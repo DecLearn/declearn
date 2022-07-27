@@ -8,3 +8,4 @@ This declearn submodule provides with:
 """
 
 from . import api
+from . import sklearn
