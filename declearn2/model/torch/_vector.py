@@ -149,6 +149,8 @@ class TorchVector(Vector):
             other: Any,
         ) -> 'TorchVector':
         # false-positive; pylint: disable=no-member
+        if isinstance(other, Vector):
+            return self._apply_operation(other, torch.minimum)
         return self.apply_func(torch.minimum, other)  # type: ignore
 
     def maximum(
@@ -156,4 +158,6 @@ class TorchVector(Vector):
             other: Any,
         ) -> 'TorchVector':
         # false-positive; pylint: disable=no-member
+        if isinstance(other, Vector):
+            return self._apply_operation(other, torch.minimum)
         return self.apply_func(torch.maximum, other)  # type: ignore

@@ -145,10 +145,14 @@ class TensorflowVector(Vector):
             self,
             other: Any,
         ) -> 'TensorflowVector':
+        if isinstance(other, Vector):
+            return self._apply_operation(other, tf.minimum)
         return self.apply_func(tf.minimum, other)
 
     def maximum(
             self,
             other: Any,
         ) -> 'TensorflowVector':
+        if isinstance(other, Vector):
+            return self._apply_operation(other, tf.maximum)
         return self.apply_func(tf.maximum, other)

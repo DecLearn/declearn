@@ -141,10 +141,14 @@ class NumpyVector(Vector):
             self,
             other: Any,
         ) -> 'Vector':
+        if isinstance(other, NumpyVector):
+            return self._apply_operation(other, np.minimum)
         return self.apply_ufunc(np.minimum, other)
 
     def maximum(
             self,
             other: Any,
         ) -> 'Vector':
+        if isinstance(other, Vector):
+            return self._apply_operation(other, np.maximum)
         return self.apply_ufunc(np.maximum, other)
