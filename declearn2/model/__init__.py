@@ -9,4 +9,5 @@ This declearn submodule provides with:
 
 from . import api
 from . import tensorflow
+from . import torch
 from . import sklearn
