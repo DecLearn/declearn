@@ -25,8 +25,23 @@ class SklearnSGDModel(Model):
             model: Union[SGDClassifier, SGDRegressor],
             n_features: int,
             n_classes: Optional[int] = None,
+            classes: Optional[Union[np.ndarray, List[int]]] = None,
         ) -> None:
-        """Instantiate a Model interface wrapping a 'model' object."""
+        """Instantiate a Model interfacing a sklearn SGD-based model.
+
+        model: SGDClassifier or SGDRegressor
+            Scikit-learn model that needs wrapping for federated training.
+            Note that some hyperparameters will be overridden, as will the
+            model's existing weights.
+        n_features: int
+            Number of input features in the learning task.
+        n_classes: int ot None, default=None
+            If `model` is a `SGDClassifier`, number of target classes.
+            May be inferred from `classes` if provided.
+        classes: np.ndarray or list[int] or None, default=None
+            If `model` is a `SGDClassifier`, values of target classes.
+            If None, will be set to `np.arange(n_classes)`.
+        """
         if not isinstance(model, (SGDClassifier, SGDRegressor)):
             raise TypeError(
                 "'model' should be a scikit-learn SGDClassifier"
@@ -38,7 +53,7 @@ class SklearnSGDModel(Model):
             warm_start=False,
             average=False,
         )
-        self._initialize_coefs(model, n_features, n_classes)
+        self._initialize_coefs(model, n_features, n_classes, classes)
         super().__init__(model)
 
     @staticmethod
@@ -46,20 +61,32 @@ class SklearnSGDModel(Model):
             model: Union[SGDClassifier, SGDRegressor],
             n_features: int,
             n_classes: Optional[int] = None,
+            classes: Optional[Union[np.ndarray, List[int]]] = None,
         ) -> None:
         """Initialize a sklearn SGD model's weights."""
-        if isinstance(model, SGDRegressor):
-            coef = np.zeros((n_features,))
-            intc = np.zeros((1,))
-        elif n_classes:
-            coef = np.zeros((n_features, n_classes))
-            intc = np.zeros((n_classes,))
+        if isinstance(model, SGDClassifier):
+            # Cross-check or harmonize classes and n_classes.
+            if n_classes is None:
+                if classes is None:
+                    raise ValueError(
+                        "At least one of 'n_classes' or 'classes' must be "
+                        "specified to initialize a SGDClassifier model."
+                    )
+                n_classes = len(classes)
+            elif classes is None:
+                classes = np.arange(n_classes)
+            elif len(classes) != n_classes:
+                raise ValueError(
+                    f"'n_classes' is {n_classes} but "
+                    f"'classes' has length {len(classes)}."
+                )
+            # Assign 'classes_' attribute to avoid partial_fit failure.
+            model.classes_ = np.array(classes)
         else:
-            raise ValueError(
-                "'n_classes' is required to initialize a SGDClassifier"
-            )
-        model.coef_ = coef
-        model.intercept_ = intc
+            n_classes = 1  # single-target regression
+        # Assign zero-valued coefficients. Note: sklearn backend does the same.
+        model.coef_ = np.zeros((n_features,))
+        model.intercept_ = np.zeros((n_classes,))
 
     def get_config(
             self,
@@ -69,6 +96,7 @@ class SklearnSGDModel(Model):
         data_specs = {
             "n_features": self._model.coef_.shape[0],
             "n_classes": self._model.coef_.shape[1] if is_clf else None,
+            "classes": self._model.classes_.tolist() if is_clf else None,
         }
         return {
             "is_clf": is_clf,
