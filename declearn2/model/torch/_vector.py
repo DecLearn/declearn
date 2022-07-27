@@ -43,9 +43,10 @@ class TorchVector(Vector):
             cls,
             string: str,
         ) -> 'TorchVector':
+        # false-positive; pylint: disable=no-member
         data = json.loads(string)
         coef = {
-            key: torch.Tensor(deserialize_numpy(dat))
+            key: torch.from_numpy(deserialize_numpy(dat))
             for key, dat in data.items()
         }
         return cls(coef)
