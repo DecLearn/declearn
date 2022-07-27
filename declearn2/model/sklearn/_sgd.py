@@ -63,9 +63,14 @@ class SklearnSGDModel(Model):
             n_classes: Optional[int] = None,
             classes: Optional[Union[np.ndarray, List[int]]] = None,
         ) -> None:
-        """Initialize a sklearn SGD model's weights."""
+        """Initialize a sklearn SGD model's weights.
+
+        Create (or overwrite) `coef_` and `intercept_` attributes
+        and set them to zero-valued arrays (as is done by sklearn
+        the first time (partial_)fit is called).
+        If the model is a classifier, also set `classes_`.
+        """
         if isinstance(model, SGDClassifier):
-            # Cross-check or harmonize classes and n_classes.
             if n_classes is None:
                 if classes is None:
                     raise ValueError(
@@ -80,13 +85,14 @@ class SklearnSGDModel(Model):
                     f"'n_classes' is {n_classes} but "
                     f"'classes' has length {len(classes)}."
                 )
-            # Assign 'classes_' attribute to avoid partial_fit failure.
+            # Assign attributes.
             model.classes_ = np.array(classes)
+            model.coef_ = np.zeros((1, n_features))
+            model.intercept_ = np.zeros((n_classes,))
         else:
-            n_classes = 1  # single-target regression
-        # Assign zero-valued coefficients. Note: sklearn backend does the same.
-        model.coef_ = np.zeros((n_features,))
-        model.intercept_ = np.zeros((n_classes,))
+            # Assign attributes in the SGDRegressor case.
+            model.coef_ = np.zeros((n_features,))
+            model.intercept_ = np.zeros((1,))
 
     def get_config(
             self,
