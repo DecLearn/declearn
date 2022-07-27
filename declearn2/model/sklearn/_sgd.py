@@ -2,7 +2,7 @@
 
 """Model subclass to wrap scikit-learn SGD classifier and regressor models."""
 
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
 import numpy as np
 from numpy.typing import ArrayLike
@@ -145,19 +145,27 @@ class SklearnSGDModel(Model):
         self._model.coef_ = weights.coefs["coef"]
         self._model.intercept_ = weights.coefs["intercept"]
 
-    def compute_batch_gradients(
+    def _unpack_batch(
             self,
             batch: Union[ArrayLike, List[Optional[ArrayLike]]],
-        ) -> NumpyVector:
-        """Compute and return the model's gradients over a data batch."""
-        # Unpack the batch data, checking it has proper specifications.
+        ) -> Tuple[ArrayLike, ArrayLike, Optional[ArrayLike]]:
+        """Unpack a received data batch into (x, y, [w])."""
         x_data, y_data, s_wght = unpack_batch(batch)
         if y_data is None:
             raise TypeError(
                 "'SklearnSGDModel' requires batches to contain target data."
             )
-        # Iteratively compute sample-wise gradients. Average and return.
-        data = [arr for arr in (x_data, y_data, s_wght) if arr is not None]
+        return x_data, y_data, s_wght
+
+    def compute_batch_gradients(
+            self,
+            batch: Union[ArrayLike, List[Optional[ArrayLike]]],
+        ) -> NumpyVector:
+        """Compute and return the model's gradients over a data batch."""
+        # Unpack, validate and repack input data.
+        x_data, y_data, s_wght = self._unpack_batch(batch)
+        data = (x_data, y_data) if s_wght is None else (x_data, y_data, s_wght)
+        # Iteratively compute sample-wise gradients. Average them and return.
         grad = [
             self._compute_sample_gradient(*smp)
             for smp in zip(*data)  # type: ignore
@@ -190,3 +198,45 @@ class SklearnSGDModel(Model):
         """Apply updates to the model's weights."""
         self._model.coef_ += updates.coefs["coef"]
         self._model.intercept_ += updates.coefs["intercept"]
+
+    def compute_loss(
+            self,
+            dataset: Iterable[Union[ArrayLike, List[Optional[ArrayLike]]]],
+        ) -> float:
+        """Compute the average loss of the model on a given dataset.
+
+        dataset: iterable of batches
+            Iterable yielding batch structures that are to be unpacked
+            into (input_features, target_labels, [sample_weights]).
+            If set, sample weights will affect the loss averaging.
+
+        Return the average value of the model's loss over samples.
+        """
+        # TODO: implement SklearnMetric objects and abstract this code
+        # Instantiate a loss function from the wrapped model's specs.
+        if hasattr(self._model, 'loss_function_'):
+            loss_fn = self._model.loss_function_.py_loss
+        else:
+            loss_cls, *args = self._model.loss_functions[self._model.loss]
+            loss_fn = loss_cls(*args).py_loss
+        # Initialize loss numerator and denominator.
+        loss = 0
+        nsmp = 0
+        # Iteratively compute and accumulate batch- and sample-wise loss.
+        for batch in dataset:
+            inputs, y_true, s_wght = self._unpack_batch(batch)
+            y_pred = self._model.predict(inputs)
+            if s_wght is None:
+                loss += sum(
+                    loss_fn(*smp)
+                    for smp in zip(y_pred, y_true)  # type: ignore
+                )
+                nsmp += len(y_pred)
+            else:
+                loss += sum(
+                    smp[2] * loss_fn(smp[0], smp[1])
+                    for smp in zip(y_pred, y_true, s_wght)  # type: ignore
+                )
+                nsmp += np.sum(s_wght)
+        # Reduce the results and return them.
+        return loss / nsmp
