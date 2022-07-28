@@ -19,20 +19,20 @@ from declearn2.typing import Batch
 
 
 __all__ = [
-    'SklearnDataset',
+    'InMemoryDataset',
 ]
 
 
 DataArray = Union[np.ndarray, pd.DataFrame, spmatrix]
 
 
-class SklearnDataset(Dataset):
+class InMemoryDataset(Dataset):
     """Dataset subclass serving numpy(-like) memory-loaded data arrays.
 
     This subclass implements:
-    * yielding (X, [y]) batches matching the scikit-learn API,
-      with data wrapped as numpy arrays, scipy sparse matrix
-      or pandas dataframes (or series)
+    * yielding (X, [y], [w]) batches matching the scikit-learn API,
+      with data wrapped as numpy arrays, scipy sparse matrices,
+      or pandas dataframes (or series for y and w)
     * loading the source data from which batches are derived
       fully in memory, with support for some standard file
       formats
@@ -53,7 +53,7 @@ class SklearnDataset(Dataset):
         input features (i.e. batches' first array) to which.
     """
 
-    _type_key = "SklearnDataset"
+    _type_key = "InMemoryDataset"
 
     def __init__(
             self,
@@ -279,8 +279,8 @@ class SklearnDataset(Dataset):
             path: str,
             f_cols: Optional[List[int]] = None,
             dtype: Union[str, np.dtype] = 'float64',
-        ) -> "SklearnDataset":
-        """Instantiate a SklearnDataset from a svmlight file.
+        ) -> "InMemoryDataset":
+        """Instantiate a InMemoryDataset from a svmlight file.
 
         A SVMlight file contains both input features (as a sparse
         matrix in CSR format) and target labels. This method uses
@@ -343,7 +343,7 @@ class SklearnDataset(Dataset):
     def load_from_json(
             cls,
             path: str,
-        ) -> 'SklearnDataset':
+        ) -> 'InMemoryDataset':
         """Instantiate a dataset based on local files.
 
         Arguments:
