@@ -1,0 +1,33 @@
+[project]
+name = "declearn2"
+version = "0.0.1"
+description = "declearn code rewrite and API revision"
+#readme = "README.Md"
+requires_python = ">=3.7"
+license = "MIT"
+authors = [
+    "Paul Andrey",
+    "Nathalie Vauquier",
+    "Marc-André Sirgiel",
+    "Yannick Bouillard",
+]
+classifiers = [
+    "Development Status :: 1 - Planning",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: UNIX",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Typing :: Typed",
+]
+dependencies = [
+    "pandas >= 1.2",
+    "scikit-learn >= 1.0",
+    "tensorflow >= 2.5",
+    "torch >= 1.10",
+]
+
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = ["pip >= 19", "setuptools ~= 58.0"]
