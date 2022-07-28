@@ -31,7 +31,6 @@ class MomentumModule(OptiModule):
 
     This module impements the following algorithm:
         Init(beta):
-            beta  = beta
             state = 0
         Step(grads):
             state = beta*state + (1-beta)*grads
@@ -72,7 +71,6 @@ class AdaGradModule(OptiModule):
 
     This module implements the following algorithm:
         Init(eps):
-            eps   = 0
             state = 0
         Step(grads):
             state += (grads ** 2)
@@ -117,8 +115,6 @@ class RMSPropModule(OptiModule):
 
     This module implements the following algorithm:
         Init(beta, eps):
-            beta  = beta
-            eps   = 0
             state = 0
         Step(grads, step):
             state = beta*state + (1-beta)*(grads**2)
@@ -166,9 +162,6 @@ class AdamModule(OptiModule):
 
     This module implements the following algorithm:
         Init(beta_1, beta_2, eps):
-            beta_1  = beta_1
-            beta_2  = beta_2
-            eps     = 0
             state_m = 0
             state_v = 0
         Step(grads, step):
@@ -256,7 +249,6 @@ class YogiMomentumModule(MomentumModule):
 
     This module impements the following algorithm:
         Init(beta):
-            beta  = beta
             state = 0
         Step(grads):
             state = state + sign(state-grads)*(1-beta)*grads
@@ -290,9 +282,6 @@ class YogiModule(AdamModule):
 
     This module implements the following algorithm:
         Init(beta_1, beta_2, eps):
-            beta_1  = beta_1
-            beta_2  = beta_2
-            eps     = 0
             state_m = 0
             state_v = 0
         Step(grads, step):
