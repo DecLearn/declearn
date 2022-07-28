@@ -15,6 +15,7 @@ from sklearn.datasets import load_svmlight_file  # type: ignore
 
 from declearn2.dataset._base import Dataset, DataSpecs
 from declearn2.dataset._sparse import sparse_from_file, sparse_to_file
+from declearn2.typing import Batch
 
 
 __all__ = [
@@ -382,7 +383,7 @@ class SklearnDataset(Dataset):
             shuffle: bool = False,
             seed: Optional[int] = None,
             drop_remainder: bool = True,
-        ) -> Iterator[List[Optional[ArrayLike]]]:
+        ) -> Iterator[Batch]:
         """Yield batches of data samples.
 
         Arguments:

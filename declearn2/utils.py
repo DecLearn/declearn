@@ -37,6 +37,7 @@ def deserialize_numpy(
     return array.reshape(data[2])
 
 
+# future: garbage-collect
 def unpack_batch(
         batch: Union[ArrayLike, List[Optional[ArrayLike]]],
     ) -> Tuple[ArrayLike, Optional[ArrayLike], Optional[ArrayLike]]:

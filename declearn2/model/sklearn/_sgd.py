@@ -9,7 +9,7 @@ from numpy.typing import ArrayLike
 from sklearn.linear_model import SGDClassifier, SGDRegressor  # type: ignore
 
 from declearn2.model.api import Model, NumpyVector
-from declearn2.utils import unpack_batch
+from declearn2.typing import Batch
 
 
 class SklearnSGDModel(Model):
@@ -145,25 +145,13 @@ class SklearnSGDModel(Model):
         self._model.coef_ = weights.coefs["coef"]
         self._model.intercept_ = weights.coefs["intercept"]
 
-    def _unpack_batch(
-            self,
-            batch: Union[ArrayLike, List[Optional[ArrayLike]]],
-        ) -> Tuple[ArrayLike, ArrayLike, Optional[ArrayLike]]:
-        """Unpack a received data batch into (x, y, [w])."""
-        x_data, y_data, s_wght = unpack_batch(batch)
-        if y_data is None:
-            raise TypeError(
-                "'SklearnSGDModel' requires batches to contain target data."
-            )
-        return x_data, y_data, s_wght
-
     def compute_batch_gradients(
             self,
-            batch: Union[ArrayLike, List[Optional[ArrayLike]]],
+            batch: Batch,
         ) -> NumpyVector:
         """Compute and return the model's gradients over a data batch."""
         # Unpack, validate and repack input data.
-        x_data, y_data, s_wght = self._unpack_batch(batch)
+        x_data, y_data, s_wght = self._verify_batch(batch)
         data = (x_data, y_data) if s_wght is None else (x_data, y_data, s_wght)
         # Iteratively compute sample-wise gradients. Average them and return.
         grad = [
@@ -171,6 +159,24 @@ class SklearnSGDModel(Model):
             for smp in zip(*data)  # type: ignore
         ]
         return sum(grad) / len(grad)  # type: ignore
+
+    def _verify_batch(
+            self,
+            batch: Batch,
+        ) -> Tuple[ArrayLike, ArrayLike, Optional[ArrayLike]]:
+        """Verify and unpack an input batch into (x, y, [w]).
+
+        Note: this method does not verify arrays' dimensionality or
+        shape coherence; the wrapped sklearn objects already do so.
+        """
+        x_data, y_data, s_wght = batch
+        invalid = (y_data is None) or isinstance(y_data, list)
+        if invalid or isinstance(x_data, list):
+            raise TypeError(
+                "'SklearnSGDModel' requires (array, array, [array|None]) "
+                "data batches."
+            )
+        return x_data, y_data, s_wght  # type: ignore
 
     def _compute_sample_gradient(
             self,
@@ -201,7 +207,7 @@ class SklearnSGDModel(Model):
 
     def compute_loss(
             self,
-            dataset: Iterable[Union[ArrayLike, List[Optional[ArrayLike]]]],
+            dataset: Iterable[Batch],
         ) -> float:
         """Compute the average loss of the model on a given dataset.
 
@@ -224,7 +230,7 @@ class SklearnSGDModel(Model):
         nsmp = 0
         # Iteratively compute and accumulate batch- and sample-wise loss.
         for batch in dataset:
-            inputs, y_true, s_wght = self._unpack_batch(batch)
+            inputs, y_true, s_wght = self._verify_batch(batch)
             y_pred = self._model.predict(inputs)
             if s_wght is None:
                 loss += sum(

@@ -4,9 +4,9 @@
 
 from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Iterator, List, Optional, Set
+from typing import Any, Iterator, Optional, Set
 
-from numpy.typing import ArrayLike
+from declearn2.typing import Batch
 
 
 __all__ = [
@@ -77,7 +77,7 @@ class Dataset(metaclass=ABCMeta):
             shuffle: bool = False,
             seed: Optional[int] = None,
             drop_remainder: bool = True,
-        ) -> Iterator[List[Optional[ArrayLike]]]:
+        ) -> Iterator[Batch]:
         """Yield batches of data samples.
 
         Arguments:
@@ -95,10 +95,13 @@ class Dataset(metaclass=ABCMeta):
 
         Yields:
         ------
-        batch: list of (optional) array-like elements
-            Depending on the actual dataset used (and the
-            learning task at hand), a batch may contain a
-            varying-number of elements; e.g. input features,
-            target labels, sample weights...
+        inputs: (2+)-dimensional data array or list of data arrays
+            Input features of that batch.
+        targets: data array, list of data arrays or None
+            Target labels or values of that batch.
+            May be None for unsupervised or semi-supervised tasks.
+        weights: 1-d data array or None
+            Optional weights associated with the samples, that are
+            typically used to balance a model's loss or metrics.
         """
         return NotImplemented

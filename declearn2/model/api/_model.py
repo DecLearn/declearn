@@ -3,12 +3,11 @@
 """Model abstraction API."""
 
 from abc import ABCMeta, abstractmethod
-from typing import Any, Dict, List, Optional, Union
-
-from numpy.typing import ArrayLike
+from typing import Any, Dict
 
 from declearn2.model.api._vector import Vector
 from declearn2.model.api._np_vec import NumpyVector
+from declearn2.typing import Batch
 
 
 __all__ = [
@@ -68,7 +67,7 @@ class Model(metaclass=ABCMeta):
     @abstractmethod
     def compute_batch_gradients(
             self,
-            batch: Union[ArrayLike, List[Optional[ArrayLike]]],
+            batch: Batch,
         ) -> Vector:
         """Compute and return the model's gradients over a data batch."""
         return NotImplemented

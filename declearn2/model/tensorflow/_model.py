@@ -2,14 +2,13 @@
 
 """Model subclass to wrap TensorFlow models."""
 
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, Iterable, List, Optional, Union
 
 import tensorflow as tf  # type: ignore
-from numpy.typing import ArrayLike
 
 from declearn2.model.api import Model, NumpyVector
 from declearn2.model.tensorflow._vector import TensorflowVector
-from declearn2.utils import unpack_batch
+from declearn2.typing import Batch
 
 
 class TensorflowModel(Model):
@@ -78,10 +77,10 @@ class TensorflowModel(Model):
 
     def compute_batch_gradients(
             self,
-            batch: Union[ArrayLike, List[Optional[ArrayLike]]],
+            batch: Batch,
         ) -> TensorflowVector:
         """Compute and return the model's gradients over a data batch."""
-        inputs, y_true, s_wght = unpack_batch(batch)
+        inputs, y_true, s_wght = batch
         with tf.GradientTape() as tape:
             y_pred = self._model(inputs)
             loss = self._model.compute_loss(inputs, y_true, y_pred, s_wght)

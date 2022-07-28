@@ -2,14 +2,13 @@
 
 """Model subclass to wrap PyTorch models."""
 
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple
 
 import torch
-from numpy.typing import ArrayLike
 
 from declearn2.model.api import Model, NumpyVector
 from declearn2.model.torch._vector import TorchVector
-from declearn2.utils import unpack_batch
+from declearn2.typing import Batch
 
 
 class TorchModel(Model):
@@ -73,7 +72,7 @@ class TorchModel(Model):
 
     def compute_batch_gradients(
             self,
-            batch: Union[ArrayLike, List[Optional[ArrayLike]]],
+            batch: Batch,
         ) -> TorchVector:
         """Compute and return the model's gradients over a data batch."""
         # Unpack inputs and clear gradients' history.
@@ -95,13 +94,13 @@ class TorchModel(Model):
 
     @staticmethod
     def _unpack_batch(
-            batch: Union[ArrayLike, List[Optional[ArrayLike]]]
+            batch: Batch
         ) -> Tuple[
             List[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor]
         ]:
         """Unpack an input data batch for use in `compute_batch_gradients`."""
         # Perform basic unpacking.
-        inparr, y_true, s_wght = unpack_batch(batch)
+        inparr, y_true, s_wght = batch
         # Convert inputs into a list of Tensor objects.
         if isinstance(inparr, (tuple, list)):
             inputs = [torch.Tensor(arr) for arr in inparr]
