@@ -87,7 +87,9 @@ class SklearnSGDModel(Model):
                 )
             # Assign attributes.
             model.classes_ = np.array(classes)
-            model.coef_ = np.zeros((1, n_features))
+            model.coef_ = np.zeros(
+                (n_classes if (n_classes > 2) else 1, n_features)
+            )
             model.intercept_ = np.zeros((n_classes,))
         else:
             # Assign attributes in the SGDRegressor case.
@@ -100,13 +102,13 @@ class SklearnSGDModel(Model):
         """Return the model's parameters as a JSON-serializable dict."""
         is_clf = isinstance(self._model, SGDClassifier)
         data_specs = {
-            "n_features": self._model.coef_.shape[0],
-            "n_classes": self._model.coef_.shape[1] if is_clf else None,
+            "n_features": self._model.coef_.shape[-1],
+            "n_classes": len(self._model.classes_) if is_clf else None,
             "classes": self._model.classes_.tolist() if is_clf else None,
         }
         return {
             "is_clf": is_clf,
-            "params": self._model.get_config(),
+            "params": self._model.get_params(),
             "kwargs": data_specs,
         }
 
@@ -119,7 +121,7 @@ class SklearnSGDModel(Model):
         for key in ("is_clf", "params", "kwargs"):
             if key not in config:
                 raise KeyError(f"Missing key '{key}' in the config dict.")
-        m_cls = SGDClassifier if config["classif"] else SGDRegressor
+        m_cls = SGDClassifier if config["is_clf"] else SGDRegressor
         model = m_cls(**config["params"])
         return cls(model, **config["kwargs"])
 
