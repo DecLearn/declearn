@@ -47,7 +47,7 @@ class SklearnDataset(Dataset):
         (and optionally more columns).
     target: data array or None
         Optional data array containing target labels.
-    f_cols: list[int], list[str] or None
+    f_cols: list[int] or list[str] or None
         Optional subset of `data` columns to restrict yielded
         input features (i.e. batches' first array) to which.
     """
@@ -58,6 +58,7 @@ class SklearnDataset(Dataset):
             self,
             data: Union[DataArray, str],
             target: Optional[Union[DataArray, str]] = None,
+            s_wght: Optional[Union[DataArray, str]] = None,
             f_cols: Optional[Union[List[int], List[str]]] = None,
         ) -> None:
         """Instantiate the dataset interface.
@@ -80,10 +81,16 @@ class SklearnDataset(Dataset):
             If `data` is a pandas DataFrame (or a path to a csv file),
             `target` may be the name of a column to use as labels (and
             thus not to use as input feature unless listed in `f_cols`).
+        s_wght: int or str or function or None, default=None
+            Optional data array containing sample weights, or path to a
+            dump file from which to load it.
+            If `data` is a pandas DataFrame (or a path to a csv file),
+            `s_wght` may be the name of a column to use as labels (and
+            thus not to use as input feature unless listed in `f_cols`).
         f_cols: list[int] or list[str] or None, default=None
             Optional list of columns in `data` to use as input features
             (other columns will not be included in the first array of
-            batches yielded by `self.generate_batches(...)`).
+            the batches yielded by `self.generate_batches(...)`).
         """
         self._data_path = None  # type: Optional[str]
         self._trgt_path = None  # type: Optional[str]
@@ -92,22 +99,32 @@ class SklearnDataset(Dataset):
             self._data_path = data
             data = self.load_data_array(data)
         self.data = data
-        # Assign the target data array.
+        # Assign the optional input features list.
+        self.f_cols = f_cols
+        # Assign the (optional) target data array.
         if isinstance(target, str):
             self._trgt_path = target
             if isinstance(self.data, pd.DataFrame):
-                try:
-                    target = self.data[target]
-                except KeyError:
-                    target = self.load_data_array(target)
-                else:
+                if target in self.data.columns:
                     if f_cols is None:
-                        f_cols = [c for c in self.data.columns if c != target]
+                        self.f_cols = self.f_cols or list(self.data.columns)
+                        self.f_cols.remove(target)  # type: ignore
+                    target = self.data[target]
             else:
                 target = self.load_data_array(target)
         self.target = target
-        # Assign the optional input features list.
-        self.f_cols = f_cols
+        # Assign the (optional) sample weights data array.
+        if isinstance(s_wght, str):
+            self._wght_path = s_wght
+            if isinstance(self.data, pd.DataFrame):
+                if s_wght in self.data.columns:
+                    if f_cols is None:
+                        self.f_cols = self.f_cols or list(self.data.columns)
+                        self.f_cols.remove(s_wght)  # type: ignore
+                    s_wght = self.data[s_wght]
+            else:
+                s_wght = self.load_data_array(s_wght)
+        self.weights = s_wght
 
     @property
     def feats(
@@ -140,19 +157,6 @@ class SklearnDataset(Dataset):
         raise TypeError(
             f"Invalid 'target' attribute type: '{type(self.target)}'."
         )
-
-    @property
-    def _batchable_arrays(
-            self
-        ) -> List[Optional[DataArray]]:
-        """List of (optional) arrays to yield from in `generate_batches`.
-
-        This attribute is meant for private use only, for the notable
-        purpose of being overridden in children classes in order to
-        add (or remove) information fields from yielded batches, e.g.
-        to add sample-wise weights.
-        """
-        return [self.feats, self.target]
 
     @staticmethod
     def load_data_array(
@@ -325,6 +329,10 @@ class SklearnDataset(Dataset):
             self._trgt_path
             or self.save_data_array(os.path.join(folder, "trgt"), self.target)
         )
+        info["s_wght"] = None if self.weights is None else (
+            self._wght_path
+            or self.save_data_array(os.path.join(folder, "wght"), self.weights)
+        )
         info["f_cols"] = self.f_cols
         # Write the information to the JSON file.
         with open(path, "w", encoding="utf-8") as file:
@@ -346,7 +354,7 @@ class SklearnDataset(Dataset):
         # Read and parse the JSON file and check its specs conformity.
         with open(path, "r", encoding="utf-8") as file:
             info = json.load(file)
-        for key in ("type", "data", "target", "f_cols"):
+        for key in ("type", "data", "target", "s_wght", "f_cols"):
             if key not in info:
                 raise KeyError(f"Missing key in the JSON file: '{key}'.")
         key = info.pop("type")
@@ -395,20 +403,16 @@ class SklearnDataset(Dataset):
 
         Yields:
         ------
-        batch: 2-elements list
-            List of (optional) array-like elements, aligned along
-            their first axis. Here, `batch` is [X, y] with:
-            * X: array-like
-                Batch of input features, as a 2-D array.
-                This may be a numpy array, scipy sparse matrix
-                or pandas dataframe depending on `self.data`.
-            * y: array-like or None
-                Batch of labels associated with the features.
-                If `self.target` is None, yield None values
-                (e.g. for unsupervised learning models.).
-                It may otherwise be a 1-D or 2-D numpy array,
-                scipy sparse matrix, pandas dataframe or pandas
-                series, depending on `self.target`.
+        inputs: data array
+            Input features; scikit-learn's `X`.
+        targets: data array or None
+            Optional target labels or values; scikit-learn's `y`.
+        weights: data array or None
+            Optional sample weights; scikit-learn's `sample_weight`.
+
+        Note: in this context, a 'data array' is either a numpy array,
+              scipy sparse matrix, pandas dataframe or pandas series.
+        Note: batched arrays are aligned along their first axis.
         """
         # Optionally set up samples' shuffling.
         if shuffle:
@@ -422,11 +426,10 @@ class SklearnDataset(Dataset):
         # Build array-wise batch iterators.
         iterators = [
             self._build_iterator(data, batch_size, order)
-            for data in self._batchable_arrays
+            for data in (self.feats, self.target, self.weights)
         ]
         # Yield tuples zipping the former.
-        for batch in zip(*iterators):
-            yield list(batch)
+        yield from zip(*iterators)
 
     def _build_iterator(
             self,
@@ -436,6 +439,8 @@ class SklearnDataset(Dataset):
         ) -> Iterator[Optional[ArrayLike]]:
         """Yield batches extracted from a data array.
 
+        Arguments:
+        ---------
         data: optional data array
             Data from which to derive the yielded batches.
             If None, yield None as many times as `order` specifies it.
