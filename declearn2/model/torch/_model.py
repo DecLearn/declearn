@@ -101,18 +101,18 @@ class TorchModel(Model):
             List[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor]
         ]:
         """Unpack an input data batch for use in `compute_batch_gradients`."""
-        # Perform basic unpacking.
-        inparr, y_true, s_wght = batch
-        # Convert inputs into a list of Tensor objects.
-        if isinstance(inparr, (tuple, list)):
-            inputs = [torch.Tensor(arr) for arr in inparr]
-        else:
-            inputs = [torch.Tensor(inparr)]
-        # Ensure defined arrays are converted to Tensor objects.
-        y_true = None if (y_true is None) else torch.Tensor(y_true)
-        s_wght = None if (s_wght is None) else torch.Tensor(s_wght)
-        # Return the prepared data.
-        return inputs, y_true, s_wght
+        # Define an array-to-tensor conversion routine.
+        def convert(data: Any) -> Optional[torch.Tensor]:
+            if (data is None) or isinstance(data, torch.Tensor):
+                return data
+            return torch.from_numpy(data)  # pylint: disable=no-member
+        # Ensure inputs is a list.
+        inputs, y_true, s_wght = batch
+        if not isinstance(inputs, (tuple, list)):
+            inputs = [inputs]
+        # Ensure output data was converted to Tensor.
+        output = [list(map(convert, inputs)), convert(y_true), convert(s_wght)]
+        return output  # type: ignore
 
     def apply_updates(  # type: ignore  # future: revise
             self,
