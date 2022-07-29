@@ -113,3 +113,26 @@ class TensorflowModel(Model):
         # Ensure ops have been performed before exiting.
         with tf.control_dependencies([upd_op]):
             return None
+
+    def compute_loss(
+            self,
+            dataset: Iterable[Batch],
+        ) -> float:
+        """Compute the average loss of the model on a given dataset.
+
+        dataset: iterable of batches
+            Iterable yielding batch structures that are to be unpacked
+            into (input_features, target_labels, [sample_weights]).
+            If set, sample weights will affect the loss averaging.
+
+        Return the average value of the model's loss over samples.
+        """
+        total = 0.
+        n_btc = 0
+        for batch in dataset:
+            inputs, y_true, s_wght = batch
+            y_pred = self._model(inputs)
+            loss = self._model.compute_loss(inputs, y_true, y_pred, s_wght)
+            total += loss.numpy()
+            n_btc += 1
+        return total / n_btc

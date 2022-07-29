@@ -170,6 +170,11 @@ class TestTensorflowModel:
         diff = list((w_end - w_srt).coefs.values())
         assert all(np.abs(a - b).max() < 1e-7 for a, b in zip(diff, updt))
 
+    def test_compute_loss(self, test_case):
+        """Test that loss computation abides by its specs."""
+        loss = test_case.model.compute_loss(test_case.dataset)
+        assert isinstance(loss, float)
+
     def test_serialize_gradients(self, test_case):
         """Test that computed gradients can be (de)serialized as strings."""
         model = test_case.model
