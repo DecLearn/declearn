@@ -107,7 +107,8 @@ class TensorflowModel(Model):
         ) -> None:
         """Apply updates to the model's weights."""
         # Delegate updates' application to a tensorflow Optimizer.
-        zipped = zip(updates.coefs.values(), self._model.trainable_weights)
+        values = (-1 * updates).coefs.values()
+        zipped = zip(values, self._model.trainable_weights)
         upd_op = self._sgd.apply_gradients(zipped)
         # Ensure ops have been performed before exiting.
         with tf.control_dependencies([upd_op]):
