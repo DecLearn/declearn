@@ -29,8 +29,8 @@ class KerasTestCase:
                  1 output neuron with sigmoid activation
     * "CNN":
         - input: 64x64 image with 3 channels (normalized values)
-        - stack: 32 8x8 conv. filters, then 8x8 max pooling
-                 16 2x2 conv. filters, then 8x8 avg pooling
+        - stack: 32 7x7 conv. filters, then 8x8 max pooling
+                 16 5x5 conv. filters, then 8x8 avg pooling
                  1 output neuron with sigmoid activation
     """
 
@@ -79,14 +79,11 @@ class KerasTestCase:
             ]
             shape = [None, 128]
         elif self.kind == "CNN":
+            cnn_kwargs = {"padding": "same", "activation": "relu"}
             stack = [
-                tf.keras.layers.Conv2D(
-                    32, 8, padding="same", activation="relu"
-                ),
+                tf.keras.layers.Conv2D(32, 7, **cnn_kwargs),
                 tf.keras.layers.MaxPool2D((8, 8)),
-                tf.keras.layers.Conv2D(
-                    16, 2, padding="same", activation="relu"
-                ),
+                tf.keras.layers.Conv2D(16, 5, **cnn_kwargs),
                 tf.keras.layers.AveragePooling2D((8, 8)),
                 tf.keras.layers.Reshape((16,)),
                 tf.keras.layers.Dense(1, activation="sigmoid"),
@@ -105,7 +102,7 @@ def test_case(kind: Literal["MLP", "RNN", "CNN"]) -> KerasTestCase:
 
 @pytest.mark.parametrize("kind", ["MLP", "RNN", "CNN"])
 class TestTensorflowModel:
-    """Unit tests for declearn.model.tensorflow.TensorllowModel."""
+    """Unit tests for declearn.model.tensorflow.TensorflowModel."""
 
     def test_serialization(self, test_case):
         """Check that the model can be JSON-(de)serialized properly."""
@@ -134,14 +131,12 @@ class TestTensorflowModel:
         w_end = model.get_weights()
         assert w_srt == w_end
         assert isinstance(grads, TensorflowVector)
-        assert grads.coefs.keys() == w_srt.coefs.keys()
 
-    def test_compute_batch_gradients_tfnp(self, test_case):
+    def test_compute_batch_gradients_np(self, test_case):
         """Check that gradients computations work with numpy inputs."""
         # Setup the model and a batch of data, in both tf and np formats.
         model = test_case.model
-        dataset = test_case.dataset
-        tf_batch = next(iter(dataset))
+        tf_batch = next(iter(test_case.dataset))
         assert isinstance(tf_batch[0], tf.Tensor)
         np_batch = [None if arr is None else arr.numpy() for arr in tf_batch]
         assert isinstance(np_batch[0], np.ndarray)
@@ -164,6 +159,7 @@ class TestTensorflowModel:
         model.apply_updates(grads)
         # Verify the the updates were correctly applied.
         # Check up to 1e-7 numerical precision due to tf/np conversion.
+        # NOTE: if the model has frozen weights, this test would xfail.
         w_end = model.get_weights()
         assert w_end != w_srt
         updt = [val.numpy() for val in grads.coefs.values()]
