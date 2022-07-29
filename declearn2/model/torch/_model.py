@@ -119,7 +119,8 @@ class TorchModel(Model):
             updates: TorchVector,
         ) -> None:
         """Apply updates to the model's weights."""
-        for idx, par in self._model.parameters():
-            upd = updates.coefs.get(str(idx))
-            if upd is not None:
-                par.add_(upd)
+        with torch.no_grad():
+            for idx, par in enumerate(self._model.parameters()):
+                upd = updates.coefs.get(str(idx))
+                if upd is not None:
+                    par.add_(upd)
