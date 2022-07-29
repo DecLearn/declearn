@@ -1,6 +1,17 @@
 # coding: utf-8
 
-"""Unit tests for SklearnSGDModel."""
+"""Unit tests for SklearnSGDModel.
+
+Three model/task settings are tested:
+* "Reg": Regression (single-target)
+* "Bin": Binary classification
+* "Clf": Multiclass classification
+
+Random-valued data is generated based on the task.
+Additional data settings are tested:
+* "-SmpWgt": include sample weights in the yielded batches
+* "-Sparse": wrap up the input features as a CSR sparse matrix
+"""
 
 import json
 from typing import List, Optional
@@ -52,10 +63,10 @@ def dataset(
     if s_weights:
         s_wght = np.exp(rng.normal(size=(2, 32)))
         s_wght /= s_wght.sum(axis=1, keepdims=True) * 32
-        dataset = list(zip(inputs, labels, s_wght))
+        batches = list(zip(inputs, labels, s_wght))
     else:
-        dataset = list(zip(inputs, labels, [None, None]))
-    return dataset
+        batches = list(zip(inputs, labels, [None, None]))
+    return batches
 
 
 @pytest.mark.parametrize("n_classes", [None, 2, 5], ids=["Reg", "Bin", "Clf"])
