@@ -19,7 +19,7 @@ class TorchVector(Vector):
     This Vector is designed to store a collection of named
     PyTorch tensors, enabling computations that are either
     applied to each and every coefficient, or imply two sets
-    of alligned coefficients (i.e. two TorchVector with
+    of aligned coefficients (i.e. two TorchVector with
     similar specifications).
     """
 
@@ -46,7 +46,7 @@ class TorchVector(Vector):
         # false-positive; pylint: disable=no-member
         data = json.loads(string)
         coef = {
-            key: torch.from_numpy(deserialize_numpy(dat))
+            key: torch.from_numpy(deserialize_numpy(dat).copy())
             for key, dat in data.items()
         }
         return cls(coef)
