@@ -2,9 +2,10 @@
 
 """Model subclass to wrap TensorFlow models."""
 
-from typing import Any, Dict, Iterable, List, Optional, Union
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
 import tensorflow as tf  # type: ignore
+from numpy.typing import ArrayLike
 
 from declearn2.model.api import Model, NumpyVector
 from declearn2.model.tensorflow._vector import TensorflowVector
@@ -80,12 +81,25 @@ class TensorflowModel(Model):
             batch: Batch,
         ) -> TensorflowVector:
         """Compute and return the model's gradients over a data batch."""
-        inputs, y_true, s_wght = batch
+        inputs, y_true, s_wght = self._verify_batch(batch)
         with tf.GradientTape() as tape:
             y_pred = self._model(inputs)
             loss = self._model.compute_loss(inputs, y_true, y_pred, s_wght)
             grad = tape.gradient(loss, self._model.trainable_weights)
         return TensorflowVector({str(i): tns for i, tns in enumerate(grad)})
+
+    def _verify_batch(
+            self,
+            batch: Batch,
+        ) -> Tuple[tf.Tensor, Optional[tf.Tensor], Optional[tf.Tensor]]:
+        """Enforce Tensor conversion to batched data."""
+        # Define an array-to-tensor conversion routine.
+        def convert(data: Optional[ArrayLike]) -> Optional[tf.Tensor]:
+            if (data is None) or tf.is_tensor(data):
+                return data
+            return tf.convert_to_tensor(data)
+        # Apply it to the the batched elements.
+        return tf.nest.map_structure(convert, batch)
 
     def apply_updates(  # type: ignore  # future: revise
             self,
