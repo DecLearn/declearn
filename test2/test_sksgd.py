@@ -3,7 +3,7 @@
 """Unit tests for SklearnSGDModel."""
 
 import json
-from typing import Any, Iterator, List, Optional
+from typing import Iterator, Optional
 
 import numpy as np
 import pytest
@@ -37,24 +37,9 @@ def build_dataset(
         yield from zip(inputs, labels, [None, None])
 
 
-def build_test_cases() -> List[Any]:
-    """Build test-case parameters with readable id tagging."""
-    cases = []  # type: List[Any]  # pytest ParameterSet (private type)
-    tasks = {
-        "Regression": None,
-        "Binary_Clf": 2,
-        "Multip_Clf": 5,
-    }
-    for tag, n_classes in tasks.items():
-        for s_weights in (False, True):
-            for as_sparse in (False, True):
-                tid = tag + ("-SmpWgt" * s_weights) + ("-Sparse" * as_sparse)
-                param = pytest.param(n_classes, s_weights, as_sparse, id=tid)
-                cases.append(param)
-    return cases
-
-
-@pytest.mark.parametrize("n_classes,s_weights,as_sparse", build_test_cases())
+@pytest.mark.parametrize("as_sparse", [False, True], ids=["", "Sparse"])
+@pytest.mark.parametrize("s_weights", [False, True], ids=["", "SmpWgt"])
+@pytest.mark.parametrize("n_classes", [None, 2, 5], ids=["Reg", "Bin", "Clf"])
 def test_model(
         n_classes: Optional[int],
         s_weights: bool,
