@@ -127,3 +127,11 @@ class TestSklearnSGDModelUsage:
         """Test that loss computation abides by its specs."""
         loss = model.compute_loss(dataset)
         assert isinstance(loss, float)
+
+    def test_serialize_gradients(self, model, dataset):
+        """Test that computed gradients can be (de)serialized as strings."""
+        grads = model.compute_batch_gradients(dataset[0])
+        gdump = grads.serialize()
+        assert isinstance(gdump, str)
+        other = NumpyVector.deserialize(gdump)
+        assert grads == other
