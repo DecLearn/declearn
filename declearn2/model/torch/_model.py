@@ -55,19 +55,21 @@ class TorchModel(Model):
 
     def get_weights(
             self,
-        ) -> NumpyVector:  # revise: could be TorchVector
+        ) -> NumpyVector:
         """Return the model's trainable weights."""
         return NumpyVector({
-            key: tns.numpy() for key, tns in self._model.state_dict().items()
+            key: tns.numpy().copy()  # NOTE: otherwise, view on Tensor data
+            for key, tns in self._model.state_dict().items()
         })
 
     def set_weights(
             self,
-            weights: NumpyVector,  # revise: could be TorchVector
+            weights: NumpyVector,
         ) -> None:
         """Assign values to the model's trainable weights."""
+        # false-positive on torch.from_numpy; pylint: disable=no-member
         self._model.load_state_dict({
-            key: torch.Tensor(arr) for key, arr in weights.coefs.items()
+            key: torch.from_numpy(arr) for key, arr in weights.coefs.items()
         })
 
     def compute_batch_gradients(
