@@ -4,6 +4,7 @@
 
 from ._register import (
     access_registered,
+    access_registration_info,
     create_types_registry,
     register_type,
 )

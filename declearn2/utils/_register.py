@@ -3,11 +3,12 @@
 """Generic types-registration system backing some (de)serialization utils."""
 
 import functools
-from typing import Dict, Type, Optional
+from typing import Dict, Optional, Tuple, Type
 
 
 __all__ = [
     'access_registered',
+    'access_registration_info',
     'create_types_registry',
     'register_type',
 ]
@@ -88,6 +89,29 @@ class TypesRegistry:
         if name not in self._reg:
             raise KeyError(f"No '{name}' entry under '{self.name}' registry.")
         return self._reg[name]
+
+    def get_name(
+            self,
+            cls: Type,
+        ) -> str:
+        """Return the name under which a type has been registered.
+
+        Arguments:
+        ---------
+        cls: type
+            Registered type, the storage name of which to retrive.
+
+        Returns
+        -------
+        name: str
+            Name under which the type is registered.
+        """
+        for name, rtype in self._reg.items():
+            if rtype is cls:
+                return name
+        raise KeyError(
+            f"Type '{cls.__name__}' not found in '{self.name}' registry."
+        )
 
 
 def create_types_registry(
@@ -177,7 +201,7 @@ def access_registered(
         return the first-found match or raise a KeyError.
 
     Returns
-    -------
+    -------, Optional
     cls: type
         Type retrieved from a types registry.
     """
@@ -193,3 +217,41 @@ def access_registered(
     if group not in REGISTRIES:
         raise KeyError(f"Type registry '{group}' does not exist.")
     return REGISTRIES[group].access(name)
+
+
+def access_registration_info(
+        cls: Type,
+        group: Optional[str] = None
+    ) -> Tuple[str, str]:
+    """Access a registered type's storage name and belonging group.
+
+    Arguments:
+    ---------
+    cls: str
+        Registered type, the storage name of which to retrive.
+    group: str or None, default=None
+        Name of the TypesRegistry under which the type is stored.
+        If None, look for the type in each and every registry and
+        return the first-found match or raise a KeyError.
+
+    Returns
+    -------
+    name: str
+        Name under which the type is registered.
+    group: str
+        Name of the TypesRegistry in which the type is registered.
+    """
+    # If group is unspecified, look the type up in each and every registry.
+    if group is None:
+        for grp, reg in REGISTRIES.items():
+            try:
+                return reg.get_name(cls), grp
+            except KeyError:
+                continue
+        raise KeyError(
+            f"Type '{cls.__name__}' not found under any types registry."
+        )
+    # Otherwise, look up the registry, then get the target name from it.
+    if group not in REGISTRIES:
+        raise KeyError(f"Type registry '{group}' does not exist.")
+    return REGISTRIES[group].get_name(cls), group
