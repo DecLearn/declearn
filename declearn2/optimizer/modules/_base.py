@@ -7,6 +7,7 @@ from typing import Any, Dict, Optional, Union
 
 
 from declearn2.model.api import Vector
+from declearn2.utils import create_types_registry, register_type
 
 
 __all__ = [
@@ -86,6 +87,10 @@ class OptiModule(metaclass=ABCMeta):
         return None
 
 
+create_types_registry("OptiModule", OptiModule)
+
+
+@register_type(name="Momentum", group="OptiModule")
 class MomentumModule(OptiModule):
     """Momentum gradient-acceleration module.
 

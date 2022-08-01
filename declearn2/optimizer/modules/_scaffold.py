@@ -21,6 +21,7 @@ from typing import Any, Dict, List, Optional, Union
 
 from declearn2.model.api import Vector
 from declearn2.optimizer.modules._base import OptiModule
+from declearn2.utils import register_type
 
 
 __all__ = [
@@ -29,7 +30,7 @@ __all__ = [
 ]
 
 
-
+@register_type(name="ScaffoldClient", group="OptiModule")
 class ScaffoldClientModule(OptiModule):
     """Client-side Stochastic Controlled Averaging (SCAFFOLD) module.
 
@@ -180,6 +181,7 @@ class ScaffoldClientModule(OptiModule):
         self._steps = 0
 
 
+@register_type(name="ScaffoldServer", group="OptiModule")
 class ScaffoldServerModule(OptiModule):
     """Server-side Stochastic Controlled Averaging (SCAFFOLD) module.
 
