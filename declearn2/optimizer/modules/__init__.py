@@ -10,6 +10,10 @@ Adaptive learning-rate algorithms:
 * AdamModule    : Adam and AMSGrad algorithms
 * RMSPropModule : RMSProp algorithm
 * YogiModule    : Yogi algorithm, with Adam or AMSGrad base
+
+SCAFFOLD algorithm, as a pair of complementary modules:
+* ScaffoldClientModule : client-side module
+* ScaffoldServerModule : server-side module
 """
 
 from ._base import (
@@ -21,4 +25,8 @@ from ._adaptive import (
     AdamModule,
     RMSPropModule,
     YogiModule,
+)
+from ._scaffold import (
+    ScaffoldClientModule,
+    ScaffoldServerModule,
 )
