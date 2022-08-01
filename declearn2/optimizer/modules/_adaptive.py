@@ -4,6 +4,7 @@
 
 from typing import Optional, Union
 
+
 from declearn2.model.api import Vector
 from declearn2.optimizer.modules._base import OptiModule, MomentumModule
 

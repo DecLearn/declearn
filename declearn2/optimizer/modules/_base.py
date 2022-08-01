@@ -5,7 +5,14 @@
 from abc import ABCMeta, abstractmethod
 from typing import Any, Dict, Optional, Union
 
+
 from declearn2.model.api import Vector
+
+
+__all__ = [
+    'MomentumModule',
+    'OptiModule',
+]
 
 
 class OptiModule(metaclass=ABCMeta):
