@@ -38,6 +38,8 @@ class AdaGradModule(OptiModule):
         https://jmlr.org/papers/v12/duchi11a.html
     """
 
+    name = "adagrad"
+
     def __init__(
             self,
             eps: float = 1e-7,
@@ -53,12 +55,12 @@ class AdaGradModule(OptiModule):
 
     def run(
             self,
-            gradient: Vector,
+            gradients: Vector,
         ) -> Vector:
         """Apply Adagrad adaptation to input (pseudo-)gradients."""
-        self.state = self.state + (gradient ** 2)
+        self.state = self.state + (gradients ** 2)
         scaling = (self.state ** .5) + self.eps
-        return gradient / scaling
+        return gradients / scaling
 
 
 class RMSPropModule(OptiModule):
@@ -81,6 +83,8 @@ class RMSPropModule(OptiModule):
         Average of its Recent Magnitude.
     """
 
+    name = "rmsprop"
+
     def __init__(
             self,
             beta: float = 0.9,
@@ -100,12 +104,12 @@ class RMSPropModule(OptiModule):
 
     def run(
             self,
-            gradient: Vector,
+            gradients: Vector,
         ) -> Vector:
         """Apply RMSProp adaptation to input (pseudo-)gradients."""
-        v_t = self.mom.run(gradient ** 2)
+        v_t = self.mom.run(gradients ** 2)
         scaling = (v_t ** .5) + self.eps
-        return gradient / scaling
+        return gradients / scaling
 
 
 class AdamModule(OptiModule):
@@ -144,6 +148,8 @@ class AdamModule(OptiModule):
         https://arxiv.org/abs/1904.09237
     """
 
+    name = "adam"
+
     def __init__(
             self,
             beta_1: float = 0.9,
@@ -175,12 +181,12 @@ class AdamModule(OptiModule):
 
     def run(
             self,
-            gradient: Vector,
+            gradients: Vector,
         ) -> Vector:
         """Apply Adam adaptation to input (pseudo-)gradients."""
         # Compute momentum-corrected state variables.
-        m_t = self.mom_1.run(gradient)
-        v_t = self.mom_2.run(gradient ** 2)
+        m_t = self.mom_1.run(gradients)
+        v_t = self.mom_2.run(gradients ** 2)
         # Apply bias correction to the previous terms.
         m_h = m_t / (1 - (self.mom_1.beta ** (self.steps + 1)))
         v_h = v_t / (1 - (self.mom_2.beta ** (self.steps + 1)))
@@ -190,9 +196,9 @@ class AdamModule(OptiModule):
                 v_h = v_h.maximum(self._vmax)
             self._vmax = v_h
         # Compute and return the adapted gradients.
-        gradient = m_h / ((v_h ** .5) + self.eps)
+        gradients = m_h / ((v_h ** .5) + self.eps)
         self.steps += 1
-        return gradient
+        return gradients
 
 
 class YogiMomentumModule(MomentumModule):
@@ -218,13 +224,15 @@ class YogiMomentumModule(MomentumModule):
         Adaptive Methods for Nonconvex Optimization.
     """
 
+    name = "yogi-momentum"
+
     def run(
             self,
-            gradient: Vector,
+            gradients: Vector,
         ) -> Vector:
         """Apply Momentum acceleration to input (pseudo-)gradients."""
-        sign = (self.state - gradient).sign()
-        self.state = self.state + (sign * (1 - self.beta) * gradient)
+        sign = (self.state - gradients).sign()
+        self.state = self.state + (sign * (1 - self.beta) * gradients)
         return self.state
 
 
@@ -260,6 +268,8 @@ class YogiModule(AdamModule):
         On the Convergence of Adam and Beyond.
         https://arxiv.org/abs/1904.09237
     """
+
+    name = "yogi"
 
     def __init__(
             self,

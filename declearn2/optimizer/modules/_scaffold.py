@@ -81,6 +81,8 @@ class ScaffoldClientModule(OptiModule):
         https://arxiv.org/abs/1910.06378
     """
 
+    name = "scaffold"
+
     def __init__(
             self,
         ) -> None:
@@ -91,15 +93,15 @@ class ScaffoldClientModule(OptiModule):
 
     def run(
             self,
-            gradient: Vector,
+            gradients: Vector,
         ) -> Vector:
         """Apply Scaffold correction to input local gradients."""
         # Apply state-based correction.
-        gradient = gradient - self.delta
+        gradients = gradients - self.delta
         # Accumulate the processed gradients, then return.
-        self._grads = gradient + self._grads
+        self._grads = gradients + self._grads
         self._steps += 1
-        return gradient
+        return gradients
 
     def collect_aux_var(
             self,
@@ -220,6 +222,8 @@ class ScaffoldServerModule(OptiModule):
         https://arxiv.org/abs/1910.06378
     """
 
+    name = "scaffold"
+
     def __init__(
             self,
             clients: Optional[List[str]] = None,
@@ -243,12 +247,12 @@ class ScaffoldServerModule(OptiModule):
 
     def run(
             self,
-            gradient: Vector,
+            gradients: Vector,
         ) -> Vector:
         """Apply Scaffold correction to input global (aggregated) gradients."""
         # Note: use "previous" state rather than the updated one,
         # which serves as reference in the *next* training round.
-        return gradient - self._prev
+        return gradients - self._prev
 
     def collect_aux_var(
             self,
