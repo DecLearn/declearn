@@ -4,5 +4,6 @@
 
 from . import typing
 from . import utils
-from . import model
 from . import dataset
+from . import model
+from . import optimizer
