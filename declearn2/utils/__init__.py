@@ -4,6 +4,18 @@
 
 The key functionalities implemented here are:
 
+Config serialization
+--------------------
+Tools to create JSON config dumps of objects and instantiate from them.
+
+* ObjectConfig:
+    Dataclass to wrap objects' config and interface JSON dumps.
+* deserialize_object:
+    Instantiate an object from an ObjectConfig or a JSON file.
+* serialize_object:
+    Return an ObjectConfig wrapping a given (supported) object.
+
+
 Types-registration
 ------------------
 Tools to map class constructors to (name, group) string tuples.
@@ -49,4 +61,9 @@ from ._register import (
     access_registration_info,
     create_types_registry,
     register_type,
+)
+from ._serialize import (
+    ObjectConfig,
+    deserialize_object,
+    serialize_object,
 )
