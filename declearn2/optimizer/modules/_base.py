@@ -7,7 +7,13 @@ from typing import Any, Dict, Optional, Union
 
 
 from declearn2.model.api import Vector
-from declearn2.utils import create_types_registry, register_type
+from declearn2.utils import (
+    ObjectConfig,
+    create_types_registry,
+    deserialize_object,
+    register_type,
+    serialize_object,
+)
 
 
 __all__ = [
@@ -86,6 +92,40 @@ class OptiModule(metaclass=ABCMeta):
         # API-defining method; pylint: disable=unused-argument
         return None
 
+    def get_config(
+            self,
+        ) -> Dict[str, Any]:
+        """Return a JSON-serializable dict with this module's parameters."""
+        return {}
+
+    @classmethod
+    def from_config(
+            cls,
+            config: Dict[str, Any],
+        ) -> 'OptiModule':
+        """Instantiate an OptiModule from its configuration dict."""
+        return cls(**config)
+
+    def serialize(
+            self,
+        ) -> ObjectConfig:
+        """Return an ObjectConfig serialization of this instance."""
+        return serialize_object(self, group="OptiModule")
+
+    @classmethod
+    def deserialize(
+            cls,
+            config: Union[str, ObjectConfig],
+        ) -> 'OptiModule':
+        """Instantiate an OptiModule from a JSON configuration file or dict."""
+        obj = deserialize_object(config, custom=None)
+        if not isinstance(obj, cls):
+            raise TypeError(
+                f"Configuration specifies a '{type(obj).__name__}' object, "
+                f"which is not a subclass of '{cls.__name__}'."
+            )
+        return obj
+
 
 create_types_registry("OptiModule", OptiModule)
 
@@ -123,6 +163,12 @@ class MomentumModule(OptiModule):
             raise ValueError("'beta' value should be in [0, 1[.")
         self.beta = beta
         self.state = 0.  # type: Union[Vector, float]
+
+    def get_config(
+            self,
+        ) -> Dict[str, Any]:
+        """Return a JSON-serializable dict with this module's parameters."""
+        return {"beta": self.beta}
 
     def run(
             self,

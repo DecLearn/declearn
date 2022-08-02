@@ -2,7 +2,7 @@
 
 """Adaptive algorithms for optimizers, implemented as plug-in modules."""
 
-from typing import Optional, Union
+from typing import Any, Dict, Optional, Union
 
 
 from declearn2.model.api import Vector
@@ -57,6 +57,12 @@ class AdaGradModule(OptiModule):
         self.eps = eps
         self.state = 0.  # type: Union[Vector, float]
 
+    def get_config(
+            self,
+        ) -> Dict[str, Any]:
+        """Return a JSON-serializable dict with this module's parameters."""
+        return {"eps": self.eps}
+
     def run(
             self,
             gradients: Vector,
@@ -108,6 +114,12 @@ class RMSPropModule(OptiModule):
         """
         self.mom = MomentumModule(beta=beta)
         self.eps = eps
+
+    def get_config(
+            self,
+        ) -> Dict[str, Any]:
+        """Return a JSON-serializable dict with this module's parameters."""
+        return {"beta": self.mom.beta, "eps": self.eps}
 
     def run(
             self,
@@ -188,6 +200,17 @@ class AdamModule(OptiModule):
         self.eps = eps
         self.amsgrad = amsgrad
         self._vmax = None  # type: Optional[Vector]
+
+    def get_config(
+            self,
+        ) -> Dict[str, Any]:
+        """Return a JSON-serializable dict with this module's parameters."""
+        return {
+            "beta_1": self.mom_1.beta,
+            "beta_2": self.mom_2.beta,
+            "amsgrad": self.amsgrad,
+            "eps": self.eps,
+        }
 
     def run(
             self,

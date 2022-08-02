@@ -236,18 +236,27 @@ class ScaffoldServerModule(OptiModule):
         ---------
         clients: list[str] or None, default=None
             Optional list of known clients' id strings.
-            If this module is used under a training strategy that has
-            participating clients vary across epochs, leaving this to
-            None will affect the update rule for the shared state, as
-            it uses a (n_participating / n_total_clients) term, the
-            divisor of which will be incorrect (at least on the first
-            step, potentially on following ones as well).
+
+        If this module is used under a training strategy that has
+        participating clients vary across epochs, leaving `clients`
+        to None will affect the update rule for the shared state,
+        as it uses a (n_participating / n_total_clients) term, the
+        divisor of which will be incorrect (at least on the first
+        step, potentially on following ones as well).
+        Similarly, listing clients that in fact do not participate
+        in training will have side effects on computations.
         """
         self.state = 0.  # type: Union[Vector, float]
         self._prev = 0.  # type: Union[Vector, float]
         self.s_loc = {}  # type: Dict[str, Union[Vector, float]]
         if clients:
             self.s_loc = {client: 0. for client in clients}
+
+    def get_config(
+            self,
+        ) -> Dict[str, Any]:
+        """Return a JSON-serializable dict with this module's parameters."""
+        return {"clients": list(self.s_loc)}
 
     def run(
             self,
