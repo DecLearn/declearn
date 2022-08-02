@@ -3,7 +3,7 @@
 """Unit tests for TensorflowModel."""
 
 import json
-from typing import Literal
+from typing_extensions import Literal  # future: import from typing (Py>=3.8)
 
 import numpy as np
 import pytest
