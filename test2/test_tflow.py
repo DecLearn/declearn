@@ -3,10 +3,13 @@
 """Unit tests for TensorflowModel."""
 
 import json
+import warnings
 
 import numpy as np
 import pytest
-import tensorflow as tf  # type: ignore
+with warnings.catch_warnings():  # silence tensorflow import-time warnings
+    warnings.simplefilter("ignore")
+    import tensorflow as tf  # type: ignore
 from typing_extensions import Literal  # future: import from typing (Py>=3.8)
 
 from declearn2.model.api import NumpyVector
