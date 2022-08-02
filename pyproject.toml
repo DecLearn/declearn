@@ -1,15 +1,23 @@
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = ["pip >= 19", "setuptools ~= 58.0", "setuptools-scm"]
+
 [project]
 name = "declearn2"
 version = "0.0.1"
 description = "declearn code rewrite and API revision"
 #readme = "README.Md"
-requires_python = ">=3.7"
-license = "MIT"
+requires-python = ">=3.7"
+license = {text = "MIT"}
 authors = [
-    "Paul Andrey",
-    "Nathalie Vauquier",
-    "Marc-André Sirgiel",
-    "Yannick Bouillard",
+    {name = "Paul Andrey"},
+    {name = "Nathalie Vauquier"},
+    {name = "Marc-André Sirgiel"},
+    {name = "Yannick Bouillard"},
+]
+maintainers = [
+    {name = "Paul Andrey"},
+    {name = "Nathalie Vauquier"},
 ]
 classifiers = [
     "Development Status :: 1 - Planning",
@@ -24,10 +32,22 @@ classifiers = [
 dependencies = [
     "pandas >= 1.2",
     "scikit-learn >= 1.0",
-    "tensorflow >= 2.5",
-    "torch >= 1.10",
+    "typing_extensions >= 4.0",
 ]
 
-[build-system]
-build-backend = "setuptools.build_meta"
-requires = ["pip >= 19", "setuptools ~= 58.0"]
+[project.optional-dependencies]
+tensorflow = [
+    "tensorflow >= 2.5",
+]
+torch = [
+    "torch >= 1.10",
+]
+tests = [
+    "declearn2[tensorflow,torch]",
+]
+
+[tools.setuptools]
+packages = ["declearn2", "declearn2.*"]
+
+[tools.setuptools.package_data]
+declearn2 = ["py.typed"]
