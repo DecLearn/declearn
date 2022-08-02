@@ -1,10 +1,12 @@
 # coding: utf-8
 
-"""(De-)serialization tools commonly used in declearn."""
+"""Numpy-related declearn utils."""
 
 from typing import List, Tuple
 
 import numpy as np
+
+from declearn2.utils._json import add_json_support
 
 
 __all__ = [
@@ -33,3 +35,6 @@ def deserialize_numpy(
     buffer = bytes.fromhex(data[0])
     array = np.frombuffer(buffer, dtype=data[1])
     return array.reshape(data[2])
+
+
+add_json_support(np.ndarray, serialize_numpy, deserialize_numpy, "np.ndarray")
