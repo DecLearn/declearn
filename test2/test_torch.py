@@ -4,11 +4,11 @@
 
 import json
 from typing import List, Tuple
-from typing_extensions import Literal  # future: import from typing (Py>=3.8)
 
 import numpy as np
 import pytest
 import torch
+from typing_extensions import Literal  # future: import from typing (Py>=3.8)
 
 from declearn2.model.api import NumpyVector
 from declearn2.model.torch import TorchModel, TorchVector

@@ -4,12 +4,12 @@
 
 from abc import ABCMeta, abstractmethod
 from typing import Any, Dict, List, Optional, Tuple, Union
+
+from numpy.typing import ArrayLike
 from typing_extensions import (
     Protocol,  # future: import from typing (Py>=3.8)
     Self,      # future: import from typing (Py>=3.11)
 )
-
-from numpy.typing import ArrayLike
 
 
 __all__ = [

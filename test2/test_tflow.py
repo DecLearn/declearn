@@ -3,11 +3,11 @@
 """Unit tests for TensorflowModel."""
 
 import json
-from typing_extensions import Literal  # future: import from typing (Py>=3.8)
 
 import numpy as np
 import pytest
 import tensorflow as tf  # type: ignore
+from typing_extensions import Literal  # future: import from typing (Py>=3.8)
 
 from declearn2.model.api import NumpyVector
 from declearn2.model.tensorflow import TensorflowModel, TensorflowVector
