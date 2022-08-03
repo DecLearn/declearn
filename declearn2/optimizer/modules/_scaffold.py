@@ -102,7 +102,7 @@ class ScaffoldClientModule(OptiModule):
         # Accumulate the processed gradients, then return.
         self._grads = gradients + self._grads
         self._steps += 1
-        return gradients
+        return gradients  # type: ignore
 
     def collect_aux_var(
             self,
@@ -113,12 +113,8 @@ class ScaffoldClientModule(OptiModule):
         of the local state variable, so that the server may compute
         the updated shared state variable.
         """
-        s_del = self._compute_updated_state()
-        if isinstance(s_del, Vector):
-            state_dump = s_del.serialize()  # Type: Union[str, float]
-        else:
-            state_dump = s_del  # type: ignore
-        return {"state": state_dump}
+        state = self._compute_updated_state()
+        return {"state": state}
 
     def _compute_updated_state(
             self,
@@ -165,9 +161,7 @@ class ScaffoldClientModule(OptiModule):
                 "Missing 'delta' key in ScaffoldClientModule's "
                 "received auxiliary variables."
             )
-        if isinstance(delta, str):
-            self.delta = Vector.deserialize(delta)
-        elif isinstance(delta, float):
+        if isinstance(delta, (float, Vector)):
             self.delta = delta
         else:
             raise TypeError(
@@ -276,8 +270,7 @@ class ScaffoldServerModule(OptiModule):
         aux_var = {}  # type: Dict[str, Dict[str, Any]]
         for client, state in self.s_loc.items():
             delta = state - self.state
-            sdump = delta.serialize() if isinstance(delta, Vector) else delta
-            aux_var[client] = {"delta": sdump}
+            aux_var[client] = {"delta": delta}
         return aux_var
 
     def process_aux_var(
@@ -303,9 +296,7 @@ class ScaffoldServerModule(OptiModule):
                     f"received by ScaffoldServerModule from client '{client}'."
                 )
             state = c_dict["state"]
-            if isinstance(state, str):
-                s_new[client] = Vector.deserialize(state)
-            elif isinstance(state, float):
+            if isinstance(state, (Vector, float)):
                 s_new[client] = state
             else:
                 raise TypeError(
