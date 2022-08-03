@@ -318,8 +318,8 @@ class ScaffoldServerModule(OptiModule):
             for client, state in s_new.items()
         )
         self.s_loc.update(s_new)
-        share = len(s_new) / len(self.s_loc)
+        update = update / len(self.s_loc)
         # Retain the current round state's values, because
         # gradients-correction still makes use of it.
         self._prev = self.state
-        self.state = self.state + share * update
+        self.state = self.state + update
