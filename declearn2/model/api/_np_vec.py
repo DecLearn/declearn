@@ -42,7 +42,7 @@ class NumpyVector(Vector):
             other: Any
         ) -> bool:
         valid = isinstance(other, NumpyVector)
-        valid &= (self.coefs.keys() == other.coefs.keys())
+        valid = valid and (self.coefs.keys() == other.coefs.keys())
         return valid and all(
             np.array_equal(self.coefs[k], other.coefs[k]) for k in self.coefs
         )

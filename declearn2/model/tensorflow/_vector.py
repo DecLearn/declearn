@@ -113,7 +113,7 @@ class TensorflowVector(Vector):
             other: Any,
         ) -> bool:
         valid = isinstance(other, TensorflowVector)
-        valid &= (self.coefs.keys() == other.coefs.keys())
+        valid = valid & (self.coefs.keys() == other.coefs.keys())
         return valid and all(
             self._tensor_equal(self.coefs[key], other.coefs[key])
             for key in self.coefs

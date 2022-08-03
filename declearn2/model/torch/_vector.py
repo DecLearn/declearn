@@ -72,7 +72,7 @@ class TorchVector(Vector):
             other: Any,
         ) -> bool:
         valid = isinstance(other, TorchVector)
-        valid &= (self.coefs.keys() == other.coefs.keys())
+        valid = valid and (self.coefs.keys() == other.coefs.keys())
         return valid and all(
             np.array_equal(self.coefs[k].numpy(), other.coefs[k].numpy())
             for k in self.coefs
