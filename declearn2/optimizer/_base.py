@@ -2,6 +2,7 @@
 
 """Base class to define gradient-descent-based optimizers."""
 
+from copy import deepcopy
 from typing import Any, Dict, List, Optional
 
 from declearn2.model.api import Model, Vector
@@ -117,6 +118,29 @@ class Optimizer:
                     "'modules' should be a list of `OptiModule` instances; "
                     f"received an element of type '{type(module).__name__}'."
                 )
+
+    def get_config(
+            self,
+        ) -> Dict[str, Any]:
+        """Return a JSON-serializable dict with this optimizer's parameters."""
+        return {
+            "lrate": self.lrate,
+            "w_decay": self.w_decay,
+            "modules": [mod.serialize().to_dict() for mod in self.modules]
+        }
+
+    @classmethod
+    def from_config(
+            cls,
+            config: Dict[str, Any],
+        ) -> 'Optimizer':
+        """Instantiate an Optimizer from its configuration dict."""
+        config = deepcopy(config)  # avoid side-effects
+        config['modules'] = [
+            OptiModule.deserialize(cfg)
+            for cfg in config.pop("modules", [])
+        ]
+        return cls(**config)
 
     def apply_gradients(
             self,
