@@ -110,7 +110,7 @@ def serialize_object(
 
 
 def deserialize_object(
-        config: Union[str, ObjectConfig],
+        config: Union[str, ObjectConfig, ObjectConfigDict],
         custom: Optional[Dict[str, Type[SupportsConfig]]] = None,
     ) -> SupportsConfig:
     """Return an object from a ObjectConfig serialization or JSON file.
@@ -120,8 +120,8 @@ def deserialize_object(
     Arguments:
     ---------
     config: ObjectConfig or str
-        Either an ObjectConfig object, or the path to a JSON file that
-        stores an ObjectConfig dump.
+        Either an ObjectConfig object, the dict representation of one,
+        or the path to a JSON file that stores an ObjectConfig dump.
     custom: dict[str, object] or None, default=None
         Optional dict providing with a {name: type} mapping to enable
         deserializing user-defined types that have not been registered
@@ -134,6 +134,19 @@ def deserialize_object(
     """
     if isinstance(config, str):
         config = ObjectConfig.from_json(config)
+    elif isinstance(config, dict):
+        try:
+            config = ObjectConfig(**config)
+        except TypeError as exc:
+            raise TypeError(
+                "deserialize_object received a 'config' dict that does not "
+                "conform with the ObjectConfig specification."
+            ) from exc
+    elif not isinstance(config, ObjectConfig):
+        raise TypeError(
+            "Unproper type for argument 'config' of deserialize_object: "
+            f"'{type(config)}'."
+        )
     try:
         cls = access_registered(config.name, config.group)
     except KeyError as exception:
