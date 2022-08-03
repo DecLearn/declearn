@@ -145,9 +145,7 @@ class ScaffoldClientModule(OptiModule):
         gradients output by this module along the training steps.
         """
         if not self._steps:
-            raise RuntimeError(
-                "Calling `_update_state` while no gradients were processed."
-            )
+            return self.delta
         avg_grad = self._grads / self._steps
         return avg_grad + self.delta
 
