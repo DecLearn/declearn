@@ -275,9 +275,9 @@ class ScaffoldServerModule(OptiModule):
         # Compute clients' delta variable, package them and return.
         aux_var = {}  # type: Dict[str, Dict[str, Any]]
         for client, state in self.s_loc.items():
-            state = state - self.state
-            sdump = state.serialize() if isinstance(state, Vector) else state
-            aux_var[client] = {"state": sdump}
+            delta = state - self.state
+            sdump = delta.serialize() if isinstance(delta, Vector) else delta
+            aux_var[client] = {"delta": sdump}
         return aux_var
 
     def process_aux_var(
