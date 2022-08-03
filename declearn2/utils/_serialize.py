@@ -33,7 +33,20 @@ ObjectConfigDict = TypedDict(
 
 @dataclasses.dataclass
 class ObjectConfig:
-    """Dataclass to wrap a JSON-serializable object configuration."""
+    """Dataclass to wrap a JSON-serializable object configuration.
+
+    Attributes:
+    ----------
+    name: str
+        Key to retrieve the object's type constructor, typically from
+        registered types (see `declearn.utils.access_registered`).
+    group: str or None
+        Optional name of the group under which the object's type is
+        registered (see `declearn.utils.access_registered`).
+    config: dict[str, any]
+        JSON-serializable dict containing the object's config, that
+        enables recreating it using `type(obj).from_config(config)`.
+    """
 
     name: str
     group: Optional[str]
@@ -96,6 +109,11 @@ def serialize_object(
     config: ObjectConfig
         A JSON-serializable dataclass wrapper containing all required
         information to recreate the object, e.g. from a config file.
+
+    Raises:
+    ------
+    KeyError
+        If `obj`'s type is not registered and `allow_unregistered=False`.
     """
     try:
         name, group = access_registration_info(type(obj), group)
@@ -131,6 +149,13 @@ def deserialize_object(
     -------
     obj: object
         An object instantiated from the provided configuration.
+
+    Raises:
+    ------
+    TypeError
+        If `config` is not or cannot be transformed into an ObjectConfig.
+    KeyError
+        If `config` specifies an object type that cannot be retrieved.
     """
     if isinstance(config, str):
         config = ObjectConfig.from_json(config)
