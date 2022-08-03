@@ -3,10 +3,11 @@
 """TorchVector gradients container."""
 
 import json
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict
 
 import numpy as np
 import torch
+from typing_extensions import Self  # future: import from typing (Py>=3.11)
 
 from declearn2.model.api import NumpyVector, Vector, register_vector_type
 from declearn2.utils import deserialize_numpy, serialize_numpy
@@ -22,6 +23,12 @@ class TorchVector(Vector):
     of aligned coefficients (i.e. two TorchVector with
     similar specifications).
     """
+
+    _op_add = torch.add  # pylint: disable=no-member
+    _op_sub = torch.sub  # pylint: disable=no-member
+    _op_mul = torch.mul  # pylint: disable=no-member
+    _op_div = torch.div  # pylint: disable=no-member
+    _op_pow = torch.pow  # pylint: disable=no-member
 
     def __init__(
             self,
@@ -51,6 +58,25 @@ class TorchVector(Vector):
         }
         return cls(coef)
 
+    def _apply_operation(
+            self,
+            other: Any,
+            func: Callable[[Any, Any], Any],
+        ) -> Self:  # type: ignore
+        # Extend support to (TensorflowVector, NumpyVector) combinations.
+        if isinstance(other, NumpyVector):
+            if self.coefs.keys() != other.coefs.keys():
+                raise KeyError(
+                    f"Cannot {func.__name__} Vectors "\
+                    "with distinct coefficient names."
+                )
+            return type(self)({
+                key: func(self.coefs[key], other.coefs[key])
+                for key in self.coefs
+            })
+        # Delegate other cases to parent class.
+        return super()._apply_operation(other, func)
+
     def __eq__(
             self,
             other: Any,
@@ -62,103 +88,26 @@ class TorchVector(Vector):
             for k in self.coefs
         )
 
-    def _apply_operation(
-            self,
-            other: Any,
-            func: Callable[[torch.Tensor, torch.Tensor], torch.Tensor]
-        ) -> 'TorchVector':
-        """Apply an operation to combine this vector with another."""
-        # Case when operating on two TorchVector objects.
-        if isinstance(other, (TorchVector, NumpyVector)):
-            if self.coefs.keys() != other.coefs.keys():
-                raise KeyError(
-                    f"Cannot {func.__name__} TorchVectors "\
-                    "with distinct coefficient names."
-                )
-            return TorchVector({
-                key: func(self.coefs[key], other.coefs[key])
-                for key in self.coefs
-            })
-        # Case when operating with another object (e.g. a scalar).
-        try:
-            return TorchVector({
-                key: func(coef, other)
-                for key, coef in self.coefs.items()
-            })
-        except TypeError as exc:
-            raise TypeError(
-                f"Cannot {func.__name__} TorchVector "\
-                f"with object of type {type(other)}."
-            ) from exc
-
-    def apply_func(
-            self,
-            func: Callable[[torch.Tensor], torch.Tensor],
-            *args: Any,
-            **kwargs: Any
-        ) -> 'TorchVector':
-        """Apply a tensor-altering function to the wrapped coefficients."""
-        return TorchVector({
-            key: func(coef, *args, **kwargs)
-            for key, coef in self.coefs.items()
-        })
-
-    def __add__(
-            self,
-            other: Any
-        ) -> 'TorchVector':
-        # false-positive; pylint: disable=no-member
-        return self._apply_operation(other, torch.add)
-
-    def __sub__(
-            self,
-            other: Any
-        ) -> 'TorchVector':
-        # false-positive; pylint: disable=no-member
-        return self._apply_operation(other, torch.sub)
-
-    def __mul__(
-            self,
-            other: Any
-        ) -> 'TorchVector':
-        # false-positive; pylint: disable=no-member
-        return self._apply_operation(other, torch.mul)
-
-    def __truediv__(
-            self,
-            other: Any
-        ) -> 'TorchVector':
-        # false-positive; pylint: disable=no-member
-        return self._apply_operation(other, torch.div)
-
-    def __pow__(
-            self,
-            power: float,
-            modulo: Optional[int] = None
-        ) -> 'TorchVector':
-        # false-positive; pylint: disable=no-member
-        return self.apply_func(torch.pow, power)  # type: ignore
-
     def sign(
             self
-        ) -> 'TorchVector':
+        ) -> Self:  # type: ignore
         # false-positive; pylint: disable=no-member
         return self.apply_func(torch.sign)
 
     def minimum(
             self,
             other: Any,
-        ) -> 'TorchVector':
+        ) -> Self:  # type: ignore
         # false-positive; pylint: disable=no-member
         if isinstance(other, Vector):
             return self._apply_operation(other, torch.minimum)
-        return self.apply_func(torch.minimum, other)  # type: ignore
+        return self.apply_func(torch.minimum, other)
 
     def maximum(
             self,
             other: Any,
-        ) -> 'TorchVector':
+        ) -> Self:  # type: ignore
         # false-positive; pylint: disable=no-member
         if isinstance(other, Vector):
             return self._apply_operation(other, torch.minimum)
-        return self.apply_func(torch.maximum, other)  # type: ignore
+        return self.apply_func(torch.maximum, other)

@@ -3,12 +3,13 @@
 """TensorflowVector gradients container."""
 
 import json
-from typing import Any, Callable, Dict, Optional, Tuple, Union
+from typing import Any, Callable, Dict, Union
 
 import tensorflow as tf  # type: ignore
 # false-positive; pylint: disable=no-name-in-module
 from tensorflow.python.framework.ops import EagerTensor  # type: ignore
 # pylint: enable=no-name-in-module
+from typing_extensions import Self  # future: import from typing (Py>=3.11)
 
 from declearn2.model.api import NumpyVector, Vector, register_vector_type
 from declearn2.utils import deserialize_numpy, serialize_numpy
@@ -30,6 +31,12 @@ class TensorflowVector(Vector):
     Note that this class does not (yet?) support special
     tensor types such as SparseTensor or RaggedTensor.
     """
+
+    _op_add = staticmethod(tf.add)       # type: ignore
+    _op_sub = staticmethod(tf.subtract)  # type: ignore
+    _op_mul = staticmethod(tf.multiply)  # type: ignore
+    _op_div = staticmethod(tf.divide)    # type: ignore
+    _op_pow = staticmethod(tf.pow)       # type: ignore
 
     def __init__(
             self,
@@ -82,6 +89,25 @@ class TensorflowVector(Vector):
             return tf.IndexedSlices(val, ind)
         return tf.convert_to_tensor(deserialize_numpy(data))  # type: ignore
 
+    def _apply_operation(
+            self,
+            other: Any,
+            func: Callable[[Any, Any], Any],
+        ) -> Self:  # type: ignore
+        # Extend support to (TensorflowVector, NumpyVector) combinations.
+        if isinstance(other, NumpyVector):
+            if self.coefs.keys() != other.coefs.keys():
+                raise KeyError(
+                    f"Cannot {func.__name__} Vectors "\
+                    "with distinct coefficient names."
+                )
+            return type(self)({
+                key: func(self.coefs[key], other.coefs[key])
+                for key in self.coefs
+            })
+        # Delegate other cases to parent class.
+        return super()._apply_operation(other, func)
+
     def __eq__(
             self,
             other: Any,
@@ -107,87 +133,15 @@ class TensorflowVector(Vector):
             )
         return tf.reduce_all(t_a == t_b).numpy()  # type: ignore
 
-    def _apply_operation(
-            self,
-            other: Any,
-            func: Callable[[tf.Tensor, tf.Tensor], tf.Tensor]
-        ) -> 'TensorflowVector':
-        """Apply an operation to combine this vector with another."""
-        # Case when operating on two TensorflowVector objects.
-        if isinstance(other, (TensorflowVector, NumpyVector)):
-            if self.coefs.keys() != other.coefs.keys():
-                raise KeyError(
-                    f"Cannot {func.__name__} TensorflowVectors "\
-                    "with distinct coefficient names."
-                )
-            return TensorflowVector({
-                key: func(self.coefs[key], other.coefs[key])
-                for key in self.coefs
-            })
-        # Case when operating with another object (e.g. a scalar).
-        try:
-            return TensorflowVector({
-                key: func(coef, other)
-                for key, coef in self.coefs.items()
-            })
-        except TypeError as exc:
-            raise TypeError(
-                f"Cannot {func.__name__} TensorflowVector "\
-                f"with object of type {type(other)}."
-            ) from exc
-
-    def apply_func(
-            self,
-            func: Callable[[tf.Tensor], tf.Tensor],
-            *args: Any,
-            **kwargs: Any
-        ) -> 'TensorflowVector':
-        """Apply a tensor-altering function to the wrapped coefficients."""
-        return TensorflowVector({
-            key: func(coef, *args, **kwargs)
-            for key, coef in self.coefs.items()
-        })
-
-    def __add__(
-            self,
-            other: Any
-        ) -> 'TensorflowVector':
-        return self._apply_operation(other, tf.add)
-
-    def __sub__(
-            self,
-            other: Any
-        ) -> 'TensorflowVector':
-        return self._apply_operation(other, tf.subtract)
-
-    def __mul__(
-            self,
-            other: Any
-        ) -> 'TensorflowVector':
-        return self._apply_operation(other, tf.multiply)
-
-    def __truediv__(
-            self,
-            other: Any
-        ) -> 'TensorflowVector':
-        return self._apply_operation(other, tf.divide)
-
-    def __pow__(
-            self,
-            power: float,
-            modulo: Optional[int] = None
-        ) -> 'TensorflowVector':
-        return self.apply_func(tf.pow, power)
-
     def sign(
             self
-        ) -> 'TensorflowVector':
+        ) -> Self:  # type: ignore
         return self.apply_func(tf.sign)
 
     def minimum(
             self,
             other: Any,
-        ) -> 'TensorflowVector':
+        ) -> Self:  # type: ignore
         if isinstance(other, Vector):
             return self._apply_operation(other, tf.minimum)
         return self.apply_func(tf.minimum, other)
@@ -195,7 +149,7 @@ class TensorflowVector(Vector):
     def maximum(
             self,
             other: Any,
-        ) -> 'TensorflowVector':
+        ) -> Self:  # type: ignore
         if isinstance(other, Vector):
             return self._apply_operation(other, tf.maximum)
         return self.apply_func(tf.maximum, other)

@@ -3,7 +3,7 @@
 """NumpyVector model coefficients container."""
 
 import json
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Dict, Union
 
 import numpy as np
 from numpy.typing import ArrayLike
@@ -26,6 +26,12 @@ class NumpyVector(Vector):
     two sets of aligned coefficients (i.e. two NumpyVector
     instances with similar coefficients specifications).
     """
+
+    _op_add = np.add
+    _op_sub = np.subtract
+    _op_mul = np.multiply
+    _op_truediv = np.divide
+    _op_pow = np.power
 
     def __init__(
             self,
@@ -58,97 +64,23 @@ class NumpyVector(Vector):
             np.array_equal(self.coefs[k], other.coefs[k]) for k in self.coefs
         )
 
-    def _apply_operation(
-            self,
-            other: Any,
-            func: Callable[[ArrayLike, ArrayLike], ArrayLike]
-        ) -> 'NumpyVector':
-        """Apply an operation to combine this vector with another."""
-        # Case when operating on two NumpyVector objects.
-        if isinstance(other, NumpyVector):
-            if self.coefs.keys() != other.coefs.keys():
-                raise KeyError(
-                    f"Cannot {func.__name__} NumpyVectors "\
-                    "with distinct coefficient names."
-                )
-            return NumpyVector({
-                key: func(self.coefs[key], other.coefs[key])  # type: ignore
-                for key in self.coefs
-            })
-        # Case when operating with another object (e.g. a scalar).
-        try:
-            return NumpyVector({
-                key: func(coef, other)  # type: ignore
-                for key, coef in self.coefs.items()
-            })
-        except TypeError as exc:
-            raise TypeError(
-                f"Cannot {func.__name__} NumpyVector "\
-                f"with object of type {type(other)}."
-            ) from exc
-
-    def apply_ufunc(
-            self,
-            ufunc: np.ufunc,
-            *args: Any,
-            **kwargs: Any
-        ) -> 'NumpyVector':
-        """Apply a numpy ufunc to the wrapped coefficients."""
-        if not isinstance(ufunc, np.ufunc):
-            raise TypeError(f"Cannot apply non-ufunc object '{ufunc}'")
-        return NumpyVector({
-            key: ufunc(coef, *args, **kwargs)
-            for key, coef in self.coefs.items()
-        })
-
-    def __add__(
-            self,
-            other: Any
-        ) -> 'NumpyVector':
-        return self._apply_operation(other, np.add)
-
-    def __sub__(
-            self,
-            other: Any
-        ) -> 'NumpyVector':
-        return self._apply_operation(other, np.subtract)
-
-    def __mul__(
-            self,
-            other: Any
-        ) -> 'NumpyVector':
-        return self._apply_operation(other, np.multiply)
-
-    def __truediv__(
-            self,
-            other: Any
-        ) -> 'NumpyVector':
-        return self._apply_operation(other, np.divide)
-
-    def __pow__(
-            self,
-            power: float,
-            modulo: Optional[int] = None
-        ) -> 'NumpyVector':
-        return self.apply_ufunc(np.power, power)
-
     def sign(
-            self
+            self,
         ) -> 'NumpyVector':
-        return self.apply_ufunc(np.sign)
+        return self.apply_func(np.sign)
 
     def minimum(
             self,
-            other: Any,
-        ) -> 'Vector':
+            other: Union['Vector', float, ArrayLike],
+        ) -> 'NumpyVector':
         if isinstance(other, NumpyVector):
             return self._apply_operation(other, np.minimum)
-        return self.apply_ufunc(np.minimum, other)
+        return self.apply_func(np.minimum, other)
 
     def maximum(
             self,
-            other: Any,
-        ) -> 'Vector':
+            other: Union['Vector', float, ArrayLike],
+        ) -> 'NumpyVector':
         if isinstance(other, Vector):
             return self._apply_operation(other, np.maximum)
-        return self.apply_ufunc(np.maximum, other)
+        return self.apply_func(np.maximum, other)

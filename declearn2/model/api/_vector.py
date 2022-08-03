@@ -2,10 +2,12 @@
 
 """Vector abstraction API."""
 
+import operator
 from abc import ABCMeta, abstractmethod
-from typing import Any, Callable, Dict, Optional, Type, Union
+from typing import Any, Callable, Dict, Type, Union
 
 from numpy.typing import ArrayLike
+from typing_extensions import Self  # future: import from typing (Py>=3.11)
 
 
 __all__ = [
@@ -20,11 +22,17 @@ VECTOR_TYPES = {}  # type: Dict[Type[Any], Type[Vector]]
 class Vector(metaclass=ABCMeta):
     """Abstract class defining an API to manipulate (sets of) data arrays.
 
-    A 'Vector' is an abstraction used to wrap a collection of data
+    A Vector is an abstraction used to wrap a collection of data
     structures (numpy arrays, tensorflow or torch tensors, etc.).
     It enables writing algorithms and operations on such structures,
     agnostic of their actual implementation support.
     """
+
+    _op_add = operator.add
+    _op_sub = operator.sub
+    _op_mul = operator.mul
+    _op_div = operator.truediv
+    _op_pow = operator.pow
 
     def __new__(
             cls,
@@ -69,84 +77,128 @@ class Vector(metaclass=ABCMeta):
         """Deserialize a Vector from a string."""
         raise NotImplementedError
 
-    @abstractmethod
+    def apply_func(
+            self,
+            func: Callable[..., Any],
+            *args: Any,
+            **kwargs: Any
+        ) -> Self:  # type: ignore
+        """Apply a given function to the wrapped coefficients."""
+        return type(self)({
+            key: func(coef, *args, **kwargs)
+            for key, coef in self.coefs.items()
+        })
+
+    def _apply_operation(
+            self,
+            other: Any,
+            func: Callable[[Any, Any], Any],
+        ) -> Self:  # type: ignore
+        """Apply an operation to combine this vector with another."""
+        # Case when operating on two Vector objects.
+        if isinstance(other, type(self)):
+            if self.coefs.keys() != other.coefs.keys():
+                raise KeyError(
+                    f"Cannot {func.__name__} Vectors "\
+                    "with distinct coefficient names."
+                )
+            return type(self)({
+                key: func(self.coefs[key], other.coefs[key])
+                for key in self.coefs
+            })
+        # Case when operating with another object (e.g. a scalar).
+        try:
+            return type(self)({
+                key: func(coef, other)
+                for key, coef in self.coefs.items()
+            })
+        except TypeError as exc:
+            raise TypeError(
+                f"Cannot {func.__name__} {type(self).__name__} object "\
+                f"with object of type {type(other)}."
+            ) from exc
+
     def __add__(
             self,
-            other: Union['Vector', float, ArrayLike],
-        ) -> 'Vector':
-        raise NotImplementedError
+            other: Any,
+        ) -> Self:  # type: ignore
+        return self._apply_operation(other, self._op_add)  # type: ignore
 
     def __radd__(
             self,
-            other: Union['Vector', float, ArrayLike],
-        ) -> 'Vector':
+            other: Any,
+        ) -> Self:  # type: ignore
         return self.__add__(other)
 
-    @abstractmethod
     def __sub__(
             self,
-            other: Union['Vector', float, ArrayLike],
-        ) -> 'Vector':
-        raise NotImplementedError
+            other: Any,
+        ) -> Self:  # type: ignore
+        return self._apply_operation(other, self._op_sub)  # type: ignore
 
     def __rsub__(
             self,
-            other: Union['Vector', float, ArrayLike],
-        ) -> 'Vector':
-        return self.__sub__(other)
+            other: Any,
+        ) -> Self:  # type: ignore
+        return self.__sub__(- other)
 
-    @abstractmethod
     def __mul__(
             self,
-            other: Union['Vector', float, ArrayLike],
-        ) -> 'Vector':
-        raise NotImplementedError
+            other: Any,
+        ) -> Self:  # type: ignore
+        return self._apply_operation(other, self._op_mul)  # type: ignore
 
     def __rmul__(
             self,
-            other: Union['Vector', float, ArrayLike],
-        ) -> 'Vector':
+            other: Any,
+        ) -> Self:  # type: ignore
         return self.__mul__(other)
 
-    @abstractmethod
     def __truediv__(
             self,
-            other: Union['Vector', float, ArrayLike],
-        ) -> 'Vector':
-        raise NotImplementedError
+            other: Any,
+        ) -> Self:  # type: ignore
+        return self._apply_operation(other, self._op_div)  # type: ignore
 
     def __rtruediv__(
             self,
-            other: Union['Vector', float, ArrayLike],
-        ) -> Union['Vector', float, ArrayLike]:
-        return self.__truediv__(other)
+            other: Any,
+        ) -> Self:  # type: ignore
+        return self.__mul__(1 / other)
 
-    @abstractmethod
     def __pow__(
             self,
-            power: float,
-            modulo: Optional[int] = None,
-        ) -> 'Vector':
+            other: Any,
+        ) -> Self:  # type: ignore
+        return self._apply_operation(other, self._op_pow)  # type: ignore
+
+    @abstractmethod
+    def __eq__(
+            self,
+            other: Any
+        ) -> bool:
         raise NotImplementedError
 
     @abstractmethod
-    def sign(self) -> 'Vector':
-        """Return a Vector storing the sign of each weight."""
+    def sign(
+            self,
+        ) -> Self:  # type: ignore
+        """Return a Vector storing the sign of each coefficient."""
         raise NotImplementedError
 
     @abstractmethod
     def minimum(
             self,
-            other: Union['Vector', float, ArrayLike]
-        ) -> 'Vector':
+            other: Union['Vector', float, ArrayLike],
+        ) -> Self:  # type: ignore
         """Compute coef.-wise, element-wise minimum wrt to another Vector."""
         raise NotImplementedError
 
     @abstractmethod
     def maximum(
             self,
-            other: Union['Vector', float, ArrayLike]
-        ) -> 'Vector':
+            other: Union['Vector', float, ArrayLike],
+        ) -> Self:  # type: ignore
         """Compute coef.-wise, element-wise maximum wrt to another Vector."""
         raise NotImplementedError
 
