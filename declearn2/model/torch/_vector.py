@@ -2,7 +2,6 @@
 
 """TorchVector gradients container."""
 
-import json
 from typing import Any, Callable, Dict
 
 import numpy as np
@@ -10,7 +9,6 @@ import torch
 from typing_extensions import Self  # future: import from typing (Py>=3.11)
 
 from declearn2.model.api import NumpyVector, Vector, register_vector_type
-from declearn2.utils import deserialize_numpy, serialize_numpy
 
 
 @register_vector_type(torch.Tensor)
@@ -36,26 +34,18 @@ class TorchVector(Vector):
         ) -> None:
         super().__init__(coefs)
 
-    def serialize(
+    def pack(
             self,
-        ) -> str:
-        data = {
-            key: serialize_numpy(tns.numpy())
-            for key, tns in self.coefs.items()
-        }
-        return json.dumps(data)
+        ) -> Dict[str, Any]:
+        return {key: tns.numpy() for key, tns in self.coefs.items()}
 
     @classmethod
-    def deserialize(
+    def unpack(
             cls,
-            string: str,
+            data: Dict[str, Any],
         ) -> 'TorchVector':
         # false-positive; pylint: disable=no-member
-        data = json.loads(string)
-        coef = {
-            key: torch.from_numpy(deserialize_numpy(dat).copy())
-            for key, dat in data.items()
-        }
+        coef = {key: torch.from_numpy(dat) for key, dat in data.items()}
         return cls(coef)
 
     def _apply_operation(

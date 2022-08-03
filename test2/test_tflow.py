@@ -14,6 +14,7 @@ from typing_extensions import Literal  # future: import from typing (Py>=3.8)
 
 from declearn2.model.api import NumpyVector
 from declearn2.model.tensorflow import TensorflowModel, TensorflowVector
+from declearn2.utils import json_pack, json_unpack
 
 
 class KerasTestCase:
@@ -179,7 +180,9 @@ class TestTensorflowModel:
         model = test_case.model
         batch = next(iter(test_case.dataset))
         grads = model.compute_batch_gradients(batch)
-        gdump = grads.serialize()
+        gdump = json.dumps(grads.pack(), default=json_pack)
         assert isinstance(gdump, str)
-        other = TensorflowVector.deserialize(gdump)
+        other = TensorflowVector.unpack(
+            json.loads(gdump, object_hook=json_unpack)
+        )
         assert grads == other

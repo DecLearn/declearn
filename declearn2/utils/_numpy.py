@@ -34,7 +34,7 @@ def deserialize_numpy(
     """
     buffer = bytes.fromhex(data[0])
     array = np.frombuffer(buffer, dtype=data[1])
-    return array.reshape(data[2])
+    return array.reshape(data[2]).copy()  # copy makes the array writable
 
 
 add_json_support(np.ndarray, serialize_numpy, deserialize_numpy, "np.ndarray")

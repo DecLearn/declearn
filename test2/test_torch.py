@@ -13,6 +13,7 @@ from typing_extensions import Literal  # future: import from typing (Py>=3.8)
 from declearn2.model.api import NumpyVector
 from declearn2.model.torch import TorchModel, TorchVector
 from declearn2.typing import Batch
+from declearn2.utils import json_pack, json_unpack
 
 
 class ExtractLSTMFinalOutput(torch.nn.Module):
@@ -191,7 +192,9 @@ class TestTorchModel:
         model = test_case.model
         batch = next(iter(test_case.dataset))
         grads = model.compute_batch_gradients(batch)
-        gdump = grads.serialize()
+        gdump = json.dumps(grads.pack(), default=json_pack)
         assert isinstance(gdump, str)
-        other = TorchVector.deserialize(gdump)
+        other = TorchVector.unpack(
+            json.loads(gdump, object_hook=json_unpack)
+        )
         assert grads == other

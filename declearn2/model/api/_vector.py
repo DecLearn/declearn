@@ -61,21 +61,19 @@ class Vector(metaclass=ABCMeta):
         """
         self.coefs = coefs
 
-    @abstractmethod
-    def serialize(
+    def pack(
             self,
-        ) -> str:
-        """Serialize this Vector to a string."""
-        raise NotImplementedError
+        ) -> Dict[str, Any]:
+        """Return a JSON-serializable dict representation of this Vector."""
+        return self.coefs
 
     @classmethod
-    @abstractmethod
-    def deserialize(
+    def unpack(
             cls,
-            string: str,
-        ) -> 'Vector':
-        """Deserialize a Vector from a string."""
-        raise NotImplementedError
+            data: Dict[str, Any],
+        ) -> Self:  # type: ignore
+        """Instantiate a Vector from its "packed" dict representation."""
+        return cls(data)
 
     def apply_func(
             self,

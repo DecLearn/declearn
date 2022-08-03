@@ -24,6 +24,7 @@ from sklearn.linear_model import SGDClassifier, SGDRegressor  # type: ignore
 from declearn2.model.api import NumpyVector
 from declearn2.model.sklearn import SklearnSGDModel
 from declearn2.typing import Batch
+from declearn2.utils import json_pack, json_unpack
 
 
 @pytest.fixture
@@ -131,7 +132,9 @@ class TestSklearnSGDModelUsage:
     def test_serialize_gradients(self, model, dataset):
         """Test that computed gradients can be (de)serialized as strings."""
         grads = model.compute_batch_gradients(dataset[0])
-        gdump = grads.serialize()
+        gdump = json.dumps(grads.pack(), default=json_pack)
         assert isinstance(gdump, str)
-        other = NumpyVector.deserialize(gdump)
+        other = NumpyVector.unpack(
+            json.loads(gdump, object_hook=json_unpack)
+        )
         assert grads == other

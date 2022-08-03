@@ -2,14 +2,12 @@
 
 """NumpyVector model coefficients container."""
 
-import json
 from typing import Any, Dict, Union
 
 import numpy as np
 from numpy.typing import ArrayLike
 
 from declearn2.model.api._vector import Vector, register_vector_type
-from declearn2.utils import deserialize_numpy, serialize_numpy
 
 
 __all__ = [
@@ -38,21 +36,6 @@ class NumpyVector(Vector):
             coefs: Dict[str, np.ndarray]
         ) -> None:
         super().__init__(coefs)
-
-    def serialize(
-            self,
-        ) -> str:
-        data = {key: serialize_numpy(arr) for key, arr in self.coefs.items()}
-        return json.dumps(data)
-
-    @classmethod
-    def deserialize(
-            cls,
-            string: str,
-        ) -> 'NumpyVector':
-        data = json.loads(string)
-        coef = {key: deserialize_numpy(dat) for key, dat in data.items()}
-        return cls(coef)
 
     def __eq__(
             self,

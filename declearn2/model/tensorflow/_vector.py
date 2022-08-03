@@ -2,7 +2,6 @@
 
 """TensorflowVector gradients container."""
 
-import json
 from typing import Any, Callable, Dict, Union
 
 import tensorflow as tf  # type: ignore
@@ -12,7 +11,6 @@ from tensorflow.python.framework.ops import EagerTensor  # type: ignore
 from typing_extensions import Self  # future: import from typing (Py>=3.11)
 
 from declearn2.model.api import NumpyVector, Vector, register_vector_type
-from declearn2.utils import deserialize_numpy, serialize_numpy
 
 
 @register_vector_type(tf.Tensor, EagerTensor, tf.IndexedSlices)
@@ -44,50 +42,52 @@ class TensorflowVector(Vector):
         ) -> None:
         super().__init__(coefs)
 
-    def serialize(
+    def pack(
             self,
-        ) -> str:
+        ) -> Dict[str, Any]:
         data = {
-            key: self._serialize_tensor(tns)
+            key: self._pack_tensor(tns)
             for key, tns in self.coefs.items()
         }
-        return json.dumps(data)
+        return data
 
     @classmethod
-    def deserialize(
+    def unpack(
             cls,
-            string: str,
+            data: Dict[str, Any],
         ) -> 'TensorflowVector':
-        data = json.loads(string)
         coef = {
-            key: cls._deserialize_tensor(dat)
+            key: cls._unpack_tensor(dat)
             for key, dat in data.items()
         }
         return cls(coef)
 
     @classmethod
-    def _serialize_tensor(
+    def _pack_tensor(
             cls,
             tensor: Union[tf.Tensor, tf.IndexedSlices],
-        ) -> Tuple[Any, ...]:
+        ) -> Any:
         """Convert a Tensor to a JSON-serializable object."""
         if isinstance(tensor, tf.IndexedSlices):
-            val = cls._serialize_tensor(tensor.values)
-            ind = cls._serialize_tensor(tensor.indices)
-            return ("slices", val, ind)
-        return serialize_numpy(tensor.numpy())
+            val = cls._pack_tensor(tensor.values)
+            ind = cls._pack_tensor(tensor.indices)
+            return ["slices", val, ind]
+        return tensor.numpy()
 
     @classmethod
-    def _deserialize_tensor(
+    def _unpack_tensor(
             cls,
-            data: Tuple[Any, ...],
+            data: Any,
         ) -> Union[tf.Tensor, tf.IndexedSlices]:
-        """Re-create a Tensor from a JSON-deserialized object."""
-        if data[0] == "slices":
-            val = cls._deserialize_tensor(data[1])
-            ind = cls._deserialize_tensor(data[2])
+        """Re-create a Tensor from a JSON-unpacked object."""
+        if isinstance(data, list) and (data[0] == "slices"):
+            val = cls._unpack_tensor(data[1])
+            ind = cls._unpack_tensor(data[2])
             return tf.IndexedSlices(val, ind)
-        return tf.convert_to_tensor(deserialize_numpy(data))  # type: ignore
+        try:
+            return tf.convert_to_tensor(data)
+        except TypeError as exc:
+            raise TypeError("Invalid tf.Tensor dump received.") from exc
 
     def _apply_operation(
             self,
