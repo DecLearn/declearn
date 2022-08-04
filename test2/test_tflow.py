@@ -98,8 +98,8 @@ class KerasTestCase:
         return TensorflowModel(tfmod, loss="binary_crossentropy", metrics=None)
 
 
-@pytest.fixture
-def test_case(kind: Literal["MLP", "RNN", "CNN"]) -> KerasTestCase:
+@pytest.fixture(name="test_case")
+def fixture_test_case(kind: Literal["MLP", "RNN", "CNN"]) -> KerasTestCase:
     """Fixture to access a KerasTestCase."""
     return KerasTestCase(kind)
 
@@ -108,14 +108,20 @@ def test_case(kind: Literal["MLP", "RNN", "CNN"]) -> KerasTestCase:
 class TestTensorflowModel:
     """Unit tests for declearn.model.tensorflow.TensorflowModel."""
 
-    def test_serialization(self, test_case):
+    def test_serialization(
+            self,
+            test_case: KerasTestCase,
+        ) -> None:
         """Check that the model can be JSON-(de)serialized properly."""
         model = test_case.model
         config = json.dumps(model.get_config())
         other = model.from_config(json.loads(config))
         assert model.get_config() == other.get_config()
 
-    def test_get_set_weights(self, test_case):
+    def test_get_set_weights(
+            self,
+            test_case: KerasTestCase,
+        ) -> None:
         """Check that weights are properly initialized to zero."""
         model = test_case.model
         w_srt = model.get_weights()
@@ -124,7 +130,10 @@ class TestTensorflowModel:
         model.set_weights(w_end)
         assert model.get_weights() == w_end
 
-    def test_compute_batch_gradients(self, test_case):
+    def test_compute_batch_gradients(
+            self,
+            test_case: KerasTestCase,
+        ) -> None:
         """Check that gradients computation works."""
         # Setup the model and a batch of data.
         model = test_case.model
@@ -136,7 +145,10 @@ class TestTensorflowModel:
         assert w_srt == w_end
         assert isinstance(grads, TensorflowVector)
 
-    def test_compute_batch_gradients_np(self, test_case):
+    def test_compute_batch_gradients_np(
+            self,
+            test_case: KerasTestCase,
+        ) -> None:
         """Check that gradients computations work with numpy inputs."""
         # Setup the model and a batch of data, in both tf and np formats.
         model = test_case.model
@@ -145,12 +157,15 @@ class TestTensorflowModel:
         np_batch = [None if arr is None else arr.numpy() for arr in tf_batch]
         assert isinstance(np_batch[0], np.ndarray)
         # Compute gradients in both cases.
-        np_grads = model.compute_batch_gradients(np_batch)
+        np_grads = model.compute_batch_gradients(np_batch)  # type: ignore
         assert isinstance(np_grads, TensorflowVector)
         tf_grads = model.compute_batch_gradients(tf_batch)
         assert tf_grads == np_grads
 
-    def test_apply_updates(self, test_case):
+    def test_apply_updates(
+            self,
+            test_case: KerasTestCase,
+        ) -> None:
         """Test that updates' application is mathematically correct."""
         model = test_case.model
         batch = next(iter(test_case.dataset))
@@ -167,15 +182,21 @@ class TestTensorflowModel:
         w_end = model.get_weights()
         assert w_end != w_srt
         updt = [val.numpy() for val in grads.coefs.values()]
-        diff = list((w_end - w_srt).coefs.values())
+        diff = list((w_end - w_srt).coefs.values())  # type: ignore
         assert all(np.abs(a - b).max() < 1e-7 for a, b in zip(diff, updt))
 
-    def test_compute_loss(self, test_case):
+    def test_compute_loss(
+            self,
+            test_case: KerasTestCase,
+        ) -> None:
         """Test that loss computation abides by its specs."""
         loss = test_case.model.compute_loss(test_case.dataset)
         assert isinstance(loss, float)
 
-    def test_serialize_gradients(self, test_case):
+    def test_serialize_gradients(
+            self,
+            test_case: KerasTestCase,
+        ) -> None:
         """Test that computed gradients can be (de)serialized as strings."""
         model = test_case.model
         batch = next(iter(test_case.dataset))

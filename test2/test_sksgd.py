@@ -27,8 +27,8 @@ from declearn2.typing import Batch
 from declearn2.utils import json_pack, json_unpack
 
 
-@pytest.fixture
-def model(
+@pytest.fixture(name="model")
+def fixture_model(
         n_classes: Optional[int],
     ) -> SklearnSGDModel:
     """Instantiate a SklearnSGDModel to test with."""
@@ -36,8 +36,8 @@ def model(
     return SklearnSGDModel(skmod, n_features=8, n_classes=n_classes)
 
 
-@pytest.fixture
-def dataset(
+@pytest.fixture(name="dataset")
+def fixture_dataset(
         n_classes: Optional[int],
         s_weights: bool,
         as_sparse: bool,
@@ -77,13 +77,13 @@ class TestSklearnSGDModelInit:
     This class groups tests that require only a model object.
     """
 
-    def test_serialization(self, model):
+    def test_serialization(self, model: SklearnSGDModel) -> None:
         """Check that the model can be JSON-(de)serialized properly."""
         config = json.dumps(model.get_config())
         other = model.from_config(json.loads(config))
         assert model.get_config() == other.get_config()
 
-    def test_initialization(self, model):
+    def test_initialization(self, model: SklearnSGDModel) -> None:
         """Check that weights are properly initialized to zero."""
         w_srt = model.get_weights()
         assert isinstance(w_srt, NumpyVector)
@@ -100,7 +100,11 @@ class TestSklearnSGDModelUsage:
     This class groups tests that require both a model and some data.
     """
 
-    def test_compute_batch_gradients(self, model, dataset):
+    def test_compute_batch_gradients(
+            self,
+            model: SklearnSGDModel,
+            dataset: List[Batch],
+        ) -> None:
         """Check that gradients computation works."""
         w_srt = model.get_weights()
         grads = model.compute_batch_gradients(dataset[0])
@@ -110,7 +114,11 @@ class TestSklearnSGDModelUsage:
         assert not all(np.all(arr == 0.) for arr in grads.coefs.values())
         assert grads.coefs.keys() == w_srt.coefs.keys()
 
-    def test_apply_updates(self, model, dataset):
+    def test_apply_updates(
+            self,
+            model: SklearnSGDModel,
+            dataset: List[Batch],
+        ) -> None:
         """Test that updates' application is mathematically correct."""
         # Compute gradients.
         w_srt = model.get_weights()
@@ -124,12 +132,20 @@ class TestSklearnSGDModelUsage:
         assert w_end != w_srt
         assert w_end == (w_srt + grads)
 
-    def test_compute_loss(self, model, dataset):
+    def test_compute_loss(
+            self,
+            model: SklearnSGDModel,
+            dataset: List[Batch],
+        ) -> None:
         """Test that loss computation abides by its specs."""
         loss = model.compute_loss(dataset)
         assert isinstance(loss, float)
 
-    def test_serialize_gradients(self, model, dataset):
+    def test_serialize_gradients(
+            self,
+            model: SklearnSGDModel,
+            dataset: List[Batch],
+        ) -> None:
         """Test that computed gradients can be (de)serialized as strings."""
         grads = model.compute_batch_gradients(dataset[0])
         gdump = json.dumps(grads, default=json_pack)

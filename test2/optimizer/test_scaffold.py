@@ -10,13 +10,14 @@ from declearn2.model.api import Vector
 from declearn2.optimizer.modules import (
     ScaffoldClientModule, ScaffoldServerModule
 )
-
-sys.path.append('.')  # dirty trick to import from `test_modules.py`
+# dirty trick to import from `test_modules.py`;
+# pylint: disable=wrong-import-order, wrong-import-position
+sys.path.append('.')
 from test_modules import FRAMEWORKS, Framework, GradientsTestCase
 
 
-@pytest.fixture
-def mock_gradients(framework: Framework) -> Vector:
+@pytest.fixture(name="mock_gradients")
+def fixture_mock_gradients(framework: Framework) -> Vector:
     """Framework-specific, fixed-rng-based-valued mock gradients Vector."""
     test_case = GradientsTestCase(framework)
     return test_case.mock_gradient

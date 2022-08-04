@@ -41,8 +41,8 @@ class MockClass:
         return isinstance(other, type(self)) and (self.val == other.val)
 
 
-@pytest.fixture
-def registered_class() -> Tuple[Type[MockClass], str]:
+@pytest.fixture(name="registered_class")
+def fixture_registered_class() -> Tuple[Type[MockClass], str]:
     """Provide with a type-registered MockClass subclass."""
     # Declare a subtype to avoid side effects between tests.
     class SubClass(MockClass):  # pylint: disable=all
@@ -88,7 +88,9 @@ def test_serialize_unregistered() -> None:
     assert cfg.config == obj.get_config()
 
 
-def test_serialize_registered(registered_class) -> None:  # type: ignore
+def test_serialize_registered(
+        registered_class: Tuple[Type[MockClass], str]
+    ) -> None:
     """Unit tests for `serialize_object` with a registered type."""
     cls, group = registered_class
     obj = cls()
@@ -139,8 +141,8 @@ def test_deserialize_unregistered(index: int) -> None:
 @pytest.mark.parametrize(
     'index', [0, 1, 2], ids=['dict', 'ObjectConfig', 'JSON path']
 )
-def test_deserialize_registered(  # type: ignore
-        registered_class,
+def test_deserialize_registered(
+        registered_class: Tuple[Type[MockClass], str],
         index: int
     ) -> None:
     """Unit tests from `deserialize_object` with a registered type."""
