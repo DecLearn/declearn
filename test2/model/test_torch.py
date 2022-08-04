@@ -2,18 +2,21 @@
 
 """Unit tests for TorchModel."""
 
-import json
-from typing import List, Tuple
+import sys
+from typing import Any, List, Tuple
 
 import numpy as np
 import pytest
 import torch
 from typing_extensions import Literal  # future: import from typing (Py>=3.8)
 
-from declearn2.model.api import NumpyVector
 from declearn2.model.torch import TorchModel, TorchVector
 from declearn2.typing import Batch
-from declearn2.utils import json_pack, json_unpack
+
+# dirty trick to import from `model_testing.py`;
+# pylint: disable=wrong-import-order, wrong-import-position
+sys.path.append('.')
+from model_testing import ModelTestSuite, ModelTestCase
 
 
 class ExtractLSTMFinalOutput(torch.nn.Module):
@@ -27,7 +30,7 @@ class ExtractLSTMFinalOutput(torch.nn.Module):
         return inputs[1][0][0]
 
 
-class TorchTestCase:
+class TorchTestCase(ModelTestCase):
     """PyTorch test-case-provider fixture.
 
     Implemented architectures are:
@@ -48,6 +51,9 @@ class TorchTestCase:
                  1 output neuron with sigmoid activation
     """
 
+    vector_cls = TorchVector
+    tensor_cls = torch.Tensor
+
     def __init__(
             self,
             kind: Literal["MLP", "RNN", "CNN"],
@@ -56,6 +62,14 @@ class TorchTestCase:
         if kind not in ("MLP", "RNN", "CNN"):
             raise ValueError(f"Invalid torch test architecture: '{kind}'.")
         self.kind = kind
+
+    @staticmethod
+    def to_numpy(
+            tensor: Any,
+        ) -> np.ndarray:
+        """Convert an input tensor to a numpy array."""
+        assert isinstance(tensor, torch.Tensor)
+        return tensor.numpy()  # type: ignore
 
     @property
     def dataset(
@@ -115,105 +129,20 @@ class TorchTestCase:
 
 
 @pytest.fixture(name="test_case")
-def fixture_test_case(kind: Literal["MLP", "RNN", "CNN"]) -> TorchTestCase:
+def fixture_test_case(
+        kind: Literal["MLP", "RNN", "CNN"]
+    ) -> TorchTestCase:
     """Fixture to access a TorchTestCase."""
     return TorchTestCase(kind)
 
 
 @pytest.mark.parametrize("kind", ["MLP", "RNN", "CNN"])
-class TestTorchModel:
+class TestTorchModel(ModelTestSuite):
     """Unit tests for declearn.model.torch.TorchModel."""
 
     @pytest.mark.xfail  # NOTE: unimplemented feature **yet**
     def test_serialization(
             self,
-            test_case: TorchTestCase,
+            test_case: ModelTestCase,
         ) -> None:
-        """Check that the model can be JSON-(de)serialized properly."""
-        model = test_case.model
-        config = json.dumps(model.get_config())
-        other = model.from_config(json.loads(config))
-        assert model.get_config() == other.get_config()
-
-    def test_get_set_weights(
-            self,
-            test_case: TorchTestCase,
-        ) -> None:
-        """Check that weights are properly initialized to zero."""
-        model = test_case.model
-        w_srt = model.get_weights()
-        assert isinstance(w_srt, NumpyVector)
-        w_end = w_srt + 1.
-        model.set_weights(w_end)  # type: ignore
-        assert model.get_weights() == w_end
-
-    def test_compute_batch_gradients(
-            self,
-            test_case: TorchTestCase,
-        ) -> None:
-        """Check that gradients computation works."""
-        # Setup the model and a batch of data.
-        model = test_case.model
-        batch = test_case.dataset[0]
-        # Check that gradients computation works.
-        w_srt = model.get_weights()
-        grads = model.compute_batch_gradients(batch)
-        w_end = model.get_weights()
-        assert w_srt == w_end
-        assert isinstance(grads, TorchVector)
-
-    def test_compute_batch_gradients_np(
-            self,
-            test_case: TorchTestCase,
-        ) -> None:
-        """Check that gradients computations work with numpy inputs."""
-        # Setup the model and a batch of data, in both tf and np formats.
-        model = test_case.model
-        nn_batch = test_case.dataset[0]
-        assert isinstance(nn_batch[0], torch.Tensor)
-        np_batch = [
-            None if arr is None else arr.numpy()  # type: ignore
-            for arr in nn_batch
-        ]
-        assert isinstance(np_batch[0], np.ndarray)
-        # Compute gradients in both cases.
-        np_grads = model.compute_batch_gradients(np_batch)  # type: ignore
-        assert isinstance(np_grads, TorchVector)
-        nn_grads = model.compute_batch_gradients(nn_batch)
-        assert nn_grads == np_grads
-
-    def test_apply_updates(
-            self,
-            test_case: TorchTestCase,
-        ) -> None:
-        """Test that updates' application is mathematically correct."""
-        model = test_case.model
-        batch = next(iter(test_case.dataset))
-        # Compute gradients.
-        w_srt = model.get_weights()
-        grads = model.compute_batch_gradients(batch)
-        # Check that updates can be obtained and applied.
-        grads = -.1 * grads  # type: ignore
-        assert isinstance(grads, TorchVector)
-        model.apply_updates(grads)
-        # Verify the the updates were correctly applied.
-        # Check up to 1e-7 numerical precision due to tf/np conversion.
-        # NOTE: if the model has frozen weights, this test would xfail.
-        w_end = model.get_weights()
-        assert w_end != w_srt
-        updt = [val.numpy() for val in grads.coefs.values()]
-        diff = list((w_end - w_srt).coefs.values())
-        assert all(np.abs(a - b).max() < 1e-6 for a, b in zip(diff, updt))
-
-    def test_serialize_gradients(
-            self,
-            test_case: TorchTestCase,
-        ) -> None:
-        """Test that computed gradients can be (de)serialized as strings."""
-        model = test_case.model
-        batch = next(iter(test_case.dataset))
-        grads = model.compute_batch_gradients(batch)
-        gdump = json.dumps(grads, default=json_pack)
-        assert isinstance(gdump, str)
-        other = json.loads(gdump, object_hook=json_unpack)
-        assert grads == other
+        super().test_serialization(test_case)
