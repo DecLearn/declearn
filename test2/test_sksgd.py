@@ -132,9 +132,7 @@ class TestSklearnSGDModelUsage:
     def test_serialize_gradients(self, model, dataset):
         """Test that computed gradients can be (de)serialized as strings."""
         grads = model.compute_batch_gradients(dataset[0])
-        gdump = json.dumps(grads.pack(), default=json_pack)
+        gdump = json.dumps(grads, default=json_pack)
         assert isinstance(gdump, str)
-        other = NumpyVector.unpack(
-            json.loads(gdump, object_hook=json_unpack)
-        )
+        other = json.loads(gdump, object_hook=json_unpack)
         assert grads == other

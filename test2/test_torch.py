@@ -192,9 +192,7 @@ class TestTorchModel:
         model = test_case.model
         batch = next(iter(test_case.dataset))
         grads = model.compute_batch_gradients(batch)
-        gdump = json.dumps(grads.pack(), default=json_pack)
+        gdump = json.dumps(grads, default=json_pack)
         assert isinstance(gdump, str)
-        other = TorchVector.unpack(
-            json.loads(gdump, object_hook=json_unpack)
-        )
+        other = json.loads(gdump, object_hook=json_unpack)
         assert grads == other
