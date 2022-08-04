@@ -6,6 +6,7 @@ from typing import Any, Dict, Union
 
 import numpy as np
 from numpy.typing import ArrayLike
+from typing_extensions import Self  # future: import from typing (Py>=3.11)
 
 from declearn2.model.api._vector import Vector, register_vector_type
 
@@ -49,13 +50,13 @@ class NumpyVector(Vector):
 
     def sign(
             self,
-        ) -> 'NumpyVector':
+        ) -> Self:  # type: ignore
         return self.apply_func(np.sign)
 
     def minimum(
             self,
             other: Union['Vector', float, ArrayLike],
-        ) -> 'NumpyVector':
+        ) -> Self:  # type: ignore
         if isinstance(other, NumpyVector):
             return self._apply_operation(other, np.minimum)
         return self.apply_func(np.minimum, other)
@@ -63,7 +64,7 @@ class NumpyVector(Vector):
     def maximum(
             self,
             other: Union['Vector', float, ArrayLike],
-        ) -> 'NumpyVector':
+        ) -> Self:  # type: ignore
         if isinstance(other, Vector):
             return self._apply_operation(other, np.maximum)
         return self.apply_func(np.maximum, other)
