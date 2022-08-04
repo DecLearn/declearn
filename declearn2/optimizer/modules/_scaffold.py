@@ -102,7 +102,7 @@ class ScaffoldClientModule(OptiModule):
         # Accumulate the processed gradients, then return.
         self._grads = gradients + self._grads
         self._steps += 1
-        return gradients  # type: ignore
+        return gradients
 
     def collect_aux_var(
             self,

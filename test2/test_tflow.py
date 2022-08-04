@@ -127,7 +127,7 @@ class TestTensorflowModel:
         w_srt = model.get_weights()
         assert isinstance(w_srt, NumpyVector)
         w_end = w_srt + 1.
-        model.set_weights(w_end)
+        model.set_weights(w_end)  # type: ignore
         assert model.get_weights() == w_end
 
     def test_compute_batch_gradients(
@@ -173,7 +173,7 @@ class TestTensorflowModel:
         w_srt = model.get_weights()
         grads = model.compute_batch_gradients(batch)
         # Check that updates can be obtained and applied.
-        grads = -.1 * grads
+        grads = -.1 * grads  # type: ignore
         assert isinstance(grads, TensorflowVector)
         model.apply_updates(grads)
         # Verify the the updates were correctly applied.
@@ -182,7 +182,7 @@ class TestTensorflowModel:
         w_end = model.get_weights()
         assert w_end != w_srt
         updt = [val.numpy() for val in grads.coefs.values()]
-        diff = list((w_end - w_srt).coefs.values())  # type: ignore
+        diff = list((w_end - w_srt).coefs.values())
         assert all(np.abs(a - b).max() < 1e-7 for a, b in zip(diff, updt))
 
     def test_compute_loss(

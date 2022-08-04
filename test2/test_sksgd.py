@@ -124,7 +124,7 @@ class TestSklearnSGDModelUsage:
         w_srt = model.get_weights()
         grads = model.compute_batch_gradients(dataset[0])
         # Check that updates can be obtained and applied.
-        grads = -.1 * grads
+        grads = -.1 * grads  # type: ignore
         assert isinstance(grads, NumpyVector)
         model.apply_updates(grads)
         # Verify the the updates were correctly applied.

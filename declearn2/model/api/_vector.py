@@ -7,7 +7,7 @@ from abc import ABCMeta, abstractmethod
 from typing import Any, Callable, Dict, Optional, Type, Union
 
 from numpy.typing import ArrayLike
-from typing_extensions import Self  # future: import from typing (Py>=3.11)
+# future: `from typing_extensions import Self` and revise Vector return types
 
 from declearn2.utils import (
     add_json_support, create_types_registry, register_type
@@ -84,7 +84,7 @@ class Vector(metaclass=ABCMeta):
     def unpack(
             cls,
             data: Dict[str, Any],
-        ) -> Self:  # type: ignore
+        ) -> 'Vector':
         """Instantiate a Vector from its "packed" dict representation."""
         return cls(data)
 
@@ -93,7 +93,7 @@ class Vector(metaclass=ABCMeta):
             func: Callable[..., Any],
             *args: Any,
             **kwargs: Any
-        ) -> Self:  # type: ignore
+        ) -> 'Vector':
         """Apply a given function to the wrapped coefficients."""
         return type(self)({
             key: func(coef, *args, **kwargs)
@@ -104,7 +104,7 @@ class Vector(metaclass=ABCMeta):
             self,
             other: Any,
             func: Callable[[Any, Any], Any],
-        ) -> Self:  # type: ignore
+        ) -> 'Vector':
         """Apply an operation to combine this vector with another."""
         # Case when operating on two Vector objects.
         if isinstance(other, type(self)):
@@ -132,55 +132,55 @@ class Vector(metaclass=ABCMeta):
     def __add__(
             self,
             other: Any,
-        ) -> Self:  # type: ignore
+        ) -> 'Vector':
         return self._apply_operation(other, self._op_add)  # type: ignore
 
     def __radd__(
             self,
             other: Any,
-        ) -> Self:  # type: ignore
+        ) -> 'Vector':
         return self.__add__(other)
 
     def __sub__(
             self,
             other: Any,
-        ) -> Self:  # type: ignore
+        ) -> 'Vector':
         return self._apply_operation(other, self._op_sub)  # type: ignore
 
     def __rsub__(
             self,
             other: Any,
-        ) -> Self:  # type: ignore
+        ) -> 'Vector':
         return self.__sub__(- other)
 
     def __mul__(
             self,
             other: Any,
-        ) -> Self:  # type: ignore
+        ) -> 'Vector':
         return self._apply_operation(other, self._op_mul)  # type: ignore
 
     def __rmul__(
             self,
             other: Any,
-        ) -> Self:  # type: ignore
+        ) -> 'Vector':
         return self.__mul__(other)
 
     def __truediv__(
             self,
             other: Any,
-        ) -> Self:  # type: ignore
+        ) -> 'Vector':
         return self._apply_operation(other, self._op_div)  # type: ignore
 
     def __rtruediv__(
             self,
             other: Any,
-        ) -> Self:  # type: ignore
+        ) -> 'Vector':
         return self.__mul__(1 / other)
 
     def __pow__(
             self,
             other: Any,
-        ) -> Self:  # type: ignore
+        ) -> 'Vector':
         return self._apply_operation(other, self._op_pow)  # type: ignore
 
     @abstractmethod
@@ -193,7 +193,7 @@ class Vector(metaclass=ABCMeta):
     @abstractmethod
     def sign(
             self,
-        ) -> Self:  # type: ignore
+        ) -> 'Vector':
         """Return a Vector storing the sign of each coefficient."""
         raise NotImplementedError
 
@@ -201,7 +201,7 @@ class Vector(metaclass=ABCMeta):
     def minimum(
             self,
             other: Union['Vector', float, ArrayLike],
-        ) -> Self:  # type: ignore
+        ) -> 'Vector':
         """Compute coef.-wise, element-wise minimum wrt to another Vector."""
         raise NotImplementedError
 
@@ -209,7 +209,7 @@ class Vector(metaclass=ABCMeta):
     def maximum(
             self,
             other: Union['Vector', float, ArrayLike],
-        ) -> Self:  # type: ignore
+        ) -> 'Vector':
         """Compute coef.-wise, element-wise maximum wrt to another Vector."""
         raise NotImplementedError
 

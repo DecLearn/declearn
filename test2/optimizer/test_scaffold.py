@@ -66,7 +66,7 @@ def test_scaffold_server(mock_gradients: Vector) -> None:
     assert module.s_loc == {str(i): mock_gradients for i in range(5)}
     assert isinstance(module.state, type(mock_gradients))
     # Take numerical precision issues into account when checking values.
-    mock_unprecise = (5 * mock_gradients / 5)  # type: ignore
+    mock_unprecise = (5 * mock_gradients / 5)
     assert module.state == mock_unprecise
     # Test run correctness (no correction at state 0).
     output = module.run(mock_gradients)
