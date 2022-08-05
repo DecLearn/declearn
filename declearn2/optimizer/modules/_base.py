@@ -38,7 +38,7 @@ class OptiModule(metaclass=ABCMeta):
     updates. Note that learning-rate use and optional (decoupled)
     weight-decay mechanisms are implemented at `Optimizer` level.
 
-    Abstract:
+    Abstract
     --------
     The following attribute and method require to be overridden
     by any non-abstract child class of `OptiModule`:
@@ -51,7 +51,7 @@ class OptiModule(metaclass=ABCMeta):
         Apply an adaptation algorithm to input gradients and return
         them. This is the main method for any `OptiModule`.
 
-    Overridable:
+    Overridable
     -----------
     The following methods may be overridden to implement information-
     passing and parallel behaviors between client/server module pairs.
@@ -153,6 +153,8 @@ class MomentumModule(OptiModule):
         ) -> None:
         """Instantiate the Momentum gradients-adaptation module.
 
+        Parameters
+        ----------
         beta: float, default=0.9
             Coefficient parameterizing the (exponentially-
             decaying) moving average of input gradients.

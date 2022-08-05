@@ -46,8 +46,8 @@ class SklearnSGDModel(Model):
               constructor that does not require a manual instantiation
               of the wrapped scikit-learn model.
 
-        Arguments:
-        ---------
+        Parameters
+        ----------
         model: SGDClassifier or SGDRegressor
             Scikit-learn model that needs wrapping for federated training.
             Note that some hyperparameters will be overridden, as will the
@@ -135,8 +135,8 @@ class SklearnSGDModel(Model):
         a SklearnSGDModel without first instantiating a scikit-learn
         SGDRegressor or SGDClassifier.
 
-        Arguments:
-        ---------
+        Parameters
+        ----------
         * The first three arguments are from `SklearnSGDModel.__init__`
           and specify the task at hand (regression or classification)
           as well as the model's dimensionality.
@@ -284,12 +284,17 @@ class SklearnSGDModel(Model):
         ) -> float:
         """Compute the average loss of the model on a given dataset.
 
+        Parameters
+        ----------
         dataset: iterable of batches
             Iterable yielding batch structures that are to be unpacked
             into (input_features, target_labels, [sample_weights]).
             If set, sample weights will affect the loss averaging.
 
-        Return the average value of the model's loss over samples.
+        Returns
+        -------
+        loss: float
+            Average value of the model's loss over samples.
         """
         # TODO: implement SklearnMetric objects and abstract this code
         # Instantiate a loss function from the wrapped model's specs.

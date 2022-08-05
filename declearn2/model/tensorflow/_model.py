@@ -120,12 +120,17 @@ class TensorflowModel(Model):
         ) -> float:
         """Compute the average loss of the model on a given dataset.
 
+        Parameters
+        ----------
         dataset: iterable of batches
             Iterable yielding batch structures that are to be unpacked
             into (input_features, target_labels, [sample_weights]).
             If set, sample weights will affect the loss averaging.
 
-        Return the average value of the model's loss over samples.
+        Returns
+        -------
+        loss: float
+            Average value of the model's loss over samples.
         """
         total = 0.
         n_btc = 0

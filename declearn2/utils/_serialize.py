@@ -35,7 +35,7 @@ ObjectConfigDict = TypedDict(
 class ObjectConfig:
     """Dataclass to wrap a JSON-serializable object configuration.
 
-    Attributes:
+    Attributes
     ----------
     name: str
         Key to retrieve the object's type constructor, typically from
@@ -86,8 +86,8 @@ def serialize_object(
 
     This function is the counterpart to `declearn.utils.deserialize_object`.
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     obj: object
         Object that needs serialization. To be valid, the object must:
         * implement the `get_config` and `from_config` (class)methods
@@ -104,13 +104,13 @@ def serialize_object(
         and its class will need to be passed as part of `custom` to
         the deserialization function (see `deserialize_object`).
 
-    Returns:
+    Returns
     -------
     config: ObjectConfig
         A JSON-serializable dataclass wrapper containing all required
         information to recreate the object, e.g. from a config file.
 
-    Raises:
+    Raises
     ------
     KeyError
         If `obj`'s type is not registered and `allow_unregistered=False`.
@@ -135,8 +135,8 @@ def deserialize_object(
 
     This function is the counterpart to `declearn.utils.serialize_object`.
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     config: ObjectConfig or str
         Either an ObjectConfig object, the dict representation of one,
         or the path to a JSON file that stores an ObjectConfig dump.
@@ -145,12 +145,12 @@ def deserialize_object(
         deserializing user-defined types that have not been registered
         using `declearn.utils.register_type`.
 
-    Returns:
+    Returns
     -------
     obj: object
         An object instantiated from the provided configuration.
 
-    Raises:
+    Raises
     ------
     TypeError
         If `config` is not or cannot be transformed into an ObjectConfig.

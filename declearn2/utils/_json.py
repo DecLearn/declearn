@@ -67,8 +67,8 @@ def add_json_support(
     ) -> None:
     """Add or modify JSON (de)serialization support for a custom type.
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     cls: type
         Type for which to add (or modify) JSON (de)serialization support.
     pack: func(cls) -> any

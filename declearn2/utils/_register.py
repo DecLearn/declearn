@@ -27,8 +27,8 @@ class TypesRegistry:
         ) -> None:
         """Instantiate the TypesRegistry.
 
-        Arguments:
-        ---------
+        Parameters
+        ----------
         name: str
             Name of the registry (used to document raised exceptions).
         base: type
@@ -46,8 +46,8 @@ class TypesRegistry:
         ) -> None:
         """Add a (name, cls) entry to the registry.
 
-        Arguments:
-        ---------
+        Parameters
+        ----------
         cls: type
             Class that is to be registered.
             Must inherit `self.base`. If not, raise a TypeError.
@@ -76,8 +76,8 @@ class TypesRegistry:
         ) -> Type:
         """Access a registered type by its name.
 
-        Arguments:
-        ---------
+        Parameters
+        ----------
         name: str
             Name under which the type is registered.
 
@@ -96,8 +96,8 @@ class TypesRegistry:
         ) -> str:
         """Return the name under which a type has been registered.
 
-        Arguments:
-        ---------
+        Parameters
+        ----------
         cls: type
             Registered type, the storage name of which to retrive.
 
@@ -120,8 +120,8 @@ def create_types_registry(
     ) -> None:
     """Create a TypesRegistry backing generic (de)serialization utils.
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     name: str
         Name of the registry, used to register or access classes
         using the generic `register_type` and `access_registered`
@@ -145,8 +145,8 @@ def register_type(
           type through functional syntax, or placed as a decorator
           for class-defining code
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     cls: type of None, default=None
         Class that is to be registered.
         If None, return a class decorator.
@@ -191,8 +191,8 @@ def access_registered(
     ) -> Type:
     """Access a registered type by its name.
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     name: str
         Name under which the type is registered.
     group: str or None, default=None
@@ -225,8 +225,8 @@ def access_registration_info(
     ) -> Tuple[str, str]:
     """Access a registered type's storage name and belonging group.
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     cls: str
         Registered type, the storage name of which to retrive.
     group: str or None, default=None

@@ -46,8 +46,8 @@ class Dataset(metaclass=ABCMeta):
         ) -> None:
         """Write a JSON file enabling dataset re-creation.
 
-        Arguments:
-        ---------
+        Parameters
+        ----------
         path: str
             Path to the main JSON file where to dump the dataset.
             Additional files may be created in the same folder.
@@ -80,8 +80,8 @@ class Dataset(metaclass=ABCMeta):
         ) -> Iterator[Batch]:
         """Yield batches of data samples.
 
-        Arguments:
-        ---------
+        Parameters
+        ----------
         batch_size: int
             Number of samples per batch.
         shuffle: bool, default=False
@@ -93,7 +93,7 @@ class Dataset(metaclass=ABCMeta):
             Whether to drop the last batch if it contains less
             samples than `batch_size`, or yield it anyway.
 
-        Yields:
+        Yields
         ------
         inputs: (2+)-dimensional data array or list of data arrays
             Input features of that batch.

@@ -41,7 +41,7 @@ class InMemoryDataset(Dataset):
           into two distinct base classes to articulate back into
           this one.
 
-    Attributes:
+    Attributes
     ----------
     data: data array
         Data array containing samples, with all input features
@@ -71,8 +71,8 @@ class InMemoryDataset(Dataset):
         See the `load_data_array` method for details
         on supported file formats.
 
-        Arguments:
-        ---------
+        Parameters
+        ----------
         data: data array or str
             Main data array which contains input features (and possibly
             more), or path to a dump file from which it is to be loaded.
@@ -182,8 +182,8 @@ class InMemoryDataset(Dataset):
             `which` int keyword argument (default: 0, for
             features).
 
-        Arguments:
-        ---------
+        Parameters
+        ----------
         path: str
             Path to the data array dump file.
             Extension must be adequate to enable proper parsing;
@@ -192,12 +192,12 @@ class InMemoryDataset(Dataset):
             Extension-type-based keyword parameters may be passed.
             See above for details.
 
-        Returns:
+        Returns
         -------
         data: numpy.ndarray or pandas.DataFrame or scipy.spmatrix
             Reloaded data array.
 
-        Raises:
+        Raises
         ------
         TypeError:
             If `path` is of unsupported extension.
@@ -232,8 +232,8 @@ class InMemoryDataset(Dataset):
             Dump to a ".sparse" file, using a custom format
             and `declearn.data.sparse.sparse_to_file`.
 
-        Arguments:
-        ---------
+        Parameters
+        ----------
         path: str
             Path to the file where to dump the array.
             Appropriate file extension will be added when
@@ -243,13 +243,13 @@ class InMemoryDataset(Dataset):
             See above for supported types and associated
             behaviours.
 
-        Returns:
+        Returns
         -------
         path: str
             Path to the created file dump, based on the input
             `path` and the chosen file extension (see above).
 
-        Raises:
+        Raises
         ------
         TypeError:
             If `array` is of unsupported type.
@@ -286,8 +286,8 @@ class InMemoryDataset(Dataset):
         matrix in CSR format) and target labels. This method uses
         `sklearn.datasets.load_svmlight_file` to parse this file.
 
-        Arguments:
-        ---------
+        Parameters
+        ----------
         path: str
             Path to the SVMlight file from which to load the `data`
             and `target` parameters used to isinstantiate.
@@ -307,8 +307,8 @@ class InMemoryDataset(Dataset):
         ) -> None:
         """Write a JSON file enabling dataset re-creation.
 
-        Arguments:
-        ---------
+        Parameters
+        ----------
         path: str
             Path to the main JSON file where to dump the dataset.
             Additional files may be created in the same folder.
@@ -346,8 +346,8 @@ class InMemoryDataset(Dataset):
         ) -> 'InMemoryDataset':
         """Instantiate a dataset based on local files.
 
-        Arguments:
-        ---------
+        Parameters
+        ----------
         path: str
             Path to the main JSON file where to dump the dataset.
             Additional files may be created in the same folder.
@@ -386,8 +386,8 @@ class InMemoryDataset(Dataset):
         ) -> Iterator[Batch]:
         """Yield batches of data samples.
 
-        Arguments:
-        ---------
+        Parameters
+        ----------
         batch_size: int
             Number of samples per batch.
         shuffle: bool, default=False
@@ -402,7 +402,7 @@ class InMemoryDataset(Dataset):
             Whether to drop the last batch if it contains less
             samples than `batch_size`, or yield it anyway.
 
-        Yields:
+        Yields
         ------
         inputs: data array
             Input features; scikit-learn's `X`.
@@ -440,8 +440,8 @@ class InMemoryDataset(Dataset):
         ) -> Iterator[Optional[ArrayLike]]:
         """Yield batches extracted from a data array.
 
-        Arguments:
-        ---------
+        Parameters
+        ----------
         data: optional data array
             Data from which to derive the yielded batches.
             If None, yield None as many times as `order` specifies it.

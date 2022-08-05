@@ -224,8 +224,8 @@ class ScaffoldServerModule(OptiModule):
         ) -> None:
         """Instantiate the server-side SCAFFOLD gradients-correction module.
 
-        Arguments:
-        ---------
+        Parameters
+        ----------
         clients: list[str] or None, default=None
             Optional list of known clients' id strings.
 

@@ -55,8 +55,8 @@ def sparse_to_file(
 
     See function `sparse_from_file` to reload from the dump file.
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     path: str
         Path to the file where to store the sparse matrix.
         If the path does not end with a '.sparse' extension,
@@ -64,7 +64,7 @@ def sparse_to_file(
     matrix: scipy.sparse.spmatrix
         Sparse matrix that needs storing to file.
 
-    Raises:
+    Raises
     ------
     TypeError if 'matrix' is of unsupported type, i.e. not
     a BSR, CSC, CSR, COO, DIA, DOK or LIL sparse matrix.
@@ -104,18 +104,18 @@ def sparse_from_file(
 
     See function `sparse_to_file` to create reloadable dump files.
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     path: str
         Path to the sparse matrix dump file.
 
-    Returns:
+    Returns
     -------
     matrix: scipy.sparse.spmatrix
         Sparse matrix restored from file, the exact type
         of which being defined by said file.
 
-    Raises:
+    Raises
     ------
     KeyError:
         If the file's header cannot be JSON-parsed or does not

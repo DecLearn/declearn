@@ -48,8 +48,8 @@ class AdaGradModule(OptiModule):
         ) -> None:
         """Instantiate the Adagrad gradients-adaptation module.
 
-        Arguments:
-        ---------
+        Parameters
+        ----------
         eps: float, default=1e-7
             Numerical-stability improvement term, added
             to the (divisor) adapative scaling term.
@@ -103,8 +103,8 @@ class RMSPropModule(OptiModule):
         ) -> None:
         """Instantiate the RMSProp gradients-adaptation module.
 
-        Arguments:
-        ---------
+        Parameters
+        ----------
         beta: float
             Beta parameter for the momentum correction
             applied to the adaptive scaling term.
@@ -179,8 +179,8 @@ class AdamModule(OptiModule):
         ) -> None:
         """Instantiate the Adam gradients-adaptation module.
 
-        Arguments:
-        ---------
+        Parameters
+        ----------
         beta_1: float
             Beta parameter for the momentum correction
             applied to the input gradients.
@@ -315,8 +315,8 @@ class YogiModule(AdamModule):
         ) -> None:
         """Instantiate the Yogi gradients-adaptation module.
 
-        Arguments:
-        ---------
+        Parameters
+        ----------
         beta_1: float
             Beta parameter for the momentum correction
             applied to the input gradients.

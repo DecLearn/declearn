@@ -233,8 +233,8 @@ def register_vector_type(
     * Make the subclass buildable through `Vector.build(coefs)`,
       based on the analysis of wrapped coefficients' type.
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     v_type: type
         Type of wrapped data that is to trigger using `cls`.
     *types: type
@@ -244,7 +244,7 @@ def register_vector_type(
         by `register_type` and `add_json_support`.
         If None, use `cls.__name__`.
 
-    Returns:
+    Returns
     -------
     register: func(cls) -> cls
         A closure that performs the registration operations.

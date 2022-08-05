@@ -50,7 +50,7 @@ class Optimizer:
     plugged-in-modules' variables and maps back received variables
     to them.
 
-    Attributes:
+    Attributes
     ----------
 
     lrate: float
@@ -72,7 +72,7 @@ class Optimizer:
     run_train_step(Model, batch) -> None:
         Compute gradients of a Model over a Batch and apply updates.
 
-    References:
+    References
     ----------
     [1] Loshchilov & Hutter, 2019.
         Decoupled Weight Decay Regularization.
@@ -87,8 +87,8 @@ class Optimizer:
         ) -> None:
         """Instantiate the gradient-descent optimizer.
 
-        Arguments:
-        ---------
+        Parameters
+        ----------
         lrate: float
             Base learning rate (i.e. step size) applied to gradients-
             based updates upon applying them to a model's weights.
@@ -103,7 +103,7 @@ class Optimizer:
             applied to gradients following this list's ordering.
             See `declearn.optimizer.modules.OptiModule` for details.
 
-        References:
+        References
         ----------
         [1] Loshchilov & Hutter, 2019.
             Decoupled Weight Decay Regularization.
@@ -149,8 +149,8 @@ class Optimizer:
         ) -> None:
         """Compute and apply model updates based on pre-computed gradients.
 
-        Arguments:
-        ---------
+        Parameters
+        ----------
         model: Model
             Model instance that is to be trained using gradient-descent.
         gradients: Vector
@@ -158,7 +158,7 @@ class Optimizer:
             perform the gradient-descent step, by applying the algorithm
             defined by this optimizer and its plug-in modules.
 
-        Returns:
+        Returns
         -------
         None
             This method does not return, as `model` is updated in-place.
@@ -179,7 +179,7 @@ class Optimizer:
         ) -> Dict[str, Dict[str, Any]]:
         """Return auxiliary variables that need to be shared between nodes.
 
-        Returns:
+        Returns
         -------
         aux_var: dict[str, dict[str, ...]]
             Dict that associates `module.collect_aux_var()` values
@@ -202,8 +202,8 @@ class Optimizer:
         Received auxiliary variables will be passed to this optimizer's
         modules' `process_aux_var` method, mapped based on `module.name`.
 
-        Arguments:
-        ---------
+        Parameters
+        ----------
         aux_var: dict[str, dict[str, ...]]
             Auxiliary variables received from the counterpart optimizer
             (on the other side of the client/server relationship), that
@@ -211,7 +211,7 @@ class Optimizer:
             a {`module.name`: {client: `module.collect_aux_var()`}} dict
             (depending on which side this optimizer is on).
 
-        Raises:
+        Raises
         ------
         KeyError
             If a key from `aux_var` does not match the name of any module
@@ -235,14 +235,14 @@ class Optimizer:
         ) -> None:
         """Perform a gradient-descent step on a given batch.
 
-        Arguments:
-        ---------
+        Parameters
+        ----------
         model: Model
             Model instance that is to be trained using gradient-descent.
         batch: Batch
             Training data used for that training step.
 
-        Returns:
+        Returns
         -------
         None
             This method does not return, as `model` is updated in-place.
