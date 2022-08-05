@@ -36,9 +36,9 @@ class WebSocketsServer(Server):
         nb_clients: int
             Maximum number of clients that should be accepted.
         host : str, dafault='localhost'
-            Host name (e.g. IP address) to listen to.
+            Host name (e.g. IP address) of the server.
         port: int, default=8765
-            Socket's port.
+            Communications port to use.
         certificate: str or None, default=None
             Path to the server certificate (publickey) to use SSL/TLS
             communications encryption. If provided, `private_key` must
@@ -106,7 +106,7 @@ class WebSocketsServer(Server):
     def start(
             self,
         ) -> None:
-        """Start the websockets server, to receive and manage connections."""
+        """Start the websockets server."""
         # Create a new Future object to await so as to keep connections alive.
         self._running.cancel()
         self._running = self.loop.create_future()
@@ -200,14 +200,6 @@ class WebSocketsServer(Server):
     async def wait_for_clients(
             self,
         ) -> Dict[str, Dict[str, Any]]:
-        """Pause the server until the required number of clients have joined.
-
-        Returns
-        -------
-        client_info: dict[str, dict[str, any]]
-            A dictionary where the keys are the participants
-            and the values are their information.
-        """
         self.logger.info("Waiting for clients to register for training...")
         number = 0
         while len(self._clients) < self.nb_clients:
@@ -237,20 +229,6 @@ class WebSocketsServer(Server):
             action: str,
             params: Dict[str, Any],
         ) -> None:
-        """Send a message to all the clients.
-
-        Parameters
-        ----------
-        action: str
-            Instruction for the client.
-        params: dict
-            Associated parameters, as a JSON-serializable dict.
-
-        Note
-        ----
-        The message sent here (action and params) is designed to
-        be received using the `Client.wait_for_message` method.
-        """
         if self._running.done():
             raise RuntimeError(
                 "Cannot broadcast messages while the server is not running."
@@ -262,19 +240,6 @@ class WebSocketsServer(Server):
     async def wait_for_messages(
             self,
         ) -> Dict[str, Dict[str, Any]]:
-        """Retrieve the next expected messages from each of the participants.
-
-        Returns
-        -------
-        messages:
-            A dictionary where the keys are the participants and
-            the values are messages they sent to the server.
-
-        Note
-        ----
-        The messages received here are expected to have been sent
-        usin the `Client.send_message` method.
-        """
         if self._running.done():
             raise RuntimeError(
                 "Cannot await messages while the server is not running."
