@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package grpc;
+
+message Empty {}
+
+message Error {
+  string message = 1;
+}
+
+message JoinRequest {
+    string name = 1;
+    string info = 2;
+}
+
+message JoinReply {
+    string message = 1;
+}
+
+message CheckMessageRequest {
+  string name = 1;
+}
+
+message Message {
+    string name = 1;
+    string action = 2;
+    string params = 3;
+}
+
+service MessageBoard {
+  rpc ping(Empty) returns (Empty);
+  rpc join (JoinRequest) returns (JoinReply);
+  rpc send_message (Message) returns (Empty);
+  rpc check_message (CheckMessageRequest) returns (Message);
+}
