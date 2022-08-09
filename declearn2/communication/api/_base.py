@@ -71,6 +71,12 @@ class Server(metaclass=ABCMeta):
         self.port = port
         self.loop = asyncio.get_event_loop() if loop is None else loop
 
+    @property
+    @abstractmethod
+    def uri(self) -> str:
+        """URI on which this server is exposed, to be requested by clients."""
+        return NotImplemented
+
     def run_until_complete(
             self,
             task: Callable[[], Coroutine[Any, Any, None]],

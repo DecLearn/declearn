@@ -71,6 +71,11 @@ class WebsocketsServer(Server):
         self._running.cancel()  # ensure the server is not marked as running
         self._server = None  # type: Optional[WebSocketServer]
 
+    @property
+    def uri(self) -> str:
+        protocol = "ws" if self.ssl_context is None else "wss"
+        return f"{protocol}://{self.host}:{self.port}"
+
     @staticmethod
     def _setup_ssl(
             certificate: Optional[str] = None,

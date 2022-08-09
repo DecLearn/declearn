@@ -95,6 +95,10 @@ class GrpcServer(Server):
         self.host = self._service.host
         self.port = self._service.port
 
+    @property
+    def uri(self) -> str:
+        return f"{self.host}:{self.port}"
+
     @staticmethod
     def _setup_ssl_credentials(
             certificate: Optional[str] = None,
