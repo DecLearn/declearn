@@ -45,12 +45,21 @@ And examples of pre-registered (de)serialization functions:
 
 * (deserialize_numpy, serialize_numpy):
     Pair of functions to (un)pack a numpy ndarray as JSON-serializable data.
+
+Miscellaneous
+-------------
+
+* get_logger:
+    Access or create a logger, automating basic handlers' configuration.
 """
 
 from ._json import (
     add_json_support,
     json_pack,
     json_unpack,
+)
+from ._logging import (
+    get_logger,
 )
 from ._numpy import (
     deserialize_numpy,
