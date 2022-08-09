@@ -22,7 +22,7 @@ from declearn2.utils import get_logger, json_pack, json_unpack
 class GrpcClient(Client):
     """Client-side communication endpoint using gRPC."""
 
-    logger = get_logger("websockets-client")
+    logger = get_logger("grpc-client")
 
     def __init__(
             self,

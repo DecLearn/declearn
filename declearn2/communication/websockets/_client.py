@@ -82,7 +82,7 @@ class WebsocketsClient(Client):
         )
         connect = ws.connect(  # type: ignore
             self.server_uri,
-            #logger=self.logger,
+            logger=self.logger,
             ping_interval=None,  # revise: use keep-alive pings?
             ssl=self.ssl_context,
             extra_headers=extra_headers,

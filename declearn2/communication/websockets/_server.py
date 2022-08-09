@@ -115,6 +115,7 @@ class WebsocketsServer(Server):
             self._handle_connection,
             host=self.host,
             port=self.port,
+            logger=self.logger,
             ssl=self.ssl_context,
             extra_headers=extra_headers,
         )
