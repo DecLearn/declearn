@@ -182,8 +182,10 @@ class Client(metaclass=ABCMeta):
         """
         self.start()
         loop = getattr(self, '_loop', asyncio.get_event_loop())  # revise
-        loop.run_until_complete(task())
-        self.stop()
+        try:
+            loop.run_until_complete(task())
+        finally:
+            self.stop()
 
     @abstractmethod  # revise
     def start(
@@ -200,7 +202,7 @@ class Client(metaclass=ABCMeta):
         return None
 
     @abstractmethod
-    def register(
+    async def register(
             self,
             data_info: Dict[str, Any],
         ) -> Literal[FLAG_WELCOME, FLAG_REFUSE_CONNECTION]:  # type: ignore
@@ -223,7 +225,7 @@ class Client(metaclass=ABCMeta):
         return NotImplemented
 
     @abstractmethod
-    def send_message(
+    async def send_message(
             self,
             message: Dict[str, Any],
         ) -> None:
@@ -243,7 +245,7 @@ class Client(metaclass=ABCMeta):
         return None
 
     @abstractmethod
-    def check_message(
+    async def check_message(
             self,
         ) -> Tuple[str, Dict[str, Any]]:
         """Retrieve the next message sent by the server.
