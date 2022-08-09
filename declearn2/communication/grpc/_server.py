@@ -121,13 +121,13 @@ class GrpcServer(Server):
             self,
         ) -> None:
         """Start the gRPC server."""
-        self.loop.create_task(self._service.start())
+        self.loop.run_until_complete(self._service.start())
 
     def stop(
             self,
         ) -> None:
         """Stop the gRPC server."""
-        self.loop.create_task(self._service.stop())
+        self.loop.run_until_complete(self._service.stop())
 
     async def wait_for_clients(
             self,
@@ -153,8 +153,13 @@ class GrpcServer(Server):
         dump = json.dumps(params, default=json_pack)
         message = {"action": action, "params": dump}
         # Set the message up for transmission.
-        for stack in self._service.outgoing_messages.values():
-            stack.append(message)
+        for client in self._service.registered_users.values():
+            if client["name"] in self._service.outgoing_messages:
+                self.logger.warning(
+                    "Overwriting pending message uncollected by client '%s'.",
+                    client["name"]
+                )
+            self._service.outgoing_messages[client["name"]] = message
 
     async def wait_for_messages(
             self,
