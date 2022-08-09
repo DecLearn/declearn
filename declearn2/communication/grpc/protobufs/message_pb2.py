@@ -3,6 +3,7 @@
 # source: message.proto
 """Generated protocol buffer code."""
 from google.protobuf import descriptor as _descriptor
+from google.protobuf import descriptor_pool as _descriptor_pool
 from google.protobuf import message as _message
 from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
@@ -13,231 +14,16 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor.FileDescriptor(
-  name='message.proto',
-  package='grpc',
-  syntax='proto3',
-  serialized_options=None,
-  create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\rmessage.proto\x12\x04grpc\"\x07\n\x05\x45mpty\"\x18\n\x05\x45rror\x12\x0f\n\x07message\x18\x01 \x01(\t\")\n\x0bJoinRequest\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0c\n\x04info\x18\x02 \x01(\t\"\x1c\n\tJoinReply\x12\x0f\n\x07message\x18\x01 \x01(\t\"#\n\x13\x43heckMessageRequest\x12\x0c\n\x04name\x18\x01 \x01(\t\"7\n\x07Message\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0e\n\x06\x61\x63tion\x18\x02 \x01(\t\x12\x0e\n\x06params\x18\x03 \x01(\t2\xc3\x01\n\x0cMessageBoard\x12 \n\x04ping\x12\x0b.grpc.Empty\x1a\x0b.grpc.Empty\x12*\n\x04join\x12\x11.grpc.JoinRequest\x1a\x0f.grpc.JoinReply\x12*\n\x0csend_message\x12\r.grpc.Message\x1a\x0b.grpc.Empty\x12\x39\n\rcheck_message\x12\x19.grpc.CheckMessageRequest\x1a\r.grpc.Messageb\x06proto3'
-)
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\rmessage.proto\x12\x04grpc\"\x07\n\x05\x45mpty\"\x18\n\x05\x45rror\x12\x0f\n\x07message\x18\x01 \x01(\t\")\n\x0bJoinRequest\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0c\n\x04info\x18\x02 \x01(\t\"\x19\n\tJoinReply\x12\x0c\n\x04\x66lag\x18\x01 \x01(\t\"\x15\n\x13\x43heckMessageRequest\")\n\x07Message\x12\x0e\n\x06\x61\x63tion\x18\x01 \x01(\t\x12\x0e\n\x06params\x18\x02 \x01(\t2\xc3\x01\n\x0cMessageBoard\x12 \n\x04ping\x12\x0b.grpc.Empty\x1a\x0b.grpc.Empty\x12*\n\x04join\x12\x11.grpc.JoinRequest\x1a\x0f.grpc.JoinReply\x12*\n\x0csend_message\x12\r.grpc.Message\x1a\x0b.grpc.Empty\x12\x39\n\rcheck_message\x12\x19.grpc.CheckMessageRequest\x1a\r.grpc.Messageb\x06proto3')
 
 
 
-
-_EMPTY = _descriptor.Descriptor(
-  name='Empty',
-  full_name='grpc.Empty',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  create_key=_descriptor._internal_create_key,
-  fields=[
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  serialized_options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=23,
-  serialized_end=30,
-)
-
-
-_ERROR = _descriptor.Descriptor(
-  name='Error',
-  full_name='grpc.Error',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  create_key=_descriptor._internal_create_key,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='message', full_name='grpc.Error.message', index=0,
-      number=1, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=b"".decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  serialized_options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=32,
-  serialized_end=56,
-)
-
-
-_JOINREQUEST = _descriptor.Descriptor(
-  name='JoinRequest',
-  full_name='grpc.JoinRequest',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  create_key=_descriptor._internal_create_key,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='name', full_name='grpc.JoinRequest.name', index=0,
-      number=1, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=b"".decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
-    _descriptor.FieldDescriptor(
-      name='info', full_name='grpc.JoinRequest.info', index=1,
-      number=2, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=b"".decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  serialized_options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=58,
-  serialized_end=99,
-)
-
-
-_JOINREPLY = _descriptor.Descriptor(
-  name='JoinReply',
-  full_name='grpc.JoinReply',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  create_key=_descriptor._internal_create_key,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='message', full_name='grpc.JoinReply.message', index=0,
-      number=1, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=b"".decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  serialized_options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=101,
-  serialized_end=129,
-)
-
-
-_CHECKMESSAGEREQUEST = _descriptor.Descriptor(
-  name='CheckMessageRequest',
-  full_name='grpc.CheckMessageRequest',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  create_key=_descriptor._internal_create_key,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='name', full_name='grpc.CheckMessageRequest.name', index=0,
-      number=1, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=b"".decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  serialized_options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=131,
-  serialized_end=166,
-)
-
-
-_MESSAGE = _descriptor.Descriptor(
-  name='Message',
-  full_name='grpc.Message',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  create_key=_descriptor._internal_create_key,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='name', full_name='grpc.Message.name', index=0,
-      number=1, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=b"".decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
-    _descriptor.FieldDescriptor(
-      name='action', full_name='grpc.Message.action', index=1,
-      number=2, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=b"".decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
-    _descriptor.FieldDescriptor(
-      name='params', full_name='grpc.Message.params', index=2,
-      number=3, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=b"".decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  serialized_options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=168,
-  serialized_end=223,
-)
-
-DESCRIPTOR.message_types_by_name['Empty'] = _EMPTY
-DESCRIPTOR.message_types_by_name['Error'] = _ERROR
-DESCRIPTOR.message_types_by_name['JoinRequest'] = _JOINREQUEST
-DESCRIPTOR.message_types_by_name['JoinReply'] = _JOINREPLY
-DESCRIPTOR.message_types_by_name['CheckMessageRequest'] = _CHECKMESSAGEREQUEST
-DESCRIPTOR.message_types_by_name['Message'] = _MESSAGE
-_sym_db.RegisterFileDescriptor(DESCRIPTOR)
-
+_EMPTY = DESCRIPTOR.message_types_by_name['Empty']
+_ERROR = DESCRIPTOR.message_types_by_name['Error']
+_JOINREQUEST = DESCRIPTOR.message_types_by_name['JoinRequest']
+_JOINREPLY = DESCRIPTOR.message_types_by_name['JoinReply']
+_CHECKMESSAGEREQUEST = DESCRIPTOR.message_types_by_name['CheckMessageRequest']
+_MESSAGE = DESCRIPTOR.message_types_by_name['Message']
 Empty = _reflection.GeneratedProtocolMessageType('Empty', (_message.Message,), {
   'DESCRIPTOR' : _EMPTY,
   '__module__' : 'message_pb2'
@@ -280,61 +66,22 @@ Message = _reflection.GeneratedProtocolMessageType('Message', (_message.Message,
   })
 _sym_db.RegisterMessage(Message)
 
+_MESSAGEBOARD = DESCRIPTOR.services_by_name['MessageBoard']
+if _descriptor._USE_C_DESCRIPTORS == False:
 
-
-_MESSAGEBOARD = _descriptor.ServiceDescriptor(
-  name='MessageBoard',
-  full_name='grpc.MessageBoard',
-  file=DESCRIPTOR,
-  index=0,
-  serialized_options=None,
-  create_key=_descriptor._internal_create_key,
-  serialized_start=226,
-  serialized_end=421,
-  methods=[
-  _descriptor.MethodDescriptor(
-    name='ping',
-    full_name='grpc.MessageBoard.ping',
-    index=0,
-    containing_service=None,
-    input_type=_EMPTY,
-    output_type=_EMPTY,
-    serialized_options=None,
-    create_key=_descriptor._internal_create_key,
-  ),
-  _descriptor.MethodDescriptor(
-    name='join',
-    full_name='grpc.MessageBoard.join',
-    index=1,
-    containing_service=None,
-    input_type=_JOINREQUEST,
-    output_type=_JOINREPLY,
-    serialized_options=None,
-    create_key=_descriptor._internal_create_key,
-  ),
-  _descriptor.MethodDescriptor(
-    name='send_message',
-    full_name='grpc.MessageBoard.send_message',
-    index=2,
-    containing_service=None,
-    input_type=_MESSAGE,
-    output_type=_EMPTY,
-    serialized_options=None,
-    create_key=_descriptor._internal_create_key,
-  ),
-  _descriptor.MethodDescriptor(
-    name='check_message',
-    full_name='grpc.MessageBoard.check_message',
-    index=3,
-    containing_service=None,
-    input_type=_CHECKMESSAGEREQUEST,
-    output_type=_MESSAGE,
-    serialized_options=None,
-    create_key=_descriptor._internal_create_key,
-  ),
-])
-_sym_db.RegisterServiceDescriptor(_MESSAGEBOARD)
-
-DESCRIPTOR.services_by_name['MessageBoard'] = _MESSAGEBOARD
-
+  DESCRIPTOR._options = None
+  _EMPTY._serialized_start=23
+  _EMPTY._serialized_end=30
+  _ERROR._serialized_start=32
+  _ERROR._serialized_end=56
+  _JOINREQUEST._serialized_start=58
+  _JOINREQUEST._serialized_end=99
+  _JOINREPLY._serialized_start=101
+  _JOINREPLY._serialized_end=126
+  _CHECKMESSAGEREQUEST._serialized_start=128
+  _CHECKMESSAGEREQUEST._serialized_end=149
+  _MESSAGE._serialized_start=151
+  _MESSAGE._serialized_end=192
+  _MESSAGEBOARD._serialized_start=195
+  _MESSAGEBOARD._serialized_end=390
 # @@protoc_insertion_point(module_scope)

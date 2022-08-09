@@ -157,13 +157,14 @@ class GrpcServer(Server):
         dump = json.dumps(params, default=json_pack)
         message = {"action": action, "params": dump}
         # Set the message up for transmission.
-        for client in self._service.registered_users.values():
-            if client["name"] in self._service.outgoing_messages:
+        for client, c_info in self._service.registered_users.items():
+            name = c_info["alias"]
+            if client in self._service.outgoing_messages:
                 self.logger.warning(
                     "Overwriting pending message uncollected by client '%s'.",
-                    client["name"]
+                    name
                 )
-            self._service.outgoing_messages[client["name"]] = message
+            self._service.outgoing_messages[name] = message
 
     async def wait_for_messages(
             self,

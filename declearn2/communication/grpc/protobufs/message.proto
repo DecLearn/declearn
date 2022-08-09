@@ -9,22 +9,19 @@ message Error {
 }
 
 message JoinRequest {
-    string name = 1;
-    string info = 2;
+  string name = 1;
+  string info = 2;
 }
 
 message JoinReply {
-    string message = 1;
+  string flag = 1;
 }
 
-message CheckMessageRequest {
-  string name = 1;
-}
+message CheckMessageRequest {}
 
 message Message {
-    string name = 1;
-    string action = 2;
-    string params = 3;
+  string action = 1;
+  string params = 2;
 }
 
 service MessageBoard {

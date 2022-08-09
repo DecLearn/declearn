@@ -95,8 +95,9 @@ class GrpcClient(Client):
         # Set up and send the join request.
         message = json.dumps(data_info, default=json_pack)
         request = JoinRequest(name=self.name, info=message)
+        # Await and parse the join reply.
         response = await self._service.join(request)
-        reply = response.message
+        reply = response.flag
         if reply not in (flags.FLAG_WELCOME, flags.FLAG_REFUSE_CONNECTION):
             raise ValueError(
                 f"Invalid server reply to registration request: '{reply}'."
@@ -110,7 +111,7 @@ class GrpcClient(Client):
         if self._service is None:
             raise RuntimeError("Cannot send messages while not connected.")
         params = json.dumps(message, default=json_pack)
-        message = Message(name=self.name, params=params)
+        message = Message(params=params)
         await self._service.send_message(message)
 
     async def check_message(
@@ -119,7 +120,7 @@ class GrpcClient(Client):
         if self._service is None:
             raise RuntimeError("Cannot receive messages while not connected.")
         # Request and await a message for this client.
-        request = CheckMessageRequest(name=self.name)
+        request = CheckMessageRequest()
         message = await self._service.check_message(request)
         # Unpack and deserialize the message, then return.
         action = message.action

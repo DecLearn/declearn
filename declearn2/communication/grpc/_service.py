@@ -89,21 +89,33 @@ class Service(MessageBoardServicer):
             context: grpc.ServicerContext,
         ) -> JoinReply:
         """Handle a join request."""
-        # NOTE: comment this to be able to run tests with several
-        #       client whereas they share this same value
         if context.peer() in self.registered_users:
             return JoinReply(message=flags.FLAG_REFUSE_CONNECTION)
-        # If clients are still welcome, register the user.
+        # If clients are still welcome, register the user and welcome it.
         if len(self.registered_users) < self.nb_clients:
-            # Deserialize the received information.
-            info = {"name": request.name}
-            info.update(json.loads(request.info, object_hook=json_unpack))
-            # Store information about the user and set up a messages stack.
-            self.registered_users[context.peer()] = info
-            # Return a positive JoinReply.
-            return JoinReply(message=flags.FLAG_WELCOME)
+            self._register_user(request, context)
+            return JoinReply(flag=flags.FLAG_WELCOME)
         # Otherwise, return a negative JoinReply.
-        return JoinReply(message=flags.FLAG_REFUSE_CONNECTION)
+        return JoinReply(flag=flags.FLAG_REFUSE_CONNECTION)
+
+    def _register_user(
+            self,
+            request: JoinRequest,
+            context: grpc.ServicerContext,
+        ) -> None:
+        """Register a user based on its JoinRequest and ServicerContext."""
+        # Deserialize the received information.
+        name = request.name  # type: str
+        info = json.loads(request.info, object_hook=json_unpack)
+        # Generate a user alias (ensuring clients' names are not duplicated).
+        alias = name
+        aliases = {info["alias"] for info in self.registered_users.values()}
+        if name in aliases:
+            idx = sum(other.rsplit('.', 1)[0] == name for other in aliases)
+            alias = f"{name}.{idx}"
+        # Record the user's information, including its alias name.
+        info = {"name": request.name, "alias": alias, "data_info": info}
+        self.registered_users[context.peer()] = info
 
     def check_message(
             self,
@@ -113,12 +125,12 @@ class Service(MessageBoardServicer):
         """Handle a Message-checking request from a client."""
         if context.peer() not in self.registered_users:
             return Error(message=flags.FLAG_REFUSE_CONNECTION)
+        name = self.registered_users[context.peer()]["alias"]
         # Stay idle until at least one message is available.
-        client_name = request.name
-        while not self.outgoing_messages.get(client_name):
+        while not self.outgoing_messages.get(name):
             time.sleep(1)
         # Unstack the oldest available message and return it.
-        message = self.outgoing_messages.pop(client_name)
+        message = self.outgoing_messages.pop(name)
         return Message(action=message['action'], params=message['params'])
 
     def send_message(
@@ -129,8 +141,9 @@ class Service(MessageBoardServicer):
         """Handle a Message-sending request from a client."""
         if context.peer() not in self.registered_users:
             return Error(message=flags.FLAG_REFUSE_CONNECTION)
+        name = self.registered_users[context.peer()]["alias"]
         # Deserialize the message's content and make it available.
         message = json.loads(request.params, object_hook=json_unpack)
-        self.incoming_messages[request.name] = message
+        self.incoming_messages[name] = message
         # Ping back the message sender.
         return Empty()
