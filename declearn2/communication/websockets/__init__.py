@@ -2,4 +2,5 @@
 
 """WebSockets implementation of communications' endpoints."""
 
+from ._client import WebsocketsClient
 from ._server import WebsocketsServer
