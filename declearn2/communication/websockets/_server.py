@@ -7,7 +7,7 @@ import json
 import logging
 import os
 import ssl
-from typing import Any, Awaitable, Callable, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import websockets as ws
 from websockets.server import WebSocketServer, WebSocketServerProtocol
@@ -19,8 +19,15 @@ from declearn2.utils import json_pack, json_unpack
 
 ADD_HEADER = False  # revise: drop this constant (choose a behaviour)
 
+WEBS_LOGGER = logging.getLogger('websockets')
+WEBS_LOGGER.setLevel(logging.INFO)
+WEBS_LOGGER.addHandler(logging.StreamHandler())
+
+
 class WebsocketsServer(Server):
     """Server-side communication endpoint using WebSockets."""
+
+    logger = WEBS_LOGGER
 
     def __init__(
             self,
@@ -38,7 +45,7 @@ class WebsocketsServer(Server):
         ----------
         nb_clients: int
             Maximum number of clients that should be accepted.
-        host : str, dafault='localhost'
+        host : str, default='localhost'
             Host name (e.g. IP address) of the server.
         port: int, default=8765
             Communications port to use.
@@ -57,23 +64,16 @@ class WebsocketsServer(Server):
             An asyncio event loop to use.
             If None, use `asyncio.get_event_loop()`.
         """
-        self.nb_clients = nb_clients
-        self.host = host
-        self.port = port
+        # inherited signature; pylint: disable=too-many-arguments
+        # Assign attributes and set up optional SSL context.
+        super().__init__(nb_clients, host, port, loop=loop)
         self.ssl_context = self._setup_ssl(certificate, private_key, password)
-        if loop is None:
-            loop = asyncio.get_event_loop()
-        self.loop = loop  # type: asyncio.AbstractEventLoop
         # Set up private attributes storing clients information.
         self._clients = {}  # type: Dict[WebSocketServerProtocol, str]
         self._data_info = {}  # type: Dict[str, Dict[str, Any]]
         # Set up private attributes to handle asynchronous awaitables.
         self._running = self.loop.create_future()
         self._running.cancel()  # ensure the server is not marked as running
-        #
-        self.logger = logging.getLogger('websockets')
-        self.logger.setLevel(logging.INFO)
-        self.logger.addHandler(logging.StreamHandler())
         self._server = None  # type: Optional[WebSocketServer]
 
     @staticmethod
@@ -99,19 +99,6 @@ class WebsocketsServer(Server):
         ssl_context.load_cert_chain(certificate, private_key, password)
         return ssl_context
 
-    def run_until_complete(
-            self,
-            task: Callable[[], Awaitable],
-        ) -> None:
-        self.start()
-        try:
-            self.loop.run_until_complete(task())
-        except asyncio.CancelledError as cerr:
-            msg = f"Asyncio error while running the server: {cerr}"
-            self.logger.info(msg)
-        finally:
-            self.stop()
-
     def start(
             self,
         ) -> None:
@@ -134,6 +121,18 @@ class WebsocketsServer(Server):
         # Run the websockets server.
         self.logger.info("Server is now starting...")
         self._server = self.loop.run_until_complete(server)
+
+    def stop(
+            self,
+        ) -> None:
+        """Stop the websockets server and purge information about clients."""
+        if not self._running.done():
+            self._running.cancel()
+        if self._server is not None:
+            self._server.close()
+            self._server = None
+        self._clients = {}
+        self._data_info = {}
 
     async def _handle_connection(
             self,
@@ -194,18 +193,6 @@ class WebsocketsServer(Server):
         await socket.send(flags.FLAG_REFUSE_CONNECTION)
         return False
 
-    def stop(
-            self,
-        ) -> None:
-        """Stop the websockets server and purge information about clients."""
-        if not self._running.done():
-            self._running.cancel()
-        if self._server is not None:
-            self._server.close()
-            self._server = None
-        self._clients = {}
-        self._data_info = {}
-
     async def wait_for_clients(
             self,
         ) -> Dict[str, Dict[str, Any]]:
@@ -230,7 +217,7 @@ class WebsocketsServer(Server):
                     "Now waiting for %s additional participants.",
                     self.nb_clients - len(self._clients)
                 )
-            number = len(self._clients)
+                number = len(self._clients)
         return self._data_info.copy()
 
     def broadcast_message(

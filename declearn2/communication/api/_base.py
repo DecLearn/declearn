@@ -8,8 +8,9 @@ that are used as communication endpoints by the `FederatedClient` and
 """
 
 import asyncio
+import logging
 from abc import ABCMeta, abstractmethod
-from typing import Any, Awaitable, Callable, Dict, Tuple
+from typing import Any, Callable, Coroutine, Dict, Optional, Tuple
 
 from typing_extensions import Literal  # future: import from typing (Py>=3.8)
 
@@ -26,18 +27,82 @@ class Server(metaclass=ABCMeta):
     agnostic to the actual communication protocol in use.
     """
 
+    logger: logging.Logger
+
     @abstractmethod
+    def __init__(
+            self,
+            nb_clients: int,  # revise: move this to "wait_for_clients"
+            host: str,
+            port: int,
+            certificate: Optional[str] = None,
+            private_key: Optional[str] = None,
+            password: Optional[str] = None,
+            loop: Optional[asyncio.AbstractEventLoop] = None,
+        ) -> None:
+        """Instantiate the server-side communications handler.
+
+        Parameters
+        ----------
+        nb_clients: int
+            Maximum number of clients that should be accepted.
+        host : str
+            Host name (e.g. IP address) of the server.
+        port: int
+            Communications port to use.
+        certificate: str or None, default=None
+            Path to the server certificate (publickey) to use SSL/TLS
+            communications encryption. If provided, `private_key` must
+            be set as well.
+        private_key: str or None, default=None
+            Path to the server private key to use SSL/TLS communications
+            encryption. If provided, `certificate` must be set as well.
+        password: str or None, default=None
+            Optional password used to access `private_key`, or path to a
+            file from which to read such a password.
+            If None but a password is needed, an input will be prompted.
+        loop: asyncio.AbstractEventLoop or None, default=None
+            An asyncio event loop to use.
+            If None, use `asyncio.get_event_loop()`.
+        """
+        # arguments serve modularity; pylint: disable=too-many-arguments
+        self.nb_clients = nb_clients
+        self.host = host
+        self.port = port
+        self.loop = asyncio.get_event_loop() if loop is None else loop
+
     def run_until_complete(
             self,
-            task: Callable[[], Awaitable],
+            task: Callable[[], Coroutine[Any, Any, None]],
         ) -> None:
         """Start a server to run a given task, and stop it afterwards.
 
         Parameters
         ----------
-        task: callable returning an awaitable
+        task: callable returning a coroutine
             The coroutine function to perform, using this server.
         """
+        self.start()
+        try:
+            self.loop.run_until_complete(task())
+        except asyncio.CancelledError as cerr:
+            msg = f"Asyncio error while running the server: {cerr}"
+            self.logger.info(msg)
+        finally:
+            self.stop()
+
+    @abstractmethod
+    def start(
+            self,
+        ) -> None:
+        """Initialize the server and start welcoming communications."""
+        return None
+
+    @abstractmethod
+    def stop(
+            self,
+        ) -> None:
+        """Stop the server and purge information about clients."""
         return None
 
     @abstractmethod
@@ -106,7 +171,7 @@ class Client(metaclass=ABCMeta):
 
     def run_until_complete(
             self,
-            task: Callable[[], Awaitable],
+            task: Callable[[], Coroutine[Any, Any, None]],
         ) -> None:
         """Start a client to run a given task, and stop it afterwards.
 

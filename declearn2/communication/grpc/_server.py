@@ -5,8 +5,9 @@
 import asyncio
 import getpass
 import json
+import logging
 import os
-from typing import Any, Awaitable, Callable, Dict, Optional
+from typing import Any, Dict, Optional
 
 import grpc  # type: ignore
 from cryptography.hazmat.primitives import serialization
@@ -14,6 +15,11 @@ from cryptography.hazmat.primitives import serialization
 from declearn2.communication.api import Server
 from declearn2.communication.grpc._service import Service
 from declearn2.utils import json_pack
+
+
+GRPC_LOGGER = logging.getLogger('grpc')
+GRPC_LOGGER.setLevel(logging.INFO)
+GRPC_LOGGER.addHandler(logging.StreamHandler())
 
 
 def load_pem_file(
@@ -46,6 +52,8 @@ def load_pem_file(
 class GrpcServer(Server):
     """Server-side communication endpoint using gRPC."""
 
+    logger = GRPC_LOGGER
+
     def __init__(
             self,
             nb_clients: int,
@@ -62,7 +70,7 @@ class GrpcServer(Server):
         ----------
         nb_clients: int
             Maximum number of clients that should be accepted.
-        host : str, dafault='localhost'
+        host : str, default='localhost'
             Host name (e.g. IP address) of the server.
         port: int, default=0
             Communications port to use.
@@ -82,13 +90,16 @@ class GrpcServer(Server):
             An asyncio event loop to use.
             If None, use `asyncio.get_event_loop()`.
         """
+        # inherited signature; pylint: disable=too-many-arguments
+        # Assign attributes and set up optional TLS/SSL credentials.
+        super().__init__(nb_clients, host, port, loop=loop)
         credentials = self._setup_ssl_credentials(
             certificate, private_key, password
         )
+        # Instantiate a gRPC message-board servicer. Override host/port info.
         self._service = Service(nb_clients, host, port, credentials)
-        if loop is None:
-            loop = asyncio.get_event_loop()
-        self.loop = loop  # type: asyncio.AbstractEventLoop
+        self.host = self._service.host
+        self.port = self._service.port
 
     @staticmethod
     def _setup_ssl_credentials(
@@ -112,26 +123,6 @@ class GrpcServer(Server):
             require_client_auth=False,
         )
 
-    @property
-    def host(self) -> str:
-        """Hostname of this server."""
-        return self._service.host
-
-    @property
-    def port(self) -> int:
-        """Communication port used by this server."""
-        return self._service.port
-
-    def run_until_complete(
-            self,
-            task: Callable[[], Awaitable],
-        ) -> None:
-        self.start()
-        try:
-            self.loop.run_until_complete(task())
-        finally:
-            self.stop()
-
     def start(
             self,
         ) -> None:
@@ -147,8 +138,16 @@ class GrpcServer(Server):
     async def wait_for_clients(
             self,
         ) -> Dict[str, Dict[str, Any]]:
+        self.logger.info("Waiting for clients to register for training...")
+        number = 0
         while len(self._service.registered_users) < self._service.nb_clients:
             await asyncio.sleep(1)  # past: self.heartbeat
+            if self._service.nb_clients != number:
+                self.logger.info(
+                    "Now waiting for %s additional participants.",
+                    self.nb_clients - self._service.nb_clients
+                )
+                number = self._service.nb_clients
         return self._service.registered_users
 
     def broadcast_message(
