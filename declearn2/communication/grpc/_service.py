@@ -17,7 +17,7 @@ import grpc  # type: ignore
 
 from declearn2.communication.api import flags
 from declearn2.communication.grpc.protobufs.message_pb2 import (
-    JoinRequest, JoinReply, CheckMessageRequest, Message, Empty, Error
+    CheckMessageRequest, Empty, Error, JoinRequest, JoinReply, Message
 )
 from declearn2.communication.grpc.protobufs.message_pb2_grpc import (
     MessageBoard, add_MessageBoardServicer_to_server

@@ -2,7 +2,8 @@
 
 """gRPC implementation of communications' endpoints."""
 
-from ._server import Server
+from . import protobufs
+from ._server import GrpcServer
 
 # Note: to generate protobufs/*.py files from the message.proto file,
 # run the following instructions (with protobufs as working directory):
