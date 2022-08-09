@@ -3,7 +3,9 @@
 """Server-side communication endpoint implementation using gRPC."""
 
 import asyncio
+import getpass
 import json
+import os
 from typing import Any, Awaitable, Callable, Dict, Optional
 
 import grpc  # type: ignore
@@ -22,8 +24,14 @@ def load_pem_file(
     # Load the raw bytes data from the PEM file.
     with open(path, mode="rb") as file:
         pem_bytes = file.read()
-    # Optionally decode the data using a provided password.
+    # If a password is required and missing, prompt for one.
+    if ("ENCRYPTED".encode() in pem_bytes[:20]) and not password:
+        password = getpass.getpass("Enter PEM pass phrase:")
+    # Optionally decode the data using the provided password.
     if password:
+        if os.path.isfile(password):
+            with open(password, mode="r", encoding="utf-8") as file:
+                password = file.read().strip("\n")
         pwd_bytes = password.encode()
         private_key = serialization.load_pem_private_key(pem_bytes, pwd_bytes)
         return private_key.private_bytes(
@@ -45,7 +53,7 @@ class GrpcServer(Server):
             port: int = 0,
             certificate: Optional[str] = None,
             private_key: Optional[str] = None,
-            password: Optional[str] = None,   # revise: prompt? use file path?
+            password: Optional[str] = None,
             loop: Optional[asyncio.AbstractEventLoop] = None,
         ) -> None:
         """Instantiate the server-side gRPC communications handler.
@@ -67,7 +75,9 @@ class GrpcServer(Server):
             Path to the server private key to use SSL/TLS communications
             encryption. If provided, `certificate` must be set as well.
         password: str or None, default=None
-            Optional password used to access `private_key`.
+            Optional password used to access `private_key`, or path to a
+            file from which to read such a password.
+            If None but a password is needed, an input will be prompted.
         loop: asyncio.AbstractEventLoop or None, default=None
             An asyncio event loop to use.
             If None, use `asyncio.get_event_loop()`.

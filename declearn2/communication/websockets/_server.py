@@ -5,6 +5,7 @@
 import asyncio
 import json
 import logging
+import os
 import ssl
 from typing import Any, Awaitable, Callable, Dict, Optional
 
@@ -47,8 +48,9 @@ class WebSocketsServer(Server):
             Path to the server private key to use SSL/TLS communications
             encryption. If provided, `certificate` must be set as well.
         password: str or None, default=None
-            Optional password used to access `private_key`. If None
-            but a password is needed, an input will be prompted.
+            Optional password used to access `private_key`, or path to a
+            file from which to read such a password.
+            If None but a password is needed, an input will be prompted.
         loop: asyncio.AbstractEventLoop or None, default=None
             An asyncio event loop to use.
             If None, use `asyncio.get_event_loop()`.
@@ -86,6 +88,11 @@ class WebSocketsServer(Server):
                 "Both 'certificate' and 'private_key' are required "
                 "to set up SSL encryption."
             )
+        # Optionally read a password from a file.
+        if password and os.path.isfile(password):
+            with open(password, mode="r", encoding="utf-8") as file:
+                password = file.read().strip("\n")
+        # Set up the SSLContext, load certificate information and return.
         ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
         ssl_context.load_cert_chain(certificate, private_key, password)
         return ssl_context
