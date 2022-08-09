@@ -13,12 +13,13 @@ from websockets.server import WebSocketServer, WebSocketServerProtocol
 from websockets.exceptions import ConnectionClosedOK, ConnectionClosedError
 
 from declearn2.communication.api import Server, flags
-from declearn2.utils import get_logger, json_pack, json_unpack
+from declearn2.utils import get_logger, json_pack, json_unpack, register_type
 
 
 ADD_HEADER = False  # revise: drop this constant (choose a behaviour)
 
 
+register_type(name="websockets", group="Server")
 class WebsocketsServer(Server):
     """Server-side communication endpoint using WebSockets."""
 

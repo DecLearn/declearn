@@ -13,9 +13,10 @@ from websockets.client import WebSocketClientProtocol
 from websockets.exceptions import ConnectionClosedOK, ConnectionClosedError
 
 from declearn2.communication.api import Client, flags
-from declearn2.utils import get_logger, json_pack, json_unpack
+from declearn2.utils import get_logger, json_pack, json_unpack, register_type
 
 
+register_type(name="websockets", group="Client")
 class WebsocketsClient(Client):
     """Client-side communication endpoint using WebSockets."""
 

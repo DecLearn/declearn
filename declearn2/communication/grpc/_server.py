@@ -13,7 +13,7 @@ from cryptography.hazmat.primitives import serialization
 
 from declearn2.communication.api import Server
 from declearn2.communication.grpc._service import Service
-from declearn2.utils import get_logger, json_pack
+from declearn2.utils import get_logger, json_pack, register_type
 
 
 def load_pem_file(
@@ -43,6 +43,7 @@ def load_pem_file(
     return pem_bytes
 
 
+register_type(name="grpc", group="Server")
 class GrpcServer(Server):
     """Server-side communication endpoint using gRPC."""
 
