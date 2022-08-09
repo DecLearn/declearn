@@ -10,6 +10,8 @@ import ssl
 from typing import Any, Awaitable, Callable, Dict, Optional
 
 import websockets as ws
+from websockets.server import WebSocketServer, WebSocketServerProtocol
+from websockets.exceptions import ConnectionClosedOK, ConnectionClosedError
 
 from declearn2.communication.api import Server, flags
 from declearn2.utils import json_pack, json_unpack
@@ -17,7 +19,7 @@ from declearn2.utils import json_pack, json_unpack
 
 ADD_HEADER = False  # revise: drop this constant (choose a behaviour)
 
-class WebSocketsServer(Server):
+class WebsocketsServer(Server):
     """Server-side communication endpoint using WebSockets."""
 
     def __init__(
@@ -62,17 +64,17 @@ class WebSocketsServer(Server):
         if loop is None:
             loop = asyncio.get_event_loop()
         self.loop = loop  # type: asyncio.AbstractEventLoop
-        #
-        self._clients = {}  # type: Dict[ws.WebSocketServerProtocol, str]
+        # Set up private attributes storing clients information.
+        self._clients = {}  # type: Dict[WebSocketServerProtocol, str]
         self._data_info = {}  # type: Dict[str, Dict[str, Any]]
-        #
+        # Set up private attributes to handle asynchronous awaitables.
         self._running = self.loop.create_future()
         self._running.cancel()  # ensure the server is not marked as running
-        self._server = None  # type: Optional[ws.WebSocketServer]
         #
         self.logger = logging.getLogger('websockets')
         self.logger.setLevel(logging.INFO)
         self.logger.addHandler(logging.StreamHandler())
+        self._server = None  # type: Optional[WebSocketServer]
 
     @staticmethod
     def _setup_ssl(
@@ -135,7 +137,7 @@ class WebSocketsServer(Server):
 
     async def _handle_connection(
             self,
-            socket: ws.WebSocketServerProtocol,  # pylint: disable=no-member
+            socket: WebSocketServerProtocol,  # pylint: disable=no-member
         ) -> None:
         """WebSockets handler to manage incoming client connections."""
         # Handle the registration process and decide to accept or reject.
@@ -146,7 +148,7 @@ class WebSocketsServer(Server):
         except (KeyError, ValueError) as err:
             self.logger.error("Error while handling new connection:\n%s", err)
         # Log about connection closing during the registration process.
-        except (ws.ConnectionClosedOK, ws.ConnectionClosedError) as err:
+        except (ConnectionClosedOK, ConnectionClosedError) as err:
             self.logger.error(
                 "Connection from client was closed before registration "
                 "or rejection could happen:\n%s", err
@@ -158,7 +160,7 @@ class WebSocketsServer(Server):
 
     async def _handle_registration_request(
             self,
-            socket: ws.WebSocketServerProtocol,  # pylint: disable=no-member
+            socket: WebSocketServerProtocol,  # pylint: disable=no-member
         ) -> bool:
         """Handle the registration request of a new incoming client socket."""
         # Expect an initial message from the new client.
@@ -211,11 +213,11 @@ class WebSocketsServer(Server):
         number = 0
         while len(self._clients) < self.nb_clients:
             await asyncio.sleep(1)  # past: self.hearbeat
-            dropped = []  # type: List[ws.WebSocketServerProtocol]
+            dropped = []  # type: List[WebSocketServerProtocol]
             for socket, name in self._clients.items():
                 try:
                     await socket.ping()
-                except (ws.ConnectionClosedOK, ws.ConnectionClosedError):
+                except (ConnectionClosedOK, ConnectionClosedError):
                     self.logger.info(
                         "Client '%s' disconnected while waiting for "
                         "participants.", name
@@ -242,7 +244,8 @@ class WebSocketsServer(Server):
             )
         dat = {"action": action, "params": params}
         msg = json.dumps(dat, default=json_pack)
-        ws.broadcast(list(self._clients), msg)  # pylint: disable=no-member
+        # pylint: disable=no-member
+        ws.broadcast(list(self._clients), msg)  # type: ignore
 
     async def wait_for_messages(
             self,
