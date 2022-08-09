@@ -169,6 +169,36 @@ class Client(metaclass=ABCMeta):
     process, agnostic to the actual communication protocol in use.
     """
 
+    @abstractmethod
+    def __init__(
+            self,
+            server_uri: str,
+            name: str,
+            certificate: Optional[str] = None,
+            loop: Optional[asyncio.AbstractEventLoop] = None,
+        ) -> None:
+        """Instantiate the client-side communications handler.
+
+        Parameters
+        ----------
+        server_uri: str
+            Public uri of the WebSockets server to which this client is
+            to connect (e.g. "wss://127.0.0.1:8765").
+        name: str
+            Name of this client, reported to the server for logging and
+            messages' addressing purposes.
+        certificate: str or None, default=None,
+            Path to a certificate (publickey) PEM file, to use SSL/TLS
+            communcations encryption.
+        loop: asyncio.AbstractEventLoop or None, default=None
+            An asyncio event loop to use.
+            If None, use `asyncio.get_event_loop()`.
+        """
+        # Assign basic attributes. Note: children must handle 'certificate'.
+        self.server_uri = server_uri
+        self.name = name
+        self.loop = asyncio.get_event_loop() if loop is None else loop
+
     def run_until_complete(
             self,
             task: Callable[[], Coroutine[Any, Any, None]],
@@ -181,9 +211,8 @@ class Client(metaclass=ABCMeta):
             The coroutine function to perform, using this client.
         """
         self.start()
-        loop = getattr(self, '_loop', asyncio.get_event_loop())  # revise
         try:
-            loop.run_until_complete(task())
+            self.loop.run_until_complete(task())
         finally:
             self.stop()
 
@@ -218,7 +247,7 @@ class Client(metaclass=ABCMeta):
         -------
         response: str
             The return code to the registration request, using a flag
-            from `declearn.communication.messages`:
+            from `declearn.communication.api.flags`:
             - FLAG_WELCOME if the client was registered as participant
             - FLAG_REFUSE_CONNECTION if the registration was denied
         """

@@ -48,11 +48,9 @@ class GrpcClient(Client):
             An asyncio event loop to use.
             If None, use `asyncio.get_event_loop()`.
         """
-        # pylint: disable=too-many-arguments
-        self.server_uri = server_uri
-        self.name = name
+        # Assign attributes and handle TLS/SSL credentials.
+        super().__init__(server_uri, name, loop=loop)
         self.credentials = self._setup_ssl_credentials(certificate)
-        self.loop = asyncio.get_event_loop() if loop is None else loop
         # Declare private attributes to store gRPC message-board servicers.
         self._channel = None  # type: Optional[grpc.Channel]
         self._service = None  # type: Optional[MessageBoardStub]
