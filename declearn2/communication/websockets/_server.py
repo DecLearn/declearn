@@ -4,7 +4,6 @@
 
 import asyncio
 import json
-import logging
 import os
 import ssl
 from typing import Any, Dict, List, Optional
@@ -14,20 +13,16 @@ from websockets.server import WebSocketServer, WebSocketServerProtocol
 from websockets.exceptions import ConnectionClosedOK, ConnectionClosedError
 
 from declearn2.communication.api import Server, flags
-from declearn2.utils import json_pack, json_unpack
+from declearn2.utils import get_logger, json_pack, json_unpack
 
 
 ADD_HEADER = False  # revise: drop this constant (choose a behaviour)
-
-WEBS_LOGGER = logging.getLogger('websockets')
-WEBS_LOGGER.setLevel(logging.INFO)
-WEBS_LOGGER.addHandler(logging.StreamHandler())
 
 
 class WebsocketsServer(Server):
     """Server-side communication endpoint using WebSockets."""
 
-    logger = WEBS_LOGGER
+    logger = get_logger("websockets-server")
 
     def __init__(
             self,

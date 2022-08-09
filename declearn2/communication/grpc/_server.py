@@ -5,7 +5,6 @@
 import asyncio
 import getpass
 import json
-import logging
 import os
 from typing import Any, Dict, Optional
 
@@ -14,12 +13,7 @@ from cryptography.hazmat.primitives import serialization
 
 from declearn2.communication.api import Server
 from declearn2.communication.grpc._service import Service
-from declearn2.utils import json_pack
-
-
-GRPC_LOGGER = logging.getLogger('grpc')
-GRPC_LOGGER.setLevel(logging.INFO)
-GRPC_LOGGER.addHandler(logging.StreamHandler())
+from declearn2.utils import get_logger, json_pack
 
 
 def load_pem_file(
@@ -52,7 +46,7 @@ def load_pem_file(
 class GrpcServer(Server):
     """Server-side communication endpoint using gRPC."""
 
-    logger = GRPC_LOGGER
+    logger = get_logger("grpc-server")
 
     def __init__(
             self,
