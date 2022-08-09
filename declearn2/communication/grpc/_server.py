@@ -133,15 +133,15 @@ class GrpcServer(Server):
             self,
         ) -> Dict[str, Dict[str, Any]]:
         self.logger.info("Waiting for clients to register for training...")
-        number = 0
-        while len(self._service.registered_users) < self._service.nb_clients:
+        number = -1
+        while len(self._service.registered_users) < self.nb_clients:
             await asyncio.sleep(1)  # past: self.heartbeat
-            if self._service.nb_clients != number:
+            if len(self._service.registered_users) != number:
                 self.logger.info(
                     "Now waiting for %s additional participants.",
-                    self.nb_clients - self._service.nb_clients
+                    self.nb_clients - len(self._service.registered_users)
                 )
-                number = self._service.nb_clients
+                number = len(self._service.registered_users)
         return self._service.registered_users
 
     def broadcast_message(
