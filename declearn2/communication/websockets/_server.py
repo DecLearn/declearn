@@ -236,6 +236,24 @@ class WebsocketsServer(Server):
         # pylint: disable=no-member
         ws.broadcast(list(self._clients), msg)  # type: ignore
 
+    async def send_message(
+            self,
+            client: str,
+            action: str,
+            params: Dict[str, Any]
+        ) -> None:
+        if self._running.done():
+            raise RuntimeError(
+                "Cannot send messages while the server is not running."
+            )
+        for socket, name in self._clients.items():
+            if name == client:
+                dat = {"action": action, "params": params}
+                msg = json.dumps(dat, default=json_pack)
+                await socket.send(msg)
+                return None
+        raise KeyError(f"Unkown destinatory client '{client}'.")
+
     async def wait_for_messages(
             self,
         ) -> Dict[str, Dict[str, Any]]:

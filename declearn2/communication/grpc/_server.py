@@ -167,6 +167,24 @@ class GrpcServer(Server):
                 )
             self._service.outgoing_messages[name] = message
 
+    async def send_message(
+            self,
+            client: str,
+            action: str,
+            params: Dict[str, Any]
+        ) -> None:
+        dump = json.dumps(params, default=json_pack)
+        message = {"action": action, "params": dump}
+        clients = {d["alias"] for d in self._service.registered_users.values()}
+        if client not in clients:
+            raise KeyError(f"Unkown destinatory client '{client}'.")
+        if client in self._service.outgoing_messages:
+            self.logger.warning(
+                "Overwriting pending message uncollected by client '%s'.",
+                client
+            )
+        self._service.outgoing_messages[client] = message
+
     async def wait_for_messages(
             self,
         ) -> Dict[str, Dict[str, Any]]:

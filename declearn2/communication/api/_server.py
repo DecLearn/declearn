@@ -124,10 +124,35 @@ class Server(metaclass=ABCMeta):
             action: str,
             params: Dict[str, Any],
         ) -> None:
-        """Send a message to all the clients
+        """Send a message to all the clients.
 
         Parameters
         ----------
+        action: str
+            Instruction for the client.
+        params: dict
+            Associated parameters, as a JSON-serializable dict.
+
+        Note
+        ----
+        The message sent here (action and params) is designed to
+        be received using the `Client.wait_for_message` method.
+        """
+        return None
+
+    @abstractmethod
+    async def send_message(
+            self,
+            client: str,
+            action: str,
+            params: Dict[str, Any]
+        ) -> None:
+        """Send a message to a given client.
+
+        Parameters
+        ----------
+        client: str
+            Identifier of the client to whom the message is addressed.
         action: str
             Instruction for the client.
         params: dict
