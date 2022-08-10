@@ -145,6 +145,8 @@ class GrpcClient(Client):
         success: bool
             Whether a ping response was received before timeout.
         """
+        if self._service is None:
+            raise RuntimeError("Cannot ping while not connected.")
         try:
             await asyncio.wait_for(self._service.ping(Empty()), timeout)
             return True
