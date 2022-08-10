@@ -5,7 +5,7 @@
 import asyncio
 import logging
 from abc import ABCMeta, abstractmethod
-from typing import Any, Callable, Coroutine, Dict, Optional
+from typing import Any, Callable, Coroutine, Dict, Optional, Set
 
 __all__ = [
     'Server',
@@ -68,6 +68,12 @@ class Server(metaclass=ABCMeta):
     @abstractmethod
     def uri(self) -> str:
         """URI on which this server is exposed, to be requested by clients."""
+        return NotImplemented
+
+    @property
+    @abstractmethod
+    def client_names(self) -> Set[str]:
+        """Set of registered clients' names."""
         return NotImplemented
 
     def run_until_complete(

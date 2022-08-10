@@ -6,7 +6,7 @@ import asyncio
 import getpass
 import json
 import os
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Set
 
 import grpc  # type: ignore
 from cryptography.hazmat.primitives import serialization
@@ -100,6 +100,10 @@ class GrpcServer(Server):
     def uri(self) -> str:
         return f"{self.host}:{self.port}"
 
+    @property
+    def client_names(self) -> Set[str]:
+        return self._service.client_names
+
     @staticmethod
     def _setup_ssl_credentials(
             certificate: Optional[str] = None,
@@ -161,9 +165,8 @@ class GrpcServer(Server):
         dump = json.dumps(params, default=json_pack)
         message = {"action": action, "params": dump}
         # Set the message up for transmission.
-        for client, c_info in self._service.registered_users.items():
-            name = c_info["alias"]
-            if client in self._service.outgoing_messages:
+        for name in self.client_names:
+            if name in self._service.outgoing_messages:
                 self.logger.warning(
                     "Overwriting pending message uncollected by client '%s'.",
                     name
@@ -178,8 +181,7 @@ class GrpcServer(Server):
         ) -> None:
         dump = json.dumps(params, default=json_pack)
         message = {"action": action, "params": dump}
-        clients = {d["alias"] for d in self._service.registered_users.values()}
-        if client not in clients:
+        if client not in self.client_names:
             raise KeyError(f"Unkown destinatory client '{client}'.")
         if client in self._service.outgoing_messages:
             self.logger.warning(

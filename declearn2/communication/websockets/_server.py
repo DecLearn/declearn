@@ -6,7 +6,7 @@ import asyncio
 import json
 import os
 import ssl
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set
 
 import websockets as ws
 from websockets.server import WebSocketServer, WebSocketServerProtocol
@@ -76,6 +76,10 @@ class WebsocketsServer(Server):
     def uri(self) -> str:
         protocol = "ws" if self.ssl_context is None else "wss"
         return f"{protocol}://{self.host}:{self.port}"
+
+    @property
+    def client_names(self) -> Set[str]:
+        return set(self._clients.values())
 
     @staticmethod
     def _setup_ssl(
@@ -197,9 +201,9 @@ class WebsocketsServer(Server):
             socket: WebSocketServerProtocol,
         ) -> None:
         # Optionally alias the client's name to avoid duplication issues.
-        aliases = set(self._clients.values())
-        if name in aliases:
-            idx = sum(other.rsplit('.', 1)[0] == name for other in aliases)
+        clients = self.client_names
+        if name in clients:
+            idx = sum(other.rsplit('.', 1)[0] == name for other in clients)
             alias = f"{name}.{idx}"
             log = "Registering client '%s' for training, under '%s' alias."
             self.logger.info(log, name, alias)

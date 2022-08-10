@@ -11,7 +11,7 @@ compiler).
 import json
 import time
 from concurrent import futures
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Set
 
 import grpc  # type: ignore
 
@@ -45,6 +45,11 @@ class Service(MessageBoardServicer):
         self.registered_users = {}  # type: Dict[str, Dict[str, Any]]
         self.outgoing_messages = {}  # type: Dict[str, Dict[str, Any]]
         self.incoming_messages = {}  # type: Dict[str, Dict[str, Any]]
+
+    @property
+    def client_names(self) -> Set[str]:
+        """Set of registered clients' names."""
+        return {info["alias"] for info in self.registered_users.values()}
 
     def _setup_server(
             self,
@@ -109,9 +114,9 @@ class Service(MessageBoardServicer):
         info = json.loads(request.info, object_hook=json_unpack)
         # Generate a user alias (ensuring clients' names are not duplicated).
         alias = name
-        aliases = {info["alias"] for info in self.registered_users.values()}
-        if name in aliases:
-            idx = sum(other.rsplit('.', 1)[0] == name for other in aliases)
+        clients = self.client_names
+        if name in clients:
+            idx = sum(other.rsplit('.', 1)[0] == name for other in clients)
             alias = f"{name}.{idx}"
         # Record the user's information, including its alias name.
         info = {"name": request.name, "alias": alias, "data_info": info}
