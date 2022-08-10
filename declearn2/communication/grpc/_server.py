@@ -121,7 +121,7 @@ class GrpcServer(Server):
         cert = load_pem_file(certificate)
         pkey = load_pem_file(private_key, password)
         return grpc.ssl_server_credentials(
-            private_key_certificate_chain_pairs=(pkey, cert),
+            private_key_certificate_chain_pairs=[(pkey, cert)],
             root_certificates=None,
             require_client_auth=False,
         )
