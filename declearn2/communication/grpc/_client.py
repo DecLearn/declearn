@@ -11,7 +11,7 @@ from typing_extensions import Literal  # future: import from typing (Py>=3.8)
 
 from declearn2.communication.api import Client, flags
 from declearn2.communication.grpc.protobufs.message_pb2 import (
-    CheckMessageRequest, JoinRequest, Message,
+    CheckMessageRequest, Empty, JoinRequest, Message,
 )
 from declearn2.communication.grpc.protobufs.message_pb2_grpc import (
     MessageBoardStub
@@ -127,3 +127,26 @@ class GrpcClient(Client):
         action = message.action
         params = json.loads(message.params, object_hook=json_unpack)
         return action, params
+
+    async def ping(
+            self,
+            timeout: int = 1,
+        ) -> bool:
+        """Ping the server and return whether it was successful.
+
+        Parameters
+        ----------
+        timeout: int, default=1
+            Delay, in seconds, above which an absence of response
+            should be considered a failure.
+
+        Returns
+        -------
+        success: bool
+            Whether a ping response was received before timeout.
+        """
+        try:
+            await asyncio.wait_for(self._service.ping(Empty()), timeout)
+            return True
+        except asyncio.exceptions.TimeoutError:
+            return False
