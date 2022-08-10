@@ -147,7 +147,10 @@ class GrpcServer(Server):
                     self.nb_clients - len(self._service.registered_users)
                 )
                 number = len(self._service.registered_users)
-        return self._service.registered_users
+        return {
+            client["alias"]: client["data_info"]
+            for client in self._service.registered_users.values()
+        }
 
     def broadcast_message(
             self,
