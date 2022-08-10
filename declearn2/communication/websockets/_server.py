@@ -183,17 +183,33 @@ class WebsocketsServer(Server):
             raise ValueError(f"Unproper first-message flag '{msg['type']}'.")
         # If there is room for more participants, register the client.
         if len(self._clients) < self.nb_clients:
-            self.logger.info(
-                "Registering client '%s' for training.", msg['name']
-            )
-            await socket.send(flags.FLAG_WELCOME)
-            self._clients[socket] = msg['name']
-            self._data_info[msg['name']] = msg['data_info']
+            await self._register_user(msg["name"], msg["data_info"], socket)
             return True
         # Otherwise, deny to register it.
         self.logger.info("Rejecting request from client '%s'.", msg['name'])
         await socket.send(flags.FLAG_REFUSE_CONNECTION)
         return False
+
+    async def _register_user(
+            self,
+            name: str,
+            data_info: Dict[str, Any],
+            socket: WebSocketServerProtocol,
+        ) -> None:
+        # Optionally alias the client's name to avoid duplication issues.
+        aliases = set(self._clients.values())
+        if name in aliases:
+            idx = sum(other.rsplit('.', 1)[0] == name for other in aliases)
+            alias = f"{name}.{idx}"
+            log = "Registering client '%s' for training, under '%s' alias."
+            self.logger.info(log, name, alias)
+            name = alias
+        else:
+            self.logger.info("Registering client '%s' for training.", name)
+        # Send a positive response to the client, then record its information.
+        await socket.send(flags.FLAG_WELCOME)
+        self._clients[socket] = name
+        self._data_info[name] = data_info
 
     async def wait_for_clients(
             self,
