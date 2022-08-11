@@ -142,7 +142,7 @@ class WebsocketsServer(Server):
 
     async def _handle_connection(
             self,
-            socket: WebSocketServerProtocol,  # pylint: disable=no-member
+            socket: WebSocketServerProtocol,
         ) -> None:
         """WebSockets handler to manage incoming client connections."""
         # Handle the registration process and decide to accept or reject.
@@ -165,7 +165,7 @@ class WebsocketsServer(Server):
 
     async def _handle_registration_request(
             self,
-            socket: WebSocketServerProtocol,  # pylint: disable=no-member
+            socket: WebSocketServerProtocol,
         ) -> bool:
         """Handle the registration request of a new incoming client socket."""
         # Expect an initial message from the new client.
