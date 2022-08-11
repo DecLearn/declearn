@@ -19,7 +19,7 @@ from declearn2.communication.grpc.protobufs.message_pb2_grpc import (
 from declearn2.utils import get_logger, json_pack, json_unpack, register_type
 
 
-register_type(name="grpc", group="Client")
+@register_type(name="grpc", group="Client")
 class GrpcClient(Client):
     """Client-side communication endpoint using gRPC."""
 

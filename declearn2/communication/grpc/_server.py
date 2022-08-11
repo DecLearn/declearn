@@ -43,7 +43,7 @@ def load_pem_file(
     return pem_bytes
 
 
-register_type(name="grpc", group="Server")
+@register_type(name="grpc", group="Server")
 class GrpcServer(Server):
     """Server-side communication endpoint using gRPC."""
 
