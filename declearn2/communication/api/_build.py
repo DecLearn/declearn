@@ -37,7 +37,7 @@ def build_client(
     ----------
     protocol: str
         Name of the communications protocol backend, based on which
-        the Client subclass to instantiate will be retrived.
+        the Client subclass to instantiate will be retrieved.
     server_uri: str
         Public uri of the server to which this client is to connect.
     name: str
@@ -80,7 +80,7 @@ def build_server(
     ----------
     protocol: str
         Name of the communications protocol backend, based on which
-        the Server subclass to instantiate will be retrived.
+        the Server subclass to instantiate will be retrieved.
     nb_clients: int
         Maximum number of clients that should be accepted.
     host : str
