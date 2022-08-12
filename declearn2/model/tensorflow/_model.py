@@ -11,8 +11,10 @@ from declearn2.data_info import aggregate_data_info
 from declearn2.model.api import Model, NumpyVector
 from declearn2.model.tensorflow._vector import TensorflowVector
 from declearn2.typing import Batch
+from declearn2.utils import register_type
 
 
+@register_type(name="TensorflowModel", group="Model")
 class TensorflowModel(Model):
     """Model wrapper for TensorFlow Model instances.
 

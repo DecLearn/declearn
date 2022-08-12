@@ -13,6 +13,7 @@ from typing_extensions import Literal  # future: import from typing (Py>=3.8)
 from declearn2.data_info import aggregate_data_info
 from declearn2.model.api import Model, NumpyVector
 from declearn2.typing import Batch
+from declearn2.utils import register_type
 
 
 LossesLiteral = Literal[
@@ -26,6 +27,7 @@ REG_LOSSES = (
 )
 
 
+@register_type(name="SklearnSGDModel", group="Model")
 class SklearnSGDModel(Model):
     """Model wrapper for Scikit-Learn SGDClassifier and SGDRegressor.
 

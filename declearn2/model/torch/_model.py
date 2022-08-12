@@ -9,8 +9,10 @@ import torch
 from declearn2.model.api import Model, NumpyVector
 from declearn2.model.torch._vector import TorchVector
 from declearn2.typing import Batch
+from declearn2.utils import register_type
 
 
+@register_type(name="TorchModel", group="Model")
 class TorchModel(Model):
     """Model wrapper for PyTorch Model instances.
 

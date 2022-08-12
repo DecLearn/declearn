@@ -8,6 +8,7 @@ from typing import Any, Dict, Set
 from declearn2.model.api._vector import Vector
 from declearn2.model.api._np_vec import NumpyVector
 from declearn2.typing import Batch
+from declearn2.utils import create_types_registry
 
 
 __all__ = [
@@ -116,3 +117,6 @@ class Model(metaclass=ABCMeta):
         ) -> None:
         """Apply updates to the model's weights."""
         return None
+
+
+create_types_registry("Model", Model)
