@@ -3,7 +3,7 @@
 """Model abstraction API."""
 
 from abc import ABCMeta, abstractmethod
-from typing import Any, Dict
+from typing import Any, Dict, Set
 
 from declearn2.model.api._vector import Vector
 from declearn2.model.api._np_vec import NumpyVector
@@ -32,6 +32,43 @@ class Model(metaclass=ABCMeta):
         ) -> None:
         """Instantiate a Model interface wrapping a 'model' object."""
         self._model = model
+
+    @property
+    @abstractmethod
+    def required_data_info(
+            self,
+        ) -> Set[str]:
+        """List of 'data_info' fields required to initialize this model.
+
+        Note: these fields should match a registered specification
+              (see `declearn.data_info` submodule)
+        """
+        return NotImplemented
+
+    @abstractmethod
+    def initialize(
+            self,
+            data_info: Dict[str, Any],
+        ) -> None:
+        """Initialize the model based on data specifications.
+
+        Parameters
+        ----------
+        data_info: dict[str, any]
+            Data specifications, presenting values for all fields
+            listed under `self.required_data_info`
+
+        Raises
+        ------
+        KeyError:
+            If some fields in `required_data_info` are missing.
+
+        Notes
+        -----
+        See the `aggregate_data_info` method to derive `data_info`
+        from client-wise dict.
+        """
+        return None
 
     @abstractmethod
     def get_config(

@@ -2,7 +2,7 @@
 
 """Model subclass to wrap PyTorch models."""
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import torch
 
@@ -34,6 +34,18 @@ class TorchModel(Model):
         # Compile the wrapped model and retain compilation arguments.
         self._loss_fn = loss
         self._loss_fn.reduction = 'none'  # type: ignore
+
+    @property
+    def required_data_info(
+            self,
+        ) -> Set[str]:
+        return set()
+
+    def initialize(
+            self,
+            data_info: Dict[str, Any],
+        ) -> None:
+        return None
 
     def get_config(
             self,

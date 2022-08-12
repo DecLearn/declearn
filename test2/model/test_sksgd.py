@@ -3,7 +3,7 @@
 """Unit tests for SklearnSGDModel."""
 
 import sys
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 import pytest
@@ -85,8 +85,12 @@ class SklearnSGDTestCase(ModelTestCase):
         ) -> SklearnSGDModel:
         """Suited toy binary-classification model."""
         skmod = (SGDClassifier if self.n_classes else SGDRegressor)()
-        return SklearnSGDModel(skmod, n_features=8, n_classes=self.n_classes)
-
+        model = SklearnSGDModel(skmod)
+        data_info = {"n_features": 8}  # type: Dict[str, Any]
+        if self.n_classes:
+            data_info["classes"] = np.arange(self.n_classes)
+        model.initialize(data_info)
+        return model
 
 @pytest.fixture(name="test_case")
 def fixture_test_case(

@@ -111,7 +111,7 @@ class TensorflowTestCase(ModelTestCase):
             ]
             shape = [None, 64, 64, 3]
         tfmod = tf.keras.Sequential(stack)
-        tfmod.build(shape)
+        tfmod.build(shape)  # as model is built, no data_info is required
         return TensorflowModel(tfmod, loss="binary_crossentropy", metrics=None)
 
 

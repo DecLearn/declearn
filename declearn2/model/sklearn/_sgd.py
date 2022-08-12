@@ -3,13 +3,14 @@
 """Model subclass to wrap scikit-learn SGD classifier and regressor models."""
 
 import typing
-from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
+from typing import Any, Dict, Iterable, Optional, Set, Tuple, Union
 
 import numpy as np
 from numpy.typing import ArrayLike
 from sklearn.linear_model import SGDClassifier, SGDRegressor  # type: ignore
 from typing_extensions import Literal  # future: import from typing (Py>=3.8)
 
+from declearn2.data_info import aggregate_data_info
 from declearn2.model.api import Model, NumpyVector
 from declearn2.typing import Batch
 
@@ -36,9 +37,6 @@ class SklearnSGDModel(Model):
     def __init__(
             self,
             model: Union[SGDClassifier, SGDRegressor],
-            n_features: int,
-            n_classes: Optional[int] = None,
-            classes: Optional[Union[np.ndarray, List[int]]] = None,
         ) -> None:
         """Instantiate a Model interfacing a sklearn SGD-based model.
 
@@ -51,15 +49,7 @@ class SklearnSGDModel(Model):
         model: SGDClassifier or SGDRegressor
             Scikit-learn model that needs wrapping for federated training.
             Note that some hyperparameters will be overridden, as will the
-            model's existing weights.
-        n_features: int
-            Number of input features in the learning task.
-        n_classes: int or None, default=None
-            If `model` is a `SGDClassifier`, number of target classes.
-            May be inferred from `classes` if provided.
-        classes: np.ndarray or list[int] or None, default=None
-            If `model` is a `SGDClassifier`, values of target classes.
-            If None, will be set to `np.arange(n_classes)`.
+            model's existing weights (if any).
         """
         if not isinstance(model, (SGDClassifier, SGDRegressor)):
             raise TypeError(
@@ -72,55 +62,42 @@ class SklearnSGDModel(Model):
             warm_start=False,
             average=False,
         )
-        self._initialize_coefs(model, n_features, n_classes, classes)
         super().__init__(model)
+        self._initialized = False
 
-    @staticmethod
-    def _initialize_coefs(
-            model: Union[SGDClassifier, SGDRegressor],
-            n_features: int,
-            n_classes: Optional[int] = None,
-            classes: Optional[Union[np.ndarray, List[int]]] = None,
+    @property
+    def required_data_info(
+            self,
+        ) -> Set[str]:
+        if isinstance(self._model, SGDRegressor):
+            return {"n_features"}
+        return {"n_features", "classes"}
+
+    def initialize(
+            self,
+            data_info: Dict[str, Any],
         ) -> None:
-        """Initialize a sklearn SGD model's weights.
-
-        Create (or overwrite) `coef_` and `intercept_` attributes
-        and set them to zero-valued arrays (as is done by sklearn
-        the first time (partial_)fit is called).
-        If the model is a classifier, also set `classes_`.
-        """
-        if isinstance(model, SGDClassifier):
-            if n_classes is None:
-                if classes is None:
-                    raise ValueError(
-                        "At least one of 'n_classes' or 'classes' must be "
-                        "specified to initialize a SGDClassifier model."
-                    )
-                n_classes = len(classes)
-            elif classes is None:
-                classes = np.arange(n_classes)
-            elif len(classes) != n_classes:
-                raise ValueError(
-                    f"'n_classes' is {n_classes} but "
-                    f"'classes' has length {len(classes)}."
-                )
-            # Assign attributes.
-            model.classes_ = np.array(classes)
-            model.coef_ = np.zeros(
-                (n_classes if (n_classes > 2) else 1, n_features)
+        # Check that required fields are available and of valid type.
+        data_info = aggregate_data_info([data_info], self.required_data_info)
+        # SGDClassifier case.
+        if isinstance(self._model, SGDClassifier):
+            self._model.classes_ = np.array(list(data_info["classes"]))
+            n_classes = len(self._model.classes_)
+            self._model.coef_ = np.zeros(
+                (n_classes if (n_classes > 2) else 1, data_info["n_features"])
             )
-            model.intercept_ = np.zeros((n_classes,))
+            self._model.intercept_ = np.zeros((n_classes,))
+        # SGDRegressor case.
         else:
-            # Assign attributes in the SGDRegressor case.
-            model.coef_ = np.zeros((n_features,))
-            model.intercept_ = np.zeros((1,))
+            self._model.coef_ = np.zeros((data_info["n_features"],))
+            self._model.intercept_ = np.zeros((1,))
+        # Mark the SklearnSGDModel as initialized.
+        self._initialized = True
 
     @classmethod
     def from_parameters(
             cls,
-            n_features: int,
-            n_classes: Optional[int] = None,
-            classes: Optional[Union[np.ndarray, List[int]]] = None,
+            kind: Literal['classifier', 'regressor'],
             loss: Optional[LossesLiteral] = None,
             penalty: Literal['l1', 'l2', 'elasticnet'] = 'l2',
             alpha: float = 1e-4,
@@ -137,25 +114,53 @@ class SklearnSGDModel(Model):
 
         Parameters
         ----------
-        * The first three arguments are from `SklearnSGDModel.__init__`
-          and specify the task at hand (regression or classification)
-          as well as the model's dimensionality.
-        * All other arguments come from the scikit-learn `SGDRegressor`
-          and `SGDClassifier` classes (from `sklearn.linear_model`),
-          and specify the loss function (hence type of model) as well
-          as some of its parameters.
-        * Note that unexposed parameters from the scikit-learn classes
-          are simply of no use when wrapped by `SklearnSGDModel`.
+        kind: "classifier" or "regressor"
+            Literal string specifying the task-based kind of model to use.
+        loss: str or None, default=None
+            The loss function to be used.
+            See `sklearn.linear_model.SGDRegressor` and `SGDClassifier`
+            documentation for details on possible values. If None, set
+            to "hinge" for classifier or "squared_error" for regressor.
+        penalty: {"l1", "l2", "elasticnet"}, default="l2"
+            The penalty (i.e. regularization term) to be used.
+        alpha: float, default=0.0001
+            Regularization constant (the higher the stronger).
+            Alpha must be in [0, inf[ and is constant through training.
+        l1_ratio: float, default=0.15
+            Mixing parameter for elasticnet regularization.
+            Only used if `penalty="elasticnet"`. Must be in [0, 1].
+        epsilon: float, default=0.1
+            Epsilon in the epsilon-insensitive loss functions. For these,
+            defines an un-penalized margin of error. Must be in [0, inf[.
+        fit_intercept: bool, default=True
+            Whether an intercept should be estimated or not.
+        n_jobs: int or None, default=None
+            Number of CPUs to use when to compute one-versus-all.
+            Only used for multi-class classifiers.
+            `None` means 1, while -1 means all available CPUs.
+
+        Notes
+        -----
+        Save for `kind`, all parameters are strictly equivalent to those
+        of `sklearn.linear_modelSGDClassifier` and `SGDRegressor`. Refer
+        to the latter' documentation for additional details.
+        Note that unexposed parameters from those classes are simply not
+        used and/or overwritten when wrapped by `SklearnSGDModel`.
+
+        Returns
+        -------
+        model: SklearnSGDModel
+            A declearn Model wrapping an instantiated scikit-learn one.
         """
         # partially-inherited signature; pylint: disable=too-many-arguments
         # SGDClassifier case.
-        if n_classes or (classes is not None):
+        if kind == "classifier":
             loss = loss or 'hinge'
             if loss not in typing.get_args(LossesLiteral):
                 raise ValueError(f"Invalid loss '{loss}' for SGDClassifier.")
             sk_cls = SGDClassifier
         # SGDRegressor case.
-        else:
+        elif kind == "regressor":
             loss = loss or 'squared_error'
             if loss not in REG_LOSSES:
                 raise ValueError(f"Invalid loss '{loss}' for SGDRegressor.")
@@ -165,41 +170,44 @@ class SklearnSGDModel(Model):
             loss=loss, penalty=penalty, alpha=alpha, l1_ratio=l1_ratio,
             epsilon=epsilon, fit_intercept=fit_intercept, n_jobs=n_jobs,
         )
-        return cls(model, n_features, n_classes, classes)
+        return cls(model)
 
     def get_config(
             self,
         ) -> Dict[str, Any]:
-        """Return the model's parameters as a JSON-serializable dict."""
         is_clf = isinstance(self._model, SGDClassifier)
-        data_specs = {
-            "n_features": self._model.coef_.shape[-1],
-            "n_classes": len(self._model.classes_) if is_clf else None,
-            "classes": self._model.classes_.tolist() if is_clf else None,
-        }
+        data_info = None  # type: Optional[Dict[str, Any]]
+        if self._initialized:
+            data_info = {
+                "n_features": self._model.coef_.shape[-1],
+                "classes": self._model.classes_.tolist() if is_clf else None,
+            }
         return {
-            "is_clf": is_clf,
+            "kind": "classifier" if is_clf else "regressor",
             "params": self._model.get_params(),
-            "kwargs": data_specs,
+            "data_info": data_info,
         }
 
     @classmethod
     def from_config(
             cls,
             config: Dict[str, Any],
-        ) -> 'Model':
-        """Instantiate a model from a configuration dict."""
-        for key in ("is_clf", "params", "kwargs"):
+        ) -> 'SklearnSGDModel':
+        """Instantiate a SklearnSGDModel from a configuration dict."""
+        for key in ("kind", "params"):
             if key not in config:
                 raise KeyError(f"Missing key '{key}' in the config dict.")
-        m_cls = SGDClassifier if config["is_clf"] else SGDRegressor
-        model = m_cls(**config["params"])
-        return cls(model, **config["kwargs"])
+        if config["kind"] == "classifier":
+            model = cls(SGDClassifier(**config["params"]))
+        else:
+            model = cls(SGDRegressor(**config["params"]))
+        if config.get("data_info"):
+            model.initialize(config["data_info"])
+        return model
 
     def get_weights(
             self,
         ) -> NumpyVector:
-        """Return the model's trainable weights."""
         return NumpyVector({
             "intercept": self._model.intercept_.copy(),
             "coef": self._model.coef_.copy(),
@@ -209,7 +217,6 @@ class SklearnSGDModel(Model):
             self,
             weights: NumpyVector,
         ) -> None:
-        """Assign values to the model's trainable weights."""
         for key in ("coef", "intercept"):
             if key not in weights.coefs:
                 raise TypeError(
@@ -222,7 +229,6 @@ class SklearnSGDModel(Model):
             self,
             batch: Batch,
         ) -> NumpyVector:
-        """Compute and return the model's gradients over a data batch."""
         # Unpack, validate and repack input data.
         x_data, y_data, s_wght = self._verify_batch(batch)
         data = (x_data, y_data) if s_wght is None else (x_data, y_data, s_wght)
@@ -274,7 +280,6 @@ class SklearnSGDModel(Model):
             self,
             updates: NumpyVector,
         ) -> None:
-        """Apply updates to the model's weights."""
         self._model.coef_ += updates.coefs["coef"]
         self._model.intercept_ += updates.coefs["intercept"]
 

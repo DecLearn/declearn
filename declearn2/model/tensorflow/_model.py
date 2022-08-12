@@ -2,11 +2,12 @@
 
 """Model subclass to wrap TensorFlow models."""
 
-from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
+from typing import Any, Dict, Iterable, List, Optional, Set, Tuple, Union
 
 import tensorflow as tf  # type: ignore
 from numpy.typing import ArrayLike
 
+from declearn2.data_info import aggregate_data_info
 from declearn2.model.api import Model, NumpyVector
 from declearn2.model.tensorflow._vector import TensorflowVector
 from declearn2.typing import Batch
@@ -41,6 +42,20 @@ class TensorflowModel(Model):
         self._compile_kwargs = kwargs
         # Instantiate a SGD optimizer to apply updates as-provided.
         self._sgd = tf.keras.optimizers.SGD(learning_rate=1.)
+
+    @property
+    def required_data_info(
+            self,
+        ) -> Set[str]:
+        return set() if self._model.built else {"input_shape"}
+
+    def initialize(
+            self,
+            data_info: Dict[str, Any],
+        ) -> None:
+        if not self._model.built:
+            data_info = aggregate_data_info([data_info], {"input_shape"})
+            self._model.build(data_info["input_shape"])
 
     def get_config(
             self,
@@ -99,7 +114,7 @@ class TensorflowModel(Model):
                 return data
             return tf.convert_to_tensor(data)
         # Apply it to the the batched elements.
-        return tf.nest.map_structure(convert, batch)
+        return tf.nest.map_structure(convert, batch)  # type: ignore
 
     def apply_updates(  # type: ignore  # future: revise
             self,
