@@ -165,9 +165,9 @@ def aggregate_data_info(
 
     Notes
     -----
-    See `declearn.model.api.register_data_info_field` for details on
+    See `declearn.data_info.register_data_info_field` for details on
     how to register a `DataInfoField` subclass. See the latter (also
-    part of `declearn.model.api`) for the field specification API.
+    part of `declearn.data_info`) for the field specification API.
     """
     # Select shared fields across clients, or required ones.
     fields = set.intersection(*[set(info) for info in clients_data_info])
