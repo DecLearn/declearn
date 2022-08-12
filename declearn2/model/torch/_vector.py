@@ -34,6 +34,16 @@ class TorchVector(Vector):
         ) -> None:
         super().__init__(coefs)
 
+    def __repr__(
+            self,
+        ) -> str:
+        string = f"{type(self).__name__} with {len(self.coefs)} coefs:"
+        string += "".join(
+            f"\n    {key}: {val.dtype} tensor with shape {val.shape}"
+            for key, val in self.coefs.items()
+        )
+        return string
+
     def pack(
             self,
         ) -> Dict[str, Any]:
