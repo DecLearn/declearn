@@ -44,11 +44,11 @@ class ScaffoldClientModule(OptiModule):
             _past = 0
             _step = 0
         Step(grads):
-            grads = grads - state
             _past += grads
             _step += 1
+            grads = grads - state
         Send:
-            state = (_past / _step) + delta
+            state = (_past / _step)
         Receive(delta):
             delta = delta
             reset(_past, _step) to 0
@@ -97,12 +97,11 @@ class ScaffoldClientModule(OptiModule):
             gradients: Vector,
         ) -> Vector:
         """Apply Scaffold correction to input local gradients."""
-        # Apply state-based correction.
-        gradients = gradients - self.delta
-        # Accumulate the processed gradients, then return.
-        self._grads = gradients + self._grads
+        # Accumulate the uncorrected gradients.
+        self._grads = self._grads + gradients
         self._steps += 1
-        return gradients
+        # Apply state-based correction to outputs.
+        return gradients - self.delta
 
     def collect_aux_var(
             self,
@@ -135,13 +134,16 @@ class ScaffoldClientModule(OptiModule):
         local model's weights before and after running K training
         steps, we rewrite it as eta_l * Sum_k(grad(y_i^k) - D_i),
         where we define D_i = (c_i - c). Thus we rewrite c_i^+ as:
-            c_i^+ = D_i + Avg_k(grad(y_i^k) - D_i)
+            c_i^+ = D_i + (1/K)*Sum_k(grad(y_i^k) - D_i)
+        When then note that D_i is constant and can be taken out
+        of the summation term, leaving us with:
+            c_i^+ = Avg_k(grad(y_i^k))
 
         Hence the new local state can be computed by averaging the
-        gradients output by this module along the training steps.
+        gradients input to this module along the training steps.
         """
         if not self._steps:
-            return self.delta
+            raise RuntimeError("Cannot collect on a module that was not run.")
         avg_grad = self._grads / self._steps
         return avg_grad + self.delta
 
@@ -186,13 +188,13 @@ class ScaffoldServerModule(OptiModule):
             state = 0
             s_loc = {client: 0 for client in clients}
         Step(grads):
-            grads = grads - state
+            grads
         Send:
             delta = {client: (s_loc[client] - state); client in s_loc}
         Receive(s_new = {client: state}):
             s_upd = sum(s_new[client] - s_loc[client]; client in s_new)
             s_loc.update(s_new)
-            state += s_upd * len(s_new) / len(s_loc)
+            state += s_upd / len(s_loc)
 
     In other words, this module holds a shared state variable, and a
     set of client-specific ones, which are zero-valued when created.
@@ -239,7 +241,6 @@ class ScaffoldServerModule(OptiModule):
         in training will have side effects on computations.
         """
         self.state = 0.  # type: Union[Vector, float]
-        self._prev = 0.  # type: Union[Vector, float]
         self.s_loc = {}  # type: Dict[str, Union[Vector, float]]
         if clients:
             self.s_loc = {client: 0. for client in clients}
@@ -254,10 +255,8 @@ class ScaffoldServerModule(OptiModule):
             self,
             gradients: Vector,
         ) -> Vector:
-        """Apply Scaffold correction to input global (aggregated) gradients."""
-        # Note: use "previous" state rather than the updated one,
-        # which serves as reference in the *next* training round.
-        return gradients - self._prev
+        """Pass gradients through the Scaffold module (no effect)."""
+        return gradients
 
     def collect_aux_var(
             self,
@@ -310,7 +309,4 @@ class ScaffoldServerModule(OptiModule):
         )
         self.s_loc.update(s_new)
         update = update / len(self.s_loc)
-        # Retain the current round state's values, because
-        # gradients-correction still makes use of it.
-        self._prev = self.state
         self.state = self.state + update

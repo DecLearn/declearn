@@ -28,9 +28,9 @@ def test_scaffold_client(mock_gradients: Vector) -> None:
     """Conduct a series of co-dependent unit tests on ScaffoldClientModule."""
     module = ScaffoldClientModule()
     assert module.delta == 0.
-    # Test initial aux_var collection.
-    aux_var = module.collect_aux_var()
-    assert aux_var == {"state": 0.}
+    # Test that initial aux_var collection fails.
+    with pytest.raises(RuntimeError):
+        module.collect_aux_var()
     # Test run correctness (no correction at state 0).
     output = module.run(mock_gradients)
     assert output == mock_gradients
@@ -68,19 +68,12 @@ def test_scaffold_server(mock_gradients: Vector) -> None:
     # Take numerical precision issues into account when checking values.
     mock_unprecise = (5 * mock_gradients / 5)
     assert module.state == mock_unprecise
-    # Test run correctness (no correction at state 0).
-    output = module.run(mock_gradients)
-    assert output == mock_gradients
+    # Test run correctness (no correction as per algorithm).
+    assert module.run(mock_gradients) == mock_gradients
     # Test aux_var collection after a round.
     zeros = (mock_gradients - mock_unprecise)
     aux_var = module.collect_aux_var()
     assert aux_var == {str(i): {"delta": zeros} for i in range(5)}
-    # Test run correctness (with correction, after second round).
-    module.process_aux_var(
-        {str(i): {"state": mock_gradients} for i in range(5)}
-    )
-    assert module.state == mock_unprecise
-    assert module.run(mock_gradients) == zeros
 
 
 @pytest.mark.parametrize(
