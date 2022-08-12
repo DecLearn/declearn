@@ -2,7 +2,7 @@
 
 """DataInfoField subclasses specifying common 'data_info' metadata fields."""
 
-from typing import Any, Set
+from typing import Any, List, Optional, Set
 
 import numpy as np
 
@@ -11,6 +11,7 @@ from declearn2.data_info._base import DataInfoField, register_data_info_field
 
 __all__ = [
     'ClassesField',
+    'InputShapeField',
     'NbFeaturesField',
     'NbSamplesField',
 ]
@@ -40,6 +41,53 @@ class ClassesField(DataInfoField):
         ) -> Set[Any]:
         super().combine(*values)  # type-check inputs
         return set.union(*map(set, values))
+
+
+@register_data_info_field
+class InputShapeField(DataInfoField):
+    """Specifications for 'input_shape' data_info field."""
+
+    field = "input_shape"
+    types = (tuple, list)
+    doc = "Input features' batched shape, checked to be equal."
+
+    @classmethod
+    def is_valid(
+            cls,
+            value: Any,
+        ) -> bool:
+        return isinstance(value, cls.types) and (len(value) >= 2) and all(
+            isinstance(val, int) or (val is None) for val in value
+        )
+
+    @classmethod
+    def combine(
+            cls,
+            *values: Any,
+        ) -> List[Optional[int]]:
+        # Type check each and every input shape.
+        super().combine(*values)
+        # Check that all shapes are of same length.
+        unique = list({len(shp) for shp in values})
+        if len(unique) != 1:
+            raise ValueError(
+                f"Cannot combine '{cls.field}': inputs have various lengths."
+            )
+        # Fill-in the unified shape: except all-None or (None or unique) value.
+        # Note: batching dimension is set to None by default (no check).
+        shape = [None] * unique[0]  # type: List[Optional[int]]
+        for i in range(1, unique[0]):
+            val = [shp[i] for shp in values if shp[i] is not None]
+            if not val:  # all None
+                shape[i] = None
+            elif len(set(val)) > 1:
+                raise ValueError(
+                    f"Cannot combine '{cls.field}': provided shapes differ."
+                )
+            else:
+                shape[i] = val[0]
+        # Return the combined shape.
+        return shape
 
 
 @register_data_info_field
