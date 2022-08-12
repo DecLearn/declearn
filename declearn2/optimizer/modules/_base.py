@@ -75,20 +75,94 @@ class OptiModule(metaclass=ABCMeta):
             self,
             gradients: Vector,
         ) -> Vector:
-        """Apply an adaptation algorithm to input gradients."""
+        """Apply an adaptation algorithm to input gradients.
+
+        Parameters
+        ----------
+        gradients: Vector
+            Input gradients that are to be processed and updated.
+
+        Returns
+        -------
+        gradients: Vector
+            Modified input gradients. The output Vector should be
+            fully compatible with the input one - only the values
+            of the wrapped coefficients may have changed.
+        """
         return NotImplemented
 
     def collect_aux_var(
             self,
         ) -> Optional[Dict[str, Any]]:
-        """Return auxiliary variables that need to be shared between nodes."""
+        """Return auxiliary variables that need to be shared between nodes.
+
+        Returns
+        -------
+        aux_var: dict[str, any] or None
+            Optional JSON-serializable dict of auxiliary variables that
+            are to be shared with a similarly-named OptiModule on the
+            other side of the client-server relationship.
+
+        Notes
+        -----
+        Specfications for the output and calling context depend on whether
+        the module is part of a client's optimizer or of the server's one:
+        * Client:
+          - aux_var is dict[str, any] or None.
+          - `collect_aux_var` is expected to happen after taking a series
+            of local optimization steps, before sending the local updates
+            to the server for aggregation and further processing.
+        * Server:
+          - aux_var may be None ; dict[str, any] (to send the same values
+            to each and every client) ; or dict[str, dict[str, any]] with
+            clients' names as keys and client-wise new aux_var as values
+            so as to send distinct values to the clients.
+          - `collect_aux_var` is expected to happen when the global model
+            weights are ready to be shared with clients, i.e. at the very
+            end of a training round or at the beginning of the training
+            process.
+        """
         return None
 
     def process_aux_var(
             self,
             aux_var: Dict[str, Any],
         ) -> None:
-        """Update this module based on received shared auxiliary variables."""
+        """Update this module based on received shared auxiliary variables.
+
+        Parameters
+        ----------
+        aux_var: dict[str, any]
+            JSON-serializable dict of auxiliary variables that are to be
+            processed by this module at the start of a training round (on
+            the client side) or before processing global updates (on the
+            server side).
+
+        Notes
+        -----
+        Specfications for the inputs and calling context depend on whether
+        the module is part of a client's optimizer or of the server's one:
+        * Client:
+          - aux_var is dict[str, any] and may be client-specific.
+          - `process_aux_var` is expected to happen at the beginning of
+            a training round to define gradients' processing during the
+            local optimization steps taken through that round.
+        * Server:
+          - aux_var is dict[str, dict[str, any]] with clients' names as
+            primary keys and client-wise collected aux_var as values.
+          - `process_aux_var` is expected to happen upon receiving local
+            updates (and, thus, aux_var), before the aggregated updates
+            are computed and passed through the server optimizer (which
+            comprises this module).
+
+        Raises
+        ------
+        KeyError:
+            If an expected auxiliary variable is missing.
+        TypeError:
+            If a variable is of unproper type, or if aux_var
+            is not formatted as it should be.
+        """
         # API-defining method; pylint: disable=unused-argument
         return None
 
