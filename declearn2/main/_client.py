@@ -4,7 +4,8 @@
 
 import asyncio
 import dataclasses
-from typing import Tuple
+import time
+from typing import Any, Dict, Optional, Tuple
 
 
 from declearn2.communication import messaging
@@ -72,12 +73,19 @@ class FederatedClient:
             self,
         ) -> Tuple[Model, Optimizer]:
         """Docstring."""
-        # Await initialization instructions.
-        message = await self.netwk.check_message()
+        # Await initialization instructions. Report messages-unpacking errors.
+        try:
+            message = await self.netwk.check_message()
+        except Exception as exc:
+            await self.netwk.send_message(messaging.Error(repr(exc)))
+            raise RuntimeError("Initialization failed.") from exc
+        # Otherwise, check that the request is of valid type.
         if not isinstance(message, messaging.InitRequest):
             error = f"Awaited InitRequest message, got: '{message}'"
             self.logger.error(error)
             raise RuntimeError(error)
+        # Send back an empty message to indicate that all went fine.
+        await self.netwk.send_message(messaging.Empty())
         # Return the model and optimizer received from the server.
         return message.model, message.optim
 
@@ -98,29 +106,63 @@ class FederatedClient:
             model.set_weights(message.weights)  # type: ignore
             optim.process_aux_var(message.aux_var)
             start_weights = model.get_weights()
-            # Train for a full epoch.  # TODO: modularize using message fields
-            self.logger.info("Training local model for 1 epoch.")
-            batches = self.dataset.generate_batches(
-                batch_size=message.batch_s,
-                # revise: improve kwargs handling
+            # Train under instructed effort constraints.
+            self.logger.info(
+                "Training local model for %s epochs | %s steps | %s seconds.",
+                message.n_epoch, message.n_steps, message.timeout
             )
-            n_steps = 0
-            for batch in batches:
-                optim.run_train_step(model, batch)
-                n_steps += 1
+            effort = self._train_for(
+                model, optim, message.n_epoch, message.n_steps,
+                message.timeout, batch_size=message.batch_s,
+                # revise: enable passing other dataset arguments?
+            )
             # Compute model updates and collect auxiliary variables.
             reply = messaging.TrainReply(
-                n_epoch=1,
-                n_steps=n_steps,
-                t_spent=0,  # fixme: implement
                 updates=start_weights - model.get_weights(),
                 aux_var=optim.collect_aux_var(),
+                **effort
             )  # type: messaging.Message
         # In case of failure, ensure it is reported to the server.
         except Exception as exception:  # pylint: disable=broad-except
             reply = messaging.Error(repr(exception))
         # Send training results (or error message) to the server.
         await self.netwk.send_message(reply)
+
+    def _train_for(
+            self,
+            model: Model,
+            optim: Optimizer,
+            epochs: Optional[int] = None,
+            steps: Optional[int] = None,
+            timeout: Optional[int] = None,
+            **kwargs: Any,
+        )  -> Dict[str, int]:
+        """Docstring."""
+        # arguments serve modularity; pylint: disable=too-many-arguments
+        if all(arg is None for arg in (epochs, steps, timeout)):
+            raise ValueError("At least one control argument must be set.")
+        if timeout is None:
+            timeout = float("inf")  # type: ignore
+        if steps is None:
+            steps = float("inf")  # type: ignore
+        # Set up variables to keep track of constaints and efforts.
+        t_start = time.time()
+        t_spent = 0.
+        n_epoch = 0
+        n_steps = 0
+        # Run batch train steps for as long as constraints set it.
+        while (epochs is None) or (n_epoch < epochs):
+            for batch in self.dataset.generate_batches(**kwargs):
+                optim.run_train_step(model, batch)
+                n_steps += 1
+                t_spent = time.time() - t_start
+                if (n_steps >= steps) or (t_spent >= timeout):  # type: ignore
+                    break
+            n_epoch += 1
+        # Return a dict storing information on the training effort.
+        return {
+            "n_epoch": n_epoch, "n_steps": n_steps, "t_spent": round(t_spent)
+        }
 
     async def _cancel_training(
             self,
