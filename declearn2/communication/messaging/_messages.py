@@ -16,6 +16,7 @@ from declearn2.utils import (
 
 
 __all__ = [
+    'CancelTraining',
     'Empty',
     'Error',
     'GenericMessage',
@@ -46,6 +47,14 @@ class Message(metaclass=ABCMeta):
         """Parse a message from a JSON-serialized string."""
         data = json.loads(string, object_hook=json_unpack)
         return cls(**data)
+
+
+@dataclasses.dataclass
+class CancelTraining(Message):
+    """Empty message used to ping or signal message reception."""
+
+    typekey = "cancel"
+    reason: str
 
 
 @dataclasses.dataclass
@@ -153,6 +162,7 @@ class TrainReply(Message):
 
 
 _MESSAGE_CLASSES = [
+    CancelTraining,
     Empty,
     Error,
     GenericMessage,

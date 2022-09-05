@@ -4,6 +4,7 @@
 
 from . import flags
 from ._messages import (
+    CancelTraining,
     Empty,
     Error,
     GenericMessage,
