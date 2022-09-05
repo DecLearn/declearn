@@ -2,31 +2,14 @@ syntax = "proto3";
 
 package grpc;
 
-message Empty {}
-
-message Error {
-  string message = 1;
+message Empty {
 }
-
-message JoinRequest {
-  string name = 1;
-  string info = 2;
-}
-
-message JoinReply {
-  string flag = 1;
-}
-
-message CheckMessageRequest {}
 
 message Message {
-  string action = 1;
-  string params = 2;
+  string message = 1;
 }
 
 service MessageBoard {
   rpc ping(Empty) returns (Empty);
-  rpc join (JoinRequest) returns (JoinReply);
-  rpc send_message (Message) returns (Empty);
-  rpc check_message (CheckMessageRequest) returns (Message);
+  rpc send(Message) returns (Message);
 }

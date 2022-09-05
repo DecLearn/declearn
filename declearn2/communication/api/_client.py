@@ -5,13 +5,13 @@
 import asyncio
 import logging
 from abc import ABCMeta, abstractmethod
-from typing import Any, Callable, Coroutine, Dict, Optional, Tuple
+from typing import Any, Callable, Coroutine, Dict, Optional
 
-from typing_extensions import Literal  # future: import from typing (Py>=3.8)
 
-from declearn2.communication.api.flags import (
-    FLAG_WELCOME, FLAG_REFUSE_CONNECTION
+from declearn2.communication.messaging import (
+    Empty, Error, GetMessageRequest, JoinReply, JoinRequest, Message
 )
+
 
 __all__ = [
     'Client',
@@ -87,11 +87,10 @@ class Client(metaclass=ABCMeta):
         """Stop the client, i.e. close all connections."""
         return None
 
-    @abstractmethod
     async def register(
             self,
             data_info: Dict[str, Any],
-        ) -> Literal[FLAG_WELCOME, FLAG_REFUSE_CONNECTION]:  # type: ignore
+        ) -> bool:
         """Request the server to join a federating learning session
 
         Parameters
@@ -102,38 +101,87 @@ class Client(metaclass=ABCMeta):
 
         Returns
         -------
-        response: str
-            The return code to the registration request, using a flag
-            from `declearn.communication.api.flags`:
-            - FLAG_WELCOME if the client was registered as participant
-            - FLAG_REFUSE_CONNECTION if the registration was denied
+        accepted: bool
+            Whether the registration request was accepted by the server
+            or not.
+
+        Raises
+        -------
+        TypeError:
+            If the server does not return a JoinReply message.
+        """
+        reply = await self._send_message(JoinRequest(self.name, data_info))
+        # Case when a JoinReply was received.
+        if isinstance(reply, JoinReply):
+            self.logger.info(
+                "Registration was %saccepted: '%s'",
+                "" if reply.accept else "not ", reply.flag
+            )
+            return reply.accept
+        # Case when an Error was received.
+        if isinstance(reply, Error):
+            self.logger.error(
+                "Registration request triggered an error:\n%s", reply.message
+            )
+            return False
+        # Otherwise, raise.
+        raise TypeError(
+            "Received an undue message type in response to JoinRequest."
+        )
+
+    @abstractmethod
+    async def _send_message(
+            self,
+            message: Message,
+        ) -> Message:
+        """Send a message to the server and return the obtained reply.
+
+        This method should be defined by concrete Client subclasses,
+        and implement communication-protocol-specific code to send a
+        Message (of any kind) to the server and await the primary
+        reply from the `MessagesHandler` used by the server.
         """
         return NotImplemented
 
-    @abstractmethod
     async def send_message(
             self,
-            message: Dict[str, Any],
+            message: Message,
         ) -> None:
         """Send a message to the server.
 
         Parameters
         ----------
-        message: dict[str, Any]
-            A JSON-serializable dictionary with str keys, holding
-            the information being sent to the server.
+        message: Message
+            Message instance that is to be delivered to the server.
+
+        Raises
+        ------
+        RuntimeError:
+            If the server emits an Error message in response to the
+            message sent.
+        TypeError:
+            If the server returns a non-Empty message.
 
         Note
         ----
         The message sent here is designed to be received using the
         `Server.wait_for_messages` method.
         """
-        return None
+        reply = await self._send_message(message)
+        if isinstance(reply, Empty):
+            return None
+        if isinstance(reply, Error):
+            raise RuntimeError(
+                f"Message was rejected with error: {reply.message}"
+            )
+        raise TypeError(
+            "Received an undue message type in response to the posted message."
+        )
 
-    @abstractmethod
     async def check_message(
             self,
-        ) -> Tuple[str, Dict[str, Any]]:
+            timeout: Optional[int] = None
+        ) -> Message:
         """Retrieve the next message sent by the server.
 
         Returns
@@ -146,6 +194,7 @@ class Client(metaclass=ABCMeta):
         Note
         ----
         The message received here is expected to have been sent
-        usin the `Server.broadcast_message` method.
+        using one of the following `Server` methods: `send_message`,
+        `send_messages`, or `broadcast_message`.
         """
-        return NotImplemented
+        return await self._send_message(GetMessageRequest(timeout))

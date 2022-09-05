@@ -18,9 +18,10 @@ import grpc  # type: ignore
 import pytest
 import pytest_asyncio
 
+from declearn2.communication.messaging import Empty
 from declearn2.communication.grpc._server import load_pem_file
 from declearn2.communication.grpc import GrpcClient, GrpcServer
-from declearn2.communication.grpc.protobufs.message_pb2 import Empty
+from declearn2.communication.grpc.protobufs import message_pb2
 from declearn2.communication.grpc.protobufs.message_pb2_grpc import (
     MessageBoardServicer, MessageBoardStub, add_MessageBoardServicer_to_server
 )
@@ -36,8 +37,19 @@ SERVER_URI = f'{HOST}:{PORT}'
 class FakeMessageBoard(MessageBoardServicer):
     """Minimal MessageBoard implementation to test the connection."""
 
-    def ping(self, request: Empty, context: grpc.ServicerContext) -> Empty:
-        return Empty()
+    def ping(
+            self,
+            request: message_pb2.Empty,
+            context: grpc.ServicerContext
+        ) -> message_pb2.Empty:
+        return message_pb2.Empty()
+
+    def send(
+            self,
+            request: message_pb2.Message,
+            context: grpc.ServicerContext
+        ) -> message_pb2.Message:
+        return message_pb2.Message(message=Empty().to_string())
 
 
 @pytest_asyncio.fixture(name="insecure_grpc_server")
@@ -95,7 +107,7 @@ async def secure_grpc_client_fixture(
 def insecure_declearn_server_fixture(
     ) -> Iterator[GrpcServer]:
     """Create and return a GrpcServer with unsecured communications."""
-    server = GrpcServer(nb_clients=1, host=HOST, port=PORT)
+    server = GrpcServer(host=HOST, port=PORT)
     server.start()
     yield server
     server.stop()
@@ -107,7 +119,7 @@ def secure_declearn_server_fixture(
     ) -> Iterator[GrpcServer]:
     """Create and return a GrpcServer with secured communications."""
     server = GrpcServer(
-        nb_clients=1, host=HOST, port=PORT,
+        host=HOST, port=PORT,
         certificate=ssl_cert["server_cert"],
         private_key=ssl_cert["server_pkey"],
     )
@@ -151,8 +163,8 @@ async def test_message_pb2_grpc_server_insecure(
     """Unit test for minimal gRPC unsecured communications."""
     # fixture; pylint: disable=unused-argument
     stub = insecure_grpc_client
-    response = await stub.ping(Empty())
-    assert isinstance(response, Empty)
+    response = await stub.ping(message_pb2.Empty())
+    assert isinstance(response, message_pb2.Empty)
 
 
 @pytest.mark.asyncio
@@ -163,8 +175,8 @@ async def test_message_pb2_grpc_server_secure_successful_on_secure_channel(
     """Unit test for minimal gRPC secured communications."""
     # fixture; pylint: disable=unused-argument
     stub = secure_grpc_client
-    response = await stub.ping(Empty())
-    assert isinstance(response, Empty)
+    response = await stub.ping(message_pb2.Empty())
+    assert isinstance(response, message_pb2.Empty)
 
 
 @pytest.mark.asyncio
@@ -176,7 +188,7 @@ async def test_message_pb2_grpc_server_secure_unsuccessful_on_insecure_channel(
     # fixture; pylint: disable=unused-argument
     stub = insecure_grpc_client
     with pytest.raises(grpc.aio.AioRpcError):
-        await stub.ping(Empty())
+        await stub.ping(message_pb2.Empty())
 
 
 #################################################################
@@ -190,8 +202,8 @@ async def test_grpc_server_insecure(
     """Unit test for minimal unsecured GrpcServer use."""
     # fixture; pylint: disable=unused-argument
     stub = insecure_grpc_client
-    response = await stub.ping(Empty())
-    assert isinstance(response, Empty)
+    response = await stub.ping(message_pb2.Empty())
+    assert isinstance(response, message_pb2.Empty)
 
 
 @pytest.mark.asyncio
@@ -202,8 +214,8 @@ async def test_grpc_server_secure_successful_on_secure_channel(
     """Unit test for minimal unsecured GrpcServer use."""
     # fixture; pylint: disable=unused-argument
     stub = secure_grpc_client
-    response = await stub.ping(Empty())
-    assert isinstance(response, Empty)
+    response = await stub.ping(message_pb2.Empty())
+    assert isinstance(response, message_pb2.Empty)
 
 
 @pytest.mark.asyncio
@@ -215,7 +227,7 @@ async def test_grpc_server_secure_unsuccessful_on_insecure_channel(
     # fixture; pylint: disable=unused-argument
     stub = insecure_grpc_client
     with pytest.raises(grpc.aio.AioRpcError):
-        await stub.ping(Empty())
+        await stub.ping(message_pb2.Empty())
 
 #################################################################
 # 3. Test the gRPC channel wrapped in declearn Client class
@@ -228,8 +240,7 @@ async def test_client_with_insecure_grpc_server(
     """Unit test for minimal unsecured GrpcClient use."""
     # fixture; pylint: disable=unused-argument
     client = insecure_declearn_client
-    ping_ok = await client.ping()
-    assert ping_ok is True
+    await client.send_message(Empty())
 
 
 @pytest.mark.asyncio
@@ -240,8 +251,7 @@ async def test_secure_client_with_secure_grpc_server(
     """Unit test for minimal secured GrpcClient use."""
     # fixture; pylint: disable=unused-argument
     client = secure_declearn_client
-    ping_ok = await client.ping()
-    assert ping_ok is True
+    await client.send_message(Empty())
 
 
 @pytest.mark.asyncio
@@ -253,7 +263,7 @@ async def test_insecure_client_with_secure_grpc_server_fails(
     # fixture; pylint: disable=unused-argument
     client = insecure_declearn_client
     with pytest.raises(grpc.aio.AioRpcError):
-        await client.ping()
+        await client.send_message(Empty())
 
 
 #################################################################
@@ -267,8 +277,8 @@ async def test_client_with_insecure_server(
     """Unit test for minimal unsecured GrpcServer/GrpcClient use."""
     # fixture; pylint: disable=unused-argument
     client = insecure_declearn_client
-    ping_ok = await client.ping()
-    assert ping_ok is True
+    with pytest.raises(RuntimeError):  # unregistered client
+        await client.send_message(Empty())
 
 
 @pytest.mark.asyncio
@@ -279,8 +289,8 @@ async def test_secure_client_with_secure_server(
     """Unit test for minimal secured GrpcServer/GrpcClient use."""
     # fixture; pylint: disable=unused-argument
     client = secure_declearn_client
-    ping_ok = await client.ping()
-    assert ping_ok is True
+    with pytest.raises(RuntimeError):  # unregistered client
+        await client.send_message(Empty())
 
 
 @pytest.mark.asyncio
@@ -292,7 +302,7 @@ async def test_insecure_client_with_secure_server_fails(
     # fixture; pylint: disable=unused-argument
     client = insecure_declearn_client
     with pytest.raises(grpc.aio.AioRpcError):
-        await client.ping()
+        await client.send_message(Empty())
 
 
 @pytest.mark.asyncio
@@ -304,4 +314,4 @@ async def test_secure_client_with_insecure_server_fails(
     # fixture; pylint: disable=unused-argument
     client = secure_declearn_client
     with pytest.raises(grpc.aio.AioRpcError):
-        await client.ping()
+        await client.send_message(Empty())

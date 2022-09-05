@@ -14,15 +14,11 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\rmessage.proto\x12\x04grpc\"\x07\n\x05\x45mpty\"\x18\n\x05\x45rror\x12\x0f\n\x07message\x18\x01 \x01(\t\")\n\x0bJoinRequest\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0c\n\x04info\x18\x02 \x01(\t\"\x19\n\tJoinReply\x12\x0c\n\x04\x66lag\x18\x01 \x01(\t\"\x15\n\x13\x43heckMessageRequest\")\n\x07Message\x12\x0e\n\x06\x61\x63tion\x18\x01 \x01(\t\x12\x0e\n\x06params\x18\x02 \x01(\t2\xc3\x01\n\x0cMessageBoard\x12 \n\x04ping\x12\x0b.grpc.Empty\x1a\x0b.grpc.Empty\x12*\n\x04join\x12\x11.grpc.JoinRequest\x1a\x0f.grpc.JoinReply\x12*\n\x0csend_message\x12\r.grpc.Message\x1a\x0b.grpc.Empty\x12\x39\n\rcheck_message\x12\x19.grpc.CheckMessageRequest\x1a\r.grpc.Messageb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\rmessage.proto\x12\x04grpc\"\x07\n\x05\x45mpty\"\x1a\n\x07Message\x12\x0f\n\x07message\x18\x01 \x01(\t2V\n\x0cMessageBoard\x12 \n\x04ping\x12\x0b.grpc.Empty\x1a\x0b.grpc.Empty\x12$\n\x04send\x12\r.grpc.Message\x1a\r.grpc.Messageb\x06proto3')
 
 
 
 _EMPTY = DESCRIPTOR.message_types_by_name['Empty']
-_ERROR = DESCRIPTOR.message_types_by_name['Error']
-_JOINREQUEST = DESCRIPTOR.message_types_by_name['JoinRequest']
-_JOINREPLY = DESCRIPTOR.message_types_by_name['JoinReply']
-_CHECKMESSAGEREQUEST = DESCRIPTOR.message_types_by_name['CheckMessageRequest']
 _MESSAGE = DESCRIPTOR.message_types_by_name['Message']
 Empty = _reflection.GeneratedProtocolMessageType('Empty', (_message.Message,), {
   'DESCRIPTOR' : _EMPTY,
@@ -30,34 +26,6 @@ Empty = _reflection.GeneratedProtocolMessageType('Empty', (_message.Message,), {
   # @@protoc_insertion_point(class_scope:grpc.Empty)
   })
 _sym_db.RegisterMessage(Empty)
-
-Error = _reflection.GeneratedProtocolMessageType('Error', (_message.Message,), {
-  'DESCRIPTOR' : _ERROR,
-  '__module__' : 'message_pb2'
-  # @@protoc_insertion_point(class_scope:grpc.Error)
-  })
-_sym_db.RegisterMessage(Error)
-
-JoinRequest = _reflection.GeneratedProtocolMessageType('JoinRequest', (_message.Message,), {
-  'DESCRIPTOR' : _JOINREQUEST,
-  '__module__' : 'message_pb2'
-  # @@protoc_insertion_point(class_scope:grpc.JoinRequest)
-  })
-_sym_db.RegisterMessage(JoinRequest)
-
-JoinReply = _reflection.GeneratedProtocolMessageType('JoinReply', (_message.Message,), {
-  'DESCRIPTOR' : _JOINREPLY,
-  '__module__' : 'message_pb2'
-  # @@protoc_insertion_point(class_scope:grpc.JoinReply)
-  })
-_sym_db.RegisterMessage(JoinReply)
-
-CheckMessageRequest = _reflection.GeneratedProtocolMessageType('CheckMessageRequest', (_message.Message,), {
-  'DESCRIPTOR' : _CHECKMESSAGEREQUEST,
-  '__module__' : 'message_pb2'
-  # @@protoc_insertion_point(class_scope:grpc.CheckMessageRequest)
-  })
-_sym_db.RegisterMessage(CheckMessageRequest)
 
 Message = _reflection.GeneratedProtocolMessageType('Message', (_message.Message,), {
   'DESCRIPTOR' : _MESSAGE,
@@ -72,16 +40,8 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   DESCRIPTOR._options = None
   _EMPTY._serialized_start=23
   _EMPTY._serialized_end=30
-  _ERROR._serialized_start=32
-  _ERROR._serialized_end=56
-  _JOINREQUEST._serialized_start=58
-  _JOINREQUEST._serialized_end=99
-  _JOINREPLY._serialized_start=101
-  _JOINREPLY._serialized_end=126
-  _CHECKMESSAGEREQUEST._serialized_start=128
-  _CHECKMESSAGEREQUEST._serialized_end=149
-  _MESSAGE._serialized_start=151
-  _MESSAGE._serialized_end=192
-  _MESSAGEBOARD._serialized_start=195
-  _MESSAGEBOARD._serialized_end=390
+  _MESSAGE._serialized_start=32
+  _MESSAGE._serialized_end=58
+  _MESSAGEBOARD._serialized_start=60
+  _MESSAGEBOARD._serialized_end=146
 # @@protoc_insertion_point(module_scope)

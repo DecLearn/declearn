@@ -4,16 +4,19 @@
 
 import asyncio
 import getpass
-import json
 import os
-from typing import Any, Dict, Optional, Set
+from concurrent import futures
+from typing import Optional
 
 import grpc  # type: ignore
 from cryptography.hazmat.primitives import serialization
 
 from declearn2.communication.api import Server
-from declearn2.communication.grpc._service import Service
-from declearn2.utils import get_logger, json_pack, register_type
+from declearn2.communication.grpc.protobufs import message_pb2
+from declearn2.communication.grpc.protobufs.message_pb2_grpc import (
+    MessageBoardServicer, add_MessageBoardServicer_to_server
+)
+from declearn2.utils import get_logger, register_type
 
 
 def load_pem_file(
@@ -51,7 +54,6 @@ class GrpcServer(Server):
 
     def __init__(
             self,
-            nb_clients: int,
             host: str = 'localhost',
             port: int = 0,
             certificate: Optional[str] = None,
@@ -63,8 +65,6 @@ class GrpcServer(Server):
 
         Parameters
         ----------
-        nb_clients: int
-            Maximum number of clients that should be accepted.
         host : str, default='localhost'
             Host name (e.g. IP address) of the server.
         port: int, default=0
@@ -86,23 +86,32 @@ class GrpcServer(Server):
             If None, use `asyncio.get_event_loop()`.
         """
         # inherited signature; pylint: disable=too-many-arguments
-        # Assign attributes and set up optional TLS/SSL credentials.
-        super().__init__(nb_clients, host, port, loop=loop)
-        credentials = self._setup_ssl_credentials(
-            certificate, private_key, password
-        )
-        # Instantiate a gRPC message-board servicer. Override host/port info.
-        self._service = Service(nb_clients, host, port, credentials)
-        self.host = self._service.host
-        self.port = self._service.port
+        # Assign attributes and set up the gRPC server.
+        super().__init__(host, port, loop=loop)
+        self._server = self._setup_server(certificate, private_key, password)
 
     @property
     def uri(self) -> str:
         return f"{self.host}:{self.port}"
 
-    @property
-    def client_names(self) -> Set[str]:
-        return self._service.client_names
+    def _setup_server(
+            self,
+            certificate: Optional[str] = None,
+            private_key: Optional[str] = None,
+            password: Optional[str] = None,
+        ) -> grpc.Server:
+        """Set up and return a grpc Server to be used by this service."""
+        server = grpc.aio.server(futures.ThreadPoolExecutor(max_workers=10))
+        creds = self._setup_ssl_credentials(certificate, private_key, password)
+        address = f'{self.host}:{self.port}'
+        self.port = (
+            server.add_secure_port(address, creds)
+            if (creds is not None)
+            else server.add_insecure_port(address)
+        )
+        servicer = self._setup_board_servicer()
+        add_MessageBoardServicer_to_server(servicer, server)  # type: ignore
+        return server
 
     @staticmethod
     def _setup_ssl_credentials(
@@ -126,77 +135,47 @@ class GrpcServer(Server):
             require_client_auth=False,
         )
 
+    def _setup_board_servicer(
+            self,
+        ) -> MessageBoardServicer:
+        """Create and return a gRPC message board servicer for this server."""
+        server = self
+        # Declare a MessageBoardServicer implementing message processing.
+        class Servicer(MessageBoardServicer):
+            """A gRPC MessageBoard service to be used by this GrpcServer."""
+
+            async def ping(
+                    self,
+                    request: message_pb2.Empty,
+                    context: grpc.ServicerContext,
+                ) -> message_pb2.Empty:
+                """Handle a ping request from a client."""
+                return message_pb2.Empty()
+
+            async def send(
+                    self,
+                    request: message_pb2.Message,
+                    context: grpc.ServicerContext,
+                ) -> message_pb2.Message:
+                """Handle a Message-sending request from a client."""
+                # async is needed; pylint: disable=invalid-overridden-method
+                nonlocal server
+                reply = await server.handler.handle_message(
+                    string=request.message,
+                    context=context.peer(),
+                )
+                return message_pb2.Message(message=reply.to_string())
+        # Instantiate and return the servicer.
+        return Servicer()
+
     def start(
             self,
         ) -> None:
         """Start the gRPC server."""
-        self.loop.run_until_complete(self._service.start())
+        self.loop.run_until_complete(self._server.start())
 
     def stop(
             self,
         ) -> None:
         """Stop the gRPC server."""
-        self.loop.run_until_complete(self._service.stop())
-
-    async def wait_for_clients(
-            self,
-        ) -> Dict[str, Dict[str, Any]]:
-        self.logger.info("Waiting for clients to register for training...")
-        number = -1
-        while len(self._service.registered_users) < self.nb_clients:
-            await asyncio.sleep(1)  # past: self.heartbeat
-            if len(self._service.registered_users) != number:
-                self.logger.info(
-                    "Now waiting for %s additional participants.",
-                    self.nb_clients - len(self._service.registered_users)
-                )
-                number = len(self._service.registered_users)
-        return {
-            client["alias"]: client["data_info"]
-            for client in self._service.registered_users.values()
-        }
-
-    def broadcast_message(
-            self,
-            action: str,
-            params: Dict[str, Any],
-        ) -> None:
-        # Serialize the parameters. Note: gRPC handles dicts as messages.
-        dump = json.dumps(params, default=json_pack)
-        message = {"action": action, "params": dump}
-        # Set the message up for transmission.
-        for name in self.client_names:
-            if name in self._service.outgoing_messages:
-                self.logger.warning(
-                    "Overwriting pending message uncollected by client '%s'.",
-                    name
-                )
-            self._service.outgoing_messages[name] = message
-
-    async def send_message(
-            self,
-            client: str,
-            action: str,
-            params: Dict[str, Any]
-        ) -> None:
-        dump = json.dumps(params, default=json_pack)
-        message = {"action": action, "params": dump}
-        if client not in self.client_names:
-            raise KeyError(f"Unkown destinatory client '{client}'.")
-        if client in self._service.outgoing_messages:
-            self.logger.warning(
-                "Overwriting pending message uncollected by client '%s'.",
-                client
-            )
-        self._service.outgoing_messages[client] = message
-
-    async def wait_for_messages(
-            self,
-        ) -> Dict[str, Dict[str, Any]]:
-        # Wait for all clients to have posted a message.
-        while len(self._service.incoming_messages) < self._service.nb_clients:
-            await asyncio.sleep(1)  # past: self.heartbeat
-        # Grab the (already-deserialized) messages and return them.
-        incoming_messages = self._service.incoming_messages
-        self._service.incoming_messages = {}
-        return incoming_messages
+        self.loop.run_until_complete(self._server.stop(grace=None))

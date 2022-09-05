@@ -19,19 +19,9 @@ class MessageBoardStub(object):
                 request_serializer=message__pb2.Empty.SerializeToString,
                 response_deserializer=message__pb2.Empty.FromString,
                 )
-        self.join = channel.unary_unary(
-                '/grpc.MessageBoard/join',
-                request_serializer=message__pb2.JoinRequest.SerializeToString,
-                response_deserializer=message__pb2.JoinReply.FromString,
-                )
-        self.send_message = channel.unary_unary(
-                '/grpc.MessageBoard/send_message',
+        self.send = channel.unary_unary(
+                '/grpc.MessageBoard/send',
                 request_serializer=message__pb2.Message.SerializeToString,
-                response_deserializer=message__pb2.Empty.FromString,
-                )
-        self.check_message = channel.unary_unary(
-                '/grpc.MessageBoard/check_message',
-                request_serializer=message__pb2.CheckMessageRequest.SerializeToString,
                 response_deserializer=message__pb2.Message.FromString,
                 )
 
@@ -45,19 +35,7 @@ class MessageBoardServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def join(self, request, context):
-        """Missing associated documentation comment in .proto file."""
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
-    def send_message(self, request, context):
-        """Missing associated documentation comment in .proto file."""
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
-    def check_message(self, request, context):
+    def send(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -71,19 +49,9 @@ def add_MessageBoardServicer_to_server(servicer, server):
                     request_deserializer=message__pb2.Empty.FromString,
                     response_serializer=message__pb2.Empty.SerializeToString,
             ),
-            'join': grpc.unary_unary_rpc_method_handler(
-                    servicer.join,
-                    request_deserializer=message__pb2.JoinRequest.FromString,
-                    response_serializer=message__pb2.JoinReply.SerializeToString,
-            ),
-            'send_message': grpc.unary_unary_rpc_method_handler(
-                    servicer.send_message,
+            'send': grpc.unary_unary_rpc_method_handler(
+                    servicer.send,
                     request_deserializer=message__pb2.Message.FromString,
-                    response_serializer=message__pb2.Empty.SerializeToString,
-            ),
-            'check_message': grpc.unary_unary_rpc_method_handler(
-                    servicer.check_message,
-                    request_deserializer=message__pb2.CheckMessageRequest.FromString,
                     response_serializer=message__pb2.Message.SerializeToString,
             ),
     }
@@ -114,7 +82,7 @@ class MessageBoard(object):
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
-    def join(request,
+    def send(request,
             target,
             options=(),
             channel_credentials=None,
@@ -124,42 +92,8 @@ class MessageBoard(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/grpc.MessageBoard/join',
-            message__pb2.JoinRequest.SerializeToString,
-            message__pb2.JoinReply.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
-
-    @staticmethod
-    def send_message(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/grpc.MessageBoard/send_message',
+        return grpc.experimental.unary_unary(request, target, '/grpc.MessageBoard/send',
             message__pb2.Message.SerializeToString,
-            message__pb2.Empty.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
-
-    @staticmethod
-    def check_message(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/grpc.MessageBoard/check_message',
-            message__pb2.CheckMessageRequest.SerializeToString,
             message__pb2.Message.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

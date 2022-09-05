@@ -3,20 +3,19 @@
 """Client-side communication endpoint implementation using gRPC"""
 
 import asyncio
-import json
-from typing import Any, Dict, Optional, Tuple
+from typing import Optional
 
 import grpc  # type: ignore
-from typing_extensions import Literal  # future: import from typing (Py>=3.8)
 
-from declearn2.communication.api import Client, flags
-from declearn2.communication.grpc.protobufs.message_pb2 import (
-    CheckMessageRequest, Empty, JoinRequest, Message,
+from declearn2.communication.api import Client
+from declearn2.communication.messaging import (
+    Message, parse_message_from_string
 )
+from declearn2.communication.grpc.protobufs import message_pb2
 from declearn2.communication.grpc.protobufs.message_pb2_grpc import (
     MessageBoardStub
 )
-from declearn2.utils import get_logger, json_pack, json_unpack, register_type
+from declearn2.utils import get_logger, register_type
 
 
 @register_type(name="grpc", group="Client")
@@ -85,70 +84,13 @@ class GrpcClient(Client):
             self._channel = None
             self._service = None
 
-    async def register(
+    async def _send_message(
             self,
-            data_info: Dict[str, Any],
-        ) -> Literal[  # type: ignore
-            flags.FLAG_WELCOME, flags.FLAG_REFUSE_CONNECTION
-        ]:
-        if self._service is None:
-            raise RuntimeError("Cannot register while not connected.")
-        # Set up and send the join request.
-        message = json.dumps(data_info, default=json_pack)
-        request = JoinRequest(name=self.name, info=message)
-        # Await and parse the join reply.
-        response = await self._service.join(request)
-        reply = response.flag
-        if reply not in (flags.FLAG_WELCOME, flags.FLAG_REFUSE_CONNECTION):
-            raise ValueError(
-                f"Invalid server reply to registration request: '{reply}'."
-            )
-        return reply
-
-    async def send_message(
-            self,
-            message: Dict[str, Any],
-        ) -> None:
+            message: Message,
+        ) -> Message:
+        """Send a message to the server and return the obtained reply."""
         if self._service is None:
             raise RuntimeError("Cannot send messages while not connected.")
-        params = json.dumps(message, default=json_pack)
-        message = Message(params=params)
-        await self._service.send_message(message)
-
-    async def check_message(
-            self,
-        ) -> Tuple[str, Dict[str, Any]]:
-        if self._service is None:
-            raise RuntimeError("Cannot receive messages while not connected.")
-        # Request and await a message for this client.
-        request = CheckMessageRequest()
-        message = await self._service.check_message(request)
-        # Unpack and deserialize the message, then return.
-        action = message.action
-        params = json.loads(message.params, object_hook=json_unpack)
-        return action, params
-
-    async def ping(
-            self,
-            timeout: int = 1,
-        ) -> bool:
-        """Ping the server and return whether it was successful.
-
-        Parameters
-        ----------
-        timeout: int, default=1
-            Delay, in seconds, above which an absence of response
-            should be considered a failure.
-
-        Returns
-        -------
-        success: bool
-            Whether a ping response was received before timeout.
-        """
-        if self._service is None:
-            raise RuntimeError("Cannot ping while not connected.")
-        try:
-            await asyncio.wait_for(self._service.ping(Empty()), timeout)
-            return True
-        except asyncio.exceptions.TimeoutError:
-            return False
+        grpc_message = message_pb2.Message(message=message.to_string())
+        grpc_reply = await self._service.send(grpc_message)
+        return parse_message_from_string(grpc_reply.message)

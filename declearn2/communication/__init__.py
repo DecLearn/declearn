@@ -5,14 +5,15 @@
 This module contains the following submodules:
 * api:
     Base API to define client- and server-side communication endpoints.
-* flags (re-exposed from `api`):
-    Set of communication flags conventionally used in declearn.
+* messaging:
+    Message dataclasses defining information containers to be exchanged
+    between communication endpoints.
 * grpc:
     gRPC-based network communication endpoints.
 * websockets:
     WebSockets-based network communication endpoints.
 
-It also exposes the following functions (re-exported from `api`):
+It also exposes the following functions:
 * build_client:
     Instantiate a Client, selecting its subclass based on protocol name.
 * build_server:
@@ -26,8 +27,10 @@ Note: the latter two functions natively support the declearn-implemented
       group for Server subclasses).
 """
 
+# Messaging and Communications API and base tools:
+from . import messaging
 from . import api
+from ._build import build_client, build_server
+# Concrete implementations using various protocols:
 from . import grpc
 from . import websockets
-# Re-expose some utils to limit import paths' length.
-from .api import build_client, build_server, flags

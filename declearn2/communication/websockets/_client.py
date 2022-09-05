@@ -3,17 +3,18 @@
 """Client-side communication endpoint implementation using WebSockets."""
 
 import asyncio
-import json
 import ssl
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional
 
 import websockets as ws
-from typing_extensions import Literal  # future: import from typing (Py>=3.8)
 from websockets.client import WebSocketClientProtocol
 from websockets.exceptions import ConnectionClosedOK, ConnectionClosedError
 
-from declearn2.communication.api import Client, flags
-from declearn2.utils import get_logger, json_pack, json_unpack, register_type
+from declearn2.communication.api import Client
+from declearn2.communication.messaging import (
+    Message, parse_message_from_string
+)
+from declearn2.utils import get_logger, register_type
 
 
 @register_type(name="websockets", group="Client")
@@ -97,53 +98,26 @@ class WebsocketsClient(Client):
             self.loop.run_until_complete(self._socket.close())
             self._socket = None
 
+    async def _send_message(
+            self,
+            message: Message,
+        ) -> Message:
+        """Send a message to the server and return the obtained reply."""
+        if self._socket is None:
+            raise RuntimeError("Cannot communicate while not connected.")
+        string = message.to_string()
+        await self._socket.send(string)
+        reply = await self._socket.recv()
+        if isinstance(reply, bytes):
+            reply = reply.decode("utf-8")
+        return parse_message_from_string(reply)
+
     async def register(
             self,
             data_info: Dict[str, Any],
-        ) -> Literal[  # type: ignore
-            flags.FLAG_WELCOME, flags.FLAG_REFUSE_CONNECTION
-        ]:
-        if self._socket is None:
-            raise RuntimeError("Cannot register while not connected.")
-        # Set up and send the join request.
-        message = {
-            "type": flags.FIRST_CONNECTION,
-            "name": self.name,
-            "data_info": data_info,
-        }
-        request = json.dumps(message, default=json_pack)
-        await self._socket.send(request)
-        # Wait for the server's reply and return it.
+        ) -> bool:
         try:
-            reply = await self._socket.recv()
-            assert isinstance(reply, str)
+            return await super().register(data_info)
         except (ConnectionClosedOK, ConnectionClosedError) as err:
             self.logger.error("Connection closed during registration: %s", err)
-            reply = flags.FLAG_REFUSE_CONNECTION
-        if reply not in (flags.FLAG_WELCOME, flags.FLAG_REFUSE_CONNECTION):
-            raise ValueError(
-                f"Invalid server reply to registration request: '{reply}'."
-            )
-        return reply
-
-    async def send_message(
-            self,
-            message: Dict[str, Any],
-        ) -> None:
-        if self._socket is None:
-            raise RuntimeError("Cannot send messages while not connected.")
-        string = json.dumps(message, default=json_pack)
-        await self._socket.send(string)
-
-    async def check_message(
-            self,
-        ) -> Tuple[str, Dict[str, Any]]:
-        if self._socket is None:
-            raise RuntimeError("Cannot receive messages while not connected.")
-        string = await self._socket.recv()
-        message = json.loads(string, object_hook=json_unpack)
-        if message.keys() != {"action", "params"}:
-            raise KeyError(
-                f"Received a message of unproper format: '{message}'."
-            )
-        return message["action"], message["params"]
+            return False

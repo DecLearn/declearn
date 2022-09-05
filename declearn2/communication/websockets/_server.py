@@ -3,17 +3,16 @@
 """Server-side communication endpoint implementation using WebSockets."""
 
 import asyncio
-import json
 import os
 import ssl
-from typing import Any, Dict, List, Optional, Set
+from typing import Optional
 
 import websockets as ws
 from websockets.server import WebSocketServer, WebSocketServerProtocol
 from websockets.exceptions import ConnectionClosedOK, ConnectionClosedError
 
-from declearn2.communication.api import Server, flags
-from declearn2.utils import get_logger, json_pack, json_unpack, register_type
+from declearn2.communication.api import Server
+from declearn2.utils import get_logger, register_type
 
 
 ADD_HEADER = False  # revise: drop this constant (choose a behaviour)
@@ -27,7 +26,6 @@ class WebsocketsServer(Server):
 
     def __init__(
             self,
-            nb_clients: int,
             host: str = 'localhost',
             port: int = 8765,
             certificate: Optional[str] = None,
@@ -39,8 +37,6 @@ class WebsocketsServer(Server):
 
         Parameters
         ----------
-        nb_clients: int
-            Maximum number of clients that should be accepted.
         host : str, default='localhost'
             Host name (e.g. IP address) of the server.
         port: int, default=8765
@@ -62,24 +58,15 @@ class WebsocketsServer(Server):
         """
         # inherited signature; pylint: disable=too-many-arguments
         # Assign attributes and set up optional SSL context.
-        super().__init__(nb_clients, host, port, loop=loop)
+        super().__init__(host, port, loop=loop)
         self.ssl_context = self._setup_ssl(certificate, private_key, password)
-        # Set up private attributes storing clients information.
-        self._clients = {}  # type: Dict[WebSocketServerProtocol, str]
-        self._data_info = {}  # type: Dict[str, Dict[str, Any]]
-        # Set up private attributes to handle asynchronous awaitables.
-        self._running = self.loop.create_future()
-        self._running.cancel()  # ensure the server is not marked as running
+        # Create a server attribute slot.
         self._server = None  # type: Optional[WebSocketServer]
 
     @property
     def uri(self) -> str:
         protocol = "ws" if self.ssl_context is None else "wss"
         return f"{protocol}://{self.host}:{self.port}"
-
-    @property
-    def client_names(self) -> Set[str]:
-        return set(self._clients.values())
 
     @staticmethod
     def _setup_ssl(
@@ -108,9 +95,6 @@ class WebsocketsServer(Server):
             self,
         ) -> None:
         """Start the websockets server."""
-        # Create a new Future object to await so as to keep connections alive.
-        self._running.cancel()
-        self._running = self.loop.create_future()
         # Set up the websockets connections handling process.
         extra_headers = (
             ws.Headers(Connection="keep-alive")  # type: ignore
@@ -128,166 +112,36 @@ class WebsocketsServer(Server):
         self.logger.info("Server is now starting...")
         self._server = self.loop.run_until_complete(server)
 
-    def stop(
-            self,
-        ) -> None:
-        """Stop the websockets server and purge information about clients."""
-        if not self._running.done():
-            self._running.cancel()
-        if self._server is not None:
-            self._server.close()
-            self._server = None
-        self._clients = {}
-        self._data_info = {}
-
     async def _handle_connection(
             self,
             socket: WebSocketServerProtocol,
         ) -> None:
         """WebSockets handler to manage incoming client connections."""
-        # Handle the registration process and decide to accept or reject.
-        accept = False
+        self.logger.info("New connection from %s", socket.remote_address)
         try:
-            accept = await self._handle_registration_request(socket)
-        # Log about expected failures in the registration process.
-        except (KeyError, ValueError) as err:
-            self.logger.error("Error while handling new connection:\n%s", err)
-        # Log about connection closing during the registration process.
-        except (ConnectionClosedOK, ConnectionClosedError) as err:
+            async for message in socket:
+                if isinstance(message, bytes):
+                    message = message.decode("utf-8")
+                reply = await self.handler.handle_message(message, socket)
+                await socket.send(reply.to_string())
+                if socket not in self.handler.registered_clients:
+                    break
+        except (ConnectionClosedOK, ConnectionClosedError) as exc:
+            name = self.handler.registered_clients.pop(
+                socket, socket.remote_address
+            )
             self.logger.error(
-                "Connection from client was closed before registration "
-                "or rejection could happen:\n%s", err
+                "Connection from client '%s' was closed unexpectedly: %s",
+                name, exc
             )
-        # If the client was accepted, maintain the connection indefinitely.
-        if accept:
-            await self._running
-        await socket.close()
+        finally:
+            await socket.close()
 
-    async def _handle_registration_request(
+    def stop(
             self,
-            socket: WebSocketServerProtocol,
-        ) -> bool:
-        """Handle the registration request of a new incoming client socket."""
-        # Expect an initial message from the new client.
-        msg_string = await socket.recv()
-        msg = json.loads(msg_string, object_hook=json_unpack)
-        # If the message does not conform to expected format, raise.
-        for key in ("type", "name", "data_info"):
-            if key not in msg:
-                raise KeyError(
-                    f"Missing required key in join-request message: '{key}'."
-                )
-        # Otherwise, log the participation request.
-        self.logger.info(
-            "Received a new connection from client '%s' with ip address '%s'.",
-            msg['name'], socket.remote_address
-        )
-        # If the message has an unproper action flag, warn and exit.
-        if not msg["type"] == flags.FIRST_CONNECTION:
-            raise ValueError(f"Unproper first-message flag '{msg['type']}'.")
-        # If there is room for more participants, register the client.
-        if len(self._clients) < self.nb_clients:
-            await self._register_user(msg["name"], msg["data_info"], socket)
-            return True
-        # Otherwise, deny to register it.
-        self.logger.info("Rejecting request from client '%s'.", msg['name'])
-        await socket.send(flags.FLAG_REFUSE_CONNECTION)
-        return False
-
-    async def _register_user(
-            self,
-            name: str,
-            data_info: Dict[str, Any],
-            socket: WebSocketServerProtocol,
         ) -> None:
-        # Optionally alias the client's name to avoid duplication issues.
-        clients = self.client_names
-        if name in clients:
-            idx = sum(other.rsplit('.', 1)[0] == name for other in clients)
-            alias = f"{name}.{idx}"
-            log = "Registering client '%s' for training, under '%s' alias."
-            self.logger.info(log, name, alias)
-            name = alias
-        else:
-            self.logger.info("Registering client '%s' for training.", name)
-        # Send a positive response to the client, then record its information.
-        await socket.send(flags.FLAG_WELCOME)
-        self._clients[socket] = name
-        self._data_info[name] = data_info
-
-    async def wait_for_clients(
-            self,
-        ) -> Dict[str, Dict[str, Any]]:
-        self.logger.info("Waiting for clients to register for training...")
-        number = 0
-        while len(self._clients) < self.nb_clients:
-            await asyncio.sleep(1)  # past: self.hearbeat
-            dropped = []  # type: List[WebSocketServerProtocol]
-            for socket, name in self._clients.items():
-                try:
-                    await socket.ping()
-                except (ConnectionClosedOK, ConnectionClosedError):
-                    self.logger.info(
-                        "Client '%s' disconnected while waiting for "
-                        "participants.", name
-                    )
-                    dropped.append(socket)
-            for socket in dropped:
-                self._clients.pop(socket)
-            if dropped or (len(self._clients) != number):
-                self.logger.info(
-                    "Now waiting for %s additional participants.",
-                    self.nb_clients - len(self._clients)
-                )
-                number = len(self._clients)
-        return self._data_info.copy()
-
-    def broadcast_message(
-            self,
-            action: str,
-            params: Dict[str, Any],
-        ) -> None:
-        if self._running.done():
-            raise RuntimeError(
-                "Cannot broadcast messages while the server is not running."
-            )
-        dat = {"action": action, "params": params}
-        msg = json.dumps(dat, default=json_pack)
-        # pylint: disable=no-member
-        ws.broadcast(list(self._clients), msg)  # type: ignore
-
-    async def send_message(
-            self,
-            client: str,
-            action: str,
-            params: Dict[str, Any]
-        ) -> None:
-        if self._running.done():
-            raise RuntimeError(
-                "Cannot send messages while the server is not running."
-            )
-        for socket, name in self._clients.items():
-            if name == client:
-                dat = {"action": action, "params": params}
-                msg = json.dumps(dat, default=json_pack)
-                await socket.send(msg)
-                return None
-        raise KeyError(f"Unkown destinatory client '{client}'.")
-
-    async def wait_for_messages(
-            self,
-        ) -> Dict[str, Dict[str, Any]]:
-        if self._running.done():
-            raise RuntimeError(
-                "Cannot await messages while the server is not running."
-            )
-        # Await for each client to have sent a message.
-        routines = [socket.recv() for socket in self._clients]
-        received = await asyncio.gather(*routines, return_exceptions=True)
-        # Deserialize messages' content, and raise exceptions if any.
-        messages = {}  # type: Dict[str, Dict[str, Any]]
-        for name, message in zip(self._clients.values(), received):
-            if isinstance(message, Exception):
-                raise message
-            messages[name] = json.loads(message, object_hook=json_unpack)
-        return messages
+        """Stop the websockets server and purge information about clients."""
+        if self._server is not None:
+            self._server.close()
+            self._server = None
+        self.loop.run_until_complete(self.handler.purge())
