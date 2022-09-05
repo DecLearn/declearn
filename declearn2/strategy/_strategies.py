@@ -9,7 +9,7 @@ from typing import List
 from declearn2.optimizer.modules import (
     MomentumModule, OptiModule, ScaffoldClientModule, ScaffoldServerModule
 )
-from declearn2.strategy._base import FedAvg, Strategy
+from declearn2.strategy._strategy import FedAvg, Strategy
 
 
 __all__ = [
