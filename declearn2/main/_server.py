@@ -118,7 +118,7 @@ class FederatedServer:
         clients = self._select_round_participants()
         await self._send_training_instructions(clients, round_i)
         self.logger.info("Awaiting clients' training results.")
-        results = await self._collect_training_results()#clients)
+        results = await self._collect_training_results(clients)
         self.logger.info("Conducting server-side optimization.")
         self._conduct_global_update(results)
         #revise: self._compute_global_metrics(results)
@@ -156,7 +156,7 @@ class FederatedServer:
 
     async def _collect_training_results(
             self,
-            #clients: List[str],
+            clients: List[str],
         ) -> Dict[str, messaging.TrainReply]:
         """Collect training results for clients participating in a round.
 
@@ -167,7 +167,7 @@ class FederatedServer:
         Return a {client_name: TrainReply} dict otherwise.
         """
         # Await clients' responses.
-        replies = await self.netwk.wait_for_messages()  # revise: specify clients
+        replies = await self.netwk.wait_for_messages(clients)
         results = {}  # type: Dict[str, messaging.TrainReply]
         errors = {}  # type: Dict[str, str]
         for client, message in replies.items():
