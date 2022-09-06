@@ -46,7 +46,7 @@ class FederatedServer:
             self,
             rounds: int,
         ) -> None:
-        """Docstring."""
+        """Orchestrate the federated training routine."""
         await self.initialization()
         round_i = 0
         while True:
@@ -58,7 +58,20 @@ class FederatedServer:
     async def initialization(
             self,
         ) -> None:
-        """Docstring."""
+        """Orchestrate the initialization steps to set up training.
+
+        Wait for clients to register and process their data information.
+        Send instructions to clients to set up their model and optimizer.
+        Await clients to have finalized their initialization step; raise
+        and cancel training if issues are reported back.
+
+        Raises
+        ------
+        RuntimeError:
+            In case any of the clients returned an Error message rather
+            than an Empty ping-back message. Send CancelTraining to all
+            clients before raising.
+        """
         # Wait for clients to register and process their data information.
         data_info = await self.netwk.wait_for_clients()  # revise: nb_clients
         await self._process_data_info(data_info)
@@ -93,7 +106,21 @@ class FederatedServer:
             self,
             clients_data_info: Dict[str, Dict[str, Any]],
         ) -> None:
-        """Docstring."""
+        """Validate, aggregate and make use of clients' data-info.
+
+        Parameters
+        ----------
+        clients_data_info: dict[str, dict[str, any]]
+            Client-wise data-info dict, that are to be aggregated
+            and passed to the global model for initialization.
+
+        Raises
+        ------
+        AggregationError:
+            In case (some of) the clients' data info is invalid, or
+            incompatible. Send CancelTraining to all clients before
+            raising.
+        """
         fields = self.model.required_data_info  # revise: add optimizer, etc.
         # Try aggregating the input data_info.
         try:
@@ -134,7 +161,15 @@ class FederatedServer:
             clients: List[str],
             round_i: int,
         ) -> None:
-        """Send training instructions to selected clients."""
+        """Send training instructions to selected clients.
+
+        Parameters
+        ----------
+        clients: list[str]
+            Names of the clients participating in the training round.
+        round_i: int
+            Index of the training round.
+        """
         # Set up shared training parameters.
         params = {
             "round_i": round_i,
@@ -160,11 +195,22 @@ class FederatedServer:
         ) -> Dict[str, messaging.TrainReply]:
         """Collect training results for clients participating in a round.
 
-        Raise a RuntimeError if any client sent an incorrect message
-        or reported a failure to conduct the training step properly,
-        after sending cancelling instructions to all clients.
+        Parameters
+        ----------
+        clients: list[str]
+            Names of the clients participating in the training round.
 
-        Return a {client_name: TrainReply} dict otherwise.
+        Raises
+        ------
+        RuntimeError:
+            If any client sent an incorrect message or reported
+            failure to conduct the training step properly. Send
+            CancelTraining to all clients before raising.
+
+        Returns
+        -------
+        results: dict[str, TrainReply]
+            Client-wise TrainReply message.
         """
         # Await clients' responses.
         replies = await self.netwk.wait_for_messages(clients)
@@ -196,7 +242,13 @@ class FederatedServer:
             self,
             results: Dict[str, messaging.TrainReply],
         ) -> None:
-        """Use training results from clients to update the global model."""
+        """Use training results from clients to update the global model.
+
+        Parameters
+        ----------
+        results: dict[str, TrainReply]
+            Client-wise TrainReply message sent after a training round.
+        """
         self.optim.process_aux_var(
             {client: result.aux_var for client, result in results.items()}
         )
