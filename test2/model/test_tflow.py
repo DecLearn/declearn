@@ -126,11 +126,3 @@ def fixture_test_case(
 @pytest.mark.parametrize("kind", ["MLP", "RNN", "CNN"])
 class TestTensorflowModel(ModelTestSuite):
     """Unit tests for declearn.model.tensorflow.TensorflowModel."""
-
-    def test_compute_loss(
-            self,
-            test_case: TensorflowTestCase,
-        ) -> None:
-        """Test that loss computation abides by its specs."""
-        loss = test_case.model.compute_loss(test_case.dataset)
-        assert isinstance(loss, float)

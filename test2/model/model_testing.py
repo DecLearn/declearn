@@ -132,3 +132,11 @@ class ModelTestSuite:
         assert isinstance(gdump, str)
         other = json.loads(gdump, object_hook=json_unpack)
         assert grads == other
+
+    def test_compute_loss(
+            self,
+            test_case: ModelTestCase,
+        ) -> None:
+        """Test that loss computation abides by its specs."""
+        loss = test_case.model.compute_loss(test_case.dataset)
+        assert isinstance(loss, float)

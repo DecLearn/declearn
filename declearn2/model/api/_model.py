@@ -3,7 +3,7 @@
 """Model abstraction API."""
 
 from abc import ABCMeta, abstractmethod
-from typing import Any, Dict, Set
+from typing import Any, Dict, Iterable, Set
 
 from declearn2.model.api._vector import Vector
 from declearn2.model.api._np_vec import NumpyVector
@@ -117,6 +117,14 @@ class Model(metaclass=ABCMeta):
         ) -> None:
         """Apply updates to the model's weights."""
         return None
+
+    @abstractmethod
+    def compute_loss(
+            self,
+            dataset: Iterable[Batch],
+        ) -> float:
+        """Compute the average loss of the model on a given dataset."""
+        return NotImplemented
 
 
 create_types_registry("Model", Model)

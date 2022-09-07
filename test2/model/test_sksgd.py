@@ -151,11 +151,3 @@ class TestSklearnSGDModel(ModelTestSuite):
         # NOTE: in fact, it fails with sparse inputs as intercept is *not*
         #       fitted equally (while coefficients are) -> investigate this.
         return None
-
-    def test_compute_loss(
-            self,
-            test_case: SklearnSGDTestCase,
-        ) -> None:
-        """Test that loss computation abides by its specs."""
-        loss = test_case.model.compute_loss(test_case.dataset)
-        assert isinstance(loss, float)
