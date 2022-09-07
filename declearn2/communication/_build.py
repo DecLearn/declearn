@@ -62,7 +62,6 @@ def build_client(
 
 def build_server(
         protocol: str,
-        nb_clients: int,
         host: str,
         port: int,
         certificate: Optional[str] = None,
@@ -81,8 +80,6 @@ def build_server(
     protocol: str
         Name of the communications protocol backend, based on which
         the Server subclass to instantiate will be retrieved.
-    nb_clients: int
-        Maximum number of clients that should be accepted.
     host : str
         Host name (e.g. IP address) of the server.
     port: int
@@ -110,6 +107,4 @@ def build_server(
             f"Failed to retrieve Server class for protocol '{protocol}'."
         ) from exc
     assert issubclass(cls, Server)  # guaranteed by TypesRegistry
-    return cls(
-        nb_clients, host, port, certificate, private_key, password, **kwargs
-    )
+    return cls(host, port, certificate, private_key, password, **kwargs)
