@@ -2,7 +2,7 @@
 
 """Model subclass to wrap PyTorch models."""
 
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
 
 import torch
 
@@ -138,3 +138,38 @@ class TorchModel(Model):
                 upd = updates.coefs.get(str(idx))
                 if upd is not None:
                     par.add_(upd)
+
+    def compute_loss(
+            self,
+            dataset: Iterable[Batch],
+        ) -> float:
+        """Compute the average loss of the model on a given dataset.
+
+        Parameters
+        ----------
+        dataset: iterable of batches
+            Iterable yielding batch structures that are to be unpacked
+            into (input_features, target_labels, [sample_weights]).
+            If set, sample weights will affect the loss averaging.
+
+        Returns
+        -------
+        loss: float
+            Average value of the model's loss over samples.
+        """
+        total = 0.
+        n_btc = 0
+        try:
+            self._model.eval()
+            with torch.no_grad():
+                for batch in dataset:
+                    inputs, y_true, s_wght = self._unpack_batch(batch)
+                    y_pred = self._model(*inputs)
+                    loss = self._loss_fn(y_pred, y_true)
+                    if s_wght is not None:
+                        loss.mul_(s_wght)
+                    total += loss.mean().numpy()
+                    n_btc += 1
+        finally:
+            self._model.train()
+        return total / n_btc
