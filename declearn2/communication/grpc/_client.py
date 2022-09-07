@@ -2,7 +2,6 @@
 
 """Client-side communication endpoint implementation using gRPC"""
 
-import asyncio
 from typing import Optional
 
 import grpc  # type: ignore
@@ -29,7 +28,6 @@ class GrpcClient(Client):
             server_uri: str,
             name: str,
             certificate: Optional[str] = None,
-            loop: Optional[asyncio.AbstractEventLoop] = None,
         ) -> None:
         """Instantiate the client-side gRPC communications handler.
 
@@ -44,19 +42,13 @@ class GrpcClient(Client):
         certificate: str or None, default=None,
             Path to a certificate (publickey) PEM file, to use SSL/TLS
             communcations encryption.
-        loop: asyncio.AbstractEventLoop or None, default=None
-            An asyncio event loop to use.
-            If None, use `asyncio.get_event_loop()`.
         """
-        # Assign attributes and handle TLS/SSL credentials.
-        super().__init__(server_uri, name, loop=loop)
-        self.credentials = self._setup_ssl_credentials(certificate)
-        # Declare private attributes to store gRPC message-board servicers.
+        super().__init__(server_uri, name, certificate)
         self._channel = None  # type: Optional[grpc.Channel]
         self._service = None  # type: Optional[MessageBoardStub]
 
     @staticmethod
-    def _setup_ssl_credentials(
+    def _setup_ssl_context(
             certificate: Optional[str] = None,
         ) -> Optional[grpc.ChannelCredentials]:
         """Set up and return an (optional) grpc ChannelCredentials object."""
@@ -66,21 +58,21 @@ class GrpcClient(Client):
             cert_bytes = file.read()
         return grpc.ssl_channel_credentials(cert_bytes)
 
-    def start(
+    async def start(
             self
         ) -> None:
         self._channel = (
-            grpc.aio.secure_channel(self.server_uri, self.credentials)
-            if (self.credentials is not None)
+            grpc.aio.secure_channel(self.server_uri, self._ssl)
+            if (self._ssl is not None)
             else grpc.aio.insecure_channel(self.server_uri)
         )
         self._service = MessageBoardStub(self._channel)  # type: ignore
 
-    def stop(
+    async def stop(
             self
         ) -> None:
         if self._channel is not None:
-            self.loop.run_until_complete(self._channel.close())
+            await self._channel.close()
             self._channel = None
             self._service = None
 

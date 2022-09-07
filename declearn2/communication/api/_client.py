@@ -2,10 +2,10 @@
 
 """Abstract class defining an API for client-side communication endpoints."""
 
-import asyncio
 import logging
+import types
 from abc import ABCMeta, abstractmethod
-from typing import Any, Callable, Coroutine, Dict, Optional
+from typing import Any, Dict, Optional, Type
 
 
 from declearn2.communication.messaging import (
@@ -33,7 +33,6 @@ class Client(metaclass=ABCMeta):
             server_uri: str,
             name: str,
             certificate: Optional[str] = None,
-            loop: Optional[asyncio.AbstractEventLoop] = None,
         ) -> None:
         """Instantiate the client-side communications handler.
 
@@ -47,49 +46,50 @@ class Client(metaclass=ABCMeta):
         certificate: str or None, default=None,
             Path to a certificate (publickey) PEM file, to use SSL/TLS
             communcations encryption.
-        loop: asyncio.AbstractEventLoop or None, default=None
-            An asyncio event loop to use.
-            If None, use `asyncio.get_event_loop()`.
         """
         # Assign basic attributes. Note: children must handle 'certificate'.
         self.server_uri = server_uri
         self.name = name
-        if loop is None:
-            try:
-                self.loop = asyncio.get_running_loop()
-            except RuntimeError:
-                self.loop = asyncio.get_event_loop_policy().get_event_loop()
+        self._ssl = self._setup_ssl_context(certificate)
 
-    def run_until_complete(
-            self,
-            task: Callable[[], Coroutine[Any, Any, None]],
-        ) -> None:
-        """Start a client to run a given task, and stop it afterwards.
+    @staticmethod
+    @abstractmethod
+    def _setup_ssl_context(
+            certificate: Optional[str] = None,
+        ) -> Any:
+        """Set up and return an (optional) SSL context object.
 
-        Parameters
-        ----------
-        task: callable returning an awaitable
-            The coroutine function to perform, using this client.
+        The return type is communication-protocol dependent.
         """
-        self.start()
-        try:
-            self.loop.run_until_complete(task())
-        finally:
-            self.stop()
+        return NotImplemented
 
-    @abstractmethod  # revise
-    def start(
+    @abstractmethod
+    async def start(
             self
         ) -> None:
         """Start the client, i.e. connect to the server."""
         return None
 
-    @abstractmethod  # revise
-    def stop(
+    @abstractmethod
+    async def stop(
             self
         ) -> None:
         """Stop the client, i.e. close all connections."""
         return None
+
+    async def __aenter__(
+            self,
+        ) -> 'Client':
+        await self.start()
+        return self
+
+    async def __aexit__(
+            self,
+            exc_type: Type[Exception],
+            exc_value: Exception,
+            exc_tb: types.TracebackType,
+        ) -> None:
+        await self.stop()
 
     async def register(
             self,
