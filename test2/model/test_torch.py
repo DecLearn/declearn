@@ -140,7 +140,7 @@ def fixture_test_case(
 class TestTorchModel(ModelTestSuite):
     """Unit tests for declearn.model.torch.TorchModel."""
 
-    @pytest.mark.xfail  # NOTE: unimplemented feature **yet**
+    @pytest.mark.filterwarnings("ignore: PyTorch JSON serialization")
     def test_serialization(
             self,
             test_case: ModelTestCase,

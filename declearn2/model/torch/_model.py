@@ -2,6 +2,8 @@
 
 """Model subclass to wrap PyTorch models."""
 
+import io
+import warnings
 from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
 
 import torch
@@ -53,9 +55,19 @@ class TorchModel(Model):
             self,
         ) -> Dict[str, Any]:
         """Return the model's parameters as a JSON-serializable dict."""
-        raise NotImplementedError(
-            "PyTorch does not implement JSON serialization."
+        warnings.warn(
+            "PyTorch JSON serialization relies on pickle, which may be unsafe."
         )
+        with io.BytesIO() as buffer:
+            torch.save(self._model, buffer)
+            model = buffer.getbuffer().hex()
+        with io.BytesIO() as buffer:
+            torch.save(self._loss_fn, buffer)
+            loss = buffer.getbuffer().hex()
+        return {
+            "model": model,
+            "loss": loss,
+        }
 
     @classmethod
     def from_config(
@@ -63,9 +75,11 @@ class TorchModel(Model):
             config: Dict[str, Any],
         ) -> 'Model':
         """Instantiate a model from a configuration dict."""
-        raise NotImplementedError(
-            "PyTorch does not implement JSON serialization."
-        )
+        with io.BytesIO(bytes.fromhex(config["model"])) as buffer:
+            model = torch.load(buffer)  # type: ignore
+        with io.BytesIO(bytes.fromhex(config["loss"])) as buffer:
+            loss = torch.load(buffer)  # type: ignore
+        return cls(model=model, loss=loss)
 
     def get_weights(
             self,
