@@ -2,8 +2,8 @@
 
 """Server-side main Federated Learning orchestrating class."""
 
-import functools
-from typing import Any, Dict, List
+import asyncio
+from typing import Any, Dict, Set
 
 
 from declearn2.communication import messaging
@@ -26,6 +26,7 @@ class FederatedServer:
             model: Model,    # revise: from_config
             server: Server,  # revise: from_config
             strategy: Strategy,  # revise: from_config
+            batch_size: int,
         ) -> None:
         """Docstring."""
         self.model = model
@@ -33,27 +34,28 @@ class FederatedServer:
         self.strat = strategy
         self.aggrg = self.strat.build_server_aggregator()
         self.optim = self.strat.build_server_optimizer()
+        self.batch_size = batch_size
 
     def run(
             self,
             rounds: int,
         ) -> None:
         """Docstring."""
-        task = functools.partial(self.training, rounds=rounds)
-        self.netwk.run_until_complete(task)
+        asyncio.run(self.training(rounds))
 
     async def training(
             self,
             rounds: int,
         ) -> None:
         """Orchestrate the federated training routine."""
-        await self.initialization()
-        round_i = 0
-        while True:
-            await self.training_round(round_i)
-            round_i += 1
-            if round_i >= rounds:
-                break
+        async with self.netwk:
+            await self.initialization()
+            round_i = 0
+            while True:
+                await self.training_round(round_i)
+                round_i += 1
+                if round_i >= rounds:
+                    break
 
     async def initialization(
             self,
@@ -152,20 +154,20 @@ class FederatedServer:
 
     def _select_round_participants(
             self,
-        ) -> List[str]:
-        """Return the list of clients that should participate in the round."""
-        return list(self.netwk.client_names)
+        ) -> Set[str]:
+        """Return the names of clients that should participate in the round."""
+        return self.netwk.client_names
 
     async def _send_training_instructions(
             self,
-            clients: List[str],
+            clients: Set[str],
             round_i: int,
         ) -> None:
         """Send training instructions to selected clients.
 
         Parameters
         ----------
-        clients: list[str]
+        clients: set[str]
             Names of the clients participating in the training round.
         round_i: int
             Index of the training round.
@@ -174,7 +176,7 @@ class FederatedServer:
         params = {
             "round_i": round_i,
             "weights": self.model.get_weights(),
-            "batch_s": self.strat.batch_size,  # todo: implement/revise
+            "batch_s": self.batch_size,
             "n_epoch": 1, # todo: add params (n_epoch, n_steps, timeout...)
         }  # type: Dict[str, Any]
         messages = {}  # type: Dict[str, messaging.Message]
@@ -191,13 +193,13 @@ class FederatedServer:
 
     async def _collect_training_results(
             self,
-            clients: List[str],
+            clients: Set[str],
         ) -> Dict[str, messaging.TrainReply]:
         """Collect training results for clients participating in a round.
 
         Parameters
         ----------
-        clients: list[str]
+        clients: set[str]
             Names of the clients participating in the training round.
 
         Raises
