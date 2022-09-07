@@ -63,7 +63,11 @@ class Server(metaclass=ABCMeta):
         # arguments serve modularity; pylint: disable=too-many-arguments
         self.host = host
         self.port = port
-        self.loop = asyncio.get_event_loop() if loop is None else loop
+        if loop is None:
+            try:
+                self.loop = asyncio.get_running_loop()
+            except RuntimeError:
+                self.loop = asyncio.get_event_loop_policy().get_event_loop()
         self.handler = MessagesHandler(self.logger)
 
     @property

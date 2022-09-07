@@ -54,7 +54,11 @@ class Client(metaclass=ABCMeta):
         # Assign basic attributes. Note: children must handle 'certificate'.
         self.server_uri = server_uri
         self.name = name
-        self.loop = asyncio.get_event_loop() if loop is None else loop
+        if loop is None:
+            try:
+                self.loop = asyncio.get_running_loop()
+            except RuntimeError:
+                self.loop = asyncio.get_event_loop_policy().get_event_loop()
 
     def run_until_complete(
             self,
