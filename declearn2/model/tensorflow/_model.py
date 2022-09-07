@@ -158,3 +158,24 @@ class TensorflowModel(Model):
             total += loss.numpy()
             n_btc += 1
         return total / n_btc
+
+    def evaluate(
+            self,
+            dataset: Iterable[Batch],
+        ) -> Dict[str, float]:
+        """Compute the model's built-in evaluation metrics on a given dataset.
+
+        Parameters
+        ----------
+        dataset: iterable of batches
+            Iterable yielding batch structures that are to be unpacked
+            into (input_features, target_labels, [sample_weights]).
+            If set, sample weights will affect metrics' averaging.
+
+        Returns
+        -------
+        metrics: dict[str, float]
+            Dictionary associating evaluation metrics' values to their
+            name.
+        """
+        return self._model.evaluate(dataset, return_dict=True)  # type: ignore
