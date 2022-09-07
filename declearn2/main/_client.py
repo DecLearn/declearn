@@ -34,27 +34,28 @@ class FederatedClient:
             self,
         ) -> None:
         """Docstring."""
-        self.netwk.run_until_complete(self.training)
+        asyncio.run(self.training())
 
     async def training(
             self,
         ) -> None:
         """Participate in the federated training process."""
-        # Register for training, then collect initialization information.
-        await self.register()
-        model, optim = await self.initialize()
-        # Process server instructions as they come.
-        while True:
-            message = await self.netwk.check_message()
-            if isinstance(message, messaging.TrainRequest):
-                await self._train_one_round(model, optim, message)
-            elif isinstance(message, messaging.CancelTraining):
-                await self._cancel_training(message)
-            else:
-                error = "Unexpected instruction received from server:"
-                error += repr(message)
-                self.logger.error(error)
-                raise ValueError(error)
+        async with self.netwk:
+            # Register for training, then collect initialization information.
+            await self.register()
+            model, optim = await self.initialize()
+            # Process server instructions as they come.
+            while True:
+                message = await self.netwk.check_message()
+                if isinstance(message, messaging.TrainRequest):
+                    await self._train_one_round(model, optim, message)
+                elif isinstance(message, messaging.CancelTraining):
+                    await self._cancel_training(message)
+                else:
+                    error = "Unexpected instruction received from server:"
+                    error += repr(message)
+                    self.logger.error(error)
+                    raise ValueError(error)
 
     async def register(
             self,
