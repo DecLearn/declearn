@@ -100,7 +100,7 @@ class TensorflowModel(Model):
         """Compute and return the model's gradients over a data batch."""
         inputs, y_true, s_wght = self._verify_batch(batch)
         with tf.GradientTape() as tape:
-            y_pred = self._model(inputs)
+            y_pred = self._model(inputs, training=True)
             loss = self._model.compute_loss(inputs, y_true, y_pred, s_wght)
             grad = tape.gradient(loss, self._model.trainable_weights)
         return TensorflowVector({str(i): tns for i, tns in enumerate(grad)})
@@ -152,8 +152,8 @@ class TensorflowModel(Model):
         total = 0.
         n_btc = 0
         for batch in dataset:
-            inputs, y_true, s_wght = batch
-            y_pred = self._model(inputs)
+            inputs, y_true, s_wght = self._verify_batch(batch)
+            y_pred = self._model(inputs, training=False)
             loss = self._model.compute_loss(inputs, y_true, y_pred, s_wght)
             total += loss.numpy()
             n_btc += 1
