@@ -2,7 +2,6 @@
 
 """Server-side communication endpoint implementation using WebSockets."""
 
-import asyncio
 import os
 import ssl
 from typing import Optional
@@ -31,7 +30,6 @@ class WebsocketsServer(Server):
             certificate: Optional[str] = None,
             private_key: Optional[str] = None,
             password: Optional[str] = None,
-            loop: Optional[asyncio.AbstractEventLoop] = None,
         ) -> None:
         """Instantiate the server-side WebSockets communications handler.
 
@@ -52,24 +50,18 @@ class WebsocketsServer(Server):
             Optional password used to access `private_key`, or path to a
             file from which to read such a password.
             If None but a password is needed, an input will be prompted.
-        loop: asyncio.AbstractEventLoop or None, default=None
-            An asyncio event loop to use.
-            If None, use `asyncio.get_event_loop()`.
         """
         # inherited signature; pylint: disable=too-many-arguments
-        # Assign attributes and set up optional SSL context.
-        super().__init__(host, port, loop=loop)
-        self.ssl_context = self._setup_ssl(certificate, private_key, password)
-        # Create a server attribute slot.
+        super().__init__(host, port, certificate, private_key, password)
         self._server = None  # type: Optional[WebSocketServer]
 
     @property
     def uri(self) -> str:
-        protocol = "ws" if self.ssl_context is None else "wss"
+        protocol = "ws" if self._ssl is None else "wss"
         return f"{protocol}://{self.host}:{self.port}"
 
     @staticmethod
-    def _setup_ssl(
+    def _setup_ssl_context(
             certificate: Optional[str] = None,
             private_key: Optional[str] = None,
             password: Optional[str] = None,
@@ -91,7 +83,7 @@ class WebsocketsServer(Server):
         ssl_context.load_cert_chain(certificate, private_key, password)
         return ssl_context
 
-    def start(
+    async def start(
             self,
         ) -> None:
         """Start the websockets server."""
@@ -105,12 +97,12 @@ class WebsocketsServer(Server):
             host=self.host,
             port=self.port,
             logger=self.logger,
-            ssl=self.ssl_context,
+            ssl=self._ssl,
             extra_headers=extra_headers,
         )
         # Run the websockets server.
         self.logger.info("Server is now starting...")
-        self._server = self.loop.run_until_complete(server)
+        self._server = await server
 
     async def _handle_connection(
             self,
@@ -137,11 +129,11 @@ class WebsocketsServer(Server):
         finally:
             await socket.close()
 
-    def stop(
+    async def stop(
             self,
         ) -> None:
         """Stop the websockets server and purge information about clients."""
         if self._server is not None:
             self._server.close()
             self._server = None
-        self.loop.run_until_complete(self.handler.purge())
+        await self.handler.purge()

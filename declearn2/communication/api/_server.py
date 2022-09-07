@@ -4,8 +4,9 @@
 
 import asyncio
 import logging
+import types
 from abc import ABCMeta, abstractmethod
-from typing import Any, Callable, Coroutine, Dict, Optional, Set
+from typing import Any, Dict, Optional, Set, Type
 
 
 from declearn2.communication.api._service import MessagesHandler
@@ -35,7 +36,6 @@ class Server(metaclass=ABCMeta):
             certificate: Optional[str] = None,
             private_key: Optional[str] = None,
             password: Optional[str] = None,
-            loop: Optional[asyncio.AbstractEventLoop] = None,
         ) -> None:
         """Instantiate the server-side communications handler.
 
@@ -56,18 +56,11 @@ class Server(metaclass=ABCMeta):
             Optional password used to access `private_key`, or path to a
             file from which to read such a password.
             If None but a password is needed, an input will be prompted.
-        loop: asyncio.AbstractEventLoop or None, default=None
-            An asyncio event loop to use.
-            If None, use `asyncio.get_event_loop()`.
         """
         # arguments serve modularity; pylint: disable=too-many-arguments
         self.host = host
         self.port = port
-        if loop is None:
-            try:
-                self.loop = asyncio.get_running_loop()
-            except RuntimeError:
-                self.loop = asyncio.get_event_loop_policy().get_event_loop()
+        self._ssl = self._setup_ssl_context(certificate, private_key, password)
         self.handler = MessagesHandler(self.logger)
 
     @property
@@ -81,39 +74,46 @@ class Server(metaclass=ABCMeta):
         """Set of registered clients' names."""
         return self.handler.client_names
 
+    @staticmethod
     @abstractmethod
-    def start(
+    def _setup_ssl_context(
+            certificate: Optional[str] = None,
+            private_key: Optional[str] = None,
+            password: Optional[str] = None,
+        ) -> Any:
+        """Set up and return an (optional) SSL context object.
+
+        The return type is communication-protocol dependent.
+        """
+        return NotImplemented
+
+    @abstractmethod
+    async def start(
             self,
         ) -> None:
         """Initialize the server and start welcoming communications."""
         return None
 
     @abstractmethod
-    def stop(
+    async def stop(
             self,
         ) -> None:
         """Stop the server and purge information about clients."""
         return None
 
-    def run_until_complete(
+    async def __aenter__(
             self,
-            task: Callable[[], Coroutine[Any, Any, None]],
-        ) -> None:
-        """Start a server to run a given task, and stop it afterwards.
+        ) -> 'Server':
+        await self.start()
+        return self
 
-        Parameters
-        ----------
-        task: callable returning a coroutine
-            The coroutine function to perform, using this server.
-        """
-        self.start()
-        try:
-            self.loop.run_until_complete(task())
-        except asyncio.CancelledError as cerr:
-            msg = f"Asyncio error while running the server: {cerr}"
-            self.logger.info(msg)
-        finally:
-            self.stop()
+    async def __aexit__(
+            self,
+            exc_type: Type[Exception],
+            exc_value: Exception,
+            exc_tb: types.TracebackType,
+        ) -> None:
+        await self.stop()
 
     async def wait_for_clients(
             self,

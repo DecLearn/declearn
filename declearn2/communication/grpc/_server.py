@@ -2,7 +2,6 @@
 
 """Server-side communication endpoint implementation using gRPC."""
 
-import asyncio
 import getpass
 import os
 from concurrent import futures
@@ -12,6 +11,7 @@ import grpc  # type: ignore
 from cryptography.hazmat.primitives import serialization
 
 from declearn2.communication.api import Server
+from declearn2.communication.api._service import MessagesHandler
 from declearn2.communication.grpc.protobufs import message_pb2
 from declearn2.communication.grpc.protobufs.message_pb2_grpc import (
     MessageBoardServicer, add_MessageBoardServicer_to_server
@@ -55,11 +55,10 @@ class GrpcServer(Server):
     def __init__(
             self,
             host: str = 'localhost',
-            port: int = 0,
+            port: int = 8765,
             certificate: Optional[str] = None,
             private_key: Optional[str] = None,
             password: Optional[str] = None,
-            loop: Optional[asyncio.AbstractEventLoop] = None,
         ) -> None:
         """Instantiate the server-side gRPC communications handler.
 
@@ -67,9 +66,10 @@ class GrpcServer(Server):
         ----------
         host : str, default='localhost'
             Host name (e.g. IP address) of the server.
-        port: int, default=0
+        port: int, default=8765
             Communications port to use.
-            If left to zero, gRPC runtime will choose one.
+            If set to 0, the gRPC runtime will choose one when the
+            server is first started.
         certificate: str or None, default=None
             Path to the server certificate (publickey) to use SSL/TLS
             communications encryption. If provided, `private_key` must
@@ -81,40 +81,18 @@ class GrpcServer(Server):
             Optional password used to access `private_key`, or path to a
             file from which to read such a password.
             If None but a password is needed, an input will be prompted.
-        loop: asyncio.AbstractEventLoop or None, default=None
-            An asyncio event loop to use.
-            If None, use `asyncio.get_event_loop()`.
         """
         # inherited signature; pylint: disable=too-many-arguments
         # Assign attributes and set up the gRPC server.
-        super().__init__(host, port, loop=loop)
-        self._server = self._setup_server(certificate, private_key, password)
+        super().__init__(host, port, certificate, private_key, password)
+        self._server = None  # type: Optional[grpc.Server]
 
     @property
     def uri(self) -> str:
         return f"{self.host}:{self.port}"
 
-    def _setup_server(
-            self,
-            certificate: Optional[str] = None,
-            private_key: Optional[str] = None,
-            password: Optional[str] = None,
-        ) -> grpc.Server:
-        """Set up and return a grpc Server to be used by this service."""
-        server = grpc.aio.server(futures.ThreadPoolExecutor(max_workers=10))
-        creds = self._setup_ssl_credentials(certificate, private_key, password)
-        address = f'{self.host}:{self.port}'
-        self.port = (
-            server.add_secure_port(address, creds)
-            if (creds is not None)
-            else server.add_insecure_port(address)
-        )
-        servicer = self._setup_board_servicer()
-        add_MessageBoardServicer_to_server(servicer, server)  # type: ignore
-        return server
-
     @staticmethod
-    def _setup_ssl_credentials(
+    def _setup_ssl_context(
             certificate: Optional[str] = None,
             private_key: Optional[str] = None,
             password: Optional[str] = None,
@@ -135,47 +113,66 @@ class GrpcServer(Server):
             require_client_auth=False,
         )
 
-    def _setup_board_servicer(
-            self,
-        ) -> MessageBoardServicer:
-        """Create and return a gRPC message board servicer for this server."""
-        server = self
-        # Declare a MessageBoardServicer implementing message processing.
-        class Servicer(MessageBoardServicer):
-            """A gRPC MessageBoard service to be used by this GrpcServer."""
-
-            async def ping(
-                    self,
-                    request: message_pb2.Empty,
-                    context: grpc.ServicerContext,
-                ) -> message_pb2.Empty:
-                """Handle a ping request from a client."""
-                return message_pb2.Empty()
-
-            async def send(
-                    self,
-                    request: message_pb2.Message,
-                    context: grpc.ServicerContext,
-                ) -> message_pb2.Message:
-                """Handle a Message-sending request from a client."""
-                # async is needed; pylint: disable=invalid-overridden-method
-                nonlocal server
-                reply = await server.handler.handle_message(
-                    string=request.message,
-                    context=context.peer(),
-                )
-                return message_pb2.Message(message=reply.to_string())
-        # Instantiate and return the servicer.
-        return Servicer()
-
-    def start(
+    async def start(
             self,
         ) -> None:
         """Start the gRPC server."""
-        self.loop.run_until_complete(self._server.start())
+        self._server = self._setup_server()
+        self.logger.info("Server is now starting...")
+        await self._server.start()
 
-    def stop(
+    def _setup_server(
+            self,
+        ) -> grpc.Server:
+        """Set up and return a grpc Server to be used by this service."""
+        server = grpc.aio.server(futures.ThreadPoolExecutor(max_workers=10))
+        address = f'{self.host}:{self.port}'
+        self.port = (
+            server.add_secure_port(address, self._ssl)
+            if (self._ssl is not None)
+            else server.add_insecure_port(address)
+        )
+        servicer = GrpcServicer(self.handler)
+        add_MessageBoardServicer_to_server(servicer, server)  # type: ignore
+        return server
+
+    async def stop(
             self,
         ) -> None:
-        """Stop the gRPC server."""
-        self.loop.run_until_complete(self._server.stop(grace=None))
+        """Stop the gRPC server and purge information about clients."""
+        if self._server is not None:
+            await self._server.stop(grace=None)
+            self._server = None
+        await self.handler.purge()
+
+
+class GrpcServicer(MessageBoardServicer):
+    """A gRPC MessageBoard service to be used by a GrpcServer."""
+
+    def __init__(
+            self,
+            handler: MessagesHandler,
+        ) -> None:
+        self.handler = handler
+
+    async def ping(
+            self,
+            request: message_pb2.Empty,
+            context: grpc.ServicerContext,
+        ) -> message_pb2.Empty:
+        """Handle a ping request from a client."""
+        # async is needed; pylint: disable=invalid-overridden-method
+        return message_pb2.Empty()
+
+    async def send(
+            self,
+            request: message_pb2.Message,
+            context: grpc.ServicerContext,
+        ) -> message_pb2.Message:
+        """Handle a Message-sending request from a client."""
+        # async is needed; pylint: disable=invalid-overridden-method
+        reply = await self.handler.handle_message(
+            string=request.message,
+            context=context.peer(),
+        )
+        return message_pb2.Message(message=reply.to_string())
