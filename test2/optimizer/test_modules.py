@@ -37,6 +37,7 @@ from declearn2.model.api import NumpyVector, Vector
 from declearn2.model.tensorflow import TensorflowVector
 from declearn2.model.torch import TorchVector
 from declearn2.optimizer.modules import OptiModule
+from declearn2.utils import json_pack, json_unpack
 from declearn2.utils._register import REGISTRIES
 
 
@@ -177,10 +178,17 @@ class TestOptiModule:
             for key, val in res.coefs.items()
         )
 
-    def test_collect_aux_var(self, cls: Type[OptiModule]) -> None:
+    @pytest.mark.parametrize('framework', FRAMEWORKS)
+    def test_collect_aux_var(
+            self, cls: Type[OptiModule], framework: Framework
+        ) -> None:
         """Test an OptiModule's collect_aux_var method."""
+        test_case = GradientsTestCase(framework)
         module = cls()
+        module.run(test_case.mock_gradient)
         aux_var = module.collect_aux_var()
         assert (aux_var is None) or isinstance(aux_var, dict)
         if isinstance(aux_var, dict):
-            assert isinstance(json.dumps(aux_var), str)
+            dump = json.dumps(aux_var, default=json_pack)
+            assert isinstance(dump, str)
+            assert json.loads(dump, object_hook=json_unpack) == aux_var
