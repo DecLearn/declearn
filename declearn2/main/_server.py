@@ -268,9 +268,13 @@ class FederatedServer:
         results: dict[str, TrainReply]
             Client-wise TrainReply message sent after a training round.
         """
-        self.optim.process_aux_var(
-            {client: result.aux_var for client, result in results.items()}
-        )
+        # Reformat received auxiliary variables and pass them to the Optimizer.
+        aux_var = {}  # type: Dict[str, Dict[str, Dict[str, Any]]]
+        for client, result in results.items():
+            for module, params in result.aux_var.items():
+                aux_var.setdefault(module, {})[client] = params
+        self.optim.process_aux_var(aux_var)
+        # Compute aggregated "gradients" (updates) and apply them to the model.
         gradients = self.aggrg.aggregate(  # revise: pass n_epoch / t_spent / ?
             {client: result.updates for client, result in results.items()},
             {client: result.n_steps for client, result in results.items()}
