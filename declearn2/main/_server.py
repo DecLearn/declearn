@@ -3,7 +3,7 @@
 """Server-side main Federated Learning orchestrating class."""
 
 import asyncio
-from typing import Any, Dict, Set
+from typing import Any, Dict, Optional, Set
 
 
 from declearn2.communication import messaging
@@ -39,17 +39,23 @@ class FederatedServer:
     def run(
             self,
             rounds: int,
+            min_clients: int = 1,
+            max_clients: Optional[int] = None,
+            timeout: Optional[int] = None,
         ) -> None:
         """Docstring."""
-        asyncio.run(self.training(rounds))
+        asyncio.run(self.training(rounds, min_clients, max_clients, timeout))
 
     async def training(
             self,
             rounds: int,
+            min_clients: int,
+            max_clients: Optional[int],
+            timeout: Optional[int],
         ) -> None:
         """Orchestrate the federated training routine."""
         async with self.netwk:
-            await self.initialization()
+            await self.initialization(min_clients, max_clients, timeout)
             round_i = 0
             while True:
                 await self.training_round(round_i)
@@ -59,6 +65,9 @@ class FederatedServer:
 
     async def initialization(
             self,
+            min_clients: int,
+            max_clients: Optional[int],
+            timeout: Optional[int],
         ) -> None:
         """Orchestrate the initialization steps to set up training.
 
@@ -75,7 +84,9 @@ class FederatedServer:
             clients before raising.
         """
         # Wait for clients to register and process their data information.
-        data_info = await self.netwk.wait_for_clients()  # revise: nb_clients
+        data_info = await self.netwk.wait_for_clients(
+            min_clients, max_clients, timeout
+        )
         await self._process_data_info(data_info)
         # Serialize intialization information and send it to clients.
         message = messaging.InitRequest(
