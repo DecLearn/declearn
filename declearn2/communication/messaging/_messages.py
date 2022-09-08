@@ -43,10 +43,11 @@ class Message(metaclass=ABCMeta):
         return json.dumps(data, default=json_pack)
 
     @classmethod
-    def from_string(cls, string: str) -> 'Message':
-        """Parse a message from a JSON-serialized string."""
-        data = json.loads(string, object_hook=json_unpack)
-        return cls(**data)
+    def from_kwargs(cls, **kwargs: Any) -> 'Message':
+        """Parse the message from JSON-deserialized attributes."""
+        # NOTE: override this method to de-serialize attributes
+        #       that are not handled by declearn2.utils.json_pack
+        return cls(**kwargs)
 
 
 @dataclasses.dataclass
@@ -107,10 +108,10 @@ class InitRequest(Message):
         return json.dumps(data, default=json_pack)
 
     @classmethod
-    def from_string(cls, string: str) -> 'Message':
-        data = json.loads(string, object_hook=json_unpack)
-        data["model"] = deserialize_object(data["model"])
-        return cls(**data)
+    def from_kwargs(cls, **kwargs: Any) -> 'Message':
+        kwargs["model"] = deserialize_object(kwargs["model"])
+        kwargs["optim"] = Optimizer.from_config(kwargs["optim"])
+        return cls(**kwargs)
 
 
 @dataclasses.dataclass
@@ -189,4 +190,4 @@ def parse_message_from_string(
     cls = MESSAGE_CLASSES.get(typekey)
     if cls is None:
         raise KeyError(f"No Message matches typekey '{typekey}'.")
-    return cls(**data)
+    return cls.from_kwargs(**data)
