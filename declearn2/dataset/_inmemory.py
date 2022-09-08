@@ -47,11 +47,12 @@ class InMemoryDataset(Dataset):
         Data array containing samples, with all input features
         (and optionally more columns).
     target: data array or None
-        Optional data array containing target labels.
+        Optional data array containing target labels ~ values.
     f_cols: list[int] or list[str] or None
         Optional subset of `data` columns to restrict yielded
         input features (i.e. batches' first array) to which.
     """
+    # attributes serve clarity; pylint: disable=too-many-instance-attributes
 
     _type_key = "InMemoryDataset"
 
@@ -61,6 +62,7 @@ class InMemoryDataset(Dataset):
             target: Optional[Union[DataArray, str]] = None,
             s_wght: Optional[Union[DataArray, str]] = None,
             f_cols: Optional[Union[List[int], List[str]]] = None,
+            expose_classes: bool = False,
         ) -> None:
         """Instantiate the dataset interface.
 
@@ -92,7 +94,12 @@ class InMemoryDataset(Dataset):
             Optional list of columns in `data` to use as input features
             (other columns will not be included in the first array of
             the batches yielded by `self.generate_batches(...)`).
+        expose_classes: bool, default=False
+            Whether the dataset should be used for classification, in
+            which case the unique values of `target` are exposed under
+            `self.classes` and exported by `self.get_data_specs()`).
         """
+        # arguments serve modularity; pylint: disable=too-many-arguments
         self._data_path = None  # type: Optional[str]
         self._trgt_path = None  # type: Optional[str]
         # Assign the main data array.
@@ -126,6 +133,8 @@ class InMemoryDataset(Dataset):
             else:
                 s_wght = self.load_data_array(s_wght)
         self.weights = s_wght
+        # Assign the 'expose_classes' attribute.
+        self.expose_classes = expose_classes
 
     @property
     def feats(
@@ -145,7 +154,7 @@ class InMemoryDataset(Dataset):
             self
         ) -> Optional[Set[Any]]:
         """Unique target classes."""
-        if self.target is None:
+        if (not self.expose_classes) or (self.target is None):
             return None
         if isinstance(self.target, pd.DataFrame):
             return set(self.target.unstack().unique())
