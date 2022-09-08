@@ -155,12 +155,14 @@ class SklearnSGDModel(Model):
             A declearn Model wrapping an instantiated scikit-learn one.
         """
         # partially-inherited signature; pylint: disable=too-many-arguments
+        kwargs = {}
         # SGDClassifier case.
         if kind == "classifier":
             loss = loss or 'hinge'
             if loss not in typing.get_args(LossesLiteral):
                 raise ValueError(f"Invalid loss '{loss}' for SGDClassifier.")
             sk_cls = SGDClassifier
+            kwargs["n_jobs"] = n_jobs
         # SGDRegressor case.
         elif kind == "regressor":
             loss = loss or 'squared_error'
@@ -170,7 +172,7 @@ class SklearnSGDModel(Model):
         # Instantiate the sklearn model, wrap it up and return.
         model = sk_cls(
             loss=loss, penalty=penalty, alpha=alpha, l1_ratio=l1_ratio,
-            epsilon=epsilon, fit_intercept=fit_intercept, n_jobs=n_jobs,
+            epsilon=epsilon, fit_intercept=fit_intercept, **kwargs
         )
         return cls(model)
 
