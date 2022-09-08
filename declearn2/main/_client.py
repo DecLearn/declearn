@@ -101,6 +101,7 @@ class FederatedClient:
             Optimizer that is to be used locally to train the model.
         """
         # Await initialization instructions. Report messages-unpacking errors.
+        self.logger.info("Awaiting initialization instructions from server.")
         try:
             message = await self.netwk.check_message()
         except Exception as exc:
@@ -112,6 +113,7 @@ class FederatedClient:
             self.logger.error(error)
             raise RuntimeError(error)
         # Send back an empty message to indicate that all went fine.
+        self.logger.info("Notifying the server that initialization went fine.")
         await self.netwk.send_message(
             messaging.GenericMessage(action="InitializationOK", params={})
         )

@@ -84,18 +84,23 @@ class FederatedServer:
             clients before raising.
         """
         # Wait for clients to register and process their data information.
+        self.logger.info("Starting clients registration process.")
         data_info = await self.netwk.wait_for_clients(
             min_clients, max_clients, timeout
         )
+        self.logger.info("Clients' registration is now complete.")
         await self._process_data_info(data_info)
         # Serialize intialization information and send it to clients.
         message = messaging.InitRequest(
             model=self.model,
             optim=self.strat.build_client_optimizer(),
         )  # revise: strategy rather than optimizer?
+        self.logger.info("Sending initialization requests to clients.")
         await self.netwk.broadcast_message(message)
         # Await a confirmation from clients that initialization went well.
+        self.logger.info("Waiting for clients' responses.")
         replies = await self.netwk.wait_for_messages()
+        self.logger.info("Received clients' responses.")
         errors = {
             client: msg.message
             for client, msg in replies.items()
@@ -114,6 +119,7 @@ class FederatedServer:
             )
             self.logger.error(err_msg)
             raise RuntimeError(err_msg)
+        self.logger.info("Initialization was successful.")
 
     async def _process_data_info(  # revise: drop async
             self,
