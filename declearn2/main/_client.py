@@ -112,7 +112,9 @@ class FederatedClient:
             self.logger.error(error)
             raise RuntimeError(error)
         # Send back an empty message to indicate that all went fine.
-        await self.netwk.send_message(messaging.Empty())
+        await self.netwk.send_message(
+            messaging.GenericMessage(action="InitializationOK", params={})
+        )
         # Return the model and optimizer received from the server.
         return message.model, message.optim
 
