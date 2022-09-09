@@ -59,11 +59,14 @@ class FederatedServer:
             await self.initialization(min_clients, max_clients, timeout)
             round_i = 0
             while True:
+                round_i += 1
                 await self.training_round(round_i)
                 await self.evaluation_round(round_i)
-                round_i += 1
                 if round_i >= rounds:
                     break
+                # TODO: add early stopping criteria (based on former)
+            self.logger.info("Stopping training.")
+            await self.stop_training(round_i)
 
     async def initialization(
             self,
@@ -408,3 +411,22 @@ class FederatedServer:
             total += reply.loss
             n_stp += reply.n_steps
         return total / n_stp
+
+    async def stop_training(
+            self,
+            rounds: int
+        ) -> None:
+        """Notify clients that training is over and send final information.
+
+        Parameters
+        ----------
+        rounds: int
+            Number of training rounds taken until now.
+        """
+        message = messaging.StopTraining(
+            weights=self.model.get_weights(),
+            loss=self._loss[rounds],
+            rounds=rounds
+        )
+        self.logger.info("Notifying clients that training is over.")
+        await self.netwk.broadcast_message(message)

@@ -4,6 +4,8 @@
 
 import asyncio
 import dataclasses
+import json
+import os
 import time
 from typing import Any, Dict, Optional, Tuple
 
@@ -13,7 +15,7 @@ from declearn2.communication.api import Client
 from declearn2.dataset import Dataset
 from declearn2.model.api import Model
 from declearn2.optimizer import Optimizer
-from declearn2.utils import get_logger
+from declearn2.utils import get_logger, json_pack, serialize_object
 
 
 class FederatedClient:
@@ -25,10 +27,12 @@ class FederatedClient:
             self,
             client: Client,  # revise: from_config
             dataset: Dataset,  # revise: from_json
+            folder: str,
         ) -> None:
         """Docstring."""
         self.netwk = client
         self.dataset = dataset
+        self.folder = folder
 
     def run(
             self,
@@ -48,11 +52,13 @@ class FederatedClient:
             while True:
                 message = await self.netwk.check_message()
                 if isinstance(message, messaging.TrainRequest):
-                    await self._training_round(model, optim, message)
+                    await self.training_round(model, optim, message)
                 elif isinstance(message, messaging.EvaluationRequest):
-                    await self._evaluation_round(model, message)
+                    await self.evaluation_round(model, message)
+                elif isinstance(message, messaging.StopTraining):
+                    await self.stop_training(model, message)
                 elif isinstance(message, messaging.CancelTraining):
-                    await self._cancel_training(message)
+                    await self.cancel_training(message)
                 else:
                     error = "Unexpected instruction received from server:"
                     error += repr(message)
@@ -122,7 +128,7 @@ class FederatedClient:
         # Return the model and optimizer received from the server.
         return message.model, message.optim
 
-    async def _training_round(
+    async def training_round(
             self,
             model: Model,
             optim: Optimizer,
@@ -143,11 +149,9 @@ class FederatedClient:
         message: TrainRequest
             Instructions from the server regarding the training round.
         """
+        self.logger.info("Participating in training round %s", message.round_i)
         # Try running the training round.
         try:
-            self.logger.info(
-                "Participating in training round %s", message.round_i
-            )
             # Unpack and apply model weights and optimizer auxiliary variables.
             self.logger.info("Applying server updates to local objects.")
             model.set_weights(message.weights)
@@ -164,6 +168,7 @@ class FederatedClient:
                 # revise: enable passing other dataset arguments?
             )
             # Compute model updates and collect auxiliary variables.
+            self.logger.info("Sending local updates to the server.")
             reply = messaging.TrainReply(
                 updates=start_weights - model.get_weights(),
                 aux_var=optim.collect_aux_var(),
@@ -246,7 +251,7 @@ class FederatedClient:
             "n_epoch": n_epoch, "n_steps": n_steps, "t_spent": round(t_spent)
         }
 
-    async def _evaluation_round(
+    async def evaluation_round(
             self,
             model: Model,
             message: messaging.EvaluationRequest,
@@ -287,7 +292,32 @@ class FederatedClient:
         # Send training results (or error message) to the server.
         await self.netwk.send_message(reply)
 
-    async def _cancel_training(
+    async def stop_training(
+            self,
+            model: Model,
+            message: messaging.StopTraining,
+        ) -> None:
+        """Handle a server request to stop training.
+
+        Parameters
+        ----------
+        message: StopTraining
+            StopTraining message received from the server.
+        """
+        self.logger.info(
+            "Training is now over, after %s rounds. Global loss: %s",
+            message.rounds, message.loss
+        )
+        model.set_weights(message.weights)
+        dump = {
+            "model": serialize_object(model),
+            "weights": model.get_weights(),
+        }
+        path = os.path.join(self.folder, "final_model.json")
+        with open(path, "w", encoding="utf-8") as file:
+            json.dump(dump, file, default=json_pack)
+
+    async def cancel_training(
             self,
             message: messaging.CancelTraining,
         ) -> None:

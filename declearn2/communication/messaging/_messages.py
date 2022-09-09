@@ -27,6 +27,7 @@ __all__ = [
     'JoinReply',
     'JoinRequest',
     'Message',
+    'StopTraining',
     'TrainReply',
     'TrainRequest',
     'parse_message_from_string',
@@ -160,6 +161,17 @@ class JoinReply(Message):
 
 
 @dataclasses.dataclass
+class StopTraining(Message):
+    """Server-emitted notification that the training process is over."""
+
+    typekey = "stop_training"
+
+    weights: NumpyVector
+    loss: float
+    rounds: int
+
+
+@dataclasses.dataclass
 class TrainRequest(Message):
     """Server-emitted request to participate in a training round."""
 
@@ -198,6 +210,7 @@ _MESSAGE_CLASSES = [
     InitRequest,
     JoinReply,
     JoinRequest,
+    StopTraining,
     TrainReply,
     TrainRequest,
 ]  # type: List[Type[Message]]
