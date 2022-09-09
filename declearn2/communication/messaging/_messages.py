@@ -8,7 +8,7 @@ from abc import ABCMeta
 from typing import Any, Dict, List, Optional, Type
 
 
-from declearn2.model.api import Model, Vector
+from declearn2.model.api import Model, NumpyVector, Vector
 from declearn2.optimizer import Optimizer
 from declearn2.utils import (
     deserialize_object, json_pack, json_unpack, serialize_object
@@ -57,6 +57,7 @@ class CancelTraining(Message):
     """Empty message used to ping or signal message reception."""
 
     typekey = "cancel"
+
     reason: str
 
 
@@ -72,6 +73,7 @@ class Error(Message):
     """Error message container, used to convey exceptions between nodes."""
 
     typekey = "error"
+
     message: str
 
 
@@ -82,7 +84,7 @@ class EvaluationRequest(Message):
     typekey = "eval_request"
 
     round_i: int
-    weights: Vector
+    weights: NumpyVector
     batch_s: int
 
 
@@ -164,7 +166,7 @@ class TrainRequest(Message):
     typekey = "train_request"
 
     round_i: int
-    weights: Vector
+    weights: NumpyVector
     aux_var: Dict[str, Any]
     batch_s: int
     n_epoch: Optional[int] = None

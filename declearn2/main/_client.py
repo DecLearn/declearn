@@ -150,7 +150,7 @@ class FederatedClient:
             )
             # Unpack and apply model weights and optimizer auxiliary variables.
             self.logger.info("Applying server updates to local objects.")
-            model.set_weights(message.weights)  # type: ignore
+            model.set_weights(message.weights)
             optim.process_aux_var(message.aux_var)
             start_weights = model.get_weights()
             # Train under instructed effort constraints.
@@ -270,7 +270,7 @@ class FederatedClient:
         # Try running the evaluation round.
         try:
             # Update the model's weights and evaluate on the local dataset.
-            model.set_weights(message.weights)  # type: ignore
+            model.set_weights(message.weights)
             data = self.dataset.generate_batches(batch_size=message.batch_s)
             loss = model.compute_loss(data)
             nstp = self.dataset.get_data_specs().n_samples // message.batch_s
