@@ -10,6 +10,7 @@ from typing import Any, Dict, Optional, Set, Union
 from declearn2.communication.messaging import (
     Empty,
     Error,
+    EvaluationReply,
     GenericMessage,
     GetMessageRequest,
     JoinReply,
@@ -114,7 +115,8 @@ class MessagesHandler:
         if isinstance(message, GetMessageRequest):
             return await self._handle_recv_request(message, context)
         # Case: expected type of message being sent to server.
-        if isinstance(message, (Error, GenericMessage, TrainReply)):
+        acceptable = (Error, EvaluationReply, GenericMessage, TrainReply)
+        if isinstance(message, acceptable):
             return await self._handle_send_request(message, context)
         # Otherwise, send back an error regarding incorrect message type.
         self.logger.error(

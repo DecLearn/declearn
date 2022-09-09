@@ -48,7 +48,9 @@ class FederatedClient:
             while True:
                 message = await self.netwk.check_message()
                 if isinstance(message, messaging.TrainRequest):
-                    await self._train_one_round(model, optim, message)
+                    await self._training_round(model, optim, message)
+                elif isinstance(message, messaging.EvaluationRequest):
+                    await self._evaluation_round(model, message)
                 elif isinstance(message, messaging.CancelTraining):
                     await self._cancel_training(message)
                 else:
@@ -120,7 +122,7 @@ class FederatedClient:
         # Return the model and optimizer received from the server.
         return message.model, message.optim
 
-    async def _train_one_round(
+    async def _training_round(
             self,
             model: Model,
             optim: Optimizer,
@@ -142,7 +144,7 @@ class FederatedClient:
             Instructions from the server regarding the training round.
         """
         # Try running the training round.
-        try:  # revise: use a dataclass to unpack params
+        try:
             self.logger.info(
                 "Participating in training round %s", message.round_i
             )
@@ -243,6 +245,47 @@ class FederatedClient:
         return {
             "n_epoch": n_epoch, "n_steps": n_steps, "t_spent": round(t_spent)
         }
+
+    async def _evaluation_round(
+            self,
+            model: Model,
+            message: messaging.EvaluationRequest,
+        ) -> None:
+        """Run a local evaluation round.
+
+        If an exception is raised during the local process, wrap
+        it as an Error message and send it to the server instead
+        of raising it.
+
+        Parameters
+        ----------
+        model:
+            Model that is to be evaluated locally.
+        message: EvaluationRequest
+            Instructions from the server regarding the evaluation round.
+        """
+        self.logger.info(
+            "Participating in evaluation round %s", message.round_i
+        )
+        # Try running the evaluation round.
+        try:
+            # Update the model's weights and evaluate on the local dataset.
+            model.set_weights(message.weights)  # type: ignore
+            data = self.dataset.generate_batches(batch_size=message.batch_s)
+            loss = model.compute_loss(data)
+            nstp = self.dataset.get_data_specs().n_samples // message.batch_s
+            # future: implement the former more elegantly
+            reply = messaging.EvaluationReply(
+                loss=loss, n_steps=nstp
+            )  # type: messaging.Message
+        # In case of failure, ensure it is reported to the server.
+        except Exception as exception:  # pylint: disable=broad-except
+            self.logger.error(
+                "Error encountered during evaluation: %s.", exception
+            )
+            reply = messaging.Error(repr(exception))
+        # Send training results (or error message) to the server.
+        await self.netwk.send_message(reply)
 
     async def _cancel_training(
             self,

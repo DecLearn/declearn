@@ -19,6 +19,8 @@ __all__ = [
     'CancelTraining',
     'Empty',
     'Error',
+    'EvaluationReply',
+    'EvaluationRequest',
     'GenericMessage',
     'GetMessageRequest',
     'InitRequest',
@@ -71,6 +73,27 @@ class Error(Message):
 
     typekey = "error"
     message: str
+
+
+@dataclasses.dataclass
+class EvaluationRequest(Message):
+    """Server-emitted request to participate in an evaluation round."""
+
+    typekey = "eval_request"
+
+    round_i: int
+    weights: Vector
+    batch_s: int
+
+
+@dataclasses.dataclass
+class EvaluationReply(Message):
+    """Client-emitted results from a local evaluation round."""
+
+    typekey = "eval_reply"
+
+    loss: float
+    n_steps: int
 
 
 @dataclasses.dataclass
@@ -166,6 +189,8 @@ _MESSAGE_CLASSES = [
     CancelTraining,
     Empty,
     Error,
+    EvaluationReply,
+    EvaluationRequest,
     GenericMessage,
     GetMessageRequest,
     InitRequest,

@@ -9,6 +9,8 @@ from ._messages import (
     Error,
     GenericMessage,
     GetMessageRequest,
+    EvaluationReply,
+    EvaluationRequest,
     InitRequest,
     JoinReply,
     JoinRequest,
