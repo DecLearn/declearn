@@ -8,6 +8,12 @@ from typing import Any, Dict, Set
 from declearn2.data_info import aggregate_data_info
 
 
+__all__ = [
+    'AggregationError',
+    'aggregate_clients_data_info',
+]
+
+
 class AggregationError(Exception):
     """Custom Exception, used to wrap data-info-aggregation failure info."""
 
@@ -16,6 +22,23 @@ class AggregationError(Exception):
             error: str,
             messages: Dict[str, str],
         ) -> None:
+        """Instantiate the AggregationError, wrapping error information.
+
+        Parameters
+        ----------
+        error: str
+            General error message reporting on the reasons for which
+            client-wise data-info aggregation failed.
+        messages: dict[str, str]
+            Client-wise error messages reporting on the reason for
+            which data-info aggregation failed, formatted as a
+            `{client_name: error_msg}` dict.
+
+        Note
+        ----
+        The `error` and `messages` arguments are available as attributes,
+        effectively making this exception a wrapper to pass information.
+        """
         super().__init__(error, messages)
         self.error = error
         self.messages = messages
@@ -30,7 +53,35 @@ def aggregate_clients_data_info(
         clients_data_info: Dict[str, Dict[str, Any]],
         required_fields: Set[str],
     ) -> Dict[str, Any]:
-    """Docstring."""
+    """Validate and aggregate clients' data-info dictionaries.
+
+    This functions wraps `declearn.data_info.aggregate_data_info`,
+    catches KeyError and ValueError and runs further analysis to
+    identify their cause and raise a custom AggregationError that
+    stores a general error message and client-wise ones in order
+    to report on failure causes.
+
+    Parameters
+    ----------
+    clients_data_info: dict[str, dict[str, any]]
+        Client-wise data-info dict that are to be aggregated.
+    required_fields: set[str]
+        Optional set of fields to target among provided information.
+        If set, raise if a field is missing from any client, and use
+        only these fields in the returned dict.
+
+    Raises
+    ------
+    AggregationError:
+        In case any error is raised when calling `aggregate_data_info`
+        on the input arguments.
+
+    Returns
+    -------
+    data_info: dict[str, any]
+        Aggregated data specifications derived from individual ones,
+        with `required_fields` as keys.
+    """
     try:
         return aggregate_data_info(
             list(clients_data_info.values()), required_fields
