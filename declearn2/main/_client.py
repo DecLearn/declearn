@@ -57,6 +57,7 @@ class FederatedClient:
                     await self.evaluation_round(model, message)
                 elif isinstance(message, messaging.StopTraining):
                     await self.stop_training(model, message)
+                    break
                 elif isinstance(message, messaging.CancelTraining):
                     await self.cancel_training(message)
                 else:
@@ -310,7 +311,7 @@ class FederatedClient:
         )
         model.set_weights(message.weights)
         dump = {
-            "model": serialize_object(model),
+            "model": serialize_object(model).to_dict(),
             "weights": model.get_weights(),
         }
         path = os.path.join(self.folder, "final_model.json")
