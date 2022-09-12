@@ -8,8 +8,9 @@ from typing import Any, Dict, Optional, Set, Type
 
 from declearn2.communication import messaging
 from declearn2.communication.api import Server
-from declearn2.main._data_info import (
-    AggregationError, aggregate_clients_data_info
+from declearn2.main.utils import (
+    AggregationError,
+    aggregate_clients_data_info,
 )
 from declearn2.model.api import Model
 from declearn2.strategy import Strategy
