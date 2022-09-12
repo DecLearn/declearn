@@ -171,7 +171,7 @@ def aggregate_data_info(
     """
     # Select shared fields across clients, or required ones.
     fields = set.intersection(*[set(info) for info in clients_data_info])
-    if required_fields:
+    if required_fields is not None:
         missing = set(required_fields).difference(fields)
         if missing:
             raise KeyError(
