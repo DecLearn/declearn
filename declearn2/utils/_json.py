@@ -131,3 +131,12 @@ def json_unpack(obj: Dict[str, Any]) -> Any:
         return obj
     # Otherwise, use the recovered spec to unpack the object.
     return spec.unpack(obj["dump"])
+
+
+# Add JSON support for built-in set objects.
+add_json_support(
+    cls=set,
+    pack=list,
+    unpack=set,
+    name="set",
+)
