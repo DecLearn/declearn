@@ -179,7 +179,7 @@ class TrainRequest(Message):
 
     round_i: int
     weights: NumpyVector
-    aux_var: Dict[str, Any]
+    aux_var: Dict[str, Dict[str, Any]]
     batch_s: int
     n_epoch: Optional[int] = None
     n_steps: Optional[int] = None
@@ -196,7 +196,7 @@ class TrainReply(Message):
     n_steps: int
     t_spent: int
     updates: Vector
-    aux_var: Dict[str, Any]
+    aux_var: Dict[str, Dict[str, Any]]
 
 
 _MESSAGE_CLASSES = [
