@@ -36,9 +36,6 @@ from declearn2.communication.api import Client, Server
 from declearn2.communication.messaging import GenericMessage
 
 
-PORT = 8764  # incremented with each test ran
-
-
 async def client_routine(
         client: Client,
     ) -> None:
@@ -104,8 +101,6 @@ def run_test_routines(
         ssl_cert: Dict[str, str],
     ) -> None:
     """Test that the defined server and client routines run properly."""
-    global PORT  # avoids test side effects; pylint: disable=global-statement
-    PORT += 1
     # Set up processes that isolately run a server and its clients
     args = (protocol, nb_clients, use_ssl, ssl_cert)
     processes = [_build_server_process(*args)]
@@ -134,7 +129,7 @@ def _build_server_process(
     ) -> mp.Process:
     """Set up and return a mp.Process that spawns and uses a Server."""
     server_cfg = {
-        "protocol": protocol, "host": "localhost", "port": PORT,
+        "protocol": protocol, "host": "localhost", "port": 8765,
         "certificate": ssl_cert["server_cert"] if use_ssl else None,
         "private_key": ssl_cert["server_pkey"] if use_ssl else None,
     }
@@ -160,7 +155,7 @@ def _build_client_processes(
     ) -> List[mp.Process]:
     """Set up and return mp.Process that spawn and use Client objects."""
     certificate = ssl_cert["client_cert"] if use_ssl else None
-    server_uri = f"localhost:{PORT}"
+    server_uri = "localhost:8765"
     if protocol == "websockets":
         server_uri = f"ws{'s' * use_ssl}://{server_uri}"
     # Define a coroutine that spawns and runs a client.
