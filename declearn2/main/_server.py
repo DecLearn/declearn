@@ -217,7 +217,7 @@ class FederatedServer:
         aux_var = self.optim.collect_aux_var()
         for client in clients:
             params["aux_var"] = {
-                key: val[key].get(client, val[key])
+                key: val.get(client, val)
                 for key, val in aux_var.items()
             }
             messages[client] = messaging.TrainRequest(**params)
