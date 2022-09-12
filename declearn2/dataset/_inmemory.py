@@ -157,13 +157,13 @@ class InMemoryDataset(Dataset):
         if (not self.expose_classes) or (self.target is None):
             return None
         if isinstance(self.target, pd.DataFrame):
-            return set(self.target.unstack().unique())
+            return set(self.target.unstack().unique().tolist())
         if isinstance(self.target, pd.Series):
-            return set(self.target.unique())
+            return set(self.target.unique().tolist())
         if isinstance(self.target, np.ndarray):
-            return set(np.unique(self.target))
+            return set(np.unique(self.target).tolist())
         if isinstance(self.target, spmatrix):
-            return set(np.unique(self.target.tocsr().data))
+            return set(np.unique(self.target.tocsr().data).tolist())
         raise TypeError(
             f"Invalid 'target' attribute type: '{type(self.target)}'."
         )
