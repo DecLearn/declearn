@@ -3,13 +3,14 @@
 """Server-side main Federated Learning orchestrating class."""
 
 import asyncio
-from typing import Any, Dict, Optional, Set, Type
+from typing import Any, Dict, Optional, Set, Type, Union
 
 
 from declearn2.communication import messaging
 from declearn2.communication.api import Server
 from declearn2.main.utils import (
     AggregationError,
+    EarlyStoppingCriterion,
     aggregate_clients_data_info,
 )
 from declearn2.model.api import Model
@@ -28,6 +29,7 @@ class FederatedServer:
             server: Server,  # revise: from_config
             strategy: Strategy,  # revise: from_config
             batch_size: int,
+            early_stop: Optional[Union[int, EarlyStoppingCriterion]] = None,
         ) -> None:
         """Docstring."""
         self.model = model
@@ -36,6 +38,16 @@ class FederatedServer:
         self.aggrg = self.strat.build_server_aggregator()
         self.optim = self.strat.build_server_optimizer()
         self.batch_size = batch_size
+        if early_stop is None:
+            self.early_stop = None  # type: Optional[EarlyStoppingCriterion]
+        elif isinstance(early_stop, int):
+            self.early_stop = EarlyStoppingCriterion(patience=early_stop)
+        elif isinstance(early_stop, EarlyStoppingCriterion):
+            self.early_stop = early_stop
+        else:
+            raise TypeError(
+                "'early_stop' must be None, int or EarlyStoppingCriterion."
+            )
         self._loss = {}  # type: Dict[int, float]
 
     def run(
@@ -63,9 +75,8 @@ class FederatedServer:
                 round_i += 1
                 await self.training_round(round_i)
                 await self.evaluation_round(round_i)
-                if round_i >= rounds:
+                if not self._keep_training(round_i, rounds):
                     break
-                # TODO: add early stopping criteria (based on former)
             self.logger.info("Stopping training.")
             await self.stop_training(round_i)
 
@@ -413,9 +424,33 @@ class FederatedServer:
             n_stp += reply.n_steps
         return total / n_stp
 
+    def _keep_training(
+            self,
+            round_i: int,
+            rounds: int,
+        ) -> bool:
+        """Decide whether training should continue.
+
+        Parameters
+        ----------
+        round_i: int
+            Index of the latest achieved training round.
+        rounds: int
+            Maximum number of rounds that are planned.
+        """
+        if round_i >= rounds:
+            self.logger.info("Maximum number of training rounds reached.")
+            return False
+        if self.early_stop is not None:
+            self.early_stop.update(self._loss[round_i])
+            if not self.early_stop.keep_training:
+                self.logger.info("Early stopping criterion reached.")
+                return False
+        return True
+
     async def stop_training(
             self,
-            rounds: int
+            rounds: int,
         ) -> None:
         """Notify clients that training is over and send final information.
 
