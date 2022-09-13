@@ -4,7 +4,6 @@
 
 import multiprocessing as mp
 import tempfile
-import time
 import warnings
 from typing import Dict, Optional
 
@@ -209,7 +208,6 @@ def run_test_case(
     try:
         # Start all processes.
         server.start()
-        time.sleep(1)  # avoid errors due to clients starting before server
         for process in clients:
             process.start()
         # Regularly check for any failed process (exit if so).
