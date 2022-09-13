@@ -127,4 +127,7 @@ class WebsocketsClient(Client):
             return await super().register(data_info)
         except (ConnectionClosedOK, ConnectionClosedError) as err:
             self.logger.error("Connection closed during registration: %s", err)
+            self.logger.info("Reconnecting to the server.")
+            await self.stop()
+            await self.start()
             return False
