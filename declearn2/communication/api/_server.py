@@ -24,6 +24,32 @@ class Server(metaclass=ABCMeta):
     This class defines the key methods used to communicate between
     a server and its clients during a federated learning process,
     agnostic to the actual communication protocol in use.
+
+    Instantiating a `Server` does not instantly serve the declearn
+    messaging program on the selected host and port. To enable clients
+    to connect to the server via a `Server` object, its `start` method
+    must first be awaited, and conversely, its `stop` method should be
+    awaited to close the connection:
+    >>> server = ServerSubclass(
+    ...     "example.domain.com", 8765, "cert_path", "pkey_path"
+    ... )
+    >>> await server.start()
+    >>> try:
+    >>>     data_info = server.wait_for_clients(...)
+    >>>     ...
+    >>> finally:
+    >>>     await server.stop()
+
+    An alternative syntax to achieve the former is using the server
+    object as an asynchronous context manager:
+    >>> async with ServerSubclass(...) as server:
+    >>>     data_info = server.wait_for_clients(...)
+    >>>     ...
+
+    Note that a `Server` manages an allow-list of clients, which is
+    defined based on `Client.register(...)`-emitted requests during
+    a registration phase restricted to the context of the awaitable
+    `wait_for_clients` method.
     """
 
     logger: logging.Logger

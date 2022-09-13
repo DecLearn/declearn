@@ -23,6 +23,31 @@ class Client(metaclass=ABCMeta):
     This class defines the key methods used to communicate between a
     client and the orchestrating server during a federated learning
     process, agnostic to the actual communication protocol in use.
+
+    Instantiating a `Client` does not trigger a connection to the
+    target server. To enable communicating with the server via a
+    `Client` object, its `start` method must first be awaited and
+    conversely, its `stop` method should be awaited to close the
+    connection:
+    >>> client = ClientSubclass("example.domain.com:8765", "name", "cert_path")
+    >>> await client.start()
+    >>> try:
+    >>>     client.register(data_info)
+    >>>     ...
+    >>> finally:
+    >>>     await client.stop()
+
+    An alternative syntax to achieve the former is using the client
+    object as an asynchronous context manager:
+    >>> async with ClientSubclass(...) as client:
+    >>>     client.register(data_info)
+    >>>     ...
+
+    Note that a declearn `Server` manages an allow-list of clients,
+    which is defined during a registration phase of limited time,
+    based on requests emitted through the `Client.register` method.
+    Any message emitted using `Client.send_message` will probably
+    be rejected by the server if the client has not been registered.
     """
 
     logger: logging.Logger
