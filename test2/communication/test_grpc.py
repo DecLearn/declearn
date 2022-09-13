@@ -12,7 +12,7 @@ proper behaviour in the context of Federated Learning are left to separate
 test scripts.
 """
 
-from typing import AsyncIterator, Dict, Iterator
+from typing import AsyncIterator, Dict
 
 import grpc  # type: ignore
 import pytest
@@ -103,53 +103,53 @@ async def secure_grpc_client_fixture(
     await channel.close()
 
 
-@pytest.fixture(name="insecure_declearn_server")
-def insecure_declearn_server_fixture(
-    ) -> Iterator[GrpcServer]:
+@pytest_asyncio.fixture(name="insecure_declearn_server")
+async def insecure_declearn_server_fixture(
+    ) -> AsyncIterator[GrpcServer]:
     """Create and return a GrpcServer with unsecured communications."""
     server = GrpcServer(host=HOST, port=PORT)
-    server.start()
+    await server.start()
     yield server
-    server.stop()
+    await server.stop()
 
 
-@pytest.fixture(name="secure_declearn_server")
-def secure_declearn_server_fixture(
+@pytest_asyncio.fixture(name="secure_declearn_server")
+async def secure_declearn_server_fixture(
         ssl_cert: Dict[str, str],
-    ) -> Iterator[GrpcServer]:
+    ) -> AsyncIterator[GrpcServer]:
     """Create and return a GrpcServer with secured communications."""
     server = GrpcServer(
         host=HOST, port=PORT,
         certificate=ssl_cert["server_cert"],
         private_key=ssl_cert["server_pkey"],
     )
-    server.start()
+    await server.start()
     yield server
-    server.stop()
+    await server.stop()
 
 
-@pytest.fixture(name="insecure_declearn_client")
-def insecure_declearn_client_fixture(
-    ) -> Iterator[GrpcClient]:
+@pytest_asyncio.fixture(name="insecure_declearn_client")
+async def insecure_declearn_client_fixture(
+    ) -> AsyncIterator[GrpcClient]:
     """Create and return a GrpcClient with unsecured communications."""
     client = GrpcClient(server_uri=SERVER_URI, name="client")
-    client.start()
+    await client.start()
     yield client
-    client.stop()
+    await client.stop()
 
 
-@pytest.fixture(name="secure_declearn_client")
-def secure_declearn_client_fixture(
+@pytest_asyncio.fixture(name="secure_declearn_client")
+async def secure_declearn_client_fixture(
         ssl_cert: Dict[str, str],
-    ) -> Iterator[GrpcClient]:
+    ) -> AsyncIterator[GrpcClient]:
     """Create and return a GrpcClient with secured communications."""
     client = GrpcClient(
         server_uri=SERVER_URI, name="client",
         certificate=ssl_cert["client_cert"],
     )
-    client.start()
+    await client.start()
     yield client
-    client.stop()
+    await client.stop()
 
 
 #################################################################
