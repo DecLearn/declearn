@@ -2,7 +2,7 @@
 
 """Client-side communication endpoint implementation using gRPC"""
 
-from typing import Optional
+from typing import Any, Dict, Optional
 
 import grpc  # type: ignore
 
@@ -87,3 +87,16 @@ class GrpcClient(Client):
         grpc_message = message_pb2.Message(message=message.to_string())
         grpc_reply = await self._service.send(grpc_message)
         return parse_message_from_string(grpc_reply.message)
+
+    async def register(
+            self,
+            data_info: Dict[str, Any],
+        ) -> bool:
+        try:
+            return await super().register(data_info)
+        except grpc.aio.AioRpcError as err:
+            self.logger.error(
+                "Connection failed during registration: %s %s",
+                err.code(), err.details()
+            )
+            return False
