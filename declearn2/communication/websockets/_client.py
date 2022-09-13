@@ -69,6 +69,9 @@ class WebsocketsClient(Client):
             self
         ) -> None:
         # false-positives; pylint: disable=no-member
+        if not (self._socket is None or self._socket.closed):
+            self.logger.info("Client is already connected.")
+            return None
         extra_headers = (
             ws.Headers(**self.headers)  # type: ignore
             if self.headers else None

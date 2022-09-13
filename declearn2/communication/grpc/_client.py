@@ -61,11 +61,12 @@ class GrpcClient(Client):
     async def start(
             self
         ) -> None:
-        self._channel = (
-            grpc.aio.secure_channel(self.server_uri, self._ssl)
-            if (self._ssl is not None)
-            else grpc.aio.insecure_channel(self.server_uri)
-        )
+        if self._channel is None:
+            self._channel = (
+                grpc.aio.secure_channel(self.server_uri, self._ssl)
+                if (self._ssl is not None)
+                else grpc.aio.insecure_channel(self.server_uri)
+            )
         self._service = MessageBoardStub(self._channel)  # type: ignore
 
     async def stop(

@@ -67,14 +67,22 @@ class Client(metaclass=ABCMeta):
     async def start(
             self
         ) -> None:
-        """Start the client, i.e. connect to the server."""
+        """Start the client, i.e. connect to the server.
+
+        Note: this method can be called safely even if the
+        client is already running (simply having no effect).
+        """
         return None
 
     @abstractmethod
     async def stop(
             self
         ) -> None:
-        """Stop the client, i.e. close all connections."""
+        """Stop the client, i.e. close all connections.
+
+        Note: this method can be called safely even if the
+        client is not running (simply having no effect).
+        """
         return None
 
     async def __aenter__(
@@ -95,7 +103,7 @@ class Client(metaclass=ABCMeta):
             self,
             data_info: Dict[str, Any],
         ) -> bool:
-        """Request the server to join a federating learning session
+        """Request the server to join a federating learning session.
 
         Parameters
         ----------
