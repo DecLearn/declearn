@@ -2,6 +2,7 @@
 
 """Client-side communication endpoint implementation using WebSockets."""
 
+import asyncio
 import ssl
 from typing import Any, Dict, Optional
 
@@ -72,17 +73,30 @@ class WebsocketsClient(Client):
         if not (self._socket is None or self._socket.closed):
             self.logger.info("Client is already connected.")
             return None
-        extra_headers = (
-            ws.Headers(**self.headers)  # type: ignore
-            if self.headers else None
-        )
-        self._socket = await ws.connect(  # type: ignore
-            self.server_uri,
-            logger=self.logger,
-            ping_interval=None,  # revise: use keep-alive pings?
-            ssl=self._ssl,
-            extra_headers=extra_headers,
-        )
+        # Set up parameters for `websockets.connect`.
+        kwargs = {
+            "uri": self.server_uri,
+            "logger": self.logger,
+            "ping_interval": None,  # revise: use keep-alive pings?
+            "ssl": self._ssl,
+            "extra_headers": (
+                ws.Headers(**self.headers)  # type: ignore
+                if self.headers else None
+            )
+        }
+        # If connection fails, retry after 1 second - at most 10 times.
+        idx = 0
+        while True:
+            idx += 1
+            try:
+                self._socket = await ws.connect(**kwargs)  # type: ignore
+            except OSError as err:
+                if idx == 10:
+                    raise err
+                await asyncio.sleep(1)
+            else:
+                self.logger.info("Connected to the server.")
+                break
 
     async def stop(
             self
