@@ -85,10 +85,9 @@ class SklearnSGDModel(Model):
         if isinstance(self._model, SGDClassifier):
             self._model.classes_ = np.array(list(data_info["classes"]))
             n_classes = len(self._model.classes_)
-            self._model.coef_ = np.zeros(
-                (n_classes if (n_classes > 2) else 1, data_info["n_features"])
-            )
-            self._model.intercept_ = np.zeros((n_classes,))
+            dim = n_classes if (n_classes > 2) else 1
+            self._model.coef_ = np.zeros((dim, data_info["n_features"]))
+            self._model.intercept_ = np.zeros((dim,))
         # SGDRegressor case.
         else:
             self._model.coef_ = np.zeros((data_info["n_features"],))
