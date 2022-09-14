@@ -112,12 +112,14 @@ class InMemoryDataset(Dataset):
         # Assign the (optional) target data array.
         if isinstance(target, str):
             self._trgt_path = target
-            if isinstance(self.data, pd.DataFrame):
-                if target in self.data.columns:
-                    if f_cols is None:
-                        self.f_cols = self.f_cols or list(self.data.columns)
-                        self.f_cols.remove(target)  # type: ignore
-                    target = self.data[target]
+            if (
+                isinstance(self.data, pd.DataFrame)
+                and target in self.data.columns
+            ):
+                if f_cols is None:
+                    self.f_cols = self.f_cols or list(self.data.columns)
+                    self.f_cols.remove(target)  # type: ignore
+                target = self.data[target]
             else:
                 target = self.load_data_array(target)
         self.target = target
@@ -215,7 +217,7 @@ class InMemoryDataset(Dataset):
         """
         ext = os.path.splitext(path)[1]
         if ext == ".csv":
-            return pd.read_csv(path, **kwargs).values
+            return pd.read_csv(path, **kwargs)
         if ext == ".npy":
             return np.load(path, allow_pickle=False)
         if ext == ".sparse":
@@ -272,7 +274,7 @@ class InMemoryDataset(Dataset):
             save = functools.partial(np.save, arr=array)
         elif isinstance(array, spmatrix):
             ext = ".sparse"
-            save = functools.partial(sparse_to_file, array=array)
+            save = functools.partial(sparse_to_file, matrix=array)
         else:
             raise TypeError(f"Unsupported data array type: '{type(array)}'.")
         # Ensure proper naming. Save the array. Return the path.
@@ -467,7 +469,7 @@ class InMemoryDataset(Dataset):
         else:
             # Ensure slicing compatibility for pandas structures.
             if isinstance(data, (pd.DataFrame, pd.Series)):
-                data = data.iloc
+                data = data.values
             # Iteratively yield slices of the data array.
             for idx in range(0, len(order), batch_size):
                 yield data[order[idx:idx+batch_size]]
