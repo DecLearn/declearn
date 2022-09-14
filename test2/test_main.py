@@ -180,7 +180,7 @@ class DeclearnTestCase:
         netwk = self.build_netwk_client(name)
         dataset = self.build_dataset()
         with tempfile.TemporaryDirectory() as folder:
-            client = FederatedClient(netwk, dataset, folder)
+            client = FederatedClient(netwk, dataset, folder=folder)
             client.run()
 
 

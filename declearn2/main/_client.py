@@ -26,12 +26,14 @@ class FederatedClient:
     def __init__(
             self,
             client: Client,  # revise: from_config
-            dataset: Dataset,  # revise: from_json
-            folder: str,
+            train_data: Dataset,  # revise: from_json
+            valid_data: Optional[Dataset] = None,
+            folder: Optional[str] = None,
         ) -> None:
         """Docstring."""
         self.netwk = client
-        self.dataset = dataset
+        self.train_data = train_data
+        self.valid_data = valid_data
         self.folder = folder
 
     def run(
@@ -77,9 +79,10 @@ class FederatedClient:
             If registration has failed 10 times (with a 1 minute delay
             between connection and registration attempts).
         """
-        data_info = dataclasses.asdict(self.dataset.get_data_specs())
+        # revise: add validation dataset specs
+        data_info = dataclasses.asdict(self.train_data.get_data_specs())
         for i in range(10):  # max_attempts (10)
-            self.logger.info("Attempting to join training (trial n°%s)", i)
+            self.logger.info("Attempting to join training (attempt n°%s)", i+1)
             registered = await self.netwk.register(data_info)
             if registered:
                 break
@@ -208,7 +211,7 @@ class FederatedClient:
             Time (in seconds) beyond which to interrupt training,
             regardless of the actual number of steps taken (> 0).
         **kwargs:
-            Keyword arguments to `self.dataset.generate_batches`
+            Keyword arguments to `self.train_data.generate_batches`
             may also be passed to this function, e.g. to specify
             the `batch_size` of local SGD steps.
 
@@ -240,7 +243,7 @@ class FederatedClient:
         n_steps = 0
         # Run batch train steps for as long as constraints set it.
         while (epochs is None) or (n_epoch < epochs):
-            for batch in self.dataset.generate_batches(**kwargs):
+            for batch in self.train_data.generate_batches(**kwargs):
                 optim.run_train_step(model, batch)
                 n_steps += 1
                 t_spent = time.time() - t_start
@@ -273,13 +276,14 @@ class FederatedClient:
         self.logger.info(
             "Participating in evaluation round %s", message.round_i
         )
+        dataset = self.valid_data or self.train_data
         # Try running the evaluation round.
         try:
             # Update the model's weights and evaluate on the local dataset.
             model.set_weights(message.weights)
-            data = self.dataset.generate_batches(batch_size=message.batch_s)
+            data = dataset.generate_batches(batch_size=message.batch_s)
             loss = model.compute_loss(data)
-            nstp = self.dataset.get_data_specs().n_samples // message.batch_s
+            nstp = dataset.get_data_specs().n_samples // message.batch_s
             # future: implement the former more elegantly
             reply = messaging.EvaluationReply(
                 loss=loss, n_steps=nstp
@@ -309,14 +313,16 @@ class FederatedClient:
             "Training is now over, after %s rounds. Global loss: %s",
             message.rounds, message.loss
         )
-        model.set_weights(message.weights)
-        dump = {
-            "model": serialize_object(model).to_dict(),
-            "weights": model.get_weights(),
-        }
-        path = os.path.join(self.folder, "final_model.json")
-        with open(path, "w", encoding="utf-8") as file:
-            json.dump(dump, file, default=json_pack)
+        if self.folder is not None:
+            path = os.path.join(self.folder, "final_model.json")
+            self.logger.info("Saving final model in '%s'.", path)
+            model.set_weights(message.weights)
+            dump = {
+                "model": serialize_object(model).to_dict(),
+                "weights": model.get_weights(),
+            }
+            with open(path, "w", encoding="utf-8") as file:
+                json.dump(dump, file, default=json_pack)
 
     async def cancel_training(
             self,
