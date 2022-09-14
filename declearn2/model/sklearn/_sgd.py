@@ -317,7 +317,7 @@ class SklearnSGDModel(Model):
         # Iteratively compute and accumulate batch- and sample-wise loss.
         for batch in dataset:
             inputs, y_true, s_wght = self._verify_batch(batch)
-            y_pred = self._model.predict(inputs)
+            y_pred = self._model.decision_function(inputs)
             if s_wght is None:
                 loss += sum(
                     loss_fn(*smp)
