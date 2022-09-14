@@ -18,6 +18,11 @@ from declearn2.strategy import Strategy
 from declearn2.utils import get_logger
 
 
+__all__ = [
+    'FederatedServer',
+]
+
+
 class FederatedServer:
     """Server-side Federated Learning orchestrating class."""
 

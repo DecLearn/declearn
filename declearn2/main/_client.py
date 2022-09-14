@@ -18,6 +18,11 @@ from declearn2.optimizer import Optimizer
 from declearn2.utils import get_logger, json_pack, serialize_object
 
 
+__all__ = [
+    'FederatedClient',
+]
+
+
 class FederatedClient:
     """Client-side Federated Learning orchestrating class."""
 

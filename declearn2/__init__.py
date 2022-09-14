@@ -9,3 +9,4 @@ from . import data_info
 from . import dataset
 from . import model
 from . import optimizer
+from . import main
