@@ -266,7 +266,7 @@ class YogiMomentumModule(MomentumModule):
         ) -> Vector:
         """Apply Momentum acceleration to input (pseudo-)gradients."""
         sign = (self.state - gradients).sign()
-        self.state = self.state + (sign * (1 - self.beta) * gradients)
+        self.state = self.state - (sign * (1 - self.beta) * gradients)
         return self.state
 
 
