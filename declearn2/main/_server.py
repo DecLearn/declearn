@@ -425,7 +425,7 @@ class FederatedServer:
         total = 0.
         n_stp = 0
         for reply in results.values():  # future: enable re-weighting?
-            total += reply.loss
+            total += reply.loss * reply.n_steps
             n_stp += reply.n_steps
         return total / n_stp
 
