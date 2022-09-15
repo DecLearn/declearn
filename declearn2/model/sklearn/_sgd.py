@@ -3,7 +3,7 @@
 """Model subclass to wrap scikit-learn SGD classifier and regressor models."""
 
 import typing
-from typing import Any, Dict, Iterable, Optional, Set, Tuple, Union
+from typing import Any, Callable, Dict, Iterable, Optional, Set, Tuple, Union
 
 import numpy as np
 from numpy.typing import ArrayLike
@@ -305,30 +305,47 @@ class SklearnSGDModel(Model):
             Average value of the model's loss over samples.
         """
         # TODO: implement SklearnMetric objects and abstract this code
-        # Instantiate a loss function from the wrapped model's specs.
-        if hasattr(self._model, 'loss_function_'):
-            loss_fn = self._model.loss_function_.py_loss
-        else:
-            loss_cls, *args = self._model.loss_functions[self._model.loss]
-            loss_fn = loss_cls(*args).py_loss
-        # Initialize loss numerator and denominator.
+        loss_fn = self._setup_loss_fn()
         loss = 0
         nsmp = 0
+        if isinstance(self._model, SGDClassifier):
+            predict = self._model.decision_function
+        else:
+            predict = self._model.predict
         # Iteratively compute and accumulate batch- and sample-wise loss.
         for batch in dataset:
             inputs, y_true, s_wght = self._verify_batch(batch)
-            y_pred = self._model.decision_function(inputs)
+            y_pred = predict(inputs)
+            losses = loss_fn(y_pred, y_true)  # type: ignore
             if s_wght is None:
-                loss += sum(
-                    loss_fn(*smp)
-                    for smp in zip(y_pred, y_true)  # type: ignore
-                )
+                loss += losses.sum()
                 nsmp += len(y_pred)
             else:
-                loss += sum(
-                    smp[2] * loss_fn(smp[0], smp[1])
-                    for smp in zip(y_pred, y_true, s_wght)  # type: ignore
-                )
+                loss += (s_wght * losses).sum()  # type: ignore
                 nsmp += np.sum(s_wght)
         # Reduce the results and return them.
         return loss / nsmp
+
+    def _setup_loss_fn(
+            self,
+        ) -> Callable[[np.ndarray, np.ndarray], np.ndarray]:
+        """Return a function to compute point-wise loss for a given batch."""
+        # Gather or instantiate a loss function from the wrapped model's specs.
+        if hasattr(self._model, 'loss_function_'):
+            loss_smp = self._model.loss_function_.py_loss
+        else:
+            loss_cls, *args = self._model.loss_functions[self._model.loss]
+            loss_smp = loss_cls(*args).py_loss
+        # Wrap it to support batched inputs.
+        def loss_1d(y_pred: np.ndarray, y_true: np.ndarray) -> np.ndarray:
+            return np.array([loss_smp(*smp) for smp in zip(y_pred, y_true)])
+        # For multiclass classifiers, further wrap to support 2d predictions.
+        if len(getattr(self._model, "classes_", [])) > 2:
+            def loss_fn(y_pred: np.ndarray, y_true: np.ndarray) -> np.ndarray:
+                return np.sum([  # type: ignore
+                    loss_1d(y_pred[:, i], y_true == val)
+                    for i, val in enumerate(self._model.classes_)
+                ], axis=0)
+        else:
+            loss_fn = loss_1d
+        return loss_fn
