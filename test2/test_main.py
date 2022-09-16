@@ -169,8 +169,11 @@ class DeclearnTestCase:
         model = self.build_model()
         netwk = self.build_netwk_server()
         strat = self.strategy(eta_l=0.01)
-        server = FederatedServer(model, netwk, strat, batch_size=100)
-        server.run(rounds=self.rounds, min_clients=self.nb_clients)
+        with tempfile.TemporaryDirectory() as folder:
+            server = FederatedServer(
+                model, netwk, strat, batch_size=100, folder=folder
+            )
+            server.run(rounds=self.rounds, min_clients=self.nb_clients)
 
     def run_federated_client(
             self,
@@ -218,6 +221,7 @@ def run_test_case(
         # Assert that all processes exited properly.
         assert server.exitcode == 0
         assert all(p.exitcode == 0 for p in clients)
+        # TODO: add convergence tests
     finally:
         # Ensure that all processes are terminated.
         server.terminate()
