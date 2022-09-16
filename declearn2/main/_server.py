@@ -10,6 +10,7 @@ from declearn2.communication import messaging
 from declearn2.communication.api import Server
 from declearn2.main.utils import (
     AggregationError,
+    Checkpointer,
     EarlyStoppingCriterion,
     aggregate_clients_data_info,
 )
@@ -35,6 +36,7 @@ class FederatedServer:
             strategy: Strategy,  # revise: from_config
             batch_size: int,
             early_stop: Optional[Union[int, EarlyStoppingCriterion]] = None,
+            folder: Optional[str] = None,
         ) -> None:
         """Docstring."""
         self.model = model
@@ -53,7 +55,7 @@ class FederatedServer:
             raise TypeError(
                 "'early_stop' must be None, int or EarlyStoppingCriterion."
             )
-        self._loss = {}  # type: Dict[int, float]
+        self.checkpointer = Checkpointer(self.model, folder)
 
     def run(
             self,
@@ -75,6 +77,7 @@ class FederatedServer:
         """Orchestrate the federated training routine."""
         async with self.netwk:
             await self.initialization(min_clients, max_clients, timeout)
+            self.checkpointer.save_model()
             round_i = 0
             while True:
                 round_i += 1
@@ -348,8 +351,9 @@ class FederatedServer:
         self.logger.info("Awaiting clients' evaluation results.")
         results = await self._collect_evaluation_results(clients)
         self.logger.info("Aggregating evaluation results.")
-        self._loss[round_i] = self._aggregate_evaluation_results(results)
-        self.logger.info("Global loss is: %s", self._loss[round_i])
+        loss = self._aggregate_evaluation_results(results)
+        self.logger.info("Global loss is: %s", loss)
+        self.checkpointer.checkpoint(loss)
 
     def _select_evaluation_round_participants(
             self,
@@ -447,7 +451,7 @@ class FederatedServer:
             self.logger.info("Maximum number of training rounds reached.")
             return False
         if self.early_stop is not None:
-            self.early_stop.update(self._loss[round_i])
+            self.early_stop.update(self.checkpointer.get_loss(round_i))
             if not self.early_stop.keep_training:
                 self.logger.info("Early stopping criterion reached.")
                 return False
@@ -464,10 +468,11 @@ class FederatedServer:
         rounds: int
             Number of training rounds taken until now.
         """
+        self.checkpointer.reset_best_weights()
         message = messaging.StopTraining(
             weights=self.model.get_weights(),
-            loss=self._loss[rounds],
-            rounds=rounds
+            loss=min(self.checkpointer.get_loss(i) for i in range(rounds)),
+            rounds=rounds,
         )
         self.logger.info("Notifying clients that training is over.")
         await self.netwk.broadcast_message(message)
