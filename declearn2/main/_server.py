@@ -184,6 +184,7 @@ class FederatedServer:
         async with self.netwk:
             await self.initialization(regst_cfg)
             self.checkpointer.save_model()
+            self.checkpointer.checkpoint(float("inf"))  # save initial weights
             round_i = 0
             while True:
                 round_i += 1
