@@ -30,7 +30,9 @@ Note: the latter two functions natively support the declearn-implemented
 # Messaging and Communications API and base tools:
 from . import messaging
 from . import api
-from ._build import build_client, build_server
+from ._build import (
+    NetworkClientConfig, NetworkServerConfig, build_client, build_server
+)
 # Concrete implementations using various protocols:
 from . import grpc
 from . import websockets
