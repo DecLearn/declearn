@@ -13,6 +13,7 @@ from typing import Any, Dict, Optional, Tuple
 from declearn2.communication import messaging
 from declearn2.communication.api import Client
 from declearn2.dataset import Dataset
+from declearn2.main.utils import Checkpointer
 from declearn2.model.api import Model
 from declearn2.optimizer import Optimizer
 from declearn2.utils import get_logger, json_pack, serialize_object
@@ -40,6 +41,7 @@ class FederatedClient:
         self.train_data = train_data
         self.valid_data = valid_data
         self.folder = folder
+        self.checkpointer = None  # type: Optional[Checkpointer]
 
     def run(
             self,
@@ -55,6 +57,10 @@ class FederatedClient:
             # Register for training, then collect initialization information.
             await self.register()
             model, optim = await self.initialize()
+            # Instantiate a checkpointer and save the initial model.
+            self.checkpointer = Checkpointer(model, self.folder)
+            self.checkpointer.save_model()
+            self.checkpointer.checkpoint(float("inf"))  # initial weights
             # Process server instructions as they come.
             while True:
                 message = await self.netwk.check_message()
@@ -294,6 +300,9 @@ class FederatedClient:
             reply = messaging.EvaluationReply(
                 loss=loss, n_steps=nstp
             )  # type: messaging.Message
+            # If possible, checkpoint the model and record the local loss.
+            if self.checkpointer is not None:  # True in `run` context
+                self.checkpointer.checkpoint(loss)
         # In case of failure, ensure it is reported to the server.
         except Exception as exception:  # pylint: disable=broad-except
             self.logger.error(
@@ -320,15 +329,18 @@ class FederatedClient:
             message.rounds, message.loss
         )
         if self.folder is not None:
-            path = os.path.join(self.folder, "final_model.json")
-            self.logger.info("Saving final model in '%s'.", path)
-            model.set_weights(message.weights)
-            dump = {
-                "model": serialize_object(model).to_dict(),
-                "weights": model.get_weights(),
-            }
+            # Save the locally-best-performing model weights.
+            if self.checkpointer is not None:  # True in `run` context
+                path = os.path.join(self.folder, "best_local_weights.json")
+                self.logger.info("Saving best local weights in '%s'.", path)
+                self.checkpointer.reset_best_weights()
+                with open(path, "w", encoding="utf-8") as file:
+                    json.dump(model.get_weights(), file, default=json_pack)
+            # Save the globally-best-performing model weights.
+            path = os.path.join(self.folder, "final_weights.json")
+            self.logger.info("Saving final weights in '%s'.", path)
             with open(path, "w", encoding="utf-8") as file:
-                json.dump(dump, file, default=json_pack)
+                json.dump(message.weights, file, default=json_pack)
 
     async def cancel_training(
             self,
