@@ -11,7 +11,7 @@ from declearn2.communication.api import Server
 from declearn2.main.utils import (
     AggregationError,
     Checkpointer,
-    EarlyStoppingCriterion,
+    EarlyStopping,
     aggregate_clients_data_info,
 )
 from declearn2.model.api import Model
@@ -35,7 +35,7 @@ class FederatedServer:
             server: Server,  # revise: from_config
             strategy: Strategy,  # revise: from_config
             batch_size: int,
-            early_stop: Optional[Union[int, EarlyStoppingCriterion]] = None,
+            early_stop: Optional[Union[int, EarlyStopping]] = None,
             folder: Optional[str] = None,
         ) -> None:
         """Docstring."""
@@ -46,14 +46,14 @@ class FederatedServer:
         self.optim = self.strat.build_server_optimizer()
         self.batch_size = batch_size
         if early_stop is None:
-            self.early_stop = None  # type: Optional[EarlyStoppingCriterion]
+            self.early_stop = None  # type: Optional[EarlyStopping]
         elif isinstance(early_stop, int):
-            self.early_stop = EarlyStoppingCriterion(patience=early_stop)
-        elif isinstance(early_stop, EarlyStoppingCriterion):
+            self.early_stop = EarlyStopping(patience=early_stop)
+        elif isinstance(early_stop, EarlyStopping):
             self.early_stop = early_stop
         else:
             raise TypeError(
-                "'early_stop' must be None, int or EarlyStoppingCriterion."
+                "'early_stop' must be None, int or EarlyStopping."
             )
         self.checkpointer = Checkpointer(self.model, folder)
 

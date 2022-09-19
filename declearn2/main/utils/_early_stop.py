@@ -6,11 +6,11 @@ from typing import Optional
 
 
 __all__ = [
-    'EarlyStoppingCriterion',
+    'EarlyStopping',
 ]
 
 
-class EarlyStoppingCriterion:
+class EarlyStopping:
     """Class implementing a metric-based early-stopping decision rule."""
 
     def __init__(
