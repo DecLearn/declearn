@@ -178,9 +178,8 @@ class FederatedClient:
                 message.n_epoch, message.n_steps, message.timeout
             )
             effort = self._train_for(
-                model, optim,
+                model, optim, message.batches,
                 message.n_epoch, message.n_steps, message.timeout,
-                **message.batches,
             )
             # Compute model updates and collect auxiliary variables.
             self.logger.info("Sending local updates to the server.")
@@ -199,10 +198,10 @@ class FederatedClient:
             self,
             model: Model,
             optim: Optimizer,
+            batch_cfg: Dict[str, Any],
             epochs: Optional[int] = None,
             steps: Optional[int] = None,
             timeout: Optional[int] = None,
-            **kwargs: Any,
         )  -> Dict[str, int]:
         """Backend code to run local SGD steps under effort constraints.
 
@@ -212,6 +211,10 @@ class FederatedClient:
             Model that is to be trained locally.
         optim:
             Optimizer to be used when computing local SGD steps.
+        batch_cfg: Dict[str, Any]
+            Keyword arguments to `self.train_data.generate_batches`
+            may also be passed to this function, e.g. to specify
+            the `batch_size` of local SGD steps.
         epochs: int or None, default=None
             Maximum number of local training epochs to perform.
             May be overridden by `steps` or `timeout`.
@@ -221,10 +224,6 @@ class FederatedClient:
         timeout: int or None, default=None
             Time (in seconds) beyond which to interrupt training,
             regardless of the actual number of steps taken (> 0).
-        **kwargs:
-            Keyword arguments to `self.train_data.generate_batches`
-            may also be passed to this function, e.g. to specify
-            the `batch_size` of local SGD steps.
 
         Returns
         -------
@@ -254,7 +253,7 @@ class FederatedClient:
         n_steps = 0
         # Run batch train steps for as long as constraints set it.
         while (epochs is None) or (n_epoch < epochs):
-            for batch in self.train_data.generate_batches(**kwargs):
+            for batch in self.train_data.generate_batches(**batch_cfg):
                 optim.run_train_step(model, batch)
                 n_steps += 1
                 t_spent = time.time() - t_start
