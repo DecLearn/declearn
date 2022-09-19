@@ -39,6 +39,8 @@ class Checkpointer:
         """
         self.model = model
         self.folder = folder
+        if self.folder is not None:
+            os.makedirs(self.folder, exist_ok=True)
         self._best = None  # type: Optional[NumpyVector]
         self._loss = []    # type: List[float]
 
