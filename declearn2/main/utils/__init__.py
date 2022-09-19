@@ -4,5 +4,5 @@
 
 from ._checkpoint import Checkpointer
 from ._data_info import AggregationError, aggregate_clients_data_info
-from ._dataclasses import EvaluateConfig, TrainingConfig
+from ._dataclasses import EvaluateConfig, RegisterConfig, TrainingConfig
 from ._early_stop import EarlyStopping
