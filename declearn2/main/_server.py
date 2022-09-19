@@ -12,6 +12,8 @@ from declearn2.main.utils import (
     AggregationError,
     Checkpointer,
     EarlyStopping,
+    EvaluateConfig,
+    TrainingConfig,
     aggregate_clients_data_info,
 )
 from declearn2.model.api import Model
@@ -26,6 +28,8 @@ __all__ = [
 
 class FederatedServer:
     """Server-side Federated Learning orchestrating class."""
+    # orchestrating class for a complex process;
+    # pylint: disable=too-many-instance-attributes
 
     logger = get_logger("federated-server")
 
@@ -34,7 +38,8 @@ class FederatedServer:
             model: Union[Model, str, Dict[str, Any]],
             netwk: Union[Server, NetworkServerConfig, Dict[str, Any]],
             strategy: Strategy,  # future: revise Strategy, add config
-            batch_size: int,
+            train_cfg: Union[TrainingConfig, Dict[str, Any]],
+            valid_cfg: Optional[Union[EvaluateConfig, Dict[str, Any]]] = None,
             early_stop: Optional[Union[EarlyStopping, Dict[str, Any]]] = None,
             folder: Optional[str] = None,
         ) -> None:
@@ -52,9 +57,15 @@ class FederatedServer:
             Strategy instance providing with instantiation methods for
             the server's updates-aggregator, the server-side optimizer
             and the clients-side one.
-        batch_size: int
-            Size of the data batches used for training and validation
-            steps by clients.
+        train_cfg: TrainingConfig or dict
+            Keyword arguments to specify effort constraints and data
+            batching parameters for training rounds - formatted as a
+            dict or a declearn.main.utils.TrainingConfig instance.
+        valid_cfg: EvaluateConfig or dict or None, default=None
+            Keyword arguments to specify effort constraints and data
+            batching parameters for evaluation rounds. If None, use
+            default arguments (1 epoch over batches of same size as
+            for training, without shuffling nor samples dropping).
         early_stop: EarlyStopping or dict or None, default=None
             Optional EarlyStopping instance or configuration dict,
             specifying an early-stopping rule based on the global
@@ -90,7 +101,26 @@ class FederatedServer:
         self.strat = strategy
         self.aggrg = self.strat.build_server_aggregator()
         self.optim = self.strat.build_server_optimizer()
-        self.batch_size = batch_size
+        # Assign training and validation data-batching and computation config.
+        if isinstance(train_cfg, dict):
+            train_cfg = TrainingConfig(**train_cfg)
+        elif not isinstance(train_cfg, TrainingConfig):
+            raise TypeError(
+                "'train_cfg' should be a declearn TrainingConfig, "
+                "or a corresponding keyword-arguments dict."
+            )
+        self.train_cfg = train_cfg
+        if valid_cfg is None:
+            valid_cfg = EvaluateConfig(batch_size=self.train_cfg.batch_size)
+        elif isinstance(valid_cfg, dict):
+            valid_cfg = EvaluateConfig(**valid_cfg)
+        elif not isinstance(valid_cfg, EvaluateConfig):
+            raise TypeError(
+                "'valid_cfg' should be a declearn EvaluateConfig, "
+                "or a corresponding keyword-arguments dict."
+            )
+        self.valid_cfg = valid_cfg
+        # Assign the optional early-stopping criterion loss-tracker.
         if early_stop is None:
             self.early_stop = None  # type: Optional[EarlyStopping]
         elif isinstance(early_stop, dict):
@@ -264,8 +294,10 @@ class FederatedServer:
         params = {
             "round_i": round_i,
             "weights": self.model.get_weights(),
-            "batch_s": self.batch_size,
-            "n_epoch": 1, # todo: add params (n_epoch, n_steps, timeout...)
+            "batches": self.train_cfg.batch_cfg,
+            "n_epoch": self.train_cfg.n_epoch,
+            "n_steps": self.train_cfg.n_steps,
+            "timeout": self.train_cfg.timeout,
         }  # type: Dict[str, Any]
         messages = {}  # type: Dict[str, messaging.Message]
         # Dispatch auxiliary variables (which may be client-specific).
@@ -425,7 +457,7 @@ class FederatedServer:
         message = messaging.EvaluationRequest(
             round_i=round_i,
             weights=self.model.get_weights(),
-            batch_s=self.batch_size,
+            batches=self.valid_cfg.batch_cfg,
         )
         await self.netwk.broadcast_message(message, clients)
 

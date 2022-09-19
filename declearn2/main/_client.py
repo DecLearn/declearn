@@ -172,9 +172,9 @@ class FederatedClient:
                 message.n_epoch, message.n_steps, message.timeout
             )
             effort = self._train_for(
-                model, optim, message.n_epoch, message.n_steps,
-                message.timeout, batch_size=message.batch_s,
-                # revise: enable passing other dataset arguments?
+                model, optim,
+                message.n_epoch, message.n_steps, message.timeout,
+                **message.batches,
             )
             # Compute model updates and collect auxiliary variables.
             self.logger.info("Sending local updates to the server.")
@@ -286,10 +286,11 @@ class FederatedClient:
         try:
             # Update the model's weights and evaluate on the local dataset.
             model.set_weights(message.weights)
-            data = dataset.generate_batches(batch_size=message.batch_s)
+            data = dataset.generate_batches(**message.batches)
             loss = model.compute_loss(data)
-            nstp = dataset.get_data_specs().n_samples // message.batch_s
-            # future: implement the former more elegantly
+            nstp = dataset.get_data_specs().n_samples
+            if message.batches.get("drop_remainder", True):
+                nstp = nstp // message.batches["batch_size"]
             reply = messaging.EvaluationReply(
                 loss=loss, n_steps=nstp
             )  # type: messaging.Message
