@@ -6,7 +6,7 @@ import asyncio
 from typing import Any, Dict, Optional, Set, Type, Union
 
 
-from declearn2.communication import messaging
+from declearn2.communication import NetworkServerConfig, messaging
 from declearn2.communication.api import Server
 from declearn2.main.utils import (
     AggregationError,
@@ -16,7 +16,7 @@ from declearn2.main.utils import (
 )
 from declearn2.model.api import Model
 from declearn2.strategy import Strategy
-from declearn2.utils import get_logger
+from declearn2.utils import deserialize_object, get_logger
 
 
 __all__ = [
@@ -31,30 +31,77 @@ class FederatedServer:
 
     def __init__(
             self,
-            model: Model,    # revise: from_config
-            server: Server,  # revise: from_config
-            strategy: Strategy,  # revise: from_config
+            model: Union[Model, str, Dict[str, Any]],
+            netwk: Union[Server, NetworkServerConfig, Dict[str, Any]],
+            strategy: Strategy,  # future: revise Strategy, add config
             batch_size: int,
-            early_stop: Optional[Union[int, EarlyStopping]] = None,
+            early_stop: Optional[Union[EarlyStopping, Dict[str, Any]]] = None,
             folder: Optional[str] = None,
         ) -> None:
-        """Docstring."""
+        """Instantiate the orchestrating server for a federated learning task.
+
+        Parameters
+        ----------
+        model: Model or dict or str
+            Model instance, that may be serialized as an ObjectConfig,
+            a config dict or a JSON file the path to which is provided.
+        netwk: Server of NetworkServerConfig or dict
+            Server communication endpoint instance, or configuration
+            dict or dataclass enabling its instantiation.
+        strategy: Strategy
+            Strategy instance providing with instantiation methods for
+            the server's updates-aggregator, the server-side optimizer
+            and the clients-side one.
+        batch_size: int
+            Size of the data batches used for training and validation
+            steps by clients.
+        early_stop: EarlyStopping or dict or None, default=None
+            Optional EarlyStopping instance or configuration dict,
+            specifying an early-stopping rule based on the global
+            loss metric computed during evaluation rounds.
+        folder: str or None, default=None
+            Optional folder where to write out a model dump, round-
+            wise weights checkpoints and global validation losses.
+            If None, only record the loss metric and lowest-loss-
+            yielding weights in memory (under `self.checkpoint`).
+        """
+        # arguments serve modularity; pylint: disable=too-many-arguments
+        # branches are mostly independent; pylint: disable=too-many-branches
+        # Assign the wrapped Model.
+        if not isinstance(model, Model):
+            model = deserialize_object(model)  # type: ignore
+        if not isinstance(model, Model):
+            raise TypeError(
+                "'model' should be a declearn Model, opt. in serialized form."
+            )
         self.model = model
-        self.netwk = server
+        # Assign the wrapped communication Server.
+        if isinstance(netwk, dict):
+            netwk = NetworkServerConfig(**netwk).build_server()
+        elif isinstance(netwk, NetworkServerConfig):
+            netwk = netwk.build_server()
+        elif not isinstance(netwk, Server):
+            raise TypeError(
+                "'netwk' should be a declearn.communication.Server, "
+                "or the valid configuration of one."
+            )
+        self.netwk = netwk
+        # Assign the strategy and instantiate server-side objects.
         self.strat = strategy
         self.aggrg = self.strat.build_server_aggregator()
         self.optim = self.strat.build_server_optimizer()
         self.batch_size = batch_size
         if early_stop is None:
             self.early_stop = None  # type: Optional[EarlyStopping]
-        elif isinstance(early_stop, int):
-            self.early_stop = EarlyStopping(patience=early_stop)
+        elif isinstance(early_stop, dict):
+            self.early_stop = EarlyStopping(**early_stop)
         elif isinstance(early_stop, EarlyStopping):
             self.early_stop = early_stop
         else:
             raise TypeError(
                 "'early_stop' must be None, int or EarlyStopping."
             )
+        # Assign a model checkpointer.
         self.checkpointer = Checkpointer(self.model, folder)
 
     def run(
