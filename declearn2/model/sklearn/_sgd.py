@@ -2,14 +2,27 @@
 
 """Model subclass to wrap scikit-learn SGD classifier and regressor models."""
 
+import typing
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
 import numpy as np
 from numpy.typing import ArrayLike
 from sklearn.linear_model import SGDClassifier, SGDRegressor  # type: ignore
+from typing_extensions import Literal  # future: import from typing (Py>=3.8)
 
 from declearn2.model.api import Model, NumpyVector
 from declearn2.typing import Batch
+
+
+LossesLiteral = Literal[
+    'hinge', 'log_loss', 'modified_huber', 'squared_hinge',
+    'perceptron', 'squared_error', 'huber', 'epsilon_insensitive',
+    'squared_epsilon_insensitive'
+]
+REG_LOSSES = (
+    'squared_error', 'huber', 'epsilon_insensitive',
+    'squared_epsilon_insensitive'
+)
 
 
 class SklearnSGDModel(Model):
@@ -29,13 +42,19 @@ class SklearnSGDModel(Model):
         ) -> None:
         """Instantiate a Model interfacing a sklearn SGD-based model.
 
+        Note: See `SklearnSGDModel.from_parameters` for an alternative
+              constructor that does not require a manual instantiation
+              of the wrapped scikit-learn model.
+
+        Arguments:
+        ---------
         model: SGDClassifier or SGDRegressor
             Scikit-learn model that needs wrapping for federated training.
             Note that some hyperparameters will be overridden, as will the
             model's existing weights.
         n_features: int
             Number of input features in the learning task.
-        n_classes: int ot None, default=None
+        n_classes: int or None, default=None
             If `model` is a `SGDClassifier`, number of target classes.
             May be inferred from `classes` if provided.
         classes: np.ndarray or list[int] or None, default=None
@@ -95,6 +114,58 @@ class SklearnSGDModel(Model):
             # Assign attributes in the SGDRegressor case.
             model.coef_ = np.zeros((n_features,))
             model.intercept_ = np.zeros((1,))
+
+    @classmethod
+    def from_parameters(
+            cls,
+            n_features: int,
+            n_classes: Optional[int] = None,
+            classes: Optional[Union[np.ndarray, List[int]]] = None,
+            loss: Optional[LossesLiteral] = None,
+            penalty: Literal['l1', 'l2', 'elasticnet'] = 'l2',
+            alpha: float = 1e-4,
+            l1_ratio: float = 0.15,
+            epsilon: float = 0.1,
+            fit_intercept: bool = True,
+            n_jobs: Optional[int] = None,
+        ) -> 'SklearnSGDModel':
+        """Instantiate a SklearnSGDModel from model parameters.
+
+        This classmethod is an alternative constructor to instantiate
+        a SklearnSGDModel without first instantiating a scikit-learn
+        SGDRegressor or SGDClassifier.
+
+        Arguments:
+        ---------
+        * The first three arguments are from `SklearnSGDModel.__init__`
+          and specify the task at hand (regression or classification)
+          as well as the model's dimensionality.
+        * All other arguments come from the scikit-learn `SGDRegressor`
+          and `SGDClassifier` classes (from `sklearn.linear_model`),
+          and specify the loss function (hence type of model) as well
+          as some of its parameters.
+        * Note that unexposed parameters from the scikit-learn classes
+          are simply of no use when wrapped by `SklearnSGDModel`.
+        """
+        # partially-inherited signature; pylint: disable=too-many-arguments
+        # SGDClassifier case.
+        if n_classes or (classes is not None):
+            loss = loss or 'hinge'
+            if loss not in typing.get_args(LossesLiteral):
+                raise ValueError(f"Invalid loss '{loss}' for SGDClassifier.")
+            sk_cls = SGDClassifier
+        # SGDRegressor case.
+        else:
+            loss = loss or 'squared_error'
+            if loss not in REG_LOSSES:
+                raise ValueError(f"Invalid loss '{loss}' for SGDRegressor.")
+            sk_cls = SGDRegressor
+        # Instantiate the sklearn model, wrap it up and return.
+        model = sk_cls(
+            loss=loss, penalty=penalty, alpha=alpha, l1_ratio=l1_ratio,
+            epsilon=epsilon, fit_intercept=fit_intercept, n_jobs=n_jobs,
+        )
+        return cls(model, n_features, n_classes, classes)
 
     def get_config(
             self,
