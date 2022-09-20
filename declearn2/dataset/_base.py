@@ -2,16 +2,19 @@
 
 """Dataset abstraction API."""
 
+import json
 from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Iterator, Optional, Set
 
 from declearn2.typing import Batch
+from declearn2.utils import access_registered, create_types_registry
 
 
 __all__ = [
     'DataSpecs',
     'Dataset',
+    'load_dataset_from_json',
 ]
 
 
@@ -105,3 +108,28 @@ class Dataset(metaclass=ABCMeta):
             typically used to balance a model's loss or metrics.
         """
         return NotImplemented
+
+
+create_types_registry("Dataset", Dataset)
+
+
+def load_dataset_from_json(path: str) -> Dataset:
+    """Instantiate a dataset based on a JSON dump file.
+
+    Parameters
+    ----------
+    path: str
+        Path to a JSON file output by the `save_to_json`
+        method of the Dataset that is being reloaded.
+        The actual type of dataset should be specified
+        under the "name" field of that file.
+
+    Returns
+    -------
+    dataset: Dataset
+        Dataset (subclass) instance, reloaded from JSON.
+    """
+    with open(path, "r", encoding="utf-8") as file:
+        dump = json.load(file)
+    cls = access_registered(dump["name"], group="Dataset")
+    return cls.load_from_json(path)  # type: ignore

@@ -16,6 +16,7 @@ from sklearn.datasets import load_svmlight_file  # type: ignore
 from declearn2.dataset._base import Dataset, DataSpecs
 from declearn2.dataset._sparse import sparse_from_file, sparse_to_file
 from declearn2.typing import Batch
+from declearn2.utils import register_type
 
 
 __all__ = [
@@ -26,6 +27,7 @@ __all__ = [
 DataArray = Union[np.ndarray, pd.DataFrame, spmatrix]
 
 
+@register_type(group="Dataset")
 class InMemoryDataset(Dataset):
     """Dataset subclass serving numpy(-like) memory-loaded data arrays.
 
@@ -268,7 +270,9 @@ class InMemoryDataset(Dataset):
         # Select a file extension and set up the array-dumping function.
         if isinstance(array, (pd.DataFrame, pd.Series)):
             ext = ".csv"
-            save = functools.partial(array.to_csv, sep=",", encoding="utf-8")
+            save = functools.partial(
+                array.to_csv, sep=",", encoding="utf-8", index=False
+            )
         elif isinstance(array, np.ndarray):
             ext = ".npy"
             save = functools.partial(np.save, arr=array)
@@ -347,8 +351,9 @@ class InMemoryDataset(Dataset):
         )
         info["f_cols"] = self.f_cols
         # Write the information to the JSON file.
+        dump = {"name": self.__class__.__name__, "config": info}
         with open(path, "w", encoding="utf-8") as file:
-            json.dump(info, file, indent=2)
+            json.dump(dump, file, indent=2)
 
     @classmethod
     def load_from_json(
@@ -365,10 +370,14 @@ class InMemoryDataset(Dataset):
         """
         # Read and parse the JSON file and check its specs conformity.
         with open(path, "r", encoding="utf-8") as file:
-            info = json.load(file)
+            dump = json.load(file)
+        if "config" not in dump:
+            raise KeyError("Missing key in the JSON file: 'config'.")
+        info = dump["config"]
         for key in ("type", "data", "target", "s_wght", "f_cols"):
             if key not in info:
-                raise KeyError(f"Missing key in the JSON file: '{key}'.")
+                error = f"Missing key in the JSON file: 'config/{key}'."
+                raise KeyError(error)
         key = info.pop("type")
         if key != cls._type_key:
             raise TypeError(
