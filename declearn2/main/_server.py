@@ -46,7 +46,7 @@ class FederatedServer:
         model: Model or dict or str
             Model instance, that may be serialized as an ObjectConfig,
             a config dict or a JSON file the path to which is provided.
-        netwk: Server of NetworkServerConfig or dict
+        netwk: Server or NetworkServerConfig or dict
             Server communication endpoint instance, or configuration
             dict or dataclass enabling its instantiation.
         strategy: Strategy
