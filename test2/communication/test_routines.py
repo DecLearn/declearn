@@ -110,10 +110,9 @@ def run_test_routines(
         process.start()
     # Force termination in case any process raises an exception.
     while any(p.is_alive() for p in processes):
-        for process in processes:
-            process.join(timeout=10)
-        if any(p.exitcode == 1 for p in processes):
+        if any(p.exitcode for p in processes):
             break
+        processes[0].join(timeout=1)
     # Ensure all processes are terminated before exiting this function.
     for process in processes:
         process.terminate()
