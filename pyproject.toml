@@ -3,7 +3,7 @@ build-backend = "setuptools.build_meta"
 requires = ["pip >= 19", "setuptools ~= 58.0", "setuptools-scm"]
 
 [project]
-name = "declearn2"
+name = "declearn"
 version = "2.0.0.beta1"
 description = "Declearn - a python package for decentralized learning."
 #readme = "README.Md"
@@ -20,7 +20,7 @@ maintainers = [
     {name = "Nathalie Vauquier"},
 ]
 classifiers = [
-    "Development Status :: 1 - Planning",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: MIT License",
     "Operating System :: UNIX",
