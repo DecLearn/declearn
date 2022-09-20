@@ -4,8 +4,8 @@ requires = ["pip >= 19", "setuptools ~= 58.0", "setuptools-scm"]
 
 [project]
 name = "declearn2"
-version = "0.0.1"
-description = "declearn code rewrite and API revision"
+version = "2.0.0.beta1"
+description = "Declearn - a python package for decentralized learning."
 #readme = "README.Md"
 requires-python = ">=3.7"
 license = {text = "MIT"}
