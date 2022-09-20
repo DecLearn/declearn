@@ -7,16 +7,16 @@ import dataclasses
 import json
 import os
 import time
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple, Union
 
 
-from declearn2.communication import messaging
+from declearn2.communication import NetworkClientConfig, messaging
 from declearn2.communication.api import Client
-from declearn2.dataset import Dataset
+from declearn2.dataset import Dataset, load_dataset_from_json
 from declearn2.main.utils import Checkpointer
 from declearn2.model.api import Model
 from declearn2.optimizer import Optimizer
-from declearn2.utils import get_logger, json_pack, serialize_object
+from declearn2.utils import get_logger, json_pack
 
 
 __all__ = [
@@ -31,28 +31,81 @@ class FederatedClient:
 
     def __init__(
             self,
-            client: Client,  # revise: from_config
-            train_data: Dataset,  # revise: from_json
-            valid_data: Optional[Dataset] = None,
+            netwk: Union[Client, NetworkClientConfig, Dict[str, Any]],
+            train_data: Union[Dataset, str],
+            valid_data: Optional[Union[Dataset, str]] = None,
             folder: Optional[str] = None,
         ) -> None:
-        """Docstring."""
-        self.netwk = client
+        """Instantiate a client to participate in a federated learning task.
+
+        Parameters
+        ----------
+        netwk: Client or NetworkClientConfig or dict
+            Client communication endpoint instance, or configuration
+            dict or dataclass enabling its instantiation.
+        train_data: Dataset or str
+            Dataset instance wrapping the training data, or path to
+            a JSON file from which it can be instantiated.
+        valid_data: Dataset or str or None
+            Optional Dataset instance wrapping validation data, or
+            path to a JSON file from which it can be instantiated.
+            If None, run evaluation rounds over `train_data`.
+        folder: str or None, default=None
+            Optional folder where to write out a model dump, round-
+            wise weights checkpoints and local validation losses.
+            If None, only record the loss metric and lowest-loss-
+            yielding weights in memory (under `self.checkpoint`).
+        """
+        # Assign the wrapped communication Client.
+        if isinstance(netwk, dict):
+            netwk = NetworkClientConfig(**netwk).build_client()
+        elif isinstance(netwk, NetworkClientConfig):
+            netwk = netwk.build_client()
+        elif not isinstance(netwk, Client):
+            raise TypeError(
+                "'netwk' should be a declearn.communication.Client, "
+                "or the valid configuration of one."
+            )
+        self.netwk = netwk
+        # Assign the wrapped training dataset.
+        if isinstance(train_data, str):
+            train_data = load_dataset_from_json(train_data)
+        if not isinstance(train_data, Dataset):
+            raise TypeError("'train_data' should be a Dataset or path to one.")
         self.train_data = train_data
+        # Assign the wrapped validation dataset (if any).
+        if isinstance(valid_data, str):
+            valid_data = load_dataset_from_json(valid_data)
+        if not (valid_data is None or isinstance(valid_data, Dataset)):
+            raise TypeError("'valid_data' should be a Dataset or path to one.")
         self.valid_data = valid_data
+        # Record the checkpointing folder and create a Checkpointer slot.
         self.folder = folder
         self.checkpointer = None  # type: Optional[Checkpointer]
 
     def run(
             self,
         ) -> None:
-        """Docstring."""
-        asyncio.run(self.training())
+        """Participate in the federated learning process.
 
-    async def training(
+        * Connect to the orchestrating `FederatedServer` and register
+          for training, sharing some metadata about `self.train_data`.
+        * Await initialization instructions to spawn the Model that is
+          to be trained and the local Optimizer used to do so.
+        * Participate in training and evaluation rounds based on the
+          server's requests, checkpointing the model and local loss.
+        * Expect instructions to stop training, or to cancel it in
+          case errors are reported during the process.
+        """
+        asyncio.run(self.async_run())
+
+    async def async_run(
             self,
         ) -> None:
-        """Participate in the federated training process."""
+        """Participate in the federated learning process.
+
+        Note: this method is the async backend of `self.run`.
+        """
         async with self.netwk:
             # Register for training, then collect initialization information.
             await self.register()
