@@ -1,12 +1,12 @@
 # coding: utf-8
 
-"""Unit tests for 'declearn2.utils._register' tools."""
+"""Unit tests for 'declearn.utils._register' tools."""
 
 import time
 
 import pytest
 
-from declearn2.utils import (
+from declearn.utils import (
     access_registered,
     access_registration_info,
     create_types_registry,

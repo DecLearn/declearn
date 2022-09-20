@@ -31,9 +31,9 @@ from typing import Dict, List
 import pytest
 from typing_extensions import Literal  # future: import from typing (Py>=3.8)
 
-from declearn2.communication import build_client, build_server
-from declearn2.communication.api import Client, Server
-from declearn2.communication.messaging import GenericMessage
+from declearn.communication import build_client, build_server
+from declearn.communication.api import Client, Server
+from declearn.communication.messaging import GenericMessage
 
 
 async def client_routine(

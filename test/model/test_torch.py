@@ -10,8 +10,8 @@ import pytest
 import torch
 from typing_extensions import Literal  # future: import from typing (Py>=3.8)
 
-from declearn2.model.torch import TorchModel, TorchVector
-from declearn2.typing import Batch
+from declearn.model.torch import TorchModel, TorchVector
+from declearn.typing import Batch
 
 # dirty trick to import from `model_testing.py`;
 # pylint: disable=wrong-import-order, wrong-import-position

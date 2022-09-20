@@ -18,11 +18,11 @@ import grpc  # type: ignore
 import pytest
 import pytest_asyncio
 
-from declearn2.communication.messaging import Empty
-from declearn2.communication.grpc._server import load_pem_file
-from declearn2.communication.grpc import GrpcClient, GrpcServer
-from declearn2.communication.grpc.protobufs import message_pb2
-from declearn2.communication.grpc.protobufs.message_pb2_grpc import (
+from declearn.communication.messaging import Empty
+from declearn.communication.grpc._server import load_pem_file
+from declearn.communication.grpc import GrpcClient, GrpcServer
+from declearn.communication.grpc.protobufs import message_pb2
+from declearn.communication.grpc.protobufs.message_pb2_grpc import (
     MessageBoardServicer, MessageBoardStub, add_MessageBoardServicer_to_server
 )
 

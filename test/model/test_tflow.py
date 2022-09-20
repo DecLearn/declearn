@@ -13,8 +13,8 @@ with warnings.catch_warnings():  # silence tensorflow import-time warnings
     import tensorflow as tf  # type: ignore
 from typing_extensions import Literal  # future: import from typing (Py>=3.8)
 
-from declearn2.model.tensorflow import TensorflowModel, TensorflowVector
-from declearn2.typing import Batch
+from declearn.model.tensorflow import TensorflowModel, TensorflowVector
+from declearn.typing import Batch
 
 # dirty trick to import from `model_testing.py`;
 # pylint: disable=wrong-import-order, wrong-import-position

@@ -9,7 +9,7 @@ from typing import Any
 
 import pytest
 
-from declearn2.utils import (
+from declearn.utils import (
     add_json_support,
     json_pack,
     json_unpack,

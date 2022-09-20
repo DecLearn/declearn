@@ -13,7 +13,7 @@ from typing import Any, Dict, Optional, Tuple, Type
 
 import pytest
 
-from declearn2.utils import (
+from declearn.utils import (
     ObjectConfig,
     create_types_registry,
     deserialize_object,

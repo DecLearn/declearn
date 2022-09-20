@@ -6,8 +6,8 @@ import sys
 
 import pytest
 
-from declearn2.model.api import Vector
-from declearn2.optimizer.modules import (
+from declearn.model.api import Vector
+from declearn.optimizer.modules import (
     ScaffoldClientModule, ScaffoldServerModule
 )
 # dirty trick to import from `test_modules.py`;

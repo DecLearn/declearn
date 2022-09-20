@@ -15,15 +15,15 @@ with warnings.catch_warnings():  # silence tensorflow import-time warnings
 import torch
 from typing_extensions import Literal  # future: import from typing (Py>=3.8)
 
-from declearn2.communication import build_client, build_server
-from declearn2.communication.api import Client, Server
-from declearn2.dataset import InMemoryDataset
-from declearn2.model.api import Model
-from declearn2.model.sklearn import SklearnSGDModel
-from declearn2.model.tensorflow import TensorflowModel
-from declearn2.model.torch import TorchModel
-from declearn2.main import FederatedClient, FederatedServer
-from declearn2.strategy import FedAvg, FedAvgM, Scaffold, ScaffoldM
+from declearn.communication import build_client, build_server
+from declearn.communication.api import Client, Server
+from declearn.dataset import InMemoryDataset
+from declearn.model.api import Model
+from declearn.model.sklearn import SklearnSGDModel
+from declearn.model.tensorflow import TensorflowModel
+from declearn.model.torch import TorchModel
+from declearn.main import FederatedClient, FederatedServer
+from declearn.strategy import FedAvg, FedAvgM, Scaffold, ScaffoldM
 
 
 class DeclearnTestCase:

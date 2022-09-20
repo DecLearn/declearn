@@ -33,12 +33,12 @@ import torch
 from numpy.typing import ArrayLike
 from typing_extensions import Literal  # future: import from typing (Py>=3.8)
 
-from declearn2.model.api import NumpyVector, Vector
-from declearn2.model.tensorflow import TensorflowVector
-from declearn2.model.torch import TorchVector
-from declearn2.optimizer.modules import OptiModule
-from declearn2.utils import json_pack, json_unpack
-from declearn2.utils._register import REGISTRIES
+from declearn.model.api import NumpyVector, Vector
+from declearn.model.tensorflow import TensorflowVector
+from declearn.model.torch import TorchVector
+from declearn.optimizer.modules import OptiModule
+from declearn.utils import json_pack, json_unpack
+from declearn.utils._register import REGISTRIES
 
 
 # unproper but efficient way to list modules; pylint: disable=protected-access

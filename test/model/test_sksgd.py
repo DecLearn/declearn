@@ -10,9 +10,9 @@ import pytest
 from scipy.sparse import csr_matrix  # type: ignore
 from sklearn.linear_model import SGDClassifier, SGDRegressor  # type: ignore
 
-from declearn2.model.api import NumpyVector
-from declearn2.model.sklearn import SklearnSGDModel
-from declearn2.typing import Batch
+from declearn.model.api import NumpyVector
+from declearn.model.sklearn import SklearnSGDModel
+from declearn.typing import Batch
 
 # dirty trick to import from `model_testing.py`;
 # pylint: disable=wrong-import-order, wrong-import-position

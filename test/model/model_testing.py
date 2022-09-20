@@ -7,9 +7,9 @@ from typing import Any, List, Protocol, Tuple, Type, Union
 
 import numpy as np
 
-from declearn2.model.api import Model, NumpyVector, Vector
-from declearn2.typing import Batch
-from declearn2.utils import json_pack, json_unpack
+from declearn.model.api import Model, NumpyVector, Vector
+from declearn.typing import Batch
+from declearn.utils import json_pack, json_unpack
 
 
 class ModelTestCase(Protocol):
