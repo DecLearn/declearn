@@ -241,6 +241,7 @@ def test_declearn(
         kind: Literal['Reg', 'Bin', 'Clf'],
         framework: Literal['Sksgd', 'Tflow', 'Torch'],
         strategy: Literal['FedAvg', 'FedAvgM', 'Scaffold', 'ScaffoldM'],
+        fulltest: bool,
     ) -> None:
     """Pytest-collected functional test of declearn's main classes.
 
@@ -249,6 +250,9 @@ def test_declearn(
           costful to establish than gRPC and/or SSL-secured ones
           (the latter due to the certificates-generation costs).
     """
+    if not fulltest:
+        if (kind != 'Reg') or (strategy == 'FedAvgM'):
+            pytest.skip("skip scenario (no --fulltest option)")
     run_test_case(
         kind, framework, strategy,
         nb_clients=2, protocol="websockets", use_ssl=False,

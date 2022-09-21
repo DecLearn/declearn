@@ -499,6 +499,14 @@ tox           # run with default py 3.8
 tox -e py310  # override to use py 3.10
 ```
 
+Note that additional parameters for `pytest` may be passed as well, by adding
+`--` followed by any set of options you want at the end of the `tox` command.
+For example, to use the declearn-specific `--fulltest` option (see the section
+below), run:
+```bash
+tox [tox options] -- --fulltest
+```
+
 #### Running tests using pytest
 
 To run all the tests, simply use:
@@ -514,4 +522,12 @@ pytest test/model
 To run the tests under a given file (here, "test_main.py"):
 ```bash
 pytest test/test_main.py
+```
+
+Note that by default, some test scenarios that are considered somewhat
+superfluous~redundant will be skipped in order to save time. To avoid
+skipping these, and therefore run a more complete test suite, add the
+`--fulltest` option to pytest:
+```bash
+pytest --fulltest test  # or any more-specific target you want
 ```
