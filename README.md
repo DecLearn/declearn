@@ -481,6 +481,19 @@ the `test/` folder of the present repository.
 They are implemented using the [PyTest](https://docs.pytest.org) framework,
 as well as some third-party plug-ins (refer to [Setup][#setup] for details).
 
+#### Running the test suite using tox
+
+The third-party [tox](https://tox.wiki/en/latest/) tools may be used to run
+the entire test suite within a dedicated virtual environment. Simply run `tox`
+from the commandline with the root repo folder as working directory. You may
+optionally specify the python version(s) with which you want to run tests.
+
+```bash
+tox           # run with default py 3.8
+tox -e py310  # override to use py 3.10
+```
+
+#### Running tests using pytest
 
 To run all the tests, simply use:
 ```bash
