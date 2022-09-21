@@ -121,18 +121,19 @@ class DeclearnTestCase:
 
     def build_dataset(
             self,
+            size: int = 1000,
         ) -> InMemoryDataset:
         """Return an in-memory dataset suitable for the learning task."""
-        features = np.random.normal(size=(1000, 32)).astype(np.float32)
+        features = np.random.normal(size=(size, 32)).astype(np.float32)
         if self.kind in ("Reg", "Bin"):
-            noise = np.random.normal(size=(1000,)).astype(np.float32)
+            noise = np.random.normal(size=(size,)).astype(np.float32)
             target = np.matmul(features, self.coefs)[:, 0] + noise
             if self.kind == "Bin":
                 target = (np.tanh(target).round() > 0).astype(np.float32)
                 if self.framework.lower() == "torch":
                     target = np.expand_dims(target, 1)
         else:
-            noise = np.random.normal(size=(1000, 4)).astype(np.float32)
+            noise = np.random.normal(size=(size, 4)).astype(np.float32)
             target = np.matmul(features, self.coefs) + noise
             target = target.argmax(axis=1)
         return InMemoryDataset(
@@ -183,9 +184,10 @@ class DeclearnTestCase:
         ) -> None:
         """Set up and run a FederatedClient."""
         netwk = self.build_netwk_client(name)
-        dataset = self.build_dataset()
+        train = self.build_dataset(size=1000)
+        valid = self.build_dataset(size=250)
         with tempfile.TemporaryDirectory() as folder:
-            client = FederatedClient(netwk, dataset, folder=folder)
+            client = FederatedClient(netwk, train, valid, folder)
             client.run()
 
 
