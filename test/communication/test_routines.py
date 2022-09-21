@@ -60,7 +60,9 @@ async def server_routine(
         nb_clients: int = 1,
     ) -> None:
     """Basic server testing routine."""
-    data_info = await server.wait_for_clients(nb_clients, timeout=5)
+    data_info = await server.wait_for_clients(
+        min_clients=nb_clients, max_clients=nb_clients, timeout=5
+    )
     print(data_info)
     print("Sending")
     await server.broadcast_message(
