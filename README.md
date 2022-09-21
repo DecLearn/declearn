@@ -97,6 +97,15 @@ cd declearn
 pip install .  # or pip install -e .
 ```
 
+To also install optional requirements, add the name of the extras between
+brackets to the `pip install` command, _e.g._ running one of the following:
+
+```bash
+pip install .[torch]  # install declearn.model.torch submodule dependencies
+pip install .[tensorflow,torch]  # install both tensorflow and torch
+pip install .[tests]  # install all optional dependencies plus testing ones
+```
+
 **Notes**:
 * If you are not using a virtual environment, select carefully the `pip`
   binary being called (e.g. use `python -m pip`), and/or add a `--user`
