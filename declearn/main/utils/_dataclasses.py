@@ -34,7 +34,7 @@ class RegisterConfig:
         to close registration and either return or raise.
     """
 
-    min_clients: int
+    min_clients: int = 1
     max_clients: Optional[int] = None
     timeout: Optional[int] = None
 
