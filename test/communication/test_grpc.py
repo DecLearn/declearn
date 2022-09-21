@@ -12,6 +12,7 @@ proper behaviour in the context of Federated Learning are left to separate
 test scripts.
 """
 
+import asyncio
 from typing import AsyncIterator, Dict
 
 import grpc  # type: ignore
@@ -277,8 +278,12 @@ async def test_client_with_insecure_server(
     """Unit test for minimal unsecured GrpcServer/GrpcClient use."""
     # fixture; pylint: disable=unused-argument
     client = insecure_declearn_client
-    with pytest.raises(RuntimeError):  # unregistered client
-        await client.send_message(Empty())
+    server = insecure_declearn_server
+    await asyncio.gather(
+        server.wait_for_clients(1, timeout=5),
+        client.register({})
+    )
+    await client.send_message(Empty())
 
 
 @pytest.mark.asyncio
@@ -289,8 +294,12 @@ async def test_secure_client_with_secure_server(
     """Unit test for minimal secured GrpcServer/GrpcClient use."""
     # fixture; pylint: disable=unused-argument
     client = secure_declearn_client
-    with pytest.raises(RuntimeError):  # unregistered client
-        await client.send_message(Empty())
+    server = secure_declearn_server
+    await asyncio.gather(
+        server.wait_for_clients(1, timeout=5),
+        client.register({})
+    )
+    await client.send_message(Empty())
 
 
 @pytest.mark.asyncio
