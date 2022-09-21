@@ -4,6 +4,9 @@
 - [Setup](#setup)
 - [Quickstart](#quickstart)
 - [Usage of the Python API](#usage-of-the-python-api)
+  - [Overview of the Federated Learning process](#overview-of-the-federated-learning-process)
+  - [Overview of the declearn API](#overview-of-the-declearn-api)
+  - [Hands-on usage](#hands-on-usage)
 - [Developers](#developers)
 
 --------------------
@@ -134,6 +137,9 @@ Here, the code uses:
 Note that this example code may easily be adjusted to suit use cases, using
 other types of models, alternative federated learning algorithms and/or
 modifying the communication, training and validation hyper-parameters.
+Please refer to the [Hands-on usage](#hands-on-usage) section for a more
+general and detailed description of how to set up a federated learning
+task and process with declearn.
 
 ### Server-side script
 
