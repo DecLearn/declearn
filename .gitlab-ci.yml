@@ -24,6 +24,9 @@ test:
     - tox -e py38
   rules:
     - if: ($CI_COMMIT_BRANCH == "main") && ($CI_PIPELINE_SOURCE == "push")
+  tags:
+    - ci.inria.fr
+    - small
 
 # Run the test suite using tox, with --fulltest option.
 # This job is called when a merge request is created.
@@ -33,3 +36,6 @@ test-full:
     - tox -e py38 -- --fulltest
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  tags:
+    - ci.inria.fr
+    - small
