@@ -124,5 +124,6 @@ def fixture_test_case(
 
 
 @pytest.mark.parametrize("kind", ["MLP", "RNN", "CNN"])
+@pytest.mark.filterwarnings("ignore:.*randrange.*:DeprecationWarning")
 class TestTensorflowModel(ModelTestSuite):
     """Unit tests for declearn.model.tensorflow.TensorflowModel."""
