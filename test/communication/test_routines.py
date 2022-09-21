@@ -60,7 +60,7 @@ async def server_routine(
         nb_clients: int = 1,
     ) -> None:
     """Basic server testing routine."""
-    data_info = await server.wait_for_clients(nb_clients)
+    data_info = await server.wait_for_clients(nb_clients, timeout=5)
     print(data_info)
     print("Sending")
     await server.broadcast_message(
@@ -164,7 +164,6 @@ def _build_client_processes(
         """Spawn a client and run `client_routine` in its context."""
         nonlocal certificate, protocol, server_uri
         args = (protocol, server_uri, name, certificate)
-        await asyncio.sleep(1)
         async with build_client(*args) as client:
             await client_routine(client)
     # Define a routine that runs the former.

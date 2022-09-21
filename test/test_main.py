@@ -173,7 +173,7 @@ class DeclearnTestCase:
             server = FederatedServer(model, netwk, strat, folder=folder)
             server.run(
                 rounds=self.rounds,
-                regst_cfg=self.nb_clients,
+                regst_cfg={"min_clients": self.nb_clients, "timeout": 20},
                 train_cfg={"batch_size": 100},
             )
 
