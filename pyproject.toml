@@ -1,23 +1,27 @@
 [build-system]
 build-backend = "setuptools.build_meta"
-requires = ["pip >= 19", "setuptools ~= 58.0", "setuptools-scm"]
+requires = [
+    "pip >= 19",
+    "setuptools ~= 58.0",
+    "setuptools_scm[toml] >= 6.2",
+]
 
 [project]
 name = "declearn"
 version = "2.0.0.beta1"
 description = "Declearn - a python package for decentralized learning."
-#readme = "README.Md"
+readme = "README.md"
 requires-python = ">=3.7"
 license = {text = "MIT"}
 authors = [
-    {name = "Paul Andrey"},
-    {name = "Nathalie Vauquier"},
+    {name = "Paul Andrey", email = "paul.andrey@inria.fr"},
+    {name = "Nathalie Vauquier", email = "nathalie.vauquier@inria.fr"},
     {name = "Marc-André Sirgiel"},
     {name = "Yannick Bouillard"},
 ]
 maintainers = [
-    {name = "Paul Andrey"},
-    {name = "Nathalie Vauquier"},
+    {name = "Paul Andrey", email = "paul.andrey@inria.fr"},
+    {name = "Nathalie Vauquier", email = "nathalie.vauquier@inria.fr"},
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -46,7 +50,7 @@ torch = [
     "torch >= 1.10",
 ]
 tests = [
-    "declearn2[tensorflow,torch]",
+    "declearn[tensorflow,torch]",
     "pytest >= 6.1",
     "pytest-asyncio",
 ]
