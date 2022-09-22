@@ -423,6 +423,6 @@ class MessagesHandler:
         n_clients = len(self.registered_clients)
         if not min_clients <= n_clients <= max_clients:  # type: ignore
             raise RuntimeError(
-                f"The number of registered clients is {n_clients}, which"
+                f"The number of registered clients is {n_clients}, which "
                 f"is out of the [{min_clients}, {max_clients}] range."
             )

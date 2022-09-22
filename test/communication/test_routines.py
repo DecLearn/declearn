@@ -130,7 +130,7 @@ def _build_server_process(
     ) -> mp.Process:
     """Set up and return a mp.Process that spawns and uses a Server."""
     server_cfg = {
-        "protocol": protocol, "host": "localhost", "port": 8765,
+        "protocol": protocol, "host": "127.0.0.1", "port": 8765,
         "certificate": ssl_cert["server_cert"] if use_ssl else None,
         "private_key": ssl_cert["server_pkey"] if use_ssl else None,
     }
