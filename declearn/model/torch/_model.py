@@ -110,11 +110,8 @@ class TorchModel(Model):
         self._model.zero_grad()
         # Run the forward and backward pass to compute gradients.
         y_pred = self._model(*inputs)
-        loss = self._loss_fn(y_pred, y_true)
-        if s_wght is not None:
-            loss.mul_(s_wght)
-        loss = loss.mean()
-        loss.backward()
+        loss = self._compute_loss(y_pred, y_true, s_wght)
+        loss.backward()  # type: ignore
         # Collect weights' gradients and return them in a Vector container.
         return TorchVector({
             str(i): p.grad
@@ -141,6 +138,19 @@ class TorchModel(Model):
         # Ensure output data was converted to Tensor.
         output = [list(map(convert, inputs)), convert(y_true), convert(s_wght)]
         return output  # type: ignore
+
+    def _compute_loss(
+            self,
+            y_pred: torch.Tensor,
+            y_true: Optional[torch.Tensor],
+            s_wght: Optional[torch.Tensor] = None,
+        ) -> torch.Tensor:
+        """Compute the average (opt. weighted) loss over given predictions."""
+        loss = self._loss_fn(y_pred, y_true)
+        if s_wght is not None:
+            loss.mul_(s_wght)
+            loss.sum_().div_(s_wght.sum())
+        return loss.mean()  # type: ignore
 
     def apply_updates(  # type: ignore  # future: revise
             self,
@@ -179,10 +189,8 @@ class TorchModel(Model):
                 for batch in dataset:
                     inputs, y_true, s_wght = self._unpack_batch(batch)
                     y_pred = self._model(*inputs)
-                    loss = self._loss_fn(y_pred, y_true)
-                    if s_wght is not None:
-                        loss.mul_(s_wght)
-                    total += loss.mean().numpy()
+                    loss = self._compute_loss(y_pred, y_true, s_wght)
+                    total += loss.numpy()
                     n_btc += 1
         finally:
             self._model.train()
