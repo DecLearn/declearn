@@ -114,9 +114,9 @@ class TorchModel(Model):
         loss.backward()  # type: ignore
         # Collect weights' gradients and return them in a Vector container.
         return TorchVector({
-            str(i): p.grad
+            str(i): p.grad.detach().clone()
             for i, p in enumerate(self._model.parameters())
-            if p.grad is not None
+            if p.requires_grad
         })
 
     @staticmethod
