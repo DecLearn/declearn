@@ -46,7 +46,7 @@ class ScaffoldClientModule(OptiModule):
         Step(grads):
             _past += grads
             _step += 1
-            grads = grads - state
+            grads = grads - delta
         Send:
             state = (_past / _step)
         Receive(delta):
