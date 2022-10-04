@@ -1,16 +1,6 @@
 # Official language image, in version 3.8(.latest)
 image: python:3.8
 
-# Change pip's cache directory to be inside the project directory.
-variables:
-  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
-
-# Cache the installed packages.
-cache:
-  paths:
-    - .cache/pip
-    - venv/
-
 # Set up a virtual environment.
 before_script:
   - python -m venv venv
