@@ -87,6 +87,8 @@ class EvaluationRequest(Message):
     round_i: int
     weights: NumpyVector
     batches: Dict[str, Any]
+    n_steps: Optional[int]
+    timeout: Optional[int]
 
 
 @dataclasses.dataclass
@@ -97,6 +99,7 @@ class EvaluationReply(Message):
 
     loss: float
     n_steps: int
+    t_spent: float
 
 
 @dataclasses.dataclass
@@ -194,7 +197,7 @@ class TrainReply(Message):
 
     n_epoch: int
     n_steps: int
-    t_spent: int
+    t_spent: float
     updates: Vector
     aux_var: Dict[str, Dict[str, Any]]
 

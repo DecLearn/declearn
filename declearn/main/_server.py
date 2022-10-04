@@ -514,8 +514,8 @@ class FederatedServer:
             round_i=round_i,
             weights=self.model.get_weights(),
             batches=valid_cfg.batch_cfg,
-            # future: n_steps=self.valid_cfg.n_steps,
-            # future: timeout=self.valid_cfg.timeout,
+            n_steps=valid_cfg.n_steps,
+            timeout=valid_cfg.timeout,
         )
         await self.netwk.broadcast_message(message, clients)
 
