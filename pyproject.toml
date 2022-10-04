@@ -55,6 +55,9 @@ tests = [
     "pytest-asyncio",
 ]
 
+[project.urls]
+source = "https://gitlab.inria.fr/magnet/declearn/declearn2"
+
 [tools.setuptools]
 packages = ["declearn2", "declearn2.*"]
 
