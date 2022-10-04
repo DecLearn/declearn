@@ -93,6 +93,11 @@ class TrainingConfig:
 
 @dataclasses.dataclass
 class EvaluateConfig(TrainingConfig):
-    """Dataclass wrapping parameters for an evaluation round."""
+    """Dataclass wrapping parameters for an evaluation round.
+
+    Please refer to the parent class `TrainingConfig` for details
+    on the wrapped parameters / attribute. Note that `n_epoch` is
+    most-likely ignored by handling classes.
+    """
 
     drop_remainder: bool = False
