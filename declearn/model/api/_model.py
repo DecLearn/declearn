@@ -3,7 +3,7 @@
 """Model abstraction API."""
 
 from abc import ABCMeta, abstractmethod
-from typing import Any, Dict, Iterable, Set
+from typing import Any, Dict, Iterable, Optional, Set
 
 from declearn.model.api._vector import Vector
 from declearn.typing import Batch
@@ -106,17 +106,24 @@ class Model(metaclass=ABCMeta):
     def compute_batch_gradients(
         self,
         batch: Batch,
+        max_norm: Optional[float] = None,
     ) -> Vector:
         """Compute and return gradients computed over a given data batch.
 
         Compute the average gradients of the model's loss with respect
         to its trainable parameters for the given data batch.
+        Optionally clip sample-wise gradients before batch-averaging.
 
         Parameters
         ----------
         batch: declearn.typing.Batch
             Tuple wrapping input data, (opt.) target values and (opt.)
             sample weights to be applied to the loss function.
+        max_norm: float or None, default=None
+            Maximum L2-norm of sample-wise gradients, beyond which to
+            clip them before computing the batch-average gradients.
+            If None, batch-averaged gradients are computed directly,
+            which is less costful in computational time and memory.
 
         Returns
         -------
