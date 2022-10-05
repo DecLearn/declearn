@@ -30,6 +30,15 @@ class ExtractLSTMFinalOutput(torch.nn.Module):
         return inputs[1][0][0]
 
 
+class FlattenCNNOutput(torch.nn.Module):
+    """Custom torch Module to reshape the output of the CNN conv layers."""
+
+    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
+        """Reshape the Tensor to the desired shape."""
+        shape = (-1,) if (inputs.ndim == 3) else (inputs.shape[0], -1)
+        return inputs.view(*shape)
+
+
 class TorchTestCase(ModelTestCase):
     """PyTorch test-case-provider fixture.
 
@@ -120,7 +129,7 @@ class TorchTestCase(ModelTestCase):
                 torch.nn.Conv2d(32, 16, 5, padding="same"),
                 torch.nn.ReLU(),
                 torch.nn.AvgPool2d(8),
-                torch.nn.Flatten(),
+                FlattenCNNOutput(),
                 torch.nn.Linear(16, 1),
                 torch.nn.Sigmoid(),
             ]
@@ -154,3 +163,17 @@ class TestTorchModel(ModelTestSuite):
                     "skipping failed test due to custom nn.Module pickling"
                 )
         super().test_serialization(test_case)
+
+    def test_compute_batch_gradients_clipped(
+        self,
+        test_case: ModelTestCase,
+    ) -> None:
+        if getattr(test_case, "kind", "") == "RNN":
+            try:
+                super().test_compute_batch_gradients_clipped(test_case)
+            except RuntimeError:
+                pytest.skip(
+                    "skipping test due to lack of RNN support in functorch"
+                )
+        else:
+            super().test_compute_batch_gradients_clipped(test_case)

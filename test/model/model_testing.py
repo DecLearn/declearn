@@ -97,6 +97,29 @@ class ModelTestSuite:
         my_grads = model.compute_batch_gradients(my_batch)
         assert my_grads == np_grads
 
+    def test_compute_batch_gradients_clipped(
+        self,
+        test_case: ModelTestCase,
+    ) -> None:
+        """Check that gradients computation with sample-wise clipping works."""
+        # NOTE: this test does not check that results are correct
+        # Setup the model and a batch of data.
+        model = test_case.model
+        batch = test_case.dataset[0]
+        # Check that gradients computation works.
+        w_srt = model.get_weights()
+        grads_a = model.compute_batch_gradients(batch, max_norm=None)
+        grads_b = model.compute_batch_gradients(batch, max_norm=0.05)
+        w_end = model.get_weights()
+        assert w_srt == w_end
+        assert isinstance(grads_b, test_case.vector_cls)
+        assert grads_a.coefs.keys() == grads_b.coefs.keys()
+        assert all(
+            grads_a.coefs[k].shape == grads_b.coefs[k].shape
+            for k in grads_a.coefs
+        )
+        assert grads_a != grads_b
+
     def test_apply_updates(
         self,
         test_case: ModelTestCase,
