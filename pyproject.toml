@@ -48,6 +48,7 @@ tensorflow = [
     "tensorflow >= 2.5",
 ]
 torch = [
+    "functorch >= 0.1",  # note: functorch is included with torch>=1.13
     "torch >= 1.10",
 ]
 tests = [
@@ -58,6 +59,7 @@ tests = [
     "pytest >= 6.1",
     "pytest-asyncio",
     # other extra dependencies
+    "functorch >= 0.1",
     "tensorflow >= 2.5",
     "torch >= 1.10",
 ]
