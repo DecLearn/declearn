@@ -248,6 +248,7 @@ class SklearnSGDModel(Model):
     def compute_batch_gradients(
         self,
         batch: Batch,
+        max_norm: Optional[float] = None,
     ) -> NumpyVector:
         # Unpack, validate and repack input data.
         x_data, y_data, s_wght = self._unpack_batch(batch)
@@ -256,6 +257,12 @@ class SklearnSGDModel(Model):
             self._compute_sample_gradient(x, y)  # type: ignore
             for x, y in zip(x_data, y_data)  # type: ignore
         ]
+        # Optionally clip sample-wise gradients based on their L2 norm.
+        if max_norm:
+            for vec in grad:
+                for arr in vec.coefs.values():
+                    norm = np.sqrt(np.sum(np.square(arr)))
+                    arr *= min(max_norm / norm, 1)  # type: ignore
         # Optionally re-weight gradients based on sample weights.
         if s_wght is not None:
             grad = [g * w for g, w in zip(grad, s_wght)]  # type: ignore
