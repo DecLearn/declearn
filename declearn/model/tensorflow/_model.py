@@ -134,9 +134,14 @@ class TensorflowModel(Model):
     def compute_batch_gradients(
         self,
         batch: Batch,
+        max_norm: Optional[float] = None,
     ) -> TensorflowVector:
         data = self._unpack_batch(batch)
-        grad = self._compute_batch_gradients(*data)
+        if max_norm is None:
+            grad = self._compute_batch_gradients(*data)
+        else:
+            norm = tf.constant(max_norm)
+            grad = self._compute_clipped_gradients(*data, norm)
         return TensorflowVector({str(i): tns for i, tns in enumerate(grad)})
 
     def _unpack_batch(
@@ -168,14 +173,53 @@ class TensorflowModel(Model):
             grad = tape.gradient(loss, self._model.trainable_weights)
         return grad  # type: ignore
 
+    @tf.function  # optimize tensorflow runtime
+    def _compute_clipped_gradients(
+        self,
+        inputs: tf.Tensor,
+        y_true: Optional[tf.Tensor],
+        s_wght: Optional[tf.Tensor],
+        max_norm: Union[tf.Tensor, float],
+    ) -> List[tf.Tensor]:
+        """Compute and return sample-wise-clipped batch-averaged gradients."""
+        grad = self._compute_samplewise_gradients(inputs, y_true)
+        if s_wght is None:
+            s_wght = tf.cast(1, grad[0].dtype)
+        grad = self._clip_and_average_gradients(grad, max_norm, s_wght)
+        return grad  # type: ignore
+
+    @tf.function  # optimize tensorflow runtime
+    def _compute_samplewise_gradients(
+        self,
+        inputs: tf.Tensor,
+        y_true: Optional[tf.Tensor],
+    ) -> List[tf.Tensor]:
+        """Compute and return sample-wise gradients for a given batch."""
+        with tf.GradientTape() as tape:
+            y_pred = self._model(inputs, training=True)
+            loss = self._model.compute_loss(inputs, y_true, y_pred)
+            grad = tape.jacobian(loss, self._model.trainable_weights)
+        return grad  # type: ignore
+
+    @staticmethod
+    @tf.function  # optimize tensorflow runtime
+    def _clip_and_average_gradients(
+        gradients: List[tf.Tensor],
+        max_norm: Union[tf.Tensor, float],
+        s_wght: tf.Tensor,
+    ) -> List[tf.Tensor]:
+        """Clip sample-wise gradients then batch-average them."""
+        outp = []  # type: List[tf.Tensor]
+        for grad in gradients:
+            dims = list(range(1, grad.shape.rank))
+            grad = tf.clip_by_norm(grad, max_norm, axes=dims)
+            outp.append(tf.reduce_mean(grad * s_wght, axis=0))
+        return outp
+
     def apply_updates(  # type: ignore  # Vector subtype specification
         self,
         updates: TensorflowVector,
     ) -> None:
-        if not isinstance(updates, TensorflowVector):
-            raise TypeError(
-                "TensorflowModel requires TensorflowVector updates."
-            )
         # Delegate updates' application to a tensorflow Optimizer.
         values = (-1 * updates).coefs.values()
         zipped = zip(values, self._model.trainable_weights)
