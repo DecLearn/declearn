@@ -107,7 +107,23 @@ class Model(metaclass=ABCMeta):
             self,
             batch: Batch,
         ) -> Vector:
-        """Compute and return the model's gradients over a data batch."""
+        """Compute and return gradients computed over a given data batch.
+
+        Compute the average gradients of the model's loss with respect
+        to its trainable parameters for the given data batch.
+
+        Parameters
+        ----------
+        batch: declearn.typing.Batch
+            Tuple wrapping input data, (opt.) target values and (opt.)
+            sample weights to be applied to the loss function.
+
+        Returns
+        -------
+        gradients: Vector
+            Batch-averaged gradients, wrapped into a Vector (using
+            a suited Vector subclass depending on the Model class).
+        """
         return NotImplemented
 
     @abstractmethod
@@ -123,7 +139,20 @@ class Model(metaclass=ABCMeta):
             self,
             dataset: Iterable[Batch],
         ) -> float:
-        """Compute the average loss of the model on a given dataset."""
+        """Compute the average loss of the model on a given dataset.
+
+        Parameters
+        ----------
+        dataset: iterable of batches
+            Iterable yielding batch structures that are to be unpacked
+            into (input_features, target_labels, [sample_weights]).
+            If set, sample weights will affect the loss averaging.
+
+        Returns
+        -------
+        loss: float
+            Average value of the model's loss over samples.
+        """
         return NotImplemented
 
 
