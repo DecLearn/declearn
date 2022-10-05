@@ -14,6 +14,12 @@ from declearn.typing import Batch
 from declearn.utils import register_type
 
 
+# alias for unpacked Batch structures, converted to torch.Tensor objects
+TensorBatch = Tuple[
+    List[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor]
+]
+
+
 @register_type(name="TorchModel", group="Model")
 class TorchModel(Model):
     """Model wrapper for PyTorch Model instances.
@@ -28,14 +34,24 @@ class TorchModel(Model):
             loss: torch.nn.Module,
             #metrics: ,
         ) -> None:
-        """Instantiate a Model interface wrapping a 'model' object."""
+        """Instantiate a Model interface wrapping a torch.nn.Module.
+
+        Parameters
+        ----------
+        model: torch.nn.Module
+            Torch Module instance that defines the model's architecture.
+        loss: torch.nn.Module
+            Torch Module instance that defines the model's loss, that
+            is to be minimized through training. Note that it will be
+            altered when wrapped.
+        """
         # Type-check the input Model and wrap it up.
         if not isinstance(model, torch.nn.Module):
             raise TypeError(
                 "'model' should be a torch.nn.Module instance."
             )
         super().__init__(model)
-        # Compile the wrapped model and retain compilation arguments.
+        # Assign loss module and set it not to reduce sample-wise values.
         self._loss_fn = loss
         self._loss_fn.reduction = 'none'  # type: ignore
 
@@ -54,7 +70,6 @@ class TorchModel(Model):
     def get_config(
             self,
         ) -> Dict[str, Any]:
-        """Return the model's parameters as a JSON-serializable dict."""
         warnings.warn(
             "PyTorch JSON serialization relies on pickle, which may be unsafe."
         )
@@ -73,8 +88,8 @@ class TorchModel(Model):
     def from_config(
             cls,
             config: Dict[str, Any],
-        ) -> 'Model':
-        """Instantiate a model from a configuration dict."""
+        ) -> 'TorchModel':
+        """Instantiate a TorchModel from a configuration dict."""
         with io.BytesIO(bytes.fromhex(config["model"])) as buffer:
             model = torch.load(buffer)  # type: ignore
         with io.BytesIO(bytes.fromhex(config["loss"])) as buffer:
@@ -84,7 +99,6 @@ class TorchModel(Model):
     def get_weights(
             self,
         ) -> NumpyVector:
-        """Return the model's trainable weights."""
         return NumpyVector({
             key: tns.numpy().copy()  # NOTE: otherwise, view on Tensor data
             for key, tns in self._model.state_dict().items()
@@ -94,7 +108,6 @@ class TorchModel(Model):
             self,
             weights: NumpyVector,
         ) -> None:
-        """Assign values to the model's trainable weights."""
         # false-positive on torch.from_numpy; pylint: disable=no-member
         self._model.load_state_dict({
             key: torch.from_numpy(arr) for key, arr in weights.coefs.items()
@@ -104,7 +117,13 @@ class TorchModel(Model):
             self,
             batch: Batch,
         ) -> TorchVector:
-        """Compute and return the model's gradients over a data batch."""
+        return self._compute_batch_gradients(batch)
+
+    def _compute_batch_gradients(
+            self,
+            batch: Batch,
+        ) -> TorchVector:
+        """Compute and return batch-averaged gradients of trainable weights."""
         # Unpack inputs and clear gradients' history.
         inputs, y_true, s_wght = self._unpack_batch(batch)
         self._model.zero_grad()
@@ -122,10 +141,8 @@ class TorchModel(Model):
     @staticmethod
     def _unpack_batch(
             batch: Batch
-        ) -> Tuple[
-            List[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor]
-        ]:
-        """Unpack an input data batch for use in `compute_batch_gradients`."""
+        ) -> TensorBatch:
+        """Unpack and enforce Tensor conversion to an input data batch."""
         # Define an array-to-tensor conversion routine.
         def convert(data: Any) -> Optional[torch.Tensor]:
             if (data is None) or isinstance(data, torch.Tensor):
@@ -149,14 +166,12 @@ class TorchModel(Model):
         loss = self._loss_fn(y_pred, y_true)
         if s_wght is not None:
             loss.mul_(s_wght)
-            loss.sum_().div_(s_wght.sum())
         return loss.mean()  # type: ignore
 
     def apply_updates(  # type: ignore  # future: revise
             self,
             updates: TorchVector,
         ) -> None:
-        """Apply updates to the model's weights."""
         with torch.no_grad():
             for idx, par in enumerate(self._model.parameters()):
                 upd = updates.coefs.get(str(idx))
@@ -167,22 +182,8 @@ class TorchModel(Model):
             self,
             dataset: Iterable[Batch],
         ) -> float:
-        """Compute the average loss of the model on a given dataset.
-
-        Parameters
-        ----------
-        dataset: iterable of batches
-            Iterable yielding batch structures that are to be unpacked
-            into (input_features, target_labels, [sample_weights]).
-            If set, sample weights will affect the loss averaging.
-
-        Returns
-        -------
-        loss: float
-            Average value of the model's loss over samples.
-        """
         total = 0.
-        n_btc = 0
+        n_btc = 0.
         try:
             self._model.eval()
             with torch.no_grad():
@@ -191,7 +192,7 @@ class TorchModel(Model):
                     y_pred = self._model(*inputs)
                     loss = self._compute_loss(y_pred, y_true, s_wght)
                     total += loss.numpy()
-                    n_btc += 1
+                    n_btc += 1 if s_wght is None else s_wght.mean().numpy()
         finally:
             self._model.train()
         return total / n_btc

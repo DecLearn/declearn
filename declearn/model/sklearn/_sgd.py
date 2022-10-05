@@ -233,16 +233,19 @@ class SklearnSGDModel(Model):
             batch: Batch,
         ) -> NumpyVector:
         # Unpack, validate and repack input data.
-        x_data, y_data, s_wght = self._verify_batch(batch)
-        data = (x_data, y_data) if s_wght is None else (x_data, y_data, s_wght)
-        # Iteratively compute sample-wise gradients. Average them and return.
+        x_data, y_data, s_wght = self._unpack_batch(batch)
+        # Iteratively compute sample-wise gradients.
         grad = [
-            self._compute_sample_gradient(*smp)
-            for smp in zip(*data)  # type: ignore
+            self._compute_sample_gradient(x, y)  # type: ignore
+            for x, y in zip(x_data, y_data)  # type: ignore
         ]
+        # Optionally re-weight gradients based on sample weights.
+        if s_wght is not None:
+            grad = [g * w for g, w in zip(grad, s_wght)]  # type: ignore
+        # Batch-average the gradients and return them.
         return sum(grad) / len(grad)  # type: ignore
 
-    def _verify_batch(
+    def _unpack_batch(
             self,
             batch: Batch,
         ) -> Tuple[ArrayLike, ArrayLike, Optional[ArrayLike]]:
@@ -264,15 +267,13 @@ class SklearnSGDModel(Model):
             self,
             x_smp: ArrayLike,
             y_smp: float,
-            s_wgt: Optional[float] = None,
         ) -> NumpyVector:
         """Compute and return the model's gradients over a single sample."""
         # Gather current weights.
         w_srt = self.get_weights()
         # Perform SGD step and gather weights.
         x_smp = x_smp.reshape((1, -1))  # type: ignore
-        s_wgt = None if s_wgt is None else [s_wgt]  # type: ignore
-        self._model.partial_fit(x_smp, [y_smp], sample_weight=s_wgt)
+        self._model.partial_fit(x_smp, [y_smp])
         w_end = self.get_weights()
         # Restore the model's weights.
         self.set_weights(w_srt)
@@ -290,31 +291,17 @@ class SklearnSGDModel(Model):
             self,
             dataset: Iterable[Batch],
         ) -> float:
-        """Compute the average loss of the model on a given dataset.
-
-        Parameters
-        ----------
-        dataset: iterable of batches
-            Iterable yielding batch structures that are to be unpacked
-            into (input_features, target_labels, [sample_weights]).
-            If set, sample weights will affect the loss averaging.
-
-        Returns
-        -------
-        loss: float
-            Average value of the model's loss over samples.
-        """
         # TODO: implement SklearnMetric objects and abstract this code
         loss_fn = self._setup_loss_fn()
-        loss = 0
-        nsmp = 0
+        loss = 0.
+        nsmp = 0.
         if isinstance(self._model, SGDClassifier):
             predict = self._model.decision_function
         else:
             predict = self._model.predict
         # Iteratively compute and accumulate batch- and sample-wise loss.
         for batch in dataset:
-            inputs, y_true, s_wght = self._verify_batch(batch)
+            inputs, y_true, s_wght = self._unpack_batch(batch)
             y_pred = predict(inputs)
             losses = loss_fn(y_pred, y_true)  # type: ignore
             if s_wght is None:
@@ -322,7 +309,7 @@ class SklearnSGDModel(Model):
                 nsmp += len(y_pred)
             else:
                 loss += (s_wght * losses).sum()  # type: ignore
-                nsmp += np.sum(s_wght)
+                nsmp += np.mean(s_wght)  # type: ignore
         # Reduce the results and return them.
         return loss / nsmp
 
