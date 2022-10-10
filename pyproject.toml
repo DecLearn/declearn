@@ -2,8 +2,8 @@
 build-backend = "setuptools.build_meta"
 requires = [
     "pip >= 19",
-    "setuptools ~= 58.0",
-    "setuptools_scm[toml] >= 6.2",
+    "setuptools >= 62.0",
+    "setuptools-scm[toml] >= 6.2",
 ]
 
 [project]
@@ -37,6 +37,7 @@ dependencies = [
     "cryptography >= 35.0",
     "grpcio >= 1.45",
     "pandas >= 1.2",
+    "protobuf >= 3.19",
     "scikit-learn >= 1.0",
     "typing_extensions >= 4.0",
     "websockets >= 10.1",
@@ -58,8 +59,9 @@ tests = [
 [project.urls]
 source = "https://gitlab.inria.fr/magnet/declearn/declearn2"
 
-[tools.setuptools]
-packages = ["declearn2", "declearn2.*"]
 
-[tools.setuptools.package_data]
-declearn2 = ["py.typed"]
+[tool.setuptools]
+packages = ["declearn"]
+
+[tool.setuptools.package-data]
+declearn = ["py.typed"]
