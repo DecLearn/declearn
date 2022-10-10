@@ -2,16 +2,17 @@
 
 """Server-side communication endpoint implementation using WebSockets."""
 
+import logging
 import os
 import ssl
-from typing import Optional
+from typing import Optional, Union
 
 import websockets as ws
 from websockets.server import WebSocketServer, WebSocketServerProtocol
 from websockets.exceptions import ConnectionClosedOK, ConnectionClosedError
 
 from declearn.communication.api import Server
-from declearn.utils import get_logger, register_type
+from declearn.utils import register_type
 
 
 ADD_HEADER = False  # revise: drop this constant (choose a behaviour)
@@ -21,8 +22,6 @@ ADD_HEADER = False  # revise: drop this constant (choose a behaviour)
 class WebsocketsServer(Server):
     """Server-side communication endpoint using WebSockets."""
 
-    logger = get_logger("websockets-server")
-
     def __init__(
             self,
             host: str = 'localhost',
@@ -30,6 +29,7 @@ class WebsocketsServer(Server):
             certificate: Optional[str] = None,
             private_key: Optional[str] = None,
             password: Optional[str] = None,
+            logger: Union[logging.Logger, str, None] = None,
         ) -> None:
         """Instantiate the server-side WebSockets communications handler.
 
@@ -50,9 +50,14 @@ class WebsocketsServer(Server):
             Optional password used to access `private_key`, or path to a
             file from which to read such a password.
             If None but a password is needed, an input will be prompted.
+        logger: logging.Logger or str or None, default=None,
+            Logger to use, or name of a logger to set up with
+            `declearn.utils.get_logger`. If None, use `type(self)`.
         """
         # inherited signature; pylint: disable=too-many-arguments
-        super().__init__(host, port, certificate, private_key, password)
+        super().__init__(
+            host, port, certificate, private_key, password, logger
+        )
         self._server = None  # type: Optional[WebSocketServer]
 
     @property

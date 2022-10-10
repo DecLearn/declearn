@@ -3,8 +3,9 @@
 """Client-side communication endpoint implementation using WebSockets."""
 
 import asyncio
+import logging
 import ssl
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Union
 
 import websockets as ws
 from websockets.client import WebSocketClientProtocol
@@ -14,20 +15,19 @@ from declearn.communication.api import Client
 from declearn.communication.messaging import (
     Message, parse_message_from_string
 )
-from declearn.utils import get_logger, register_type
+from declearn.utils import register_type
 
 
 @register_type(name="websockets", group="Client")
 class WebsocketsClient(Client):
     """Client-side communication endpoint using WebSockets."""
 
-    logger = get_logger("websockets-client")
-
     def __init__(
             self,
             server_uri: str,
             name: str,
             certificate: Optional[str] = None,
+            logger: Union[logging.Logger, str, None] = None,
             headers: Optional[Dict[str, str]] = None,
         ) -> None:
         """Instantiate the client-side WebSockets communications handler.
@@ -43,13 +43,17 @@ class WebsocketsClient(Client):
         certificate: str or None, default=None,
             Path to a certificate (publickey) PEM file, to use SSL/TLS
             communcations encryption.
+        logger: logging.Logger or str or None, default=None,
+            Logger to use, or name of a logger to set up using
+            `declearn.utils.get_logger`. If None, use `type(self)-name`.
         headers: dict[str, str] or None, default=None
             Optional non-default HTTP headers to use when connecting to
             the server, during the handshake. This may be required when
             connecting through a proxy. For further information, see
             RFC 6455 (https://tools.ietf.org/html/rfc6455#section-1.2).
         """
-        super().__init__(server_uri, name, certificate)
+        # arguments serve modularity; pylint: disable=too-many-arguments
+        super().__init__(server_uri, name, certificate, logger)
         self.headers = headers
         self._socket = None  # type: Optional[WebSocketClientProtocol]
 

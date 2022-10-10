@@ -6,11 +6,12 @@ import asyncio
 import logging
 import types
 from abc import ABCMeta, abstractmethod
-from typing import Any, Dict, Optional, Set, Type
+from typing import Any, Dict, Optional, Set, Type, Union
 
 
 from declearn.communication.api._service import MessagesHandler
 from declearn.communication.messaging import Message
+from declearn.utils import get_logger
 
 
 __all__ = [
@@ -52,8 +53,6 @@ class Server(metaclass=ABCMeta):
     `wait_for_clients` method.
     """
 
-    logger: logging.Logger
-
     @abstractmethod
     def __init__(
             self,
@@ -62,12 +61,13 @@ class Server(metaclass=ABCMeta):
             certificate: Optional[str] = None,
             private_key: Optional[str] = None,
             password: Optional[str] = None,
+            logger: Union[logging.Logger, str, None] = None,
         ) -> None:
         """Instantiate the server-side communications handler.
 
         Parameters
         ----------
-        host : str
+        host: str
             Host name (e.g. IP address) of the server.
         port: int
             Communications port to use.
@@ -82,11 +82,18 @@ class Server(metaclass=ABCMeta):
             Optional password used to access `private_key`, or path to a
             file from which to read such a password.
             If None but a password is needed, an input will be prompted.
+        logger: logging.Logger or str or None, default=None,
+            Logger to use, or name of a logger to set up with
+            `declearn.utils.get_logger`. If None, use `type(self)`.
         """
         # arguments serve modularity; pylint: disable=too-many-arguments
         self.host = host
         self.port = port
         self._ssl = self._setup_ssl_context(certificate, private_key, password)
+        if isinstance(logger, logging.Logger):
+            self.logger = logger
+        else:
+            self.logger = get_logger(logger or f"{type(self).__name__}")
         self.handler = MessagesHandler(self.logger)
 
     @property

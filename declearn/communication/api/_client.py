@@ -5,12 +5,13 @@
 import logging
 import types
 from abc import ABCMeta, abstractmethod
-from typing import Any, Dict, Optional, Type
+from typing import Any, Dict, Optional, Type, Union
 
 
 from declearn.communication.messaging import (
     Empty, Error, GetMessageRequest, JoinReply, JoinRequest, Message
 )
+from declearn.utils import get_logger
 
 
 __all__ = [
@@ -50,14 +51,13 @@ class Client(metaclass=ABCMeta):
     be rejected by the server if the client has not been registered.
     """
 
-    logger: logging.Logger
-
     @abstractmethod
     def __init__(
             self,
             server_uri: str,
             name: str,
             certificate: Optional[str] = None,
+            logger: Union[logging.Logger, str, None] = None,
         ) -> None:
         """Instantiate the client-side communications handler.
 
@@ -71,11 +71,18 @@ class Client(metaclass=ABCMeta):
         certificate: str or None, default=None,
             Path to a certificate (publickey) PEM file, to use SSL/TLS
             communcations encryption.
+        logger: logging.Logger or str or None, default=None,
+            Logger to use, or name of a logger to set up using
+            `declearn.utils.get_logger`. If None, use `type(self)-name`.
         """
         # Assign basic attributes. Note: children must handle 'certificate'.
         self.server_uri = server_uri
         self.name = name
         self._ssl = self._setup_ssl_context(certificate)
+        if isinstance(logger, logging.Logger):
+            self.logger = logger
+        else:
+            self.logger = get_logger(logger or f"{type(self).__name__}-{name}")
 
     @staticmethod
     @abstractmethod

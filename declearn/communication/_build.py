@@ -3,7 +3,8 @@
 """Communication endpoints generic instantiation utils."""
 
 import dataclasses
-from typing import Any, Dict, Optional
+import logging
+from typing import Any, Dict, Optional, Union
 
 
 from declearn.communication.api import Client, Server
@@ -28,6 +29,7 @@ def build_client(
         server_uri: str,
         name: str,
         certificate: Optional[str] = None,
+        logger: Union[logging.Logger, str, None] = None,
         **kwargs: Any,
     ) -> Client:
     """Set up and return a Client communication endpoint.
@@ -49,6 +51,9 @@ def build_client(
     certificate: str or None, default=None,
         Path to a certificate (publickey) PEM file, to use SSL/TLS
         communcations encryption.
+    logger: logging.Logger or str or None, default=None,
+        Logger to use, or name of a logger to set up using
+        `declearn.utils.get_logger`. If None, use `type(client)-name`.
     **kwargs:
         Any valid additional keyword parameter may be passed as well.
         Refer to the target `Client` subclass for details.
@@ -60,7 +65,7 @@ def build_client(
             f"Failed to retrieve Client class for protocol '{protocol}'."
         ) from exc
     assert issubclass(cls, Client)  # guaranteed by TypesRegistry
-    return cls(server_uri, name, certificate, **kwargs)
+    return cls(server_uri, name, certificate, logger, **kwargs)
 
 
 @dataclasses.dataclass
@@ -80,6 +85,9 @@ class NetworkClientConfig:
     certificate: str or None, default=None,
         Path to a certificate (publickey) PEM file, to use SSL/TLS
         communcations encryption.
+    logger: logging.Logger or str or None, default=None,
+        Logger to use, or name of a logger to set up using
+        `declearn.utils.get_logger`. If None, use `type(client)-name`.
     kwargs: dict[str, None]
         Any valid additional keyword parameter may be passed as well.
         Refer to the target `Client` subclass for details.
@@ -95,6 +103,7 @@ class NetworkClientConfig:
     server_uri: str
     name: str
     certificate: Optional[str] = None
+    logger: Union[logging.Logger, str, None] = None
     kwargs: Dict[str, Any] = dataclasses.field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
@@ -115,6 +124,7 @@ def build_server(
         certificate: Optional[str] = None,
         private_key: Optional[str] = None,
         password: Optional[str] = None,
+        logger: Union[logging.Logger, str, None] = None,
         **kwargs: Any,
     ) -> Server:
     """Set up and return a Server communication endpoint.
@@ -128,7 +138,7 @@ def build_server(
     protocol: str
         Name of the communications protocol backend, based on which
         the Server subclass to instantiate will be retrieved.
-    host : str
+    host: str
         Host name (e.g. IP address) of the server.
     port: int
         Communications port to use.
@@ -143,6 +153,9 @@ def build_server(
         Optional password used to access `private_key`, or path to a
         file from which to read such a password.
         If None but a password is needed, an input will be prompted.
+    logger: logging.Logger or str or None, default=None,
+        Logger to use, or name of a logger to set up with
+        `declearn.utils.get_logger`. If None, use `type(server)`.
     **kwargs:
         Any valid additional keyword parameter may be passed as well.
         Refer to the target `Server` subclass for details.
@@ -155,7 +168,9 @@ def build_server(
             f"Failed to retrieve Server class for protocol '{protocol}'."
         ) from exc
     assert issubclass(cls, Server)  # guaranteed by TypesRegistry
-    return cls(host, port, certificate, private_key, password, **kwargs)
+    return cls(
+        host, port, certificate, private_key, password, logger, **kwargs
+    )
 
 
 @dataclasses.dataclass
@@ -167,7 +182,7 @@ class NetworkServerConfig:
     protocol: str
         Name of the communications protocol backend, based on which
         the Server subclass to instantiate will be retrieved.
-    host : str
+    host: str
         Host name (e.g. IP address) of the server.
     port: int
         Communications port to use.
@@ -182,6 +197,9 @@ class NetworkServerConfig:
         Optional password used to access `private_key`, or path to a
         file from which to read such a password.
         If None but a password is needed, an input will be prompted.
+    logger: logging.Logger or str or None, default=None,
+        Logger to use, or name of a logger to set up with
+        `declearn.utils.get_logger`. If None, use `type(server)`.
     kwargs: dict[str, None]
         Any valid additional keyword parameter may be passed as well.
         Refer to the target `Server` subclass for details.
@@ -192,6 +210,7 @@ class NetworkServerConfig:
     Refer to it (and to the `declearn.communication` submodule) for
     additional details.
     """
+    # inherited signature; pylint: disable=too-many-instance-attributes
 
     protocol: str
     host: str
@@ -199,6 +218,7 @@ class NetworkServerConfig:
     certificate: Optional[str] = None
     private_key: Optional[str] = None
     password: Optional[str] = None
+    logger: Union[logging.Logger, str, None] = None
     kwargs: Dict[str, Any] = dataclasses.field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:

@@ -5,6 +5,7 @@
 import asyncio
 import dataclasses
 import json
+import logging
 import os
 from typing import Any, Dict, Optional, Tuple, Union
 
@@ -28,14 +29,13 @@ __all__ = [
 class FederatedClient:
     """Client-side Federated Learning orchestrating class."""
 
-    logger = get_logger("federated-client")
-
     def __init__(
             self,
             netwk: Union[Client, NetworkClientConfig, Dict[str, Any]],
             train_data: Union[Dataset, str],
             valid_data: Optional[Union[Dataset, str]] = None,
             folder: Optional[str] = None,
+            logger: Union[logging.Logger, str, None] = None,
         ) -> None:
         """Instantiate a client to participate in a federated learning task.
 
@@ -44,6 +44,8 @@ class FederatedClient:
         netwk: Client or NetworkClientConfig or dict
             Client communication endpoint instance, or configuration
             dict or dataclass enabling its instantiation.
+            In the latter two cases, the object's default logger will
+            be set to that of this `FederatedClient`.
         train_data: Dataset or str
             Dataset instance wrapping the training data, or path to
             a JSON file from which it can be instantiated.
@@ -56,11 +58,19 @@ class FederatedClient:
             wise weights checkpoints and local validation losses.
             If None, only record the loss metric and lowest-loss-
             yielding weights in memory (under `self.checkpoint`).
+        logger: logging.Logger or str or None, default=None,
+            Logger to use, or name of a logger to set up with
+            `declearn.utils.get_logger`.
+            If None, use `type(self):netwk.name`.
         """
+        # arguments serve modularity; pylint: disable=too-many-arguments
         # Assign the wrapped communication Client.
+        replace_netwk_logger = False
         if isinstance(netwk, dict):
+            replace_netwk_logger = netwk.get("logger", None) is None
             netwk = NetworkClientConfig(**netwk).build_client()
         elif isinstance(netwk, NetworkClientConfig):
+            replace_netwk_logger = netwk.logger is None
             netwk = netwk.build_client()
         elif not isinstance(netwk, Client):
             raise TypeError(
@@ -68,6 +78,14 @@ class FederatedClient:
                 "or the valid configuration of one."
             )
         self.netwk = netwk
+        # Assign the logger and optionally replace that of the network client.
+        if not isinstance(logger, logging.Logger):
+            logger = get_logger(
+                logger or f"{type(self).__name__}-{netwk.name}"
+            )
+        self.logger = logger
+        if replace_netwk_logger:
+            self.netwk.logger = self.logger
         # Assign the wrapped training dataset.
         if isinstance(train_data, str):
             train_data = load_dataset_from_json(train_data)

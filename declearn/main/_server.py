@@ -3,6 +3,7 @@
 """Server-side main Federated Learning orchestrating class."""
 
 import asyncio
+import logging
 from typing import Any, Dict, Optional, Set, Tuple, Type, Union
 
 
@@ -30,14 +31,13 @@ __all__ = [
 class FederatedServer:
     """Server-side Federated Learning orchestrating class."""
 
-    logger = get_logger("federated-server")
-
     def __init__(
             self,
             model: Union[Model, str, Dict[str, Any]],
             netwk: Union[Server, NetworkServerConfig, Dict[str, Any]],
             strategy: Strategy,  # future: revise Strategy, add config
             folder: Optional[str] = None,
+            logger: Union[logging.Logger, str, None] = None,
         ) -> None:
         """Instantiate the orchestrating server for a federated learning task.
 
@@ -49,6 +49,8 @@ class FederatedServer:
         netwk: Server or NetworkServerConfig or dict
             Server communication endpoint instance, or configuration
             dict or dataclass enabling its instantiation.
+            In the latter two cases, the object's default logger will
+            be set to that of this `FederatedClient`.
         strategy: Strategy
             Strategy instance providing with instantiation methods for
             the server's updates-aggregator, the server-side optimizer
@@ -58,7 +60,15 @@ class FederatedServer:
             wise weights checkpoints and global validation losses.
             If None, only record the loss metric and lowest-loss-
             yielding weights in memory (under `self.checkpoint`).
+        logger: logging.Logger or str or None, default=None,
+            Logger to use, or name of a logger to set up with
+            `declearn.utils.get_logger`. If None, use `type(self)`.
         """
+        # arguments serve modularity; pylint: disable=too-many-arguments
+        # Assign the logger.
+        if not isinstance(logger, logging.Logger):
+            logger = get_logger(logger or type(self).__name__)
+        self.logger = logger
         # Assign the wrapped Model.
         if not isinstance(model, Model):
             model = deserialize_object(model)  # type: ignore
@@ -69,8 +79,11 @@ class FederatedServer:
         self.model = model
         # Assign the wrapped communication Server.
         if isinstance(netwk, dict):
+            netwk.setdefault("logger", self.logger)
             netwk = NetworkServerConfig(**netwk).build_server()
         elif isinstance(netwk, NetworkServerConfig):
+            if netwk.logger is None:
+                netwk.logger = self.logger
             netwk = netwk.build_server()
         elif not isinstance(netwk, Server):
             raise TypeError(

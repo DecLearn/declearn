@@ -3,9 +3,10 @@
 """Server-side communication endpoint implementation using gRPC."""
 
 import getpass
+import logging
 import os
 from concurrent import futures
-from typing import Optional
+from typing import Optional, Union
 
 import grpc  # type: ignore
 from cryptography.hazmat.primitives import serialization
@@ -16,7 +17,7 @@ from declearn.communication.grpc.protobufs import message_pb2
 from declearn.communication.grpc.protobufs.message_pb2_grpc import (
     MessageBoardServicer, add_MessageBoardServicer_to_server
 )
-from declearn.utils import get_logger, register_type
+from declearn.utils import register_type
 
 
 def load_pem_file(
@@ -50,8 +51,6 @@ def load_pem_file(
 class GrpcServer(Server):
     """Server-side communication endpoint using gRPC."""
 
-    logger = get_logger("grpc-server")
-
     def __init__(
             self,
             host: str = 'localhost',
@@ -59,6 +58,7 @@ class GrpcServer(Server):
             certificate: Optional[str] = None,
             private_key: Optional[str] = None,
             password: Optional[str] = None,
+            logger: Union[logging.Logger, str, None] = None,
         ) -> None:
         """Instantiate the server-side gRPC communications handler.
 
@@ -81,10 +81,15 @@ class GrpcServer(Server):
             Optional password used to access `private_key`, or path to a
             file from which to read such a password.
             If None but a password is needed, an input will be prompted.
+        logger: logging.Logger or str or None, default=None,
+            Logger to use, or name of a logger to set up with
+            `declearn.utils.get_logger`. If None, use `type(self)`.
         """
         # inherited signature; pylint: disable=too-many-arguments
         # Assign attributes and set up the gRPC server.
-        super().__init__(host, port, certificate, private_key, password)
+        super().__init__(
+            host, port, certificate, private_key, password, logger
+        )
         self._server = None  # type: Optional[grpc.Server]
 
     @property

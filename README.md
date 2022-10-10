@@ -452,6 +452,17 @@ former section being an overly simple examplification of the present one.
     (model checkpoints and local loss history).
   - Call the client's `run` method and let the magic happen.
 
+#### Logging
+
+Note that this section and the quickstart example both left apart the option
+to configure logging associated with the federated client and server, and/or
+the network communication handlers they make use of. One may simply set up
+custom `logging.Logger` instances and pass them as arguments to the class
+constructors to replace the default, console-only, loggers.
+
+The `declearn.utils.get_logger` function may be used to facilitate the setup
+of such logger instances, defining their name, verbosity level, and whether
+messages should be logged to the console and/or to an output file.
 
 ## Developers
 
