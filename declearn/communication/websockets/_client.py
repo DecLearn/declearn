@@ -77,12 +77,12 @@ class WebsocketsClient(Client):
         kwargs = {
             "uri": self.server_uri,
             "logger": self.logger,
-            "ping_interval": None,  # revise: use keep-alive pings?
             "ssl": self._ssl,
             "extra_headers": (
                 ws.Headers(**self.headers)  # type: ignore
                 if self.headers else None
-            )
+            ),
+            "ping_timeout": None,  # disable timeout on keep-alive pings
         }
         # If connection fails, retry after 1 second - at most 10 times.
         idx = 0

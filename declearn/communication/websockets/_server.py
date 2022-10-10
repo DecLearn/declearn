@@ -99,6 +99,7 @@ class WebsocketsServer(Server):
             logger=self.logger,
             ssl=self._ssl,
             extra_headers=extra_headers,
+            ping_timeout=None,  # disable timeout on keep-alive pings
         )
         # Run the websockets server.
         self.logger.info("Server is now starting...")
