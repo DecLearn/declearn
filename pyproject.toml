@@ -52,6 +52,8 @@ torch = [
 ]
 tests = [
     "declearn[tensorflow,torch]",
+    "black ~= 22.0",
+    "pylint >= 2.14",
     "pytest >= 6.1",
     "pytest-asyncio",
 ]
@@ -61,7 +63,14 @@ source = "https://gitlab.inria.fr/magnet/declearn/declearn2"
 
 [tool.black]
 line-length = 79
-extend-exclude = "(.*_pb2.*py)"  # exclude auto-generated protobuf code files
+extend-exclude = "(.*_pb2.*py$)"  # exclude auto-generated protobuf code files
+
+[tool.pylint.main]
+fail-under = 10
+ignore-patterns = ["(.*_pb2.*py$)"]
+
+[tool.pylint.format]
+max-line-length = 79
 
 [tool.setuptools]
 packages = ["declearn"]

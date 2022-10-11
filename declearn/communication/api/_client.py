@@ -101,6 +101,8 @@ class Client(metaclass=ABCMeta):
         """
         return NotImplemented
 
+    # similar to Server API; pylint: disable=duplicate-code
+
     @abstractmethod
     async def start(self) -> None:
         """Start the client, i.e. connect to the server.
@@ -132,6 +134,8 @@ class Client(metaclass=ABCMeta):
         exc_tb: types.TracebackType,
     ) -> None:
         await self.stop()
+
+    # pylint: enable=duplicate-code
 
     async def register(
         self,

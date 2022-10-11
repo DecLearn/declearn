@@ -233,7 +233,7 @@ def run_test_case(
         # Assert that all processes exited properly.
         assert server.exitcode == 0
         assert all(p.exitcode == 0 for p in clients)
-        # TODO: add convergence tests
+        # REVISE: add convergence tests
     finally:
         # Ensure that all processes are terminated.
         server.terminate()

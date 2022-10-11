@@ -305,7 +305,6 @@ class SklearnSGDModel(Model):
         self,
         dataset: Iterable[Batch],
     ) -> float:
-        # TODO: implement SklearnMetric objects and abstract this code
         loss_fn = self._setup_loss_fn()
         loss = 0.0
         nsmp = 0.0
