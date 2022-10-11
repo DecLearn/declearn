@@ -2,7 +2,7 @@
 
 """TorchVector gradients container."""
 
-from typing import Any, Callable, Dict
+from typing import Any, Dict, Set, Type
 
 import numpy as np
 import torch
@@ -27,6 +27,11 @@ class TorchVector(Vector):
     _op_mul = torch.mul  # pylint: disable=no-member
     _op_div = torch.div  # pylint: disable=no-member
     _op_pow = torch.pow  # pylint: disable=no-member
+
+    @property
+    def compatible_vector_types(self) -> Set[Type[Vector]]:
+        types = super().compatible_vector_types
+        return types.union({NumpyVector, TorchVector})
 
     def __init__(self, coefs: Dict[str, torch.Tensor]) -> None:
         super().__init__(coefs)
@@ -54,26 +59,6 @@ class TorchVector(Vector):
         # false-positive; pylint: disable=no-member
         coefs = {key: torch.from_numpy(dat) for key, dat in data.items()}
         return cls(coefs)
-
-    def _apply_operation(
-        self,
-        other: Any,
-        func: Callable[[Any, Any], Any],
-    ) -> Self:  # type: ignore
-        # Extend support to (TensorflowVector, NumpyVector) combinations.
-        if isinstance(other, NumpyVector):
-            if self.coefs.keys() != other.coefs.keys():
-                raise KeyError(
-                    f"Cannot {func.__name__} Vectors "
-                    "with distinct coefficient names."
-                )
-            coefs = {
-                key: func(self.coefs[key], other.coefs[key])
-                for key in self.coefs
-            }
-            return type(self)(coefs)
-        # Delegate other cases to parent class.
-        return super()._apply_operation(other, func)
 
     def __eq__(
         self,

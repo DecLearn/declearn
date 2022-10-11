@@ -2,7 +2,7 @@
 
 """TensorflowVector gradients container."""
 
-from typing import Any, Callable, Dict, Union
+from typing import Any, Dict, Set, Type, Union
 
 import tensorflow as tf  # type: ignore
 
@@ -37,6 +37,11 @@ class TensorflowVector(Vector):
     _op_mul = staticmethod(tf.multiply)
     _op_div = staticmethod(tf.divide)
     _op_pow = staticmethod(tf.pow)
+
+    @property
+    def compatible_vector_types(self) -> Set[Type[Vector]]:
+        types = super().compatible_vector_types
+        return types.union({NumpyVector, TensorflowVector})
 
     def __init__(
         self, coefs: Dict[str, Union[tf.Tensor, tf.IndexedSlices]]
@@ -96,26 +101,6 @@ class TensorflowVector(Vector):
             return tf.convert_to_tensor(data)
         except TypeError as exc:
             raise TypeError("Invalid tf.Tensor dump received.") from exc
-
-    def _apply_operation(
-        self,
-        other: Any,
-        func: Callable[[Any, Any], Any],
-    ) -> Self:  # type: ignore
-        # Extend support to (TensorflowVector, NumpyVector) combinations.
-        if isinstance(other, NumpyVector):
-            if self.coefs.keys() != other.coefs.keys():
-                raise KeyError(
-                    f"Cannot {func.__name__} Vectors "
-                    "with distinct coefficient names."
-                )
-            coefs = {
-                key: func(self.coefs[key], other.coefs[key])
-                for key in self.coefs
-            }
-            return type(self)(coefs)
-        # Delegate other cases to parent class.
-        return super()._apply_operation(other, func)
 
     def __eq__(
         self,

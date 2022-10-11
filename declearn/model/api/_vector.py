@@ -4,7 +4,7 @@
 
 import operator
 from abc import ABCMeta, abstractmethod
-from typing import Any, Callable, Dict, Optional, Type, Union
+from typing import Any, Callable, Dict, Optional, Set, Type, Union
 
 from numpy.typing import ArrayLike
 
@@ -39,6 +39,22 @@ class Vector(metaclass=ABCMeta):
     _op_mul = operator.mul
     _op_div = operator.truediv
     _op_pow = operator.pow
+
+    @property
+    def compatible_vector_types(self) -> Set[Type["Vector"]]:
+        """Compatible Vector types, that may be combined into this.
+
+        Note that VectorTypeA may be compatible with VectorTypeB
+        while the opposite is False. It means that, for example,
+            (VectorTypeB + VectorTypeA) -> VectorTypeB
+        while
+            (VectorTypeA + VectorTypeB) -> TypeError
+
+        This is for example the case is VectorTypeB stores numpy
+        arrays while VectorTypeA stores tensorflow tensors since
+        tf.add(tensor, array) returns a tensor, not an array.
+        """
+        return {type(self)}
 
     @staticmethod
     def build(
@@ -108,7 +124,7 @@ class Vector(metaclass=ABCMeta):
     ) -> "Vector":
         """Apply an operation to combine this vector with another."""
         # Case when operating on two Vector objects.
-        if isinstance(other, type(self)):
+        if isinstance(other, tuple(self.compatible_vector_types)):
             if self.coefs.keys() != other.coefs.keys():
                 raise KeyError(
                     f"Cannot {func.__name__} Vectors "
@@ -119,6 +135,12 @@ class Vector(metaclass=ABCMeta):
                 for key in self.coefs
             }
             return type(self)(coefs)
+        # Case when the two vectors have incompatible types.
+        if isinstance(other, Vector):
+            raise TypeError(
+                f"Cannot {func.__name__} {type(self).__name__} object with "
+                f"a vector of incompatible type {type(other).__name__}."
+            )
         # Case when operating with another object (e.g. a scalar).
         try:
             return type(self)(
