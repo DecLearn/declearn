@@ -67,18 +67,11 @@ class WebsocketsServer(Server):
 
     @staticmethod
     def _setup_ssl_context(
-        certificate: Optional[str] = None,
-        private_key: Optional[str] = None,
+        certificate: str,
+        private_key: str,
         password: Optional[str] = None,
     ) -> Optional[ssl.SSLContext]:
-        """Set up and return an (optional) SSLContext object."""
-        if (certificate is None) and (private_key is None):
-            return None
-        if (certificate is None) or (private_key is None):
-            raise ValueError(
-                "Both 'certificate' and 'private_key' are required "
-                "to set up SSL encryption."
-            )
+        """Set up and return a SSLContext object."""
         # Optionally read a password from a file.
         if password and os.path.isfile(password):
             with open(password, mode="r", encoding="utf-8") as file:
