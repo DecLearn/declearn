@@ -23,14 +23,14 @@ class WebsocketsServer(Server):
     """Server-side communication endpoint using WebSockets."""
 
     def __init__(
-            self,
-            host: str = 'localhost',
-            port: int = 8765,
-            certificate: Optional[str] = None,
-            private_key: Optional[str] = None,
-            password: Optional[str] = None,
-            logger: Union[logging.Logger, str, None] = None,
-        ) -> None:
+        self,
+        host: str = "localhost",
+        port: int = 8765,
+        certificate: Optional[str] = None,
+        private_key: Optional[str] = None,
+        password: Optional[str] = None,
+        logger: Union[logging.Logger, str, None] = None,
+    ) -> None:
         """Instantiate the server-side WebSockets communications handler.
 
         Parameters
@@ -67,10 +67,10 @@ class WebsocketsServer(Server):
 
     @staticmethod
     def _setup_ssl_context(
-            certificate: Optional[str] = None,
-            private_key: Optional[str] = None,
-            password: Optional[str] = None,
-        ) -> Optional[ssl.SSLContext]:
+        certificate: Optional[str] = None,
+        private_key: Optional[str] = None,
+        password: Optional[str] = None,
+    ) -> Optional[ssl.SSLContext]:
         """Set up and return an (optional) SSLContext object."""
         if (certificate is None) and (private_key is None):
             return None
@@ -89,13 +89,14 @@ class WebsocketsServer(Server):
         return ssl_context
 
     async def start(
-            self,
-        ) -> None:
+        self,
+    ) -> None:
         """Start the websockets server."""
         # Set up the websockets connections handling process.
         extra_headers = (
             ws.Headers(Connection="keep-alive")  # type: ignore
-            if ADD_HEADER else None
+            if ADD_HEADER
+            else None
         )
         server = ws.serve(  # type: ignore  # pylint: disable=no-member
             self._handle_connection,
@@ -111,9 +112,9 @@ class WebsocketsServer(Server):
         self._server = await server
 
     async def _handle_connection(
-            self,
-            socket: WebSocketServerProtocol,
-        ) -> None:
+        self,
+        socket: WebSocketServerProtocol,
+    ) -> None:
         """WebSockets handler to manage incoming client connections."""
         self.logger.info("New connection from %s", socket.remote_address)
         try:
@@ -130,14 +131,15 @@ class WebsocketsServer(Server):
             )
             self.logger.error(
                 "Connection from client '%s' was closed unexpectedly: %s",
-                name, exc
+                name,
+                exc,
             )
         finally:
             await socket.close()
 
     async def stop(
-            self,
-        ) -> None:
+        self,
+    ) -> None:
         """Stop the websockets server and purge information about clients."""
         if self._server is not None:
             self._server.close()

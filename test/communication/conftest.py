@@ -34,10 +34,10 @@ def ssl_cert_fixture() -> Iterator[Dict[str, str]]:
 
 
 def generate_ssl_certificates(
-        folder: str = ".",
-        c_name: str = "localhost",
-        password: Optional[str] = None
-    ) -> Tuple[str, str, str]:
+    folder: str = ".",
+    c_name: str = "localhost",
+    password: Optional[str] = None,
+) -> Tuple[str, str, str]:
     """Generate self-signed certificates for localhost testing purposes.
 
     Parameters

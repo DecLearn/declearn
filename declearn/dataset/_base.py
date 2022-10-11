@@ -12,15 +12,16 @@ from declearn.utils import access_registered, create_types_registry
 
 
 __all__ = [
-    'DataSpecs',
-    'Dataset',
-    'load_dataset_from_json',
+    "DataSpecs",
+    "Dataset",
+    "load_dataset_from_json",
 ]
 
 
 @dataclass
 class DataSpecs:
     """Dataclass to wrap a dataset's metadata."""
+
     n_samples: int
     n_features: int
     classes: Optional[Set[Any]] = None
@@ -44,9 +45,9 @@ class Dataset(metaclass=ABCMeta):
 
     @abstractmethod
     def save_to_json(
-            self,
-            path: str,
-        ) -> None:
+        self,
+        path: str,
+    ) -> None:
         """Write a JSON file enabling dataset re-creation.
 
         Parameters
@@ -60,27 +61,27 @@ class Dataset(metaclass=ABCMeta):
     @classmethod
     @abstractmethod
     def load_from_json(
-            cls,
-            path: str,
-        ) -> 'Dataset':
+        cls,
+        path: str,
+    ) -> "Dataset":
         """Instantiate a dataset based on local files."""
         return NotImplemented
 
     @abstractmethod
     def get_data_specs(
-            self,
-        ) -> DataSpecs:
+        self,
+    ) -> DataSpecs:
         """Return a DataSpecs object describing this dataset."""
         return NotImplemented
 
     @abstractmethod
     def generate_batches(
-            self,
-            batch_size: int,
-            shuffle: bool = False,
-            seed: Optional[int] = None,
-            drop_remainder: bool = True,
-        ) -> Iterator[Batch]:
+        self,
+        batch_size: int,
+        shuffle: bool = False,
+        seed: Optional[int] = None,
+        drop_remainder: bool = True,
+    ) -> Iterator[Batch]:
         """Yield batches of data samples.
 
         Parameters

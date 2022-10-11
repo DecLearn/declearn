@@ -12,10 +12,10 @@ from declearn.utils import access_registered, create_types_registry
 
 
 __all__ = [
-    'NetworkClientConfig',
-    'NetworkServerConfig',
-    'build_client',
-    'build_server',
+    "NetworkClientConfig",
+    "NetworkServerConfig",
+    "build_client",
+    "build_server",
 ]
 
 
@@ -25,13 +25,13 @@ create_types_registry("Server", base=Server)
 
 
 def build_client(
-        protocol: str,
-        server_uri: str,
-        name: str,
-        certificate: Optional[str] = None,
-        logger: Union[logging.Logger, str, None] = None,
-        **kwargs: Any,
-    ) -> Client:
+    protocol: str,
+    server_uri: str,
+    name: str,
+    certificate: Optional[str] = None,
+    logger: Union[logging.Logger, str, None] = None,
+    **kwargs: Any,
+) -> Client:
     """Set up and return a Client communication endpoint.
 
     Note: this function requires the target Client subclass to have
@@ -118,15 +118,15 @@ class NetworkClientConfig:
 
 
 def build_server(
-        protocol: str,
-        host: str,
-        port: int,
-        certificate: Optional[str] = None,
-        private_key: Optional[str] = None,
-        password: Optional[str] = None,
-        logger: Union[logging.Logger, str, None] = None,
-        **kwargs: Any,
-    ) -> Server:
+    protocol: str,
+    host: str,
+    port: int,
+    certificate: Optional[str] = None,
+    private_key: Optional[str] = None,
+    password: Optional[str] = None,
+    logger: Union[logging.Logger, str, None] = None,
+    **kwargs: Any,
+) -> Server:
     """Set up and return a Server communication endpoint.
 
     Note: this function requires the target Server subclass to have
@@ -210,6 +210,7 @@ class NetworkServerConfig:
     Refer to it (and to the `declearn.communication` submodule) for
     additional details.
     """
+
     # inherited signature; pylint: disable=too-many-instance-attributes
 
     protocol: str

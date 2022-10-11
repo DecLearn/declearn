@@ -7,27 +7,28 @@ import json
 from typing import Any, Dict, Optional, Type, Union
 
 from typing_extensions import (
-    Self,       # future: import from typing (Py>=3.11)
+    Self,  # future: import from typing (Py>=3.11)
     TypedDict,  # future: import from typing (Py>=3.8)
 )
 
 from declearn.utils._register import (
-    access_registered, access_registration_info
+    access_registered,
+    access_registration_info,
 )
 from declearn.utils._json import json_pack, json_unpack
 from declearn.typing import SupportsConfig
 
 
 __all__ = [
-    'ObjectConfig',
-    'deserialize_object',
-    'serialize_object',
+    "ObjectConfig",
+    "deserialize_object",
+    "serialize_object",
 ]
 
 
 ObjectConfigDict = TypedDict(
     "ObjectConfigDict",
-    {"name": str, "group": Optional[str], "config": Dict[str, Any]}
+    {"name": str, "group": Optional[str], "config": Dict[str, Any]},
 )
 
 
@@ -52,25 +53,17 @@ class ObjectConfig:
     group: Optional[str]
     config: Dict[str, Any]
 
-    def to_dict(
-            self
-        ) -> ObjectConfigDict:
+    def to_dict(self) -> ObjectConfigDict:
         """Return a dict representation of this ObjectConfig."""
         return dataclasses.asdict(self)  # type: ignore
 
-    def to_json(
-            self,
-            path: str
-        ) -> None:
+    def to_json(self, path: str) -> None:
         """Save this ObjectConfig to a JSON file."""
         with open(path, "w", encoding="utf-8") as file:
             json.dump(self.to_dict(), file, indent=2, default=json_pack)
 
     @classmethod
-    def from_json(
-            cls,
-            path: str
-        ) -> Self:  # type: ignore
+    def from_json(cls, path: str) -> Self:  # type: ignore
         """Restore an ObjectConfig from a JSON file."""
         with open(path, "r", encoding="utf-8") as file:
             config = json.load(file, object_hook=json_unpack)
@@ -78,10 +71,10 @@ class ObjectConfig:
 
 
 def serialize_object(
-        obj: SupportsConfig,
-        group: Optional[str] = None,
-        allow_unregistered: bool = False,
-    ) -> ObjectConfig:
+    obj: SupportsConfig,
+    group: Optional[str] = None,
+    allow_unregistered: bool = False,
+) -> ObjectConfig:
     """Return a ObjectConfig serialization of an object.
 
     This function is the counterpart to `declearn.utils.deserialize_object`.
@@ -128,9 +121,9 @@ def serialize_object(
 
 
 def deserialize_object(
-        config: Union[str, ObjectConfig, ObjectConfigDict],
-        custom: Optional[Dict[str, Type[SupportsConfig]]] = None,
-    ) -> SupportsConfig:
+    config: Union[str, ObjectConfig, ObjectConfigDict],
+    custom: Optional[Dict[str, Type[SupportsConfig]]] = None,
+) -> SupportsConfig:
     """Return an object from a ObjectConfig serialization or JSON file.
 
     This function is the counterpart to `declearn.utils.serialize_object`.

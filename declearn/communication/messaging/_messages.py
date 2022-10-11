@@ -11,26 +11,29 @@ from typing import Any, Dict, List, Optional, Type
 from declearn.model.api import Model, NumpyVector, Vector
 from declearn.optimizer import Optimizer
 from declearn.utils import (
-    deserialize_object, json_pack, json_unpack, serialize_object
+    deserialize_object,
+    json_pack,
+    json_unpack,
+    serialize_object,
 )
 
 
 __all__ = [
-    'CancelTraining',
-    'Empty',
-    'Error',
-    'EvaluationReply',
-    'EvaluationRequest',
-    'GenericMessage',
-    'GetMessageRequest',
-    'InitRequest',
-    'JoinReply',
-    'JoinRequest',
-    'Message',
-    'StopTraining',
-    'TrainReply',
-    'TrainRequest',
-    'parse_message_from_string',
+    "CancelTraining",
+    "Empty",
+    "Error",
+    "EvaluationReply",
+    "EvaluationRequest",
+    "GenericMessage",
+    "GetMessageRequest",
+    "InitRequest",
+    "JoinReply",
+    "JoinRequest",
+    "Message",
+    "StopTraining",
+    "TrainReply",
+    "TrainRequest",
+    "parse_message_from_string",
 ]
 
 
@@ -46,7 +49,7 @@ class Message(metaclass=ABCMeta):
         return json.dumps(data, default=json_pack)
 
     @classmethod
-    def from_kwargs(cls, **kwargs: Any) -> 'Message':
+    def from_kwargs(cls, **kwargs: Any) -> "Message":
         """Parse the message from JSON-deserialized attributes."""
         # NOTE: override this method to de-serialize attributes
         #       that are not handled by declearn.utils.json_pack
@@ -137,7 +140,7 @@ class InitRequest(Message):
         return json.dumps(data, default=json_pack)
 
     @classmethod
-    def from_kwargs(cls, **kwargs: Any) -> 'Message':
+    def from_kwargs(cls, **kwargs: Any) -> "Message":
         kwargs["model"] = deserialize_object(kwargs["model"])
         kwargs["optim"] = Optimizer.from_config(kwargs["optim"])
         return cls(**kwargs)
@@ -217,14 +220,12 @@ _MESSAGE_CLASSES = [
     TrainReply,
     TrainRequest,
 ]  # type: List[Type[Message]]
-MESSAGE_CLASSES = {
-    cls.typekey: cls for cls in _MESSAGE_CLASSES
-}
+MESSAGE_CLASSES = {cls.typekey: cls for cls in _MESSAGE_CLASSES}
 
 
 def parse_message_from_string(
-        string: str,
-    ) -> Message:
+    string: str,
+) -> Message:
     """Instantiate a Message from a JSON-serialized string."""
     data = json.loads(string, object_hook=json_unpack)
     if "typekey" not in data:

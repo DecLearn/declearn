@@ -25,8 +25,8 @@ from declearn.utils import register_type
 
 
 __all__ = [
-    'ScaffoldClientModule',
-    'ScaffoldServerModule',
+    "ScaffoldClientModule",
+    "ScaffoldServerModule",
 ]
 
 
@@ -85,17 +85,17 @@ class ScaffoldClientModule(OptiModule):
     name = "scaffold"
 
     def __init__(
-            self,
-        ) -> None:
+        self,
+    ) -> None:
         """Instantiate the client-side SCAFFOLD gradients-correction module."""
-        self.delta = 0.  # type: Union[Vector, float]
-        self._grads = 0.  # type: Union[Vector, float]
+        self.delta = 0.0  # type: Union[Vector, float]
+        self._grads = 0.0  # type: Union[Vector, float]
         self._steps = 0
 
     def run(
-            self,
-            gradients: Vector,
-        ) -> Vector:
+        self,
+        gradients: Vector,
+    ) -> Vector:
         """Apply Scaffold correction to input local gradients."""
         # Accumulate the uncorrected gradients.
         self._grads = self._grads + gradients
@@ -104,8 +104,8 @@ class ScaffoldClientModule(OptiModule):
         return gradients - self.delta
 
     def collect_aux_var(
-            self,
-        ) -> Optional[Dict[str, Any]]:
+        self,
+    ) -> Optional[Dict[str, Any]]:
         """Return auxiliary variables that need to be shared between nodes.
 
         Compute and package (without applying it) the updated value
@@ -116,8 +116,8 @@ class ScaffoldClientModule(OptiModule):
         return {"state": state}
 
     def _compute_updated_state(
-            self,
-        ) -> Union[Vector, float]:
+        self,
+    ) -> Union[Vector, float]:
         """Compute and return the updated value of the local state.
 
         Note: the computed update is *not* applied by this method.
@@ -148,9 +148,9 @@ class ScaffoldClientModule(OptiModule):
         return avg_grad + self.delta
 
     def process_aux_var(
-            self,
-            aux_var: Dict[str, Any],
-        ) -> None:
+        self,
+        aux_var: Dict[str, Any],
+    ) -> None:
         """Update this module based on received shared auxiliary variables.
 
         Collect the (local_state - shared_state) variable sent by server.
@@ -171,7 +171,7 @@ class ScaffoldClientModule(OptiModule):
                 "received auxiliary variable 'delta'."
             )
         # Reset local variables.
-        self._grads = 0.
+        self._grads = 0.0
         self._steps = 0
 
 
@@ -221,9 +221,9 @@ class ScaffoldServerModule(OptiModule):
     name = "scaffold"
 
     def __init__(
-            self,
-            clients: Optional[List[str]] = None,
-        ) -> None:
+        self,
+        clients: Optional[List[str]] = None,
+    ) -> None:
         """Instantiate the server-side SCAFFOLD gradients-correction module.
 
         Parameters
@@ -240,27 +240,27 @@ class ScaffoldServerModule(OptiModule):
         Similarly, listing clients that in fact do not participate
         in training will have side effects on computations.
         """
-        self.state = 0.  # type: Union[Vector, float]
+        self.state = 0.0  # type: Union[Vector, float]
         self.s_loc = {}  # type: Dict[str, Union[Vector, float]]
         if clients:
-            self.s_loc = {client: 0. for client in clients}
+            self.s_loc = {client: 0.0 for client in clients}
 
     def get_config(
-            self,
-        ) -> Dict[str, Any]:
+        self,
+    ) -> Dict[str, Any]:
         """Return a JSON-serializable dict with this module's parameters."""
         return {"clients": list(self.s_loc)}
 
     def run(
-            self,
-            gradients: Vector,
-        ) -> Vector:
+        self,
+        gradients: Vector,
+    ) -> Vector:
         """Pass gradients through the Scaffold module (no effect)."""
         return gradients
 
     def collect_aux_var(
-            self,
-        ) -> Optional[Dict[str, Any]]:
+        self,
+    ) -> Optional[Dict[str, Any]]:
         """Return auxiliary variables that need to be shared between nodes.
 
         Package client-wise (local_state - shared_state) variables.
@@ -273,9 +273,9 @@ class ScaffoldServerModule(OptiModule):
         return aux_var
 
     def process_aux_var(
-            self,
-            aux_var: Dict[str, Any],
-        ) -> None:
+        self,
+        aux_var: Dict[str, Any],
+    ) -> None:
         """Update this module based on received shared auxiliary variables.
 
         Collect updated local state variables sent by clients.
@@ -304,7 +304,7 @@ class ScaffoldServerModule(OptiModule):
                 )
         # Update the global and client-wise state variables.
         update = sum(
-            state - self.s_loc.get(client, 0.)
+            state - self.s_loc.get(client, 0.0)
             for client, state in s_new.items()
         )
         self.s_loc.update(s_new)

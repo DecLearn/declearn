@@ -7,15 +7,18 @@ from abc import ABCMeta, abstractmethod
 from typing import Any, Callable, Dict, Optional, Type, Union
 
 from numpy.typing import ArrayLike
+
 # future: `from typing_extensions import Self` and revise Vector return types
 
 from declearn.utils import (
-    add_json_support, create_types_registry, register_type
+    add_json_support,
+    create_types_registry,
+    register_type,
 )
 
 __all__ = [
-    'Vector',
-    'register_vector_type',
+    "Vector",
+    "register_vector_type",
 ]
 
 
@@ -39,8 +42,8 @@ class Vector(metaclass=ABCMeta):
 
     @staticmethod
     def build(
-            coefs: Dict[str, Any],
-        ) -> 'Vector':
+        coefs: Dict[str, Any],
+    ) -> "Vector":
         """Instantiate a Vector, inferring its exact subtype from coefs'.
 
         'Vector' is an abstract class. Its subclasses, however, are
@@ -68,148 +71,143 @@ class Vector(metaclass=ABCMeta):
         return types[0](coefs)
 
     def __init__(
-            self,
-            coefs: Dict[str, Any],
-        ) -> None:
+        self,
+        coefs: Dict[str, Any],
+    ) -> None:
         """Instantiate the Vector to wrap a collection of data arrays."""
         self.coefs = coefs
 
     def pack(
-            self,
-        ) -> Dict[str, Any]:
+        self,
+    ) -> Dict[str, Any]:
         """Return a JSON-serializable dict representation of this Vector."""
         return self.coefs
 
     @classmethod
     def unpack(
-            cls,
-            data: Dict[str, Any],
-        ) -> 'Vector':
+        cls,
+        data: Dict[str, Any],
+    ) -> "Vector":
         """Instantiate a Vector from its "packed" dict representation."""
         return cls(data)
 
     def apply_func(
-            self,
-            func: Callable[..., Any],
-            *args: Any,
-            **kwargs: Any
-        ) -> 'Vector':
+        self, func: Callable[..., Any], *args: Any, **kwargs: Any
+    ) -> "Vector":
         """Apply a given function to the wrapped coefficients."""
-        return type(self)({
+        coefs = {
             key: func(coef, *args, **kwargs)
             for key, coef in self.coefs.items()
-        })
+        }
+        return type(self)(coefs)
 
     def _apply_operation(
-            self,
-            other: Any,
-            func: Callable[[Any, Any], Any],
-        ) -> 'Vector':
+        self,
+        other: Any,
+        func: Callable[[Any, Any], Any],
+    ) -> "Vector":
         """Apply an operation to combine this vector with another."""
         # Case when operating on two Vector objects.
         if isinstance(other, type(self)):
             if self.coefs.keys() != other.coefs.keys():
                 raise KeyError(
-                    f"Cannot {func.__name__} Vectors "\
+                    f"Cannot {func.__name__} Vectors "
                     "with distinct coefficient names."
                 )
-            return type(self)({
+            coefs = {
                 key: func(self.coefs[key], other.coefs[key])
                 for key in self.coefs
-            })
+            }
+            return type(self)(coefs)
         # Case when operating with another object (e.g. a scalar).
         try:
-            return type(self)({
-                key: func(coef, other)
-                for key, coef in self.coefs.items()
-            })
+            return type(self)(
+                {key: func(coef, other) for key, coef in self.coefs.items()}
+            )
         except TypeError as exc:
             raise TypeError(
-                f"Cannot {func.__name__} {type(self).__name__} object "\
+                f"Cannot {func.__name__} {type(self).__name__} object "
                 f"with object of type {type(other)}."
             ) from exc
 
     def __add__(
-            self,
-            other: Any,
-        ) -> 'Vector':
+        self,
+        other: Any,
+    ) -> "Vector":
         return self._apply_operation(other, self._op_add)  # type: ignore
 
     def __radd__(
-            self,
-            other: Any,
-        ) -> 'Vector':
+        self,
+        other: Any,
+    ) -> "Vector":
         return self.__add__(other)
 
     def __sub__(
-            self,
-            other: Any,
-        ) -> 'Vector':
+        self,
+        other: Any,
+    ) -> "Vector":
         return self._apply_operation(other, self._op_sub)  # type: ignore
 
     def __rsub__(
-            self,
-            other: Any,
-        ) -> 'Vector':
-        return self.__sub__(- other)
+        self,
+        other: Any,
+    ) -> "Vector":
+        return self.__sub__(-other)
 
     def __mul__(
-            self,
-            other: Any,
-        ) -> 'Vector':
+        self,
+        other: Any,
+    ) -> "Vector":
         return self._apply_operation(other, self._op_mul)  # type: ignore
 
     def __rmul__(
-            self,
-            other: Any,
-        ) -> 'Vector':
+        self,
+        other: Any,
+    ) -> "Vector":
         return self.__mul__(other)
 
     def __truediv__(
-            self,
-            other: Any,
-        ) -> 'Vector':
+        self,
+        other: Any,
+    ) -> "Vector":
         return self._apply_operation(other, self._op_div)  # type: ignore
 
     def __rtruediv__(
-            self,
-            other: Any,
-        ) -> 'Vector':
+        self,
+        other: Any,
+    ) -> "Vector":
         return self.__mul__(1 / other)
 
     def __pow__(
-            self,
-            other: Any,
-        ) -> 'Vector':
+        self,
+        other: Any,
+    ) -> "Vector":
         return self._apply_operation(other, self._op_pow)  # type: ignore
 
     @abstractmethod
-    def __eq__(
-            self,
-            other: Any
-        ) -> bool:
+    def __eq__(self, other: Any) -> bool:
         raise NotImplementedError
 
     @abstractmethod
     def sign(
-            self,
-        ) -> 'Vector':
+        self,
+    ) -> "Vector":
         """Return a Vector storing the sign of each coefficient."""
         raise NotImplementedError
 
     @abstractmethod
     def minimum(
-            self,
-            other: Union['Vector', float, ArrayLike],
-        ) -> 'Vector':
+        self,
+        other: Union["Vector", float, ArrayLike],
+    ) -> "Vector":
         """Compute coef.-wise, element-wise minimum wrt to another Vector."""
         raise NotImplementedError
 
     @abstractmethod
     def maximum(
-            self,
-            other: Union['Vector', float, ArrayLike],
-        ) -> 'Vector':
+        self,
+        other: Union["Vector", float, ArrayLike],
+    ) -> "Vector":
         """Compute coef.-wise, element-wise maximum wrt to another Vector."""
         raise NotImplementedError
 
@@ -218,10 +216,10 @@ create_types_registry("Vector", base=Vector)
 
 
 def register_vector_type(
-        v_type: Type[Any],
-        *types: Type[Any],
-        name: Optional[str] = None
-    ) -> Callable[[Type[Vector]], Type[Vector]]:
+    v_type: Type[Any],
+    *types: Type[Any],
+    name: Optional[str] = None,
+) -> Callable[[Type[Vector]], Type[Vector]]:
     """Decorate a Vector subclass to make it buildable with `Vector(...)`.
 
     Decorating a Vector subclass with this has three effects:
@@ -265,5 +263,6 @@ def register_vector_type(
         for v_type in v_types:
             VECTOR_TYPES[v_type] = cls
         return cls
+
     # Return the former, enabling decoration syntax for `register_vector_type`.
     return register

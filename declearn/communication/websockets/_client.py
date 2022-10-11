@@ -12,9 +12,7 @@ from websockets.client import WebSocketClientProtocol
 from websockets.exceptions import ConnectionClosedOK, ConnectionClosedError
 
 from declearn.communication.api import Client
-from declearn.communication.messaging import (
-    Message, parse_message_from_string
-)
+from declearn.communication.messaging import Message, parse_message_from_string
 from declearn.utils import register_type
 
 
@@ -23,13 +21,13 @@ class WebsocketsClient(Client):
     """Client-side communication endpoint using WebSockets."""
 
     def __init__(
-            self,
-            server_uri: str,
-            name: str,
-            certificate: Optional[str] = None,
-            logger: Union[logging.Logger, str, None] = None,
-            headers: Optional[Dict[str, str]] = None,
-        ) -> None:
+        self,
+        server_uri: str,
+        name: str,
+        certificate: Optional[str] = None,
+        logger: Union[logging.Logger, str, None] = None,
+        headers: Optional[Dict[str, str]] = None,
+    ) -> None:
         """Instantiate the client-side WebSockets communications handler.
 
         Parameters
@@ -59,8 +57,8 @@ class WebsocketsClient(Client):
 
     @staticmethod
     def _setup_ssl_context(
-            certificate: Optional[str] = None,
-        ) -> Optional[ssl.SSLContext]:
+        certificate: Optional[str] = None,
+    ) -> Optional[ssl.SSLContext]:
         """Set up and return an (optional) SSLContext object."""
         if certificate is None:
             return None
@@ -70,9 +68,7 @@ class WebsocketsClient(Client):
         ssl_context.post_handshake_auth = True  # for TLS version 3 or higher
         return ssl_context
 
-    async def start(
-            self
-        ) -> None:
+    async def start(self) -> None:
         # false-positives; pylint: disable=no-member
         if not (self._socket is None or self._socket.closed):
             self.logger.info("Client is already connected.")
@@ -84,7 +80,8 @@ class WebsocketsClient(Client):
             "ssl": self._ssl,
             "extra_headers": (
                 ws.Headers(**self.headers)  # type: ignore
-                if self.headers else None
+                if self.headers
+                else None
             ),
             "ping_timeout": None,  # disable timeout on keep-alive pings
         }
@@ -102,17 +99,15 @@ class WebsocketsClient(Client):
                 self.logger.info("Connected to the server.")
                 break
 
-    async def stop(
-            self
-        ) -> None:
+    async def stop(self) -> None:
         if self._socket is not None:
             await self._socket.close()
             self._socket = None
 
     async def _send_message(
-            self,
-            message: Message,
-        ) -> Message:
+        self,
+        message: Message,
+    ) -> Message:
         """Send a message to the server and return the obtained reply."""
         if self._socket is None:
             raise RuntimeError("Cannot communicate while not connected.")
@@ -124,9 +119,9 @@ class WebsocketsClient(Client):
         return parse_message_from_string(reply)
 
     async def register(
-            self,
-            data_info: Dict[str, Any],
-        ) -> bool:
+        self,
+        data_info: Dict[str, Any],
+    ) -> bool:
         try:
             return await super().register(data_info)
         except (ConnectionClosedOK, ConnectionClosedError) as err:

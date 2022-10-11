@@ -11,10 +11,10 @@ from declearn.utils import register_type
 
 
 __all__ = [
-    'AdaGradModule',
-    'AdamModule',
-    'RMSPropModule',
-    'YogiModule',
+    "AdaGradModule",
+    "AdamModule",
+    "RMSPropModule",
+    "YogiModule",
 ]
 
 
@@ -43,9 +43,9 @@ class AdaGradModule(OptiModule):
     name = "adagrad"
 
     def __init__(
-            self,
-            eps: float = 1e-7,
-        ) -> None:
+        self,
+        eps: float = 1e-7,
+    ) -> None:
         """Instantiate the Adagrad gradients-adaptation module.
 
         Parameters
@@ -55,21 +55,21 @@ class AdaGradModule(OptiModule):
             to the (divisor) adapative scaling term.
         """
         self.eps = eps
-        self.state = 0.  # type: Union[Vector, float]
+        self.state = 0.0  # type: Union[Vector, float]
 
     def get_config(
-            self,
-        ) -> Dict[str, Any]:
+        self,
+    ) -> Dict[str, Any]:
         """Return a JSON-serializable dict with this module's parameters."""
         return {"eps": self.eps}
 
     def run(
-            self,
-            gradients: Vector,
-        ) -> Vector:
+        self,
+        gradients: Vector,
+    ) -> Vector:
         """Apply Adagrad adaptation to input (pseudo-)gradients."""
-        self.state = self.state + (gradients ** 2)
-        scaling = (self.state ** .5) + self.eps
+        self.state = self.state + (gradients**2)
+        scaling = (self.state**0.5) + self.eps
         return gradients / scaling
 
 
@@ -97,10 +97,10 @@ class RMSPropModule(OptiModule):
     name = "rmsprop"
 
     def __init__(
-            self,
-            beta: float = 0.9,
-            eps: float = 1e-7,
-        ) -> None:
+        self,
+        beta: float = 0.9,
+        eps: float = 1e-7,
+    ) -> None:
         """Instantiate the RMSProp gradients-adaptation module.
 
         Parameters
@@ -116,18 +116,18 @@ class RMSPropModule(OptiModule):
         self.eps = eps
 
     def get_config(
-            self,
-        ) -> Dict[str, Any]:
+        self,
+    ) -> Dict[str, Any]:
         """Return a JSON-serializable dict with this module's parameters."""
         return {"beta": self.mom.beta, "eps": self.eps}
 
     def run(
-            self,
-            gradients: Vector,
-        ) -> Vector:
+        self,
+        gradients: Vector,
+    ) -> Vector:
         """Apply RMSProp adaptation to input (pseudo-)gradients."""
-        v_t = self.mom.run(gradients ** 2)
-        scaling = (v_t ** .5) + self.eps
+        v_t = self.mom.run(gradients**2)
+        scaling = (v_t**0.5) + self.eps
         return gradients / scaling
 
 
@@ -171,12 +171,12 @@ class AdamModule(OptiModule):
     name = "adam"
 
     def __init__(
-            self,
-            beta_1: float = 0.9,
-            beta_2: float = 0.99,
-            amsgrad: bool = False,
-            eps: float = 1e-7,
-        ) -> None:
+        self,
+        beta_1: float = 0.9,
+        beta_2: float = 0.99,
+        amsgrad: bool = False,
+        eps: float = 1e-7,
+    ) -> None:
         """Instantiate the Adam gradients-adaptation module.
 
         Parameters
@@ -202,8 +202,8 @@ class AdamModule(OptiModule):
         self._vmax = None  # type: Optional[Vector]
 
     def get_config(
-            self,
-        ) -> Dict[str, Any]:
+        self,
+    ) -> Dict[str, Any]:
         """Return a JSON-serializable dict with this module's parameters."""
         return {
             "beta_1": self.mom_1.beta,
@@ -213,13 +213,13 @@ class AdamModule(OptiModule):
         }
 
     def run(
-            self,
-            gradients: Vector,
-        ) -> Vector:
+        self,
+        gradients: Vector,
+    ) -> Vector:
         """Apply Adam adaptation to input (pseudo-)gradients."""
         # Compute momentum-corrected state variables.
         m_t = self.mom_1.run(gradients)
-        v_t = self.mom_2.run(gradients ** 2)
+        v_t = self.mom_2.run(gradients**2)
         # Apply bias correction to the previous terms.
         m_h = m_t / (1 - (self.mom_1.beta ** (self.steps + 1)))
         v_h = v_t / (1 - (self.mom_2.beta ** (self.steps + 1)))
@@ -229,7 +229,7 @@ class AdamModule(OptiModule):
                 v_h = v_h.maximum(self._vmax)
             self._vmax = v_h
         # Compute and return the adapted gradients.
-        gradients = m_h / ((v_h ** .5) + self.eps)
+        gradients = m_h / ((v_h**0.5) + self.eps)
         self.steps += 1
         return gradients
 
@@ -261,9 +261,9 @@ class YogiMomentumModule(MomentumModule):
     name = "yogi-momentum"
 
     def run(
-            self,
-            gradients: Vector,
-        ) -> Vector:
+        self,
+        gradients: Vector,
+    ) -> Vector:
         """Apply Momentum acceleration to input (pseudo-)gradients."""
         sign = (self.state - gradients).sign()
         self.state = self.state - (sign * (1 - self.beta) * gradients)
@@ -307,12 +307,12 @@ class YogiModule(AdamModule):
     name = "yogi"
 
     def __init__(
-            self,
-            beta_1: float = 0.9,
-            beta_2: float = 0.99,
-            amsgrad: bool = False,
-            eps: float = 1e-7,
-        ) -> None:
+        self,
+        beta_1: float = 0.9,
+        beta_2: float = 0.99,
+        amsgrad: bool = False,
+        eps: float = 1e-7,
+    ) -> None:
         """Instantiate the Yogi gradients-adaptation module.
 
         Parameters

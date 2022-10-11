@@ -8,9 +8,9 @@ from typing import Any, Dict, Optional
 
 
 __all__ = [
-    'EvaluateConfig',
-    'RegisterConfig',
-    'TrainingConfig',
+    "EvaluateConfig",
+    "RegisterConfig",
+    "TrainingConfig",
 ]
 
 

@@ -14,7 +14,10 @@ from declearn.communication import NetworkClientConfig, messaging
 from declearn.communication.api import Client
 from declearn.dataset import Dataset, load_dataset_from_json
 from declearn.main.utils import (
-    Checkpointer, Constraint, ConstraintSet, TimeoutConstraint
+    Checkpointer,
+    Constraint,
+    ConstraintSet,
+    TimeoutConstraint,
 )
 from declearn.model.api import Model
 from declearn.optimizer import Optimizer
@@ -22,7 +25,7 @@ from declearn.utils import get_logger, json_pack
 
 
 __all__ = [
-    'FederatedClient',
+    "FederatedClient",
 ]
 
 
@@ -30,13 +33,13 @@ class FederatedClient:
     """Client-side Federated Learning orchestrating class."""
 
     def __init__(
-            self,
-            netwk: Union[Client, NetworkClientConfig, Dict[str, Any]],
-            train_data: Union[Dataset, str],
-            valid_data: Optional[Union[Dataset, str]] = None,
-            folder: Optional[str] = None,
-            logger: Union[logging.Logger, str, None] = None,
-        ) -> None:
+        self,
+        netwk: Union[Client, NetworkClientConfig, Dict[str, Any]],
+        train_data: Union[Dataset, str],
+        valid_data: Optional[Union[Dataset, str]] = None,
+        folder: Optional[str] = None,
+        logger: Union[logging.Logger, str, None] = None,
+    ) -> None:
         """Instantiate a client to participate in a federated learning task.
 
         Parameters
@@ -103,8 +106,8 @@ class FederatedClient:
         self.checkpointer = None  # type: Optional[Checkpointer]
 
     def run(
-            self,
-        ) -> None:
+        self,
+    ) -> None:
         """Participate in the federated learning process.
 
         * Connect to the orchestrating `FederatedServer` and register
@@ -119,8 +122,8 @@ class FederatedClient:
         asyncio.run(self.async_run())
 
     async def async_run(
-            self,
-        ) -> None:
+        self,
+    ) -> None:
         """Participate in the federated learning process.
 
         Note: this method is the async backend of `self.run`.
@@ -152,8 +155,8 @@ class FederatedClient:
                     raise ValueError(error)
 
     async def register(
-            self,
-        ) -> None:
+        self,
+    ) -> None:
         """Register for participation in the federated learning process.
 
         Raises
@@ -165,7 +168,9 @@ class FederatedClient:
         # revise: add validation dataset specs
         data_info = dataclasses.asdict(self.train_data.get_data_specs())
         for i in range(10):  # max_attempts (10)
-            self.logger.info("Attempting to join training (attempt n°%s)", i+1)
+            self.logger.info(
+                "Attempting to join training (attempt n°%s)", i + 1
+            )
             registered = await self.netwk.register(data_info)
             if registered:
                 break
@@ -174,8 +179,8 @@ class FederatedClient:
             raise RuntimeError("Failed to register for training.")
 
     async def initialize(
-            self,
-        ) -> Tuple[Model, Optimizer]:
+        self,
+    ) -> Tuple[Model, Optimizer]:
         """Set up a Model and an Optimizer based on server instructions.
 
         Await server instructions (as an InitRequest message) and conduct
@@ -216,11 +221,11 @@ class FederatedClient:
         return message.model, message.optim
 
     async def training_round(
-            self,
-            model: Model,
-            optim: Optimizer,
-            message: messaging.TrainRequest,
-        ) -> None:
+        self,
+        model: Model,
+        optim: Optimizer,
+        message: messaging.TrainRequest,
+    ) -> None:
         """Run a local training round.
 
         If an exception is raised during the local process, wrap
@@ -244,14 +249,16 @@ class FederatedClient:
             model.set_weights(message.weights)
             optim.process_aux_var(message.aux_var)
             # Train under instructed effort constraints.
+            # fmt: off
             self.logger.info(
                 "Training local model for %s epochs | %s steps | %s seconds.",
-                message.n_epoch, message.n_steps, message.timeout
+                message.n_epoch, message.n_steps, message.timeout,
             )
             effort = self._train_under_constraints(
                 model, optim, message.batches,
                 message.n_epoch, message.n_steps, message.timeout,
             )
+            # fmt: on
             # Compute model updates and collect auxiliary variables.
             self.logger.info("Sending local updates to the server.")
             reply = messaging.TrainReply(
@@ -268,14 +275,14 @@ class FederatedClient:
         await self.netwk.send_message(reply)
 
     def _train_under_constraints(
-            self,
-            model: Model,
-            optim: Optimizer,
-            batch_cfg: Dict[str, Any],
-            n_epoch: Optional[int],
-            n_steps: Optional[int],
-            timeout: Optional[int],
-        ) -> Dict[str, float]:
+        self,
+        model: Model,
+        optim: Optimizer,
+        batch_cfg: Dict[str, Any],
+        n_epoch: Optional[int],
+        n_steps: Optional[int],
+        timeout: Optional[int],
+    ) -> Dict[str, float]:
         """Backend code to run local SGD steps under effort constraints.
 
         Parameters
@@ -312,10 +319,10 @@ class FederatedClient:
         # arguments serve modularity; pylint: disable=too-many-arguments
         # Set up effort constraints under which to operate.
         epochs = Constraint(limit=n_epoch, name="n_epoch")
-        constraints = ConstraintSet([
+        constraints = ConstraintSet(
             Constraint(limit=n_steps, name="n_steps"),
             TimeoutConstraint(limit=timeout, name="t_spent"),
-        ])
+        )
         # Run batch train steps for as long as constraints allow it.
         while not epochs.saturated:
             for batch in self.train_data.generate_batches(**batch_cfg):
@@ -330,10 +337,10 @@ class FederatedClient:
         return effort
 
     async def evaluation_round(
-            self,
-            model: Model,
-            message: messaging.EvaluationRequest,
-        ) -> None:
+        self,
+        model: Model,
+        message: messaging.EvaluationRequest,
+    ) -> None:
         """Run a local evaluation round.
 
         If an exception is raised during the local process, wrap
@@ -370,12 +377,12 @@ class FederatedClient:
         await self.netwk.send_message(reply)
 
     def _evaluate_under_constraints(
-            self,
-            model: Model,
-            batch_cfg: Dict[str, Any],
-            n_steps: Optional[int] = None,
-            timeout: Optional[int] = None,
-        )  -> messaging.EvaluationReply:
+        self,
+        model: Model,
+        batch_cfg: Dict[str, Any],
+        n_steps: Optional[int] = None,
+        timeout: Optional[int] = None,
+    ) -> messaging.EvaluationReply:
         """Backend code to run local loss computation under effort constraints.
 
         Parameters
@@ -400,12 +407,12 @@ class FederatedClient:
         """
         # arguments serve modularity; pylint: disable=too-many-arguments
         # Set up effort constraints under which to operate.
-        constraints = ConstraintSet([
+        constraints = ConstraintSet(
             Constraint(limit=n_steps, name="n_steps"),
             TimeoutConstraint(limit=timeout, name="t_spent"),
-        ])
+        )
         # Run batch evaluation steps for as long as constraints allow it.
-        loss = 0.
+        loss = 0.0
         dataset = self.valid_data or self.train_data
         for batch in dataset.generate_batches(**batch_cfg):
             loss += model.compute_loss([batch])
@@ -421,10 +428,10 @@ class FederatedClient:
         )
 
     async def stop_training(
-            self,
-            model: Model,
-            message: messaging.StopTraining,
-        ) -> None:
+        self,
+        model: Model,
+        message: messaging.StopTraining,
+    ) -> None:
         """Handle a server request to stop training.
 
         Parameters
@@ -434,7 +441,8 @@ class FederatedClient:
         """
         self.logger.info(
             "Training is now over, after %s rounds. Global loss: %s",
-            message.rounds, message.loss
+            message.rounds,
+            message.loss,
         )
         if self.folder is not None:
             # Save the locally-best-performing model weights.
@@ -451,9 +459,9 @@ class FederatedClient:
                 json.dump(message.weights, file, default=json_pack)
 
     async def cancel_training(
-            self,
-            message: messaging.CancelTraining,
-        ) -> None:
+        self,
+        message: messaging.CancelTraining,
+    ) -> None:
         """Handle a server request to cancel training.
 
         Parameters
@@ -464,5 +472,4 @@ class FederatedClient:
         error = "Training was cancelled by the server, with reason:\n"
         error += message.reason
         self.logger.warning(error)
-        #self.logger.info("Saving the current model and optimizer.")
         raise RuntimeError(error)

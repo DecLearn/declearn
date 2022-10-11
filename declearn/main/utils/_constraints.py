@@ -3,13 +3,13 @@
 """Minimal API to design and enforce computational effort constraints."""
 
 import time
-from typing import Collection, Dict, Optional
+from typing import Dict, Optional
 
 
 __all__ = [
-    'Constraint',
-    'ConstraintSet',
-    'TimeoutConstraint',
+    "Constraint",
+    "ConstraintSet",
+    "TimeoutConstraint",
 ]
 
 
@@ -28,11 +28,11 @@ class Constraint:
     """
 
     def __init__(
-            self,
-            limit: Optional[float],
-            start: float = 0.,
-            name: str = "constraint",
-        ) -> None:
+        self,
+        limit: Optional[float],
+        start: float = 0.0,
+        name: str = "constraint",
+    ) -> None:
         """Instantiate a count-based constraint.
 
         Parameters
@@ -51,15 +51,15 @@ class Constraint:
         self.name = name
 
     def increment(
-            self,
-        ) -> None:
+        self,
+    ) -> None:
         """Update `self.value`, incrementing it by 1."""
         self.value += 1
 
     @property
     def saturated(
-            self,
-        ) -> bool:
+        self,
+    ) -> bool:
         """Return whether the constraint is saturated."""
         return self.value >= self.limit
 
@@ -79,11 +79,11 @@ class TimeoutConstraint(Constraint):
     """
 
     def __init__(
-            self,
-            limit: Optional[float],
-            start: float = 0.,
-            name: str = "timeout",
-        ) -> None:
+        self,
+        limit: Optional[float],
+        start: float = 0.0,
+        name: str = "timeout",
+    ) -> None:
         """Instantiate a time-based constraint.
 
         Parameters
@@ -101,8 +101,8 @@ class TimeoutConstraint(Constraint):
         self.start = time.time() - start
 
     def increment(
-            self,
-        ) -> None:
+        self,
+    ) -> None:
         """Update `self.value`, storing time passed since `self.start`."""
         self.value = time.time() - self.start
 
@@ -111,29 +111,29 @@ class ConstraintSet:
     """Utility class to wrap sets of Constraint instances."""
 
     def __init__(
-            self,
-            constraints: Collection[Constraint],
-        ) -> None:
+        self,
+        *constraints: Constraint,
+    ) -> None:
         """Wrap an ensemble of Constraint objects."""
         self.constraints = constraints
 
     def increment(
-            self,
-        ) -> None:
+        self,
+    ) -> None:
         """Increment each and every wrapped constraint."""
         for constraint in self.constraints:
             constraint.increment()
 
     @property
     def saturated(
-            self,
-        ) -> bool:
+        self,
+    ) -> bool:
         """Return whether any wrapped constraint is saturated."""
         return any(c.saturated for c in self.constraints)
 
     def get_values(
-            self,
-        ) -> Dict[str, float]:
+        self,
+    ) -> Dict[str, float]:
         """Return the wrapped constraints' current values, as a dict.
 
         Returns

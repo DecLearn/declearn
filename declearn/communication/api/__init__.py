@@ -1,4 +1,4 @@
- # coding: utf-8
+# coding: utf-8
 
 """Base API to define client- and server-side communication endpoints.
 

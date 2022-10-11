@@ -8,6 +8,7 @@ from typing import Any, List
 
 import numpy as np
 import pytest
+
 with warnings.catch_warnings():  # silence tensorflow import-time warnings
     warnings.simplefilter("ignore")
     import tensorflow as tf  # type: ignore
@@ -18,7 +19,7 @@ from declearn.typing import Batch
 
 # dirty trick to import from `model_testing.py`;
 # pylint: disable=wrong-import-order, wrong-import-position
-sys.path.append('.')
+sys.path.append(".")
 from model_testing import ModelTestSuite, ModelTestCase
 
 
@@ -47,9 +48,9 @@ class TensorflowTestCase(ModelTestCase):
     tensor_cls = tf.Tensor
 
     def __init__(
-            self,
-            kind: Literal["MLP", "RNN", "CNN"],
-        ) -> None:
+        self,
+        kind: Literal["MLP", "RNN", "CNN"],
+    ) -> None:
         """Specify the desired model architecture."""
         if kind not in ("MLP", "RNN", "CNN"):
             raise ValueError(f"Invalid keras test architecture: '{kind}'.")
@@ -57,16 +58,16 @@ class TensorflowTestCase(ModelTestCase):
 
     @staticmethod
     def to_numpy(
-            tensor: Any,
-        ) -> np.ndarray:
+        tensor: Any,
+    ) -> np.ndarray:
         """Convert an input tensor to a numpy array."""
         assert isinstance(tensor, tf.Tensor)
         return tensor.numpy()  # type: ignore
 
     @property
     def dataset(
-            self,
-        ) -> List[Batch]:
+        self,
+    ) -> List[Batch]:
         """Suited toy binary-classification dataset."""
         rng = tf.random.get_global_generator()
         rng.reset_from_seed(0)
@@ -82,8 +83,8 @@ class TensorflowTestCase(ModelTestCase):
 
     @property
     def model(
-            self,
-        ) -> TensorflowModel:
+        self,
+    ) -> TensorflowModel:
         """Suited toy binary-classification keras model."""
         if self.kind == "MLP":
             stack = [
@@ -117,8 +118,8 @@ class TensorflowTestCase(ModelTestCase):
 
 @pytest.fixture(name="test_case")
 def fixture_test_case(
-        kind: Literal["MLP", "RNN", "CNN"]
-    ) -> TensorflowTestCase:
+    kind: Literal["MLP", "RNN", "CNN"]
+) -> TensorflowTestCase:
     """Fixture to access a TensorflowTestCase."""
     return TensorflowTestCase(kind)
 

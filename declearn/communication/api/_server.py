@@ -15,7 +15,7 @@ from declearn.utils import get_logger
 
 
 __all__ = [
-    'Server',
+    "Server",
 ]
 
 
@@ -55,14 +55,14 @@ class Server(metaclass=ABCMeta):
 
     @abstractmethod
     def __init__(
-            self,
-            host: str,
-            port: int,
-            certificate: Optional[str] = None,
-            private_key: Optional[str] = None,
-            password: Optional[str] = None,
-            logger: Union[logging.Logger, str, None] = None,
-        ) -> None:
+        self,
+        host: str,
+        port: int,
+        certificate: Optional[str] = None,
+        private_key: Optional[str] = None,
+        password: Optional[str] = None,
+        logger: Union[logging.Logger, str, None] = None,
+    ) -> None:
         """Instantiate the server-side communications handler.
 
         Parameters
@@ -110,10 +110,10 @@ class Server(metaclass=ABCMeta):
     @staticmethod
     @abstractmethod
     def _setup_ssl_context(
-            certificate: Optional[str] = None,
-            private_key: Optional[str] = None,
-            password: Optional[str] = None,
-        ) -> Any:
+        certificate: Optional[str] = None,
+        private_key: Optional[str] = None,
+        password: Optional[str] = None,
+    ) -> Any:
         """Set up and return an (optional) SSL context object.
 
         The return type is communication-protocol dependent.
@@ -122,38 +122,38 @@ class Server(metaclass=ABCMeta):
 
     @abstractmethod
     async def start(
-            self,
-        ) -> None:
+        self,
+    ) -> None:
         """Initialize the server and start welcoming communications."""
         return None
 
     @abstractmethod
     async def stop(
-            self,
-        ) -> None:
+        self,
+    ) -> None:
         """Stop the server and purge information about clients."""
         return None
 
     async def __aenter__(
-            self,
-        ) -> 'Server':
+        self,
+    ) -> "Server":
         await self.start()
         return self
 
     async def __aexit__(
-            self,
-            exc_type: Type[Exception],
-            exc_value: Exception,
-            exc_tb: types.TracebackType,
-        ) -> None:
+        self,
+        exc_type: Type[Exception],
+        exc_value: Exception,
+        exc_tb: types.TracebackType,
+    ) -> None:
         await self.stop()
 
     async def wait_for_clients(
-            self,
-            min_clients: int = 1,
-            max_clients: Optional[int] = None,
-            timeout: Optional[int] = None,
-        ) -> Dict[str, Dict[str, Any]]:
+        self,
+        min_clients: int = 1,
+        max_clients: Optional[int] = None,
+        timeout: Optional[int] = None,
+    ) -> Dict[str, Dict[str, Any]]:
         """Wait for clients to register for training, with given criteria.
 
         Parameters
@@ -186,12 +186,12 @@ class Server(metaclass=ABCMeta):
         )
 
     async def broadcast_message(
-            self,
-            message: Message,
-            clients: Optional[Set[str]] = None,
-            heartbeat: int = 1,
-            timeout: Optional[int] = None,
-        ) -> None:
+        self,
+        message: Message,
+        clients: Optional[Set[str]] = None,
+        heartbeat: int = 1,
+        timeout: Optional[int] = None,
+    ) -> None:
         """Send a message to an ensemble of clients and await its collection.
 
         Parameters
@@ -220,11 +220,11 @@ class Server(metaclass=ABCMeta):
         await self.send_messages(messages, heartbeat, timeout)
 
     async def send_messages(
-            self,
-            messages: Dict[str, Message],
-            heartbeat: int = 1,
-            timeout: Optional[int] = None,
-        ) -> None:
+        self,
+        messages: Dict[str, Message],
+        heartbeat: int = 1,
+        timeout: Optional[int] = None,
+    ) -> None:
         """Send a message to an ensemble of clients and await its collection.
 
         Parameters
@@ -255,12 +255,12 @@ class Server(metaclass=ABCMeta):
                 raise result
 
     async def send_message(
-            self,
-            message: Message,
-            client: str,
-            heartbeat: int = 1,
-            timeout: Optional[int] = None,
-        ) -> None:
+        self,
+        message: Message,
+        client: str,
+        heartbeat: int = 1,
+        timeout: Optional[int] = None,
+    ) -> None:
         """Send a message to a given client and wait for it to be collected.
 
         Parameters
@@ -285,11 +285,11 @@ class Server(metaclass=ABCMeta):
         await self.handler.send_message(message, client, heartbeat, timeout)
 
     async def wait_for_messages(
-            self,
-            clients: Optional[Set[str]] = None,
-            heartbeat: int = 1,
-            timeout: Optional[int] = None,
-        ) -> Dict[str, Message]:
+        self,
+        clients: Optional[Set[str]] = None,
+        heartbeat: int = 1,
+        timeout: Optional[int] = None,
+    ) -> Dict[str, Message]:
         """Wait for an ensemble of clients to have sent a message.
 
         Parameters

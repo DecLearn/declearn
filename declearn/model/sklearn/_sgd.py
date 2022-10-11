@@ -17,13 +17,21 @@ from declearn.utils import register_type
 
 
 LossesLiteral = Literal[
-    'hinge', 'log_loss', 'modified_huber', 'squared_hinge',
-    'perceptron', 'squared_error', 'huber', 'epsilon_insensitive',
-    'squared_epsilon_insensitive'
+    "hinge",
+    "log_loss",
+    "modified_huber",
+    "squared_hinge",
+    "perceptron",
+    "squared_error",
+    "huber",
+    "epsilon_insensitive",
+    "squared_epsilon_insensitive",
 ]
 REG_LOSSES = (
-    'squared_error', 'huber', 'epsilon_insensitive',
-    'squared_epsilon_insensitive'
+    "squared_error",
+    "huber",
+    "epsilon_insensitive",
+    "squared_epsilon_insensitive",
 )
 
 
@@ -37,9 +45,9 @@ class SklearnSGDModel(Model):
     """
 
     def __init__(
-            self,
-            model: Union[SGDClassifier, SGDRegressor],
-        ) -> None:
+        self,
+        model: Union[SGDClassifier, SGDRegressor],
+    ) -> None:
         """Instantiate a Model interfacing a sklearn SGD-based model.
 
         Note: See `SklearnSGDModel.from_parameters` for an alternative
@@ -60,7 +68,7 @@ class SklearnSGDModel(Model):
             )
         model = model.set_params(
             eta0=0.1,
-            learning_rate='constant',
+            learning_rate="constant",
             warm_start=False,
             average=False,
         )
@@ -69,16 +77,16 @@ class SklearnSGDModel(Model):
 
     @property
     def required_data_info(
-            self,
-        ) -> Set[str]:
+        self,
+    ) -> Set[str]:
         if isinstance(self._model, SGDRegressor):
             return {"n_features"}
         return {"n_features", "classes"}
 
     def initialize(
-            self,
-            data_info: Dict[str, Any],
-        ) -> None:
+        self,
+        data_info: Dict[str, Any],
+    ) -> None:
         # Check that required fields are available and of valid type.
         data_info = aggregate_data_info([data_info], self.required_data_info)
         # SGDClassifier case.
@@ -97,16 +105,16 @@ class SklearnSGDModel(Model):
 
     @classmethod
     def from_parameters(
-            cls,
-            kind: Literal['classifier', 'regressor'],
-            loss: Optional[LossesLiteral] = None,
-            penalty: Literal['l1', 'l2', 'elasticnet'] = 'l2',
-            alpha: float = 1e-4,
-            l1_ratio: float = 0.15,
-            epsilon: float = 0.1,
-            fit_intercept: bool = True,
-            n_jobs: Optional[int] = None,
-        ) -> 'SklearnSGDModel':
+        cls,
+        kind: Literal["classifier", "regressor"],
+        loss: Optional[LossesLiteral] = None,
+        penalty: Literal["l1", "l2", "elasticnet"] = "l2",
+        alpha: float = 1e-4,
+        l1_ratio: float = 0.15,
+        epsilon: float = 0.1,
+        fit_intercept: bool = True,
+        n_jobs: Optional[int] = None,
+    ) -> "SklearnSGDModel":
         """Instantiate a SklearnSGDModel from model parameters.
 
         This classmethod is an alternative constructor to instantiate
@@ -157,27 +165,32 @@ class SklearnSGDModel(Model):
         kwargs = {}
         # SGDClassifier case.
         if kind == "classifier":
-            loss = loss or 'hinge'
+            loss = loss or "hinge"
             if loss not in typing.get_args(LossesLiteral):
                 raise ValueError(f"Invalid loss '{loss}' for SGDClassifier.")
             sk_cls = SGDClassifier
             kwargs["n_jobs"] = n_jobs
         # SGDRegressor case.
         elif kind == "regressor":
-            loss = loss or 'squared_error'
+            loss = loss or "squared_error"
             if loss not in REG_LOSSES:
                 raise ValueError(f"Invalid loss '{loss}' for SGDRegressor.")
             sk_cls = SGDRegressor
         # Instantiate the sklearn model, wrap it up and return.
         model = sk_cls(
-            loss=loss, penalty=penalty, alpha=alpha, l1_ratio=l1_ratio,
-            epsilon=epsilon, fit_intercept=fit_intercept, **kwargs
+            loss=loss,
+            penalty=penalty,
+            alpha=alpha,
+            l1_ratio=l1_ratio,
+            epsilon=epsilon,
+            fit_intercept=fit_intercept,
+            **kwargs,
         )
         return cls(model)
 
     def get_config(
-            self,
-        ) -> Dict[str, Any]:
+        self,
+    ) -> Dict[str, Any]:
         is_clf = isinstance(self._model, SGDClassifier)
         data_info = None  # type: Optional[Dict[str, Any]]
         if self._initialized:
@@ -193,9 +206,9 @@ class SklearnSGDModel(Model):
 
     @classmethod
     def from_config(
-            cls,
-            config: Dict[str, Any],
-        ) -> 'SklearnSGDModel':
+        cls,
+        config: Dict[str, Any],
+    ) -> "SklearnSGDModel":
         """Instantiate a SklearnSGDModel from a configuration dict."""
         for key in ("kind", "params"):
             if key not in config:
@@ -209,17 +222,18 @@ class SklearnSGDModel(Model):
         return model
 
     def get_weights(
-            self,
-        ) -> NumpyVector:
-        return NumpyVector({
+        self,
+    ) -> NumpyVector:
+        weights = {
             "intercept": self._model.intercept_.copy(),
             "coef": self._model.coef_.copy(),
-        })
+        }
+        return NumpyVector(weights)
 
     def set_weights(
-            self,
-            weights: NumpyVector,
-        ) -> None:
+        self,
+        weights: NumpyVector,
+    ) -> None:
         for key in ("coef", "intercept"):
             if key not in weights.coefs:
                 raise TypeError(
@@ -229,9 +243,9 @@ class SklearnSGDModel(Model):
         self._model.intercept_ = weights.coefs["intercept"]
 
     def compute_batch_gradients(
-            self,
-            batch: Batch,
-        ) -> NumpyVector:
+        self,
+        batch: Batch,
+    ) -> NumpyVector:
         # Unpack, validate and repack input data.
         x_data, y_data, s_wght = self._unpack_batch(batch)
         # Iteratively compute sample-wise gradients.
@@ -246,9 +260,9 @@ class SklearnSGDModel(Model):
         return sum(grad) / len(grad)  # type: ignore
 
     def _unpack_batch(
-            self,
-            batch: Batch,
-        ) -> Tuple[ArrayLike, ArrayLike, Optional[ArrayLike]]:
+        self,
+        batch: Batch,
+    ) -> Tuple[ArrayLike, ArrayLike, Optional[ArrayLike]]:
         """Verify and unpack an input batch into (x, y, [w]).
 
         Note: this method does not verify arrays' dimensionality or
@@ -264,10 +278,10 @@ class SklearnSGDModel(Model):
         return x_data, y_data, s_wght  # type: ignore
 
     def _compute_sample_gradient(
-            self,
-            x_smp: ArrayLike,
-            y_smp: float,
-        ) -> NumpyVector:
+        self,
+        x_smp: ArrayLike,
+        y_smp: float,
+    ) -> NumpyVector:
         """Compute and return the model's gradients over a single sample."""
         # Gather current weights.
         w_srt = self.get_weights()
@@ -281,20 +295,20 @@ class SklearnSGDModel(Model):
         return (w_srt - w_end) / self._model.eta0  # type: ignore
 
     def apply_updates(  # type: ignore  # future: revise
-            self,
-            updates: NumpyVector,
-        ) -> None:
+        self,
+        updates: NumpyVector,
+    ) -> None:
         self._model.coef_ += updates.coefs["coef"]
         self._model.intercept_ += updates.coefs["intercept"]
 
     def compute_loss(
-            self,
-            dataset: Iterable[Batch],
-        ) -> float:
+        self,
+        dataset: Iterable[Batch],
+    ) -> float:
         # TODO: implement SklearnMetric objects and abstract this code
         loss_fn = self._setup_loss_fn()
-        loss = 0.
-        nsmp = 0.
+        loss = 0.0
+        nsmp = 0.0
         if isinstance(self._model, SGDClassifier):
             predict = self._model.decision_function
         else:
@@ -314,11 +328,12 @@ class SklearnSGDModel(Model):
         return loss / nsmp
 
     def _setup_loss_fn(
-            self,
-        ) -> Callable[[np.ndarray, np.ndarray], np.ndarray]:
+        self,
+    ) -> Callable[[np.ndarray, np.ndarray], np.ndarray]:
         """Return a function to compute point-wise loss for a given batch."""
+        # fmt: off
         # Gather or instantiate a loss function from the wrapped model's specs.
-        if hasattr(self._model, 'loss_function_'):
+        if hasattr(self._model, "loss_function_"):
             loss_smp = self._model.loss_function_.py_loss
         else:
             loss_cls, *args = self._model.loss_functions[self._model.loss]
@@ -332,7 +347,7 @@ class SklearnSGDModel(Model):
                 return np.sum([  # type: ignore
                     loss_1d(y_pred[:, i], y_true == val)
                     for i, val in enumerate(self._model.classes_)
-                ], axis=0)
+                ],axis=0)
         else:
             loss_fn = loss_1d
         return loss_fn

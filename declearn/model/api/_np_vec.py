@@ -12,8 +12,9 @@ from declearn.model.api._vector import Vector, register_vector_type
 
 
 __all__ = [
-    'NumpyVector',
+    "NumpyVector",
 ]
+
 
 @register_vector_type(np.ndarray)
 class NumpyVector(Vector):
@@ -32,15 +33,12 @@ class NumpyVector(Vector):
     _op_truediv = np.divide
     _op_pow = np.power
 
-    def __init__(
-            self,
-            coefs: Dict[str, np.ndarray]
-        ) -> None:
+    def __init__(self, coefs: Dict[str, np.ndarray]) -> None:
         super().__init__(coefs)
 
     def __repr__(
-            self,
-        ) -> str:
+        self,
+    ) -> str:
         string = f"{type(self).__name__} with {len(self.coefs)} coefs:"
         string += "".join(
             f"\n    {key}: {val.dtype} array with shape {val.shape}"
@@ -48,10 +46,7 @@ class NumpyVector(Vector):
         )
         return string
 
-    def __eq__(
-            self,
-            other: Any
-        ) -> bool:
+    def __eq__(self, other: Any) -> bool:
         valid = isinstance(other, NumpyVector)
         valid = valid and (self.coefs.keys() == other.coefs.keys())
         return valid and all(
@@ -59,22 +54,22 @@ class NumpyVector(Vector):
         )
 
     def sign(
-            self,
-        ) -> Self:  # type: ignore
+        self,
+    ) -> Self:  # type: ignore
         return self.apply_func(np.sign)
 
     def minimum(
-            self,
-            other: Union['Vector', float, ArrayLike],
-        ) -> Self:  # type: ignore
+        self,
+        other: Union["Vector", float, ArrayLike],
+    ) -> Self:  # type: ignore
         if isinstance(other, NumpyVector):
             return self._apply_operation(other, np.minimum)
         return self.apply_func(np.minimum, other)
 
     def maximum(
-            self,
-            other: Union['Vector', float, ArrayLike],
-        ) -> Self:  # type: ignore
+        self,
+        other: Union["Vector", float, ArrayLike],
+    ) -> Self:  # type: ignore
         if isinstance(other, Vector):
             return self._apply_operation(other, np.maximum)
         return self.apply_func(np.maximum, other)

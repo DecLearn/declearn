@@ -23,7 +23,7 @@ from declearn.communication.messaging import (
 
 
 __all__ = [
-    'MessagesHandler',
+    "MessagesHandler",
 ]
 
 
@@ -43,9 +43,9 @@ class MessagesHandler:
     """
 
     def __init__(
-            self,
-            logger: logging.Logger,
-        ) -> None:
+        self,
+        logger: logging.Logger,
+    ) -> None:
         self.logger = logger
         self.registered_clients = {}  # type: Dict[Any, str]
         self.data_info = {}  # type: Dict[str, Dict[str, Any]]
@@ -60,8 +60,8 @@ class MessagesHandler:
         return set(self.registered_clients.values())
 
     async def purge(
-            self,
-        ) -> None:
+        self,
+    ) -> None:
         """Close opened connections and purge information about users."""
         self.registered_clients = {}
         self.data_info = {}
@@ -69,10 +69,10 @@ class MessagesHandler:
         self.inc_messages = {}
 
     async def handle_message(
-            self,
-            string: str,
-            context: Any,
-        ) -> Message:
+        self,
+        string: str,
+        context: Any,
+    ) -> Message:
         """Handle an incoming message from a client.
 
         Parameters
@@ -99,7 +99,8 @@ class MessagesHandler:
         except (KeyError, TypeError) as exc:
             self.logger.info(
                 "%s encountered while parsing received message: %s",
-                type(exc).__name__, exc
+                type(exc).__name__,
+                exc,
             )
             return Error(flags.INVALID_MESSAGE)
         # Return a message-type-based response.
@@ -121,21 +122,21 @@ class MessagesHandler:
         # Otherwise, send back an error regarding incorrect message type.
         self.logger.error(
             "TypeError: received a message of unexpected type '%s'",
-            type(message).__name__
+            type(message).__name__,
         )
         return Error(flags.INVALID_MESSAGE)
 
     async def _handle_join_request(
-            self,
-            message: JoinRequest,
-            context: Any,
-        ) -> JoinReply:
+        self,
+        message: JoinRequest,
+        context: Any,
+    ) -> JoinReply:
         """Handle a join request."""
         # Case when client is already registered: warn but send OK.
         if context in self.registered_clients:
             self.logger.info(
                 "Client %s is already registered.",
-                self.registered_clients[context]
+                self.registered_clients[context],
             )
             reply = JoinReply(accept=True, flag=flags.REGISTERED_ALREADY)
         # Case when registration is not opened: warn and reject.
@@ -150,16 +151,16 @@ class MessagesHandler:
         return reply
 
     def _register_client(
-            self,
-            message: JoinRequest,
-            context: Any,
-        ) -> None:
+        self,
+        message: JoinRequest,
+        context: Any,
+    ) -> None:
         """Register a user based on their JoinRequest and context object."""
         # Alias the user name if needed to avoid duplication issues.
         name = message.name
         used = self.client_names
         if name in used:
-            idx = sum(other.rsplit('.', 1)[0] == name for other in used)
+            idx = sum(other.rsplit(".", 1)[0] == name for other in used)
             name = f"{name}.{idx}"
         # Register the user, recording context and received data information.
         self.logger.info("Registering client '%s' for training.", name)
@@ -167,10 +168,10 @@ class MessagesHandler:
         self.data_info[name] = message.data_info
 
     async def _handle_send_request(
-            self,
-            message: Message,
-            context: Any,
-        ) -> Union[Empty, Error]:
+        self,
+        message: Message,
+        context: Any,
+    ) -> Union[Empty, Error]:
         """Handle a message-sending request (client-to-server)."""
         name = self.registered_clients[context]
         # Wait for any previous message from this client to be collected.
@@ -181,10 +182,10 @@ class MessagesHandler:
         return Empty()
 
     async def _handle_recv_request(
-            self,
-            message: GetMessageRequest,
-            context: Any,
-        ) -> Message:
+        self,
+        message: GetMessageRequest,
+        context: Any,
+    ) -> Message:
         """Handle a message-receiving request."""
         # Set up the optional timeout mechanism.
         countdown = -1 if (message.timeout is None) else message.timeout
@@ -200,11 +201,7 @@ class MessagesHandler:
             reply = Error(flags.CHECK_MESSAGE_TIMEOUT)
         return reply
 
-    def post_message(
-            self,
-            message: Message,
-            client: str
-        ) -> None:
+    def post_message(self, message: Message, client: str) -> None:
         """Post a message to be requested by a given client.
 
         Parameters
@@ -226,17 +223,17 @@ class MessagesHandler:
         if client in self.out_messages:
             self.logger.warning(
                 "Overwriting pending message uncollected by client '%s'.",
-                client
+                client,
             )
         self.out_messages[client] = message
 
     async def send_message(
-            self,
-            message: Message,
-            client: str,
-            heartbeat: int = 1,
-            timeout: Optional[int] = None,
-        ) -> None:
+        self,
+        message: Message,
+        client: str,
+        heartbeat: int = 1,
+        timeout: Optional[int] = None,
+    ) -> None:
         """Post a message for a client and wait for it to be collected.
 
         Parameters
@@ -278,9 +275,9 @@ class MessagesHandler:
             )
 
     def check_message(
-            self,
-            client: str,
-        ) -> Optional[Message]:
+        self,
+        client: str,
+    ) -> Optional[Message]:
         """Check whether a message was received from a given client.
 
         Parameters
@@ -304,11 +301,11 @@ class MessagesHandler:
         return self.inc_messages.pop(client, None)
 
     async def recv_message(
-            self,
-            client: str,
-            heartbeat: int = 1,
-            timeout: Optional[int] = None,
-        ) -> Message:
+        self,
+        client: str,
+        heartbeat: int = 1,
+        timeout: Optional[int] = None,
+    ) -> Message:
         """Wait for a message to be received from a given client.
 
         Parameters
@@ -351,11 +348,11 @@ class MessagesHandler:
         )
 
     async def wait_for_clients(
-            self,
-            min_clients: int = 1,
-            max_clients: Optional[int] = None,
-            timeout: Optional[int] = None,
-        ) -> Dict[str, Dict[str, Any]]:
+        self,
+        min_clients: int = 1,
+        max_clients: Optional[int] = None,
+        timeout: Optional[int] = None,
+    ) -> Dict[str, Dict[str, Any]]:
         """Wait for clients to register for training, with given criteria.
 
         Parameters
@@ -394,11 +391,11 @@ class MessagesHandler:
             return self.data_info.copy()
 
     async def _wait_for_clients(
-            self,
-            min_clients: int = 1,
-            max_clients: Optional[int] = None,
-            timeout: Optional[int] = None,
-        ) -> None:
+        self,
+        min_clients: int = 1,
+        max_clients: Optional[int] = None,
+        timeout: Optional[int] = None,
+    ) -> None:
         """Backend of `wait_for_clients` method, without safeguards."""
         # Parse information on the required number of clients.
         min_clients = max(min_clients, 1)
@@ -406,7 +403,7 @@ class MessagesHandler:
             if timeout is None:
                 max_clients = min_clients
             else:
-                max_clients = float('inf')  # type: ignore
+                max_clients = float("inf")  # type: ignore
         else:
             max_clients = max(min_clients, max_clients)
         # Wait for the required number of clients to have joined.

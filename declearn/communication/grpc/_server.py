@@ -15,15 +15,13 @@ from declearn.communication.api import Server
 from declearn.communication.api._service import MessagesHandler
 from declearn.communication.grpc.protobufs import message_pb2
 from declearn.communication.grpc.protobufs.message_pb2_grpc import (
-    MessageBoardServicer, add_MessageBoardServicer_to_server
+    MessageBoardServicer,
+    add_MessageBoardServicer_to_server,
 )
 from declearn.utils import register_type
 
 
-def load_pem_file(
-        path: str,
-        password: Optional[str] = None
-    ) -> bytes:
+def load_pem_file(path: str, password: Optional[str] = None) -> bytes:
     """Load the content of a PEM file."""
     # Load the raw bytes data from the PEM file.
     with open(path, mode="rb") as file:
@@ -52,14 +50,14 @@ class GrpcServer(Server):
     """Server-side communication endpoint using gRPC."""
 
     def __init__(
-            self,
-            host: str = 'localhost',
-            port: int = 8765,
-            certificate: Optional[str] = None,
-            private_key: Optional[str] = None,
-            password: Optional[str] = None,
-            logger: Union[logging.Logger, str, None] = None,
-        ) -> None:
+        self,
+        host: str = "localhost",
+        port: int = 8765,
+        certificate: Optional[str] = None,
+        private_key: Optional[str] = None,
+        password: Optional[str] = None,
+        logger: Union[logging.Logger, str, None] = None,
+    ) -> None:
         """Instantiate the server-side gRPC communications handler.
 
         Parameters
@@ -98,10 +96,10 @@ class GrpcServer(Server):
 
     @staticmethod
     def _setup_ssl_context(
-            certificate: Optional[str] = None,
-            private_key: Optional[str] = None,
-            password: Optional[str] = None,
-        ) -> Optional[grpc.ServerCredentials]:
+        certificate: Optional[str] = None,
+        private_key: Optional[str] = None,
+        password: Optional[str] = None,
+    ) -> Optional[grpc.ServerCredentials]:
         """Set up and return an (optional) grpc.ServerCredentials object."""
         if (certificate is None) and (private_key is None):
             return None
@@ -119,19 +117,19 @@ class GrpcServer(Server):
         )
 
     async def start(
-            self,
-        ) -> None:
+        self,
+    ) -> None:
         """Start the gRPC server."""
         self._server = self._setup_server()
         self.logger.info("Server is now starting...")
         await self._server.start()
 
     def _setup_server(
-            self,
-        ) -> grpc.Server:
+        self,
+    ) -> grpc.Server:
         """Set up and return a grpc Server to be used by this service."""
         server = grpc.aio.server(futures.ThreadPoolExecutor(max_workers=10))
-        address = f'{self.host}:{self.port}'
+        address = f"{self.host}:{self.port}"
         self.port = (
             server.add_secure_port(address, self._ssl)
             if (self._ssl is not None)
@@ -142,8 +140,8 @@ class GrpcServer(Server):
         return server
 
     async def stop(
-            self,
-        ) -> None:
+        self,
+    ) -> None:
         """Stop the gRPC server and purge information about clients."""
         if self._server is not None:
             await self._server.stop(grace=None)
@@ -155,25 +153,25 @@ class GrpcServicer(MessageBoardServicer):
     """A gRPC MessageBoard service to be used by a GrpcServer."""
 
     def __init__(
-            self,
-            handler: MessagesHandler,
-        ) -> None:
+        self,
+        handler: MessagesHandler,
+    ) -> None:
         self.handler = handler
 
     async def ping(
-            self,
-            request: message_pb2.Empty,
-            context: grpc.ServicerContext,
-        ) -> message_pb2.Empty:
+        self,
+        request: message_pb2.Empty,
+        context: grpc.ServicerContext,
+    ) -> message_pb2.Empty:
         """Handle a ping request from a client."""
         # async is needed; pylint: disable=invalid-overridden-method
         return message_pb2.Empty()
 
     async def send(
-            self,
-            request: message_pb2.Message,
-            context: grpc.ServicerContext,
-        ) -> message_pb2.Message:
+        self,
+        request: message_pb2.Message,
+        context: grpc.ServicerContext,
+    ) -> message_pb2.Message:
         """Handle a Message-sending request from a client."""
         # async is needed; pylint: disable=invalid-overridden-method
         reply = await self.handler.handle_message(

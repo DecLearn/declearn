@@ -11,8 +11,8 @@ from declearn.utils import create_types_registry, register_type
 
 
 __all__ = [
-    'Aggregator',
-    'AverageAggregator',
+    "Aggregator",
+    "AverageAggregator",
 ]
 
 
@@ -21,10 +21,10 @@ class Aggregator(metaclass=ABCMeta):
 
     @abstractmethod
     def aggregate(
-            self,
-            updates: Dict[str, Vector],
-            n_steps: Dict[str, int],  # revise: abstract~generalize kwargs use
-        ) -> Vector:
+        self,
+        updates: Dict[str, Vector],
+        n_steps: Dict[str, int],  # revise: abstract~generalize kwargs use
+    ) -> Vector:
         """Aggregate input vectors into a single one.
 
         Parameters
@@ -45,16 +45,16 @@ class Aggregator(metaclass=ABCMeta):
         return NotImplemented
 
     def get_config(
-            self,
-        ) -> Dict[str, Any]:
+        self,
+    ) -> Dict[str, Any]:
         """Return a JSON-serializable dict with this object's parameters."""
         return {}
 
     @classmethod
     def from_config(
-            cls,
-            config: Dict[str, Any],
-        ) -> 'Aggregator':
+        cls,
+        config: Dict[str, Any],
+    ) -> "Aggregator":
         """Instantiate an Aggregator from its configuration dict."""
         return cls(**config)
 
@@ -74,10 +74,10 @@ class AverageAggregator(Aggregator):
     """
 
     def __init__(
-            self,
-            steps_weighted: bool = True,
-            client_weights: Optional[Dict[str, float]] = None,
-        ) -> None:
+        self,
+        steps_weighted: bool = True,
+        client_weights: Optional[Dict[str, float]] = None,
+    ) -> None:
         """Instantiate an averaging aggregator.
 
         Parameters
@@ -101,8 +101,8 @@ class AverageAggregator(Aggregator):
         self.client_weights = client_weights or {}
 
     def get_config(
-            self,
-        ) -> Dict[str, Any]:
+        self,
+    ) -> Dict[str, Any]:
         return {
             "steps_weighted": self.steps_weighted,
             "client_weights": self.client_weights,
@@ -110,16 +110,16 @@ class AverageAggregator(Aggregator):
 
     @classmethod
     def from_config(
-            cls,
-            config: Dict[str, Any],
-        ) -> 'AverageAggregator':
+        cls,
+        config: Dict[str, Any],
+    ) -> "AverageAggregator":
         return cls(**config)
 
     def aggregate(
-            self,
-            updates: Dict[str, Vector],
-            n_steps: Dict[str, int],
-        ) -> Vector:
+        self,
+        updates: Dict[str, Vector],
+        n_steps: Dict[str, int],
+    ) -> Vector:
         if not updates:
             raise TypeError("Cannot aggregate an empty set of updates.")
         weights = self.compute_client_weights(updates, n_steps)
@@ -127,10 +127,10 @@ class AverageAggregator(Aggregator):
         return agg  # type: ignore
 
     def compute_client_weights(
-            self,
-            updates: Dict[str, Vector],
-            n_steps: Dict[str, int],
-        ) -> Dict[str, float]:
+        self,
+        updates: Dict[str, Vector],
+        n_steps: Dict[str, int],
+    ) -> Dict[str, float]:
         """Compute weights to use when averaging a given set of updates.
 
         Parameters
@@ -150,12 +150,12 @@ class AverageAggregator(Aggregator):
         """
         if self.steps_weighted:
             weights = {
-                client: steps * self.client_weights.get(client, 1.)
+                client: steps * self.client_weights.get(client, 1.0)
                 for client, steps in n_steps.items()
             }
         else:
             weights = {
-                client: self.client_weights.get(client, 1.)
+                client: self.client_weights.get(client, 1.0)
                 for client in updates
             }
         total = sum(weights.values())

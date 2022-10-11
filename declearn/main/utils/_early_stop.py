@@ -6,7 +6,7 @@ from typing import Optional
 
 
 __all__ = [
-    'EarlyStopping',
+    "EarlyStopping",
 ]
 
 
@@ -14,12 +14,12 @@ class EarlyStopping:
     """Class implementing a metric-based early-stopping decision rule."""
 
     def __init__(
-            self,
-            tolerance: float = 0.,
-            patience: int = 1,
-            decrease: bool = True,
-            relative: bool = False,
-        ) -> None:
+        self,
+        tolerance: float = 0.0,
+        patience: int = 1,
+        decrease: bool = True,
+        relative: bool = False,
+    ) -> None:
         """Instantiate the early stopping criterion.
 
         Parameters
@@ -49,8 +49,8 @@ class EarlyStopping:
         self._n_iter_stuck = 0
 
     def reset(
-            self,
-        ) -> None:
+        self,
+    ) -> None:
         """Reset the early-stopping criterion to its initial state."""
         self._best_metric = None
         self._n_iter_stuck = 0
@@ -61,9 +61,9 @@ class EarlyStopping:
         return self._n_iter_stuck < self.patience
 
     def update(
-            self,
-            metric: float,
-        ) -> bool:
+        self,
+        metric: float,
+    ) -> bool:
         """Update the early-stopping decision based on a new value.
 
         Parameters

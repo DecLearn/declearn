@@ -13,7 +13,7 @@ from declearn.utils import json_pack, serialize_object
 
 
 __all__ = [
-    'Checkpointer',
+    "Checkpointer",
 ]
 
 
@@ -21,10 +21,10 @@ class Checkpointer:
     """Model and metrics checkpointing class."""
 
     def __init__(
-            self,
-            model: Model,
-            folder: Optional[str] = None,
-        ) -> None:
+        self,
+        model: Model,
+        folder: Optional[str] = None,
+    ) -> None:
         """Instantiate the checkpointer.
 
         Parameters
@@ -42,20 +42,20 @@ class Checkpointer:
         if self.folder is not None:
             os.makedirs(self.folder, exist_ok=True)
         self._best = None  # type: Optional[NumpyVector]
-        self._loss = []    # type: List[float]
+        self._loss = []  # type: List[float]
 
     def save_model(
-            self,
-        ) -> None:
+        self,
+    ) -> None:
         """Save the wrapped model's configuration to a JSON file."""
         if self.folder is not None:
             path = os.path.join(self.folder, "model.json")
             serialize_object(self.model).to_json(path)
 
     def checkpoint(
-            self,
-            loss: float,
-        ) -> None:
+        self,
+        loss: float,
+    ) -> None:
         """Checkpoint the loss value and the model's weights.
 
         If `self.folder is not None`, append the loss value to
@@ -85,15 +85,15 @@ class Checkpointer:
                 file.write(f"{indx}: {loss}\n")
 
     def reset_best_weights(
-            self,
-        ) -> None:
+        self,
+    ) -> None:
         """Restore the model's weights associated with the lowest past loss."""
         if self._best is not None:
             self.model.set_weights(self._best)
 
     def get_loss(
-            self,
-            index: int,
-        ) -> float:
+        self,
+        index: int,
+    ) -> float:
         """Return the loss value recorded at a given index."""
         return self._loss[index]

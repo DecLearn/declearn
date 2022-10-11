@@ -10,9 +10,9 @@ from typing_extensions import TypedDict  # future: import from typing (Py>=3.8)
 
 
 __all__ = [
-    'add_json_support',
-    'json_pack',
-    'json_unpack',
+    "add_json_support",
+    "json_pack",
+    "json_unpack",
 ]
 
 
@@ -59,12 +59,12 @@ class SerializeSpec:
 
 
 def add_json_support(
-        cls: Type[Any],
-        pack: Callable[[Any], Any],
-        unpack: Callable[[Any], Any],
-        name: Optional[str] = None,
-        repl: bool = False,
-    ) -> None:
+    cls: Type[Any],
+    pack: Callable[[Any], Any],
+    unpack: Callable[[Any], Any],
+    name: Optional[str] = None,
+    repl: bool = False,
+) -> None:
     """Add or modify JSON (de)serialization support for a custom type.
 
     Parameters
