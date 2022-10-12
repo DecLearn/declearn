@@ -79,7 +79,6 @@ class Dataset(metaclass=ABCMeta):
         self,
         batch_size: int,
         shuffle: bool = False,
-        seed: Optional[int] = None,
         drop_remainder: bool = True,
     ) -> Iterator[Batch]:
         """Yield batches of data samples.
@@ -90,9 +89,8 @@ class Dataset(metaclass=ABCMeta):
             Number of samples per batch.
         shuffle: bool, default=False
             Whether to shuffle data samples prior to batching.
-        seed: int or None, default=None
-            Optional seed to the random-numbers generator
-            used to generate batches (e.g. for shuffling).
+            Note that the shuffling will differ on each call
+            to this method.
         drop_remainder: bool, default=True
             Whether to drop the last batch if it contains less
             samples than `batch_size`, or yield it anyway.

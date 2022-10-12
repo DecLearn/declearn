@@ -66,6 +66,7 @@ class InMemoryDataset(Dataset):
         s_wght: Optional[Union[DataArray, str]] = None,
         f_cols: Optional[Union[List[int], List[str]]] = None,
         expose_classes: bool = False,
+        seed: Optional[int] = None,
     ) -> None:
         """Instantiate the dataset interface.
 
@@ -101,6 +102,9 @@ class InMemoryDataset(Dataset):
             Whether the dataset should be used for classification, in
             which case the unique values of `target` are exposed under
             `self.classes` and exported by `self.get_data_specs()`).
+        seed: int or None, default=None
+            Optional seed for the random number generator based on which
+            the dataset is (optionally) shuffled when generating batches.
         """
         # arguments serve modularity; pylint: disable=too-many-arguments
         self._data_path = None  # type: Optional[str]
@@ -140,6 +144,9 @@ class InMemoryDataset(Dataset):
         self.weights = s_wght
         # Assign the 'expose_classes' attribute.
         self.expose_classes = expose_classes
+        # Assign a random number generator.
+        self.seed = seed
+        self._rng = np.random.default_rng(seed)
 
     @property
     def feats(
@@ -351,6 +358,8 @@ class InMemoryDataset(Dataset):
         )
         # fmt: on
         info["f_cols"] = self.f_cols
+        info["expose_classes"] = self.expose_classes
+        info["seed"] = self.seed
         # Write the information to the JSON file.
         dump = {"name": self.__class__.__name__, "config": info}
         with open(path, "w", encoding="utf-8") as file:
@@ -402,7 +411,6 @@ class InMemoryDataset(Dataset):
         self,
         batch_size: int,
         shuffle: bool = False,
-        seed: Optional[int] = None,
         drop_remainder: bool = True,
     ) -> Iterator[Batch]:
         """Yield batches of data samples.
@@ -412,13 +420,9 @@ class InMemoryDataset(Dataset):
         batch_size: int
             Number of samples per batch.
         shuffle: bool, default=False
-            Whether to shuffle data samples prior to batching it.
-            If True, use `rng` to generate samples' permutation,
-            or call `numpy.random.default_rng()` if not set.
-        seed: int or None, default=None
-            Optional seed to the random-numbers generator
-            used to shuffle samples prior to batching.
-            Only used when `shuffle=True`.
+            Whether to shuffle data samples prior to batching.
+            Note that the shuffling will differ on each call
+            to this method.
         drop_remainder: bool, default=True
             Whether to drop the last batch if it contains less
             samples than `batch_size`, or yield it anyway.
@@ -438,8 +442,7 @@ class InMemoryDataset(Dataset):
         """
         # Optionally set up samples' shuffling.
         if shuffle:
-            rng = np.random.default_rng(seed)
-            order = rng.permutation(self.feats.shape[0])
+            order = self._rng.permutation(self.feats.shape[0])
         else:
             order = np.arange(self.feats.shape[0])
         # Optionally drop last batch if its size is too small.
