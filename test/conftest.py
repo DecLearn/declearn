@@ -8,8 +8,10 @@ import pytest
 def pytest_addoption(parser) -> None:  # type: ignore
     """Add a '--fulltest' option to the pytest commandline."""
     parser.addoption(
-        "--fulltest", action="store_true", default=False,
-        help="--fulltest: run all test scenarios in 'test_main.py'"
+        "--fulltest",
+        action="store_true",
+        default=False,
+        help="--fulltest: run all test scenarios in 'test_main.py'",
     )
 
 

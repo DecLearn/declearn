@@ -8,13 +8,13 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 from numpy.typing import ArrayLike
 from typing_extensions import (
     Protocol,  # future: import from typing (Py>=3.8)
-    Self,      # future: import from typing (Py>=3.11)
+    Self,  # future: import from typing (Py>=3.11)
 )
 
 
 __all__ = [
-    'Batch',
-    'SupportsConfig',
+    "Batch",
+    "SupportsConfig",
 ]
 
 # Data batches specification: (inputs, labels, weights), where:
@@ -23,7 +23,7 @@ __all__ = [
 Batch = Tuple[
     Union[ArrayLike, List[ArrayLike]],
     Optional[Union[ArrayLike, List[ArrayLike]]],
-    Optional[ArrayLike]
+    Optional[ArrayLike],
 ]
 
 
@@ -36,16 +36,14 @@ class SupportsConfig(Protocol, metaclass=ABCMeta):
     """
 
     @abstractmethod
-    def get_config(
-            self
-        ) -> Dict[str, Any]:
+    def get_config(self) -> Dict[str, Any]:
         """Return a JSON-serializable config dict representing this object."""
         return {}
 
     @classmethod
     def from_config(
-            cls,
-            config: Dict[str, Any],
-        ) -> Self:  # type: ignore  # will be supported once Py 3.11 is out
+        cls,
+        config: Dict[str, Any],
+    ) -> Self:  # type: ignore  # will be supported once Py 3.11 is out
         """Instantiate an object from its JSON-serializable config dict."""
         return cls(**config)

@@ -10,7 +10,7 @@ from declearn.utils import (
     access_registered,
     access_registration_info,
     create_types_registry,
-    register_type
+    register_type,
 )
 
 
@@ -30,6 +30,7 @@ def test_register_type() -> None:
 
     class ChildClass(BaseClass):  # pylint: disable=all
         pass
+
     # Create a registry and register BaseClass.
     group = f"test_{time.time_ns()}"
     create_types_registry(group, base=BaseClass)
@@ -50,6 +51,7 @@ def test_register_type_fails() -> None:
 
     class OtherClass:  # pylint: disable=all
         pass
+
     # Try registering in a group that does not exist.
     group = f"test_{time.time_ns()}"
     with pytest.raises(KeyError):
@@ -69,6 +71,7 @@ def test_access_registered() -> None:
     # Define a mock custom class.
     class Class:  # pylint: disable=all
         pass
+
     # Register the class.
     name = f"test_{time.time_ns()}"
     create_types_registry(name, base=Class)
@@ -89,8 +92,10 @@ def test_access_registeration_info() -> None:
     # Define a pair of mock custom class.
     class Class_1:  # pylint: disable=all
         pass
+
     class Class_2:  # pylint: disable=all
         pass
+
     # Register the first class but not the second.
     name = f"test_{time.time_ns()}"
     create_types_registry(name, base=Class_1)

@@ -15,7 +15,7 @@ from declearn.typing import Batch
 
 # dirty trick to import from `model_testing.py`;
 # pylint: disable=wrong-import-order, wrong-import-position
-sys.path.append('.')
+sys.path.append(".")
 from model_testing import ModelTestSuite, ModelTestCase
 
 
@@ -23,9 +23,9 @@ class ExtractLSTMFinalOutput(torch.nn.Module):
     """Custom torch Module to gather only the desired output from a LSTM."""
 
     def forward(
-            self,
-            inputs: Tuple[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]],
-        ) -> torch.Tensor:
+        self,
+        inputs: Tuple[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]],
+    ) -> torch.Tensor:
         """Extract the desired Tensor from a LSTM's outputs."""
         return inputs[1][0][0]
 
@@ -55,9 +55,9 @@ class TorchTestCase(ModelTestCase):
     tensor_cls = torch.Tensor
 
     def __init__(
-            self,
-            kind: Literal["MLP", "RNN", "CNN"],
-        ) -> None:
+        self,
+        kind: Literal["MLP", "RNN", "CNN"],
+    ) -> None:
         """Specify the desired model architecture."""
         if kind not in ("MLP", "RNN", "CNN"):
             raise ValueError(f"Invalid torch test architecture: '{kind}'.")
@@ -65,16 +65,16 @@ class TorchTestCase(ModelTestCase):
 
     @staticmethod
     def to_numpy(
-            tensor: Any,
-        ) -> np.ndarray:
+        tensor: Any,
+    ) -> np.ndarray:
         """Convert an input tensor to a numpy array."""
         assert isinstance(tensor, torch.Tensor)
         return tensor.numpy()  # type: ignore
 
     @property
     def dataset(
-            self,
-        ) -> List[Batch]:
+        self,
+    ) -> List[Batch]:
         """Suited toy binary-classification dataset."""
         # false-positives; pylint: disable=no-member
         rng = torch.random.default_generator.manual_seed(0)
@@ -91,8 +91,8 @@ class TorchTestCase(ModelTestCase):
 
     @property
     def model(
-            self,
-        ) -> TorchModel:
+        self,
+    ) -> TorchModel:
         """Suited toy binary-classification torch model."""
         if self.kind == "MLP":
             stack = [
@@ -129,9 +129,7 @@ class TorchTestCase(ModelTestCase):
 
 
 @pytest.fixture(name="test_case")
-def fixture_test_case(
-        kind: Literal["MLP", "RNN", "CNN"]
-    ) -> TorchTestCase:
+def fixture_test_case(kind: Literal["MLP", "RNN", "CNN"]) -> TorchTestCase:
     """Fixture to access a TorchTestCase."""
     return TorchTestCase(kind)
 
@@ -142,9 +140,9 @@ class TestTorchModel(ModelTestSuite):
 
     @pytest.mark.filterwarnings("ignore: PyTorch JSON serialization")
     def test_serialization(
-            self,
-            test_case: ModelTestCase,
-        ) -> None:
+        self,
+        test_case: ModelTestCase,
+    ) -> None:
         if getattr(test_case, "kind", "") == "RNN":
             # NOTE: this test fails on python 3.8 but succeeds in 3.10
             #       due to the (de)serialization of a custom nn.Module

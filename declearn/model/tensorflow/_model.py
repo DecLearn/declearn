@@ -25,12 +25,12 @@ class TensorflowModel(Model):
     """
 
     def __init__(
-            self,
-            model: tf.keras.layers.Layer,
-            loss: Optional[Union[str, tf.keras.losses.Loss]],
-            metrics: Optional[List[Union[str, tf.keras.metrics.Metric]]],
-            **kwargs: Any
-        ) -> None:
+        self,
+        model: tf.keras.layers.Layer,
+        loss: Optional[Union[str, tf.keras.losses.Loss]],
+        metrics: Optional[List[Union[str, tf.keras.metrics.Metric]]],
+        **kwargs: Any,
+    ) -> None:
         """Instantiate a Model interface wrapping a tensorflow.keras model.
 
         Parameters
@@ -66,25 +66,25 @@ class TensorflowModel(Model):
         model.compile(**kwargs)
         self._kwargs = kwargs
         # Instantiate a SGD optimizer to apply updates as-provided.
-        self._sgd = tf.keras.optimizers.SGD(learning_rate=1.)
+        self._sgd = tf.keras.optimizers.SGD(learning_rate=1.0)
 
     @property
     def required_data_info(
-            self,
-        ) -> Set[str]:
+        self,
+    ) -> Set[str]:
         return set() if self._model.built else {"input_shape"}
 
     def initialize(
-            self,
-            data_info: Dict[str, Any],
-        ) -> None:
+        self,
+        data_info: Dict[str, Any],
+    ) -> None:
         if not self._model.built:
             data_info = aggregate_data_info([data_info], {"input_shape"})
             self._model.build(data_info["input_shape"])
 
     def get_config(
-            self,
-        ) -> Dict[str, Any]:
+        self,
+    ) -> Dict[str, Any]:
         config = tf.keras.layers.serialize(self._model)  # type: Dict[str, Any]
         kwargs = deepcopy(self._kwargs)
         loss = tf.keras.losses.serialize(kwargs.pop("loss"))
@@ -92,9 +92,9 @@ class TensorflowModel(Model):
 
     @classmethod
     def from_config(
-            cls,
-            config: Dict[str, Any],
-        ) -> 'TensorflowModel':
+        cls,
+        config: Dict[str, Any],
+    ) -> "TensorflowModel":
         """Instantiate a TensorflowModel from a configuration dict."""
         for key in ("model", "loss", "kwargs"):
             if key not in config.keys():
@@ -104,31 +104,32 @@ class TensorflowModel(Model):
         return cls(model, loss, **config["kwargs"])
 
     def get_weights(
-            self,
-        ) -> NumpyVector:
-        return NumpyVector({
-            str(i): arr for i, arr in enumerate(self._model.get_weights())
-        })
+        self,
+    ) -> NumpyVector:
+        return NumpyVector(
+            {str(i): arr for i, arr in enumerate(self._model.get_weights())}
+        )
 
     def set_weights(
-            self,
-            weights: NumpyVector,
-        ) -> None:
+        self,
+        weights: NumpyVector,
+    ) -> None:
         self._model.set_weights(list(weights.coefs.values()))
 
     def compute_batch_gradients(
-            self,
-            batch: Batch,
-        ) -> TensorflowVector:
+        self,
+        batch: Batch,
+    ) -> TensorflowVector:
         data = self._unpack_batch(batch)
         grad = self._compute_batch_gradients(*data)
         return TensorflowVector({str(i): tns for i, tns in enumerate(grad)})
 
     def _unpack_batch(
-            self,
-            batch: Batch,
-        ) -> Tuple[tf.Tensor, Optional[tf.Tensor], Optional[tf.Tensor]]:
+        self,
+        batch: Batch,
+    ) -> Tuple[tf.Tensor, Optional[tf.Tensor], Optional[tf.Tensor]]:
         """Unpack and enforce Tensor conversion to an input data batch."""
+        # fmt: off
         # Define an array-to-tensor conversion routine.
         def convert(data: Optional[ArrayLike]) -> Optional[tf.Tensor]:
             if (data is None) or tf.is_tensor(data):
@@ -139,11 +140,11 @@ class TensorflowModel(Model):
 
     @tf.function  # optimize tensorflow runtime
     def _compute_batch_gradients(
-            self,
-            inputs: tf.Tensor,
-            y_true: Optional[tf.Tensor],
-            s_wght: Optional[tf.Tensor],
-        ) -> List[tf.Tensor]:
+        self,
+        inputs: tf.Tensor,
+        y_true: Optional[tf.Tensor],
+        s_wght: Optional[tf.Tensor],
+    ) -> List[tf.Tensor]:
         """Compute and return batch-averaged gradients of trainable weights."""
         with tf.GradientTape() as tape:
             y_pred = self._model(inputs, training=True)
@@ -153,9 +154,9 @@ class TensorflowModel(Model):
         return grad  # type: ignore
 
     def apply_updates(  # type: ignore  # future: revise
-            self,
-            updates: TensorflowVector,
-        ) -> None:
+        self,
+        updates: TensorflowVector,
+    ) -> None:
         # Delegate updates' application to a tensorflow Optimizer.
         values = (-1 * updates).coefs.values()
         zipped = zip(values, self._model.trainable_weights)
@@ -165,23 +166,23 @@ class TensorflowModel(Model):
             return None
 
     def compute_loss(
-            self,
-            dataset: Iterable[Batch],
-        ) -> float:
-        total = 0.
-        n_btc = 0.
+        self,
+        dataset: Iterable[Batch],
+    ) -> float:
+        total = 0.0
+        n_btc = 0.0
         for batch in dataset:
             inputs, y_true, s_wght = self._unpack_batch(batch)
             y_pred = self._model(inputs, training=False)
             loss = self._model.compute_loss(inputs, y_true, y_pred, s_wght)
             total += loss.numpy().mean()
-            n_btc += (1 if s_wght is None else s_wght.numpy().mean())
+            n_btc += 1 if s_wght is None else s_wght.numpy().mean()
         return total / n_btc
 
     def evaluate(
-            self,
-            dataset: Iterable[Batch],
-        ) -> Dict[str, float]:
+        self,
+        dataset: Iterable[Batch],
+    ) -> Dict[str, float]:
         """Compute the model's built-in evaluation metrics on a given dataset.
 
         Parameters

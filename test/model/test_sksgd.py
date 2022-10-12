@@ -16,7 +16,7 @@ from declearn.typing import Batch
 
 # dirty trick to import from `model_testing.py`;
 # pylint: disable=wrong-import-order, wrong-import-position
-sys.path.append('.')
+sys.path.append(".")
 from model_testing import ModelTestSuite, ModelTestCase
 
 
@@ -38,11 +38,11 @@ class SklearnSGDTestCase(ModelTestCase):
     tensor_cls = (np.ndarray, csr_matrix)
 
     def __init__(
-            self,
-            n_classes: Optional[int],
-            s_weights: bool,
-            as_sparse: bool,
-        ) -> None:
+        self,
+        n_classes: Optional[int],
+        s_weights: bool,
+        as_sparse: bool,
+    ) -> None:
         """Specify the desired model and type of input data."""
         self.n_classes = n_classes
         self.s_weights = s_weights
@@ -50,8 +50,8 @@ class SklearnSGDTestCase(ModelTestCase):
 
     @staticmethod
     def to_numpy(
-            tensor: Any,
-        ) -> np.ndarray:
+        tensor: Any,
+    ) -> np.ndarray:
         """Convert an input tensor to a numpy array."""
         assert isinstance(tensor, (np.ndarray, csr_matrix))
         if isinstance(tensor, csr_matrix):
@@ -60,8 +60,8 @@ class SklearnSGDTestCase(ModelTestCase):
 
     @property
     def dataset(
-            self,
-        ) -> List[Batch]:
+        self,
+    ) -> List[Batch]:
         """Suited toy binary-classification dataset."""
         rng = np.random.default_rng(seed=0)
         inputs = rng.normal(size=(2, 32, 8))
@@ -81,8 +81,8 @@ class SklearnSGDTestCase(ModelTestCase):
 
     @property
     def model(
-            self,
-        ) -> SklearnSGDModel:
+        self,
+    ) -> SklearnSGDModel:
         """Suited toy binary-classification model."""
         skmod = (SGDClassifier if self.n_classes else SGDRegressor)()
         model = SklearnSGDModel(skmod)
@@ -92,12 +92,13 @@ class SklearnSGDTestCase(ModelTestCase):
         model.initialize(data_info)
         return model
 
+
 @pytest.fixture(name="test_case")
 def fixture_test_case(
-        n_classes: Optional[int],
-        s_weights: bool,
-        as_sparse: bool,
-    ) -> SklearnSGDTestCase:
+    n_classes: Optional[int],
+    s_weights: bool,
+    as_sparse: bool,
+) -> SklearnSGDTestCase:
     """Fixture to access a SklearnSGDTestCase."""
     return SklearnSGDTestCase(n_classes, s_weights, as_sparse)
 
@@ -109,18 +110,18 @@ class TestSklearnSGDModel(ModelTestSuite):
     """Unit tests for declearn.model.sklearn.SklearnSGDModel."""
 
     def test_serialization(  # type: ignore  # Liskov does not matter here
-            self,
-            test_case: SklearnSGDTestCase,
-        ) -> None:
+        self,
+        test_case: SklearnSGDTestCase,
+    ) -> None:
         # Avoid re-running tests that are unaltered by data parameters.
         if test_case.s_weights or test_case.as_sparse:
             return None
         return super().test_serialization(test_case)
 
     def test_initialization(
-            self,
-            test_case: SklearnSGDTestCase,
-        ) -> None:
+        self,
+        test_case: SklearnSGDTestCase,
+    ) -> None:
         """Check that weights are properly initialized to zero."""
         # Avoid re-running tests that are unaltered by data parameters.
         if test_case.s_weights or test_case.as_sparse:
@@ -129,14 +130,14 @@ class TestSklearnSGDModel(ModelTestSuite):
         model = test_case.model
         w_srt = model.get_weights()
         assert isinstance(w_srt, NumpyVector)
-        assert set(w_srt.coefs.keys()) == {'intercept', 'coef'}
-        assert all(np.all(arr == 0.) for arr in w_srt.coefs.values())
+        assert set(w_srt.coefs.keys()) == {"intercept", "coef"}
+        assert all(np.all(arr == 0.0) for arr in w_srt.coefs.values())
         return None
 
     def test_get_set_weights(  # type: ignore  # Liskov does not matter here
-            self,
-            test_case: SklearnSGDTestCase,
-        ) -> None:
+        self,
+        test_case: SklearnSGDTestCase,
+    ) -> None:
         # Avoid re-running tests that are unaltered by data parameters.
         if test_case.s_weights or test_case.as_sparse:
             return None
@@ -144,9 +145,9 @@ class TestSklearnSGDModel(ModelTestSuite):
         return super().test_get_set_weights(test_case)
 
     def test_compute_batch_gradients_np(
-            self,
-            test_case: ModelTestCase,
-        ) -> None:
+        self,
+        test_case: ModelTestCase,
+    ) -> None:
         # The model already uses numpy inputs, this test is unrequired here.
         # NOTE: in fact, it fails with sparse inputs as intercept is *not*
         #       fitted equally (while coefficients are) -> investigate this.

@@ -2,7 +2,7 @@
 
 """TorchVector gradients container."""
 
-from typing import Any, Callable, Dict
+from typing import Any, Dict, Set, Tuple, Type
 
 import numpy as np
 import torch
@@ -20,6 +20,8 @@ class TorchVector(Vector):
     applied to each and every coefficient, or imply two sets
     of aligned coefficients (i.e. two TorchVector with
     similar specifications).
+
+    Use `vector.coefs` to access the stored coefficients.
     """
 
     _op_add = torch.add  # pylint: disable=no-member
@@ -28,59 +30,37 @@ class TorchVector(Vector):
     _op_div = torch.div  # pylint: disable=no-member
     _op_pow = torch.pow  # pylint: disable=no-member
 
-    def __init__(
-            self,
-            coefs: Dict[str, torch.Tensor]
-        ) -> None:
+    @property
+    def compatible_vector_types(self) -> Set[Type[Vector]]:
+        types = super().compatible_vector_types
+        return types.union({NumpyVector, TorchVector})
+
+    def __init__(self, coefs: Dict[str, torch.Tensor]) -> None:
         super().__init__(coefs)
 
-    def __repr__(
-            self,
-        ) -> str:
-        string = f"{type(self).__name__} with {len(self.coefs)} coefs:"
-        string += "".join(
-            f"\n    {key}: {val.dtype} tensor with shape {val.shape}"
-            for key, val in self.coefs.items()
-        )
-        return string
+    def shapes(
+        self,
+    ) -> Dict[str, Tuple[int, ...]]:
+        return {key: tuple(coef.shape) for key, coef in self.coefs.items()}
 
     def pack(
-            self,
-        ) -> Dict[str, Any]:
+        self,
+    ) -> Dict[str, Any]:
         return {key: tns.numpy() for key, tns in self.coefs.items()}
 
     @classmethod
     def unpack(
-            cls,
-            data: Dict[str, Any],
-        ) -> 'TorchVector':
+        cls,
+        data: Dict[str, Any],
+    ) -> "TorchVector":
         # false-positive; pylint: disable=no-member
-        coef = {key: torch.from_numpy(dat) for key, dat in data.items()}
-        return cls(coef)
-
-    def _apply_operation(
-            self,
-            other: Any,
-            func: Callable[[Any, Any], Any],
-        ) -> Self:  # type: ignore
-        # Extend support to (TensorflowVector, NumpyVector) combinations.
-        if isinstance(other, NumpyVector):
-            if self.coefs.keys() != other.coefs.keys():
-                raise KeyError(
-                    f"Cannot {func.__name__} Vectors "\
-                    "with distinct coefficient names."
-                )
-            return type(self)({
-                key: func(self.coefs[key], other.coefs[key])
-                for key in self.coefs
-            })
-        # Delegate other cases to parent class.
-        return super()._apply_operation(other, func)
+        coefs = {key: torch.from_numpy(dat) for key, dat in data.items()}
+        return cls(coefs)
 
     def __eq__(
-            self,
-            other: Any,
-        ) -> bool:
+        self,
+        other: Any,
+    ) -> bool:
         valid = isinstance(other, TorchVector)
         valid = valid and (self.coefs.keys() == other.coefs.keys())
         return valid and all(
@@ -88,25 +68,23 @@ class TorchVector(Vector):
             for k in self.coefs
         )
 
-    def sign(
-            self
-        ) -> Self:  # type: ignore
+    def sign(self) -> Self:  # type: ignore
         # false-positive; pylint: disable=no-member
         return self.apply_func(torch.sign)
 
     def minimum(
-            self,
-            other: Any,
-        ) -> Self:  # type: ignore
+        self,
+        other: Any,
+    ) -> Self:  # type: ignore
         # false-positive; pylint: disable=no-member
         if isinstance(other, Vector):
             return self._apply_operation(other, torch.minimum)
         return self.apply_func(torch.minimum, other)
 
     def maximum(
-            self,
-            other: Any,
-        ) -> Self:  # type: ignore
+        self,
+        other: Any,
+    ) -> Self:  # type: ignore
         # false-positive; pylint: disable=no-member
         if isinstance(other, Vector):
             return self._apply_operation(other, torch.minimum)

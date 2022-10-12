@@ -3,6 +3,7 @@
 """Server-side main Federated Learning orchestrating class."""
 
 import asyncio
+import logging
 from typing import Any, Dict, Optional, Set, Tuple, Type, Union
 
 
@@ -23,22 +24,21 @@ from declearn.utils import deserialize_object, get_logger
 
 
 __all__ = [
-    'FederatedServer',
+    "FederatedServer",
 ]
 
 
 class FederatedServer:
     """Server-side Federated Learning orchestrating class."""
 
-    logger = get_logger("federated-server")
-
     def __init__(
-            self,
-            model: Union[Model, str, Dict[str, Any]],
-            netwk: Union[Server, NetworkServerConfig, Dict[str, Any]],
-            strategy: Strategy,  # future: revise Strategy, add config
-            folder: Optional[str] = None,
-        ) -> None:
+        self,
+        model: Union[Model, str, Dict[str, Any]],
+        netwk: Union[Server, NetworkServerConfig, Dict[str, Any]],
+        strategy: Strategy,  # future: revise Strategy, add config
+        folder: Optional[str] = None,
+        logger: Union[logging.Logger, str, None] = None,
+    ) -> None:
         """Instantiate the orchestrating server for a federated learning task.
 
         Parameters
@@ -49,6 +49,8 @@ class FederatedServer:
         netwk: Server or NetworkServerConfig or dict
             Server communication endpoint instance, or configuration
             dict or dataclass enabling its instantiation.
+            In the latter two cases, the object's default logger will
+            be set to that of this `FederatedClient`.
         strategy: Strategy
             Strategy instance providing with instantiation methods for
             the server's updates-aggregator, the server-side optimizer
@@ -58,7 +60,15 @@ class FederatedServer:
             wise weights checkpoints and global validation losses.
             If None, only record the loss metric and lowest-loss-
             yielding weights in memory (under `self.checkpoint`).
+        logger: logging.Logger or str or None, default=None,
+            Logger to use, or name of a logger to set up with
+            `declearn.utils.get_logger`. If None, use `type(self)`.
         """
+        # arguments serve modularity; pylint: disable=too-many-arguments
+        # Assign the logger.
+        if not isinstance(logger, logging.Logger):
+            logger = get_logger(logger or type(self).__name__)
+        self.logger = logger
         # Assign the wrapped Model.
         if not isinstance(model, Model):
             model = deserialize_object(model)  # type: ignore
@@ -69,8 +79,11 @@ class FederatedServer:
         self.model = model
         # Assign the wrapped communication Server.
         if isinstance(netwk, dict):
+            netwk.setdefault("logger", self.logger)
             netwk = NetworkServerConfig(**netwk).build_server()
         elif isinstance(netwk, NetworkServerConfig):
+            if netwk.logger is None:
+                netwk.logger = self.logger
             netwk = netwk.build_server()
         elif not isinstance(netwk, Server):
             raise TypeError(
@@ -86,11 +99,11 @@ class FederatedServer:
         self.checkpointer = Checkpointer(self.model, folder)
 
     def _parse_config_dicts(
-            self,
-            regst_cfg: Union[RegisterConfig, Dict[str, Any], int],
-            train_cfg: Union[TrainingConfig, Dict[str, Any]],
-            valid_cfg: Union[EvaluateConfig, Dict[str, Any], None] = None,
-        ) -> Tuple[RegisterConfig, TrainingConfig, EvaluateConfig]:
+        self,
+        regst_cfg: Union[RegisterConfig, Dict[str, Any], int],
+        train_cfg: Union[TrainingConfig, Dict[str, Any]],
+        valid_cfg: Union[EvaluateConfig, Dict[str, Any], None] = None,
+    ) -> Tuple[RegisterConfig, TrainingConfig, EvaluateConfig]:
         """Parse input keyword arguments config dicts or dataclasses."""
         if isinstance(regst_cfg, int):
             regst_cfg = RegisterConfig(min_clients=regst_cfg)
@@ -117,13 +130,13 @@ class FederatedServer:
         return regst_cfg, train_cfg, valid_cfg
 
     def run(
-            self,
-            rounds: int,
-            regst_cfg: Union[RegisterConfig, Dict[str, Any], int],
-            train_cfg: Union[TrainingConfig, Dict[str, Any]],
-            valid_cfg: Union[EvaluateConfig, Dict[str, Any], None] = None,
-            early_stop: Optional[Union[EarlyStopping, Dict[str, Any]]] = None,
-        ) -> None:
+        self,
+        rounds: int,
+        regst_cfg: Union[RegisterConfig, Dict[str, Any], int],
+        train_cfg: Union[TrainingConfig, Dict[str, Any]],
+        valid_cfg: Union[EvaluateConfig, Dict[str, Any], None] = None,
+        early_stop: Optional[Union[EarlyStopping, Dict[str, Any]]] = None,
+    ) -> None:
         """Orchestrate the federated learning routine.
 
         Parameters
@@ -154,17 +167,15 @@ class FederatedServer:
         if isinstance(early_stop, dict):
             early_stop = EarlyStopping(**early_stop)
         if not (isinstance(early_stop, EarlyStopping) or early_stop is None):
-            raise TypeError(
-                "'early_stop' must be None, int or EarlyStopping."
-            )
+            raise TypeError("'early_stop' must be None, int or EarlyStopping.")
         asyncio.run(self.async_run(rounds, configs, early_stop))
 
     async def async_run(
-            self,
-            rounds: int,
-            configs: Tuple[RegisterConfig, TrainingConfig, EvaluateConfig],
-            early_stop: Optional[EarlyStopping],
-        ) -> None:
+        self,
+        rounds: int,
+        configs: Tuple[RegisterConfig, TrainingConfig, EvaluateConfig],
+        early_stop: Optional[EarlyStopping],
+    ) -> None:
         """Orchestrate the federated learning routine.
 
         Note: this method is the async backend of `self.run`.
@@ -196,9 +207,9 @@ class FederatedServer:
             await self.stop_training(round_i)
 
     async def initialization(
-            self,
-            regst_cfg: RegisterConfig,
-        ) -> None:
+        self,
+        regst_cfg: RegisterConfig,
+    ) -> None:
         """Orchestrate the initialization steps to set up training.
 
         Wait for clients to register and process their data information.
@@ -239,10 +250,11 @@ class FederatedServer:
         # If any client has failed to initialize, raise.
         if errors:
             err_msg = "Initialization failed for another client."
-            await self.netwk.send_messages({
+            messages = {
                 client: messaging.CancelTraining(errors.get(client, err_msg))
                 for client in self.netwk.client_names
-            })
+            }  # type: Dict[str, messaging.Message]
+            await self.netwk.send_messages(messages)
             err_msg = f"Initialization failed for {len(errors)} clients:"
             err_msg += "".join(
                 f"\n    {client}: {error}" for client, error in errors.items()
@@ -251,10 +263,10 @@ class FederatedServer:
             raise RuntimeError(err_msg)
         self.logger.info("Initialization was successful.")
 
-    async def _process_data_info(  # revise: drop async
-            self,
-            clients_data_info: Dict[str, Dict[str, Any]],
-        ) -> None:
+    async def _process_data_info(
+        self,
+        clients_data_info: Dict[str, Dict[str, Any]],
+    ) -> None:
         """Validate, aggregate and make use of clients' data-info.
 
         Parameters
@@ -276,20 +288,21 @@ class FederatedServer:
             info = aggregate_clients_data_info(clients_data_info, fields)
         # In case of failure, cancel training, notify clients, log and raise.
         except AggregationError as exc:
-            await self.netwk.send_messages({
+            messages = {
                 client: messaging.CancelTraining(reason)
                 for client, reason in exc.messages.items()
-            })
+            }  # type: Dict[str, messaging.Message]
+            await self.netwk.send_messages(messages)
             self.logger.error(exc.error)
             raise exc
         # Otherwise, initialize the model based on the aggregated information.
         self.model.initialize(info)
 
     async def training_round(
-            self,
-            round_i: int,
-            train_cfg: TrainingConfig,
-        ) -> None:
+        self,
+        round_i: int,
+        train_cfg: TrainingConfig,
+    ) -> None:
         """Orchestrate a training round.
 
         Parameters
@@ -309,17 +322,17 @@ class FederatedServer:
         self._conduct_global_update(results)
 
     def _select_training_round_participants(
-            self,
-        ) -> Set[str]:
+        self,
+    ) -> Set[str]:
         """Return the names of clients that should participate in the round."""
         return self.netwk.client_names
 
     async def _send_training_instructions(
-            self,
-            clients: Set[str],
-            round_i: int,
-            train_cfg: TrainingConfig,
-        ) -> None:
+        self,
+        clients: Set[str],
+        round_i: int,
+        train_cfg: TrainingConfig,
+    ) -> None:
         """Send training instructions to selected clients.
 
         Parameters
@@ -346,17 +359,16 @@ class FederatedServer:
         aux_var = self.optim.collect_aux_var()
         for client in clients:
             params["aux_var"] = {
-                key: val.get(client, val)
-                for key, val in aux_var.items()
+                key: val.get(client, val) for key, val in aux_var.items()
             }
             messages[client] = messaging.TrainRequest(**params)
         # Send client-wise messages.
         await self.netwk.send_messages(messages)
 
     async def _collect_training_results(
-            self,
-            clients: Set[str],
-        ) -> Dict[str, messaging.TrainReply]:
+        self,
+        clients: Set[str],
+    ) -> Dict[str, messaging.TrainReply]:
         """Collect training results for clients participating in a round.
 
         Parameters
@@ -381,11 +393,11 @@ class FederatedServer:
         )
 
     async def _collect_results(
-            self,
-            clients: Set[str],
-            msgtype: Type[messaging.Message],
-            context: str,
-        ) -> Dict[str, messaging.Message]:
+        self,
+        clients: Set[str],
+        msgtype: Type[messaging.Message],
+        context: str,
+    ) -> Dict[str, messaging.Message]:
         """Collect some results sent by clients and ensure they are okay.
 
         Parameters
@@ -425,10 +437,11 @@ class FederatedServer:
         # future: modularize errors-handling behaviour
         if errors:
             err_msg = f"{context} failed for another client."
-            await self.netwk.send_messages({
+            messages = {
                 client: messaging.CancelTraining(errors.get(client, err_msg))
                 for client in self.netwk.client_names
-            })
+            }  # type: Dict[str, messaging.Message]
+            await self.netwk.send_messages(messages)
             err_msg = f"{context} failed for {len(errors)} clients:" + "".join(
                 f"\n    {client}: {error}" for client, error in errors.items()
             )
@@ -438,9 +451,9 @@ class FederatedServer:
         return results
 
     def _conduct_global_update(
-            self,
-            results: Dict[str, messaging.TrainReply],
-        ) -> None:
+        self,
+        results: Dict[str, messaging.TrainReply],
+    ) -> None:
         """Use training results from clients to update the global model.
 
         Parameters
@@ -457,15 +470,15 @@ class FederatedServer:
         # Compute aggregated "gradients" (updates) and apply them to the model.
         gradients = self.aggrg.aggregate(  # revise: pass n_epoch / t_spent / ?
             {client: result.updates for client, result in results.items()},
-            {client: result.n_steps for client, result in results.items()}
+            {client: result.n_steps for client, result in results.items()},
         )
         self.optim.apply_gradients(self.model, gradients)
 
     async def evaluation_round(
-            self,
-            round_i: int,
-            valid_cfg: EvaluateConfig,
-        ) -> None:
+        self,
+        round_i: int,
+        valid_cfg: EvaluateConfig,
+    ) -> None:
         """Orchestrate an evaluation round.
 
         Parameters
@@ -487,17 +500,17 @@ class FederatedServer:
         self.checkpointer.checkpoint(loss)
 
     def _select_evaluation_round_participants(
-            self,
-        ) -> Set[str]:
+        self,
+    ) -> Set[str]:
         """Return the names of clients that should participate in the round."""
         return self.netwk.client_names
 
     async def _send_evaluation_instructions(
-            self,
-            clients: Set[str],
-            round_i: int,
-            valid_cfg: EvaluateConfig,
-        ) -> None:
+        self,
+        clients: Set[str],
+        round_i: int,
+        valid_cfg: EvaluateConfig,
+    ) -> None:
         """Send evaluation instructions to selected clients.
 
         Parameters
@@ -520,9 +533,9 @@ class FederatedServer:
         await self.netwk.broadcast_message(message, clients)
 
     async def _collect_evaluation_results(
-            self,
-            clients: Set[str],
-        ) -> Dict[str, messaging.EvaluationReply]:
+        self,
+        clients: Set[str],
+    ) -> Dict[str, messaging.EvaluationReply]:
         """Collect evaluation results for clients participating in a round.
 
         Parameters
@@ -547,9 +560,9 @@ class FederatedServer:
         )
 
     def _aggregate_evaluation_results(
-            self,
-            results: Dict[str, messaging.EvaluationReply],
-        ) -> float:
+        self,
+        results: Dict[str, messaging.EvaluationReply],
+    ) -> float:
         """Aggregate evaluation results from clients into a global loss.
 
         Parameters
@@ -563,7 +576,7 @@ class FederatedServer:
         loss: float
             The aggregated loss score computed from clients' ones.
         """
-        total = 0.
+        total = 0.0
         n_stp = 0
         for reply in results.values():  # future: enable re-weighting?
             total += reply.loss * reply.n_steps
@@ -571,11 +584,11 @@ class FederatedServer:
         return total / n_stp
 
     def _keep_training(
-            self,
-            round_i: int,
-            rounds: int,
-            early_stop: Optional[EarlyStopping],
-        ) -> bool:
+        self,
+        round_i: int,
+        rounds: int,
+        early_stop: Optional[EarlyStopping],
+    ) -> bool:
         """Decide whether training should continue.
 
         Parameters
@@ -599,9 +612,9 @@ class FederatedServer:
         return True
 
     async def stop_training(
-            self,
-            rounds: int,
-        ) -> None:
+        self,
+        rounds: int,
+    ) -> None:
         """Notify clients that training is over and send final information.
 
         Parameters

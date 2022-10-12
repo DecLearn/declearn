@@ -10,7 +10,7 @@ import tensorflow as tf  # type: ignore
 
 
 __all__ = [
-    'build_keras_loss',
+    "build_keras_loss",
 ]
 
 
@@ -23,25 +23,25 @@ class LossFunction(tf.keras.losses.Loss):  # type: ignore
     """Generic loss function container enabling reduction strategy control."""
 
     def __init__(
-            self,
-            loss_fn: Union[str, CallableLoss],
-            reduction: str = tf.keras.losses.Reduction.NONE,
-            name: Optional[str] = None,
-        ) -> None:
+        self,
+        loss_fn: Union[str, CallableLoss],
+        reduction: str = tf.keras.losses.Reduction.NONE,
+        name: Optional[str] = None,
+    ) -> None:
         super().__init__(reduction, name)
         self.loss_fn = tf.keras.losses.deserialize(loss_fn)
 
     def call(
-            self,
-            y_true: tf.Tensor,
-            y_pred: tf.Tensor,
-        ) -> tf.Tensor:
+        self,
+        y_true: tf.Tensor,
+        y_pred: tf.Tensor,
+    ) -> tf.Tensor:
         # inherited docstring; pylint: disable=missing-docstring
         return self.loss_fn(y_true, y_pred)
 
     def get_config(
-            self,
-        ) -> Dict[str, Any]:
+        self,
+    ) -> Dict[str, Any]:
         # inherited docstring; pylint: disable=missing-docstring
         config = super().get_config()  # type: Dict[str, Any]
         config["loss_fn"] = tf.keras.losses.serialize(self.loss_fn)
@@ -49,9 +49,9 @@ class LossFunction(tf.keras.losses.Loss):  # type: ignore
 
 
 def build_keras_loss(
-        loss: Union[str, tf.keras.losses.Loss, CallableLoss],
-        reduction: str = tf.keras.losses.Reduction.NONE,
-    ) -> tf.keras.losses.Loss:
+    loss: Union[str, tf.keras.losses.Loss, CallableLoss],
+    reduction: str = tf.keras.losses.Reduction.NONE,
+) -> tf.keras.losses.Loss:
     """Type-check, deserialize and/or wrap a keras loss into a Loss object.
 
     Parameters
@@ -76,7 +76,7 @@ def build_keras_loss(
         # Case when the string was deserialized into a function.
         if inspect.isfunction(cls):
             # Try altering the string to gather its object counterpart.
-            loss = ''.join(word.capitalize() for word in loss.split('_'))
+            loss = "".join(word.capitalize() for word in loss.split("_"))
             try:
                 loss = tf.keras.losses.deserialize(loss)
                 loss.reduction = reduction

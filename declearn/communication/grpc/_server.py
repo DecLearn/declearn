@@ -3,9 +3,10 @@
 """Server-side communication endpoint implementation using gRPC."""
 
 import getpass
+import logging
 import os
 from concurrent import futures
-from typing import Optional
+from typing import Optional, Union
 
 import grpc  # type: ignore
 from cryptography.hazmat.primitives import serialization
@@ -14,15 +15,13 @@ from declearn.communication.api import Server
 from declearn.communication.api._service import MessagesHandler
 from declearn.communication.grpc.protobufs import message_pb2
 from declearn.communication.grpc.protobufs.message_pb2_grpc import (
-    MessageBoardServicer, add_MessageBoardServicer_to_server
+    MessageBoardServicer,
+    add_MessageBoardServicer_to_server,
 )
-from declearn.utils import get_logger, register_type
+from declearn.utils import register_type
 
 
-def load_pem_file(
-        path: str,
-        password: Optional[str] = None
-    ) -> bytes:
+def load_pem_file(path: str, password: Optional[str] = None) -> bytes:
     """Load the content of a PEM file."""
     # Load the raw bytes data from the PEM file.
     with open(path, mode="rb") as file:
@@ -50,16 +49,15 @@ def load_pem_file(
 class GrpcServer(Server):
     """Server-side communication endpoint using gRPC."""
 
-    logger = get_logger("grpc-server")
-
     def __init__(
-            self,
-            host: str = 'localhost',
-            port: int = 8765,
-            certificate: Optional[str] = None,
-            private_key: Optional[str] = None,
-            password: Optional[str] = None,
-        ) -> None:
+        self,
+        host: str = "localhost",
+        port: int = 8765,
+        certificate: Optional[str] = None,
+        private_key: Optional[str] = None,
+        password: Optional[str] = None,
+        logger: Union[logging.Logger, str, None] = None,
+    ) -> None:
         """Instantiate the server-side gRPC communications handler.
 
         Parameters
@@ -81,10 +79,15 @@ class GrpcServer(Server):
             Optional password used to access `private_key`, or path to a
             file from which to read such a password.
             If None but a password is needed, an input will be prompted.
+        logger: logging.Logger or str or None, default=None,
+            Logger to use, or name of a logger to set up with
+            `declearn.utils.get_logger`. If None, use `type(self)`.
         """
         # inherited signature; pylint: disable=too-many-arguments
         # Assign attributes and set up the gRPC server.
-        super().__init__(host, port, certificate, private_key, password)
+        super().__init__(
+            host, port, certificate, private_key, password, logger
+        )
         self._server = None  # type: Optional[grpc.Server]
 
     @property
@@ -93,18 +96,11 @@ class GrpcServer(Server):
 
     @staticmethod
     def _setup_ssl_context(
-            certificate: Optional[str] = None,
-            private_key: Optional[str] = None,
-            password: Optional[str] = None,
-        ) -> Optional[grpc.ServerCredentials]:
-        """Set up and return an (optional) grpc.ServerCredentials object."""
-        if (certificate is None) and (private_key is None):
-            return None
-        if (certificate is None) or (private_key is None):
-            raise ValueError(
-                "Both 'certificate' and 'private_key' are required "
-                "to set up SSL encryption."
-            )
+        certificate: str,
+        private_key: str,
+        password: Optional[str] = None,
+    ) -> Optional[grpc.ServerCredentials]:
+        """Set up and return a grpc.ServerCredentials object."""
         cert = load_pem_file(certificate)
         pkey = load_pem_file(private_key, password)
         return grpc.ssl_server_credentials(
@@ -114,19 +110,19 @@ class GrpcServer(Server):
         )
 
     async def start(
-            self,
-        ) -> None:
+        self,
+    ) -> None:
         """Start the gRPC server."""
         self._server = self._setup_server()
         self.logger.info("Server is now starting...")
         await self._server.start()
 
     def _setup_server(
-            self,
-        ) -> grpc.Server:
+        self,
+    ) -> grpc.Server:
         """Set up and return a grpc Server to be used by this service."""
         server = grpc.aio.server(futures.ThreadPoolExecutor(max_workers=10))
-        address = f'{self.host}:{self.port}'
+        address = f"{self.host}:{self.port}"
         self.port = (
             server.add_secure_port(address, self._ssl)
             if (self._ssl is not None)
@@ -137,8 +133,8 @@ class GrpcServer(Server):
         return server
 
     async def stop(
-            self,
-        ) -> None:
+        self,
+    ) -> None:
         """Stop the gRPC server and purge information about clients."""
         if self._server is not None:
             await self._server.stop(grace=None)
@@ -150,25 +146,25 @@ class GrpcServicer(MessageBoardServicer):
     """A gRPC MessageBoard service to be used by a GrpcServer."""
 
     def __init__(
-            self,
-            handler: MessagesHandler,
-        ) -> None:
+        self,
+        handler: MessagesHandler,
+    ) -> None:
         self.handler = handler
 
     async def ping(
-            self,
-            request: message_pb2.Empty,
-            context: grpc.ServicerContext,
-        ) -> message_pb2.Empty:
+        self,
+        request: message_pb2.Empty,
+        context: grpc.ServicerContext,
+    ) -> message_pb2.Empty:
         """Handle a ping request from a client."""
         # async is needed; pylint: disable=invalid-overridden-method
         return message_pb2.Empty()
 
     async def send(
-            self,
-            request: message_pb2.Message,
-            context: grpc.ServicerContext,
-        ) -> message_pb2.Message:
+        self,
+        request: message_pb2.Message,
+        context: grpc.ServicerContext,
+    ) -> message_pb2.Message:
         """Handle a Message-sending request from a client."""
         # async is needed; pylint: disable=invalid-overridden-method
         reply = await self.handler.handle_message(

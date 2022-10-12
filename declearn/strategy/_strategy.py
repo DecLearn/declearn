@@ -15,9 +15,9 @@ from declearn.utils import deserialize_object, json_unpack
 
 
 __all__ = [
-    'FedAvg',
-    'Strategy',
-    'strategy_from_config',
+    "FedAvg",
+    "Strategy",
+    "strategy_from_config",
 ]
 
 
@@ -43,43 +43,44 @@ class Strategy(metaclass=ABCMeta):
 
     @abstractmethod
     def build_server_aggregator(
-            self,
-        ) -> Aggregator:
+        self,
+    ) -> Aggregator:
         """Set up and return an Aggregator to be used by the server."""
         raise NotImplementedError
 
     @abstractmethod
     def build_server_optimizer(
-            self,
-        ) -> Optimizer:
+        self,
+    ) -> Optimizer:
         """Set up and return an Optimizer to be used by the server."""
         raise NotImplementedError
 
     def _build_server_modules(
-            self,
-        ) -> List[OptiModule]:
+        self,
+    ) -> List[OptiModule]:
         """Return a list of OptiModule plug-ins for the server to use."""
         return []
 
     @abstractmethod
     def build_client_optimizer(
-            self,
-        ) -> Optimizer:
+        self,
+    ) -> Optimizer:
         """Set up and return an Optimizer to be used by clients."""
         raise NotImplementedError
 
     def _build_client_modules(
-            self,
-        ) -> List[OptiModule]:
+        self,
+    ) -> List[OptiModule]:
         """Return a list of OptiModule plug-ins for clients to use."""
         return []
 
     # revise: add this once clients-sampling is implemented
-    #@abstractmethod
-    #def build_clients_sampler(
-    #        self,
-    #    ) -> ClientsSelector:
-    #    """Docstring."""
+    # @abstractmethod
+    # def build_clients_sampler(
+    #         self,
+    #     ) -> ClientsSelector:
+    #     """Docstring."""
+
 
 @dataclasses.dataclass
 class AggregConfig:
@@ -95,7 +96,7 @@ class ClientConfig:
     """Dataclass specifying client-side optimizer config (and default)."""
 
     lrate: float = 1e-4
-    w_decay: float = 0.
+    w_decay: float = 0.0
     modules: List[OptiModule] = dataclasses.field(default_factory=list)
 
 
@@ -104,13 +105,13 @@ class ServerConfig:
     """Dataclass specifying server-side optimizer config (and default)."""
 
     lrate: float = 1.0
-    w_decay: float = 0.
+    w_decay: float = 0.0
     modules: List[OptiModule] = dataclasses.field(default_factory=list)
 
 
 def strategy_from_config(  # revise: generalize this (into Strategy?)
-        config: Union[str, Dict[str, Any]],
-    ) -> Strategy:
+    config: Union[str, Dict[str, Any]],
+) -> Strategy:
     """Define a custom Strategy from a configuration file."""
     if isinstance(config, str):
         with open(config, mode="r", encoding="utf-8") as file:
@@ -137,6 +138,7 @@ def strategy_from_config(  # revise: generalize this (into Strategy?)
 
         def build_client_optimizer(self) -> Optimizer:
             return Optimizer(**dataclasses.asdict(client_cfg))
+
     # Instantiate from the former and return.
     return CustomStrategy()
 
@@ -160,12 +162,12 @@ class FedAvg(Strategy):
     """
 
     def __init__(
-            self,
-            eta_l: float = 1e-4,
-            eta_g: float = 1.,
-            lam_l: float = 0.,
-            lam_g: float = 0.,
-        ) -> None:
+        self,
+        eta_l: float = 1e-4,
+        eta_g: float = 1.0,
+        lam_l: float = 0.0,
+        lam_g: float = 0.0,
+    ) -> None:
         """Instantiate the FedAvg Strategy.
 
         Parameters
@@ -188,18 +190,18 @@ class FedAvg(Strategy):
         self.lam_g = lam_g
 
     def build_client_optimizer(
-            self,
-        ) -> Optimizer:
+        self,
+    ) -> Optimizer:
         modules = self._build_client_modules()
         return Optimizer(self.eta_l, self.lam_l, modules)
 
     def build_server_optimizer(
-            self,
-        ) -> Optimizer:
+        self,
+    ) -> Optimizer:
         modules = self._build_server_modules()
         return Optimizer(self.eta_g, self.lam_g, modules)
 
     def build_server_aggregator(
-            self,
-        ) -> Aggregator:
+        self,
+    ) -> Aggregator:
         return AverageAggregator(steps_weighted=True)

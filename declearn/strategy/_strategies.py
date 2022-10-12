@@ -7,15 +7,18 @@ from typing import List
 
 
 from declearn.optimizer.modules import (
-    MomentumModule, OptiModule, ScaffoldClientModule, ScaffoldServerModule
+    MomentumModule,
+    OptiModule,
+    ScaffoldClientModule,
+    ScaffoldServerModule,
 )
 from declearn.strategy._strategy import FedAvg, Strategy
 
 
 __all__ = [
-    'FedAvgM',
-    'Scaffold',
-    'ScaffoldM',
+    "FedAvgM",
+    "Scaffold",
+    "ScaffoldM",
 ]
 
 
@@ -28,13 +31,13 @@ class FedAvgM(FedAvg):
     """
 
     def __init__(
-            self,
-            eta_l: float = 1e-4,
-            eta_g: float = 1.,
-            lam_l: float = 0.,
-            lam_g: float = 0.,
-            beta: float = 0.9,
-        ) -> None:
+        self,
+        eta_l: float = 1e-4,
+        eta_g: float = 1.0,
+        lam_l: float = 0.0,
+        lam_g: float = 0.0,
+        beta: float = 0.9,
+    ) -> None:
         """Instantiate the FedAvgM Strategy.
 
         Parameters
@@ -59,8 +62,8 @@ class FedAvgM(FedAvg):
         self.beta = beta
 
     def _build_server_modules(
-            self,
-        ) -> List[OptiModule]:
+        self,
+    ) -> List[OptiModule]:
         modules = super()._build_server_modules()
         modules.append(MomentumModule(self.beta))
         return modules
@@ -82,15 +85,15 @@ class _ScaffoldMixin(Strategy, metaclass=ABCMeta):
     """
 
     def _build_server_modules(
-            self,
-        ) -> List[OptiModule]:
+        self,
+    ) -> List[OptiModule]:
         modules = super()._build_server_modules()
         modules.append(ScaffoldServerModule())
         return modules
 
     def _build_client_modules(
-            self,
-        ) -> List[OptiModule]:
+        self,
+    ) -> List[OptiModule]:
         modules = super()._build_client_modules()
         modules.append(ScaffoldClientModule())
         return modules

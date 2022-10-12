@@ -11,11 +11,11 @@ DEFAULT_FORMAT = "%(asctime)s:%(name)s:%(levelname)s: %(message)s"
 
 
 def get_logger(
-        name: str,
-        level: int = logging.INFO,
-        fpath: Optional[str] = None,
-        s_fmt: Optional[str] = None,
-    ) -> logging.Logger:
+    name: str,
+    level: int = logging.INFO,
+    fpath: Optional[str] = None,
+    s_fmt: Optional[str] = None,
+) -> logging.Logger:
     """Create or access a logging.Logger instance with pre-set handlers.
 
     Parameters

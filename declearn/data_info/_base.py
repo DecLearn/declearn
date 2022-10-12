@@ -38,10 +38,10 @@ from typing import Any, Dict, List, Optional, Set, Tuple, Type
 
 
 __all__ = [
-    'DataInfoField',
-    'aggregate_data_info',
-    'get_data_info_fields_documentation',
-    'register_data_info_field',
+    "DataInfoField",
+    "aggregate_data_info",
+    "get_data_info_fields_documentation",
+    "register_data_info_field",
 ]
 
 
@@ -81,18 +81,18 @@ class DataInfoField(metaclass=ABCMeta):
 
     @classmethod
     def is_valid(
-            cls,
-            value: Any,
-        ) -> bool:
+        cls,
+        value: Any,
+    ) -> bool:
         """Check that a given value may belong to this field."""
         return isinstance(value, cls.types)
 
     @classmethod
     @abstractmethod
     def combine(
-            cls,
-            *values: Any,
-        ) -> Any:
+        cls,
+        *values: Any,
+    ) -> Any:
         """Combine multiple field values into a single one.
 
         Raise a ValueError if input values are invalid or incompatible.
@@ -108,8 +108,8 @@ DATA_INFO_FIELDS = {}  # type: Dict[str, Type[DataInfoField]]
 
 
 def register_data_info_field(
-        cls: Type[DataInfoField],
-    ) -> Type[DataInfoField]:
+    cls: Type[DataInfoField],
+) -> Type[DataInfoField]:
     """Decorator to register DataInfoField subclasses."""
     if not issubclass(cls, DataInfoField):
         raise TypeError(
@@ -122,9 +122,9 @@ def register_data_info_field(
 
 
 def aggregate_data_info(
-        clients_data_info: List[Dict[str, Any]],
-        required_fields: Optional[Set[str]] = None,
-    ) -> Dict[str, Any]:
+    clients_data_info: List[Dict[str, Any]],
+    required_fields: Optional[Set[str]] = None,
+) -> Dict[str, Any]:
     """Combine individual 'data_info' dict into a single one.
 
     Parameters
@@ -196,8 +196,8 @@ def aggregate_data_info(
 
 
 def get_data_info_fields_documentation(
-        display: bool = True,
-    ) -> Dict[str, str]:
+    display: bool = True,
+) -> Dict[str, str]:
     """Return the documentation of all registered `DataInfoField` subclasses.
 
     Parameters
@@ -213,7 +213,8 @@ def get_data_info_fields_documentation(
     """
     documentation = {cls.field: cls.doc for cls in DATA_INFO_FIELDS.values()}
     if display:
-        print("\n".join(
+        msg = "\n".join(
             f"{field}:\n    {doc}" for field, doc in documentation.items()
-        ))
+        )
+        print(msg)
     return documentation

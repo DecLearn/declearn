@@ -17,8 +17,8 @@ from declearn.utils import (
 
 
 __all__ = [
-    'MomentumModule',
-    'OptiModule',
+    "MomentumModule",
+    "OptiModule",
 ]
 
 
@@ -72,9 +72,9 @@ class OptiModule(metaclass=ABCMeta):
 
     @abstractmethod
     def run(
-            self,
-            gradients: Vector,
-        ) -> Vector:
+        self,
+        gradients: Vector,
+    ) -> Vector:
         """Apply an adaptation algorithm to input gradients.
 
         Parameters
@@ -92,8 +92,8 @@ class OptiModule(metaclass=ABCMeta):
         return NotImplemented
 
     def collect_aux_var(
-            self,
-        ) -> Optional[Dict[str, Any]]:
+        self,
+    ) -> Optional[Dict[str, Any]]:
         """Return auxiliary variables that need to be shared between nodes.
 
         Returns
@@ -125,9 +125,9 @@ class OptiModule(metaclass=ABCMeta):
         return None
 
     def process_aux_var(
-            self,
-            aux_var: Dict[str, Any],
-        ) -> None:
+        self,
+        aux_var: Dict[str, Any],
+    ) -> None:
         """Update this module based on received shared auxiliary variables.
 
         Parameters
@@ -167,30 +167,30 @@ class OptiModule(metaclass=ABCMeta):
         return None
 
     def get_config(
-            self,
-        ) -> Dict[str, Any]:
+        self,
+    ) -> Dict[str, Any]:
         """Return a JSON-serializable dict with this module's parameters."""
         return {}
 
     @classmethod
     def from_config(
-            cls,
-            config: Dict[str, Any],
-        ) -> 'OptiModule':
+        cls,
+        config: Dict[str, Any],
+    ) -> "OptiModule":
         """Instantiate an OptiModule from its configuration dict."""
         return cls(**config)
 
     def serialize(
-            self,
-        ) -> ObjectConfig:
+        self,
+    ) -> ObjectConfig:
         """Return an ObjectConfig serialization of this instance."""
         return serialize_object(self, group="OptiModule")
 
     @classmethod
     def deserialize(
-            cls,
-            config: Union[str, ObjectConfig],
-        ) -> 'OptiModule':
+        cls,
+        config: Union[str, ObjectConfig],
+    ) -> "OptiModule":
         """Instantiate an OptiModule from a JSON configuration file or dict."""
         obj = deserialize_object(config, custom=None)
         if not isinstance(obj, cls):
@@ -222,9 +222,9 @@ class MomentumModule(OptiModule):
     name = "momentum"
 
     def __init__(
-            self,
-            beta: float = 0.9,
-        ) -> None:
+        self,
+        beta: float = 0.9,
+    ) -> None:
         """Instantiate the Momentum gradients-adaptation module.
 
         Parameters
@@ -238,18 +238,18 @@ class MomentumModule(OptiModule):
         if not 0 <= beta < 1:
             raise ValueError("'beta' value should be in [0, 1[.")
         self.beta = beta
-        self.state = 0.  # type: Union[Vector, float]
+        self.state = 0.0  # type: Union[Vector, float]
 
     def get_config(
-            self,
-        ) -> Dict[str, Any]:
+        self,
+    ) -> Dict[str, Any]:
         """Return a JSON-serializable dict with this module's parameters."""
         return {"beta": self.beta}
 
     def run(
-            self,
-            gradients: Vector,
-        ) -> Vector:
+        self,
+        gradients: Vector,
+    ) -> Vector:
         """Apply Momentum acceleration to input (pseudo-)gradients."""
         self.state = (self.beta * self.state) + ((1 - self.beta) * gradients)
         return self.state

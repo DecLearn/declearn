@@ -10,10 +10,10 @@ from declearn.data_info._base import DataInfoField, register_data_info_field
 
 
 __all__ = [
-    'ClassesField',
-    'InputShapeField',
-    'NbFeaturesField',
-    'NbSamplesField',
+    "ClassesField",
+    "InputShapeField",
+    "NbFeaturesField",
+    "NbSamplesField",
 ]
 
 
@@ -27,18 +27,18 @@ class ClassesField(DataInfoField):
 
     @classmethod
     def is_valid(
-            cls,
-            value: Any,
-        ) -> bool:
+        cls,
+        value: Any,
+    ) -> bool:
         if isinstance(value, np.ndarray):
             return value.ndim == 1
         return super().is_valid(value)
 
     @classmethod
     def combine(
-            cls,
-            *values: Any,
-        ) -> Set[Any]:
+        cls,
+        *values: Any,
+    ) -> Set[Any]:
         super().combine(*values)  # type-check inputs
         return set.union(*map(set, values))
 
@@ -53,18 +53,20 @@ class InputShapeField(DataInfoField):
 
     @classmethod
     def is_valid(
-            cls,
-            value: Any,
-        ) -> bool:
-        return isinstance(value, cls.types) and (len(value) >= 2) and all(
-            isinstance(val, int) or (val is None) for val in value
+        cls,
+        value: Any,
+    ) -> bool:
+        return (
+            isinstance(value, cls.types)
+            and (len(value) >= 2)
+            and all(isinstance(val, int) or (val is None) for val in value)
         )
 
     @classmethod
     def combine(
-            cls,
-            *values: Any,
-        ) -> List[Optional[int]]:
+        cls,
+        *values: Any,
+    ) -> List[Optional[int]]:
         # Type check each and every input shape.
         super().combine(*values)
         # Check that all shapes are of same length.
@@ -100,16 +102,16 @@ class NbFeaturesField(DataInfoField):
 
     @classmethod
     def is_valid(
-            cls,
-            value: Any,
-        ) -> bool:
+        cls,
+        value: Any,
+    ) -> bool:
         return isinstance(value, int) and (value > 0)
 
     @classmethod
     def combine(
-            cls,
-            *values: Any,
-        ) -> int:
+        cls,
+        *values: Any,
+    ) -> int:
         unique = list(set(values))
         if len(unique) != 1:
             raise ValueError(
@@ -132,15 +134,15 @@ class NbSamplesField(DataInfoField):
 
     @classmethod
     def is_valid(
-            cls,
-            value: Any,
-        ) -> bool:
+        cls,
+        value: Any,
+    ) -> bool:
         return isinstance(value, int) and (value > 0)
 
     @classmethod
     def combine(
-            cls,
-            *values: Any,
-        ) -> int:
+        cls,
+        *values: Any,
+    ) -> int:
         super().combine(*values)  # type-check inputs
         return sum(values)

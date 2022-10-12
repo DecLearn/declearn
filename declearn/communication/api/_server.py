@@ -6,15 +6,16 @@ import asyncio
 import logging
 import types
 from abc import ABCMeta, abstractmethod
-from typing import Any, Dict, Optional, Set, Type
+from typing import Any, Dict, Optional, Set, Type, Union
 
 
 from declearn.communication.api._service import MessagesHandler
 from declearn.communication.messaging import Message
+from declearn.utils import get_logger
 
 
 __all__ = [
-    'Server',
+    "Server",
 ]
 
 
@@ -52,22 +53,21 @@ class Server(metaclass=ABCMeta):
     `wait_for_clients` method.
     """
 
-    logger: logging.Logger
-
     @abstractmethod
     def __init__(
-            self,
-            host: str,
-            port: int,
-            certificate: Optional[str] = None,
-            private_key: Optional[str] = None,
-            password: Optional[str] = None,
-        ) -> None:
+        self,
+        host: str,
+        port: int,
+        certificate: Optional[str] = None,
+        private_key: Optional[str] = None,
+        password: Optional[str] = None,
+        logger: Union[logging.Logger, str, None] = None,
+    ) -> None:
         """Instantiate the server-side communications handler.
 
         Parameters
         ----------
-        host : str
+        host: str
             Host name (e.g. IP address) of the server.
         port: int
             Communications port to use.
@@ -82,11 +82,18 @@ class Server(metaclass=ABCMeta):
             Optional password used to access `private_key`, or path to a
             file from which to read such a password.
             If None but a password is needed, an input will be prompted.
+        logger: logging.Logger or str or None, default=None,
+            Logger to use, or name of a logger to set up with
+            `declearn.utils.get_logger`. If None, use `type(self)`.
         """
         # arguments serve modularity; pylint: disable=too-many-arguments
         self.host = host
         self.port = port
-        self._ssl = self._setup_ssl_context(certificate, private_key, password)
+        self._ssl = self._setup_ssl(certificate, private_key, password)
+        if isinstance(logger, logging.Logger):
+            self.logger = logger
+        else:
+            self.logger = get_logger(logger or f"{type(self).__name__}")
         self.handler = MessagesHandler(self.logger)
 
     @property
@@ -100,53 +107,69 @@ class Server(metaclass=ABCMeta):
         """Set of registered clients' names."""
         return self.handler.client_names
 
-    @staticmethod
-    @abstractmethod
-    def _setup_ssl_context(
-            certificate: Optional[str] = None,
-            private_key: Optional[str] = None,
-            password: Optional[str] = None,
-        ) -> Any:
+    def _setup_ssl(
+        self,
+        certificate: Optional[str] = None,
+        private_key: Optional[str] = None,
+        password: Optional[str] = None,
+    ) -> Any:
         """Set up and return an (optional) SSL context object.
 
         The return type is communication-protocol dependent.
         """
+        if (certificate is None) and (private_key is None):
+            return None
+        if (certificate is None) or (private_key is None):
+            raise ValueError(
+                "Both 'certificate' and 'private_key' are required "
+                "to set up SSL encryption."
+            )
+        return self._setup_ssl_context(certificate, private_key, password)
+
+    @staticmethod
+    @abstractmethod
+    def _setup_ssl_context(
+        certificate: str,
+        private_key: str,
+        password: Optional[str] = None,
+    ) -> Any:
+        """Set up and return a SSL context object suitable for this class."""
         return NotImplemented
 
     @abstractmethod
     async def start(
-            self,
-        ) -> None:
+        self,
+    ) -> None:
         """Initialize the server and start welcoming communications."""
         return None
 
     @abstractmethod
     async def stop(
-            self,
-        ) -> None:
+        self,
+    ) -> None:
         """Stop the server and purge information about clients."""
         return None
 
     async def __aenter__(
-            self,
-        ) -> 'Server':
+        self,
+    ) -> "Server":
         await self.start()
         return self
 
     async def __aexit__(
-            self,
-            exc_type: Type[Exception],
-            exc_value: Exception,
-            exc_tb: types.TracebackType,
-        ) -> None:
+        self,
+        exc_type: Type[Exception],
+        exc_value: Exception,
+        exc_tb: types.TracebackType,
+    ) -> None:
         await self.stop()
 
     async def wait_for_clients(
-            self,
-            min_clients: int = 1,
-            max_clients: Optional[int] = None,
-            timeout: Optional[int] = None,
-        ) -> Dict[str, Dict[str, Any]]:
+        self,
+        min_clients: int = 1,
+        max_clients: Optional[int] = None,
+        timeout: Optional[int] = None,
+    ) -> Dict[str, Dict[str, Any]]:
         """Wait for clients to register for training, with given criteria.
 
         Parameters
@@ -179,12 +202,12 @@ class Server(metaclass=ABCMeta):
         )
 
     async def broadcast_message(
-            self,
-            message: Message,
-            clients: Optional[Set[str]] = None,
-            heartbeat: int = 1,
-            timeout: Optional[int] = None,
-        ) -> None:
+        self,
+        message: Message,
+        clients: Optional[Set[str]] = None,
+        heartbeat: int = 1,
+        timeout: Optional[int] = None,
+    ) -> None:
         """Send a message to an ensemble of clients and await its collection.
 
         Parameters
@@ -213,11 +236,11 @@ class Server(metaclass=ABCMeta):
         await self.send_messages(messages, heartbeat, timeout)
 
     async def send_messages(
-            self,
-            messages: Dict[str, Message],
-            heartbeat: int = 1,
-            timeout: Optional[int] = None,
-        ) -> None:
+        self,
+        messages: Dict[str, Message],
+        heartbeat: int = 1,
+        timeout: Optional[int] = None,
+    ) -> None:
         """Send a message to an ensemble of clients and await its collection.
 
         Parameters
@@ -248,12 +271,12 @@ class Server(metaclass=ABCMeta):
                 raise result
 
     async def send_message(
-            self,
-            message: Message,
-            client: str,
-            heartbeat: int = 1,
-            timeout: Optional[int] = None,
-        ) -> None:
+        self,
+        message: Message,
+        client: str,
+        heartbeat: int = 1,
+        timeout: Optional[int] = None,
+    ) -> None:
         """Send a message to a given client and wait for it to be collected.
 
         Parameters
@@ -278,11 +301,11 @@ class Server(metaclass=ABCMeta):
         await self.handler.send_message(message, client, heartbeat, timeout)
 
     async def wait_for_messages(
-            self,
-            clients: Optional[Set[str]] = None,
-            heartbeat: int = 1,
-            timeout: Optional[int] = None,
-        ) -> Dict[str, Message]:
+        self,
+        clients: Optional[Set[str]] = None,
+        heartbeat: int = 1,
+        timeout: Optional[int] = None,
+    ) -> Dict[str, Message]:
         """Wait for an ensemble of clients to have sent a message.
 
         Parameters

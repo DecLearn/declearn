@@ -7,10 +7,10 @@ from typing import Dict, Optional, Tuple, Type
 
 
 __all__ = [
-    'access_registered',
-    'access_registration_info',
-    'create_types_registry',
-    'register_type',
+    "access_registered",
+    "access_registration_info",
+    "create_types_registry",
+    "register_type",
 ]
 
 
@@ -20,11 +20,7 @@ REGISTRIES = {}  # type: Dict[str, TypesRegistry]
 class TypesRegistry:
     """Class wrapping a dict registering type classes under str names."""
 
-    def __init__(
-            self,
-            name: str,
-            base: Type
-        ) -> None:
+    def __init__(self, name: str, base: Type) -> None:
         """Instantiate the TypesRegistry.
 
         Parameters
@@ -39,11 +35,11 @@ class TypesRegistry:
         self._reg = {}  # type: Dict[str, Type]
 
     def register(
-            self,
-            cls: Type,
-            name: Optional[str] = None,
-            repl: bool = False
-        ) -> None:
+        self,
+        cls: Type,
+        name: Optional[str] = None,
+        repl: bool = False,
+    ) -> None:
         """Add a (name, cls) entry to the registry.
 
         Parameters
@@ -71,9 +67,9 @@ class TypesRegistry:
         self._reg[name] = cls
 
     def access(
-            self,
-            name: str
-        ) -> Type:
+        self,
+        name: str,
+    ) -> Type:
         """Access a registered type by its name.
 
         Parameters
@@ -91,9 +87,9 @@ class TypesRegistry:
         return self._reg[name]
 
     def get_name(
-            self,
-            cls: Type,
-        ) -> str:
+        self,
+        cls: Type,
+    ) -> str:
         """Return the name under which a type has been registered.
 
         Parameters
@@ -115,9 +111,9 @@ class TypesRegistry:
 
 
 def create_types_registry(
-        name: str,
-        base: Type
-    ) -> None:
+    name: str,
+    base: Type,
+) -> None:
     """Create a TypesRegistry backing generic (de)serialization utils.
 
     Parameters
@@ -135,10 +131,10 @@ def create_types_registry(
 
 
 def register_type(
-        cls: Optional[Type] = None,
-        name: Optional[str] = None,
-        group: Optional[str] = None,
-    ) -> Type:
+    cls: Optional[Type] = None,
+    name: Optional[str] = None,
+    group: Optional[str] = None,
+) -> Type:
     """Register a class in a registry, to ease its (de)serialization.
 
     Note: this function may either be used to register an existing
@@ -186,9 +182,9 @@ def register_type(
 
 
 def access_registered(
-        name: str,
-        group: Optional[str] = None
-    ) -> Type:
+    name: str,
+    group: Optional[str] = None,
+) -> Type:
     """Access a registered type by its name.
 
     Parameters
@@ -220,9 +216,9 @@ def access_registered(
 
 
 def access_registration_info(
-        cls: Type,
-        group: Optional[str] = None
-    ) -> Tuple[str, str]:
+    cls: Type,
+    group: Optional[str] = None,
+) -> Tuple[str, str]:
     """Access a registered type's storage name and belonging group.
 
     Parameters

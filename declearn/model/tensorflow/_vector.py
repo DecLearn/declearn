@@ -2,11 +2,13 @@
 
 """TensorflowVector gradients container."""
 
-from typing import Any, Callable, Dict, Union
+from typing import Any, Dict, Set, Type, Union
 
 import tensorflow as tf  # type: ignore
+
 # false-positive; pylint: disable=no-name-in-module
 from tensorflow.python.framework.ops import EagerTensor  # type: ignore
+
 # pylint: enable=no-name-in-module
 from typing_extensions import Self  # future: import from typing (Py>=3.11)
 
@@ -28,57 +30,50 @@ class TensorflowVector(Vector):
     gradients.
     Note that this class does not (yet?) support special
     tensor types such as SparseTensor or RaggedTensor.
+
+    Use `vector.coefs` to access the stored coefficients.
     """
 
-    _op_add = staticmethod(tf.add)       # type: ignore
-    _op_sub = staticmethod(tf.subtract)  # type: ignore
-    _op_mul = staticmethod(tf.multiply)  # type: ignore
-    _op_div = staticmethod(tf.divide)    # type: ignore
-    _op_pow = staticmethod(tf.pow)       # type: ignore
+    _op_add = staticmethod(tf.add)
+    _op_sub = staticmethod(tf.subtract)
+    _op_mul = staticmethod(tf.multiply)
+    _op_div = staticmethod(tf.divide)
+    _op_pow = staticmethod(tf.pow)
+
+    @property
+    def compatible_vector_types(self) -> Set[Type[Vector]]:
+        types = super().compatible_vector_types
+        return types.union({NumpyVector, TensorflowVector})
 
     def __init__(
-            self,
-            coefs: Dict[str, Union[tf.Tensor, tf.IndexedSlices]]
-        ) -> None:
+        self, coefs: Dict[str, Union[tf.Tensor, tf.IndexedSlices]]
+    ) -> None:
         super().__init__(coefs)
 
-    def __repr__(
-            self,
-        ) -> str:
-        string = f"{type(self).__name__} with {len(self.coefs)} coefs:"
-        string += "".join(
-            f"\n    {key}: {repr(val.dtype)} slices with shape {val.shape}"
-            if isinstance(val, tf.IndexedSlices) else
-            f"\n    {key}: {repr(val.dtype)} tensor with shape {val.shape}"
-            for key, val in self.coefs.items()
-        )
-        return string
+    def dtypes(
+        self,
+    ) -> Dict[str, str]:
+        return {key: coef.dtype.name for key, coef in self.coefs.items()}
 
     def pack(
-            self,
-        ) -> Dict[str, Any]:
-        data = {
-            key: self._pack_tensor(tns)
-            for key, tns in self.coefs.items()
-        }
+        self,
+    ) -> Dict[str, Any]:
+        data = {key: self._pack_tensor(tns) for key, tns in self.coefs.items()}
         return data
 
     @classmethod
     def unpack(
-            cls,
-            data: Dict[str, Any],
-        ) -> 'TensorflowVector':
-        coef = {
-            key: cls._unpack_tensor(dat)
-            for key, dat in data.items()
-        }
+        cls,
+        data: Dict[str, Any],
+    ) -> "TensorflowVector":
+        coef = {key: cls._unpack_tensor(dat) for key, dat in data.items()}
         return cls(coef)
 
     @classmethod
     def _pack_tensor(
-            cls,
-            tensor: Union[tf.Tensor, tf.IndexedSlices],
-        ) -> Any:
+        cls,
+        tensor: Union[tf.Tensor, tf.IndexedSlices],
+    ) -> Any:
         """Convert a Tensor to a JSON-serializable object."""
         if isinstance(tensor, tf.IndexedSlices):
             val = cls._pack_tensor(tensor.values)
@@ -88,9 +83,9 @@ class TensorflowVector(Vector):
 
     @classmethod
     def _unpack_tensor(
-            cls,
-            data: Any,
-        ) -> Union[tf.Tensor, tf.IndexedSlices]:
+        cls,
+        data: Any,
+    ) -> Union[tf.Tensor, tf.IndexedSlices]:
         """Re-create a Tensor from a JSON-unpacked object."""
         if isinstance(data, list) and (data[0] == "slices"):
             val = cls._unpack_tensor(data[1])
@@ -101,29 +96,10 @@ class TensorflowVector(Vector):
         except TypeError as exc:
             raise TypeError("Invalid tf.Tensor dump received.") from exc
 
-    def _apply_operation(
-            self,
-            other: Any,
-            func: Callable[[Any, Any], Any],
-        ) -> Self:  # type: ignore
-        # Extend support to (TensorflowVector, NumpyVector) combinations.
-        if isinstance(other, NumpyVector):
-            if self.coefs.keys() != other.coefs.keys():
-                raise KeyError(
-                    f"Cannot {func.__name__} Vectors "\
-                    "with distinct coefficient names."
-                )
-            return type(self)({
-                key: func(self.coefs[key], other.coefs[key])
-                for key in self.coefs
-            })
-        # Delegate other cases to parent class.
-        return super()._apply_operation(other, func)
-
     def __eq__(
-            self,
-            other: Any,
-        ) -> bool:
+        self,
+        other: Any,
+    ) -> bool:
         valid = isinstance(other, TensorflowVector)
         valid = valid & (self.coefs.keys() == other.coefs.keys())
         return valid and all(
@@ -133,35 +109,32 @@ class TensorflowVector(Vector):
 
     @staticmethod
     def _tensor_equal(
-            t_a: Union[tf.Tensor, tf.IndexedSlices],
-            t_b: Union[tf.Tensor, tf.IndexedSlices],
-        ) -> bool:
+        t_a: Union[tf.Tensor, tf.IndexedSlices],
+        t_b: Union[tf.Tensor, tf.IndexedSlices],
+    ) -> bool:
         if not isinstance(t_a, type(t_b)):
             return False
         if isinstance(t_a, tf.IndexedSlices):
-            return (
-                TensorflowVector._tensor_equal(t_a.indices, t_b.indices)
-                and TensorflowVector._tensor_equal(t_a.values, t_b.values)
-            )
+            return TensorflowVector._tensor_equal(
+                t_a.indices, t_b.indices
+            ) and TensorflowVector._tensor_equal(t_a.values, t_b.values)
         return tf.reduce_all(t_a == t_b).numpy()  # type: ignore
 
-    def sign(
-            self
-        ) -> Self:  # type: ignore
+    def sign(self) -> Self:  # type: ignore
         return self.apply_func(tf.sign)
 
     def minimum(
-            self,
-            other: Any,
-        ) -> Self:  # type: ignore
+        self,
+        other: Any,
+    ) -> Self:  # type: ignore
         if isinstance(other, Vector):
             return self._apply_operation(other, tf.minimum)
         return self.apply_func(tf.minimum, other)
 
     def maximum(
-            self,
-            other: Any,
-        ) -> Self:  # type: ignore
+        self,
+        other: Any,
+    ) -> Self:  # type: ignore
         if isinstance(other, Vector):
             return self._apply_operation(other, tf.maximum)
         return self.apply_func(tf.maximum, other)

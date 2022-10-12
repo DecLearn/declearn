@@ -20,7 +20,7 @@ from declearn.utils import register_type
 
 
 __all__ = [
-    'InMemoryDataset',
+    "InMemoryDataset",
 ]
 
 
@@ -54,18 +54,20 @@ class InMemoryDataset(Dataset):
         Optional subset of `data` columns to restrict yielded
         input features (i.e. batches' first array) to which.
     """
+
     # attributes serve clarity; pylint: disable=too-many-instance-attributes
 
     _type_key = "InMemoryDataset"
 
     def __init__(
-            self,
-            data: Union[DataArray, str],
-            target: Optional[Union[DataArray, str]] = None,
-            s_wght: Optional[Union[DataArray, str]] = None,
-            f_cols: Optional[Union[List[int], List[str]]] = None,
-            expose_classes: bool = False,
-        ) -> None:
+        self,
+        data: Union[DataArray, str],
+        target: Optional[Union[DataArray, str]] = None,
+        s_wght: Optional[Union[DataArray, str]] = None,
+        f_cols: Optional[Union[List[int], List[str]]] = None,
+        expose_classes: bool = False,
+        seed: Optional[int] = None,
+    ) -> None:
         """Instantiate the dataset interface.
 
         We thereafter use the term "data array" to designate
@@ -100,6 +102,9 @@ class InMemoryDataset(Dataset):
             Whether the dataset should be used for classification, in
             which case the unique values of `target` are exposed under
             `self.classes` and exported by `self.get_data_specs()`).
+        seed: int or None, default=None
+            Optional seed for the random number generator based on which
+            the dataset is (optionally) shuffled when generating batches.
         """
         # arguments serve modularity; pylint: disable=too-many-arguments
         self._data_path = None  # type: Optional[str]
@@ -139,11 +144,14 @@ class InMemoryDataset(Dataset):
         self.weights = s_wght
         # Assign the 'expose_classes' attribute.
         self.expose_classes = expose_classes
+        # Assign a random number generator.
+        self.seed = seed
+        self._rng = np.random.default_rng(seed)
 
     @property
     def feats(
-            self,
-        ) -> DataArray:
+        self,
+    ) -> DataArray:
         """Input features array."""
         if self.f_cols is None:
             return self.data
@@ -154,9 +162,7 @@ class InMemoryDataset(Dataset):
         return self.data[:, self.f_cols]  # type: ignore
 
     @property
-    def classes(
-            self
-        ) -> Optional[Set[Any]]:
+    def classes(self) -> Optional[Set[Any]]:
         """Unique target classes."""
         if (not self.expose_classes) or (self.target is None):
             return None
@@ -174,9 +180,9 @@ class InMemoryDataset(Dataset):
 
     @staticmethod
     def load_data_array(
-            path: str,
-            **kwargs: Any,
-        ) -> DataArray:
+        path: str,
+        **kwargs: Any,
+    ) -> DataArray:
         """Load a data array from a dump file.
 
         Supported file extensions are:
@@ -231,9 +237,9 @@ class InMemoryDataset(Dataset):
 
     @staticmethod
     def save_data_array(
-            path: str,
-            array: Union[DataArray, pd.Series],
-        ) -> str:
+        path: str,
+        array: Union[DataArray, pd.Series],
+    ) -> str:
         """Save a data array to a dump file.
 
         Supported types of data arrays are:
@@ -290,11 +296,11 @@ class InMemoryDataset(Dataset):
 
     @classmethod
     def from_svmlight(
-            cls,
-            path: str,
-            f_cols: Optional[List[int]] = None,
-            dtype: Union[str, np.dtype] = 'float64',
-        ) -> "InMemoryDataset":
+        cls,
+        path: str,
+        f_cols: Optional[List[int]] = None,
+        dtype: Union[str, np.dtype] = "float64",
+    ) -> "InMemoryDataset":
         """Instantiate a InMemoryDataset from a svmlight file.
 
         A SVMlight file contains both input features (as a sparse
@@ -317,9 +323,9 @@ class InMemoryDataset(Dataset):
         return cls(data=data, target=target, f_cols=f_cols)
 
     def save_to_json(
-            self,
-            path: str,
-        ) -> None:
+        self,
+        path: str,
+    ) -> None:
         """Write a JSON file enabling dataset re-creation.
 
         Parameters
@@ -337,19 +343,23 @@ class InMemoryDataset(Dataset):
         info = {}  # type: Dict[str, Any]
         info["type"] = self._type_key
         # Optionally create data dumps. Record data dumps' paths.
+        # fmt: off
         info["data"] = (
-            self._data_path
-            or self.save_data_array(os.path.join(folder, "data"), self.data)
+            self._data_path or
+            self.save_data_array(os.path.join(folder, "data"), self.data)
         )
         info["target"] = None if self.target is None else (
-            self._trgt_path
-            or self.save_data_array(os.path.join(folder, "trgt"), self.target)
+            self._trgt_path or
+            self.save_data_array(os.path.join(folder, "trgt"), self.target)
         )
         info["s_wght"] = None if self.weights is None else (
-            self._wght_path
-            or self.save_data_array(os.path.join(folder, "wght"), self.weights)
+            self._wght_path or
+            self.save_data_array(os.path.join(folder, "wght"), self.weights)
         )
+        # fmt: on
         info["f_cols"] = self.f_cols
+        info["expose_classes"] = self.expose_classes
+        info["seed"] = self.seed
         # Write the information to the JSON file.
         dump = {"name": self.__class__.__name__, "config": info}
         with open(path, "w", encoding="utf-8") as file:
@@ -357,9 +367,9 @@ class InMemoryDataset(Dataset):
 
     @classmethod
     def load_from_json(
-            cls,
-            path: str,
-        ) -> 'InMemoryDataset':
+        cls,
+        path: str,
+    ) -> "InMemoryDataset":
         """Instantiate a dataset based on local files.
 
         Parameters
@@ -381,29 +391,28 @@ class InMemoryDataset(Dataset):
         key = info.pop("type")
         if key != cls._type_key:
             raise TypeError(
-                f"Incorrect 'type' field: got '{key}', "\
+                f"Incorrect 'type' field: got '{key}', "
                 f"expected '{cls._type_key}'."
             )
         # Instantiate the object and return it.
         return cls(**info)
 
     def get_data_specs(
-            self,
-        ) -> DataSpecs:
+        self,
+    ) -> DataSpecs:
         """Return a DataSpecs object describing this dataset."""
         return DataSpecs(
             n_samples=self.feats.shape[0],
             n_features=self.feats.shape[1],
-            classes=self.classes
+            classes=self.classes,
         )
 
     def generate_batches(
-            self,
-            batch_size: int,
-            shuffle: bool = False,
-            seed: Optional[int] = None,
-            drop_remainder: bool = True,
-        ) -> Iterator[Batch]:
+        self,
+        batch_size: int,
+        shuffle: bool = False,
+        drop_remainder: bool = True,
+    ) -> Iterator[Batch]:
         """Yield batches of data samples.
 
         Parameters
@@ -411,13 +420,9 @@ class InMemoryDataset(Dataset):
         batch_size: int
             Number of samples per batch.
         shuffle: bool, default=False
-            Whether to shuffle data samples prior to batching it.
-            If True, use `rng` to generate samples' permutation,
-            or call `numpy.random.default_rng()` if not set.
-        seed: int or None, default=None
-            Optional seed to the random-numbers generator
-            used to shuffle samples prior to batching.
-            Only used when `shuffle=True`.
+            Whether to shuffle data samples prior to batching.
+            Note that the shuffling will differ on each call
+            to this method.
         drop_remainder: bool, default=True
             Whether to drop the last batch if it contains less
             samples than `batch_size`, or yield it anyway.
@@ -437,13 +442,18 @@ class InMemoryDataset(Dataset):
         """
         # Optionally set up samples' shuffling.
         if shuffle:
-            rng = np.random.default_rng(seed)
-            order = rng.permutation(self.feats.shape[0])
+            order = self._rng.permutation(self.feats.shape[0])
         else:
             order = np.arange(self.feats.shape[0])
         # Optionally drop last batch if its size is too small.
         if drop_remainder:
-            order = order[:len(order) - (len(order) % batch_size)]
+            limit = len(order) - (len(order) % batch_size)
+            order = order[:limit]
+            if len(order) == 0:
+                raise ValueError(
+                    "The dataset is smaller than `batch_size`, so that "
+                    "`drop_remainder=True` results in an empty iterator."
+                )
         # Build array-wise batch iterators.
         iterators = [
             self._build_iterator(data, batch_size, order)
@@ -453,11 +463,11 @@ class InMemoryDataset(Dataset):
         yield from zip(*iterators)
 
     def _build_iterator(
-            self,
-            data: Optional[DataArray],
-            batch_size: int,
-            order: np.ndarray,
-        ) -> Iterator[Optional[ArrayLike]]:
+        self,
+        data: Optional[DataArray],
+        batch_size: int,
+        order: np.ndarray,
+    ) -> Iterator[Optional[ArrayLike]]:
         """Yield batches extracted from a data array.
 
         Parameters
@@ -481,4 +491,4 @@ class InMemoryDataset(Dataset):
                 data = data.values
             # Iteratively yield slices of the data array.
             for idx in range(0, len(order), batch_size):
-                yield data[order[idx:idx+batch_size]]
+                yield data[order[idx : idx + batch_size]]

@@ -2,33 +2,31 @@
 
 """Client-side communication endpoint implementation using gRPC"""
 
-from typing import Any, Dict, Optional
+import logging
+from typing import Any, Dict, Optional, Union
 
 import grpc  # type: ignore
 
 from declearn.communication.api import Client
-from declearn.communication.messaging import (
-    Message, parse_message_from_string
-)
+from declearn.communication.messaging import Message, parse_message_from_string
 from declearn.communication.grpc.protobufs import message_pb2
 from declearn.communication.grpc.protobufs.message_pb2_grpc import (
-    MessageBoardStub
+    MessageBoardStub,
 )
-from declearn.utils import get_logger, register_type
+from declearn.utils import register_type
 
 
 @register_type(name="grpc", group="Client")
 class GrpcClient(Client):
     """Client-side communication endpoint using gRPC."""
 
-    logger = get_logger("grpc-client")
-
     def __init__(
-            self,
-            server_uri: str,
-            name: str,
-            certificate: Optional[str] = None,
-        ) -> None:
+        self,
+        server_uri: str,
+        name: str,
+        certificate: Optional[str] = None,
+        logger: Union[logging.Logger, str, None] = None,
+    ) -> None:
         """Instantiate the client-side gRPC communications handler.
 
         Parameters
@@ -42,15 +40,18 @@ class GrpcClient(Client):
         certificate: str or None, default=None,
             Path to a certificate (publickey) PEM file, to use SSL/TLS
             communcations encryption.
+        logger: logging.Logger or str or None, default=None,
+            Logger to use, or name of a logger to set up using
+            `declearn.utils.get_logger`. If None, use `type(self)-name`.
         """
-        super().__init__(server_uri, name, certificate)
+        super().__init__(server_uri, name, certificate, logger)
         self._channel = None  # type: Optional[grpc.Channel]
         self._service = None  # type: Optional[MessageBoardStub]
 
     @staticmethod
     def _setup_ssl_context(
-            certificate: Optional[str] = None,
-        ) -> Optional[grpc.ChannelCredentials]:
+        certificate: Optional[str] = None,
+    ) -> Optional[grpc.ChannelCredentials]:
         """Set up and return an (optional) grpc ChannelCredentials object."""
         if certificate is None:
             return None
@@ -58,9 +59,7 @@ class GrpcClient(Client):
             cert_bytes = file.read()
         return grpc.ssl_channel_credentials(cert_bytes)
 
-    async def start(
-            self
-        ) -> None:
+    async def start(self) -> None:
         if self._channel is None:
             self._channel = (
                 grpc.aio.secure_channel(self.server_uri, self._ssl)
@@ -69,18 +68,16 @@ class GrpcClient(Client):
             )
         self._service = MessageBoardStub(self._channel)  # type: ignore
 
-    async def stop(
-            self
-        ) -> None:
+    async def stop(self) -> None:
         if self._channel is not None:
             await self._channel.close()
             self._channel = None
             self._service = None
 
     async def _send_message(
-            self,
-            message: Message,
-        ) -> Message:
+        self,
+        message: Message,
+    ) -> Message:
         """Send a message to the server and return the obtained reply."""
         if self._service is None:
             raise RuntimeError("Cannot send messages while not connected.")
@@ -89,14 +86,15 @@ class GrpcClient(Client):
         return parse_message_from_string(grpc_reply.message)
 
     async def register(
-            self,
-            data_info: Dict[str, Any],
-        ) -> bool:
+        self,
+        data_info: Dict[str, Any],
+    ) -> bool:
         try:
             return await super().register(data_info)
         except grpc.aio.AioRpcError as err:
             self.logger.error(
                 "Connection failed during registration: %s %s",
-                err.code(), err.details()
+                err.code(),
+                err.details(),
             )
             return False

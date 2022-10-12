@@ -9,8 +9,8 @@ from declearn.data_info import aggregate_data_info
 
 
 __all__ = [
-    'AggregationError',
-    'aggregate_clients_data_info',
+    "AggregationError",
+    "aggregate_clients_data_info",
 ]
 
 
@@ -18,10 +18,10 @@ class AggregationError(Exception):
     """Custom Exception, used to wrap data-info-aggregation failure info."""
 
     def __init__(
-            self,
-            error: str,
-            messages: Dict[str, str],
-        ) -> None:
+        self,
+        error: str,
+        messages: Dict[str, str],
+    ) -> None:
         """Instantiate the AggregationError, wrapping error information.
 
         Parameters
@@ -44,15 +44,15 @@ class AggregationError(Exception):
         self.messages = messages
 
     def __str__(
-            self,
-        ) -> str:
+        self,
+    ) -> str:
         return self.error
 
 
 def aggregate_clients_data_info(
-        clients_data_info: Dict[str, Dict[str, Any]],
-        required_fields: Set[str],
-    ) -> Dict[str, Any]:
+    clients_data_info: Dict[str, Dict[str, Any]],
+    required_fields: Set[str],
+) -> Dict[str, Any]:
     """Validate and aggregate clients' data-info dictionaries.
 
     This functions wraps `declearn.data_info.aggregate_data_info`,
@@ -101,9 +101,9 @@ def aggregate_clients_data_info(
 
 
 def _raise_on_missing_fields(
-        clients_data_info: Dict[str, Dict[str, Any]],
-        required_fields: Set[str],
-    ) -> None:
+    clients_data_info: Dict[str, Dict[str, Any]],
+    required_fields: Set[str],
+) -> None:
     """Raise information about missing-fields-due data_info agg. failure.
 
     Raise a RuntimeError containing client-wise messages and server error.
@@ -133,9 +133,9 @@ def _raise_on_missing_fields(
 
 
 def _raise_aggregation_fails(
-        clients_data_info: Dict[str, Dict[str, Any]],
-        exception: Exception,
-    ) -> None:
+    clients_data_info: Dict[str, Dict[str, Any]],
+    exception: Exception,
+) -> None:
     """Raise information about aggregation failure for unexpected cause.
 
     Raise a RuntimeError containing client-wise messages and server error.
@@ -150,9 +150,9 @@ def _raise_aggregation_fails(
 
 
 def _raise_on_invalid_fields(
-        clients_data_info: Dict[str, Dict[str, Any]],
-        required_fields: Set[str],
-    ) -> None:
+    clients_data_info: Dict[str, Dict[str, Any]],
+    required_fields: Set[str],
+) -> None:
     """Raise information about invidual-values-due data_info agg. failure.
 
     Raise a RuntimeError containing client-wise messages and server error.
@@ -183,9 +183,9 @@ def _raise_on_invalid_fields(
 
 
 def _raise_incompatible_fields(
-        clients_data_info: Dict[str, Dict[str, Any]],
-        exception: ValueError,
-    ) -> None:
+    clients_data_info: Dict[str, Dict[str, Any]],
+    exception: ValueError,
+) -> None:
     """Raise information about incompatible-due data_info agg. failure.
 
     Raise a RuntimeError containing client-wise messages and server error.

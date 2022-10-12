@@ -7,8 +7,8 @@ from ._np_vec import NumpyVector
 from ._model import Model
 
 __all__ = [
-    'Model',
-    'NumpyVector',
-    'Vector',
-    'register_vector_type',
+    "Model",
+    "NumpyVector",
+    "Vector",
+    "register_vector_type",
 ]

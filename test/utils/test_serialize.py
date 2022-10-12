@@ -33,7 +33,7 @@ class MockClass:
         return {"val": self.val}
 
     @classmethod
-    def from_config(cls, config: Dict[str, Any]) -> 'MockClass':
+    def from_config(cls, config: Dict[str, Any]) -> "MockClass":
         """Instantiate from a configuration dict."""
         return cls(**config)
 
@@ -47,6 +47,7 @@ def fixture_registered_class() -> Tuple[Type[MockClass], str]:
     # Declare a subtype to avoid side effects between tests.
     class SubClass(MockClass):  # pylint: disable=all
         pass
+
     # Create a test-specific types registry and add the type to it.
     group = str(time.time_ns())
     create_types_registry(group, base=MockClass)
@@ -62,7 +63,9 @@ def test_object_config() -> None:
         name="lorem", group="ipsum", config={"a": 0, "b": [1, 2]}
     )
     c_dict = {
-        "name": "lorem", "group": "ipsum", "config": {"a": 0, "b": [1, 2]}
+        "name": "lorem",
+        "group": "ipsum",
+        "config": {"a": 0, "b": [1, 2]},
     }
     # Test that conversion to and from dict works.
     assert ObjectConfig(**c_dict) == config  # type: ignore
@@ -89,8 +92,8 @@ def test_serialize_unregistered() -> None:
 
 
 def test_serialize_registered(
-        registered_class: Tuple[Type[MockClass], str]
-    ) -> None:
+    registered_class: Tuple[Type[MockClass], str]
+) -> None:
     """Unit tests for `serialize_object` with a registered type."""
     cls, group = registered_class
     obj = cls()
@@ -107,10 +110,8 @@ def test_serialize_registered(
 
 
 def _setup_config_inputs(
-        obj: MockClass,
-        group: Optional[str],
-        folder: str
-    ) -> Tuple[Dict[str, Any], ObjectConfig, str]:
+    obj: MockClass, group: Optional[str], folder: str
+) -> Tuple[Dict[str, Any], ObjectConfig, str]:
     """Create three alternative input formats to `deserialize_object`."""
     cfg_dict = {"name": "mock", "group": group, "config": obj.get_config()}
     cfg_objc = ObjectConfig(**cfg_dict)  # type: ignore
@@ -120,7 +121,7 @@ def _setup_config_inputs(
 
 
 @pytest.mark.parametrize(
-    'index', [0, 1, 2], ids=['dict', 'ObjectConfig', 'JSON path']
+    "index", [0, 1, 2], ids=["dict", "ObjectConfig", "JSON path"]
 )
 def test_deserialize_unregistered(index: int) -> None:
     """Unit tests from `deserialize_object` with an unregistered type."""
@@ -139,12 +140,11 @@ def test_deserialize_unregistered(index: int) -> None:
 
 
 @pytest.mark.parametrize(
-    'index', [0, 1, 2], ids=['dict', 'ObjectConfig', 'JSON path']
+    "index", [0, 1, 2], ids=["dict", "ObjectConfig", "JSON path"]
 )
 def test_deserialize_registered(
-        registered_class: Tuple[Type[MockClass], str],
-        index: int
-    ) -> None:
+    registered_class: Tuple[Type[MockClass], str], index: int
+) -> None:
     """Unit tests from `deserialize_object` with a registered type."""
     cls, group = registered_class
     obj = cls()

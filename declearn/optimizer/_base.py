@@ -11,7 +11,7 @@ from declearn.typing import Batch
 
 
 __all__ = [
-    'Optimizer',
+    "Optimizer",
 ]
 
 
@@ -80,11 +80,11 @@ class Optimizer:
     """
 
     def __init__(
-            self,
-            lrate: float,  # future: add scheduling tools
-            w_decay: float = 0.,  # future: add scheduling tools
-            modules: Optional[List[OptiModule]] = None,
-        ) -> None:
+        self,
+        lrate: float,  # future: add scheduling tools
+        w_decay: float = 0.0,  # future: add scheduling tools
+        modules: Optional[List[OptiModule]] = None,
+    ) -> None:
         """Instantiate the gradient-descent optimizer.
 
         Parameters
@@ -120,33 +120,32 @@ class Optimizer:
                 )
 
     def get_config(
-            self,
-        ) -> Dict[str, Any]:
+        self,
+    ) -> Dict[str, Any]:
         """Return a JSON-serializable dict with this optimizer's parameters."""
         return {
             "lrate": self.lrate,
             "w_decay": self.w_decay,
-            "modules": [mod.serialize().to_dict() for mod in self.modules]
+            "modules": [mod.serialize().to_dict() for mod in self.modules],
         }
 
     @classmethod
     def from_config(
-            cls,
-            config: Dict[str, Any],
-        ) -> 'Optimizer':
+        cls,
+        config: Dict[str, Any],
+    ) -> "Optimizer":
         """Instantiate an Optimizer from its configuration dict."""
         config = deepcopy(config)  # avoid side-effects
-        config['modules'] = [
-            OptiModule.deserialize(cfg)
-            for cfg in config.pop("modules", [])
+        config["modules"] = [
+            OptiModule.deserialize(cfg) for cfg in config.pop("modules", [])
         ]
         return cls(**config)
 
     def apply_gradients(
-            self,
-            model: Model,
-            gradients: Vector,
-        ) -> None:
+        self,
+        model: Model,
+        gradients: Vector,
+    ) -> None:
         """Compute and apply model updates based on pre-computed gradients.
 
         Parameters
@@ -172,11 +171,11 @@ class Optimizer:
         if self.w_decay:
             updates += self.w_decay * model.get_weights()
         # Apply updates to the model.
-        model.apply_updates(-1. * updates)
+        model.apply_updates(-1.0 * updates)
 
     def collect_aux_var(
-            self,
-        ) -> Dict[str, Dict[str, Any]]:
+        self,
+    ) -> Dict[str, Dict[str, Any]]:
         """Return auxiliary variables that need to be shared between nodes.
 
         Returns
@@ -194,9 +193,9 @@ class Optimizer:
         return aux_var
 
     def process_aux_var(
-            self,
-            aux_var: Dict[str, Dict[str, Any]],
-        ) -> None:
+        self,
+        aux_var: Dict[str, Dict[str, Any]],
+    ) -> None:
         """Update plug-in modules based on received shared auxiliary variables.
 
         Received auxiliary variables will be passed to this optimizer's
@@ -229,10 +228,10 @@ class Optimizer:
             module.process_aux_var(auxv)
 
     def run_train_step(
-            self,
-            model: Model,
-            batch: Batch,
-        ) -> None:
+        self,
+        model: Model,
+        batch: Batch,
+    ) -> None:
         """Perform a gradient-descent step on a given batch.
 
         Parameters

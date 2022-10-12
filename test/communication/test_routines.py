@@ -37,8 +37,8 @@ from declearn.communication.messaging import GenericMessage
 
 
 async def client_routine(
-        client: Client,
-    ) -> None:
+    client: Client,
+) -> None:
     """Basic client testing routine."""
     print("Registering")
     await client.register({"foo": "bar"})
@@ -56,9 +56,9 @@ async def client_routine(
 
 
 async def server_routine(
-        server: Server,
-        nb_clients: int = 1,
-    ) -> None:
+    server: Server,
+    nb_clients: int = 1,
+) -> None:
     """Basic server testing routine."""
     data_info = await server.wait_for_clients(
         min_clients=nb_clients, max_clients=nb_clients, timeout=5
@@ -87,21 +87,21 @@ async def server_routine(
 @pytest.mark.parametrize("use_ssl", [False, True], ids=["ssl", "unsafe"])
 @pytest.mark.parametrize("protocol", ["grpc", "websockets"])
 def test_routines(
-        protocol: Literal['grpc', 'websockets'],
-        nb_clients: int,
-        use_ssl: bool,
-        ssl_cert: Dict[str, str],
-    ) -> None:
+    protocol: Literal["grpc", "websockets"],
+    nb_clients: int,
+    use_ssl: bool,
+    ssl_cert: Dict[str, str],
+) -> None:
     """Test that the defined server and client routines run properly."""
     run_test_routines(protocol, nb_clients, use_ssl, ssl_cert)
 
 
 def run_test_routines(
-        protocol: Literal['grpc', 'websockets'],
-        nb_clients: int,
-        use_ssl: bool,
-        ssl_cert: Dict[str, str],
-    ) -> None:
+    protocol: Literal["grpc", "websockets"],
+    nb_clients: int,
+    use_ssl: bool,
+    ssl_cert: Dict[str, str],
+) -> None:
     """Test that the defined server and client routines run properly."""
     # Set up processes that isolately run a server and its clients
     args = (protocol, nb_clients, use_ssl, ssl_cert)
@@ -123,14 +123,16 @@ def run_test_routines(
 
 
 def _build_server_process(
-        protocol: Literal['grpc', 'websockets'],
-        nb_clients: int,
-        use_ssl: bool,
-        ssl_cert: Dict[str, str],
-    ) -> mp.Process:
+    protocol: Literal["grpc", "websockets"],
+    nb_clients: int,
+    use_ssl: bool,
+    ssl_cert: Dict[str, str],
+) -> mp.Process:
     """Set up and return a mp.Process that spawns and uses a Server."""
     server_cfg = {
-        "protocol": protocol, "host": "127.0.0.1", "port": 8765,
+        "protocol": protocol,
+        "host": "127.0.0.1",
+        "port": 8765,
         "certificate": ssl_cert["server_cert"] if use_ssl else None,
         "private_key": ssl_cert["server_pkey"] if use_ssl else None,
     }
@@ -138,22 +140,24 @@ def _build_server_process(
     async def server_coroutine() -> None:
         """Spawn a client and run `server_routine` in its context."""
         nonlocal nb_clients, server_cfg
-        async with build_server(**server_cfg) as server:  # type: ignore
+        async with build_server(**server_cfg) as server:
             await server_routine(server, nb_clients)
+
     # Define a routine that runs the former.
     def server_process() -> None:
         """Run `server_coroutine`."""
         asyncio.run(server_coroutine())
+
     # Wrap the former in a Process and return it.
     return mp.Process(target=server_process)
 
 
 def _build_client_processes(
-        protocol: Literal['grpc', 'websockets'],
-        nb_clients: int,
-        use_ssl: bool,
-        ssl_cert: Dict[str, str],
-    ) -> List[mp.Process]:
+    protocol: Literal["grpc", "websockets"],
+    nb_clients: int,
+    use_ssl: bool,
+    ssl_cert: Dict[str, str],
+) -> List[mp.Process]:
     """Set up and return mp.Process that spawn and use Client objects."""
     certificate = ssl_cert["client_cert"] if use_ssl else None
     server_uri = "localhost:8765"
@@ -161,17 +165,19 @@ def _build_client_processes(
         server_uri = f"ws{'s' * use_ssl}://{server_uri}"
     # Define a coroutine that spawns and runs a client.
     async def client_coroutine(
-            name: str,
-        ) -> None:
+        name: str,
+    ) -> None:
         """Spawn a client and run `client_routine` in its context."""
         nonlocal certificate, protocol, server_uri
         args = (protocol, server_uri, name, certificate)
         async with build_client(*args) as client:
             await client_routine(client)
+
     # Define a routine that runs the former.
     def client_process(name: str) -> None:
         """Run `client_coroutine`."""
         asyncio.run(client_coroutine(name))
+
     # Wrap the former into Process objects and return them.
     return [
         mp.Process(target=client_process, args=(f"client_{idx}",))

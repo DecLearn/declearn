@@ -8,9 +8,9 @@ from typing import Any, Dict, Optional
 
 
 __all__ = [
-    'EvaluateConfig',
-    'RegisterConfig',
-    'TrainingConfig',
+    "EvaluateConfig",
+    "RegisterConfig",
+    "TrainingConfig",
 ]
 
 
@@ -53,9 +53,6 @@ class TrainingConfig:
         Number of samples per processed data batch.
     shuffle: bool
         Whether to shuffle data samples prior to batching.
-    seed: int or None
-        Optional seed to the random-numbers generator
-        used to generate batches (e.g. for shuffling).
     drop_remainder: bool
         Whether to drop the last batch if it contains less
         samples than `batch_size`, or yield it anyway.
@@ -73,7 +70,6 @@ class TrainingConfig:
     # Dataset.generate_batches() parameters
     batch_size: int
     shuffle: bool = False
-    seed: Optional[int] = None
     drop_remainder: bool = True
     # training effort constraints
     n_epoch: Optional[int] = 1
@@ -86,7 +82,6 @@ class TrainingConfig:
         return {
             "batch_size": self.batch_size,
             "shuffle": self.shuffle,
-            "seed": self.seed,
             "drop_remainder": self.drop_remainder,
         }
 

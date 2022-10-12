@@ -8,11 +8,13 @@ import pytest
 
 from declearn.model.api import Vector
 from declearn.optimizer.modules import (
-    ScaffoldClientModule, ScaffoldServerModule
+    ScaffoldClientModule,
+    ScaffoldServerModule,
 )
+
 # dirty trick to import from `test_modules.py`;
 # pylint: disable=wrong-import-order, wrong-import-position
-sys.path.append('.')
+sys.path.append(".")
 from test_modules import FRAMEWORKS, Framework, GradientsTestCase
 
 
@@ -23,11 +25,11 @@ def fixture_mock_gradients(framework: Framework) -> Vector:
     return test_case.mock_gradient
 
 
-@pytest.mark.parametrize('framework', FRAMEWORKS)
+@pytest.mark.parametrize("framework", FRAMEWORKS)
 def test_scaffold_client(mock_gradients: Vector) -> None:
     """Conduct a series of co-dependent unit tests on ScaffoldClientModule."""
     module = ScaffoldClientModule()
-    assert module.delta == 0.
+    assert module.delta == 0.0
     # Test that initial aux_var collection fails.
     with pytest.raises(RuntimeError):
         module.collect_aux_var()
@@ -43,15 +45,15 @@ def test_scaffold_client(mock_gradients: Vector) -> None:
     module.process_aux_var({"delta": mock_gradients})
     assert module.delta == mock_gradients
     # Test run correctness (with correction).
-    zeros = (mock_gradients - mock_gradients)
+    zeros = mock_gradients - mock_gradients
     assert module.run(mock_gradients) == zeros
 
 
-@pytest.mark.parametrize('framework', FRAMEWORKS)
+@pytest.mark.parametrize("framework", FRAMEWORKS)
 def test_scaffold_server(mock_gradients: Vector) -> None:
     """Conduct a series of co-dependent unit tests on ScaffoldServerModule."""
     module = ScaffoldServerModule()
-    assert module.state == 0.
+    assert module.state == 0.0
     # Test initial aux_var collection.
     aux_var = module.collect_aux_var()
     assert not aux_var
@@ -59,27 +61,27 @@ def test_scaffold_server(mock_gradients: Vector) -> None:
     with pytest.raises(KeyError):
         module.process_aux_var({"client": {"lorem": "ipsum"}})
     with pytest.raises(TypeError):
-        module.process_aux_var({"client": {"state": [0.]}})
+        module.process_aux_var({"client": {"state": [0.0]}})
     module.process_aux_var(
         {str(i): {"state": mock_gradients} for i in range(5)}
     )
     assert module.s_loc == {str(i): mock_gradients for i in range(5)}
     assert isinstance(module.state, type(mock_gradients))
     # Take numerical precision issues into account when checking values.
-    mock_unprecise = (5 * mock_gradients / 5)
+    mock_unprecise = 5 * mock_gradients / 5
     assert module.state == mock_unprecise
     # Test run correctness (no correction as per algorithm).
     assert module.run(mock_gradients) == mock_gradients
     # Test aux_var collection after a round.
-    zeros = (mock_gradients - mock_unprecise)
+    zeros = mock_gradients - mock_unprecise
     aux_var = module.collect_aux_var()
     assert aux_var == {str(i): {"delta": zeros} for i in range(5)}
 
 
 @pytest.mark.parametrize(
-    'client_aware', [True, False], ids=['ClientAware', 'ClientBlind']
+    "client_aware", [True, False], ids=["ClientAware", "ClientBlind"]
 )
-@pytest.mark.parametrize('framework', FRAMEWORKS)
+@pytest.mark.parametrize("framework", FRAMEWORKS)
 def test_scaffold_routine(client_aware: bool, mock_gradients: Vector) -> None:
     """Conduct a mock client/server SCAFFOLD training routine.
 
@@ -90,9 +92,7 @@ def test_scaffold_routine(client_aware: bool, mock_gradients: Vector) -> None:
     list of clients in advance.
     """
     # Instantiate 10 clients and a server.
-    clients = {
-        f"client_{i}": ScaffoldClientModule() for i in range(10)
-    }
+    clients = {f"client_{i}": ScaffoldClientModule() for i in range(10)}
     server = ScaffoldServerModule(list(clients) if client_aware else None)
     # Run two training rounds.
     for rstep in range(2):

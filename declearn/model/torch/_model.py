@@ -29,11 +29,11 @@ class TorchModel(Model):
     """
 
     def __init__(
-            self,
-            model: torch.nn.Module,
-            loss: torch.nn.Module,
-            #metrics: ,
-        ) -> None:
+        self,
+        model: torch.nn.Module,
+        loss: torch.nn.Module,
+        # metrics: ,
+    ) -> None:
         """Instantiate a Model interface wrapping a torch.nn.Module.
 
         Parameters
@@ -47,29 +47,27 @@ class TorchModel(Model):
         """
         # Type-check the input Model and wrap it up.
         if not isinstance(model, torch.nn.Module):
-            raise TypeError(
-                "'model' should be a torch.nn.Module instance."
-            )
+            raise TypeError("'model' should be a torch.nn.Module instance.")
         super().__init__(model)
         # Assign loss module and set it not to reduce sample-wise values.
         self._loss_fn = loss
-        self._loss_fn.reduction = 'none'  # type: ignore
+        self._loss_fn.reduction = "none"  # type: ignore
 
     @property
     def required_data_info(
-            self,
-        ) -> Set[str]:
+        self,
+    ) -> Set[str]:
         return set()
 
     def initialize(
-            self,
-            data_info: Dict[str, Any],
-        ) -> None:
+        self,
+        data_info: Dict[str, Any],
+    ) -> None:
         return None
 
     def get_config(
-            self,
-        ) -> Dict[str, Any]:
+        self,
+    ) -> Dict[str, Any]:
         warnings.warn(
             "PyTorch JSON serialization relies on pickle, which may be unsafe."
         )
@@ -86,9 +84,9 @@ class TorchModel(Model):
 
     @classmethod
     def from_config(
-            cls,
-            config: Dict[str, Any],
-        ) -> 'TorchModel':
+        cls,
+        config: Dict[str, Any],
+    ) -> "TorchModel":
         """Instantiate a TorchModel from a configuration dict."""
         with io.BytesIO(bytes.fromhex(config["model"])) as buffer:
             model = torch.load(buffer)  # type: ignore
@@ -97,32 +95,33 @@ class TorchModel(Model):
         return cls(model=model, loss=loss)
 
     def get_weights(
-            self,
-        ) -> NumpyVector:
-        return NumpyVector({
+        self,
+    ) -> NumpyVector:
+        weights = {
             key: tns.numpy().copy()  # NOTE: otherwise, view on Tensor data
             for key, tns in self._model.state_dict().items()
-        })
+        }
+        return NumpyVector(weights)
 
     def set_weights(
-            self,
-            weights: NumpyVector,
-        ) -> None:
+        self,
+        weights: NumpyVector,
+    ) -> None:
         # false-positive on torch.from_numpy; pylint: disable=no-member
-        self._model.load_state_dict({
-            key: torch.from_numpy(arr) for key, arr in weights.coefs.items()
-        })
+        self._model.load_state_dict(
+            {key: torch.from_numpy(arr) for key, arr in weights.coefs.items()}
+        )
 
     def compute_batch_gradients(
-            self,
-            batch: Batch,
-        ) -> TorchVector:
+        self,
+        batch: Batch,
+    ) -> TorchVector:
         return self._compute_batch_gradients(batch)
 
     def _compute_batch_gradients(
-            self,
-            batch: Batch,
-        ) -> TorchVector:
+        self,
+        batch: Batch,
+    ) -> TorchVector:
         """Compute and return batch-averaged gradients of trainable weights."""
         # Unpack inputs and clear gradients' history.
         inputs, y_true, s_wght = self._unpack_batch(batch)
@@ -132,17 +131,17 @@ class TorchModel(Model):
         loss = self._compute_loss(y_pred, y_true, s_wght)
         loss.backward()  # type: ignore
         # Collect weights' gradients and return them in a Vector container.
-        return TorchVector({
+        grads = {
             str(i): p.grad.detach().clone()
             for i, p in enumerate(self._model.parameters())
             if p.requires_grad
-        })
+        }
+        return TorchVector(grads)
 
     @staticmethod
-    def _unpack_batch(
-            batch: Batch
-        ) -> TensorBatch:
+    def _unpack_batch(batch: Batch) -> TensorBatch:
         """Unpack and enforce Tensor conversion to an input data batch."""
+        # fmt: off
         # Define an array-to-tensor conversion routine.
         def convert(data: Any) -> Optional[torch.Tensor]:
             if (data is None) or isinstance(data, torch.Tensor):
@@ -157,11 +156,11 @@ class TorchModel(Model):
         return output  # type: ignore
 
     def _compute_loss(
-            self,
-            y_pred: torch.Tensor,
-            y_true: Optional[torch.Tensor],
-            s_wght: Optional[torch.Tensor] = None,
-        ) -> torch.Tensor:
+        self,
+        y_pred: torch.Tensor,
+        y_true: Optional[torch.Tensor],
+        s_wght: Optional[torch.Tensor] = None,
+    ) -> torch.Tensor:
         """Compute the average (opt. weighted) loss over given predictions."""
         loss = self._loss_fn(y_pred, y_true)
         if s_wght is not None:
@@ -169,9 +168,9 @@ class TorchModel(Model):
         return loss.mean()  # type: ignore
 
     def apply_updates(  # type: ignore  # future: revise
-            self,
-            updates: TorchVector,
-        ) -> None:
+        self,
+        updates: TorchVector,
+    ) -> None:
         with torch.no_grad():
             for idx, par in enumerate(self._model.parameters()):
                 upd = updates.coefs.get(str(idx))
@@ -179,11 +178,11 @@ class TorchModel(Model):
                     par.add_(upd)
 
     def compute_loss(
-            self,
-            dataset: Iterable[Batch],
-        ) -> float:
-        total = 0.
-        n_btc = 0.
+        self,
+        dataset: Iterable[Batch],
+    ) -> float:
+        total = 0.0
+        n_btc = 0.0
         try:
             self._model.eval()
             with torch.no_grad():

@@ -31,8 +31,8 @@ from scipy.sparse import (  # type: ignore
 )
 
 __all__ = [
-    'sparse_from_file',
-    'sparse_to_file',
+    "sparse_from_file",
+    "sparse_to_file",
 ]
 
 
@@ -48,9 +48,9 @@ SPARSE_TYPES = {
 
 
 def sparse_to_file(
-        path: str,
-        matrix: spmatrix,
-    ) -> None:
+    path: str,
+    matrix: spmatrix,
+) -> None:
     """Dump a scipy sparse matrix as a text file.
 
     See function `sparse_from_file` to reload from the dump file.
@@ -97,9 +97,7 @@ def sparse_to_file(
             file.write("\n" + row)
 
 
-def sparse_from_file(
-        path: str
-    ) -> spmatrix:
+def sparse_from_file(path: str) -> spmatrix:
     """Return a scipy sparse matrix loaded from a text file.
 
     See function `sparse_to_file` to create reloadable dump files.
@@ -147,8 +145,8 @@ def sparse_from_file(
         cnv = int if lil.dtype.kind == "i" else float
         # Iteratively parse and fill-in row data.
         for rix, row in enumerate(file):
-            for field in row.strip(' \n').split(' '):
-                ind, val = field.split(':')
+            for field in row.strip(" \n").split(" "):
+                ind, val = field.split(":")
                 lil[rix, int(ind)] = cnv(val)
     # Convert the matrix to its initial format and return.
     return getattr(lil, f"to{head['stype']}")()

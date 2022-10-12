@@ -5,17 +5,24 @@
 import logging
 import types
 from abc import ABCMeta, abstractmethod
-from typing import Any, Dict, Optional, Type
+from typing import Any, Dict, Optional, Type, Union
 
 
 from declearn.communication.messaging import (
-    Empty, Error, GetMessageRequest, JoinReply, JoinRequest, Message
+    Empty,
+    Error,
+    GetMessageRequest,
+    JoinReply,
+    JoinRequest,
+    Message,
 )
+from declearn.utils import get_logger
 
 
 __all__ = [
-    'Client',
+    "Client",
 ]
+
 
 class Client(metaclass=ABCMeta):
     """Abstract class defining an API for client-side communication endpoints.
@@ -50,15 +57,14 @@ class Client(metaclass=ABCMeta):
     be rejected by the server if the client has not been registered.
     """
 
-    logger: logging.Logger
-
     @abstractmethod
     def __init__(
-            self,
-            server_uri: str,
-            name: str,
-            certificate: Optional[str] = None,
-        ) -> None:
+        self,
+        server_uri: str,
+        name: str,
+        certificate: Optional[str] = None,
+        logger: Union[logging.Logger, str, None] = None,
+    ) -> None:
         """Instantiate the client-side communications handler.
 
         Parameters
@@ -71,27 +77,34 @@ class Client(metaclass=ABCMeta):
         certificate: str or None, default=None,
             Path to a certificate (publickey) PEM file, to use SSL/TLS
             communcations encryption.
+        logger: logging.Logger or str or None, default=None,
+            Logger to use, or name of a logger to set up using
+            `declearn.utils.get_logger`. If None, use `type(self)-name`.
         """
         # Assign basic attributes. Note: children must handle 'certificate'.
         self.server_uri = server_uri
         self.name = name
         self._ssl = self._setup_ssl_context(certificate)
+        if isinstance(logger, logging.Logger):
+            self.logger = logger
+        else:
+            self.logger = get_logger(logger or f"{type(self).__name__}-{name}")
 
     @staticmethod
     @abstractmethod
     def _setup_ssl_context(
-            certificate: Optional[str] = None,
-        ) -> Any:
+        certificate: Optional[str] = None,
+    ) -> Any:
         """Set up and return an (optional) SSL context object.
 
         The return type is communication-protocol dependent.
         """
         return NotImplemented
 
+    # similar to Server API; pylint: disable=duplicate-code
+
     @abstractmethod
-    async def start(
-            self
-        ) -> None:
+    async def start(self) -> None:
         """Start the client, i.e. connect to the server.
 
         Note: this method can be called safely even if the
@@ -100,9 +113,7 @@ class Client(metaclass=ABCMeta):
         return None
 
     @abstractmethod
-    async def stop(
-            self
-        ) -> None:
+    async def stop(self) -> None:
         """Stop the client, i.e. close all connections.
 
         Note: this method can be called safely even if the
@@ -111,23 +122,25 @@ class Client(metaclass=ABCMeta):
         return None
 
     async def __aenter__(
-            self,
-        ) -> 'Client':
+        self,
+    ) -> "Client":
         await self.start()
         return self
 
     async def __aexit__(
-            self,
-            exc_type: Type[Exception],
-            exc_value: Exception,
-            exc_tb: types.TracebackType,
-        ) -> None:
+        self,
+        exc_type: Type[Exception],
+        exc_value: Exception,
+        exc_tb: types.TracebackType,
+    ) -> None:
         await self.stop()
 
+    # pylint: enable=duplicate-code
+
     async def register(
-            self,
-            data_info: Dict[str, Any],
-        ) -> bool:
+        self,
+        data_info: Dict[str, Any],
+    ) -> bool:
         """Request the server to join a federating learning session.
 
         Parameters
@@ -152,7 +165,8 @@ class Client(metaclass=ABCMeta):
         if isinstance(reply, JoinReply):
             self.logger.info(
                 "Registration was %saccepted: '%s'",
-                "" if reply.accept else "not ", reply.flag
+                "" if reply.accept else "not ",
+                reply.flag,
             )
             return reply.accept
         # Case when an Error was received.
@@ -168,9 +182,9 @@ class Client(metaclass=ABCMeta):
 
     @abstractmethod
     async def _send_message(
-            self,
-            message: Message,
-        ) -> Message:
+        self,
+        message: Message,
+    ) -> Message:
         """Send a message to the server and return the obtained reply.
 
         This method should be defined by concrete Client subclasses,
@@ -181,9 +195,9 @@ class Client(metaclass=ABCMeta):
         return NotImplemented
 
     async def send_message(
-            self,
-            message: Message,
-        ) -> None:
+        self,
+        message: Message,
+    ) -> None:
         """Send a message to the server.
 
         Parameters
@@ -215,10 +229,7 @@ class Client(metaclass=ABCMeta):
             "Received an undue message type in response to the posted message."
         )
 
-    async def check_message(
-            self,
-            timeout: Optional[int] = None
-        ) -> Message:
+    async def check_message(self, timeout: Optional[int] = None) -> Message:
         """Retrieve the next message sent by the server.
 
         Returns

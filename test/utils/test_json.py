@@ -15,6 +15,7 @@ from declearn.utils import (
     json_unpack,
 )
 
+
 class CustomType:
     """Mock custom type used for testing purposes."""
 
@@ -48,6 +49,7 @@ def test_add_json_support() -> None:
     # Declare a second, empty custom type for this test only.
     class OtherType:  # pylint: disable=all
         pass
+
     # Test that registration does not fail.
     add_json_support(CustomType, pack_custom, unpack_custom, "custom")
     # Test that registering twice (wrt type OR name) fails.
@@ -56,9 +58,7 @@ def test_add_json_support() -> None:
     with pytest.raises(KeyError):
         add_json_support(OtherType, pack_custom, unpack_custom, "custom")
     # Test that `repl=True` works.
-    add_json_support(
-        CustomType, pack_custom, unpack_custom, None, repl=True
-    )
+    add_json_support(CustomType, pack_custom, unpack_custom, None, repl=True)
     add_json_support(
         OtherType, pack_custom, unpack_custom, "custom", repl=True
     )
@@ -69,6 +69,7 @@ def test_json_pack() -> None:
     # Define a subtype of CustomType (to ensure it is not supported).
     class SubType(CustomType):  # pylint: disable=all
         pass
+
     # Test that an object of that type cannot be properly packed.
     obj = SubType()
     with pytest.raises(TypeError):
@@ -85,14 +86,8 @@ def test_json_pack() -> None:
 def test_json_unpack_unknown() -> None:
     """Unit tests for `json_unpack` with un-specified objects."""
     # Declare objects that should pass as-is, with and without warnings.
-    obj_warn = {
-        "__type__": str(time.time_ns()),
-        "dump": ["lorem ipsum"]
-    }
-    obj_pass = {
-        "foo": "foo",
-        "bar": ["lorem ipsum"]
-    }
+    obj_warn = {"__type__": str(time.time_ns()), "dump": ["lorem ipsum"]}
+    obj_pass = {"foo": "foo", "bar": ["lorem ipsum"]}
     # Test that the expected behavior occurs.
     with pytest.warns(UserWarning):
         assert json_unpack(obj_warn) is obj_warn

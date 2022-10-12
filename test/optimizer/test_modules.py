@@ -26,6 +26,7 @@ from typing import Dict, List, Type
 
 import pytest
 import numpy as np
+
 with warnings.catch_warnings():  # silence tensorflow import-time warnings
     warnings.simplefilter("ignore")
     import tensorflow as tf  # type: ignore
@@ -92,13 +93,13 @@ class GradientsTestCase:
         rng = np.random.default_rng(seed=0)
         shapes = [(64, 32), (32,), (32, 16), (16,), (16, 1), (1,)]
         values = [rng.normal(size=shape) for shape in shapes]
-        return self.vector_cls({
-            str(idx): self.convert(value) for idx, value in enumerate(values)
-        })
+        return self.vector_cls(
+            {str(idx): self.convert(value) for idx, value in enumerate(values)}
+        )
 
 
 @pytest.mark.parametrize(
-    'cls', OPTIMODULE_SUBCLASSES.values(), ids=OPTIMODULE_SUBCLASSES.keys()
+    "cls", OPTIMODULE_SUBCLASSES.values(), ids=OPTIMODULE_SUBCLASSES.keys()
 )
 class TestOptiModule:
     """Unit tests for declearn.optimizer.modules.OptiModule subclasses."""
@@ -130,7 +131,7 @@ class TestOptiModule:
             cfg.to_json(path)
             self.assert_equivalent(module, cls.deserialize(path))
 
-    @pytest.mark.parametrize('framework', FRAMEWORKS)
+    @pytest.mark.parametrize("framework", FRAMEWORKS)
     def test_run(self, cls: Type[OptiModule], framework: Framework) -> None:
         """Test an OptiModule's run method using a given framework.
 
@@ -166,10 +167,11 @@ class TestOptiModule:
                     f"Skipping framework '{framework}' in equivalence test."
                 )
             finally:
-                results.append(NumpyVector({
+                coefs = {
                     key: f_case.to_numpy(val)
                     for key, val in output.coefs.items()
-                }))
+                }
+                results.append(NumpyVector(coefs))
         # Check that all collected results have the same values.
         assert results
         assert all(
@@ -178,10 +180,10 @@ class TestOptiModule:
             for key, val in res.coefs.items()
         )
 
-    @pytest.mark.parametrize('framework', FRAMEWORKS)
+    @pytest.mark.parametrize("framework", FRAMEWORKS)
     def test_collect_aux_var(
-            self, cls: Type[OptiModule], framework: Framework
-        ) -> None:
+        self, cls: Type[OptiModule], framework: Framework
+    ) -> None:
         """Test an OptiModule's collect_aux_var method."""
         test_case = GradientsTestCase(framework)
         module = cls()
