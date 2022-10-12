@@ -30,6 +30,8 @@ class TensorflowVector(Vector):
     gradients.
     Note that this class does not (yet?) support special
     tensor types such as SparseTensor or RaggedTensor.
+
+    Use `vector.coefs` to access the stored coefficients.
     """
 
     _op_add = staticmethod(tf.add)

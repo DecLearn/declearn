@@ -32,6 +32,8 @@ class Vector(metaclass=ABCMeta):
     structures (numpy arrays, tensorflow or torch tensors, etc.).
     It enables writing algorithms and operations on such structures,
     agnostic of their actual implementation support.
+
+    Use `vector.coefs` to access the stored coefficients.
     """
 
     _op_add = operator.add

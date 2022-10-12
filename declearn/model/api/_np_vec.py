@@ -25,6 +25,8 @@ class NumpyVector(Vector):
     either applied to each and every coefficient, or imply
     two sets of aligned coefficients (i.e. two NumpyVector
     instances with similar coefficients specifications).
+
+    Use `vector.coefs` to access the stored coefficients.
     """
 
     _op_add = np.add
