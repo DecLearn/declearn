@@ -2,7 +2,7 @@
 
 """TorchVector gradients container."""
 
-from typing import Any, Dict, Set, Type
+from typing import Any, Dict, Set, Tuple, Type
 
 import numpy as np
 import torch
@@ -36,15 +36,10 @@ class TorchVector(Vector):
     def __init__(self, coefs: Dict[str, torch.Tensor]) -> None:
         super().__init__(coefs)
 
-    def __repr__(
+    def shapes(
         self,
-    ) -> str:
-        string = f"{type(self).__name__} with {len(self.coefs)} coefs:"
-        string += "".join(
-            f"\n    {key}: {val.dtype} tensor with shape {val.shape}"
-            for key, val in self.coefs.items()
-        )
-        return string
+    ) -> Dict[str, Tuple[int, ...]]:
+        return {key: tuple(coef.shape) for key, coef in self.coefs.items()}
 
     def pack(
         self,

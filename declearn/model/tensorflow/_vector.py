@@ -48,18 +48,10 @@ class TensorflowVector(Vector):
     ) -> None:
         super().__init__(coefs)
 
-    def __repr__(
+    def dtypes(
         self,
-    ) -> str:
-        # fmt: off
-        string = f"{type(self).__name__} with {len(self.coefs)} coefs:"
-        string += "".join(
-            f"\n    {key}: {repr(val.dtype)} slices with shape {val.shape}"
-            if isinstance(val, tf.IndexedSlices) else
-            f"\n    {key}: {repr(val.dtype)} tensor with shape {val.shape}"
-            for key, val in self.coefs.items()
-        )
-        return string
+    ) -> Dict[str, str]:
+        return {key: coef.dtype.name for key, coef in self.coefs.items()}
 
     def pack(
         self,

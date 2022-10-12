@@ -4,7 +4,7 @@
 
 import operator
 from abc import ABCMeta, abstractmethod
-from typing import Any, Callable, Dict, Optional, Set, Type, Union
+from typing import Any, Callable, Dict, Optional, Set, Tuple, Type, Union
 
 from numpy.typing import ArrayLike
 
@@ -92,6 +92,44 @@ class Vector(metaclass=ABCMeta):
     ) -> None:
         """Instantiate the Vector to wrap a collection of data arrays."""
         self.coefs = coefs
+
+    def __repr__(self) -> str:
+        string = f"{type(self).__name__} with {len(self.coefs)} coefs:"
+        dtypes = self.dtypes()
+        shapes = self.shapes()
+        otypes = {
+            key: f"{type(val).__module__}.{type(val).__name__}"
+            for key, val in self.coefs.items()
+        }
+        string += "".join(
+            f"\n    {k}: {dtypes[k]} {otypes[k]} with shape {shapes[k]}"
+            for k in self.coefs
+        )
+        return string
+
+    def shapes(
+        self,
+    ) -> Dict[str, Tuple[int, ...]]:
+        """Return a dict storing the shape of each coefficient."""
+        try:
+            return {key: coef.shape for key, coef in self.coefs.items()}
+        except AttributeError as exc:
+            raise NotImplementedError(
+                "Wrapped coefficients appear not to implement `.shape`.\n"
+                f"`{type(self).__name__}.shapes` probably needs overriding."
+            ) from exc
+
+    def dtypes(
+        self,
+    ) -> Dict[str, str]:
+        """Return a dict storing the dtype of each coefficient."""
+        try:
+            return {key: str(coef.dtype) for key, coef in self.coefs.items()}
+        except AttributeError as exc:
+            raise NotImplementedError(
+                "Wrapped coefficients appear not to implement `.dtype`.\n"
+                f"`{type(self).__name__}.dtypes` probably needs overriding."
+            ) from exc
 
     def pack(
         self,

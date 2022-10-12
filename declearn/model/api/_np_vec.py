@@ -36,16 +36,6 @@ class NumpyVector(Vector):
     def __init__(self, coefs: Dict[str, np.ndarray]) -> None:
         super().__init__(coefs)
 
-    def __repr__(
-        self,
-    ) -> str:
-        string = f"{type(self).__name__} with {len(self.coefs)} coefs:"
-        string += "".join(
-            f"\n    {key}: {val.dtype} array with shape {val.shape}"
-            for key, val in self.coefs.items()
-        )
-        return string
-
     def __eq__(self, other: Any) -> bool:
         valid = isinstance(other, NumpyVector)
         valid = valid and (self.coefs.keys() == other.coefs.keys())
