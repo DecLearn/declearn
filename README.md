@@ -89,6 +89,11 @@ conda create -n declearn python=3.8 pip
 conda activate declearn
 ```
 
+_Note: at the moment, conda installation is not recommended, because the
+package's installation is made slightly harder due to some dependencies being
+installable via conda while other are only available via pip/pypi, which can
+lead to dependency-tracking trouble._
+
 ### Installation
 
 To install the package, simply clone the git repository and run `pip install .`
@@ -115,7 +120,11 @@ pip install .[tests]  # install all optional dependencies plus testing ones
   flag to the pip command.
 * Developers may have better installing the package in editable mode,
   using `pip install -e .`
-
+* If you are installing the package within a conda environment, it may
+  be better to run `pip install --no-deps .` so as to only install the
+  package, and then to manually install the dependencies listed in the
+  `pyproject.toml` file, using `conda install` rather than `pip install`
+  whenever it is possible.
 
 ## Quickstart
 
@@ -490,13 +499,22 @@ The **coding rules** are fairly simple:
   and [pylint](https://pylint.pycqa.org/en/latest/) (for more general linting);
   do use "type: ..." and "pylint: disable=..." comments where you think it
   relevant, preferably with some side explanations
+  (see dedicated sub-section [below](#running-black-to-format-the-code))
+* reformat your code using [black](https://github.com/psf/black); do use
+  (sparingly) "fmt: off/on" comments when you think it relevant
+  (see dedicated sub-section [below](#running-pylint-to-check-the-code))
 
-### Unit tests
+### Unit tests and code analysis
 
 Unit tests, as well as more-involved functional ones, are implemented under
 the `test/` folder of the present repository.
 They are implemented using the [PyTest](https://docs.pytest.org) framework,
 as well as some third-party plug-ins (refer to [Setup][#setup] for details).
+
+Additionally, code analysis tools are configured through the `pyproject.toml`
+file, and used to control code quality upon merging to the main branch. These
+tools are [black](https://github.com/psf/black) for code formatting, and
+[pylint](https://pylint.pycqa.org/) for static code analysis.
 
 #### Running the test suite using tox
 
@@ -518,7 +536,7 @@ below), run:
 tox [tox options] -- --fulltest
 ```
 
-#### Running tests using pytest
+#### Running unit tests using pytest
 
 To run all the tests, simply use:
 ```bash
@@ -542,3 +560,65 @@ skipping these, and therefore run a more complete test suite, add the
 ```bash
 pytest --fulltest test  # or any more-specific target you want
 ```
+
+#### Running black to format the code
+
+The [black](https://github.com/psf/black) code formatter is used to enforce
+uniformity of the source code's formatting style. It is configured to have
+a maximum line length of 79 (as per [PEP 8](https://peps.python.org/pep-0008/))
+and ignore auto-generated protobuf files, but will otherwise modify files
+in-place when executing the following commands from the repository's root
+folder:
+```bash
+black declearn  # reformat the package
+black test      # reformat the tests
+```
+
+Note that it may also be called on individual files or folders.
+One may "blindly" run black, however it is actually advised to have a look
+at the reformatting operated, and act on any readability loss due to it. A
+couple of advice:
+1. Use `#fmt: off` / `#fmt: on` comments sparingly, but use them.
+<br/>It is totally okay to protect some (limited) code blocks from
+reformatting if you already spent some time and effort in achieving a
+readable code that black would disrupt. Please consider refactoring as
+an alternative (e.g. limiting the nest-depth of a statement).
+
+2. Pre-format functions and methods' signature to ensure style homogeneity.
+<br/>When a signature is short enough, black may attempt to flatten it as a
+one-liner, whereas the norm in declearn is to have one line per argument,
+all of which end with a trailing comma (for diff minimization purposes). It
+may sometimes be necessary to manually write the code in the latter style
+for black not to reformat it.
+
+
+Finally, note that the test suite run with tox comprises code-checking by
+black, and will fail if some code is deemed to require alteration by that
+tool. You may run this check manually:
+```bash
+black --check declearn  # or any specific file or folder
+```
+
+#### Running pylint to check the code
+
+The [pylint](https://pylint.pycqa.org/) linter is expected to be used for
+static code analysis. As a consequence, `# pylint: disable=[some-warning]`
+comments can be found (and added) to the source code, preferably with some
+indication as to the rationale for silencing the warning (or error).
+
+A minimal amount of non-standard hyper-parameters are configured via the
+`pyproject.toml` file and will automatically be used by pylint when run
+from within the repository's folder.
+
+Most code editors enable integrating the linter to analyze the code as it is
+being edited. To lint the entire package (or some specific files or folders)
+one may simply run `pylint`:
+```bash
+pylint declearn  # analyze the package
+pylint test      # analyze the tests
+```
+
+Note that the test suite run with tox comprises the previous two commands,
+which both result in a score associated with the analyzed code. If the score
+does not equal 10/10, the test suite will fail - notably preventing acceptance
+of merge requests.
