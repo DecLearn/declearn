@@ -446,6 +446,11 @@ class InMemoryDataset(Dataset):
         if drop_remainder:
             limit = len(order) - (len(order) % batch_size)
             order = order[:limit]
+            if len(order) == 0:
+                raise ValueError(
+                    "The dataset is smaller than `batch_size`, so that "
+                    "`drop_remainder=True` results in an empty iterator."
+                )
         # Build array-wise batch iterators.
         iterators = [
             self._build_iterator(data, batch_size, order)
