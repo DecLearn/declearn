@@ -499,7 +499,8 @@ The **coding rules** are fairly simple:
   and [pylint](https://pylint.pycqa.org/en/latest/) (for more general linting);
   do use "type: ..." and "pylint: disable=..." comments where you think it
   relevant, preferably with some side explanations
-  (see dedicated sub-section [below](#running-black-to-format-the-code))
+  (see dedicated sub-sections below: [pylint](#running-black-to-format-the-code)
+  and [mypy](#running-mypy-to-type-check-the-code))
 * reformat your code using [black](https://github.com/psf/black); do use
   (sparingly) "fmt: off/on" comments when you think it relevant
   (see dedicated sub-section [below](#running-pylint-to-check-the-code))
@@ -513,8 +514,9 @@ as well as some third-party plug-ins (refer to [Setup][#setup] for details).
 
 Additionally, code analysis tools are configured through the `pyproject.toml`
 file, and used to control code quality upon merging to the main branch. These
-tools are [black](https://github.com/psf/black) for code formatting, and
-[pylint](https://pylint.pycqa.org/) for static code analysis.
+tools are [black](https://github.com/psf/black) for code formatting,
+[pylint](https://pylint.pycqa.org/) for overall static code analysis and
+[mypy](https://mypy.readthedocs.io/) for static type-cheking.
 
 #### Running the test suite using tox
 
@@ -621,4 +623,32 @@ pylint test      # analyze the tests
 Note that the test suite run with tox comprises the previous two commands,
 which both result in a score associated with the analyzed code. If the score
 does not equal 10/10, the test suite will fail - notably preventing acceptance
+of merge requests.
+
+
+#### Running mypy to type-check the code
+
+The [mypy](https://mypy.readthedocs.io/) linter is expected to be used for
+static type-checking code analysis. As a consequence, `# type: ignore` comments
+can be found (and added) to the source code, as sparingly as possible (mostly,
+to silence warnings about untyped third-party dependencies, false-positives,
+or locally on closure functions that are obvious enough to read from context).
+
+Code should be type-hinted as much and as precisely as possible - so that mypy
+actually provides help in identifying (potential) errors and mistakes, with
+code clarity as final purpose, rather than being another linter to silence off.
+
+A minimal amount of parameters are configured via the `pyproject.toml` file,
+and some of the strictest rules are disabled as per their default value (e.g.
+Any expressions are authorized - but should be used sparingly).
+
+Most code editors enable integrating the linter to analyze the code as it is
+being edited. To lint the entire package (or some specific files or folders)
+one may simply run `mypy`:
+```bash
+mypy declearn
+```
+
+Note that the test suite run with tox comprises the previous command. If mypy
+identifies errors, the test suite will fail - notably preventing acceptance
 of merge requests.
