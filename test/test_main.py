@@ -2,7 +2,6 @@
 
 """Declearn demonstration / testing code."""
 
-import multiprocessing as mp
 import tempfile
 import warnings
 from typing import Dict, Optional
@@ -25,6 +24,7 @@ from declearn.model.tensorflow import TensorflowModel
 from declearn.model.torch import TorchModel
 from declearn.main import FederatedClient, FederatedServer
 from declearn.strategy import FedAvg, FedAvgM, Scaffold, ScaffoldM
+from declearn.test_utils import run_as_processes
 
 
 class DeclearnTestCase:
@@ -209,36 +209,23 @@ def run_test_case(
 ) -> None:
     """Run a given test case, using processes to isolate server and clients."""
     # arguments provide modularity; pylint: disable=too-many-arguments
+    # Set up a test case object.
     # fmt: off
     test_case = DeclearnTestCase(
         kind, framework, strategy, nb_clients, protocol, use_ssl,
         ssl_cert or {}, rounds,
     )
     # fmt: on
-    server = mp.Process(target=test_case.run_federated_server)
+    # Prepare the server and clients routines.
+    server = (test_case.run_federated_server, tuple())  # type: ignore
     clients = [
-        mp.Process(target=test_case.run_federated_client, args=(f"cli_{i}",))
+        (test_case.run_federated_client, (f"cli_{i}",))
         for i in range(nb_clients)
     ]
-    try:
-        # Start all processes.
-        server.start()
-        for process in clients:
-            process.start()
-        # Regularly check for any failed process (exit if so).
-        while server.is_alive() or any(p.is_alive() for p in clients):
-            if server.exitcode or any(p.exitcode for p in clients):
-                break
-            server.join(timeout=1)
-        # Assert that all processes exited properly.
-        assert server.exitcode == 0
-        assert all(p.exitcode == 0 for p in clients)
-        # REVISE: add convergence tests
-    finally:
-        # Ensure that all processes are terminated.
-        server.terminate()
-        for process in clients:
-            process.terminate()
+    # Run them concurrently using multiprocessing.
+    exitcodes = run_as_processes(server, *clients)
+    # Verify that all processes ended without error nor interruption.
+    assert all(code == 0 for code in exitcodes)
 
 
 @pytest.mark.parametrize("strategy", ["FedAvg", "FedAvgM", "Scaffold"])
