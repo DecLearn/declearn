@@ -1,4 +1,4 @@
-# Declearn: a modular and extensible framework for Federated Learning.
+# Declearn: a modular and extensible framework for Federated Learning
 
 - [Introduction](#introduction)
 - [Setup](#setup)
@@ -21,19 +21,20 @@ information (rather than individual data samples) with an orchestrating server
 
 The aim of `declearn` is to provide both real-world end-users and algorithm
 researchers with a modular and extensible framework that:
-* builds on **abstractions** general enough to write backbone algorithmic code
+
+- builds on **abstractions** general enough to write backbone algorithmic code
   agnostic to the actual computation framework, statistical model details
   or network communications setup
-* designs **modular and combinable** objects, so that algorithmic features, and
+- designs **modular and combinable** objects, so that algorithmic features, and
   more generally any specific implementation of a component (the model, network
   protocol, client or server optimizer...) may easily be plugged into the main
   federated learning process - enabling users to experiment with configurations
   that intersect unitary features
-* provides with functioning tools that may be used **out-of-the-box** to set up
+- provides with functioning tools that may be used **out-of-the-box** to set up
   federated learning tasks using some popular computation frameworks (scikit-
   learn, tensorflow, pytorch...) and federated learning algorithms (FedAvg,
   Scaffold, FedYogi...)
-* provides with tools that enable **extending** the support of existing tools
+- provides with tools that enable **extending** the support of existing tools
   and APIs to custom functions and classes without having to hack into the
   source code, merely adding new features (tensor libraries, model classes,
   optimization plug-ins, orchestration algorithms, communication protocols...)
@@ -44,12 +45,12 @@ learning that implies a central server orchestrating computations, but it might
 become more oriented towards decentralized processes in the future, that remove
 the use of a central agent.
 
-
 ## Setup
+
 ### Requirements
 
-* python >= 3.8
-* pip
+- python >= 3.8
+- pip
 
 Third-party requirements are specified (and automatically installed) as part
 of the installation process, and may be consulted from the `pyproject.toml`
@@ -62,7 +63,7 @@ are also specified as part of the `pyproject.toml` file, and may be divided
 into two categories:<br/>
 (a) dependencies of optional, applied declearn components
 (such as the TensorFlow and PyTorch tensor libraries) that are not imported
-with declern by default ;<br/>
+with declearn by default ;<br/>
 (b) dependencies for running tests on the package (mainly pytest and some of
 its plug-ins)
 
@@ -78,12 +79,14 @@ do so, you may for example use python's built-in
 [conda](https://docs.conda.io/en/latest/).
 
 Venv instructions (example):
+
 ```bash
 python -m venv ~/.venvs/declearn
 source ~/.venvs/declearn/bin/activate
 ```
 
 Conda instructions (example):
+
 ```bash
 conda create -n declearn python=3.8 pip
 conda activate declearn
@@ -115,12 +118,13 @@ pip install .[tests]  # install all optional dependencies plus testing ones
 ```
 
 **Notes**:
-* If you are not using a virtual environment, select carefully the `pip`
+
+- If you are not using a virtual environment, select carefully the `pip`
   binary being called (e.g. use `python -m pip`), and/or add a `--user`
   flag to the pip command.
-* Developers may have better installing the package in editable mode,
+- Developers may have better installing the package in editable mode,
   using `pip install -e .`
-* If you are installing the package within a conda environment, it may
+- If you are installing the package within a conda environment, it may
   be better to run `pip install --no-deps .` so as to only install the
   package, and then to manually install the dependencies listed in the
   `pyproject.toml` file, using `conda install` rather than `pip install`
@@ -136,18 +140,19 @@ using pre-processed data, formatted as csv files with a "label" column,
 where each client has two files: one for training, the other for validation.
 
 Here, the code uses:
-* standard FedAvg strategy (SGD for local steps, averaging of updates weighted
+
+- standard FedAvg strategy (SGD for local steps, averaging of updates weighted
   by clients' training dataset size, no modifications of server-side updates)
-* 10 rounds of training, with 5 local epochs performed at each round and
+- 10 rounds of training, with 5 local epochs performed at each round and
   128-samples batch size
-* at least 1 and at most 3 clients, awaited for 180 seconds by the server
-* network communications using gRPC, on host "example.com" and port 8888
+- at least 1 and at most 3 clients, awaited for 180 seconds by the server
+- network communications using gRPC, on host "example.com" and port 8888
 
 Note that this example code may easily be adjusted to suit use cases, using
 other types of models, alternative federated learning algorithms and/or
 modifying the communication, training and validation hyper-parameters.
 Please refer to the [Hands-on usage](#hands-on-usage) section for a more
-general and detailed description of how to set up a federated learning
+detailed and general description of how to set up a federated learning
 task and process with declearn.
 
 ### Server-side script
@@ -207,7 +212,6 @@ written to modify the way updates are computed locally by clients, it will
 need to be shared with clients - either as a package to be imported (like
 torch previously), or as a bit of source code to add on top of the script.
 
-
 ## Usage of the Python API
 
 ### Overview of the Federated Learning process
@@ -236,7 +240,6 @@ exposed here.
   - optionally save the model (through a checkpointer)
   - close the network server and end the process
 
-
 #### Detail of the process phases
 
 - **Registration process**:
@@ -255,8 +258,7 @@ exposed here.
       came in too soon, i.e. registration is not opened yet)
   - messaging : (JoinRequest <-> JoinReply)
 
-
-* **Post-registration initialization**
+- **Post-registration initialization**
   - Server:
     - validate and aggregate clients-transmitted metadata
     - finalize the model's initialization using those metadata
@@ -265,8 +267,7 @@ exposed here.
     - instantiate the model and optimizer based on server instructions
   - messaging: (InitRequest <-> InitReply)
 
-
-* **Training round**:
+- **Training round**:
   - Server:
     - select clients that are to participate
     - send data-batching and effort constraints parameters
@@ -283,8 +284,7 @@ exposed here.
     - run global updates through the server's optimizer to modify and finally
       apply them
 
-
-* **Evaluation round**:
+- **Evaluation round**:
   - Server:
     - select clients that are to participate
     - send data-batching parameters and shared model weights
@@ -303,21 +303,22 @@ exposed here.
 #### Package structure
 
 The package is organized into the following submodules:
-* `communication`:<br/>
+
+- `communication`:<br/>
   &emsp; Client-Server network communications API and implementations.
-* `data_info`:<br/>
+- `data_info`:<br/>
   &emsp; Tools to write and extend shareable metadata fields specifications.
-* `dataset`:<br/>
+- `dataset`:<br/>
   &emsp; Data interfacing API and implementations.
-* `main`:<br/>
+- `main`:<br/>
   &emsp; Main classes implementing a Federated Learning process.
-* `model`:<br/>
+- `model`:<br/>
   &emsp; Model interfacing API and implementations.
-* `optimizer`:<br/>
+- `optimizer`:<br/>
   &emsp; Framework-agnostic optimizer and algorithmic plug-ins API and tools.
-* `typing`:<br/>
+- `typing`:<br/>
   &emsp; Type hinting utils, defined and exposed for code readability purposes.
-* `utils`:<br/>
+- `utils`:<br/>
   &emsp; Shared utils used (extensively) across all of declearn.
 
 #### Main abstractions
@@ -329,7 +330,7 @@ well as references on how to extend the support of `declearn`
 backend (notably, (de)serialization and configuration utils) to
 new custom concrete implementations inheriting the abstraction.
 
-* `declearn.model.api.Model`:
+- `declearn.model.api.Model`:
   - Object: Interface framework-specific machine learning models.
   - Usage: Compute gradients, apply updates, compute loss...
   - Examples:
@@ -338,8 +339,7 @@ new custom concrete implementations inheriting the abstraction.
     - `declearn.model.torch.TorchModel`
   - Extend: use `declearn.utils.register_type(group="Model")`
 
-
-* `declearn.model.api.Vector`:
+- `declearn.model.api.Vector`:
   - Object: Interface framework-specific data structures.
   - Usage: Wrap and operate on model weights, gradients, updates...
   - Examples:
@@ -348,8 +348,7 @@ new custom concrete implementations inheriting the abstraction.
     - `declearn.model.torch.TorchVector`
   - Extend: use `declearn.model.api.register_vector_type`
 
-
-* `declearn.optimizer.modules.OptiModule`:
+- `declearn.optimizer.modules.OptiModule`:
   - Object: Define optimization algorithm bricks.
   - Usage: Plug into a `declearn.optimizer.Optimizer`.
   - Examples:
@@ -359,8 +358,7 @@ new custom concrete implementations inheriting the abstraction.
     - `declearn.optimizer.modules.ScaffoldServerModule`
   - Extend: use `declearn.utils.register_type(group="OptiModule")`
 
-
-* `declearn.communication.api.Client`:
+- `declearn.communication.api.Client`:
   - Object: Instantiate a network communication client endpoint.
   - Usage: Register for training, send and receive messages.
   - Examples:
@@ -368,8 +366,7 @@ new custom concrete implementations inheriting the abstraction.
     - `declearn.communication.websockets.WebsocketsClient`
   - Extend: use `declearn.utils.register_type(group="Client")`
 
-
-* `declearn.communication.api.Server`:
+- `declearn.communication.api.Server`:
   - Object: Instantiate a network communication server endpoint.
   - Usage: Receive clients' requests, send and receive messages.
   - Examples:
@@ -377,89 +374,112 @@ new custom concrete implementations inheriting the abstraction.
     - `declearn.communication.websockets.WebsocketsServer`
   - Extend: use `declearn.utils.register_type(group="Server")`
 
-
-* `declearn.dataset.Dataset`:
+- `declearn.dataset.Dataset`:
   - Object: Interface data sources agnostic to their format.
   - Usage: Yield (inputs, labels, weights) data batches, expose metadata.
   - Examples:
     - `declearn.dataset.InMemoryDataset`
   - Extend: use `declearn.utils.register_type(group="Dataset")`
 
-
 ### Hands-on usage
 
 Here are details on how to set up server-side and client-side programs
 that will run together to perform a federated learning process. Generic
 remarks from the [Quickstart](#quickstart) section hold here as well, the
-former section being an overly simple examplification of the present one.
+former section being an overly simple exemplification of the present one.
+
+You can follow along on a concrete example that uses the UCI heart disease
+dataset, that is stored in the `examples/uci-heart` folder. You may refer
+to the `server.py` and `client.py` example scripts, that comprise comments
+indicating how the code relates to the steps described below. For further
+details on this example and on how to run it, please refer to its own
+`readme.md` file.
 
 #### Server setup instructions
 
-* Define a Model:
-  - Set up a machine learning model in a given framework
-    (_e.g._ a `torch.nn.Module`).
-  - Select the appropriate `declearn.model.api.Model` subclass to wrap it up.
-  - Either instantiate the `Model` or provide a JSON-serialized configuration.
-* Define a Strategy:
-  - Select an out-of-the-box `declearn.strategy.Strategy` subclass that
-    defines the aggregation and optimization strategies for the process
-    (_e.g._ `declearn.strategy.FedAvg` or `declearn.strategy.Scaffold`)
-  - Parameterize and instantiate it.
-  <br/>**- OR -**
-  - Select and parameterize a `declearn.strategy.Aggregator` (subclass)
-    instance to define how clients' updates are to be aggregated into
-    global-model updates on the server side.
-  - Parameterize a `declearn.optimizer.Optimizer` (possibly using a selected
-    pipeline of `declearn.optimizer.modules.OptiModule` plug-ins) to be
-    used by clients to derive local step-wise updates from model gradients.
-  - Similarly, parameterize an `Optimizer` to be used by the server to
-    (optionally) refine the aggregated model updates before applying them.
-  - Wrap these three objects into a custom `Strategy` using
-    `declearn.strategiy.strategy_from_config`. Use instantiated objects'
-    `get_config` method if needed to abide by the former function's specs.
-* Define a communication Server:
-  - Select a communication protocol (_e.g._ "grpc" or "websockets").
-  - Select the host address and port to use.
-  - Optionally provide paths to PEM files storing SSL-required information.
-  - Wrap this into a config dict or use `declearn.communication.build_server`
-    to instantiate a `declearn.communication.api.Server` that will be used.
-* Instantiate a `declearn.main.FederatedServer`:
-  - Provide the Model, Strategy and Server objects or configurations.
-  - Optionally provide the path to a folder where to write output files
-    (model checkpoints and global loss history).
-* Call the server's `run` method, further specifying:
-  - Registration parameters: exact or min/max number of clients to have
-    and optional timeout delay spent waiting for said clients to join.
-  - Training parameters: data-batching parameters and effort constraints
-    (number of local epochs and/or steps to take, and optional timeout).
-  - Evaluation parameters: data-batching parameters (_as of now, effort
-    constraints are not yet used by the clients_).
+1. Define a Model:
+
+   - Set up a machine learning model in a given framework
+       (_e.g._ a `torch.nn.Module`).
+   - Select the appropriate `declearn.model.api.Model` subclass to wrap it up.
+   - Either instantiate the `Model` or provide a JSON-serialized configuration.
+
+2. Define a Strategy:
+
+   - Select an out-of-the-box `declearn.strategy.Strategy` subclass that
+       defines the aggregation and optimization strategies for the process
+       (_e.g._ `declearn.strategy.FedAvg` or `declearn.strategy.Scaffold`)
+   - Parameterize and instantiate it.
+     <br/>**- OR -**
+   - Select and parameterize a `declearn.strategy.Aggregator` (subclass)
+       instance to define how clients' updates are to be aggregated into
+       global-model updates on the server side.
+   - Parameterize a `declearn.optimizer.Optimizer` (possibly using a selected
+       pipeline of `declearn.optimizer.modules.OptiModule` plug-ins) to be
+       used by clients to derive local step-wise updates from model gradients.
+   - Similarly, parameterize an `Optimizer` to be used by the server to
+       (optionally) refine the aggregated model updates before applying them.
+   - Wrap these three objects into a custom `Strategy` using
+       `declearn.strategiy.strategy_from_config`. Use instantiated objects'
+       `get_config` method if needed to abide by the former function's specs.
+
+3. Define a communication Server:
+
+   - Select a communication protocol (_e.g._ "grpc" or "websockets").
+   - Select the host address and port to use.
+   - Optionally provide paths to PEM files stsoring SSL-required information.
+   - Wrap this into a config dict or use `declearn.communication.build_server`
+       to instantiate a `declearn.communication.api.Server` that will be used.
+
+4. Instantiate and run a FederatedServer:
+
+   - Instantiate a `declearn.main.FederatedServer`:
+     - Provide the Model, Strategy and Server objects or configurations.
+     - Optionally provide the path to a folder where to write output files
+       (model checkpoints and global loss history).
+   - Call the server's `run` method, further specifying:
+     - Registration parameters: exact or min/max number of clients to have
+       and optional timeout delay spent waiting for said clients to join.
+     - Training parameters: data-batching parameters and effort constraints
+       (number of local epochs and/or steps to take, and optional timeout).
+     - Evaluation parameters: data-batching parameters (_as of now, effort
+       constraints are not yet used by the clients_).
 
 #### Clients setup instructions
 
-* Interface training data:
-  - Select and parameterize a `declearn.dataset.Dataset` subclass that
-    will interface the local training dataset.
-  - Ensure its `get_data_sepcs` method exposes the metadata that is to
-    be shared with the server (and nothing else, to prevent data leak).
-* Interface validation data (optional):
-  - Optionally set up a second Dataset interfacing a validation dataset,
-    used in evaluation rounds. Otherwise, those rounds will be run using
-    the training dataset - which can be slow and/or lead to overfitting.
-* Define a communication Client:
-  - Select the communication protocol used (_e.g._ "grpc" or "websockets").
-  - Provide the server URI to connect to.
-  - Optionally provide path to a PEM file storing SSL-required information.
-  - Wrap this into a config dict or use `declearn.communication.build_client`
-    to instantiate a `declearn.communication.api.Client` that will be used.
-* Run any necessary import statement:
-  - If optional or third-party dependencies are known to be required, import
-    them (_e.g._ `import declearn.model.torch`).
-* Instantiate a `declearn.main.FederatedClient` and run it:
-  - Provide the Client and Dataset objects or configurations.
-  - Optionally provide the path to a folder where to write output files
-    (model checkpoints and local loss history).
-  - Call the client's `run` method and let the magic happen.
+1. Interface training data:
+
+   - Select and parameterize a `declearn.dataset.Dataset` subclass that
+       will interface the local training dataset.
+   - Ensure its `get_data_sepcs` method exposes the metadata that is to
+       be shared with the server (and nothing else, to prevent data leak).
+
+2. Interface validation data (optional):
+
+   - Optionally set up a second Dataset interfacing a validation dataset,
+       used in evaluation rounds. Otherwise, those rounds will be run using
+       the training dataset - which can be slow and/or lead to overfitting.
+
+3. Define a communication Client:
+
+   - Select the communication protocol used (_e.g._ "grpc" or "websockets").
+   - Provide the server URI to connect to.
+   - Optionally provide path to a PEM file storing SSL-required information.
+   - Wrap this into a config dict or use `declearn.communication.build_client`
+       to instantiate a `declearn.communication.api.Client` that will be used.
+
+4. Run any necessary import statement:
+
+   - If optional or third-party dependencies are known to be required, import
+       them (_e.g._ `import declearn.model.torch`).
+
+5. Instantiate a FederatedClient and run it:
+
+   - Instantiate a `declearn.main.FederatedClient`:
+     - Provide the Client and Dataset objects or configurations.
+     - Optionally provide the path to a folder where to write output files
+       (model checkpoints and local loss history).
+   - Call the client's `run` method and let the magic happen.
 
 #### Logging
 
@@ -486,22 +506,23 @@ create a dedicated branch, and submit a **Merge Request** once you want your
 work reviewed and further processed to end up integrated into the main branch.
 
 The **coding rules** are fairly simple:
-* abide by [PEP 8](https://peps.python.org/pep-0008/), in a way that is
+
+- abide by [PEP 8](https://peps.python.org/pep-0008/), in a way that is
   coherent with the practices already at work in declearn
-* abide by [PEP 257](https://peps.python.org/pep-0257/), _i.e._ write
+- abide by [PEP 257](https://peps.python.org/pep-0257/), _i.e._ write
   docstrings **everywhere** (unless inheriting from a method, the behaviour
   and signature of which are unmodified), again using formatting that is
   coherent with the declearn practices
-* type-hint the code, abiding by [PEP 484](https://peps.python.org/pep-0484/);
+- type-hint the code, abiding by [PEP 484](https://peps.python.org/pep-0484/);
   note that the use of Any and of "type: ignore" comments is authorized, but
   should be remain sparse
-* lint your code with [mypy](http://mypy-lang.org/) (for static type checking)
+- lint your code with [mypy](http://mypy-lang.org/) (for static type checking)
   and [pylint](https://pylint.pycqa.org/en/latest/) (for more general linting);
   do use "type: ..." and "pylint: disable=..." comments where you think it
   relevant, preferably with some side explanations
   (see dedicated sub-sections below: [pylint](#running-black-to-format-the-code)
   and [mypy](#running-mypy-to-type-check-the-code))
-* reformat your code using [black](https://github.com/psf/black); do use
+- reformat your code using [black](https://github.com/psf/black); do use
   (sparingly) "fmt: off/on" comments when you think it relevant
   (see dedicated sub-section [below](#running-pylint-to-check-the-code))
 
@@ -534,6 +555,7 @@ Note that additional parameters for `pytest` may be passed as well, by adding
 `--` followed by any set of options you want at the end of the `tox` command.
 For example, to use the declearn-specific `--fulltest` option (see the section
 below), run:
+
 ```bash
 tox [tox options] -- --fulltest
 ```
@@ -541,16 +563,19 @@ tox [tox options] -- --fulltest
 #### Running unit tests using pytest
 
 To run all the tests, simply use:
+
 ```bash
 pytest test
 ```
 
 To run the tests under a given module (here, "model"):
+
 ```bash
 pytest test/model
 ```
 
 To run the tests under a given file (here, "test_main.py"):
+
 ```bash
 pytest test/test_main.py
 ```
@@ -559,6 +584,7 @@ Note that by default, some test scenarios that are considered somewhat
 superfluous~redundant will be skipped in order to save time. To avoid
 skipping these, and therefore run a more complete test suite, add the
 `--fulltest` option to pytest:
+
 ```bash
 pytest --fulltest test  # or any more-specific target you want
 ```
@@ -571,6 +597,7 @@ a maximum line length of 79 (as per [PEP 8](https://peps.python.org/pep-0008/))
 and ignore auto-generated protobuf files, but will otherwise modify files
 in-place when executing the following commands from the repository's root
 folder:
+
 ```bash
 black declearn  # reformat the package
 black test      # reformat the tests
@@ -580,6 +607,7 @@ Note that it may also be called on individual files or folders.
 One may "blindly" run black, however it is actually advised to have a look
 at the reformatting operated, and act on any readability loss due to it. A
 couple of advice:
+
 1. Use `#fmt: off` / `#fmt: on` comments sparingly, but use them.
 <br/>It is totally okay to protect some (limited) code blocks from
 reformatting if you already spent some time and effort in achieving a
@@ -593,10 +621,10 @@ all of which end with a trailing comma (for diff minimization purposes). It
 may sometimes be necessary to manually write the code in the latter style
 for black not to reformat it.
 
-
 Finally, note that the test suite run with tox comprises code-checking by
 black, and will fail if some code is deemed to require alteration by that
 tool. You may run this check manually:
+
 ```bash
 black --check declearn  # or any specific file or folder
 ```
@@ -615,6 +643,7 @@ from within the repository's folder.
 Most code editors enable integrating the linter to analyze the code as it is
 being edited. To lint the entire package (or some specific files or folders)
 one may simply run `pylint`:
+
 ```bash
 pylint declearn  # analyze the package
 pylint test      # analyze the tests
