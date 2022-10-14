@@ -1,0 +1,5 @@
+# coding: utf-8
+
+"""Collection of utils for running tests and examples around declearn."""
+
+from ._gen_ssl import generate_ssl_certificates
