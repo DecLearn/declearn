@@ -388,6 +388,13 @@ that will run together to perform a federated learning process. Generic
 remarks from the [Quickstart](#quickstart) section hold here as well, the
 former section being an overly simple exemplification of the present one.
 
+You can follow along on a concrete example that uses the UCI heart disease
+dataset, that is stored in the `examples/uci-heart` folder. You may refer
+to the `server.py` and `client.py` example scripts, that comprise comments
+indicating how the code relates to the steps described below. For further
+details on this example and on how to run it, please refer to its own
+`readme.md` file.
+
 #### Server setup instructions
 
 1. Define a Model:
