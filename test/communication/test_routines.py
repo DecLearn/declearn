@@ -25,8 +25,7 @@ and seemingly forever-running multiple-clients tests).
 """
 
 import asyncio
-import multiprocessing as mp
-from typing import Dict, List
+from typing import Any, Callable, Dict, List, Tuple
 
 import pytest
 from typing_extensions import Literal  # future: import from typing (Py>=3.8)
@@ -34,6 +33,7 @@ from typing_extensions import Literal  # future: import from typing (Py>=3.8)
 from declearn.communication import build_client, build_server
 from declearn.communication.api import Client, Server
 from declearn.communication.messaging import GenericMessage
+from declearn.test_utils import run_as_processes
 
 
 async def client_routine(
@@ -103,32 +103,23 @@ def run_test_routines(
     ssl_cert: Dict[str, str],
 ) -> None:
     """Test that the defined server and client routines run properly."""
-    # Set up processes that isolately run a server and its clients
+    # Set up (func, args) tuples that specify concurrent routines.
     args = (protocol, nb_clients, use_ssl, ssl_cert)
-    processes = [_build_server_process(*args)]
-    processes.extend(_build_client_processes(*args))
-    # Start all processes.
-    for process in processes:
-        process.start()
-    # Force termination in case any process raises an exception.
-    while any(p.is_alive() for p in processes):
-        if any(p.exitcode for p in processes):
-            break
-        processes[0].join(timeout=1)
-    # Ensure all processes are terminated before exiting this function.
-    for process in processes:
-        process.terminate()
+    routines = [_build_server_func(*args)]
+    routines.extend(_build_client_funcs(*args))
+    # Run the former using isolated processes.
+    exitcodes = run_as_processes(*routines)
     # Assert that all processes terminated properly.
-    assert all(process.exitcode == 0 for process in processes)
+    assert all(code == 0 for code in exitcodes)
 
 
-def _build_server_process(
+def _build_server_func(
     protocol: Literal["grpc", "websockets"],
     nb_clients: int,
     use_ssl: bool,
     ssl_cert: Dict[str, str],
-) -> mp.Process:
-    """Set up and return a mp.Process that spawns and uses a Server."""
+) -> Tuple[Callable[..., None], Tuple[Any, ...]]:
+    """Set up and return a function that spawns and uses a Server."""
     server_cfg = {
         "protocol": protocol,
         "host": "127.0.0.1",
@@ -144,20 +135,20 @@ def _build_server_process(
             await server_routine(server, nb_clients)
 
     # Define a routine that runs the former.
-    def server_process() -> None:
+    def server_func() -> None:
         """Run `server_coroutine`."""
         asyncio.run(server_coroutine())
 
-    # Wrap the former in a Process and return it.
-    return mp.Process(target=server_process)
+    # Return the former as a (func, arg) tuple.
+    return (server_func, tuple())
 
 
-def _build_client_processes(
+def _build_client_funcs(
     protocol: Literal["grpc", "websockets"],
     nb_clients: int,
     use_ssl: bool,
     ssl_cert: Dict[str, str],
-) -> List[mp.Process]:
+) -> List[Tuple[Callable[..., None], Tuple[Any, ...]]]:
     """Set up and return mp.Process that spawn and use Client objects."""
     certificate = ssl_cert["client_cert"] if use_ssl else None
     server_uri = "localhost:8765"
@@ -174,12 +165,9 @@ def _build_client_processes(
             await client_routine(client)
 
     # Define a routine that runs the former.
-    def client_process(name: str) -> None:
+    def client_func(name: str) -> None:
         """Run `client_coroutine`."""
         asyncio.run(client_coroutine(name))
 
-    # Wrap the former into Process objects and return them.
-    return [
-        mp.Process(target=client_process, args=(f"client_{idx}",))
-        for idx in range(nb_clients)
-    ]
+    # Return a list of (func, args) tuples.
+    return [(client_func, (f"client_{idx}",)) for idx in range(nb_clients)]
