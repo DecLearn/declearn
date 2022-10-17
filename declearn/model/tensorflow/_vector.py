@@ -2,7 +2,7 @@
 
 """TensorflowVector gradients container."""
 
-from typing import Any, Dict, Set, Type, Union
+from typing import Any, Callable, Dict, Set, Type, Union
 
 import tensorflow as tf  # type: ignore
 
@@ -34,11 +34,25 @@ class TensorflowVector(Vector):
     Use `vector.coefs` to access the stored coefficients.
     """
 
-    _op_add = staticmethod(tf.add)
-    _op_sub = staticmethod(tf.subtract)
-    _op_mul = staticmethod(tf.multiply)
-    _op_div = staticmethod(tf.divide)
-    _op_pow = staticmethod(tf.pow)
+    @property
+    def _op_add(self) -> Callable[[Any, Any], Any]:
+        return tf.add  # type: ignore
+
+    @property
+    def _op_sub(self) -> Callable[[Any, Any], Any]:
+        return tf.subtract  # type: ignore
+
+    @property
+    def _op_mul(self) -> Callable[[Any, Any], Any]:
+        return tf.multiply  # type: ignore
+
+    @property
+    def _op_div(self) -> Callable[[Any, Any], Any]:
+        return tf.divide  # type: ignore
+
+    @property
+    def _op_pow(self) -> Callable[[Any, Any], Any]:
+        return tf.pow  # type: ignore
 
     @property
     def compatible_vector_types(self) -> Set[Type[Vector]]:
