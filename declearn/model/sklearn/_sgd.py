@@ -346,7 +346,7 @@ class SklearnSGDModel(Model):
                 return np.sum([  # type: ignore
                     loss_1d(y_pred[:, i], y_true == val)
                     for i, val in enumerate(self._model.classes_)
-                ],axis=0)
+                ], axis=0)
         else:
             loss_fn = loss_1d
         return loss_fn

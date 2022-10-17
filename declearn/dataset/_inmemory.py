@@ -491,4 +491,5 @@ class InMemoryDataset(Dataset):
                 data = data.values
             # Iteratively yield slices of the data array.
             for idx in range(0, len(order), batch_size):
-                yield data[order[idx : idx + batch_size]]
+                end = idx + batch_size
+                yield data[order[idx:end]]
