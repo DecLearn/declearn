@@ -76,6 +76,13 @@ class TrainingConfig:
     n_steps: Optional[int] = None
     timeout: Optional[int] = None
 
+    def __post_init__(self) -> None:
+        if all(v is None for v in (self.n_epoch, self.n_steps, self.timeout)):
+            raise ValueError(
+                "At least one effort constraint must be set: "
+                "n_epoch, n_steps and timeout cannot all be None."
+            )
+
     @property
     def batch_cfg(self) -> Dict[str, Any]:
         """Batches-generation parameters from this config."""
