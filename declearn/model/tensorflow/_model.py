@@ -27,8 +27,8 @@ class TensorflowModel(Model):
     def __init__(
         self,
         model: tf.keras.layers.Layer,
-        loss: Optional[Union[str, tf.keras.losses.Loss]],
-        metrics: Optional[List[Union[str, tf.keras.metrics.Metric]]],
+        loss: Union[str, tf.keras.losses.Loss],
+        metrics: Optional[List[Union[str, tf.keras.metrics.Metric]]] = None,
         **kwargs: Any,
     ) -> None:
         """Instantiate a Model interface wrapping a tensorflow.keras model.
