@@ -145,6 +145,9 @@ class GrpcServer(Server):
 class GrpcServicer(MessageBoardServicer):
     """A gRPC MessageBoard service to be used by a GrpcServer."""
 
+    # NOTE: mypy complains about protobuf-generated classes, hence
+    #       the amount of "type: ignore" comments in this code.
+
     def __init__(
         self,
         handler: MessagesHandler,
@@ -153,22 +156,22 @@ class GrpcServicer(MessageBoardServicer):
 
     async def ping(
         self,
-        request: message_pb2.Empty,
+        request: message_pb2.Empty,  # type: ignore
         context: grpc.ServicerContext,
-    ) -> message_pb2.Empty:
+    ) -> message_pb2.Empty:  # type: ignore
         """Handle a ping request from a client."""
         # async is needed; pylint: disable=invalid-overridden-method
-        return message_pb2.Empty()
+        return message_pb2.Empty()  # type: ignore
 
     async def send(
         self,
-        request: message_pb2.Message,
+        request: message_pb2.Message,  # type: ignore
         context: grpc.ServicerContext,
-    ) -> message_pb2.Message:
+    ) -> message_pb2.Message:  # type: ignore
         """Handle a Message-sending request from a client."""
         # async is needed; pylint: disable=invalid-overridden-method
         reply = await self.handler.handle_message(
-            string=request.message,
+            string=request.message,  # type: ignore
             context=context.peer(),
         )
-        return message_pb2.Message(message=reply.to_string())
+        return message_pb2.Message(message=reply.to_string())  # type: ignore

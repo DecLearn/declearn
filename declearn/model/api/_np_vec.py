@@ -2,7 +2,7 @@
 
 """NumpyVector model coefficients container."""
 
-from typing import Any, Dict, Union
+from typing import Any, Callable, Dict, Union
 
 import numpy as np
 from numpy.typing import ArrayLike
@@ -29,11 +29,25 @@ class NumpyVector(Vector):
     Use `vector.coefs` to access the stored coefficients.
     """
 
-    _op_add = np.add
-    _op_sub = np.subtract
-    _op_mul = np.multiply
-    _op_truediv = np.divide
-    _op_pow = np.power
+    @property
+    def _op_add(self) -> Callable[[Any, Any], Any]:
+        return np.add
+
+    @property
+    def _op_sub(self) -> Callable[[Any, Any], Any]:
+        return np.subtract
+
+    @property
+    def _op_mul(self) -> Callable[[Any, Any], Any]:
+        return np.multiply
+
+    @property
+    def _op_div(self) -> Callable[[Any, Any], Any]:
+        return np.divide
+
+    @property
+    def _op_pow(self) -> Callable[[Any, Any], Any]:
+        return np.power
 
     def __init__(self, coefs: Dict[str, np.ndarray]) -> None:
         super().__init__(coefs)

@@ -420,14 +420,14 @@ details on this example and on how to run it, please refer to its own
    - Similarly, parameterize an `Optimizer` to be used by the server to
        (optionally) refine the aggregated model updates before applying them.
    - Wrap these three objects into a custom `Strategy` using
-       `declearn.strategiy.strategy_from_config`. Use instantiated objects'
+       `declearn.strategy.strategy_from_config`. Use instantiated objects'
        `get_config` method if needed to abide by the former function's specs.
 
 3. Define a communication Server:
 
    - Select a communication protocol (_e.g._ "grpc" or "websockets").
    - Select the host address and port to use.
-   - Optionally provide paths to PEM files stsoring SSL-required information.
+   - Preferably provide paths to PEM files storing SSL-required information.
    - Wrap this into a config dict or use `declearn.communication.build_server`
        to instantiate a `declearn.communication.api.Server` that will be used.
 
@@ -442,8 +442,8 @@ details on this example and on how to run it, please refer to its own
        and optional timeout delay spent waiting for said clients to join.
      - Training parameters: data-batching parameters and effort constraints
        (number of local epochs and/or steps to take, and optional timeout).
-     - Evaluation parameters: data-batching parameters (_as of now, effort
-       constraints are not yet used by the clients_).
+     - Evaluation parameters: data-batching parameters and effort constraints
+       (optional maximum number of steps (<=1 epoch) and optional timeout).
 
 #### Clients setup instructions
 
@@ -451,7 +451,7 @@ details on this example and on how to run it, please refer to its own
 
    - Select and parameterize a `declearn.dataset.Dataset` subclass that
        will interface the local training dataset.
-   - Ensure its `get_data_sepcs` method exposes the metadata that is to
+   - Ensure its `get_data_specs` method exposes the metadata that is to
        be shared with the server (and nothing else, to prevent data leak).
 
 2. Interface validation data (optional):
@@ -464,7 +464,8 @@ details on this example and on how to run it, please refer to its own
 
    - Select the communication protocol used (_e.g._ "grpc" or "websockets").
    - Provide the server URI to connect to.
-   - Optionally provide path to a PEM file storing SSL-required information.
+   - Preferable provide the path to a PEM file storing SSL-required information
+       (matching those used on the Server side).
    - Wrap this into a config dict or use `declearn.communication.build_client`
        to instantiate a `declearn.communication.api.Client` that will be used.
 
@@ -476,7 +477,7 @@ details on this example and on how to run it, please refer to its own
 5. Instantiate a FederatedClient and run it:
 
    - Instantiate a `declearn.main.FederatedClient`:
-     - Provide the Client and Dataset objects or configurations.
+     - Provide the communication Client and Dataset objects or configurations.
      - Optionally provide the path to a folder where to write output files
        (model checkpoints and local loss history).
    - Call the client's `run` method and let the magic happen.
@@ -520,7 +521,8 @@ The **coding rules** are fairly simple:
   and [pylint](https://pylint.pycqa.org/en/latest/) (for more general linting);
   do use "type: ..." and "pylint: disable=..." comments where you think it
   relevant, preferably with some side explanations
-  (see dedicated sub-section [below](#running-black-to-format-the-code))
+  (see dedicated sub-sections below: [pylint](#running-black-to-format-the-code)
+  and [mypy](#running-mypy-to-type-check-the-code))
 - reformat your code using [black](https://github.com/psf/black); do use
   (sparingly) "fmt: off/on" comments when you think it relevant
   (see dedicated sub-section [below](#running-pylint-to-check-the-code))
@@ -534,8 +536,9 @@ as well as some third-party plug-ins (refer to [Setup][#setup] for details).
 
 Additionally, code analysis tools are configured through the `pyproject.toml`
 file, and used to control code quality upon merging to the main branch. These
-tools are [black](https://github.com/psf/black) for code formatting, and
-[pylint](https://pylint.pycqa.org/) for static code analysis.
+tools are [black](https://github.com/psf/black) for code formatting,
+[pylint](https://pylint.pycqa.org/) for overall static code analysis and
+[mypy](https://mypy.readthedocs.io/) for static type-cheking.
 
 #### Running the test suite using tox
 
@@ -545,8 +548,8 @@ from the commandline with the root repo folder as working directory. You may
 optionally specify the python version(s) with which you want to run tests.
 
 ```bash
-tox           # run with default py 3.8
-tox -e py310  # override to use py 3.10
+tox           # run with default python 3.8
+tox -e py310  # override to use python 3.10
 ```
 
 Note that additional parameters for `pytest` may be passed as well, by adding
@@ -650,4 +653,32 @@ pylint test      # analyze the tests
 Note that the test suite run with tox comprises the previous two commands,
 which both result in a score associated with the analyzed code. If the score
 does not equal 10/10, the test suite will fail - notably preventing acceptance
+of merge requests.
+
+
+#### Running mypy to type-check the code
+
+The [mypy](https://mypy.readthedocs.io/) linter is expected to be used for
+static type-checking code analysis. As a consequence, `# type: ignore` comments
+can be found (and added) to the source code, as sparingly as possible (mostly,
+to silence warnings about untyped third-party dependencies, false-positives,
+or locally on closure functions that are obvious enough to read from context).
+
+Code should be type-hinted as much and as precisely as possible - so that mypy
+actually provides help in identifying (potential) errors and mistakes, with
+code clarity as final purpose, rather than being another linter to silence off.
+
+A minimal amount of parameters are configured via the `pyproject.toml` file,
+and some of the strictest rules are disabled as per their default value (e.g.
+Any expressions are authorized - but should be used sparingly).
+
+Most code editors enable integrating the linter to analyze the code as it is
+being edited. To lint the entire package (or some specific files or folders)
+one may simply run `mypy`:
+```bash
+mypy declearn
+```
+
+Note that the test suite run with tox comprises the previous command. If mypy
+identifies errors, the test suite will fail - notably preventing acceptance
 of merge requests.

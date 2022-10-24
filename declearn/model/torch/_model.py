@@ -50,6 +50,8 @@ class TorchModel(Model):
             raise TypeError("'model' should be a torch.nn.Module instance.")
         super().__init__(model)
         # Assign loss module and set it not to reduce sample-wise values.
+        if not isinstance(loss, torch.nn.Module):
+            raise TypeError("'loss' should be a torch.nn.Module instance.")
         self._loss_fn = loss
         self._loss_fn.reduction = "none"  # type: ignore
 

@@ -2,7 +2,7 @@
 
 """TorchVector gradients container."""
 
-from typing import Any, Dict, Set, Tuple, Type
+from typing import Any, Callable, Dict, Set, Tuple, Type
 
 import numpy as np
 import torch
@@ -24,11 +24,25 @@ class TorchVector(Vector):
     Use `vector.coefs` to access the stored coefficients.
     """
 
-    _op_add = torch.add  # pylint: disable=no-member
-    _op_sub = torch.sub  # pylint: disable=no-member
-    _op_mul = torch.mul  # pylint: disable=no-member
-    _op_div = torch.div  # pylint: disable=no-member
-    _op_pow = torch.pow  # pylint: disable=no-member
+    @property
+    def _op_add(self) -> Callable[[Any, Any], Any]:
+        return torch.add  # pylint: disable=no-member
+
+    @property
+    def _op_sub(self) -> Callable[[Any, Any], Any]:
+        return torch.sub  # pylint: disable=no-member
+
+    @property
+    def _op_mul(self) -> Callable[[Any, Any], Any]:
+        return torch.mul  # pylint: disable=no-member
+
+    @property
+    def _op_div(self) -> Callable[[Any, Any], Any]:
+        return torch.div  # pylint: disable=no-member
+
+    @property
+    def _op_pow(self) -> Callable[[Any, Any], Any]:
+        return torch.pow  # pylint: disable=no-member
 
     @property
     def compatible_vector_types(self) -> Set[Type[Vector]]:

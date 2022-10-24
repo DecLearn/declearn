@@ -34,13 +34,41 @@ class Vector(metaclass=ABCMeta):
     agnostic of their actual implementation support.
 
     Use `vector.coefs` to access the stored coefficients.
+
+    Any concrete Vector subclass should:
+    - add type checks to `__init__` to control wrapped coefficients' type
+    - opt. override `_op_...` properties to define compatible operators
+    - implement the abstract operators (`sign`, `maximum`, `minimum`...)
+    - opt. override `pack` and `unpack` to enable their serialization
+    - opt. extend `compatible_vector_types` to specify their compatibility
+      with other Vector subclasses
+    - opt. override the `dtypes` and `shapes` methods
     """
 
-    _op_add = operator.add
-    _op_sub = operator.sub
-    _op_mul = operator.mul
-    _op_div = operator.truediv
-    _op_pow = operator.pow
+    @property
+    def _op_add(self) -> Callable[[Any, Any], Any]:
+        """Framework-compatible addition operator."""
+        return operator.add
+
+    @property
+    def _op_sub(self) -> Callable[[Any, Any], Any]:
+        """Framework-compatible substraction operator."""
+        return operator.sub
+
+    @property
+    def _op_mul(self) -> Callable[[Any, Any], Any]:
+        """Framework-compatible multiplication operator."""
+        return operator.mul
+
+    @property
+    def _op_div(self) -> Callable[[Any, Any], Any]:
+        """Framework-compatible true division operator."""
+        return operator.truediv
+
+    @property
+    def _op_pow(self) -> Callable[[Any, Any], Any]:
+        """Framework-compatible power operator."""
+        return operator.pow
 
     @property
     def compatible_vector_types(self) -> Set[Type["Vector"]]:
@@ -57,6 +85,13 @@ class Vector(metaclass=ABCMeta):
         tf.add(tensor, array) returns a tensor, not an array.
         """
         return {type(self)}
+
+    def __init__(
+        self,
+        coefs: Dict[str, Any],
+    ) -> None:
+        """Instantiate the Vector to wrap a collection of data arrays."""
+        self.coefs = coefs
 
     @staticmethod
     def build(
@@ -87,13 +122,6 @@ class Vector(metaclass=ABCMeta):
             )
         # Instantiate the Vector subtype and return it.
         return types[0](coefs)
-
-    def __init__(
-        self,
-        coefs: Dict[str, Any],
-    ) -> None:
-        """Instantiate the Vector to wrap a collection of data arrays."""
-        self.coefs = coefs
 
     def __repr__(self) -> str:
         string = f"{type(self).__name__} with {len(self.coefs)} coefs:"
@@ -196,7 +224,7 @@ class Vector(metaclass=ABCMeta):
         self,
         other: Any,
     ) -> "Vector":
-        return self._apply_operation(other, self._op_add)  # type: ignore
+        return self._apply_operation(other, self._op_add)
 
     def __radd__(
         self,
@@ -208,7 +236,7 @@ class Vector(metaclass=ABCMeta):
         self,
         other: Any,
     ) -> "Vector":
-        return self._apply_operation(other, self._op_sub)  # type: ignore
+        return self._apply_operation(other, self._op_sub)
 
     def __rsub__(
         self,
@@ -220,7 +248,7 @@ class Vector(metaclass=ABCMeta):
         self,
         other: Any,
     ) -> "Vector":
-        return self._apply_operation(other, self._op_mul)  # type: ignore
+        return self._apply_operation(other, self._op_mul)
 
     def __rmul__(
         self,
@@ -232,7 +260,7 @@ class Vector(metaclass=ABCMeta):
         self,
         other: Any,
     ) -> "Vector":
-        return self._apply_operation(other, self._op_div)  # type: ignore
+        return self._apply_operation(other, self._op_div)
 
     def __rtruediv__(
         self,
@@ -244,7 +272,7 @@ class Vector(metaclass=ABCMeta):
         self,
         other: Any,
     ) -> "Vector":
-        return self._apply_operation(other, self._op_pow)  # type: ignore
+        return self._apply_operation(other, self._op_pow)
 
     @abstractmethod
     def __eq__(self, other: Any) -> bool:
