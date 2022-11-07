@@ -144,8 +144,7 @@ class ScaffoldClientModule(OptiModule):
         """
         if not self._steps:
             raise RuntimeError("Cannot collect on a module that was not run.")
-        avg_grad = self._grads / self._steps
-        return avg_grad + self.delta
+        return self._grads / self._steps
 
     def process_aux_var(
         self,
