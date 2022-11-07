@@ -4,11 +4,10 @@
 
 from typing import Any, Dict, Optional, Union
 
-
 from declearn.model.api import Vector
-from declearn.optimizer.modules._base import OptiModule, MomentumModule
+from declearn.optimizer.modules._base import OptiModule
+from declearn.optimizer.modules._momentum import EWMAModule, YogiMomentumModule
 from declearn.utils import register_type
-
 
 __all__ = [
     "AdaGradModule",
@@ -112,21 +111,21 @@ class RMSPropModule(OptiModule):
             Numerical-stability improvement term, added
             to the (divisor) adapative scaling term.
         """
-        self.mom = MomentumModule(beta=beta)
+        self.ewma = EWMAModule(beta=beta)
         self.eps = eps
 
     def get_config(
         self,
     ) -> Dict[str, Any]:
         """Return a JSON-serializable dict with this module's parameters."""
-        return {"beta": self.mom.beta, "eps": self.eps}
+        return {"beta": self.ewma.beta, "eps": self.eps}
 
     def run(
         self,
         gradients: Vector,
     ) -> Vector:
         """Apply RMSProp adaptation to input (pseudo-)gradients."""
-        v_t = self.mom.run(gradients**2)
+        v_t = self.ewma.run(gradients**2)
         scaling = (v_t**0.5) + self.eps
         return gradients / scaling
 
@@ -194,8 +193,8 @@ class AdamModule(OptiModule):
             Numerical-stability improvement term, added
             to the (divisor) adapative scaling term.
         """
-        self.mom_1 = MomentumModule(beta=beta_1)
-        self.mom_2 = MomentumModule(beta=beta_2)
+        self.ewma_1 = EWMAModule(beta=beta_1)
+        self.ewma_2 = EWMAModule(beta=beta_2)
         self.steps = 0
         self.eps = eps
         self.amsgrad = amsgrad
@@ -206,8 +205,8 @@ class AdamModule(OptiModule):
     ) -> Dict[str, Any]:
         """Return a JSON-serializable dict with this module's parameters."""
         return {
-            "beta_1": self.mom_1.beta,
-            "beta_2": self.mom_2.beta,
+            "beta_1": self.ewma_1.beta,
+            "beta_2": self.ewma_2.beta,
             "amsgrad": self.amsgrad,
             "eps": self.eps,
         }
@@ -218,11 +217,11 @@ class AdamModule(OptiModule):
     ) -> Vector:
         """Apply Adam adaptation to input (pseudo-)gradients."""
         # Compute momentum-corrected state variables.
-        m_t = self.mom_1.run(gradients)
-        v_t = self.mom_2.run(gradients**2)
+        m_t = self.ewma_1.run(gradients)
+        v_t = self.ewma_2.run(gradients**2)
         # Apply bias correction to the previous terms.
-        m_h = m_t / (1 - (self.mom_1.beta ** (self.steps + 1)))
-        v_h = v_t / (1 - (self.mom_2.beta ** (self.steps + 1)))
+        m_h = m_t / (1 - (self.ewma_1.beta ** (self.steps + 1)))
+        v_h = v_t / (1 - (self.ewma_2.beta ** (self.steps + 1)))
         # Optionally implement the AMSGrad algorithm.
         if self.amsgrad:
             if self._vmax is not None:
@@ -232,42 +231,6 @@ class AdamModule(OptiModule):
         gradients = m_h / ((v_h**0.5) + self.eps)
         self.steps += 1
         return gradients
-
-
-@register_type(name="YogiMomentum", group="OptiModule")
-class YogiMomentumModule(MomentumModule):
-    """Yogi-specific momentum gradient-acceleration module.
-
-    This module impements the following algorithm:
-        Init(beta):
-            state = 0
-        Step(grads):
-            state = state + sign(state-grads)*(1-beta)*grads
-            grads = state
-
-    In other words, gradients are corrected in a somewhat-simlar
-    fashion as in the base momentum formula, but so that the
-    magnitude of the state update is merely a function of inputs
-    rather than of both the inputs and the previous state [1].
-
-    Note that this module is actually meant to be used to compute
-    a learning-rate adaptation term based on squared gradients.
-
-    References:
-    [1] Zaheer and Reddi et al., 2018.
-        Adaptive Methods for Nonconvex Optimization.
-    """
-
-    name = "yogi-momentum"
-
-    def run(
-        self,
-        gradients: Vector,
-    ) -> Vector:
-        """Apply Momentum acceleration to input (pseudo-)gradients."""
-        sign = (self.state - gradients).sign()
-        self.state = self.state - (sign * (1 - self.beta) * gradients)
-        return self.state
 
 
 @register_type(name="Yogi", group="OptiModule")

@@ -5,19 +5,15 @@
 from abc import ABCMeta, abstractmethod
 from typing import Any, Dict, Optional, Union
 
-
 from declearn.model.api import Vector
 from declearn.utils import (
     ObjectConfig,
     create_types_registry,
     deserialize_object,
-    register_type,
     serialize_object,
 )
 
-
 __all__ = [
-    "MomentumModule",
     "OptiModule",
 ]
 
@@ -202,54 +198,3 @@ class OptiModule(metaclass=ABCMeta):
 
 
 create_types_registry("OptiModule", OptiModule)
-
-
-@register_type(name="Momentum", group="OptiModule")
-class MomentumModule(OptiModule):
-    """Momentum gradient-acceleration module.
-
-    This module impements the following algorithm:
-        Init(beta):
-            state = 0
-        Step(grads):
-            state = beta*state + (1-beta)*grads
-            grads = state
-
-    In other words, gradients are corrected by an exponentially-
-    decaying moving-average of past gradients.
-    """
-
-    name = "momentum"
-
-    def __init__(
-        self,
-        beta: float = 0.9,
-    ) -> None:
-        """Instantiate the Momentum gradients-adaptation module.
-
-        Parameters
-        ----------
-        beta: float, default=0.9
-            Coefficient parameterizing the (exponentially-
-            decaying) moving average of input gradients.
-        """
-        if not isinstance(beta, float):
-            raise TypeError("'beta' should be of type float.")
-        if not 0 <= beta < 1:
-            raise ValueError("'beta' value should be in [0, 1[.")
-        self.beta = beta
-        self.state = 0.0  # type: Union[Vector, float]
-
-    def get_config(
-        self,
-    ) -> Dict[str, Any]:
-        """Return a JSON-serializable dict with this module's parameters."""
-        return {"beta": self.beta}
-
-    def run(
-        self,
-        gradients: Vector,
-    ) -> Vector:
-        """Apply Momentum acceleration to input (pseudo-)gradients."""
-        self.state = (self.beta * self.state) + ((1 - self.beta) * gradients)
-        return self.state

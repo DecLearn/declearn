@@ -11,21 +11,33 @@ Adaptive learning-rate algorithms:
 * RMSPropModule : RMSProp algorithm
 * YogiModule    : Yogi algorithm, with Adam or AMSGrad base
 
+Momentum algorithms:
+* EWMAModule         : Exponentially-Weighted Moving Average module
+* MomentumModule     : Momentum (and Nesterov) acceleration module
+* YogiMomentumModule : Yogi-specific EWMA-like module
+
 SCAFFOLD algorithm, as a pair of complementary modules:
 * ScaffoldClientModule : client-side module
 * ScaffoldServerModule : server-side module
 """
 
 from ._base import (
-    MomentumModule,
     OptiModule,
 )
+
 from ._adaptive import (
     AdaGradModule,
     AdamModule,
     RMSPropModule,
     YogiModule,
 )
+
+from ._momentum import (
+    EWMAModule,
+    MomentumModule,
+    YogiMomentumModule,
+)
+
 from ._scaffold import (
     ScaffoldClientModule,
     ScaffoldServerModule,

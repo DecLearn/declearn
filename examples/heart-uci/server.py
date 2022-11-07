@@ -6,9 +6,8 @@ import os
 from declearn.communication import NetworkServerConfig
 from declearn.main import FederatedServer
 from declearn.model.sklearn import SklearnSGDModel
-from declearn.optimizer.modules import MomentumModule, RMSPropModule
+from declearn.optimizer.modules import EWMAModule, RMSPropModule
 from declearn.strategy import strategy_from_config
-
 
 FILEDIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -59,7 +58,7 @@ def run_server(
     # Here, apply momentum to the updates and apply them (as lr=1.0).
     server_opt = {
         "lrate": 1.0,
-        "modules": [MomentumModule()],
+        "modules": [EWMAModule()],
     }
 
     # Wrap this up into a Strategy object$

@@ -5,15 +5,13 @@
 from abc import ABCMeta
 from typing import List
 
-
 from declearn.optimizer.modules import (
-    MomentumModule,
     OptiModule,
+    MomentumModule,
     ScaffoldClientModule,
     ScaffoldServerModule,
 )
 from declearn.strategy._strategy import FedAvg, Strategy
-
 
 __all__ = [
     "FedAvgM",
@@ -27,7 +25,14 @@ class FedAvgM(FedAvg):
 
     FedAvgM, or FedAvg with Momentum, is a Strategy extending
     FedAvg to use momentum when applying aggregated updates
-    on the server side.
+    on the server side, as first proposed in [1].
+
+    References
+    ----------
+    [1] Hsu et al., 2019
+        Measuring the Effects of Non-Identical Data Distribution
+        for Federated Visual Classification.
+        https://arxiv.org/abs/1909.06335
     """
 
     def __init__(
@@ -54,8 +59,8 @@ class FedAvgM(FedAvg):
             Weight decay parameter of the server's optimizer.
             Defaults to 0 so as not to use any weight decay.
         beta: float, default=.9
-            Momentum parameter applied to aggregated updates.
-            See `declearn.optimizer.modules.MomentumModule`.
+            EWMA parameter applied to aggregated updates.
+            See `declearn.optimizer.modules.EWMAModule`.
         """
         # arguments serve modularity; pylint: disable=too-many-arguments
         super().__init__(eta_l, eta_g, lam_l, lam_g)
