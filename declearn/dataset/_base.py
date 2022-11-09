@@ -2,13 +2,12 @@
 
 """Dataset abstraction API."""
 
-import json
 from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Iterator, Optional, Set
 
 from declearn.typing import Batch
-from declearn.utils import access_registered, create_types_registry
+from declearn.utils import access_registered, create_types_registry, json_load
 
 
 __all__ = [
@@ -128,7 +127,6 @@ def load_dataset_from_json(path: str) -> Dataset:
     dataset: Dataset
         Dataset (subclass) instance, reloaded from JSON.
     """
-    with open(path, "r", encoding="utf-8") as file:
-        dump = json.load(file)
+    dump = json_load(path)
     cls = access_registered(dump["name"], group="Dataset")
     return cls.load_from_json(path)  # type: ignore

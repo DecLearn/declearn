@@ -36,6 +36,10 @@ Tools to add support for 3rd-party or custom types in JSON files.
 
 * add_json_support:
     Register a (pack, unpack) pair of functions to use on a given type.
+* json_dump:
+    Function to dump data to a JSON file, automatically using `json_pack`.
+* json_load:
+    Function to load data from a JSON file, automatically using `json_unpack`.
 * json_pack:
     Function to use as `default` parameter in `json.dump` to extend it.
 * json_unpack:
@@ -55,6 +59,8 @@ Miscellaneous
 
 from ._json import (
     add_json_support,
+    json_dump,
+    json_load,
     json_pack,
     json_unpack,
 )

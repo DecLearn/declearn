@@ -4,14 +4,13 @@
 
 from abc import ABCMeta, abstractmethod
 import dataclasses
-import json
 from typing import Any, Dict, List, Union
 
 
 from declearn.optimizer import Optimizer
 from declearn.optimizer.modules import OptiModule
 from declearn.strategy._aggregator import Aggregator, AverageAggregator
-from declearn.utils import deserialize_object, json_unpack
+from declearn.utils import deserialize_object, json_load
 
 
 __all__ = [
@@ -114,8 +113,7 @@ def strategy_from_config(  # revise: generalize this (into Strategy?)
 ) -> Strategy:
     """Define a custom Strategy from a configuration file."""
     if isinstance(config, str):
-        with open(config, mode="r", encoding="utf-8") as file:
-            config = json.load(file, object_hook=json_unpack)
+        config = json_load(config)
     if not isinstance(config, dict):
         raise TypeError("'config' should be a dict or JSON-file-stored dict.")
     # Parse the configuration dict (raise if keys are unproper).

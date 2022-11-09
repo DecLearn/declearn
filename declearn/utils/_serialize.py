@@ -3,7 +3,6 @@
 """Generic tools to (de-)serialize custom declearn objects to and from JSON."""
 
 import dataclasses
-import json
 from typing import Any, Dict, Optional, Type, Union
 
 from typing_extensions import (
@@ -15,7 +14,7 @@ from declearn.utils._register import (
     access_registered,
     access_registration_info,
 )
-from declearn.utils._json import json_pack, json_unpack
+from declearn.utils._json import json_dump, json_load
 from declearn.typing import SupportsConfig
 
 
@@ -59,14 +58,12 @@ class ObjectConfig:
 
     def to_json(self, path: str) -> None:
         """Save this ObjectConfig to a JSON file."""
-        with open(path, "w", encoding="utf-8") as file:
-            json.dump(self.to_dict(), file, indent=2, default=json_pack)
+        json_dump(self.to_dict(), path, indent=2)
 
     @classmethod
     def from_json(cls, path: str) -> Self:  # type: ignore
         """Restore an ObjectConfig from a JSON file."""
-        with open(path, "r", encoding="utf-8") as file:
-            config = json.load(file, object_hook=json_unpack)
+        config = json_load(path)
         return cls(**config)
 
 

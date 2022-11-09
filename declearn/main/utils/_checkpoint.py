@@ -2,14 +2,13 @@
 
 """Model and metrics checkpointing util."""
 
-import json
 import os
 from typing import List, Optional
 
 import numpy as np
 
 from declearn.model.api import Model, NumpyVector
-from declearn.utils import json_pack, serialize_object
+from declearn.utils import json_dump, serialize_object
 
 
 __all__ = [
@@ -76,8 +75,7 @@ class Checkpointer:
             # Save the model's weights to a JSON file.
             indx = len(self._loss)
             path = os.path.join(self.folder, f"weights_{indx}.json")
-            with open(path, "w", encoding="utf-8") as file:
-                json.dump(self.model.get_weights(), file, default=json_pack)
+            json_dump(self.model.get_weights(), path)
             # Append the loss to a txt file.
             path = os.path.join(self.folder, "losses.txt")
             mode = "a" if indx > 1 else "w"

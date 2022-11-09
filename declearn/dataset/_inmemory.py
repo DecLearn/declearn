@@ -3,7 +3,6 @@
 """Dataset implementation to serve scikit-learn compatible in-memory data."""
 
 import functools
-import json
 import os
 from typing import Any, Dict, Iterator, List, Optional, Set, Union
 
@@ -16,7 +15,7 @@ from sklearn.datasets import load_svmlight_file  # type: ignore
 from declearn.dataset._base import Dataset, DataSpecs
 from declearn.dataset._sparse import sparse_from_file, sparse_to_file
 from declearn.typing import Batch
-from declearn.utils import register_type
+from declearn.utils import json_dump, json_load, register_type
 
 
 __all__ = [
@@ -362,8 +361,7 @@ class InMemoryDataset(Dataset):
         info["seed"] = self.seed
         # Write the information to the JSON file.
         dump = {"name": self.__class__.__name__, "config": info}
-        with open(path, "w", encoding="utf-8") as file:
-            json.dump(dump, file, indent=2)
+        json_dump(dump, path, indent=2)
 
     @classmethod
     def load_from_json(
@@ -379,8 +377,7 @@ class InMemoryDataset(Dataset):
             Additional files may be created in the same folder.
         """
         # Read and parse the JSON file and check its specs conformity.
-        with open(path, "r", encoding="utf-8") as file:
-            dump = json.load(file)
+        dump = json_load(path)
         if "config" not in dump:
             raise KeyError("Missing key in the JSON file: 'config'.")
         info = dump["config"]

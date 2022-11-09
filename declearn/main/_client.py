@@ -4,7 +4,6 @@
 
 import asyncio
 import dataclasses
-import json
 import logging
 import os
 from typing import Any, Dict, Optional, Tuple, Union
@@ -21,7 +20,7 @@ from declearn.main.utils import (
 )
 from declearn.model.api import Model
 from declearn.optimizer import Optimizer
-from declearn.utils import get_logger, json_pack
+from declearn.utils import get_logger, json_dump
 
 
 __all__ = [
@@ -450,13 +449,11 @@ class FederatedClient:
                 path = os.path.join(self.folder, "best_local_weights.json")
                 self.logger.info("Saving best local weights in '%s'.", path)
                 self.checkpointer.reset_best_weights()
-                with open(path, "w", encoding="utf-8") as file:
-                    json.dump(model.get_weights(), file, default=json_pack)
+                json_dump(model.get_weights(), path)
             # Save the globally-best-performing model weights.
             path = os.path.join(self.folder, "final_weights.json")
             self.logger.info("Saving final weights in '%s'.", path)
-            with open(path, "w", encoding="utf-8") as file:
-                json.dump(message.weights, file, default=json_pack)
+            json_dump(message.weights, path)
 
     async def cancel_training(
         self,

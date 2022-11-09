@@ -3,6 +3,7 @@
 """Tools to add support for non-standard types' JSON-(de)serialization."""
 
 import dataclasses
+import json
 import warnings
 from typing import Any, Callable, Dict, Optional, Type
 
@@ -11,6 +12,8 @@ from typing_extensions import TypedDict  # future: import from typing (Py>=3.8)
 
 __all__ = [
     "add_json_support",
+    "json_dump",
+    "json_load",
     "json_pack",
     "json_unpack",
 ]
@@ -131,6 +134,48 @@ def json_unpack(obj: Dict[str, Any]) -> Any:
         return obj
     # Otherwise, use the recovered spec to unpack the object.
     return spec.unpack(obj["dump"])
+
+
+def json_dump(
+    obj: Any,
+    path: str,
+    encoding: str = "utf-8",
+    indent: Optional[int] = None,
+) -> None:
+    """Dump a given object to a JSON file, using extended types support.
+
+    This function is merely a shortcut to run the following code:
+    >>> with open(path, "w", encoding=encoding) as file:
+    >>>     json.dump(obj, file, default=declearn.utils.json_pack)
+
+    See `declearn.utils.add_json_support` to extend the behaviour
+    of JSON (de)serialization to non-standard types, that will be
+    used as part of this function.
+
+    See `declearn.utils.json_load` for the counterpart method.
+    """
+    with open(path, "w", encoding=encoding) as file:
+        json.dump(obj, file, default=json_pack, indent=indent)
+
+
+def json_load(
+    path: str,
+    encoding: str = "utf-8",
+) -> Any:
+    """Load data from a JSON file, using extended types support.
+
+    This function is merely a shortcut to run the following code:
+    >>> with open(path, "r", encoding=encoding) as file:
+    >>>     return json.load(file, object_hook=declearn.utils.json_unpack)
+
+    See `declearn.utils.add_json_support` to extend the behaviour
+    of JSON (de)serialization to non-standard types, that will be
+    used as part of this function.
+
+    See `declearn.utils.json_dump` for the counterpart method.
+    """
+    with open(path, "r", encoding=encoding) as file:
+        return json.load(file, object_hook=json_unpack)
 
 
 # Add JSON support for built-in set objects.
