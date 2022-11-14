@@ -91,9 +91,9 @@ class TorchModel(Model):
     ) -> "TorchModel":
         """Instantiate a TorchModel from a configuration dict."""
         with io.BytesIO(bytes.fromhex(config["model"])) as buffer:
-            model = torch.load(buffer)  # type: ignore
+            model = torch.load(buffer)
         with io.BytesIO(bytes.fromhex(config["loss"])) as buffer:
-            loss = torch.load(buffer)  # type: ignore
+            loss = torch.load(buffer)
         return cls(model=model, loss=loss)
 
     def get_weights(
@@ -134,8 +134,8 @@ class TorchModel(Model):
         loss.backward()  # type: ignore
         # Collect weights' gradients and return them in a Vector container.
         grads = {
-            str(i): p.grad.detach().clone()
-            for i, p in enumerate(self._model.parameters())
+            k: p.grad.detach().clone()
+            for k, p in self._model.named_parameters()
             if p.requires_grad
         }
         return TorchVector(grads)
@@ -173,11 +173,23 @@ class TorchModel(Model):
         self,
         updates: TorchVector,
     ) -> None:
+        # REVISE: generalize this ~ avoid having this code around
+        if isinstance(updates, NumpyVector):
+            updates = TorchVector(
+                {
+                    key: torch.from_numpy(arr)  # pylint: disable=no-member
+                    for key, arr in updates.coefs.items()
+                }
+            )
         with torch.no_grad():
-            for idx, par in enumerate(self._model.parameters()):
-                upd = updates.coefs.get(str(idx))
-                if upd is not None:
-                    par.add_(upd)
+            try:
+                for key, upd in updates.coefs.items():
+                    tns = self._model.get_parameter(key)
+                    tns.add_(upd)
+            except KeyError as exc:
+                raise KeyError(
+                    "Invalid model parameter name(s) found in updates."
+                ) from exc
 
     def compute_loss(
         self,
