@@ -91,7 +91,10 @@ class WebsocketsClient(Client):
             idx += 1
             try:
                 self._socket = await ws.connect(**kwargs)  # type: ignore
-            except OSError as err:
+            except (OSError, asyncio.TimeoutError) as err:
+                self.logger.info(
+                    "Connection failed (attempt %s/10): %s", idx, err
+                )
                 if idx == 10:
                     raise err
                 await asyncio.sleep(1)
