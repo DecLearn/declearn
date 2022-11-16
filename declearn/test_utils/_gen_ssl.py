@@ -38,7 +38,8 @@ def generate_ssl_certificates(
         Path to the folder where to create the intermediate
         and final certificate and key PEM files.
     c_name: str
-        CommonName value for the server certificate.
+        CommonName value for the server certificate, i.e. name or
+        IP address that will be requested by clients to access it.
     password: str or None, default=None
         Optional password used to encrypt generated private keys.
 
@@ -52,18 +53,17 @@ def generate_ssl_certificates(
         Path to the server's private key PEM file.
     """
     # Generate self-signed CA certificate and private key.
-    ca_priv = os.path.join(folder, "ca-key.pem")
+    ca_priv = os.path.join(folder, "ca-pkey.pem")
     ca_cert = os.path.join(folder, "ca-cert.pem")
     cmd = (
-        "openssl req -x509 -newkey rsa:4096 "
+        "openssl req -x509 -newkey rsa:4096 -sha256 -days 365 "
         + f"-keyout {ca_priv} -out {ca_cert} "
         + (f"-passout pass:{password} " if password else "-nodes ")
-        + "-sha256 -days 365 "
-        + '-subj "/C=FR/L=Lille/O=Inria/OU=Magnet/CN=inria.fr"'
+        + '-subj "/C=FR/L=Lille/O=Inria/OU=Magnet/CN=SelfSignedCA"'
     )
     subprocess.run(shlex.split(cmd), check=True, capture_output=True)
     # Generate server private key and CSR (certificate signing request).
-    sv_priv = os.path.join(folder, "server-key.pem")
+    sv_priv = os.path.join(folder, "server-pkey.pem")
     sv_csrq = os.path.join(folder, "server-req.pem")
     cmd = (
         "openssl req -newkey rsa:4096 "
@@ -75,10 +75,9 @@ def generate_ssl_certificates(
     # Generate self-signed server certificate.
     sv_cert = os.path.join(folder, "server-cert.pem")
     cmd = (
-        f"openssl x509 -req -in {sv_csrq} -CA {ca_cert} "
-        + f"-CAkey {ca_priv} -CAcreateserial -out {sv_cert} "
-        + (f"-passin pass:{password} " if password else " ")
-        + "-days 30"
+        f"openssl x509 -req -sha256 -days 30 -in {sv_csrq} -out {sv_cert} "
+        + f"-CA {ca_cert} -CAkey {ca_priv} -CAcreateserial"
+        + (f" -passin pass:{password} " if password else "")
     )
     subprocess.run(shlex.split(cmd), check=True, capture_output=True)
     # Return paths that are used in tests.
