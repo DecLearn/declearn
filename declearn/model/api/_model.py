@@ -16,6 +16,7 @@ __all__ = [
 ]
 
 
+@create_types_registry
 class Model(metaclass=ABCMeta):
     """Abstract class defining an API to manipulate a ML model.
 
@@ -154,6 +155,3 @@ class Model(metaclass=ABCMeta):
             Average value of the model's loss over samples.
         """
         return NotImplemented
-
-
-create_types_registry("Model", Model)

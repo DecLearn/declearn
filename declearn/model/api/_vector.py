@@ -25,6 +25,7 @@ __all__ = [
 VECTOR_TYPES = {}  # type: Dict[Type[Any], Type[Vector]]
 
 
+@create_types_registry
 class Vector(metaclass=ABCMeta):
     """Abstract class defining an API to manipulate (sets of) data arrays.
 
@@ -300,9 +301,6 @@ class Vector(metaclass=ABCMeta):
     ) -> "Vector":
         """Compute coef.-wise, element-wise maximum wrt to another Vector."""
         raise NotImplementedError
-
-
-create_types_registry("Vector", base=Vector)
 
 
 def register_vector_type(

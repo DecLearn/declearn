@@ -26,6 +26,7 @@ class DataSpecs:
     classes: Optional[Set[Any]] = None
 
 
+@create_types_registry
 class Dataset(metaclass=ABCMeta):
     """Abstract class defining an API to access training or testing data.
 
@@ -106,9 +107,6 @@ class Dataset(metaclass=ABCMeta):
             typically used to balance a model's loss or metrics.
         """
         return NotImplemented
-
-
-create_types_registry("Dataset", Dataset)
 
 
 def load_dataset_from_json(path: str) -> Dataset:

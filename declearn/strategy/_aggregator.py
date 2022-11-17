@@ -16,6 +16,7 @@ __all__ = [
 ]
 
 
+@create_types_registry
 class Aggregator(metaclass=ABCMeta):
     """Base class to implement an aggregation method."""
 
@@ -57,9 +58,6 @@ class Aggregator(metaclass=ABCMeta):
     ) -> "Aggregator":
         """Instantiate an Aggregator from its configuration dict."""
         return cls(**config)
-
-
-create_types_registry("Aggregator", Aggregator)
 
 
 @register_type(name="Average", group="Aggregator")

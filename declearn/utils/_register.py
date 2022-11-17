@@ -111,23 +111,42 @@ class TypesRegistry:
 
 
 def create_types_registry(
-    name: str,
-    base: Type,
-) -> None:
+    base: Optional[Type] = None,
+    name: Optional[str] = None,
+) -> Type:
     """Create a TypesRegistry backing generic (de)serialization utils.
+
+    Note: this function may either be used to create a registy with
+          an existing type as base through functional syntax, or be
+          placed as a decorator for class-defining code
 
     Parameters
     ----------
-    name: str
+    base: type or None, default=None
+        Base class that registered entries should inherit from.
+        If None, return a class decorator.
+    name: str or None, default=None
         Name of the registry, used to register or access classes
         using the generic `register_type` and `access_registered`
         utility functions.
+        If None, use `base.__name__`
+
+    Returns
+    -------
     base: type
-        Base class that registered entries should inherit from.
+        The input `base`; hence this function may be used as
+        a decorator to register classes in the source code.
     """
+    # Case when the function is being used as a class decorator.
+    if base is None:
+        decorator = functools.partial(create_types_registry, name=name)
+        return decorator  # type: ignore
+    # Create the types registry, after checking it does not already exist.
+    name = base.__name__ if name is None else name
     if name in REGISTRIES:
         raise KeyError(f"TypesRegistry '{name}' already exists.")
     REGISTRIES[name] = TypesRegistry(name, base)
+    return base
 
 
 def register_type(
@@ -143,7 +162,7 @@ def register_type(
 
     Parameters
     ----------
-    cls: type of None, default=None
+    cls: type or None, default=None
         Class that is to be registered.
         If None, return a class decorator.
     name: str or None, default=None
@@ -161,7 +180,7 @@ def register_type(
         The input `cls`; hence this function may be used as
         a decorator to register classes in the source code.
     """
-    #
+    # Case when the function is being used as a class decorator.
     if cls is None:
         decorator = functools.partial(register_type, name=name, group=group)
         return decorator  # type: ignore

@@ -16,7 +16,7 @@ from declearn.communication.messaging import (
     JoinRequest,
     Message,
 )
-from declearn.utils import get_logger
+from declearn.utils import create_types_registry, get_logger
 
 
 __all__ = [
@@ -24,6 +24,7 @@ __all__ = [
 ]
 
 
+@create_types_registry
 class Client(metaclass=ABCMeta):
     """Abstract class defining an API for client-side communication endpoints.
 

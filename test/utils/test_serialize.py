@@ -50,7 +50,7 @@ def fixture_registered_class() -> Tuple[Type[MockClass], str]:
 
     # Create a test-specific types registry and add the type to it.
     group = str(time.time_ns())
-    create_types_registry(group, base=MockClass)
+    create_types_registry(MockClass, group)
     register_type(SubClass, name="mock", group=group)
     # Return both the class constructor and its registration group.
     return SubClass, group

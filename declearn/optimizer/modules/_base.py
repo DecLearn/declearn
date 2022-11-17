@@ -8,6 +8,7 @@ from typing import Any, Dict, Optional, Union
 from declearn.model.api import Vector
 from declearn.utils import (
     ObjectConfig,
+    access_registered,
     create_types_registry,
     deserialize_object,
     serialize_object,
@@ -18,6 +19,7 @@ __all__ = [
 ]
 
 
+@create_types_registry
 class OptiModule(metaclass=ABCMeta):
     """Abstract class defining an API to implement gradients adaptation tools.
 
@@ -195,6 +197,3 @@ class OptiModule(metaclass=ABCMeta):
                 f"which is not a subclass of '{cls.__name__}'."
             )
         return obj
-
-
-create_types_registry("OptiModule", OptiModule)
