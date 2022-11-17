@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional
 
 from declearn.model.api import Model, Vector
 from declearn.optimizer.modules import OptiModule
+from declearn.optimizer.regularizers import Regularizer
 from declearn.typing import Batch
 
 
@@ -27,7 +28,9 @@ class Optimizer:
 
     The process implemented here is the following:
     * Compute or receive the (pseudo-)gradients of a model.
-    * Refine those by running them through the plug-in modules,
+    * Compute loss-regularization terms and add them to the
+      gradients, based on a list of plug-in regularizers.
+    * Refine gradients by running them through plug-in modules,
       which are thus composed by sequential application.
     * Optionally compute a decoupled weight decay term (see [1])
       and add it to the updates (i.e. refined gradients).
@@ -83,6 +86,7 @@ class Optimizer:
         self,
         lrate: float,  # future: add scheduling tools
         w_decay: float = 0.0,  # future: add scheduling tools
+        regularizers: Optional[List[Regularizer]] = None,
         modules: Optional[List[OptiModule]] = None,
     ) -> None:
         """Instantiate the gradient-descent optimizer.
@@ -97,6 +101,11 @@ class Optimizer:
             a decoupled weight decay regularization term (see [1])
             added to the updates right before the learning rate is
             applied and model weights are effectively updated.
+        regularizers:
+            Optional list of plug-in loss regularizers. Regularizers will
+            be applied to gradients following this list's order, prior to
+            any other alteration (e.g. accelaration module - see below).
+            See `declearn.optimizer.regularizers.Regularizer` for details.
         modules: list[OptiModule] or None, default=None
             Optional list of plug-in modules implementing gradients'
             alteration into model weights' udpates. Modules will be
@@ -111,6 +120,14 @@ class Optimizer:
         """
         self.lrate = lrate
         self.w_decay = w_decay
+        self.regularizers = [] if regularizers is None else regularizers
+        for regularizer in self.regularizers:
+            if not isinstance(regularizer, Regularizer):
+                raise TypeError(
+                    "'regularizers' should be a list of `Regularizer` "
+                    "instances; received an element of type "
+                    f"'{type(regularizer).__name__}'."
+                )
         self.modules = [] if modules is None else modules
         for module in self.modules:
             if not isinstance(module, OptiModule):
@@ -123,9 +140,13 @@ class Optimizer:
         self,
     ) -> Dict[str, Any]:
         """Return a JSON-serializable dict with this optimizer's parameters."""
+        regularizers = {
+            reg.name: reg.get_config() for reg in self.regularizers
+        }
         return {
             "lrate": self.lrate,
             "w_decay": self.w_decay,
+            "regularizers": regularizers,
             "modules": [mod.serialize().to_dict() for mod in self.modules],
         }
 
@@ -136,6 +157,10 @@ class Optimizer:
     ) -> "Optimizer":
         """Instantiate an Optimizer from its configuration dict."""
         config = deepcopy(config)  # avoid side-effects
+        config["regularizers"] = [
+            Regularizer.from_specs(name, config)
+            for name, config in config.pop("regularizers", {}).items()
+        ]
         config["modules"] = [
             OptiModule.deserialize(cfg) for cfg in config.pop("modules", [])
         ]
@@ -162,6 +187,11 @@ class Optimizer:
         None
             This method does not return, as `model` is updated in-place.
         """
+        # Run input gradients through plug-in regularizers.
+        if self.regularizers:
+            weights = model.get_weights()
+            for regularizer in self.regularizers:
+                gradients = regularizer.run(gradients, weights)
         # Run input gradients through plug-in modules.
         for module in self.modules:
             gradients = module.run(gradients)
