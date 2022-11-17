@@ -21,7 +21,7 @@ SCAFFOLD algorithm, as a pair of complementary modules:
 * ScaffoldServerModule : server-side module
 """
 
-from ._base import (
+from ._api import (
     OptiModule,
 )
 

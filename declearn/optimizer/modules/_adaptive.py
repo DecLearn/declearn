@@ -5,7 +5,7 @@
 from typing import Any, Dict, Optional, Union
 
 from declearn.model.api import Vector
-from declearn.optimizer.modules._base import OptiModule
+from declearn.optimizer.modules._api import OptiModule
 from declearn.optimizer.modules._momentum import EWMAModule, YogiMomentumModule
 from declearn.utils import register_type
 

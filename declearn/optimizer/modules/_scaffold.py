@@ -20,7 +20,7 @@ from typing import Any, Dict, List, Optional, Union
 
 
 from declearn.model.api import Vector
-from declearn.optimizer.modules._base import OptiModule
+from declearn.optimizer.modules._api import OptiModule
 from declearn.utils import register_type
 
 

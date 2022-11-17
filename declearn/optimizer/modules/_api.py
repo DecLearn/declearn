@@ -1,6 +1,6 @@
 # coding: utf-8
 
-"""Base API and common examples of plug-in gradients-alteration algorithms."""
+"""Base API for plug-in gradients-alteration algorithms."""
 
 from abc import ABCMeta, abstractmethod
 from typing import Any, Dict, Optional, Union
