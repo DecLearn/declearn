@@ -43,6 +43,10 @@ class Regularizer(metaclass=ABCMeta):
 
     Abstract
     --------
+    name: str class attribute
+        Name identifier of the class (should be unique across existing
+        Regularizer classes). Also used for automatic types-registration
+        of the class (see `Inheritance` section below).
     run(gradients: Vector, weights: Vector) -> Vector:
         Compute the regularization term's derivative from weights,
         and add it to the input gradients. This is the main method
@@ -57,27 +61,21 @@ class Regularizer(metaclass=ABCMeta):
 
     Inheritance
     -----------
-    When inheriting from `Regularizer`, two keyword arguments may
-    be passed that will trigger some `__init_subclass__` code:
-    name: str
-        Name to attach to the class as a `name` class attribute.
-        This argument is mandatory.
-    register: bool, default=True
-        Whether to register the type under the "Regularizer" group,
-        using `name` as registration name.
-        See `declearn.utils.register_type` for details.
+    When a subclass inheriting from `Regularizer` is decleared, it is
+    automatically registered under the "Regularizer" group, using its
+    class-attribute `name`. This can be prevented by adding `register=False`
+    to the inheritance specs (e.g. `class MyCls(Regularizer, register=False)`).
+    See `declearn.utils.register_type` for details on types registration.
     """
 
     name: str = NotImplemented
 
     def __init_subclass__(
-            cls,
-            name: str,
-            register: bool = True,
-        ) -> None:
-        cls.name = name
+        cls,
+        register: bool = True,
+    ) -> None:
         if register:
-            register_type(cls, name, group="Regularizer")
+            register_type(cls, cls.name, group="Regularizer")
 
     def __init__(
         self,
@@ -119,8 +117,8 @@ class Regularizer(metaclass=ABCMeta):
         return NotImplemented
 
     def on_round_start(
-            self,
-        ) -> None:
+        self,
+    ) -> None:
         """Perform any required action at the start of a training round."""
         return None
 
