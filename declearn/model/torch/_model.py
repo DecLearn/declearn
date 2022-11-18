@@ -8,7 +8,7 @@ from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
 
 import torch
 
-from declearn.model.api import Model, NumpyVector
+from declearn.model.api import Model
 from declearn.model.torch._vector import TorchVector
 from declearn.typing import Batch
 from declearn.utils import register_type
@@ -98,21 +98,20 @@ class TorchModel(Model):
 
     def get_weights(
         self,
-    ) -> NumpyVector:
+    ) -> TorchVector:
         weights = {
-            key: tns.numpy().copy()  # NOTE: otherwise, view on Tensor data
+            key: tns.detach().clone()  # NOTE: otherwise, view on Tensor
             for key, tns in self._model.state_dict().items()
         }
-        return NumpyVector(weights)
+        return TorchVector(weights)
 
-    def set_weights(
+    def set_weights(  # type: ignore  # Vector subtype specification
         self,
-        weights: NumpyVector,
+        weights: TorchVector,
     ) -> None:
-        # false-positive on torch.from_numpy; pylint: disable=no-member
-        self._model.load_state_dict(
-            {key: torch.from_numpy(arr) for key, arr in weights.coefs.items()}
-        )
+        if not isinstance(weights, TorchVector):
+            raise TypeError("TorchModel requires TorchVector weights.")
+        self._model.load_state_dict(weights.coefs)
 
     def compute_batch_gradients(
         self,
@@ -169,18 +168,12 @@ class TorchModel(Model):
             loss.mul_(s_wght)
         return loss.mean()  # type: ignore
 
-    def apply_updates(  # type: ignore  # future: revise
+    def apply_updates(  # type: ignore  # Vector subtype specification
         self,
         updates: TorchVector,
     ) -> None:
-        # REVISE: generalize this ~ avoid having this code around
-        if isinstance(updates, NumpyVector):
-            updates = TorchVector(
-                {
-                    key: torch.from_numpy(arr)  # pylint: disable=no-member
-                    for key, arr in updates.coefs.items()
-                }
-            )
+        if not isinstance(updates, TorchVector):
+            raise TypeError("TorchModel requires TorchVector updates.")
         with torch.no_grad():
             try:
                 for key, upd in updates.coefs.items():

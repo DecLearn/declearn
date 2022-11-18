@@ -230,10 +230,12 @@ class SklearnSGDModel(Model):
         }
         return NumpyVector(weights)
 
-    def set_weights(
+    def set_weights(  # type: ignore  # Vector subtype specification
         self,
         weights: NumpyVector,
     ) -> None:
+        if not isinstance(weights, NumpyVector):
+            raise TypeError("SklearnSGDModel requires NumpyVector weights.")
         for key in ("coef", "intercept"):
             if key not in weights.coefs:
                 raise TypeError(
@@ -294,10 +296,12 @@ class SklearnSGDModel(Model):
         # Compute gradients based on weights' update.
         return (w_srt - w_end) / self._model.eta0  # type: ignore
 
-    def apply_updates(  # type: ignore  # future: revise
+    def apply_updates(  # type: ignore  # Vector subtype specification
         self,
         updates: NumpyVector,
     ) -> None:
+        if not isinstance(updates, NumpyVector):
+            raise TypeError("SklearnSGDModel requires NumpyVector updates.")
         self._model.coef_ += updates.coefs["coef"]
         self._model.intercept_ += updates.coefs["intercept"]
 

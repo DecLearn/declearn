@@ -6,7 +6,6 @@ from abc import ABCMeta, abstractmethod
 from typing import Any, Dict, Iterable, Set
 
 from declearn.model.api._vector import Vector
-from declearn.model.api._np_vec import NumpyVector
 from declearn.typing import Batch
 from declearn.utils import create_types_registry
 
@@ -91,14 +90,14 @@ class Model(metaclass=ABCMeta):
     @abstractmethod
     def get_weights(
         self,
-    ) -> NumpyVector:
+    ) -> Vector:
         """Return the model's trainable weights."""
         return NotImplemented
 
     @abstractmethod
     def set_weights(
         self,
-        weights: NumpyVector,
+        weights: Vector,
     ) -> None:
         """Assign values to the model's trainable weights."""
         return None

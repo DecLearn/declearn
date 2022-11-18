@@ -7,7 +7,7 @@ from typing import List, Optional
 
 import numpy as np
 
-from declearn.model.api import Model, NumpyVector
+from declearn.model.api import Model, Vector
 from declearn.utils import json_dump, serialize_object
 
 
@@ -40,7 +40,7 @@ class Checkpointer:
         self.folder = folder
         if self.folder is not None:
             os.makedirs(self.folder, exist_ok=True)
-        self._best = None  # type: Optional[NumpyVector]
+        self._best = None  # type: Optional[Vector]
         self._loss = []  # type: List[float]
 
     def save_model(

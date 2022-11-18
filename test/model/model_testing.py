@@ -7,7 +7,7 @@ from typing import Any, List, Protocol, Tuple, Type, Union
 
 import numpy as np
 
-from declearn.model.api import Model, NumpyVector, Vector
+from declearn.model.api import Model, Vector
 from declearn.typing import Batch
 from declearn.utils import json_pack, json_unpack
 
@@ -57,9 +57,9 @@ class ModelTestSuite:
         """Check that weights can properly be accessed and replaced."""
         model = test_case.model
         w_srt = model.get_weights()
-        assert isinstance(w_srt, NumpyVector)
+        assert isinstance(w_srt, test_case.vector_cls)
         w_end = w_srt + 1.0
-        model.set_weights(w_end)  # type: ignore
+        model.set_weights(w_end)
         assert model.get_weights() == w_end
 
     def test_compute_batch_gradients(
@@ -92,7 +92,7 @@ class ModelTestSuite:
         ]
         assert isinstance(np_batch[0], np.ndarray)
         # Compute gradients in both cases.
-        np_grads = model.compute_batch_gradients(np_batch)  # type: ignore
+        np_grads = model.compute_batch_gradients(np_batch)
         assert isinstance(np_grads, test_case.vector_cls)
         my_grads = model.compute_batch_gradients(my_batch)
         assert my_grads == np_grads
