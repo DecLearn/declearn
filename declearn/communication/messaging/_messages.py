@@ -134,7 +134,7 @@ class InitRequest(Message):
     optim: Optimizer
 
     def to_string(self) -> str:
-        data = dataclasses.asdict(self)
+        data = {"typekey": self.typekey}  # type: Dict[str, Any]
         data["model"] = serialize_object(self.model, group="Model").to_dict()
         data["optim"] = self.optim.get_config()
         return json.dumps(data, default=json_pack)
