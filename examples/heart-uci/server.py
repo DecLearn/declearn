@@ -6,7 +6,6 @@ import os
 from declearn.communication import NetworkServerConfig
 from declearn.main import FederatedServer
 from declearn.model.sklearn import SklearnSGDModel
-from declearn.optimizer.modules import EWMAModule, RMSPropModule
 from declearn.strategy import strategy_from_config
 
 FILEDIR = os.path.dirname(os.path.abspath(__file__))
@@ -51,14 +50,14 @@ def run_server(
     # Here, RMSProp optimizer with 0.02 learning rate.
     client_opt = {
         "lrate": 0.02,
-        "modules": [RMSPropModule()],
+        "modules": ["rmsprop"],
     }
 
     # Configure the server-side optimizer to use.
     # Here, apply momentum to the updates and apply them (as lr=1.0).
     server_opt = {
         "lrate": 1.0,
-        "modules": [EWMAModule()],
+        "modules": [("momentum", {"beta": 0.95})],
     }
 
     # Wrap this up into a Strategy object$
