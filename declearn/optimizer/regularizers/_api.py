@@ -61,8 +61,8 @@ class Regularizer(metaclass=ABCMeta):
 
     Inheritance
     -----------
-    When a subclass inheriting from `Regularizer` is decleared, it is
-    automatically registered under the "Regularizer" group, using its
+    When a subclass inheriting from `Regularizer` is declared, it is
+    automatically registered under the "Regularizer" group using its
     class-attribute `name`. This can be prevented by adding `register=False`
     to the inheritance specs (e.g. `class MyCls(Regularizer, register=False)`).
     See `declearn.utils.register_type` for details on types registration.
@@ -74,6 +74,7 @@ class Regularizer(metaclass=ABCMeta):
         cls,
         register: bool = True,
     ) -> None:
+        """Automatically type-register Regularizer subclasses."""
         if register:
             register_type(cls, cls.name, group="Regularizer")
 
@@ -83,8 +84,8 @@ class Regularizer(metaclass=ABCMeta):
     ) -> None:
         """Instantiate the loss regularization term.
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         alpha: float, default=0.01
             Coefficient scaling the regularization term as part of the
             regularized loss function's formulation.
@@ -143,8 +144,8 @@ class Regularizer(metaclass=ABCMeta):
     ) -> "Regularizer":
         """Instantiate a Regularizer from its specifications.
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         name: str
             Name based on which the regularizer can be retrieved.
             Available as a class attribute.

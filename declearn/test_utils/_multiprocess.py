@@ -16,8 +16,8 @@ def run_as_processes(
 ) -> List[Optional[int]]:
     """Run coroutines concurrently within individual processes.
 
-    Arguments
-    ---------
+    Parameters
+    ----------
     *routines: tuple(function, tuple(any, ...))
         Sequence of routines that need running concurrently,
         each formatted as a 2-elements tuple containing the

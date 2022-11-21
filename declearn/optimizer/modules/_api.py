@@ -44,7 +44,7 @@ class OptiModule(metaclass=ABCMeta):
 
     name: str class attribute
         Name identifier of the class (should be unique across existing
-        Regularizer classes). Also used for automatic types-registration
+        OptiModule classes). Also used for automatic types-registration
         of the class (see `Inheritance` section below).
     run(gradients: Vector) -> Vector:
         Apply an adaptation algorithm to input gradients and return
@@ -228,8 +228,8 @@ class OptiModule(metaclass=ABCMeta):
     ) -> "OptiModule":
         """Instantiate an OptiModule from its specifications.
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         name: str
             Name based on which the module can be retrieved.
             Available as a class attribute.

@@ -3,7 +3,7 @@
 """Base class to define gradient-descent-based optimizers."""
 
 from copy import deepcopy
-from typing import Any, Dict, List, Optional, Tuple, Type, Union
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Type, Union
 
 from declearn.model.api import Model, Vector
 from declearn.optimizer.modules import OptiModule
@@ -87,10 +87,10 @@ class Optimizer:
         lrate: float,  # future: add scheduling tools
         w_decay: float = 0.0,  # future: add scheduling tools
         regularizers: Optional[
-            List[Union[Regularizer, str, Tuple[str, Dict[str, Any]]]]
+            Sequence[Union[Regularizer, str, Tuple[str, Dict[str, Any]]]]
         ] = None,
         modules: Optional[
-            List[Union[OptiModule, str, Tuple[str, Dict[str, Any]]]]
+            Sequence[Union[OptiModule, str, Tuple[str, Dict[str, Any]]]]
         ] = None,
     ) -> None:
         """Instantiate the gradient-descent optimizer.
@@ -149,7 +149,7 @@ class Optimizer:
     def _parse_plugins(
         self,
         cls: Type[Union[OptiModule, Regularizer]],
-        plugins: List[Union[Any, str, Tuple[str, Dict[str, Any]]]],
+        plugins: Sequence[Union[Any, str, Tuple[str, Dict[str, Any]]]],
     ) -> Union[List[OptiModule], List[Regularizer]]:
         """Parse a list of plug-in specs into a list of instances.
 
