@@ -15,7 +15,7 @@ from declearn.optimizer.modules import (
 # dirty trick to import from `test_modules.py`;
 # pylint: disable=wrong-import-order, wrong-import-position
 sys.path.append(".")
-from test_modules import FRAMEWORKS, Framework, GradientsTestCase
+from optim_testing import GradientsTestCase, Framework, FRAMEWORKS
 
 
 @pytest.fixture(name="mock_gradients")
