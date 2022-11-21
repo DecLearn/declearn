@@ -11,7 +11,8 @@ from sklearn.linear_model import SGDClassifier, SGDRegressor  # type: ignore
 from typing_extensions import Literal  # future: import from typing (Py>=3.8)
 
 from declearn.data_info import aggregate_data_info
-from declearn.model.api import Model, NumpyVector
+from declearn.model.api import Model
+from declearn.model.sklearn._np_vec import NumpyVector
 from declearn.typing import Batch
 from declearn.utils import register_type
 

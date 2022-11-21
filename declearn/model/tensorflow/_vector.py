@@ -1,6 +1,6 @@
 # coding: utf-8
 
-"""TensorflowVector gradients container."""
+"""TensorflowVector data arrays container."""
 
 from typing import Any, Callable, Dict, Set, Type, Union
 
@@ -12,7 +12,8 @@ from tensorflow.python.framework.ops import EagerTensor  # type: ignore
 # pylint: enable=no-name-in-module
 from typing_extensions import Self  # future: import from typing (Py>=3.11)
 
-from declearn.model.api import NumpyVector, Vector, register_vector_type
+from declearn.model.api import Vector, register_vector_type
+from declearn.model.sklearn import NumpyVector
 
 
 @register_vector_type(tf.Tensor, EagerTensor, tf.IndexedSlices)

@@ -1,6 +1,6 @@
 # coding: utf-8
 
-"""TorchVector gradients container."""
+"""TorchVector data arrays container."""
 
 from typing import Any, Callable, Dict, Set, Tuple, Type
 
@@ -8,7 +8,8 @@ import numpy as np
 import torch
 from typing_extensions import Self  # future: import from typing (Py>=3.11)
 
-from declearn.model.api import NumpyVector, Vector, register_vector_type
+from declearn.model.api import Vector, register_vector_type
+from declearn.model.sklearn import NumpyVector
 
 
 @register_vector_type(torch.Tensor)

@@ -10,8 +10,7 @@ import pytest
 from scipy.sparse import csr_matrix  # type: ignore
 from sklearn.linear_model import SGDClassifier, SGDRegressor  # type: ignore
 
-from declearn.model.api import NumpyVector
-from declearn.model.sklearn import SklearnSGDModel
+from declearn.model.sklearn import NumpyVector, SklearnSGDModel
 from declearn.typing import Batch
 
 # dirty trick to import from `model_testing.py`;

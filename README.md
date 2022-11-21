@@ -343,7 +343,7 @@ new custom concrete implementations inheriting the abstraction.
   - Object: Interface framework-specific data structures.
   - Usage: Wrap and operate on model weights, gradients, updates...
   - Examples:
-    - `declearn.model.api.NumpyVector`
+    - `declearn.model.sklearn.NumpyVector`
     - `declearn.model.tensorflow.TensorflowVector`
     - `declearn.model.torch.TorchVector`
   - Extend: use `declearn.model.api.register_vector_type`

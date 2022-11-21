@@ -15,7 +15,8 @@ import torch
 from numpy.typing import ArrayLike
 from typing_extensions import Literal  # future: import from typing (Py>=3.8)
 
-from declearn.model.api import NumpyVector, Vector
+from declearn.model.api import Vector
+from declearn.model.sklearn import NumpyVector
 from declearn.model.tensorflow import TensorflowVector
 from declearn.model.torch import TorchVector
 from declearn.optimizer.modules import OptiModule
