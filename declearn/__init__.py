@@ -43,3 +43,5 @@ from . import dataset
 from . import model
 from . import optimizer
 from . import main
+
+__version__ = "2.0.0b2"
