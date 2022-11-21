@@ -140,14 +140,13 @@ class Optimizer:
         self,
     ) -> Dict[str, Any]:
         """Return a JSON-serializable dict with this optimizer's parameters."""
-        regularizers = {
-            reg.name: reg.get_config() for reg in self.regularizers
-        }
+        regulzr = {reg.name: reg.get_config() for reg in self.regularizers}
+        modules = {mod.name: mod.get_config() for mod in self.modules}
         return {
             "lrate": self.lrate,
             "w_decay": self.w_decay,
-            "regularizers": regularizers,
-            "modules": [mod.serialize().to_dict() for mod in self.modules],
+            "regularizers": regulzr,
+            "modules": modules,
         }
 
     @classmethod
@@ -162,7 +161,8 @@ class Optimizer:
             for name, config in config.pop("regularizers", {}).items()
         ]
         config["modules"] = [
-            OptiModule.deserialize(cfg) for cfg in config.pop("modules", [])
+            OptiModule.from_specs(name, config)
+            for name, config in config.pop("modules", {}).items()
         ]
         return cls(**config)
 
@@ -219,7 +219,8 @@ class Optimizer:
         for module in self.modules:
             auxv = module.collect_aux_var()
             if auxv:
-                aux_var[module.name] = auxv
+                name = module.aux_name or module.name
+                aux_var[name] = auxv
         return aux_var
 
     def process_aux_var(
@@ -247,7 +248,9 @@ class Optimizer:
             plugged in this optimizer (i.e. if received variables cannot
             be mapped to a destinatory module).
         """
-        modules = {module.name: module for module in self.modules}
+        modules = {
+            (module.aux_name or module.name): module for module in self.modules
+        }
         for name, auxv in aux_var.items():
             module = modules.get(name)
             if module is None:

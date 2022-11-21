@@ -11,6 +11,7 @@ from declearn.utils import (
     access_registered,
     create_types_registry,
     deserialize_object,
+    register_type,
     serialize_object,
 )
 
@@ -42,9 +43,9 @@ class OptiModule(metaclass=ABCMeta):
     by any non-abstract child class of `OptiModule`:
 
     name: str class attribute
-        Keyword naming this module. This has an effect when passing
-        auxiliary variables (see section below) between synchronous
-        client/server modules, which should share the *same* name.
+        Name identifier of the class (should be unique across existing
+        Regularizer classes). Also used for automatic types-registration
+        of the class (see `Inheritance` section below).
     run(gradients: Vector) -> Vector:
         Apply an adaptation algorithm to input gradients and return
         them. This is the main method for any `OptiModule`.
@@ -64,9 +65,31 @@ class OptiModule(metaclass=ABCMeta):
         Process a dict of auxiliary variables, received from
         a counterpart to this module on the other side of the
         client/server relationship.
+    aux_name: optional[str] class attribute, default=None
+        Name to use when sending or receiving auxiliary variables
+        between synchronous client/server modules, that therefore
+        need to share the *same* `aux_name`.
+
+    Inheritance
+    -----------
+    When a subclass inheriting from `OptiModule` is declared, it is
+    automatically registered under the "OptiModule" group using its
+    class-attribute `name`. This can be prevented by adding `register=False`
+    to the inheritance specs (e.g. `class MyCls(OptiModule, register=False)`).
+    See `declearn.utils.register_type` for details on types registration.
     """
 
     name: str = NotImplemented
+
+    aux_name: Optional[str] = None
+
+    def __init_subclass__(
+        cls,
+        register: bool = True,
+    ) -> None:
+        """Automatically type-register OptiModule subclasses."""
+        if register:
+            register_type(cls, cls.name, group="OptiModule")
 
     @abstractmethod
     def run(
@@ -197,3 +220,24 @@ class OptiModule(metaclass=ABCMeta):
                 f"which is not a subclass of '{cls.__name__}'."
             )
         return obj
+
+    @staticmethod
+    def from_specs(
+        name: str,
+        config: Dict[str, Any],
+    ) -> "OptiModule":
+        """Instantiate an OptiModule from its specifications.
+
+        Arguments
+        ---------
+        name: str
+            Name based on which the module can be retrieved.
+            Available as a class attribute.
+        config: dict[str, any]
+            Configuration dict of the regularizer, that is to be
+            passed to its `from_config` class constructor.
+        """
+        cls = access_registered(name, group="OptiModule")
+        if not issubclass(cls, OptiModule):
+            raise TypeError("Retrieved a non-OptiModule class.")
+        return cls.from_config(config)
