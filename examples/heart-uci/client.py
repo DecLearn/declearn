@@ -36,6 +36,8 @@ from data import get_data  # pylint: disable=wrong-import-order
 def run_client(
     name: str,
     ca_cert: str,
+    protocol: str = "websockets",
+    serv_uri: str = "wss://localhost:8765",
 ) -> None:
     """Instantiate and run a given client.
 
@@ -46,6 +48,10 @@ def run_client(
     ca_cert: str
         Path to the certificate authority file that was used to
         sign the server's SSL certificate.
+    protocol: str, default="websockets"
+        Name of the communication protocol to use.
+    serv_uri: str, default="wss://localhost:8765"
+        URI of the server to which to connect.
     """
 
     # (1-2) Interface training and optional validation data.
@@ -73,8 +79,8 @@ def run_client(
 
     # Here, use websockets protocol on localhost:8765, with SSL encryption.
     network = NetworkClientConfig(
-        protocol="websockets",
-        server_uri="wss://localhost:8765",
+        protocol=protocol,
+        server_uri=serv_uri,
         name=name,
         certificate=ca_cert,
     )
@@ -104,12 +110,26 @@ if __name__ == "__main__":
         choices=["cleveland", "hungarian", "switzerland", "va"],
     )
     parser.add_argument(
-        "--cert_path",
+        "--cert",
         dest="cert_path",
         type=str,
         help="path to the client-side ssl certification",
         default=os.path.join(FILEDIR, "ca-cert.pem"),
     )
+    parser.add_argument(
+        "--protocol",
+        dest="protocol",
+        type=str,
+        help="name of the communication protocol to use",
+        default="websockets",
+    )
+    parser.add_argument(
+        "--uri",
+        dest="uri",
+        type=str,
+        help="server URI to which to connect",
+        default="wss://localhost:8765",
+    )
     args = parser.parse_args()
     # Run the client routine.
-    run_client(args.name, args.cert_path)
+    run_client(args.name, args.cert_path, args.protocol, args.uri)

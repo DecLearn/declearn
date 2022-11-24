@@ -31,7 +31,10 @@ FILEDIR = os.path.dirname(os.path.abspath(__file__))
 def run_server(
     nb_clients: int,
     sv_cert: str,
-    sv_priv: str,
+    sv_pkey: str,
+    protocol: str = "websockets",
+    host: str = "localhost",
+    port: int = 8765,
 ) -> None:
     """Instantiate and run the orchestrating server.
 
@@ -41,8 +44,14 @@ def run_server(
         Exact number of clients used in this example.
     sv_cert: str
         Path to the (self-signed) SSL certificate to use.
-    sv_priv: str
+    sv_pkey: str
         Path to the associated private-key to use.
+    protocol: str, default="websockets"
+        Name of the communication protocol to use.
+    host: str, default="localhost"
+        Hostname or IP address on which to serve.
+    port: int, default=8765
+        Communication port on which to serve.
     """
 
     # (1) Define a model
@@ -88,11 +97,11 @@ def run_server(
 
     # Here, use websockets protocol on localhost:8765, with SSL encryption.
     network = NetworkServerConfig(
-        protocol="websockets",
-        host="localhost",
-        port=8765,
+        protocol=protocol,
+        host=host,
+        port=port,
         certificate=sv_cert,
-        private_key=sv_priv,
+        private_key=sv_pkey,
     )
 
     # (4) Instantiate and run a FederatedServer.
@@ -131,19 +140,40 @@ if __name__ == "__main__":
         choices=[1, 2, 3, 4],
     )
     parser.add_argument(
-        "--cert_path",
-        dest="cert_path",
+        "--cert",
+        dest="sv_cert",
         type=str,
-        help="path to the server-side ssl certification",
+        help="path to the server-side ssl certificate",
         default=os.path.join(FILEDIR, "server-cert.pem"),
     )
     parser.add_argument(
-        "--key_path",
-        dest="key_path",
+        "--pkey",
+        dest="sv_pkey",
         type=str,
         help="path to the server-side ssl private key",
         default=os.path.join(FILEDIR, "server-pkey.pem"),
     )
+    parser.add_argument(
+        "--protocol",
+        dest="protocol",
+        type=str,
+        help="name of the communication protocol to use",
+        default="websockets",
+    )
+    parser.add_argument(
+        "--host",
+        dest="host",
+        type=str,
+        help="hostname or IP address on which to serve",
+        default="localhost",
+    )
+    parser.add_argument(
+        "--port",
+        dest="port",
+        type=int,
+        help="communication port on which to serve",
+        default=8765,
+    )
     args = parser.parse_args()
     # Run the server routine.
-    run_server(args.nb_clients, args.cert_path, args.key_path)
+    run_server(**args.__dict__)
