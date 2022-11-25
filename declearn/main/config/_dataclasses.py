@@ -3,9 +3,7 @@
 """Dataclasses to wrap and parse some training-related hyperparameters."""
 
 import dataclasses
-
 from typing import Any, Dict, Optional
-
 
 __all__ = [
     "EvaluateConfig",
@@ -56,6 +54,9 @@ class TrainingConfig:
     drop_remainder: bool
         Whether to drop the last batch if it contains less
         samples than `batch_size`, or yield it anyway.
+    poisson: bool
+        Whether to use Poisson sampling to generate the batches.
+        Useful to maintain tight Differential Privacy guarantees.
     n_epoch: int or None
         Maximum number of local data-processing epochs to
         perform. May be overridden by `n_steps` or `timeout`.
@@ -71,6 +72,7 @@ class TrainingConfig:
     batch_size: int
     shuffle: bool = False
     drop_remainder: bool = True
+    poisson: bool = False
     # training effort constraints
     n_epoch: Optional[int] = 1
     n_steps: Optional[int] = None
@@ -90,6 +92,7 @@ class TrainingConfig:
             "batch_size": self.batch_size,
             "shuffle": self.shuffle,
             "drop_remainder": self.drop_remainder,
+            "poisson": self.poisson,
         }
 
     @property
