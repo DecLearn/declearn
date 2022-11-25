@@ -17,6 +17,7 @@
 
 """Collection of utils for running tests and examples around declearn."""
 
+from ._argparse import setup_client_argparse, setup_server_argparse
 from ._assertions import (
     assert_dict_equal,
     assert_list_equal,

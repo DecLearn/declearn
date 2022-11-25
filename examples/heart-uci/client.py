@@ -17,7 +17,6 @@
 
 """Script to run a federated client on the heart-disease example."""
 
-import argparse
 import os
 import sys
 
@@ -26,11 +25,15 @@ import pandas as pd  # type: ignore
 from declearn.communication import NetworkClientConfig
 from declearn.dataset import InMemoryDataset
 from declearn.main import FederatedClient
+from declearn.test_utils import setup_client_argparse
 
 FILEDIR = os.path.dirname(os.path.abspath(__file__))
 # Perform local imports.
 sys.path.append(FILEDIR)
-from data import get_data  # pylint: disable=wrong-import-order
+# pylint: disable=wrong-import-order, wrong-import-position
+from data import get_data
+# pylint: enable=wrong-import-order, wrong-import-position
+sys.path.pop()
 
 
 def run_client(
@@ -102,34 +105,16 @@ def run_client(
 # Called when the script is called directly (using `python client.py`).
 if __name__ == "__main__":
     # Parse command-line arguments.
-    parser = argparse.ArgumentParser()
+    parser = setup_client_argparse(
+        usage="Start a client providing a UCI Heart-Disease Dataset shard.",
+        default_cert=os.path.join(FILEDIR, "ca-cert.pem"),
+    )
     parser.add_argument(
         "name",
         type=str,
         help="name of your client",
         choices=["cleveland", "hungarian", "switzerland", "va"],
     )
-    parser.add_argument(
-        "--cert",
-        dest="cert_path",
-        type=str,
-        help="path to the client-side ssl certification",
-        default=os.path.join(FILEDIR, "ca-cert.pem"),
-    )
-    parser.add_argument(
-        "--protocol",
-        dest="protocol",
-        type=str,
-        help="name of the communication protocol to use",
-        default="websockets",
-    )
-    parser.add_argument(
-        "--uri",
-        dest="uri",
-        type=str,
-        help="server URI to which to connect",
-        default="wss://localhost:8765",
-    )
     args = parser.parse_args()
     # Run the client routine.
-    run_client(args.name, args.cert_path, args.protocol, args.uri)
+    run_client(args.name, args.certificate, args.protocol, args.uri)
