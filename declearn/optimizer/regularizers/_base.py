@@ -4,8 +4,6 @@
 
 from typing import Optional
 
-import numpy as np
-
 from declearn.model.api import Vector
 from declearn.optimizer.regularizers._api import Regularizer
 
@@ -75,7 +73,7 @@ class LassoRegularizer(Regularizer):
         loss += alpha * l1_norm(weights)
 
     To do so, it applies the following correction to gradients:
-        grads += alpha
+        grads += alpha * sign(weights)
     """
 
     name = "lasso"
@@ -85,7 +83,8 @@ class LassoRegularizer(Regularizer):
         gradients: Vector,
         weights: Vector,
     ) -> Vector:
-        return gradients + self.alpha
+        correct = self.alpha * weights.sign()
+        return gradients + correct
 
 
 class RidgeRegularizer(Regularizer):
@@ -95,7 +94,7 @@ class RidgeRegularizer(Regularizer):
         loss += alpha * l2_norm(weights)
 
     To do so, it applies the following correction to gradients:
-        grads += alpha * 2 * abs(weights)
+        grads += alpha * 2 * weights
     """
 
     name = "ridge"
@@ -105,5 +104,5 @@ class RidgeRegularizer(Regularizer):
         gradients: Vector,
         weights: Vector,
     ) -> Vector:
-        correct = 2 * self.alpha * weights.apply_func(np.abs)
+        correct = 2 * self.alpha * weights
         return gradients + correct
