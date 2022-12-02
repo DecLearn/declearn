@@ -11,7 +11,7 @@ from typing import Any, Dict, Optional, Set, Type, Union
 
 from declearn.communication.api._service import MessagesHandler
 from declearn.communication.messaging import Message
-from declearn.utils import get_logger
+from declearn.utils import create_types_registry, get_logger
 
 
 __all__ = [
@@ -19,6 +19,7 @@ __all__ = [
 ]
 
 
+@create_types_registry
 class Server(metaclass=ABCMeta):
     """Abstract class defining an API for server-side communication endpoints.
 

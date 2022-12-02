@@ -3,10 +3,11 @@
 """Base class to define gradient-descent-based optimizers."""
 
 from copy import deepcopy
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Type, Union
 
 from declearn.model.api import Model, Vector
 from declearn.optimizer.modules import OptiModule
+from declearn.optimizer.regularizers import Regularizer
 from declearn.typing import Batch
 
 
@@ -27,7 +28,9 @@ class Optimizer:
 
     The process implemented here is the following:
     * Compute or receive the (pseudo-)gradients of a model.
-    * Refine those by running them through the plug-in modules,
+    * Compute loss-regularization terms and add them to the
+      gradients, based on a list of plug-in regularizers.
+    * Refine gradients by running them through plug-in modules,
       which are thus composed by sequential application.
     * Optionally compute a decoupled weight decay term (see [1])
       and add it to the updates (i.e. refined gradients).
@@ -83,7 +86,12 @@ class Optimizer:
         self,
         lrate: float,  # future: add scheduling tools
         w_decay: float = 0.0,  # future: add scheduling tools
-        modules: Optional[List[OptiModule]] = None,
+        regularizers: Optional[
+            Sequence[Union[Regularizer, str, Tuple[str, Dict[str, Any]]]]
+        ] = None,
+        modules: Optional[
+            Sequence[Union[OptiModule, str, Tuple[str, Dict[str, Any]]]]
+        ] = None,
     ) -> None:
         """Instantiate the gradient-descent optimizer.
 
@@ -97,11 +105,27 @@ class Optimizer:
             a decoupled weight decay regularization term (see [1])
             added to the updates right before the learning rate is
             applied and model weights are effectively updated.
-        modules: list[OptiModule] or None, default=None
+        regularizers: list[Regularizer or specs] or None, default=None
+            Optional list of plug-in loss regularizers. Regularizers will
+            be applied to gradients following this list's order, prior to
+            any other alteration (e.g. accelaration module - see below).
+            See `declearn.optimizer.regularizers.Regularizer` for details.
+            See Notes section below for details on the "specs" format.
+        modules: list[OptiModule or specs] or None, default=None
             Optional list of plug-in modules implementing gradients'
             alteration into model weights' udpates. Modules will be
             applied to gradients following this list's ordering.
             See `declearn.optimizer.modules.OptiModule` for details.
+            See Notes section below for details on the "specs" format.
+
+        Notes
+        -----
+        `Regularizer` and `OptiModule` to be used by this optimizer,
+        specified using the `regularizers` and `modules` parameters,
+        may be passed as ready-for-use instances, or be instantiated
+        from specs, consisting either of a single string (the `name`
+        attribute of the class to build) or a tuple grouping this
+        name and a config dict (to specify some hyper-parameters).
 
         References
         ----------
@@ -111,22 +135,66 @@ class Optimizer:
         """
         self.lrate = lrate
         self.w_decay = w_decay
-        self.modules = [] if modules is None else modules
-        for module in self.modules:
-            if not isinstance(module, OptiModule):
+        self.regularizers = (
+            []
+            if regularizers is None
+            else self._parse_plugins(Regularizer, regularizers)  # type: ignore
+        )  # type: List[Regularizer]
+        self.modules = (
+            []
+            if modules is None
+            else self._parse_plugins(OptiModule, modules)  # type: ignore
+        )  # type: List[OptiModule]
+
+    def _parse_plugins(
+        self,
+        cls: Type[Union[OptiModule, Regularizer]],
+        plugins: Sequence[Union[Any, str, Tuple[str, Dict[str, Any]]]],
+    ) -> Union[List[OptiModule], List[Regularizer]]:
+        """Parse a list of plug-in specs into a list of instances.
+
+        Parameters
+        ----------
+        cls: Type[OptiModule or Regularizer]
+            Base type of plug-ins being instantiated.
+        plugins: list[`cls` | str | (str, dict)]
+            List of instances or specifications to process and/or type-check.
+            Specifications may be a single string (`name` attribute of the
+            type to build) or a tuple grouping this name and a config dict
+            (to specify non-default hyper-parameters).
+
+        Returns
+        -------
+        plugins: list[`cls`]
+            List of `cls` instances created (or taken) from the specs.
+        """
+        output = []
+        for specs in plugins:
+            if isinstance(specs, cls):
+                plugin = specs
+            elif isinstance(specs, str):
+                plugin = cls.from_specs(specs, config={})
+            elif isinstance(specs, (tuple, list)) and (len(specs) == 2):
+                plugin = cls.from_specs(*specs)
+            else:
                 raise TypeError(
-                    "'modules' should be a list of `OptiModule` instances; "
-                    f"received an element of type '{type(module).__name__}'."
+                    f"Cannot instantiate a {cls.__name__} from {specs}. "
+                    "Required a name (str) or specs ((str, dict) tuple)."
                 )
+            output.append(plugin)
+        return output  # type: ignore
 
     def get_config(
         self,
     ) -> Dict[str, Any]:
         """Return a JSON-serializable dict with this optimizer's parameters."""
+        regulzr = {reg.name: reg.get_config() for reg in self.regularizers}
+        modules = {mod.name: mod.get_config() for mod in self.modules}
         return {
             "lrate": self.lrate,
             "w_decay": self.w_decay,
-            "modules": [mod.serialize().to_dict() for mod in self.modules],
+            "regularizers": regulzr,
+            "modules": modules,
         }
 
     @classmethod
@@ -136,8 +204,13 @@ class Optimizer:
     ) -> "Optimizer":
         """Instantiate an Optimizer from its configuration dict."""
         config = deepcopy(config)  # avoid side-effects
+        config["regularizers"] = [
+            Regularizer.from_specs(name, config)
+            for name, config in config.pop("regularizers", {}).items()
+        ]
         config["modules"] = [
-            OptiModule.deserialize(cfg) for cfg in config.pop("modules", [])
+            OptiModule.from_specs(name, config)
+            for name, config in config.pop("modules", {}).items()
         ]
         return cls(**config)
 
@@ -162,6 +235,11 @@ class Optimizer:
         None
             This method does not return, as `model` is updated in-place.
         """
+        # Run input gradients through plug-in regularizers.
+        if self.regularizers:
+            weights = model.get_weights()
+            for regularizer in self.regularizers:
+                gradients = regularizer.run(gradients, weights)
         # Run input gradients through plug-in modules.
         for module in self.modules:
             gradients = module.run(gradients)
@@ -189,7 +267,8 @@ class Optimizer:
         for module in self.modules:
             auxv = module.collect_aux_var()
             if auxv:
-                aux_var[module.name] = auxv
+                name = module.aux_name or module.name
+                aux_var[name] = auxv
         return aux_var
 
     def process_aux_var(
@@ -217,7 +296,9 @@ class Optimizer:
             plugged in this optimizer (i.e. if received variables cannot
             be mapped to a destinatory module).
         """
-        modules = {module.name: module for module in self.modules}
+        modules = {
+            (module.aux_name or module.name): module for module in self.modules
+        }
         for name, auxv in aux_var.items():
             module = modules.get(name)
             if module is None:

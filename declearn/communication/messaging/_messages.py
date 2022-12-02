@@ -8,7 +8,7 @@ from abc import ABCMeta
 from typing import Any, Dict, List, Optional, Type
 
 
-from declearn.model.api import Model, NumpyVector, Vector
+from declearn.model.api import Model, Vector
 from declearn.optimizer import Optimizer
 from declearn.utils import (
     deserialize_object,
@@ -88,7 +88,7 @@ class EvaluationRequest(Message):
     typekey = "eval_request"
 
     round_i: int
-    weights: NumpyVector
+    weights: Vector
     batches: Dict[str, Any]
     n_steps: Optional[int]
     timeout: Optional[int]
@@ -172,7 +172,7 @@ class StopTraining(Message):
 
     typekey = "stop_training"
 
-    weights: NumpyVector
+    weights: Vector
     loss: float
     rounds: int
 
@@ -184,7 +184,7 @@ class TrainRequest(Message):
     typekey = "train_request"
 
     round_i: int
-    weights: NumpyVector
+    weights: Vector
     aux_var: Dict[str, Dict[str, Any]]
     batches: Dict[str, Any]
     n_epoch: Optional[int] = None

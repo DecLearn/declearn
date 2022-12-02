@@ -9,7 +9,7 @@ import tensorflow as tf  # type: ignore
 from numpy.typing import ArrayLike
 
 from declearn.data_info import aggregate_data_info
-from declearn.model.api import Model, NumpyVector
+from declearn.model.api import Model
 from declearn.model.tensorflow._utils import build_keras_loss
 from declearn.model.tensorflow._vector import TensorflowVector
 from declearn.typing import Batch
@@ -105,16 +105,31 @@ class TensorflowModel(Model):
 
     def get_weights(
         self,
-    ) -> NumpyVector:
-        return NumpyVector(
-            {str(i): arr for i, arr in enumerate(self._model.get_weights())}
+    ) -> TensorflowVector:
+        # REVISE: only return trainable weights? add flag to select?
+        return TensorflowVector(
+            {var.name: var.value() for var in self._model.weights}
         )
 
-    def set_weights(
+    def set_weights(  # type: ignore  # Vector subtype specification
         self,
-        weights: NumpyVector,
+        weights: TensorflowVector,
     ) -> None:
-        self._model.set_weights(list(weights.coefs.values()))
+        if not isinstance(weights, TensorflowVector):
+            raise TypeError(
+                "TensorflowModel requires TensorflowVector weights."
+            )
+        variables = {var.name: var for var in self._model.weights}
+        if set(weights.coefs).symmetric_difference(variables):
+            missing = set(variables).difference(weights.coefs)
+            unexpct = set(weights.coefs).difference(variables)
+            raise KeyError(
+                "Mismatch between input and model weights' names:\n"
+                + f"Missing key(s) in inputs: {missing}\n" * bool(missing)
+                + f"Unexpected key(s) in inputs: {unexpct}\n" * bool(unexpct)
+            )
+        for name, value in weights.coefs.items():
+            variables[name].assign(value, read_value=False)
 
     def compute_batch_gradients(
         self,
@@ -153,10 +168,14 @@ class TensorflowModel(Model):
             grad = tape.gradient(loss, self._model.trainable_weights)
         return grad  # type: ignore
 
-    def apply_updates(  # type: ignore  # future: revise
+    def apply_updates(  # type: ignore  # Vector subtype specification
         self,
         updates: TensorflowVector,
     ) -> None:
+        if not isinstance(updates, TensorflowVector):
+            raise TypeError(
+                "TensorflowModel requires TensorflowVector updates."
+            )
         # Delegate updates' application to a tensorflow Optimizer.
         values = (-1 * updates).coefs.values()
         zipped = zip(values, self._model.trainable_weights)

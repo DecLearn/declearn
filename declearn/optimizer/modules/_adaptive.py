@@ -5,9 +5,9 @@
 from typing import Any, Dict, Optional, Union
 
 from declearn.model.api import Vector
-from declearn.optimizer.modules._base import OptiModule
+from declearn.optimizer.modules._api import OptiModule
 from declearn.optimizer.modules._momentum import EWMAModule, YogiMomentumModule
-from declearn.utils import register_type
+
 
 __all__ = [
     "AdaGradModule",
@@ -17,7 +17,6 @@ __all__ = [
 ]
 
 
-@register_type(name="AdaGrad", group="OptiModule")
 class AdaGradModule(OptiModule):
     """Adaptative Gradient Algorithm (AdaGrad) module.
 
@@ -72,7 +71,6 @@ class AdaGradModule(OptiModule):
         return gradients / scaling
 
 
-@register_type(name="RMSProp", group="OptiModule")
 class RMSPropModule(OptiModule):
     """Root Mean Square Propagation (RMSProp) module.
 
@@ -130,7 +128,6 @@ class RMSPropModule(OptiModule):
         return gradients / scaling
 
 
-@register_type(name="Adam", group="OptiModule")
 class AdamModule(OptiModule):
     """Adaptive Moment Estimation (Adam) module.
 
@@ -233,7 +230,6 @@ class AdamModule(OptiModule):
         return gradients
 
 
-@register_type(name="Yogi", group="OptiModule")
 class YogiModule(AdamModule):
     """Yogi additive adaptive moment estimation module.
 

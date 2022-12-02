@@ -25,9 +25,9 @@ Tools to map class constructors to (name, group) string tuples.
 * access_registration_info:
     Retrieve the name (and opt. group) under which a type is registered.
 * create_types_registry:
-    Create a new types-registration group, with opt. type constraints.
+    Create a types group from a base class (as a function or class-decorator).
 * register_type:
-    Register a type, through functional or class-decorator syntax.
+    Register a type class (as a function or class-decorator).
 
 
 JSON-serialization

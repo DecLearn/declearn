@@ -343,7 +343,7 @@ new custom concrete implementations inheriting the abstraction.
   - Object: Interface framework-specific data structures.
   - Usage: Wrap and operate on model weights, gradients, updates...
   - Examples:
-    - `declearn.model.api.NumpyVector`
+    - `declearn.model.sklearn.NumpyVector`
     - `declearn.model.tensorflow.TensorflowVector`
     - `declearn.model.torch.TorchVector`
   - Extend: use `declearn.model.api.register_vector_type`
@@ -356,7 +356,20 @@ new custom concrete implementations inheriting the abstraction.
     - `declearn.optimizer.modules.MomentumModule`
     - `declearn.optimizer.modules.ScaffoldClientModule`
     - `declearn.optimizer.modules.ScaffoldServerModule`
-  - Extend: use `declearn.utils.register_type(group="OptiModule")`
+  - Extend:
+    - Simply inherit from `OptiModule` (registration is automated).
+    - To avoid it, use `class MyModule(OptiModule, register=False)`
+
+- `declearn.optimizer.modules.Regularizer`:
+  - Object: Define loss-regularization terms as gradients modifiers.
+  - Usage: Plug into a `declearn.optimizer.Optimizer`.
+  - Examples:
+    - `declearn.optimizer.regularizer.FedProxRegularizer`
+    - `declearn.optimizer.regularizer.LassoRegularizer`
+    - `declearn.optimizer.regularizer.RidgeRegularizer`
+  - Extend:
+    - Simply inherit from `Regularizer` (registration is automated).
+    - To avoid it, use `class MyRegularizer(Regularizer, register=False)`
 
 - `declearn.communication.api.Client`:
   - Object: Instantiate a network communication client endpoint.
@@ -415,7 +428,8 @@ details on this example and on how to run it, please refer to its own
        instance to define how clients' updates are to be aggregated into
        global-model updates on the server side.
    - Parameterize a `declearn.optimizer.Optimizer` (possibly using a selected
-       pipeline of `declearn.optimizer.modules.OptiModule` plug-ins) to be
+       pipeline of `declearn.optimizer.modules.OptiModule` plug-ins and/or a
+       pipeline of `declearn.optimizer.regularizers.Regularizer` ones) to be
        used by clients to derive local step-wise updates from model gradients.
    - Similarly, parameterize an `Optimizer` to be used by the server to
        (optionally) refine the aggregated model updates before applying them.

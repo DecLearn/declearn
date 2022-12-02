@@ -5,8 +5,7 @@
 from typing import Any, Dict, Union
 
 from declearn.model.api import Vector
-from declearn.optimizer.modules._base import OptiModule
-from declearn.utils import register_type
+from declearn.optimizer.modules._api import OptiModule
 
 __all__ = [
     "EWMAModule",
@@ -15,7 +14,6 @@ __all__ = [
 ]
 
 
-@register_type(name="Momentum", group="OptiModule")
 class MomentumModule(OptiModule):
     """Momentum gradient-acceleration module.
 
@@ -92,7 +90,6 @@ class MomentumModule(OptiModule):
         return self.velocity
 
 
-@register_type(name="EWMA", group="OptiModule")
 class EWMAModule(OptiModule):
     """Exponentially Weighted Moving Average module.
 
@@ -143,7 +140,6 @@ class EWMAModule(OptiModule):
         return self.state
 
 
-@register_type(name="YogiMomentum", group="OptiModule")
 class YogiMomentumModule(EWMAModule):
     """Yogi-specific momentum gradient-acceleration module.
 

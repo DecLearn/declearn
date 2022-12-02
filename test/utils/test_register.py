@@ -17,9 +17,9 @@ from declearn.utils import (
 def test_create_types_registry() -> None:
     """Unit tests for 'create_types_registry'."""
     group = f"test_{time.time_ns()}"
-    assert create_types_registry(group, base=object) is None  # type: ignore
+    assert create_types_registry(object, group) is object
     with pytest.raises(KeyError):
-        create_types_registry(group, base=object)
+        create_types_registry(object, group)
 
 
 def test_register_type() -> None:
@@ -33,7 +33,7 @@ def test_register_type() -> None:
 
     # Create a registry and register BaseClass.
     group = f"test_{time.time_ns()}"
-    create_types_registry(group, base=BaseClass)
+    create_types_registry(BaseClass, group)
     assert register_type(BaseClass, name="base", group=group) is BaseClass
     # Register ChildClass.
     assert register_type(ChildClass, name="child", group=group) is ChildClass
@@ -57,7 +57,7 @@ def test_register_type_fails() -> None:
     with pytest.raises(KeyError):
         register_type(BaseClass, name="base", group=group)
     # Try registering in a group with wrong class constraints.
-    create_types_registry(group, base=BaseClass)
+    create_types_registry(BaseClass, group)
     with pytest.raises(TypeError):
         register_type(OtherClass, name="other", group=group)
     # Try registering the same name twice.
@@ -74,7 +74,7 @@ def test_access_registered() -> None:
 
     # Register the class.
     name = f"test_{time.time_ns()}"
-    create_types_registry(name, base=Class)
+    create_types_registry(Class, name)
     register_type(Class, name=name, group=name)
     # Test that it can be recovered, even without specifying the group name.
     assert access_registered(name, group=name) is Class
@@ -98,7 +98,7 @@ def test_access_registeration_info() -> None:
 
     # Register the first class but not the second.
     name = f"test_{time.time_ns()}"
-    create_types_registry(name, base=Class_1)
+    create_types_registry(Class_1, name)
     register_type(Class_1, name=name, group=name)
     # Test that its registration info are properly recovered.
     assert access_registration_info(Class_1, group=name) == (name, name)

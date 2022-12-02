@@ -1,6 +1,6 @@
 # coding: utf-8
 
-"""NumpyVector model coefficients container."""
+"""NumpyVector data arrays container."""
 
 from typing import Any, Callable, Dict, Union
 

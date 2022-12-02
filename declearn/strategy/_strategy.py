@@ -191,13 +191,13 @@ class FedAvg(Strategy):
         self,
     ) -> Optimizer:
         modules = self._build_client_modules()
-        return Optimizer(self.eta_l, self.lam_l, modules)
+        return Optimizer(self.eta_l, self.lam_l, modules=modules)
 
     def build_server_optimizer(
         self,
     ) -> Optimizer:
         modules = self._build_server_modules()
-        return Optimizer(self.eta_g, self.lam_g, modules)
+        return Optimizer(self.eta_g, self.lam_g, modules=modules)
 
     def build_server_aggregator(
         self,

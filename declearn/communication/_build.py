@@ -8,7 +8,7 @@ from typing import Any, Dict, Optional, Union
 
 
 from declearn.communication.api import Client, Server
-from declearn.utils import access_registered, create_types_registry
+from declearn.utils import access_registered
 
 
 __all__ = [
@@ -17,11 +17,6 @@ __all__ = [
     "build_client",
     "build_server",
 ]
-
-
-# Create a pair of type registries.
-create_types_registry("Client", base=Client)
-create_types_registry("Server", base=Server)
 
 
 def build_client(
