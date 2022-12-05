@@ -53,6 +53,25 @@ class TorchVector(Vector):
     def __init__(self, coefs: Dict[str, torch.Tensor]) -> None:
         super().__init__(coefs)
 
+    def _apply_operation(
+        self,
+        other: Any,
+        func: Callable[[Any, Any], Any],
+    ) -> "Vector":
+        if isinstance(other, NumpyVector):
+            # false-positive; pylint: disable=no-member
+            coefs = {
+                key: torch.from_numpy(val) for key, val in other.coefs.items()
+            }
+            other = TorchVector(coefs)
+        return super()._apply_operation(other, func)
+
+    def dtypes(
+        self,
+    ) -> Dict[str, str]:
+        dtypes = super().dtypes()
+        return {key: val.split(".", 1)[-1] for key, val in dtypes.items()}
+
     def shapes(
         self,
     ) -> Dict[str, Tuple[int, ...]]:
