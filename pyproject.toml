@@ -51,12 +51,15 @@ torch = [
     "torch >= 1.10",
 ]
 tests = [
-    "declearn[tensorflow,torch]",
+    # test-specific dependencies
     "black ~= 22.0",
     "mypy >= 0.930",
     "pylint >= 2.14",
     "pytest >= 6.1",
     "pytest-asyncio",
+    # other extra dependencies
+    "tensorflow >= 2.5",
+    "torch >= 1.10",
 ]
 
 [project.urls]
