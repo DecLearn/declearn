@@ -55,10 +55,18 @@ Miscellaneous
 
 * TomlConfig:
     Abstract base class to define TOML-parsable configuration containers.
+* dataclass_from_func:
+    Automatically build a dataclass matching a function's signature.
+* dataclass_from_init:
+    Automatically build a dataclass matching a class's init signature.
 * get_logger:
     Access or create a logger, automating basic handlers' configuration.
 """
 
+from ._dataclass import (
+    dataclass_from_func,
+    dataclass_from_init,
+)
 from ._json import (
     add_json_support,
     json_dump,
