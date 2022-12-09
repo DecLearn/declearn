@@ -18,10 +18,11 @@ Note that the tests are somewhat slow when collected by pytest,
 and that they make use of the multiprocessing library to isolate
 the server and individual clients - which is not required when
 running the code manually, and might require using '--full-trace'
-pytest option to debug in case a test fails. For unclear reasons,
-running code that uses `asyncio.gather` on concurrent coroutines
-was unsuccessful with pytest (resulting in slow 1-client tests,
-and seemingly forever-running multiple-clients tests).
+pytest option to debug in case a test fails.
+
+Note: running code that uses `asyncio.gather` on concurrent coroutines
+is unsuccessful with gRPC due to spawned clients sharing the same peer
+context. This may be fixed by implementing proper authentication.
 """
 
 import asyncio

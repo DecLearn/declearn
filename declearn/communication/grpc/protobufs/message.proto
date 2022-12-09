@@ -11,5 +11,6 @@ message Message {
 
 service MessageBoard {
   rpc ping(Empty) returns (Empty);
-  rpc send(Message) returns (Message);
+  rpc send(Message) returns (stream Message);
+  rpc send_stream(stream Message) returns (stream Message);
 }

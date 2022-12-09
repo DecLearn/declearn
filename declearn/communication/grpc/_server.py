@@ -6,7 +6,7 @@ import getpass
 import logging
 import os
 from concurrent import futures
-from typing import Optional, Union
+from typing import AsyncIterator, Optional, Union
 
 import grpc  # type: ignore
 from cryptography.hazmat.primitives import serialization
@@ -18,7 +18,16 @@ from declearn.communication.grpc.protobufs.message_pb2_grpc import (
     MessageBoardServicer,
     add_MessageBoardServicer_to_server,
 )
+from declearn.communication.messaging import Error
 from declearn.utils import register_type
+
+
+__all__ = [
+    "GrpcServer",
+]
+
+
+CHUNK_LENGTH = 2**22 - 50  # 2**22 - sys.getsizeof("") - 1
 
 
 def load_pem_file(path: str, password: Optional[str] = None) -> bytes:
@@ -163,15 +172,50 @@ class GrpcServicer(MessageBoardServicer):
         # async is needed; pylint: disable=invalid-overridden-method
         return message_pb2.Empty()  # type: ignore
 
+    async def _handle_and_reply(
+        self,
+        message: str,
+        context: grpc.ServicerContext,
+    ) -> AsyncIterator[message_pb2.Message]:  # type: ignore
+        """Handle a received message and send back the (chunked) reply."""
+        reply = await self.handler.handle_message(message, context.peer())
+        string = reply.to_string()
+        for srt in range(0, len(string), CHUNK_LENGTH):
+            end = srt + CHUNK_LENGTH
+            yield message_pb2.Message(message=string[srt:end])
+
     async def send(
         self,
         request: message_pb2.Message,  # type: ignore
         context: grpc.ServicerContext,
-    ) -> message_pb2.Message:  # type: ignore
+    ) -> AsyncIterator[message_pb2.Message]:  # type: ignore
         """Handle a Message-sending request from a client."""
         # async is needed; pylint: disable=invalid-overridden-method
-        reply = await self.handler.handle_message(
-            string=request.message,  # type: ignore
-            context=context.peer(),
-        )
-        return message_pb2.Message(message=reply.to_string())  # type: ignore
+        message = request.message  # type: ignore
+        async for chunk in self._handle_and_reply(message, context):
+            yield chunk
+
+    async def send_stream(
+        self,
+        request_iterator: AsyncIterator[message_pb2.Message],  # type: ignore
+        context: grpc.ServicerContext,
+    ) -> AsyncIterator[message_pb2.Message]:  # type: ignore
+        """Handle a chunked Message-sending request from a client."""
+        # async is needed; pylint: disable=invalid-overridden-method
+        # Case when an unknown peer attempts sending a stream: send an error.
+        if context.peer() not in self.handler.registered_clients:
+            error = Error(
+                "Chunked messages from unregistered clients are not allowed."
+            )
+            self.handler.logger.warning(
+                "Refused a chunks-streaming request from client %s",
+                context.peer(),
+            )
+            yield message_pb2.Message(message=error.to_string())
+        # Otherwise, assemble the message for streamed chunks, then reply.
+        else:
+            message = ""
+            async for request in request_iterator:
+                message += request.message  # type: ignore
+            async for chunk in self._handle_and_reply(message, context):
+                yield chunk
