@@ -13,7 +13,14 @@ from websockets.exceptions import ConnectionClosedOK, ConnectionClosedError
 
 from declearn.communication.api import Client
 from declearn.communication.messaging import Message, parse_message_from_string
+from declearn.communication.websockets._tools import (
+    receive_websockets_message,
+    send_websockets_message,
+)
 from declearn.utils import register_type
+
+
+CHUNK_LENGTH = 100000
 
 
 @register_type(name="websockets", group="Client")
@@ -115,11 +122,12 @@ class WebsocketsClient(Client):
         if self._socket is None:
             raise RuntimeError("Cannot communicate while not connected.")
         string = message.to_string()
-        await self._socket.send(string)
-        reply = await self._socket.recv()
-        if isinstance(reply, bytes):
-            reply = reply.decode("utf-8")
-        return parse_message_from_string(reply)
+        await send_websockets_message(string, self._socket)
+        answer = await self._socket.recv()
+        string = await receive_websockets_message(
+            message=answer, socket=self._socket, allow_chunks=True
+        )
+        return parse_message_from_string(string)
 
     async def register(
         self,

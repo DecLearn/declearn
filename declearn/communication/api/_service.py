@@ -343,6 +343,7 @@ class MessagesHandler:
             if message is not None:
                 return message
             await asyncio.sleep(heartbeat)
+            countdown -= 1
         raise asyncio.TimeoutError(
             "Timeout reached before a message was received."
         )

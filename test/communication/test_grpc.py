@@ -13,7 +13,7 @@ test scripts.
 """
 
 import asyncio
-from typing import AsyncIterator, Dict
+from typing import AsyncIterator, Dict, Iterator
 
 import grpc  # type: ignore
 import pytest
@@ -41,14 +41,18 @@ class FakeMessageBoard(MessageBoardServicer):
     """Minimal MessageBoard implementation to test the connection."""
 
     def ping(
-        self, request: message_pb2.Empty, context: grpc.ServicerContext
+        self,
+        request: message_pb2.Empty,
+        context: grpc.ServicerContext,
     ) -> message_pb2.Empty:
         return message_pb2.Empty()
 
     def send(
-        self, request: message_pb2.Message, context: grpc.ServicerContext
-    ) -> message_pb2.Message:
-        return message_pb2.Message(message=Empty().to_string())
+        self,
+        request: message_pb2.Message,
+        context: grpc.ServicerContext,
+    ) -> Iterator[message_pb2.Message]:
+        yield message_pb2.Message(message=Empty().to_string())
 
 
 @pytest_asyncio.fixture(name="insecure_grpc_server")

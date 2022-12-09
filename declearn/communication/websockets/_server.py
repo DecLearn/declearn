@@ -12,6 +12,11 @@ from websockets.server import WebSocketServer, WebSocketServerProtocol
 from websockets.exceptions import ConnectionClosedOK, ConnectionClosedError
 
 from declearn.communication.api import Server
+from declearn.communication.websockets._tools import (
+    StreamRefusedError,
+    receive_websockets_message,
+    send_websockets_message,
+)
 from declearn.utils import register_type
 
 
@@ -111,11 +116,22 @@ class WebsocketsServer(Server):
         """WebSockets handler to manage incoming client connections."""
         self.logger.info("New connection from %s", socket.remote_address)
         try:
-            async for message in socket:
-                if isinstance(message, bytes):
-                    message = message.decode("utf-8")
+            async for frame in socket:
+                # Receive the message (covering chunked-message case).
+                known = socket in self.handler.registered_clients
+                try:
+                    message = await receive_websockets_message(
+                        frame, socket, allow_chunks=known
+                    )
+                except StreamRefusedError:
+                    self.logger.warning(
+                        "Refused a chunks-streaming request from client %s",
+                        socket.remote_address,
+                    )
+                    break
+                # Handle the received message and produce an answer.
                 reply = await self.handler.handle_message(message, socket)
-                await socket.send(reply.to_string())
+                await send_websockets_message(reply.to_string(), socket)
                 if socket not in self.handler.registered_clients:
                     break
         except (ConnectionClosedOK, ConnectionClosedError) as exc:

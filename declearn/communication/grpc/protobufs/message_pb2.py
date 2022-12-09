@@ -14,7 +14,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\rmessage.proto\x12\x04grpc\"\x07\n\x05\x45mpty\"\x1a\n\x07Message\x12\x0f\n\x07message\x18\x01 \x01(\t2V\n\x0cMessageBoard\x12 \n\x04ping\x12\x0b.grpc.Empty\x1a\x0b.grpc.Empty\x12$\n\x04send\x12\r.grpc.Message\x1a\r.grpc.Messageb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\rmessage.proto\x12\x04grpc\"\x07\n\x05\x45mpty\"\x1a\n\x07Message\x12\x0f\n\x07message\x18\x01 \x01(\t2\x89\x01\n\x0cMessageBoard\x12 \n\x04ping\x12\x0b.grpc.Empty\x1a\x0b.grpc.Empty\x12&\n\x04send\x12\r.grpc.Message\x1a\r.grpc.Message0\x01\x12/\n\x0bsend_stream\x12\r.grpc.Message\x1a\r.grpc.Message(\x01\x30\x01\x62\x06proto3')
 
 
 
@@ -42,6 +42,6 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _EMPTY._serialized_end=30
   _MESSAGE._serialized_start=32
   _MESSAGE._serialized_end=58
-  _MESSAGEBOARD._serialized_start=60
-  _MESSAGEBOARD._serialized_end=146
+  _MESSAGEBOARD._serialized_start=61
+  _MESSAGEBOARD._serialized_end=198
 # @@protoc_insertion_point(module_scope)

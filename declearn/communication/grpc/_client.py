@@ -16,6 +16,14 @@ from declearn.communication.grpc.protobufs.message_pb2_grpc import (
 from declearn.utils import register_type
 
 
+__all__ = [
+    "GrpcClient",
+]
+
+
+CHUNK_LENGTH = 2**22 - 50  # 2**22 - sys.getsizeof("") - 1
+
+
 @register_type(name="grpc", group="Client")
 class GrpcClient(Client):
     """Client-side communication endpoint using gRPC."""
@@ -81,9 +89,24 @@ class GrpcClient(Client):
         """Send a message to the server and return the obtained reply."""
         if self._service is None:
             raise RuntimeError("Cannot send messages while not connected.")
-        grpc_message = message_pb2.Message(message=message.to_string())
-        grpc_reply = await self._service.send(grpc_message)
-        return parse_message_from_string(grpc_reply.message)
+        # Send the message, as a unary or as a stream of message chunks.
+        string = message.to_string()
+        if len(string) <= CHUNK_LENGTH:
+            message = message_pb2.Message(message=string)
+            replies = self._service.send(message)
+        else:
+            # fmt: off
+            chunks = (
+                message_pb2.Message(message=string[idx:idx + CHUNK_LENGTH])
+                for idx in range(0, len(string), CHUNK_LENGTH)
+            )
+            # fmt: on
+            replies = self._service.send_stream(chunks)
+        # Collect the reply from a stream of message chunks.
+        buffer = ""
+        async for chunk in replies:
+            buffer += chunk.message
+        return parse_message_from_string(buffer)
 
     async def register(
         self,
