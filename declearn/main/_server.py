@@ -349,10 +349,7 @@ class FederatedServer:
         params = {
             "round_i": round_i,
             "weights": self.model.get_weights(),
-            "batches": train_cfg.batch_cfg,
-            "n_epoch": train_cfg.n_epoch,
-            "n_steps": train_cfg.n_steps,
-            "timeout": train_cfg.timeout,
+            **train_cfg.message_params,
         }  # type: Dict[str, Any]
         messages = {}  # type: Dict[str, messaging.Message]
         # Dispatch auxiliary variables (which may be client-specific).
@@ -526,9 +523,7 @@ class FederatedServer:
         message = messaging.EvaluationRequest(
             round_i=round_i,
             weights=self.model.get_weights(),
-            batches=valid_cfg.batch_cfg,
-            n_steps=valid_cfg.n_steps,
-            timeout=valid_cfg.timeout,
+            **valid_cfg.message_params,
         )
         await self.netwk.broadcast_message(message, clients)
 
