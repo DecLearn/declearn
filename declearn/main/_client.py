@@ -6,20 +6,13 @@ import asyncio
 import dataclasses
 import logging
 import os
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any, Dict, Optional, Union
 
 
 from declearn.communication import NetworkClientConfig, messaging
 from declearn.communication.api import Client
 from declearn.dataset import Dataset, load_dataset_from_json
-from declearn.main.utils import (
-    Checkpointer,
-    Constraint,
-    ConstraintSet,
-    TimeoutConstraint,
-)
-from declearn.model.api import Model
-from declearn.optimizer import Optimizer
+from declearn.main.utils import Checkpointer, TrainingManager
 from declearn.utils import get_logger, json_dump
 
 
@@ -103,6 +96,7 @@ class FederatedClient:
         # Record the checkpointing folder and create a Checkpointer slot.
         self.folder = folder
         self.checkpointer = None  # type: Optional[Checkpointer]
+        self.trainmanager = None  # type: Optional[TrainingManager]
 
     def run(
         self,
@@ -130,28 +124,46 @@ class FederatedClient:
         async with self.netwk:
             # Register for training, then collect initialization information.
             await self.register()
-            model, optim = await self.initialize()
-            # Instantiate a checkpointer and save the initial model.
-            self.checkpointer = Checkpointer(model, self.folder)
-            self.checkpointer.save_model()
-            self.checkpointer.checkpoint(float("inf"))  # initial weights
+            await self.initialize()
             # Process server instructions as they come.
             while True:
                 message = await self.netwk.check_message()
-                if isinstance(message, messaging.TrainRequest):
-                    await self.training_round(model, optim, message)
-                elif isinstance(message, messaging.EvaluationRequest):
-                    await self.evaluation_round(model, message)
-                elif isinstance(message, messaging.StopTraining):
-                    await self.stop_training(model, message)
+                stoprun = await self.handle_message(message)
+                if stoprun:
                     break
-                elif isinstance(message, messaging.CancelTraining):
-                    await self.cancel_training(message)
-                else:
-                    error = "Unexpected instruction received from server:"
-                    error += repr(message)
-                    self.logger.error(error)
-                    raise ValueError(error)
+
+    async def handle_message(
+        self,
+        message: messaging.Message,
+    ) -> bool:
+        """Handle an incoming message from the server.
+
+        Parameters
+        ----------
+        message: messaging.Message
+            Message instance that needs triage and processing.
+
+        Returns
+        -------
+        exit_loop: bool
+            Whether to interrupt the client's message-receiving loop.
+        """
+        exit_loop = False
+        if isinstance(message, messaging.TrainRequest):
+            await self.training_round(message)
+        elif isinstance(message, messaging.EvaluationRequest):
+            await self.evaluation_round(message)
+        elif isinstance(message, messaging.StopTraining):
+            await self.stop_training(message)
+            exit_loop = True
+        elif isinstance(message, messaging.CancelTraining):
+            await self.cancel_training(message)
+        else:
+            error = "Unexpected instruction received from server:"
+            error += repr(message)
+            self.logger.error(error)
+            raise ValueError(error)
+        return exit_loop
 
     async def register(
         self,
@@ -179,7 +191,7 @@ class FederatedClient:
 
     async def initialize(
         self,
-    ) -> Tuple[Model, Optimizer]:
+    ) -> None:
         """Set up a Model and an Optimizer based on server instructions.
 
         Await server instructions (as an InitRequest message) and conduct
@@ -216,13 +228,21 @@ class FederatedClient:
         await self.netwk.send_message(
             messaging.GenericMessage(action="InitializationOK", params={})
         )
-        # Return the model and optimizer received from the server.
-        return message.model, message.optim
+        # Wrap up the model and optimizer received from the server.
+        self.trainmanager = TrainingManager(
+            model=message.model,
+            optim=message.optim,
+            train_data=self.train_data,
+            valid_data=self.valid_data,
+            logger=self.logger,
+        )
+        # Instantiate a checkpointer and save the initial model.
+        self.checkpointer = Checkpointer(message.model, self.folder)
+        self.checkpointer.save_model()
+        self.checkpointer.checkpoint(float("inf"))  # initial weights
 
     async def training_round(
         self,
-        model: Model,
-        optim: Optimizer,
         message: messaging.TrainRequest,
     ) -> None:
         """Run a local training round.
@@ -233,111 +253,19 @@ class FederatedClient:
 
         Parameters
         ----------
-        model:
-            Model that is to be trained locally.
-        optim:
-            Optimizer to be used when computing local SGD steps.
+        manager: TrainingManager
+            Instance wrapping the model, optimizer and data to use.
         message: TrainRequest
             Instructions from the server regarding the training round.
         """
-        self.logger.info("Participating in training round %s", message.round_i)
-        # Try running the training round.
-        try:
-            # Unpack and apply model weights and optimizer auxiliary variables.
-            self.logger.info("Applying server updates to local objects.")
-            model.set_weights(message.weights)
-            optim.process_aux_var(message.aux_var)
-            # Train under instructed effort constraints.
-            # fmt: off
-            self.logger.info(
-                "Training local model for %s epochs | %s steps | %s seconds.",
-                message.n_epoch, message.n_steps, message.timeout,
-            )
-            effort = self._train_under_constraints(
-                model, optim, message.batches,
-                message.n_epoch, message.n_steps, message.timeout,
-            )
-            # fmt: on
-            # Compute model updates and collect auxiliary variables.
-            self.logger.info("Sending local updates to the server.")
-            reply = messaging.TrainReply(
-                updates=message.weights - model.get_weights(),
-                aux_var=optim.collect_aux_var(),
-                n_epoch=int(effort["n_epoch"]),
-                n_steps=int(effort["n_steps"]),
-                t_spent=round(effort["t_spent"], 3),
-            )  # type: messaging.Message
-        # In case of failure, ensure it is reported to the server.
-        except Exception as exception:  # pylint: disable=broad-except
-            reply = messaging.Error(repr(exception))
+        assert self.trainmanager is not None
+        # Run the training round.
+        reply = self.trainmanager.training_round(message)
         # Send training results (or error message) to the server.
         await self.netwk.send_message(reply)
 
-    def _train_under_constraints(
-        self,
-        model: Model,
-        optim: Optimizer,
-        batch_cfg: Dict[str, Any],
-        n_epoch: Optional[int],
-        n_steps: Optional[int],
-        timeout: Optional[int],
-    ) -> Dict[str, float]:
-        """Backend code to run local SGD steps under effort constraints.
-
-        Parameters
-        ----------
-        model:
-            Model that is to be trained locally.
-        optim:
-            Optimizer to be used when computing local SGD steps.
-        batch_cfg: Dict[str, Any]
-            Keyword arguments for `self.train_data.generate_batches`
-            i.e. specifications of batches used in local SGD steps.
-        n_epoch: int or None, default=None
-            Maximum number of local training epochs to perform.
-            May be overridden by `n_steps` or `timeout`.
-        n_steps: int or None, default=None
-            Maximum number of local training steps to perform.
-            May be overridden by `n_epoch` or `timeout`.
-        timeout: int or None, default=None
-            Time (in seconds) beyond which to interrupt training,
-            regardless of the actual number of steps taken (> 0).
-
-        Returns
-        -------
-        effort: dict[str, float]
-            Dictionary storing information on the computational
-            effort effectively performed:
-            * n_epoch: int
-                Number of training epochs completed.
-            * n_steps: int
-                Number of training steps completed.
-            * t_spent: float
-                Time spent running training steps (in seconds).
-        """
-        # arguments serve modularity; pylint: disable=too-many-arguments
-        # Set up effort constraints under which to operate.
-        epochs = Constraint(limit=n_epoch, name="n_epoch")
-        constraints = ConstraintSet(
-            Constraint(limit=n_steps, name="n_steps"),
-            TimeoutConstraint(limit=timeout, name="t_spent"),
-        )
-        # Run batch train steps for as long as constraints allow it.
-        while not epochs.saturated:
-            for batch in self.train_data.generate_batches(**batch_cfg):
-                optim.run_train_step(model, batch)
-                constraints.increment()
-                if constraints.saturated:
-                    break
-            epochs.increment()
-        # Return a dict storing information on the training effort.
-        effort = {"n_epoch": epochs.value}
-        effort.update(constraints.get_values())
-        return effort
-
     async def evaluation_round(
         self,
-        model: Model,
         message: messaging.EvaluationRequest,
     ) -> None:
         """Run a local evaluation round.
@@ -346,89 +274,30 @@ class FederatedClient:
         it as an Error message and send it to the server instead
         of raising it.
 
+        If a checkpointer is set, record the local loss, and the
+        model weights received from the server.
+
         Parameters
         ----------
-        model:
-            Model that is to be evaluated locally.
+        manager: TrainingManager
+            Instance wrapping the model and data to use.
         message: EvaluationRequest
             Instructions from the server regarding the evaluation round.
         """
-        self.logger.info(
-            "Participating in evaluation round %s", message.round_i
-        )
-        # Try running the evaluation round.
-        try:
-            # Update the model's weights and evaluate on the local dataset.
-            model.set_weights(message.weights)
-            reply = self._evaluate_under_constraints(
-                model, message.batches, message.n_steps, message.timeout
-            )
-            # If possible, checkpoint the model and record the local loss.
-            if self.checkpointer is not None:  # True in `run` context
-                self.checkpointer.checkpoint(reply.loss)
-        # In case of failure, ensure it is reported to the server.
-        except Exception as exception:  # pylint: disable=broad-except
-            self.logger.error(
-                "Error encountered during evaluation: %s.", exception
-            )
-            reply = messaging.Error(repr(exception))  # type: ignore
-        # Send training results (or error message) to the server.
+        assert self.trainmanager is not None
+        # Run the evaluation round.
+        reply = self.trainmanager.evaluation_round(message)
+        # If possible, checkpoint the model and record the local loss.
+        if (
+            isinstance(reply, messaging.EvaluationReply)  # not an Error
+            and self.checkpointer is not None  # True in `run` context
+        ):
+            self.checkpointer.checkpoint(reply.loss)
+        # Send evaluation results (or error message) to the server.
         await self.netwk.send_message(reply)
-
-    def _evaluate_under_constraints(
-        self,
-        model: Model,
-        batch_cfg: Dict[str, Any],
-        n_steps: Optional[int] = None,
-        timeout: Optional[int] = None,
-    ) -> messaging.EvaluationReply:
-        """Backend code to run local loss computation under effort constraints.
-
-        Parameters
-        ----------
-        model:
-            Model that is to be evaluated locally.
-        batch_cfg: Dict[str, Any]
-            Keyword arguments to `self.valid_data.generate_batches`.
-        n_steps: int or None, default=None
-            Maximum number of local evaluation steps to perform.
-            May be overridden by `timeout` or dataset size.
-        timeout: int or None, default=None
-            Time (in seconds) beyond which to interrupt evaluation,
-            regardless of the actual number of steps taken (> 0).
-
-        Returns
-        -------
-        eval_reply: messaging.EvaluationReply
-            EvaluationReply message wrapping the computed loss on the
-            local validation (or, if absent, training) dataset as well
-            as the number of steps and the time taken to obtain it.
-        """
-        # arguments serve modularity; pylint: disable=too-many-arguments
-        # Set up effort constraints under which to operate.
-        constraints = ConstraintSet(
-            Constraint(limit=n_steps, name="n_steps"),
-            TimeoutConstraint(limit=timeout, name="t_spent"),
-        )
-        # Run batch evaluation steps for as long as constraints allow it.
-        loss = 0.0
-        dataset = self.valid_data or self.train_data
-        for batch in dataset.generate_batches(**batch_cfg):
-            loss += model.compute_loss([batch])
-            constraints.increment()
-            if constraints.saturated:
-                break
-        # Pack the result and computational effort information into a message.
-        effort = constraints.get_values()
-        return messaging.EvaluationReply(
-            loss=loss / effort["n_steps"],
-            n_steps=int(effort["n_steps"]),
-            t_spent=round(effort["t_spent"], 3),
-        )
 
     async def stop_training(
         self,
-        model: Model,
         message: messaging.StopTraining,
     ) -> None:
         """Handle a server request to stop training.
@@ -449,7 +318,7 @@ class FederatedClient:
                 path = os.path.join(self.folder, "best_local_weights.json")
                 self.logger.info("Saving best local weights in '%s'.", path)
                 self.checkpointer.reset_best_weights()
-                json_dump(model.get_weights(), path)
+                json_dump(self.checkpointer.model.get_weights(), path)
             # Save the globally-best-performing model weights.
             path = os.path.join(self.folder, "final_weights.json")
             self.logger.info("Saving final weights in '%s'.", path)
