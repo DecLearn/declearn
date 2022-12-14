@@ -243,7 +243,7 @@ class Vector(metaclass=ABCMeta):
         self,
         other: Any,
     ) -> "Vector":
-        return self.__sub__(-other)
+        return -1 * self.__sub__(other)
 
     def __mul__(
         self,
