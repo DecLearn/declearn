@@ -63,6 +63,9 @@ class Optimizer:
     modules: list[OptiModule]
         List of plug-in modules composed into the optimizer's
         gradients-to-updates computation algorithm.
+    regularizers: list[Regularizer]
+        List of plug-in loss regularization modules composed into
+        the optimizer's gradients-to-updates computation algorithm.
 
     API methods:
     -----------
@@ -312,6 +315,7 @@ class Optimizer:
         self,
         model: Model,
         batch: Batch,
+        sclip: Optional[float] = None,
     ) -> None:
         """Perform a gradient-descent step on a given batch.
 
@@ -321,11 +325,15 @@ class Optimizer:
             Model instance that is to be trained using gradient-descent.
         batch: Batch
             Training data used for that training step.
+        sclip: float or None, default=None
+            Optional L2-norm clipping threshold for sample-wise gradients,
+            restraining their sensitivity prior to any alteration designed
+            as part of this Optimizer's pipeline of plug-in algorithms.
 
         Returns
         -------
         None
             This method does not return, as `model` is updated in-place.
         """
-        gradients = model.compute_batch_gradients(batch)
+        gradients = model.compute_batch_gradients(batch, max_norm=sclip)
         self.apply_gradients(model, gradients)
