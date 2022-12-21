@@ -4,7 +4,7 @@
 
 import asyncio
 import logging
-from typing import Any, Dict, Optional, Set, Type, Union
+from typing import Any, Dict, Optional, Set, Type, TypeVar, Union
 
 
 from declearn.communication import NetworkServerConfig, messaging
@@ -28,6 +28,9 @@ from declearn.utils import deserialize_object, get_logger
 __all__ = [
     "FederatedServer",
 ]
+
+
+MessageT = TypeVar("MessageT", bound=messaging.Message)
 
 
 class FederatedServer:
@@ -124,7 +127,6 @@ class FederatedServer:
             raise TypeError("'config' should be a FLRunConfig object or str.")
         asyncio.run(self.async_run(config))
 
-
     async def async_run(
         self,
         config: FLRunConfig,
@@ -205,28 +207,13 @@ class FederatedServer:
         self.logger.info("Sending initialization requests to clients.")
         await self.netwk.broadcast_message(message)
         # Await a confirmation from clients that initialization went well.
-        self.logger.info("Waiting for clients' responses.")
-        replies = await self.netwk.wait_for_messages()
-        self.logger.info("Received clients' responses.")
-        errors = {
-            client: msg.message
-            for client, msg in replies.items()
-            if isinstance(msg, messaging.Error)
-        }
         # If any client has failed to initialize, raise.
-        if errors:
-            err_msg = "Initialization failed for another client."
-            messages = {
-                client: messaging.CancelTraining(errors.get(client, err_msg))
-                for client in self.netwk.client_names
-            }  # type: Dict[str, messaging.Message]
-            await self.netwk.send_messages(messages)
-            err_msg = f"Initialization failed for {len(errors)} clients:"
-            err_msg += "".join(
-                f"\n    {client}: {error}" for client, error in errors.items()
-            )
-            self.logger.error(err_msg)
-            raise RuntimeError(err_msg)
+        self.logger.info("Waiting for clients' responses.")
+        await self._collect_results(
+            clients=self.netwk.client_names,
+            msgtype=messaging.GenericMessage,
+            context="initialization",
+        )
         self.logger.info("Initialization was successful.")
 
     async def _process_data_info(
@@ -283,7 +270,9 @@ class FederatedServer:
         clients = self._select_training_round_participants()
         await self._send_training_instructions(clients, round_i, train_cfg)
         self.logger.info("Awaiting clients' training results.")
-        results = await self._collect_training_results(clients)
+        results = await self._collect_results(
+            clients, messaging.TrainReply, "training"
+        )
         self.logger.info("Conducting server-side optimization.")
         self._conduct_global_update(results)
 
@@ -328,39 +317,12 @@ class FederatedServer:
         # Send client-wise messages.
         await self.netwk.send_messages(messages)
 
-    async def _collect_training_results(
-        self,
-        clients: Set[str],
-    ) -> Dict[str, messaging.TrainReply]:
-        """Collect training results for clients participating in a round.
-
-        Parameters
-        ----------
-        clients: set[str]
-            Names of the clients participating in the training round.
-
-        Raises
-        ------
-        RuntimeError:
-            If any client sent an incorrect message or reported
-            failure to conduct the training step properly. Send
-            CancelTraining to all clients before raising.
-
-        Returns
-        -------
-        results: dict[str, TrainReply]
-            Client-wise TrainReply message.
-        """
-        return await self._collect_results(  # type: ignore
-            clients, messaging.TrainReply, "training"
-        )
-
     async def _collect_results(
         self,
         clients: Set[str],
-        msgtype: Type[messaging.Message],
+        msgtype: Type[MessageT],
         context: str,
-    ) -> Dict[str, messaging.Message]:
+    ) -> Dict[str, MessageT]:
         """Collect some results sent by clients and ensure they are okay.
 
         Parameters
@@ -387,7 +349,7 @@ class FederatedServer:
         """
         # Await clients' responses and type-check them.
         replies = await self.netwk.wait_for_messages(clients)
-        results = {}  # type: Dict[str, messaging.Message]
+        results = {}  # type: Dict[str, MessageT]
         errors = {}  # type: Dict[str, str]
         for client, message in replies.items():
             if isinstance(message, msgtype):
@@ -456,7 +418,9 @@ class FederatedServer:
         clients = self._select_evaluation_round_participants()
         await self._send_evaluation_instructions(clients, round_i, valid_cfg)
         self.logger.info("Awaiting clients' evaluation results.")
-        results = await self._collect_evaluation_results(clients)
+        results = await self._collect_results(
+            clients, messaging.EvaluationReply, "evaluation"
+        )
         self.logger.info("Aggregating evaluation results.")
         loss = self._aggregate_evaluation_results(results)
         self.logger.info("Global loss is: %s", loss)
@@ -492,33 +456,6 @@ class FederatedServer:
             **valid_cfg.message_params,
         )
         await self.netwk.broadcast_message(message, clients)
-
-    async def _collect_evaluation_results(
-        self,
-        clients: Set[str],
-    ) -> Dict[str, messaging.EvaluationReply]:
-        """Collect evaluation results for clients participating in a round.
-
-        Parameters
-        ----------
-        clients: set[str]
-            Names of the clients participating in the evaluation round.
-
-        Raises
-        ------
-        RuntimeError:
-            If any client sent an incorrect message or reported
-            failure to conduct the evaluation step properly.
-            Send CancelTraining to all clients before raising.
-
-        Returns
-        -------
-        results: dict[str, EvaluationReply]
-            Client-wise TrainReply message.
-        """
-        return await self._collect_results(  # type: ignore
-            clients, messaging.EvaluationReply, "training"
-        )
 
     def _aggregate_evaluation_results(
         self,
