@@ -63,6 +63,9 @@ class Optimizer:
     modules: list[OptiModule]
         List of plug-in modules composed into the optimizer's
         gradients-to-updates computation algorithm.
+    regularizers: list[Regularizer]
+        List of plug-in loss regularization modules composed into
+        the optimizer's gradients-to-updates computation algorithm.
 
     API methods:
     -----------
@@ -70,6 +73,8 @@ class Optimizer:
         Update a Model based on a pre-computed Vector of gradients.
     collect_aux_var() -> Dict[str, Dict[str, Any]]:
         Collect and package plug-in modules' auxiliary variables.
+    compute_updates_from_gradients(Model, Vector) -> Vector:
+        Compute and return model updates based on pre-computed gradients.
     process_aux_var(Dict[str, Dict[str, Any]]) -> None:
         Pass auxiliary variables to plug-in modules for processing.
     run_train_step(Model, batch) -> None:
@@ -214,17 +219,19 @@ class Optimizer:
         ]
         return cls(**config)
 
-    def apply_gradients(
+    def compute_updates_from_gradients(
         self,
         model: Model,
         gradients: Vector,
-    ) -> None:
-        """Compute and apply model updates based on pre-computed gradients.
+    ) -> Vector:
+        """Compute and return model updates based on pre-computed gradients.
 
         Parameters
         ----------
         model: Model
             Model instance that is to be trained using gradient-descent.
+            This parameter is only used to access current weights in case
+            some loss regularizers are part of the pipeline.
         gradients: Vector
             Pre-computed vector of (pseudo-)gradients based on which to
             perform the gradient-descent step, by applying the algorithm
@@ -232,8 +239,9 @@ class Optimizer:
 
         Returns
         -------
-        None
-            This method does not return, as `model` is updated in-place.
+        updates: Vector
+            Model weights' updates, preserving input `gradients`'s specs,
+            ready to be applied using the `model.apply_updates` method.
         """
         # Run input gradients through plug-in regularizers.
         if self.regularizers:
@@ -248,8 +256,8 @@ class Optimizer:
         # Optionally add the decoupled weight decay term.
         if self.w_decay:
             updates += self.w_decay * model.get_weights()
-        # Apply updates to the model.
-        model.apply_updates(-1.0 * updates)
+        # Return ready-to-apply model updates.
+        return -1.0 * updates
 
     def collect_aux_var(
         self,
@@ -312,6 +320,7 @@ class Optimizer:
         self,
         model: Model,
         batch: Batch,
+        sclip: Optional[float] = None,
     ) -> None:
         """Perform a gradient-descent step on a given batch.
 
@@ -321,11 +330,39 @@ class Optimizer:
             Model instance that is to be trained using gradient-descent.
         batch: Batch
             Training data used for that training step.
+        sclip: float or None, default=None
+            Optional L2-norm clipping threshold for sample-wise gradients,
+            restraining their sensitivity prior to any alteration designed
+            as part of this Optimizer's pipeline of plug-in algorithms.
 
         Returns
         -------
         None
             This method does not return, as `model` is updated in-place.
         """
-        gradients = model.compute_batch_gradients(batch)
+        gradients = model.compute_batch_gradients(batch, max_norm=sclip)
         self.apply_gradients(model, gradients)
+
+    def apply_gradients(
+        self,
+        model: Model,
+        gradients: Vector,
+    ) -> None:
+        """Compute and apply model updates based on pre-computed gradients.
+
+        Parameters
+        ----------
+        model: Model
+            Model instance that is to be trained using gradient-descent.
+        gradients: Vector
+            Pre-computed vector of (pseudo-)gradients based on which to
+            perform the gradient-descent step, by applying the algorithm
+            defined by this optimizer and its plug-in modules.
+
+        Returns
+        -------
+        None
+            This method does not return, as `model` is updated in-place.
+        """
+        updates = self.compute_updates_from_gradients(model, gradients)
+        model.apply_updates(updates)

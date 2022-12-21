@@ -4,8 +4,9 @@
 
 import io
 import warnings
-from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
+from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple
 
+import functorch  # type: ignore
 import torch
 
 from declearn.model.api import Model
@@ -54,6 +55,8 @@ class TorchModel(Model):
             raise TypeError("'loss' should be a torch.nn.Module instance.")
         self._loss_fn = loss
         self._loss_fn.reduction = "none"  # type: ignore
+        # Compute and assign a functional version of the model.
+        self._func_model = functorch.make_functional(self._model)[0]
 
     @property
     def required_data_info(
@@ -116,7 +119,10 @@ class TorchModel(Model):
     def compute_batch_gradients(
         self,
         batch: Batch,
+        max_norm: Optional[float] = None,
     ) -> TorchVector:
+        if max_norm:
+            return self._compute_clipped_gradients(batch, max_norm)
         return self._compute_batch_gradients(batch)
 
     def _compute_batch_gradients(
@@ -167,6 +173,118 @@ class TorchModel(Model):
         if s_wght is not None:
             loss.mul_(s_wght)
         return loss.mean()  # type: ignore
+
+    def _compute_samplewise_gradients(
+        self,
+        batch: Batch,
+    ) -> TorchVector:
+        """Compute and return stacked sample-wise gradients from a batch."""
+        # Delegate preparation of the gradients-computing function.
+        # fmt: off
+        grads_fn, data, params, pnames, in_axes = (
+            self._prepare_samplewise_gradients_computations(batch)
+        )
+        # Vectorize the function to compute sample-wise gradients.
+        with torch.no_grad():
+            grads = functorch.vmap(grads_fn, in_axes)(*data, *params)
+        # Wrap the results into a TorchVector and return it.
+        return TorchVector(dict(zip(pnames, grads)))
+
+    def _compute_clipped_gradients(
+        self,
+        batch: Batch,
+        max_norm: float,
+    ) -> TorchVector:
+        """Compute and return batch-averaged sample-wise-clipped gradients."""
+        # Delegate preparation of the gradients-computing function.
+        # fmt: off
+        grads_fn, data, params, pnames, in_axes = (
+            self._prepare_samplewise_gradients_computations(batch)
+        )
+        # Compose it to clip output gradients on the way.
+        def clipped_grads_fn(inputs, y_true, s_wght, *params):  # type: ignore
+            grads = grads_fn(inputs, y_true, None, *params)
+            for grad in grads:
+                # future: use torch.linalg.norm when supported by functorch
+                norm = torch.norm(grad, p=2, keepdim=True)  # type: ignore
+                # false-positive; pylint: disable=no-member
+                grad.mul_(torch.clamp(max_norm / norm, max=1))
+                if s_wght is not None:
+                    grad.mul_(s_wght)
+            return grads
+        # Vectorize the function to compute sample-wise clipped gradients.
+        with torch.no_grad():
+            grads = functorch.vmap(clipped_grads_fn, in_axes)(*data, *params)
+        # Wrap batch-averaged results into a TorchVector and return it.
+        return TorchVector(
+            {name: grad.mean(dim=0) for name, grad in zip(pnames, grads)}
+        )
+
+    def _prepare_samplewise_gradients_computations(
+        self,
+        batch: Batch,
+    ) -> Tuple[
+        Callable[..., List[torch.Tensor]],
+        TensorBatch,
+        List[torch.nn.Parameter],
+        List[str],
+        Tuple[Any, ...],
+    ]:
+        """Prepare a function an parameters to compute sample-wise gradients.
+
+        Note: this method is merely implemented as a way to avoid code
+        redundancies between the `_compute_samplewise_gradients` method
+        and the `_compute_clipped_gradients` ones.
+
+        Parameters
+        ----------
+        batch: declearn.typing.Batch
+            Batch structure wrapping the input data, target labels and
+            optional sample weights based on which to compute gradients.
+
+        Returns
+        -------
+        grads_fn: function(*data, *params) -> List[torch.Tensor]
+            Functorch-issued gradients computation function.
+        data: tuple([torch.Tensor], torch.Tensor, torch.Tensor or None)
+            Tensor-converted data unpacked from `batch`.
+        params: list[torch.nn.Parameter]
+            Input parameters of the model, some of which require grads.
+        pnames: list[str]
+            Names of the parameters that require gradients.
+        in_axes: tuple(...)
+            Prepared `in_axes` parameter to `functorch.vmap`, suitable
+            to distribute `grads_fn` (or any compose that shares its
+            input signature) over a batch so as to compute sample-wise
+            gradients in a computationally-efficient manner.
+        """
+        # fmt: off
+        # Unpack and validate inputs.
+        data = (inputs, y_true, s_wght) = self._unpack_batch(batch)
+        # Gather parameters and list those that require gradients.
+        idxgrd = []  # type: List[int]
+        pnames = []  # type: List[str]
+        params = []  # type: List[torch.nn.Parameter]
+        for idx, (name, param) in enumerate(self._model.named_parameters()):
+            params.append(param)
+            if param.requires_grad:
+                pnames.append(name)
+                idxgrd.append(idx)
+        # Define a differentiable function wrapping the forward pass.
+        def forward(inputs, y_true, s_wght, *params):  # type: ignore
+            y_pred = self._func_model(params, *inputs)
+            return self._compute_loss(y_pred, y_true, s_wght)
+        # Transform it into a sample-wise-gradients-computing function.
+        grads_fn = functorch.grad(forward, argnums=tuple(i+3 for i in idxgrd))
+        # Prepare `functools.vmap` parameter to slice through data and params.
+        in_axes = [
+            [0] * len(inputs),
+            None if y_true is None else 0,
+            None if s_wght is None else 0,
+        ]
+        in_axes.extend([None] * len(params))
+        # Return all this prepared material.
+        return grads_fn, data, params, pnames, tuple(in_axes)
 
     def apply_updates(  # type: ignore  # Vector subtype specification
         self,

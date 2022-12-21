@@ -2,7 +2,7 @@
 
 """TorchVector data arrays container."""
 
-from typing import Any, Callable, Dict, Set, Tuple, Type
+from typing import Any, Callable, Dict, Optional, Set, Tuple, Type
 
 import numpy as np
 import torch
@@ -94,6 +94,8 @@ class TorchVector(Vector):
         # false-positive; pylint: disable=no-member
         if isinstance(other, Vector):
             return self._apply_operation(other, torch.minimum)
+        if isinstance(other, float):
+            other = torch.Tensor([other])
         return self.apply_func(torch.minimum, other)
 
     def maximum(
@@ -103,4 +105,17 @@ class TorchVector(Vector):
         # false-positive; pylint: disable=no-member
         if isinstance(other, Vector):
             return self._apply_operation(other, torch.minimum)
+        if isinstance(other, float):
+            other = torch.Tensor([other])
         return self.apply_func(torch.maximum, other)
+
+    def sum(
+        self,
+        axis: Optional[int] = None,
+        keepdims: bool = False,
+    ) -> Self:  # type: ignore
+        coefs = {
+            key: val.sum(dim=axis, keepdims=keepdims)
+            for key, val in self.coefs.items()
+        }
+        return self.__class__(coefs)
