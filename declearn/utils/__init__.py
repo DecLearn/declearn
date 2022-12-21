@@ -53,6 +53,8 @@ And examples of pre-registered (de)serialization functions:
 Miscellaneous
 -------------
 
+* TomlConfig:
+    Abstract base class to define TOML-parsable configuration containers.
 * get_logger:
     Access or create a logger, automating basic handlers' configuration.
 """
@@ -82,3 +84,4 @@ from ._serialize import (
     deserialize_object,
     serialize_object,
 )
+from ._toml_config import TomlConfig

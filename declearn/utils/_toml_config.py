@@ -1,0 +1,276 @@
+# coding: utf-8
+
+"""Base class to define TOML-parsable configuration containers."""
+
+import dataclasses
+import typing
+import warnings
+
+try:
+    import tomllib  # type: ignore
+except ModuleNotFoundError:
+    import tomli as tomllib  # type: ignore  # required re-definition
+from typing import Any, Dict, Optional, TypeVar, Union
+
+from typing_extensions import Self  # future: import from typing (py >=3.11)
+
+
+__all__ = [
+    "TomlConfig",
+]
+
+
+T = TypeVar("T")
+
+
+def parse_float(src: str) -> Optional[float]:
+    """Custom float parser that replaces nan values with None."""
+    return None if src == "nan" else float(src)
+
+
+def instantiate_field(
+    field: dataclasses.Field[T],
+    *args: Any,
+    **kwargs: Any,
+) -> T:
+    """Instantiate a dataclass field from input args and kwargs.
+
+    This functions is meant to enable automatically building dataclass
+    fields that are annotated to be a union of types, notably optional
+    fields (i.e. Union[T, None]).
+
+    It will raise a TypeError if instantiation fails or if `field.type`
+    has and unsupported typing origin. It may also raise any exception
+    coming from the target type's `__init__` method.
+    """
+    origin = typing.get_origin(field.type)
+    if origin is None:  # raw type
+        return field.type(*args, **kwargs)
+    if origin is Union:  # union of types, including optional
+        for cls in typing.get_args(field.type):
+            try:
+                return cls(*args, **kwargs)
+            except TypeError:
+                pass
+        raise TypeError(
+            f"Failed to instantiate {field.name} using type constructors "
+            f"{typing.get_args(field.type)}."
+        )
+    raise TypeError(
+        f"Unsupported field type: {field.type} with origin {origin}."
+    )
+
+
+@dataclasses.dataclass
+class TomlConfig:
+    """Base class to define TOML-parsable configuration containers.
+
+    This class aims at wrapping multiple, possibly optional, sets of
+    hyper-parameters, each of which is specified through a dedicated
+    dataclass, or as a unit type.
+
+    It also enables parsing these configuration from a TOML file, as
+    well as instantiating from Python objects, possibly using field-
+    wise parsers to convert inputs into the desired type.
+
+    Instantiation classmethods
+    --------------------------
+    from_toml:
+        Instantiate by parsing a TOML configuration file.
+    from_params:
+        Instantiate by parsing inputs dicts (or objects).
+    """
+
+    @classmethod
+    def from_params(
+        cls,
+        **kwargs: Any,
+    ) -> Self:  # type: ignore
+        """Instantiate a structured configuration from input keyword arguments.
+
+        The input keyword arguments should match this class's fields' names.
+        For each and every dataclass field of this class:
+            - If unprovided, set the argument to None.
+            - If a `parse_{field.name}` method exists, use that method.
+            - Else, use the `default_parser` method.
+
+        Notes
+        -----
+        - If a field supports being None, not passing a kwarg for it will
+          by default result in setting it to None.
+        - If a field has a default value and does not support being None,
+          not passing a kwarg for it will by default result in using its
+          default value.
+        - If a field both has a default value and supports being None, it
+          may be preferrable to pass an empty dict kwarg so as to use the
+          field's default value rather than a non-default None value.
+        - The former remarks hold up when the field does not benefit from
+          a specific parser (that may implement arbitrary processing).
+
+        Raises
+        ------
+        RuntimeError:
+            In case a field failed to be instantiated using the input key-
+            word argument (or None value resulting from the lack thereof).
+
+        Warns
+        -----
+        UserWarning:
+            In case some keyword arguments are unused due to the lack of a
+            corresponding dataclass field.
+        """
+        fields = {}  # type: Dict[str, Any]
+        # Look up expected kwargs and parse them.
+        for field in dataclasses.fields(cls):
+            parser = getattr(cls, f"parse_{field.name}", cls.default_parser)
+            inputs = kwargs.pop(field.name, None)
+            try:
+                fields[field.name] = parser(field, inputs)
+            except Exception as exc:  # pylint: disable=broad-except
+                raise RuntimeError(
+                    f"Failed to parse '{field.name}' field: {exc}"
+                ) from exc
+        # Warn about unused keyword arguments.
+        for key in kwargs:
+            warnings.warn(
+                f"Unsupported keyword argument in {cls.__name__}.from_params: "
+                f"'{key}'. This argument was ignored."
+            )
+        return cls(**fields)
+
+    @staticmethod
+    def default_parser(
+        field: dataclasses.Field[T],
+        inputs: Union[str, Dict[str, Any], T, None],
+    ) -> T:
+        """Default method to instantiate a field from python inputs.
+
+        Parameters
+        ----------
+        field: dataclasses.Field[<T>]
+            Field that is being instantiated.
+        inputs: str or dict or <T> or None
+            Provided inputs to instantiate the field.
+            - If valid as per `field.type`, return inputs.
+            - If None (and None is invalid), return the field's default value.
+            - If dict, treat them as kwargs to the field's type constructor.
+            - If str, treat as the path to a TOML file specifying the object.
+
+        Notes
+        -----
+        If `inputs` is str and treated as the path to a TOML file,
+        it will be parsed in one of the following ways:
+        - Call `field.type.from_toml` if `field.type` is a TomlConfig.
+        - Use the file's `field.name` section as kwargs, if it exists.
+        - Use the entire file's contents as kwargs otherwise.
+
+        Raises
+        ------
+        TypeError:
+            If instantiation failed, for any reason.
+
+        Returns
+        -------
+        object: <T>
+            Instantiated object that matches the field's specifications.
+        """
+        # Case of valid inputs: return them as-is (including valid None).
+        if isinstance(inputs, field.type):
+            return inputs
+        # Case of None inputs: return default value if any, else raise.
+        if inputs is None:
+            if field.default is not dataclasses.MISSING:
+                return field.default
+            if field.default_factory is not dataclasses.MISSING:
+                return field.default_factory()
+            raise TypeError(
+                f"Field '{field.name}' does not provide a default value."
+            )
+        # Case of str inputs: treat as the path to a TOML file to parse.
+        if isinstance(inputs, str):
+            # If the field implements TOML parsing, call it.
+            if issubclass(field.type, TomlConfig):
+                return field.type.from_toml(inputs)  # type: ignore
+            # Otherwise, conduct minimal parsing.
+            with open(inputs, "rb") as file:
+                config = tomllib.load(file, parse_float=parse_float)
+            section = config.get(field.name, config)  # subsection or full file
+            return (
+                instantiate_field(field, **section)
+                if isinstance(section, dict)
+                else instantiate_field(field, section)
+            )
+        # Case of dict inputs: try instantiating the target type.
+        if isinstance(inputs, dict):
+            return instantiate_field(field, **inputs)
+        # Otherwise, raise a TypeError.
+        raise TypeError(f"Failed to parse inputs for field {field.name}.")
+
+    @classmethod
+    def from_toml(
+        cls,
+        path: str,
+    ) -> Self:  # type: ignore
+        """Parse a structured configuration from a TOML file.
+
+        The parsed TOML configuration file should be organized into sections
+        that are named after this class's fields, and provide parameters to
+        be parsed by the field's associated dataclass.
+
+        Notes
+        -----
+        - Sections for fields that have default values may be missing.
+        - Parameters with default values may also be missing.
+        - All None values should be written as nan ones, as TOML does
+          not have a null data type.
+
+        Parameters
+        ----------
+        path: str
+            Path to a TOML configuration file, that provides with the
+            hyper-parameters making up for the FL "run" configuration.
+
+        Raises
+        ------
+        RuntimeError:
+            If parsing fails, whether due to misformatting of the TOML
+            file, presence of undue parameters, or absence of required
+            ones.
+
+        Warns
+        -----
+        UserWarning:
+            In case some sections of the TOML file are unused due to the
+            lack of a corresponding dataclass field.
+        """
+        # Parse the TOML configuration file.
+        try:
+            with open(path, "rb") as file:
+                config = tomllib.load(file, parse_float=parse_float)
+        except tomllib.TOMLDecodeError as exc:
+            raise RuntimeError(
+                "Failed to parse the TOML configuration file."
+            ) from exc
+        # Look for expected config sections in the parsed TOML file.
+        params = {}  # type: Dict[str, Any]
+        for field in dataclasses.fields(cls):
+            # Case when the section is provided: set it up for parsing.
+            if field.name in config:
+                params[field.name] = config.pop(field.name)
+            # Case when the section is missing: raise if it is required.
+            elif (
+                field.default is dataclasses.MISSING
+                and field.default_factory is dataclasses.MISSING
+            ):
+                raise RuntimeError(
+                    "Missing required section in the TOML configuration "
+                    f"file: '{field.name}'."
+                )
+        # Warn about remaining (unused) config sections.
+        for name in config:
+            warnings.warn(
+                f"Unsupported section encountered in {path} TOML file: "
+                f"'{name}'. This section will be ignored."
+            )
+        # Finally, instantiate the FLConfig container.
+        return cls.from_params(**params)
