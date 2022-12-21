@@ -2,7 +2,7 @@
 
 """NumpyVector data arrays container."""
 
-from typing import Any, Callable, Dict, Union
+from typing import Any, Callable, Dict, Optional, Union
 
 import numpy as np
 from numpy.typing import ArrayLike
@@ -79,3 +79,14 @@ class NumpyVector(Vector):
         if isinstance(other, Vector):
             return self._apply_operation(other, np.maximum)
         return self.apply_func(np.maximum, other)
+
+    def sum(
+        self,
+        axis: Optional[int] = None,
+        keepdims: bool = False,
+    ) -> Self:  # type: ignore
+        coefs = {
+            key: np.sum(val, axis=axis, keepdims=keepdims)
+            for key, val in self.coefs.items()
+        }
+        return self.__class__(coefs)

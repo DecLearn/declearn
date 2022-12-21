@@ -302,6 +302,13 @@ class Vector(metaclass=ABCMeta):
         """Compute coef.-wise, element-wise maximum wrt to another Vector."""
         raise NotImplementedError
 
+    @abstractmethod
+    def sum(
+        self,
+    ) -> "Vector":
+        """Compute coefficient-wise sum of elements."""
+        raise NotImplementedError
+
 
 def register_vector_type(
     v_type: Type[Any],

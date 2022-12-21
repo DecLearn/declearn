@@ -2,15 +2,15 @@
 
 """TensorflowVector data arrays container."""
 
-from typing import Any, Callable, Dict, Set, Type, Union
+from typing import Any, Callable, Dict, Optional, Set, Type, Union
 
+# fmt: off
 import tensorflow as tf  # type: ignore
-
 # false-positive; pylint: disable=no-name-in-module
 from tensorflow.python.framework.ops import EagerTensor  # type: ignore
-
 # pylint: enable=no-name-in-module
 from typing_extensions import Self  # future: import from typing (Py>=3.11)
+# fmt: on
 
 from declearn.model.api import Vector, register_vector_type
 from declearn.model.sklearn import NumpyVector
@@ -153,3 +153,14 @@ class TensorflowVector(Vector):
         if isinstance(other, Vector):
             return self._apply_operation(other, tf.maximum)
         return self.apply_func(tf.maximum, other)
+
+    def sum(
+        self,
+        axis: Optional[int] = None,
+        keepdims: bool = False,
+    ) -> Self:  # type: ignore
+        coefs = {
+            key: tf.reduce_sum(val, axis=axis, keepdims=keepdims)
+            for key, val in self.coefs.items()
+        }
+        return self.__class__(coefs)
