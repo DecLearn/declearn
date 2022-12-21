@@ -5,6 +5,7 @@ import os
 
 from declearn.communication import NetworkServerConfig
 from declearn.main import FederatedServer
+from declearn.main.config import FLRunConfig
 from declearn.model.sklearn import SklearnSGDModel
 from declearn.strategy import strategy_from_config
 
@@ -85,13 +86,14 @@ def run_server(
     # Here, we setup 20 rounds of training, with 30 samples per batch
     # during training and 50 during validation; plus an early-stopping
     # criterion if the global validation loss stops decreasing for 5 rounds.
-    server.run(
+    run_cfg = FLRunConfig.from_params(
         rounds=20,
-        regst_cfg={"min_clients": nb_clients},
-        train_cfg={"batch_size": 30, "drop_remainder": False},
-        valid_cfg={"batch_size": 50, "drop_remainder": False},
+        register={"min_clients": nb_clients},
+        training={"batch_size": 30, "drop_remainder": False},
+        evaluate={"batch_size": 50, "drop_remainder": False},
         early_stop={"tolerance": 0.0, "patience": 5, "relative": False},
     )
+    server.run(run_cfg)
 
 
 # Called when the script is called directly (using `python server.py`).

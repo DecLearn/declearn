@@ -170,11 +170,12 @@ netwk = declearn.communication.NetworkServerConfig(
 )
 strat = declearn.strategy.FedAvg()
 server = declearn.main.FederatedServer(model, netwk, strat, folder="outputs")
-server.run(
+config = declearn.main.config.FLRunConfig.from_params(
     rounds=10,
-    regst_cfg={"min_clients": 1, "max_clients": 3, "timeout": 180},
-    train_cfg={"n_epochs": 5, "batch_size": 128, "drop_remainder": False}
+    register={"min_clients": 1, "max_clients": 3, "timeout": 180},
+    training={"n_epochs": 5, "batch_size": 128, "drop_remainder": False},
 )
+server.run(config)
 ```
 
 ### Client-side script
@@ -451,13 +452,21 @@ details on this example and on how to run it, please refer to its own
      - Provide the Model, Strategy and Server objects or configurations.
      - Optionally provide the path to a folder where to write output files
        (model checkpoints and global loss history).
-   - Call the server's `run` method, further specifying:
+   - Instantiate a `declearn.main.config.FLRunConfig` to specify the process:
+     - Maximum number of training and evaluation rounds to run.
      - Registration parameters: exact or min/max number of clients to have
        and optional timeout delay spent waiting for said clients to join.
      - Training parameters: data-batching parameters and effort constraints
        (number of local epochs and/or steps to take, and optional timeout).
      - Evaluation parameters: data-batching parameters and effort constraints
        (optional maximum number of steps (<=1 epoch) and optional timeout).
+     - Early-stopping parameters (optionally): patience, tolerance, etc. as
+       to the global model loss's evolution throughout rounds.
+   - Alternatively, write up a TOML configuration file that specifies all of
+     the former hyper-parameters.
+   - Call the server's `run` method, passing it the former config object (or
+     the path to the TOML configuration file).
+
 
 #### Clients setup instructions
 
@@ -535,11 +544,11 @@ The **coding rules** are fairly simple:
   and [pylint](https://pylint.pycqa.org/en/latest/) (for more general linting);
   do use "type: ..." and "pylint: disable=..." comments where you think it
   relevant, preferably with some side explanations
-  (see dedicated sub-sections below: [pylint](#running-black-to-format-the-code)
+  (see dedicated sub-sections below: [pylint](#running-pylint-to-check-the-code)
   and [mypy](#running-mypy-to-type-check-the-code))
 - reformat your code using [black](https://github.com/psf/black); do use
   (sparingly) "fmt: off/on" comments when you think it relevant
-  (see dedicated sub-section [below](#running-pylint-to-check-the-code))
+  (see dedicated sub-section [below](#running-black-to-format-the-code))
 
 ### Unit tests and code analysis
 
