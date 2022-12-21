@@ -11,6 +11,9 @@ Adaptive learning-rate algorithms:
 * RMSPropModule : RMSProp algorithm
 * YogiModule    : Yogi algorithm, with Adam or AMSGrad base
 
+Gradient clipping algorithms:
+* L2Clipping : Fixed-threshold L2-norm gradient clipping module
+
 Momentum algorithms:
 * EWMAModule         : Exponentially-Weighted Moving Average module
 * MomentumModule     : Momentum (and Nesterov) acceleration module
@@ -30,6 +33,10 @@ from ._adaptive import (
     AdamModule,
     RMSPropModule,
     YogiModule,
+)
+
+from ._clipping import (
+    L2Clipping,
 )
 
 from ._momentum import (
