@@ -155,7 +155,7 @@ class TrainingManager:
             TimeoutConstraint(limit=timeout, name="t_spent"),
         )
         # Run batch train steps for as long as constraints allow it.
-        while not epochs.saturated:
+        while not (constraints.saturated or epochs.saturated):
             for batch in self.train_data.generate_batches(**batch_cfg):
                 self.optim.run_train_step(self.model, batch)
                 constraints.increment()
