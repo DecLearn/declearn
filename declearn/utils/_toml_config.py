@@ -10,7 +10,7 @@ try:
     import tomllib  # type: ignore
 except ModuleNotFoundError:
     import tomli as tomllib  # type: ignore  # required re-definition
-from typing import Any, Dict, Optional, TypeVar, Union
+from typing import Any, Dict, Optional, Type, TypeVar, Union
 
 from typing_extensions import Self  # future: import from typing (py >=3.11)
 
@@ -23,16 +23,83 @@ __all__ = [
 T = TypeVar("T")
 
 
+def isinstance_generic(inputs: Any, typevar: Type) -> bool:
+    """Override of `isinstance` built-in that supports some typing generics.
+
+    Note
+    ----
+    This function was mainly implemented to make up for the lack of a
+    backport of `isinstance(x, Optional[T])` for Python <3.9. Thus it
+    is currently private and used in a single place, with its future
+    (being kept / improved / made public / removed) being unclear.
+
+    Parameters
+    ----------
+    inputs: <T>
+        Input instance that needs type-checking.
+    typevar: type or typing generic
+        Type hint based on which to type-check `inputs`.
+        May be a base type, or a typing generic among a (limited)
+        number of supported cases: Dict, List, Tuple, Union.
+        Note that Optional is supported as it is a Union alias.
+
+    Returns
+    -------
+    is_instance: bool
+        Whether `inputs` abides by the type specified by `typevar`.
+        For composed type generics, recursive type-checks may be
+        conducted (e.g. to type-check elements of an iterable).
+
+    Raises
+    ------
+    TypeError:
+        If an unsupported `typevar` is provided.
+    """
+    origin = typing.get_origin(typevar)
+    # Case of a raw, unit type.
+    if origin is None:
+        return isinstance(inputs, typevar)
+    # Case of a typing generic.
+    args = typing.get_args(typevar)
+    # Case of a Union generic.
+    if origin is typing.Union:
+        return isinstance(inputs, args)
+    # Case of a Dict[..., ...] generic.
+    if origin is dict:
+        return (
+            isinstance(inputs, dict)
+            and all(isinstance_generic(k, args[0]) for k in inputs)
+            and all(isinstance_generic(v, args[1]) for v in inputs.values())
+        )
+    # Case of a List[...] generic.
+    if origin is list:
+        return isinstance(inputs, list) and all(
+            isinstance_generic(e, args[0]) for e in inputs
+        )
+    # Case of a Tuple[...] generic.
+    if origin is tuple:
+        return (
+            isinstance(inputs, tuple)
+            and len(inputs) == len(args)
+            and all(isinstance_generic(e, t) for e, t in zip(inputs, args))
+        )
+    # Unsupported cases.
+    raise TypeError(
+        "Unsupported subscripted generic for instance check: "
+        f"'{typevar}' with origin '{origin}'."
+    )
+
+
 def parse_float(src: str) -> Optional[float]:
     """Custom float parser that replaces nan values with None."""
     return None if src == "nan" else float(src)
 
 
 def instantiate_field(
-    field: dataclasses.Field[T],
+    field: dataclasses.Field,  # future: dataclasses.Field[T] (Py >=3.9)
     *args: Any,
     **kwargs: Any,
-) -> T:
+) -> Any:  # future: T
     """Instantiate a dataclass field from input args and kwargs.
 
     This functions is meant to enable automatically building dataclass
@@ -140,9 +207,9 @@ class TomlConfig:
 
     @staticmethod
     def default_parser(
-        field: dataclasses.Field[T],
+        field: dataclasses.Field,  # future: dataclasses.Field[T] (Py >=3.9)
         inputs: Union[str, Dict[str, Any], T, None],
-    ) -> T:
+    ) -> Any:
         """Default method to instantiate a field from python inputs.
 
         Parameters
@@ -175,7 +242,7 @@ class TomlConfig:
             Instantiated object that matches the field's specifications.
         """
         # Case of valid inputs: return them as-is (including valid None).
-        if isinstance(inputs, field.type):
+        if isinstance_generic(inputs, field.type):  # see function's notes
             return inputs
         # Case of None inputs: return default value if any, else raise.
         if inputs is None:
