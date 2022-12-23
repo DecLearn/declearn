@@ -13,23 +13,12 @@ import pytest
 from scipy import stats  # type: ignore
 
 from declearn.optimizer.modules import GaussianNoiseModule, NoiseModule
-
-
-# dirty trick to import from `model_testing.py`;
-# pylint: disable=wrong-import-order, wrong-import-position
-sys.path.append(".")
-from optim_testing import (
-    FRAMEWORKS,
-    Framework,
-    GradientsTestCase,
-)
-
+from declearn.test_utils import FrameworkType, GradientsTestCase
 
 
 NOISETYPES = NoiseModule.__subclasses__()
 
 
-@pytest.mark.parametrize("framework", FRAMEWORKS)
 @pytest.mark.parametrize("cls", NOISETYPES)
 class TestNoiseModule:
     """Functional tests for declearn.optimizer.modules.NoiseModule subclasses.
@@ -41,7 +30,7 @@ class TestNoiseModule:
 
     @pytest.mark.parametrize("seed", [0, 123])
     def test_seed_reproducibility(
-        self, cls: Type[NoiseModule], framework: Framework, seed: int
+        self, cls: Type[NoiseModule], framework: FrameworkType, seed: int
     ) -> None:
         """Test that using the same seed twice returns the same vector."""
         grad = GradientsTestCase(framework=framework, seed=seed).mock_gradient
@@ -53,7 +42,7 @@ class TestNoiseModule:
 
     @pytest.mark.parametrize("safe_mode", [False, True])
     def test_randomness(
-        self, cls: Type[NoiseModule], framework: Framework, safe_mode: bool
+        self, cls: Type[NoiseModule], framework: FrameworkType, safe_mode: bool
     ) -> None:
         """Test that different random calls return different results."""
         grad = GradientsTestCase(framework=framework).mock_gradient

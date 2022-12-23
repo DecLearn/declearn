@@ -27,20 +27,16 @@ from typing import Type
 
 import pytest
 from declearn.optimizer.modules import NoiseModule, OptiModule
-from declearn.optimizer.modules import OptiModule
+from declearn.test_utils import FrameworkType, GradientsTestCase
 from declearn.utils import json_pack, json_unpack
 from declearn.utils._register import REGISTRIES
 
-
-# dirty trick to import from `model_testing.py`;
-# pylint: disable=wrong-import-order, wrong-import-position
+# relative import; pylint: disable=wrong-import-order, wrong-import-position
+# fmt: off
 sys.path.append(".")
-from optim_testing import (
-    FRAMEWORKS,
-    Framework,
-    GradientsTestCase,
-    PluginTestBase,
-)
+from optim_testing import PluginTestBase
+sys.path.pop()
+# fmt: on
 
 # unproper but efficient way to list modules; pylint: disable=protected-access
 OPTIMODULE_SUBCLASSES = REGISTRIES["OptiModule"]._reg
@@ -68,9 +64,8 @@ class TestOptiModule(PluginTestBase):
             cfg.to_json(path)
             self.assert_equivalent(module, cls.deserialize(path))
 
-    @pytest.mark.parametrize("framework", FRAMEWORKS)
     def test_collect_aux_var(
-        self, cls: Type[OptiModule], framework: Framework
+        self, cls: Type[OptiModule], framework: FrameworkType
     ) -> None:
         """Test an OptiModule's collect_aux_var method."""
         test_case = GradientsTestCase(framework)
