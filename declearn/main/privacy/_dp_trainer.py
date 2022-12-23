@@ -1,0 +1,163 @@
+# coding: utf-8
+
+"""TrainingManager subclass implementing Differential Privacy mechanisms."""
+
+import logging
+from typing import Optional, Tuple, Union
+
+from opacus.accountants import IAccountant, create_accountant
+from opacus.accountants.utils import get_noise_multiplier
+
+from declearn.communication import messaging
+from declearn.dataset import Dataset
+from declearn.main.utils import TrainingManager
+from declearn.model.api import Model
+from declearn.optimizer import Optimizer
+from declearn.optimizer.modules import GaussianNoiseModule
+from declearn.typing import Batch
+
+
+__all__ = [
+    "DPTrainingManager",
+]
+
+
+class DPTrainingManager(TrainingManager):
+    """TrainingManager subclass adding Differential Privacy mechanisms.
+
+    This class extends the base TrainingManager class in three key ways:
+    * Perform per-sample gradients clipping (through the Model API),
+      parametrized by the added, optional `sclip_norm` attribute.
+    * Add noise to batch-averaged gradients at each step of training,
+      calibrated from an (epsilon, delta) DP budget and the planned
+      training computational effort (number of steps, sample rate...).
+    * Keep track of the spent privacy budget during training, and block
+      training once the monitored budget is fully spent.
+
+    This TrainingManager therefore implements the differentially-private
+    stochastic gradient descent algorithm (DP-SGD) [1] algorithm, in a
+    modular fashion that enables using any kind of optimizer plug-in
+    supported by its (non-DP) parent.
+    """
+
+    def __init__(
+        self,
+        model: Model,
+        optim: Optimizer,
+        train_data: Dataset,
+        valid_data: Optional[Dataset] = None,
+        logger: Union[logging.Logger, str, None] = None,
+    ) -> None:
+        # inherited signature; pylint: disable=too-many-arguments
+        super().__init__(model, optim, train_data, valid_data, logger)
+        # Add DP-related fields: accountant, clipping norm and budget.
+        self.accountant = None  # type: Optional[IAccountant]
+        self.sclip_norm = None  # type: Optional[float]
+        self._dp_budget = (0.0, 0.0)
+
+    def make_private(
+        self,
+        message: messaging.PrivacyRequest,
+    ) -> None:
+        """Set up the use of DP-SGD based on a received PrivacyRequest."""
+        # REVISE: add support for fixed requested noise multiplier
+        # Compute the noise multiplier to use based on the budget
+        # and the planned training duration and parameters.
+        noise_multiplier = self._fit_noise_multiplier(
+            budget=message.budget,
+            n_samples=self.train_data.get_data_specs().n_samples,
+            batch_size=message.batches["batch_size"],
+            n_round=message.rounds,
+            n_epoch=message.n_epoch,
+            n_steps=message.n_steps,
+            accountant=message.accountant,
+            drop_remainder=message.batches.get("drop_remainder", True),
+        )
+        # Add a gaussian noise addition module to the optimizer's pipeline.
+        noise_module = GaussianNoiseModule(
+            std=noise_multiplier * message.sclip_norm,
+            safe_mode=message.use_csprng,
+            seed=message.seed,
+        )
+        self.optim.modules.insert(0, noise_module)
+        # Create an accountant and store the clipping norm and privacy budget.
+        self.accountant = create_accountant(message.accountant)
+        self.sclip_norm = message.sclip_norm
+        self._dp_budget = message.budget
+
+    def get_noise_multiplier(self) -> Optional[float]:
+        """Return the noise multiplier used for DP-SGD, if any."""
+        if self.optim.modules:
+            if isinstance(self.optim.modules[0], GaussianNoiseModule):
+                return self.optim.modules[0].std / (self.sclip_norm or 1.0)
+        return None
+
+    def _fit_noise_multiplier(
+        self,
+        budget: Tuple[float, float],
+        n_samples: int,
+        batch_size: int,
+        n_round: int,
+        n_epoch: Optional[int] = None,
+        n_steps: Optional[int] = None,
+        accountant: str = "rdp",
+        drop_remainder: bool = True,
+    ) -> float:
+        """Parametrize a DP noise multiplier based on a training schedule."""
+        # arguments are all required; pylint: disable=too-many-arguments
+        # Compute the expected number of batches per epoch.
+        n_batches = n_samples // batch_size
+        if not drop_remainder:
+            n_batches += bool(n_batches % batch_size)
+        # Compute the total number of steps that will be performed.
+        steps = n_round
+        if n_epoch and n_steps:
+            steps *= min(n_steps, n_epoch * n_batches)
+        elif n_steps:  # i.e. n_epoch is None
+            steps *= n_steps
+        elif n_epoch:  # i.e. n_steps is None
+            steps *= n_epoch * n_batches
+        else:  # i.e. both None: then default n_epoch=1 is used
+            steps *= n_batches
+            if n_epoch is None:
+                self.logger.warning(
+                    "Both `n_epoch` and `n_steps` are None in the received "
+                    "PrivacyRequest. As a result, the noise used for DP is "
+                    "calibrated assuming `n_epoch=1` per round, which might "
+                    "be wrong, and result in under- or over-spending the "
+                    "privacy budget during the actual training rounds."
+                )
+        # Use the former information to choose the noise multiplier.
+        return get_noise_multiplier(
+            target_epsilon=budget[0],
+            target_delta=budget[1],
+            sample_rate=batch_size / n_samples,
+            steps=steps,
+            accountant=accountant,
+        )
+
+    def _run_train_step(
+        self,
+        batch: Batch,
+    ) -> None:
+        # Use fixed-threshold sample-wise gradients clipping, in addition
+        # to all the features implemented at the parent level.
+        # Note: in the absence of `make_private`, no clipping is performed.
+        self.optim.run_train_step(self.model, batch, sclip=self.sclip_norm)
+
+    def _training_round(
+        self,
+        message: messaging.TrainRequest,
+    ) -> messaging.TrainReply:
+        # Delegate all of the actual training routine to the parent class.
+        reply = super()._training_round(message)
+        # Optionally keep track of the spent differential privacy budget.
+        if self.accountant is not None:
+            n_samples = self.train_data.get_data_specs().n_samples
+            sample_rate = message.batches["batch_size"] / n_samples
+            self.accountant.history.append(
+                (self.get_noise_multiplier(), sample_rate, reply.n_steps)
+            )
+        # REVISE: add budget-spent warning ~ raise ~ something
+        # possible BEFORE the round goes on (compute the planned spending)
+        return reply

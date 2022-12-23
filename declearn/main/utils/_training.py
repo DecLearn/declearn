@@ -14,6 +14,7 @@ from declearn.main.utils._constraints import (
 )
 from declearn.model.api import Model
 from declearn.optimizer import Optimizer
+from declearn.typing import Batch
 from declearn.utils import get_logger
 
 __all__ = [
@@ -157,7 +158,7 @@ class TrainingManager:
         # Run batch train steps for as long as constraints allow it.
         while not (constraints.saturated or epochs.saturated):
             for batch in self.train_data.generate_batches(**batch_cfg):
-                self.optim.run_train_step(self.model, batch)
+                self._run_train_step(batch)
                 constraints.increment()
                 if constraints.saturated:
                     break
@@ -166,6 +167,13 @@ class TrainingManager:
         effort = {"n_epoch": epochs.value}
         effort.update(constraints.get_values())
         return effort
+
+    def _run_train_step(
+        self,
+        batch: Batch,
+    ) -> None:
+        """Run a single training step based on an input batch."""
+        self.optim.run_train_step(self.model, batch)
 
     def evaluation_round(
         self,
