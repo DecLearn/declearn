@@ -13,6 +13,7 @@ the other exposed dataclasses are already articulated and used by it.
 
 from ._dataclasses import (
     EvaluateConfig,
+    PrivacyConfig,
     RegisterConfig,
     TrainingConfig,
 )
