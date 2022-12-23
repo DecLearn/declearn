@@ -18,6 +18,7 @@ same values (up to reasonable numerical precision) for all
 of these.
 """
 
+import functools
 import json
 import os
 import sys
@@ -25,7 +26,7 @@ import tempfile
 from typing import Type
 
 import pytest
-
+from declearn.optimizer.modules import NoiseModule, OptiModule
 from declearn.optimizer.modules import OptiModule
 from declearn.utils import json_pack, json_unpack
 from declearn.utils._register import REGISTRIES
@@ -81,3 +82,14 @@ class TestOptiModule(PluginTestBase):
             dump = json.dumps(aux_var, default=json_pack)
             assert isinstance(dump, str)
             assert json.loads(dump, object_hook=json_unpack) == aux_var
+
+    def test_run_equivalence(  # type: ignore
+        self, cls: Type[OptiModule]
+    ) -> None:
+        # For Noise-addition mechanisms, seed the (unsafe) RNG.
+        if issubclass(cls, NoiseModule):
+            cls = functools.partial(
+                cls, safe_mode=False, seed=0
+            )  # type: ignore  # partial wraps the __init__ method
+        # Run the unit test.
+        super().test_run_equivalence(cls)
