@@ -156,11 +156,18 @@ class TrainingManager:
             TimeoutConstraint(limit=timeout, name="t_spent"),
         )
         # Run batch train steps for as long as constraints allow it.
-        while not (constraints.saturated or epochs.saturated):
+        stop_training = False
+        while not (stop_training or epochs.saturated):
             for batch in self.train_data.generate_batches(**batch_cfg):
-                self._run_train_step(batch)
+                try:
+                    self._run_train_step(batch)
+                except StopIteration as exc:
+                    self.logger.warning("Interrupting training round: %s", exc)
+                    stop_training = True
+                    break
                 constraints.increment()
                 if constraints.saturated:
+                    stop_training = True
                     break
             epochs.increment()
         # Return a dict storing information on the training effort.
@@ -172,7 +179,19 @@ class TrainingManager:
         self,
         batch: Batch,
     ) -> None:
-        """Run a single training step based on an input batch."""
+        """Run a single training step based on an input batch.
+
+        Parameters
+        ----------
+        batch: Batch
+            Batched data based on which to compute and apply model updates.
+
+        Raises
+        ------
+        StopIteration:
+            If this step is being cancelled and the training routine
+            in the context of which it is being called should stop.
+        """
         self.optim.run_train_step(self.model, batch)
 
     def evaluation_round(

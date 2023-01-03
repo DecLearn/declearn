@@ -32,7 +32,8 @@ class DPTrainingManager(TrainingManager):
       calibrated from an (epsilon, delta) DP budget and the planned
       training computational effort (number of steps, sample rate...).
     * Keep track of the spent privacy budget during training, and block
-      training once the monitored budget is fully spent.
+      training once the monitored budget is fully spent (early-stop the
+      training routine if the next step would result in over-spending).
 
     This TrainingManager therefore implements the differentially-private
     stochastic gradient descent algorithm (DP-SGD) [1] algorithm, in a
@@ -54,6 +55,7 @@ class DPTrainingManager(TrainingManager):
         self.accountant = None  # type: Optional[IAccountant]
         self.sclip_norm = None  # type: Optional[float]
         self._dp_budget = (0.0, 0.0)
+        self._dp_states = None  # type: Optional[Tuple[float, float]]
 
     def make_private(
         self,
@@ -84,13 +86,6 @@ class DPTrainingManager(TrainingManager):
         self.accountant = create_accountant(message.accountant)
         self.sclip_norm = message.sclip_norm
         self._dp_budget = message.budget
-
-    def get_noise_multiplier(self) -> Optional[float]:
-        """Return the noise multiplier used for DP-SGD, if any."""
-        if self.optim.modules:
-            if isinstance(self.optim.modules[0], GaussianNoiseModule):
-                return self.optim.modules[0].std / (self.sclip_norm or 1.0)
-        return None
 
     def _fit_noise_multiplier(
         self,
@@ -136,28 +131,77 @@ class DPTrainingManager(TrainingManager):
             accountant=accountant,
         )
 
+    def get_noise_multiplier(self) -> Optional[float]:
+        """Return the noise multiplier used for DP-SGD, if any."""
+        if self.optim.modules:
+            if isinstance(self.optim.modules[0], GaussianNoiseModule):
+                return self.optim.modules[0].std / (self.sclip_norm or 1.0)
+        return None
+
+    def get_privacy_spent(self) -> Tuple[float, float]:
+        """Return the (epsilon, delta) privacy budget used."""
+        if self.accountant is None:
+            raise RuntimeError("Cannot return spent privacy: DP is not used.")
+        delta = self._dp_budget[1]
+        epsilon = self.accountant.get_epsilon(delta=delta)
+        return epsilon, delta
+
     def _run_train_step(
         self,
         batch: Batch,
     ) -> None:
+        # Optionally have the DP accountant authorize or prevent the step.
+        # Note that once the step is authorized, it is also accounted for.
+        self._prevent_budget_overspending()
         # Use fixed-threshold sample-wise gradients clipping, in addition
         # to all the features implemented at the parent level.
         # Note: in the absence of `make_private`, no clipping is performed.
         self.optim.run_train_step(self.model, batch, sclip=self.sclip_norm)
 
+    def _prevent_budget_overspending(self) -> None:
+        """Raise a StopIteration if a step would overspend the DP budget.
+
+        This method relies on the private attribute `_dp_states` to have
+        been properly set as part of the `_training_round` routine.
+        """
+        if self.accountant is not None and self._dp_states is not None:
+            noise, srate = self._dp_states
+            self.accountant.step(noise_multiplier=noise, sample_rate=srate)
+            if self.get_privacy_spent()[0] > self._dp_budget[0]:
+                # Remove the step from the history as it will not be taken.
+                last = self.accountant.history.pop(-1)
+                if last[-1] > 1:  # number of steps with that (noise, srate)
+                    last = (last[0], last[1], last[2] - 1)
+                    self.accountant.history.append(last)
+                # Prevent the step from being taken.
+                raise StopIteration(
+                    "Local DP budget would be exceeded by taking the next "
+                    "training step."
+                )
+
     def _training_round(
         self,
         message: messaging.TrainRequest,
     ) -> messaging.TrainReply:
-        # Delegate all of the actual training routine to the parent class.
-        reply = super()._training_round(message)
-        # Optionally keep track of the spent differential privacy budget.
+        # When using differential privacy, store accountant-required values.
         if self.accountant is not None:
-            n_samples = self.train_data.get_data_specs().n_samples
-            sample_rate = message.batches["batch_size"] / n_samples
-            self.accountant.history.append(
-                (self.get_noise_multiplier(), sample_rate, reply.n_steps)
+            n_smp = self.train_data.get_data_specs().n_samples
+            srate = message.batches["batch_size"] / n_smp  # type: float
+            noise = self.get_noise_multiplier()
+            if noise is None:
+                raise RuntimeError(
+                    "Noise multiplier not found: something is wrong with "
+                    "the local DP setup."
+                )
+            self._dp_states = (noise, srate)
+        # Delegate all of the actual training routine to the parent class.
+        # DP budget saturation will cause training to be interrupted.
+        reply = super()._training_round(message)
+        # When using DP, clean up things and log about the spent budget.
+        if self.accountant is not None:
+            self._dp_states = None  # remove now out-of-scope state values
+            self.logger.info(
+                "Local DP budget spent at the end of the round: %s",
+                self.get_privacy_spent(),
             )
-        # REVISE: add budget-spent warning ~ raise ~ something
-        # possible BEFORE the round goes on (compute the planned spending)
         return reply
