@@ -12,9 +12,9 @@ from declearn.model.sklearn import NumpyVector
 from declearn.optimizer.modules import OptiModule
 from declearn.optimizer.regularizers import Regularizer
 from declearn.test_utils import (
-    Frameworks,
     FrameworkType,
     GradientsTestCase,
+    list_available_frameworks,
 )
 
 
@@ -98,7 +98,7 @@ class PluginTestBase:
         """
         # Collect outputs from a newly-created plugin for each framework.
         results = []  # type: List[NumpyVector]
-        for fwk in Frameworks:
+        for fwk in list_available_frameworks():
             f_case = GradientsTestCase(fwk)  # type: ignore
             plugin = cls()
             try:

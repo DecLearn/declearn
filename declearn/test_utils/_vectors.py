@@ -2,34 +2,40 @@
 
 """Shared objects for testing purposes."""
 
+import importlib
 import typing
-import warnings
-from typing import Dict, Optional, Tuple, Type
+from typing import List, Optional, Type
 
 import numpy as np
+import pkg_resources
 from numpy.typing import ArrayLike
 from typing_extensions import Literal  # future: import from typing (Py>=3.8)
 
-with warnings.catch_warnings():  # silence tensorflow import-time warnings
-    warnings.simplefilter("ignore")
-    import tensorflow as tf  # type: ignore
-
-import torch
 from declearn.model.api import Vector
 from declearn.model.sklearn import NumpyVector
-from declearn.model.tensorflow import TensorflowVector
-from declearn.model.torch import TorchVector
 
 
 __all__ = [
     "FrameworkType",
-    "Frameworks",
     "GradientsTestCase",
+    "list_available_frameworks",
 ]
 
 
-FrameworkType = Literal["numpy", "tflow", "torch"]
-Frameworks = typing.get_args(FrameworkType)  # type: Tuple[FrameworkType, ...]
+FrameworkType = Literal["numpy", "tensorflow", "torch"]
+
+
+def list_available_frameworks() -> List[FrameworkType]:
+    """List available Vector backend frameworks."""
+    available = []
+    for framework in typing.get_args(FrameworkType):
+        try:
+            pkg_resources.require(framework)
+        except pkg_resources.DistributionNotFound:
+            pass
+        else:
+            available.append(framework)
+    return available
 
 
 class GradientsTestCase:
@@ -44,27 +50,35 @@ class GradientsTestCase:
         self, framework: FrameworkType, seed: Optional[int] = 0
     ) -> None:
         """Instantiate the parametrized test-case."""
+        if framework not in list_available_frameworks():
+            raise RuntimeError(f"Framework '{framework}' is unavailable.")
         self.framework = framework
         self.seed = seed
 
     @property
     def vector_cls(self) -> Type[Vector]:
         """Vector subclass suitable to the tested framework."""
-        classes = {
-            "numpy": NumpyVector,
-            "tflow": TensorflowVector,
-            "torch": TorchVector,
-        }  # type: Dict[str, Type[Vector]]
-        return classes[self.framework]
+        if self.framework == "numpy":
+            return NumpyVector
+        if self.framework == "tensorflow":
+            module = importlib.import_module("declearn.model.tensorflow")
+            return module.TensorflowVector
+        if self.framework == "torch":
+            module = importlib.import_module("declearn.model.torch")
+            return module.TorchVector
+        raise ValueError(f"Invalid framework '{self.framework}'")
 
     def convert(self, array: np.ndarray) -> ArrayLike:
         """Convert an input numpy array to a framework-based structure."""
-        functions = {
-            "numpy": np.array,
-            "tflow": tf.convert_to_tensor,
-            "torch": torch.from_numpy,  # pylint: disable=no-member
-        }
-        return functions[self.framework](array)  # type: ignore
+        if self.framework == "numpy":
+            return array
+        if self.framework == "tensorflow":
+            tensorflow = importlib.import_module("tensorflow")
+            return tensorflow.convert_to_tensor(array)
+        if self.framework == "torch":
+            torch = importlib.import_module("torch")
+            return torch.from_numpy(array)
+        raise ValueError(f"Invalid framework '{self.framework}'")
 
     def to_numpy(self, array: ArrayLike) -> np.ndarray:
         """Convert an input framework-based structure to a numpy array."""
