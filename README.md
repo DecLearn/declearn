@@ -266,7 +266,19 @@ exposed here.
     - send the model and local optimizer's specs to all clients
   - Client:
     - instantiate the model and optimizer based on server instructions
-  - messaging: (InitRequest <-> InitReply)
+  - messaging: (InitRequest <-> GenericMessage)
+
+- **(Opt.) Local differential privacy initialization**
+  - This step is optional; a flag in the InitRequest at the previous step
+    indicates to clients that it is to happen, as a secondary substep.
+  - Server:
+    - send hyper-parameters to set up local differential privacy, including
+      dp-specific hyper-parameters and information on the planned training
+  - Client:
+    - adjust the training process to use sample-wise gradient clipping and
+      add gaussian noise to gradients, implementing the DP-SGD algorithm
+    - set up a privacy accountant to monitor the use of the privacy budget
+  - messaging: (PrivacyRequest <-> GenericMessage)
 
 - **Training round**:
   - Server:
@@ -462,10 +474,13 @@ details on this example and on how to run it, please refer to its own
        (optional maximum number of steps (<=1 epoch) and optional timeout).
      - Early-stopping parameters (optionally): patience, tolerance, etc. as
        to the global model loss's evolution throughout rounds.
+     - Local Differential-Privacy parameters (optionally): (epsilon, delta)
+       budget, type of accountant, clipping norm threshold, RNG parameters.
    - Alternatively, write up a TOML configuration file that specifies all of
      the former hyper-parameters.
-   - Call the server's `run` method, passing it the former config object (or
-     the path to the TOML configuration file).
+   - Call the server's `run` method, passing it the former config object,
+     the path to the TOML configuration file, or dictionaries of keyword
+     arguments to be parsed into a `FLRunConfig` instance.
 
 
 #### Clients setup instructions
