@@ -18,22 +18,22 @@
 """Script to run a federated client on the heart-disease example."""
 
 import os
-import sys
 
 import numpy as np
 import pandas as pd  # type: ignore
 from declearn.communication import NetworkClientConfig
 from declearn.dataset import InMemoryDataset
 from declearn.main import FederatedClient
-from declearn.test_utils import setup_client_argparse
+from declearn.test_utils import make_importable, setup_client_argparse
 
-FILEDIR = os.path.dirname(os.path.abspath(__file__))
+
+FILEDIR = os.path.dirname(__file__)
+
 # Perform local imports.
-sys.path.append(FILEDIR)
 # pylint: disable=wrong-import-order, wrong-import-position
-from data import get_data
+with make_importable(FILEDIR):
+    from data import get_data
 # pylint: enable=wrong-import-order, wrong-import-position
-sys.path.pop()
 
 
 def run_client(
