@@ -11,6 +11,7 @@ from declearn.communication import NetworkServerConfig, messaging
 from declearn.communication.api import Server
 from declearn.main.config import (
     EvaluateConfig,
+    FLOptimConfig,
     FLRunConfig,
     TrainingConfig,
 )
@@ -21,7 +22,6 @@ from declearn.main.utils import (
     aggregate_clients_data_info,
 )
 from declearn.model.api import Model
-from declearn.strategy import Strategy
 from declearn.utils import deserialize_object, get_logger
 
 
@@ -40,7 +40,7 @@ class FederatedServer:
         self,
         model: Union[Model, str, Dict[str, Any]],
         netwk: Union[Server, NetworkServerConfig, Dict[str, Any]],
-        strategy: Strategy,  # future: revise Strategy, add config
+        optim: Union[FLOptimConfig, str, Dict[str, Any]],
         folder: Optional[str] = None,
         logger: Union[logging.Logger, str, None] = None,
     ) -> None:
@@ -56,10 +56,11 @@ class FederatedServer:
             dict or dataclass enabling its instantiation.
             In the latter two cases, the object's default logger will
             be set to that of this `FederatedClient`.
-        strategy: Strategy
-            Strategy instance providing with instantiation methods for
-            the server's updates-aggregator, the server-side optimizer
-            and the clients-side one.
+        optim: FLOptimConfig or dict or str
+            FLOptimConfig instance or instantiation dict (using
+            the `from_params` method) or TOML configuration file path.
+            This object specifies the optimizers to use by the clients
+            and the server, as well as the client-updates aggregator.
         folder: str or None, default=None
             Optional folder where to write out a model dump, round-
             wise weights checkpoints and global validation losses.
@@ -96,10 +97,20 @@ class FederatedServer:
                 "or the valid configuration of one."
             )
         self.netwk = netwk
-        # Assign the strategy and instantiate server-side objects.
-        self.strat = strategy
-        self.aggrg = self.strat.build_server_aggregator()
-        self.optim = self.strat.build_server_optimizer()
+        # Assign the wrapped FLOptimConfig.
+        if isinstance(optim, str):
+            optim = FLOptimConfig.from_toml(optim)
+        elif isinstance(optim, dict):
+            optim = FLOptimConfig.from_params(**optim)
+        if not isinstance(optim, FLOptimConfig):
+            raise TypeError(
+                "'optim' should be a declearn.main.config.FLOptimConfig "
+                "or a dict of parameters or the path to a TOML file from "
+                "which to instantiate one."
+            )
+        self.aggrg = optim.aggregator
+        self.optim = optim.server_opt
+        self.c_opt = optim.client_opt
         # Assign a model checkpointer.
         self.checkpointer = Checkpointer(self.model, folder)
 
@@ -202,8 +213,8 @@ class FederatedServer:
         # Serialize intialization information and send it to clients.
         message = messaging.InitRequest(
             model=self.model,
-            optim=self.strat.build_client_optimizer(),
-        )  # revise: strategy rather than optimizer?
+            optim=self.c_opt,
+        )
         self.logger.info("Sending initialization requests to clients.")
         await self.netwk.broadcast_message(message)
         # Await a confirmation from clients that initialization went well.
@@ -393,7 +404,8 @@ class FederatedServer:
                 aux_var.setdefault(module, {})[client] = params
         self.optim.process_aux_var(aux_var)
         # Compute aggregated "gradients" (updates) and apply them to the model.
-        gradients = self.aggrg.aggregate(  # revise: pass n_epoch / t_spent / ?
+        # revise: pass n_epoch / t_spent / ?
+        gradients = self.aggrg.aggregate(
             {client: result.updates for client, result in results.items()},
             {client: result.n_steps for client, result in results.items()},
         )

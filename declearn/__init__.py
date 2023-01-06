@@ -31,8 +31,6 @@ The package is organized into the following submodules:
     Model interfacing API and implementations.
 * optimizer:
     Framework-agnostic optimizer and algorithmic plug-ins API and tools.
-* strategy:
-    Interface to gather an Aggregator and a pair of Optimizer into a strategy.
 * typing:
     Type hinting utils, defined and exposed for code readability purposes.
 * utils:
@@ -47,7 +45,6 @@ from . import dataset
 from . import model
 from . import optimizer
 from . import aggregator
-from . import strategy
 from . import main
 
 __version__ = "2.0.0b2"

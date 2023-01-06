@@ -168,7 +168,10 @@ netwk = declearn.communication.NetworkServerConfig(
     certificate="path/to/certificate.pem",
     private_key="path/to/private_key.pem"
 )
-strat = declearn.strategy.FedAvg()
+optim = declearn.main.FLOptimConfig.from_params(
+    aggregator="averaging",
+    client_opt={"lrate": 0.001},
+)
 server = declearn.main.FederatedServer(model, netwk, strat, folder="outputs")
 config = declearn.main.config.FLRunConfig.from_params(
     rounds=10,
@@ -418,25 +421,22 @@ details on this example and on how to run it, please refer to its own
    - Select the appropriate `declearn.model.api.Model` subclass to wrap it up.
    - Either instantiate the `Model` or provide a JSON-serialized configuration.
 
-2. Define a Strategy:
-
-   - Select an out-of-the-box `declearn.strategy.Strategy` subclass that
-       defines the aggregation and optimization strategies for the process
-       (_e.g._ `declearn.strategy.FedAvg` or `declearn.strategy.Scaffold`)
-   - Parameterize and instantiate it.
-     <br/>**- OR -**
-   - Select and parameterize a `declearn.strategy.Aggregator` (subclass)
-       instance to define how clients' updates are to be aggregated into
-       global-model updates on the server side.
+2. Define a FLOptimConfig:
+   - Select a `declearn.aggregator.Aggregator` (subclass) instance to define
+     how clients' updates are to be aggregated into global-model updates on
+     the server side.
    - Parameterize a `declearn.optimizer.Optimizer` (possibly using a selected
-       pipeline of `declearn.optimizer.modules.OptiModule` plug-ins and/or a
-       pipeline of `declearn.optimizer.regularizers.Regularizer` ones) to be
-       used by clients to derive local step-wise updates from model gradients.
+     pipeline of `declearn.optimizer.modules.OptiModule` plug-ins and/or a
+     pipeline of `declearn.optimizer.regularizers.Regularizer` ones) to be
+     used by clients to derive local step-wise updates from model gradients.
    - Similarly, parameterize an `Optimizer` to be used by the server to
-       (optionally) refine the aggregated model updates before applying them.
-   - Wrap these three objects into a custom `Strategy` using
-       `declearn.strategy.strategy_from_config`. Use instantiated objects'
-       `get_config` method if needed to abide by the former function's specs.
+     (optionally) refine the aggregated model updates before applying them.
+   - Wrap these three objects into a `declearn.main.config.FLOptimConfig`,
+     possibly using its `from_config` method to specify the former three
+     components via configuration dicts rather than actual instances.
+   - Alternatively, write up a TOML configuration file that specifies these
+     components (note that 'aggregator' and 'server_opt' have default values
+     and may therefore be left unspecified).
 
 3. Define a communication Server:
 
@@ -449,7 +449,7 @@ details on this example and on how to run it, please refer to its own
 4. Instantiate and run a FederatedServer:
 
    - Instantiate a `declearn.main.FederatedServer`:
-     - Provide the Model, Strategy and Server objects or configurations.
+     - Provide the Model, FLOptimConfig and Server objects or configurations.
      - Optionally provide the path to a folder where to write output files
        (model checkpoints and global loss history).
    - Instantiate a `declearn.main.config.FLRunConfig` to specify the process:

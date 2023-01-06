@@ -5,9 +5,9 @@ import os
 
 from declearn.communication import NetworkServerConfig
 from declearn.main import FederatedServer
-from declearn.main.config import FLRunConfig
+from declearn.main.config import FLRunConfig, FLOptimConfig
 from declearn.model.sklearn import SklearnSGDModel
-from declearn.strategy import strategy_from_config
+
 
 FILEDIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -37,13 +37,13 @@ def run_server(
         kind="classifier", loss="log_loss", penalty="l2", alpha=0.005
     )
 
-    # (2) Define a strategy
+    # (2) Define an optimization strategy
 
     # Configure the aggregator to use.
     # Here, averaging weighted by the effective number
     # of local gradient descent steps taken.
     aggregator = {
-        "name": "Average",
+        "name": "averaging",
         "config": {"steps_weighted": True},
     }
 
@@ -61,13 +61,12 @@ def run_server(
         "modules": [("momentum", {"beta": 0.95})],
     }
 
-    # Wrap this up into a Strategy object$
-    config = {
-        "aggregator": aggregator,
-        "client_opt": client_opt,
-        "server_opt": server_opt,
-    }
-    strategy = strategy_from_config(config)
+    # Wrap this up into an OptimizationStrategy object.
+    optim = FLOptimConfig.from_params(
+        aggregator=aggregator,
+        client_opt=client_opt,
+        server_opt=server_opt,
+    )
 
     # (3) Define network communication parameters.
 
@@ -82,7 +81,7 @@ def run_server(
 
     # (4) Instantiate and run a FederatedServer.
 
-    server = FederatedServer(model, network, strategy)
+    server = FederatedServer(model, network, optim)
     # Here, we setup 20 rounds of training, with 30 samples per batch
     # during training and 50 during validation; plus an early-stopping
     # criterion if the global validation loss stops decreasing for 5 rounds.
