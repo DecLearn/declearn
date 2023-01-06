@@ -2,10 +2,6 @@
 
 """Federated Learning Strategy definition API and examples submodule."""
 
-from ._aggregator import (
-    Aggregator,
-    AverageAggregator,
-)
 from ._strategy import (
     FedAvg,
     Strategy,

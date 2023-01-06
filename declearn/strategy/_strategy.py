@@ -7,9 +7,9 @@ import dataclasses
 from typing import Any, Dict, List, Union
 
 
+from declearn.aggregator import Aggregator, AveragingAggregator
 from declearn.optimizer import Optimizer
 from declearn.optimizer.modules import OptiModule
-from declearn.strategy._aggregator import Aggregator, AverageAggregator
 from declearn.utils import deserialize_object, json_load
 
 
@@ -202,4 +202,4 @@ class FedAvg(Strategy):
     def build_server_aggregator(
         self,
     ) -> Aggregator:
-        return AverageAggregator(steps_weighted=True)
+        return AveragingAggregator(steps_weighted=True)

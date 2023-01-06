@@ -17,6 +17,8 @@ most popular frameworks, such as Scikit-Learn, TensorFlow
 and PyTorch.
 
 The package is organized into the following submodules:
+* aggregator:
+    Model updates aggregating API and implementations.
 * communication:
     Client-Server network communications API and implementations.
 * data_info:
@@ -29,6 +31,8 @@ The package is organized into the following submodules:
     Model interfacing API and implementations.
 * optimizer:
     Framework-agnostic optimizer and algorithmic plug-ins API and tools.
+* strategy:
+    Interface to gather an Aggregator and a pair of Optimizer into a strategy.
 * typing:
     Type hinting utils, defined and exposed for code readability purposes.
 * utils:
@@ -42,6 +46,8 @@ from . import data_info
 from . import dataset
 from . import model
 from . import optimizer
+from . import aggregator
+from . import strategy
 from . import main
 
 __version__ = "2.0.0b2"
