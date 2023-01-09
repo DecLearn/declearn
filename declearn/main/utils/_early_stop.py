@@ -5,8 +5,12 @@
 from typing import Optional
 
 
+from declearn.utils import dataclass_from_init
+
+
 __all__ = [
     "EarlyStopping",
+    "EarlyStopConfig",
 ]
 
 
@@ -91,3 +95,6 @@ class EarlyStopping:
         else:
             self._n_iter_stuck = 0
         return self.keep_training
+
+
+EarlyStopConfig = dataclass_from_init(EarlyStopping, name="EarlyStopConfig")

@@ -178,11 +178,12 @@ class DeclearnTestCase:
         strat = self.strategy(eta_l=0.01)
         with tempfile.TemporaryDirectory() as folder:
             server = FederatedServer(model, netwk, strat, folder=folder)
-            server.run(
-                rounds=self.rounds,
-                regst_cfg={"max_clients": self.nb_clients, "timeout": 20},
-                train_cfg={"batch_size": 100},
-            )
+            config = {
+                "rounds": self.rounds,
+                "register": {"max_clients": self.nb_clients, "timeout": 20},
+                "training": {"batch_size": 100},
+            }
+            server.run(config)
 
     def run_federated_client(
         self,

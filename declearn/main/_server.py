@@ -4,18 +4,20 @@
 
 import asyncio
 import logging
-from typing import Any, Dict, Optional, Set, Tuple, Type, Union
+from typing import Any, Dict, Optional, Set, Type, TypeVar, Union
 
 
 from declearn.communication import NetworkServerConfig, messaging
 from declearn.communication.api import Server
+from declearn.main.config import (
+    EvaluateConfig,
+    FLRunConfig,
+    TrainingConfig,
+)
 from declearn.main.utils import (
     AggregationError,
     Checkpointer,
     EarlyStopping,
-    EvaluateConfig,
-    RegisterConfig,
-    TrainingConfig,
     aggregate_clients_data_info,
 )
 from declearn.model.api import Model
@@ -26,6 +28,9 @@ from declearn.utils import deserialize_object, get_logger
 __all__ = [
     "FederatedServer",
 ]
+
+
+MessageT = TypeVar("MessageT", bound=messaging.Message)
 
 
 class FederatedServer:
@@ -98,83 +103,33 @@ class FederatedServer:
         # Assign a model checkpointer.
         self.checkpointer = Checkpointer(self.model, folder)
 
-    def _parse_config_dicts(
-        self,
-        regst_cfg: Union[RegisterConfig, Dict[str, Any], int],
-        train_cfg: Union[TrainingConfig, Dict[str, Any]],
-        valid_cfg: Union[EvaluateConfig, Dict[str, Any], None] = None,
-    ) -> Tuple[RegisterConfig, TrainingConfig, EvaluateConfig]:
-        """Parse input keyword arguments config dicts or dataclasses."""
-        if isinstance(regst_cfg, int):
-            regst_cfg = RegisterConfig(min_clients=regst_cfg)
-        elif isinstance(regst_cfg, dict):
-            regst_cfg = RegisterConfig(**regst_cfg)
-        elif not isinstance(regst_cfg, RegisterConfig):
-            raise TypeError(
-                "'regst_cfg' should be a RegisterConfig instance or dict."
-            )
-        if isinstance(train_cfg, dict):
-            train_cfg = TrainingConfig(**train_cfg)
-        elif not isinstance(train_cfg, TrainingConfig):
-            raise TypeError(
-                "'train_cfg' should be a TrainingConfig instance or dict."
-            )
-        if valid_cfg is None:
-            valid_cfg = EvaluateConfig(batch_size=train_cfg.batch_size)
-        elif isinstance(valid_cfg, dict):
-            valid_cfg = EvaluateConfig(**valid_cfg)
-        elif not isinstance(valid_cfg, EvaluateConfig):
-            raise TypeError(
-                "'valid_cfg' should be a EvaluateConfig instance or dict."
-            )
-        return regst_cfg, train_cfg, valid_cfg
-
     def run(
         self,
-        rounds: int,
-        regst_cfg: Union[RegisterConfig, Dict[str, Any], int],
-        train_cfg: Union[TrainingConfig, Dict[str, Any]],
-        valid_cfg: Union[EvaluateConfig, Dict[str, Any], None] = None,
-        early_stop: Optional[Union[EarlyStopping, Dict[str, Any]]] = None,
+        config: Union[FLRunConfig, str, Dict[str, Any]],
     ) -> None:
         """Orchestrate the federated learning routine.
 
         Parameters
         ----------
-        rounds: int
-            Maximum number of training rounds to perform.
-        regst_cfg: RegisterConfig or dict or int
-            Keyword arguments to specify clients-registration rules -
-            formatted as a dict or a declearn.main.utils.RegisterConfig
-            instance. Alternatively, use an int to specify the exact
-            number of clients that are expected to register.
-        train_cfg: TrainingConfig or dict
-            Keyword arguments to specify effort constraints and data
-            batching parameters for training rounds - formatted as a
-            dict or a declearn.main.utils.TrainingConfig instance.
-        valid_cfg: EvaluateConfig or dict or None, default=None
-            Keyword arguments to specify effort constraints and data
-            batching parameters for evaluation rounds. If None, use
-            default arguments (1 epoch over batches of same size as
-            for training, without shuffling nor samples dropping).
-        early_stop: EarlyStopping or dict or None, default=None
-            Optional EarlyStopping instance or configuration dict,
-            specifying an early-stopping rule based on the global
-            loss metric computed during evaluation rounds.
+        config: FLRunConfig or str or dict
+            Container instance wrapping grouped hyper-parameters that
+            specify the federated learning process, including clients
+            registration, training and validation rounds' setup, plus
+            an optional early-stopping criterion.
+            May be a str pointing to a TOML configuration file.
+            May be as a dict of keyword arguments to be parsed.
         """
-        # arguments serve modularity; pylint: disable=too-many-arguments
-        configs = self._parse_config_dicts(regst_cfg, train_cfg, valid_cfg)
-        if isinstance(early_stop, dict):
-            early_stop = EarlyStopping(**early_stop)
-        if not (isinstance(early_stop, EarlyStopping) or early_stop is None):
-            raise TypeError("'early_stop' must be None, int or EarlyStopping.")
-        asyncio.run(self.async_run(rounds, configs, early_stop))
+        if isinstance(config, dict):
+            config = FLRunConfig.from_params(**config)
+        if isinstance(config, str):
+            config = FLRunConfig.from_toml(config)  # type: ignore
+        if not isinstance(config, FLRunConfig):
+            raise TypeError("'config' should be a FLRunConfig object or str.")
+        asyncio.run(self.async_run(config))
 
     async def async_run(
         self,
-        rounds: int,
-        configs: Tuple[RegisterConfig, TrainingConfig, EvaluateConfig],
-        early_stop: Optional[EarlyStopping],
+        config: FLRunConfig,
     ) -> None:
         """Orchestrate the federated learning routine.
 
@@ -182,33 +137,37 @@ class FederatedServer:
 
         Parameters
         ----------
-        rounds: int
-            Maximum number of training rounds to perform.
-        configs: (RegisterConfig, TrainingConfig, EvaluateConfig) tuple
-            Dataclass instances wrapping hyper-parameters specifying
-            clients-registration and training and evaluation rounds.
-        early_stop: EarlyStopping or None
-            Optional EarlyStopping instance adding a stopping criterion
-            based on the global-evaluation-loss's evolution over rounds.
+        config: FLRunConfig
+            Container instance wrapping grouped hyper-parameters that
+            specify the federated learning process, including clients
+            registration, training and validation rounds' setup, plus
+            an optional early-stopping criterion.
         """
-        regst_cfg, train_cfg, valid_cfg = configs
+        # Instantiate the early-stopping criterion, if any.
+        early_stop = None  # type: Optional[EarlyStopping]
+        if config.early_stop is not None:
+            early_stop = config.early_stop.instantiate()
+        # Start the communications server and run the FL process.
         async with self.netwk:
-            await self.initialization(regst_cfg)
+            # Conduct the initialization phase.
+            await self.initialization(config)
             self.checkpointer.save_model()
             self.checkpointer.checkpoint(float("inf"))  # save initial weights
+            # Iteratively run training and evaluation rounds.
             round_i = 0
             while True:
                 round_i += 1
-                await self.training_round(round_i, train_cfg)
-                await self.evaluation_round(round_i, valid_cfg)
-                if not self._keep_training(round_i, rounds, early_stop):
+                await self.training_round(round_i, config.training)
+                await self.evaluation_round(round_i, config.evaluate)
+                if not self._keep_training(round_i, config.rounds, early_stop):
                     break
+            # Interrupt training when time comes.
             self.logger.info("Stopping training.")
             await self.stop_training(round_i)
 
     async def initialization(
         self,
-        regst_cfg: RegisterConfig,
+        config: FLRunConfig,
     ) -> None:
         """Orchestrate the initialization steps to set up training.
 
@@ -217,6 +176,13 @@ class FederatedServer:
         Await clients to have finalized their initialization step; raise
         and cancel training if issues are reported back.
 
+        Parameters
+        ----------
+        config: FLRunConfig
+            Container instance wrapping hyper-parameters that specify
+            the planned federated learning process, including clients
+            registration ones as a RegisterConfig dataclass instance.
+
         Raises
         ------
         RuntimeError:
@@ -224,6 +190,8 @@ class FederatedServer:
             than an Empty ping-back message. Send CancelTraining to all
             clients before raising.
         """
+        # Gather the RegisterConfig instance from the main FLRunConfig.
+        regst_cfg = config.register
         # Wait for clients to register and process their data information.
         self.logger.info("Starting clients registration process.")
         data_info = await self.netwk.wait_for_clients(
@@ -239,28 +207,13 @@ class FederatedServer:
         self.logger.info("Sending initialization requests to clients.")
         await self.netwk.broadcast_message(message)
         # Await a confirmation from clients that initialization went well.
-        self.logger.info("Waiting for clients' responses.")
-        replies = await self.netwk.wait_for_messages()
-        self.logger.info("Received clients' responses.")
-        errors = {
-            client: msg.message
-            for client, msg in replies.items()
-            if isinstance(msg, messaging.Error)
-        }
         # If any client has failed to initialize, raise.
-        if errors:
-            err_msg = "Initialization failed for another client."
-            messages = {
-                client: messaging.CancelTraining(errors.get(client, err_msg))
-                for client in self.netwk.client_names
-            }  # type: Dict[str, messaging.Message]
-            await self.netwk.send_messages(messages)
-            err_msg = f"Initialization failed for {len(errors)} clients:"
-            err_msg += "".join(
-                f"\n    {client}: {error}" for client, error in errors.items()
-            )
-            self.logger.error(err_msg)
-            raise RuntimeError(err_msg)
+        self.logger.info("Waiting for clients' responses.")
+        await self._collect_results(
+            clients=self.netwk.client_names,
+            msgtype=messaging.GenericMessage,
+            context="initialization",
+        )
         self.logger.info("Initialization was successful.")
 
     async def _process_data_info(
@@ -317,7 +270,9 @@ class FederatedServer:
         clients = self._select_training_round_participants()
         await self._send_training_instructions(clients, round_i, train_cfg)
         self.logger.info("Awaiting clients' training results.")
-        results = await self._collect_training_results(clients)
+        results = await self._collect_results(
+            clients, messaging.TrainReply, "training"
+        )
         self.logger.info("Conducting server-side optimization.")
         self._conduct_global_update(results)
 
@@ -349,10 +304,7 @@ class FederatedServer:
         params = {
             "round_i": round_i,
             "weights": self.model.get_weights(),
-            "batches": train_cfg.batch_cfg,
-            "n_epoch": train_cfg.n_epoch,
-            "n_steps": train_cfg.n_steps,
-            "timeout": train_cfg.timeout,
+            **train_cfg.message_params,
         }  # type: Dict[str, Any]
         messages = {}  # type: Dict[str, messaging.Message]
         # Dispatch auxiliary variables (which may be client-specific).
@@ -365,39 +317,12 @@ class FederatedServer:
         # Send client-wise messages.
         await self.netwk.send_messages(messages)
 
-    async def _collect_training_results(
-        self,
-        clients: Set[str],
-    ) -> Dict[str, messaging.TrainReply]:
-        """Collect training results for clients participating in a round.
-
-        Parameters
-        ----------
-        clients: set[str]
-            Names of the clients participating in the training round.
-
-        Raises
-        ------
-        RuntimeError:
-            If any client sent an incorrect message or reported
-            failure to conduct the training step properly. Send
-            CancelTraining to all clients before raising.
-
-        Returns
-        -------
-        results: dict[str, TrainReply]
-            Client-wise TrainReply message.
-        """
-        return await self._collect_results(  # type: ignore
-            clients, messaging.TrainReply, "training"
-        )
-
     async def _collect_results(
         self,
         clients: Set[str],
-        msgtype: Type[messaging.Message],
+        msgtype: Type[MessageT],
         context: str,
-    ) -> Dict[str, messaging.Message]:
+    ) -> Dict[str, MessageT]:
         """Collect some results sent by clients and ensure they are okay.
 
         Parameters
@@ -424,7 +349,7 @@ class FederatedServer:
         """
         # Await clients' responses and type-check them.
         replies = await self.netwk.wait_for_messages(clients)
-        results = {}  # type: Dict[str, messaging.Message]
+        results = {}  # type: Dict[str, MessageT]
         errors = {}  # type: Dict[str, str]
         for client, message in replies.items():
             if isinstance(message, msgtype):
@@ -493,7 +418,9 @@ class FederatedServer:
         clients = self._select_evaluation_round_participants()
         await self._send_evaluation_instructions(clients, round_i, valid_cfg)
         self.logger.info("Awaiting clients' evaluation results.")
-        results = await self._collect_evaluation_results(clients)
+        results = await self._collect_results(
+            clients, messaging.EvaluationReply, "evaluation"
+        )
         self.logger.info("Aggregating evaluation results.")
         loss = self._aggregate_evaluation_results(results)
         self.logger.info("Global loss is: %s", loss)
@@ -526,38 +453,9 @@ class FederatedServer:
         message = messaging.EvaluationRequest(
             round_i=round_i,
             weights=self.model.get_weights(),
-            batches=valid_cfg.batch_cfg,
-            n_steps=valid_cfg.n_steps,
-            timeout=valid_cfg.timeout,
+            **valid_cfg.message_params,
         )
         await self.netwk.broadcast_message(message, clients)
-
-    async def _collect_evaluation_results(
-        self,
-        clients: Set[str],
-    ) -> Dict[str, messaging.EvaluationReply]:
-        """Collect evaluation results for clients participating in a round.
-
-        Parameters
-        ----------
-        clients: set[str]
-            Names of the clients participating in the evaluation round.
-
-        Raises
-        ------
-        RuntimeError:
-            If any client sent an incorrect message or reported
-            failure to conduct the evaluation step properly.
-            Send CancelTraining to all clients before raising.
-
-        Returns
-        -------
-        results: dict[str, EvaluationReply]
-            Client-wise TrainReply message.
-        """
-        return await self._collect_results(  # type: ignore
-            clients, messaging.EvaluationReply, "training"
-        )
 
     def _aggregate_evaluation_results(
         self,

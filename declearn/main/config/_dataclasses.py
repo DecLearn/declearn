@@ -92,6 +92,16 @@ class TrainingConfig:
             "drop_remainder": self.drop_remainder,
         }
 
+    @property
+    def message_params(self) -> Dict[str, Any]:
+        """TrainRequest message parameters from this config."""
+        return {
+            "batches": self.batch_cfg,
+            "n_epoch": self.n_epoch,
+            "n_steps": self.n_steps,
+            "timeout": self.timeout,
+        }
+
 
 @dataclasses.dataclass
 class EvaluateConfig(TrainingConfig):
@@ -103,3 +113,10 @@ class EvaluateConfig(TrainingConfig):
     """
 
     drop_remainder: bool = False
+
+    @property
+    def message_params(self) -> Dict[str, Any]:
+        """ValidRequest message parameters from this config."""
+        params = super().message_params
+        params.pop("n_epoch")
+        return params
