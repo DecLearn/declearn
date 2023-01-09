@@ -8,16 +8,15 @@ requires = [
 
 [project]
 name = "declearn"
-version = "2.0.0.beta2"
+version = "2.0.0.beta3"
 description = "Declearn - a python package for decentralized learning."
 readme = "README.md"
 requires-python = ">=3.7"
 license = {text = "MIT"}
 authors = [
     {name = "Paul Andrey", email = "paul.andrey@inria.fr"},
+    {name = "Nathan Bigaud", email = "nathan.bigaud@inria.fr"},
     {name = "Nathalie Vauquier", email = "nathalie.vauquier@inria.fr"},
-    {name = "Marc-André Sirgiel"},
-    {name = "Yannick Bouillard"},
 ]
 maintainers = [
     {name = "Paul Andrey", email = "paul.andrey@inria.fr"},
