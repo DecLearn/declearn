@@ -59,6 +59,13 @@ class FLOptimConfig(TomlConfig):
       be grouped into a dedicated `[aggregator.config]` sub-section
       or provided as fields of the main aggregator section.
 
+    The `client_opt` and `server_opt` fields may be specified as:
+    - a single float, specifying the learning rate for vanilla SGD.
+      In TOML, use `client_opt = 0.001` for `Optimizer(lrate=0.001)`.
+    - a dict of keyword arguments for `declearn.optimizer.Optimizer`.
+      In TOML, use a `[client_opt]` section with fields specifying
+      the input parameters you wish to pass to the constructor.
+
     Instantiation classmethods
     --------------------------
     from_toml:
@@ -74,10 +81,44 @@ class FLOptimConfig(TomlConfig):
     aggregator: Aggregator = dataclasses.field(default_factory=Aggregator)
 
     @classmethod
+    def parse_client_opt(
+        cls,
+        field: dataclasses.Field,  # future: dataclasses.Field[Optimizer]
+        inputs: Union[float, Dict[str, Any], Optimizer],
+    ) -> Optimizer:
+        """ "Field-specific parser to instanciate the client-side Optimizer."""
+        return cls._parse_optimizer(field, inputs)
+
+    @classmethod
+    def parse_server_opt(
+        cls,
+        field: dataclasses.Field,  # future: dataclasses.Field[Optimizer]
+        inputs: Union[float, Dict[str, Any], Optimizer, None],
+    ) -> Optimizer:
+        """ "Field-specific parser to instanciate the server-side Optimizer."""
+        return cls._parse_optimizer(field, inputs)
+
+    @classmethod
+    def _parse_optimizer(
+        cls,
+        field: dataclasses.Field,  # future: dataclasses.Field[Optimizer]
+        inputs: Union[float, Dict[str, Any], Optimizer, None],
+    ) -> Optimizer:
+        """Field-specific parser to instantiate an Optimizer."""
+        # Delegate to the default parser for most cases.
+        if inputs is None or isinstance(inputs, (dict, Optimizer)):
+            return cls.default_parser(field, inputs)
+        # Case when provided with a single int: treat it as lrate for base SGD.
+        if isinstance(inputs, float):
+            return Optimizer(lrate=inputs)
+        # Otherwise, raise a TypeError as inputs are unsupported.
+        raise TypeError(f"Unsupported inputs type for field '{field.name}'.")
+
+    @classmethod
     def parse_aggregator(
         cls,
         field: dataclasses.Field,  # future: dataclasses.Field[Aggregator]
-        inputs: Union[str, Dict[str, Any], Aggregator],
+        inputs: Union[str, Dict[str, Any], Aggregator, None],
     ) -> Aggregator:
         """Field-specific parser to instantiate an Aggregator.
 

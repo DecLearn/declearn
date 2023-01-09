@@ -170,7 +170,7 @@ netwk = declearn.communication.NetworkServerConfig(
 )
 optim = declearn.main.FLOptimConfig.from_params(
     aggregator="averaging",
-    client_opt={"lrate": 0.001},
+    client_opt=0.001,
 )
 server = declearn.main.FederatedServer(model, netwk, strat, folder="outputs")
 config = declearn.main.config.FLRunConfig.from_params(
