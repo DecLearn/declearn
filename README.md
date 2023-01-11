@@ -62,14 +62,18 @@ file.
 Some third-party requirements are optional, and may not be installed. These
 are also specified as part of the `pyproject.toml` file, and may be divided
 into two categories:<br/>
-(a) dependencies of optional, applied declearn components
-(such as the TensorFlow and PyTorch tensor libraries) that are not imported
-with declearn by default ;<br/>
+(a) dependencies of optional, applied declearn components (such as the PyTorch
+and Tensorflow tensor libraries, or the gRPC and websockets network
+communication backends) that are not imported with declearn by default<br/>
 (b) dependencies for running tests on the package (mainly pytest and some of
 its plug-ins)
 
 The second category is more developer-oriented, while the first may or may not
 be relevant depending on the use case to which you wish to apply `declearn`.
+
+In the `pyproject.toml` file, the `[project.optional-dependencies]` tables
+`all` and `test` respectively list the first and (first + second) categories,
+while additional tables redundantly list dependencies unit by unit.
 
 ### Using a virtual environment (optional)
 
@@ -113,8 +117,13 @@ To also install optional requirements, add the name of the extras between
 brackets to the `pip install` command, _e.g._ running one of the following:
 
 ```bash
+# Examples of cherry-picked installation instructions.
+pip install .[grpc]   # install dependencies to support gRPC communications
 pip install .[torch]  # install declearn.model.torch submodule dependencies
 pip install .[tensorflow,torch]  # install both tensorflow and torch
+
+# Instructions to install bundles of optional components.
+pip install .[all]    # install all optional dependencies, save for testing
 pip install .[tests]  # install all optional dependencies plus testing ones
 ```
 

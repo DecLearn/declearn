@@ -4,7 +4,7 @@
 
 import dataclasses
 import logging
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 
 from declearn.communication.api import NetworkClient, NetworkServer
@@ -17,7 +17,25 @@ __all__ = [
     "build_client",
     "build_server",
     "list_available_protocols",
+    "_INSTALLABLE_BACKENDS",
 ]
+
+
+_INSTALLABLE_BACKENDS = {}  # type: Dict[str, Tuple[str, ...]]
+
+
+def raise_if_installable(
+    protocol: str,
+    exc: Optional[Exception] = None,
+) -> None:
+    """Raise a RuntimeError if a given protocol is missing but installable."""
+    if protocol in _INSTALLABLE_BACKENDS:
+        raise RuntimeError(
+            f"The '{protocol}' communication protocol network endpoints "
+            "could not be imported, but could be installed by satisfying "
+            f"the following dependencies: {_INSTALLABLE_BACKENDS[protocol]}, "
+            f"or by running `pip install declearn[{protocol}]`."
+        ) from exc
 
 
 def build_client(
@@ -54,6 +72,7 @@ def build_client(
     try:
         cls = access_registered(name=protocol, group="NetworkClient")
     except KeyError as exc:
+        raise_if_installable(protocol, exc)
         raise KeyError(
             "Failed to retrieve NetworkClient "
             f"class for protocol '{protocol}'."
@@ -155,6 +174,7 @@ def build_server(
     try:
         cls = access_registered(name=protocol, group="NetworkServer")
     except KeyError as exc:
+        raise_if_installable(protocol, exc)
         raise KeyError(
             "Failed to retrieve NetworkServer "
             f"class for protocol '{protocol}'."

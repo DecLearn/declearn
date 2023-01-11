@@ -36,21 +36,28 @@ dependencies = [
     "cryptography >= 35.0",
     "grpcio >= 1.45",
     "pandas >= 1.2",
-    "protobuf >= 3.19",
+
     "scikit-learn >= 1.0",
     "typing_extensions >= 4.0",
     "websockets >= 10.1",
 ]
 
 [project.optional-dependencies]
-all = [
-    "opacus >= 1.1",
+all = [  # all non-tests extra dependencies
     "functorch >= 0.1",
+    "grpcio >= 1.45",
+    "opacus >= 1.1",
+    "protobuf >= 3.19",
     "tensorflow >= 2.5",
     "torch >= 1.10",
+    "websockets >= 10.1",
 ]
 dp = [
     "opacus >= 1.1",
+]
+grpc = [
+    "grpcio >= 1.45",
+    "protobuf >= 3.19",
 ]
 tensorflow = [
     "tensorflow >= 2.5",
@@ -59,6 +66,9 @@ torch = [
     "functorch >= 0.1",  # note: functorch is included with torch>=1.13
     "torch >= 1.10",
 ]
+websockets = [
+    "websockets >= 10.1",
+]
 tests = [
     # test-specific dependencies
     "black ~= 22.0",
@@ -66,11 +76,14 @@ tests = [
     "pylint >= 2.14",
     "pytest >= 6.1",
     "pytest-asyncio",
-    # other extra dependencies
-    "opacus >= 1.1",
+    # other extra dependencies (copy of "all")
     "functorch >= 0.1",
+    "grpcio >= 1.45",
+    "opacus >= 1.1",
+    "protobuf >= 3.19",
     "tensorflow >= 2.5",
     "torch >= 1.10",
+    "websockets >= 10.1",
 ]
 
 [project.urls]
