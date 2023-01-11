@@ -11,21 +11,21 @@ import websockets as ws
 from websockets.client import WebSocketClientProtocol
 from websockets.exceptions import ConnectionClosedOK, ConnectionClosedError
 
-from declearn.communication.api import Client
+from declearn.communication.api import NetworkClient
 from declearn.communication.messaging import Message, parse_message_from_string
 from declearn.communication.websockets._tools import (
     receive_websockets_message,
     send_websockets_message,
 )
-from declearn.utils import register_type
 
 
 CHUNK_LENGTH = 100000
 
 
-@register_type(name="websockets", group="Client")
-class WebsocketsClient(Client):
+class WebsocketsClient(NetworkClient):
     """Client-side communication endpoint using WebSockets."""
+
+    protocol = "websockets"
 
     def __init__(
         self,

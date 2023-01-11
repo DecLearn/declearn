@@ -7,7 +7,7 @@ import logging
 from typing import Any, Dict, Optional, Union
 
 
-from declearn.communication.api import Client, Server
+from declearn.communication.api import NetworkClient, NetworkServer
 from declearn.utils import access_registered
 
 
@@ -26,12 +26,8 @@ def build_client(
     certificate: Optional[str] = None,
     logger: Union[logging.Logger, str, None] = None,
     **kwargs: Any,
-) -> Client:
-    """Set up and return a Client communication endpoint.
-
-    Note: this function requires the target Client subclass to have
-          been registered with name `protocol` under the 'Client'
-          registry group. See `declearn.utils.register_type`.
+) -> NetworkClient:
+    """Set up and return a NetworkClient communication endpoint.
 
     Parameters
     ----------
@@ -51,21 +47,23 @@ def build_client(
         `declearn.utils.get_logger`. If None, use `type(client)-name`.
     **kwargs:
         Any valid additional keyword parameter may be passed as well.
-        Refer to the target `Client` subclass for details.
+        Refer to the target `NetworkClient` subclass for details.
     """
+    protocol = protocol.strip().lower()
     try:
-        cls = access_registered(name=protocol.lower(), group="Client")
+        cls = access_registered(name=protocol, group="NetworkClient")
     except KeyError as exc:
         raise KeyError(
-            f"Failed to retrieve Client class for protocol '{protocol}'."
+            "Failed to retrieve NetworkClient "
+            f"class for protocol '{protocol}'."
         ) from exc
-    assert issubclass(cls, Client)  # guaranteed by TypesRegistry
+    assert issubclass(cls, NetworkClient)  # guaranteed by TypesRegistry
     return cls(server_uri, name, certificate, logger, **kwargs)
 
 
 @dataclasses.dataclass
 class NetworkClientConfig:
-    """Dataclass to store the configuration of a communication Client.
+    """Dataclass to store the configuration of a NetowkClient.
 
     Attributes
     ----------
@@ -85,7 +83,7 @@ class NetworkClientConfig:
         `declearn.utils.get_logger`. If None, use `type(client)-name`.
     kwargs: dict[str, None]
         Any valid additional keyword parameter may be passed as well.
-        Refer to the target `Client` subclass for details.
+        Refer to the target `NetworkClient` subclass for details.
 
     Notes
     -----
@@ -105,8 +103,8 @@ class NetworkClientConfig:
         """Convert this dataclass to a JSON-serializable dictionary."""
         return dataclasses.asdict(self)
 
-    def build_client(self) -> Client:
-        """Instantiate a communication Client based on this config."""
+    def build_client(self) -> NetworkClient:
+        """Instantiate a NetworkClient based on this config."""
         params = self.to_dict()
         kwargs = params.pop("kwargs", {})
         return build_client(**params, **kwargs)
@@ -121,12 +119,8 @@ def build_server(
     password: Optional[str] = None,
     logger: Union[logging.Logger, str, None] = None,
     **kwargs: Any,
-) -> Server:
-    """Set up and return a Server communication endpoint.
-
-    Note: this function requires the target Server subclass to have
-          been registered with name `protocol` under the 'Server'
-          registry group. See `declearn.utils.register_type`.
+) -> NetworkServer:
+    """Set up and return a NetworkServer communication endpoint.
 
     Parameters
     ----------
@@ -153,16 +147,18 @@ def build_server(
         `declearn.utils.get_logger`. If None, use `type(server)`.
     **kwargs:
         Any valid additional keyword parameter may be passed as well.
-        Refer to the target `Server` subclass for details.
+        Refer to the target `NetworkServer` subclass for details.
     """
     # inherited signature; pylint: disable=too-many-arguments
+    protocol = protocol.strip().lower()
     try:
-        cls = access_registered(name=protocol.lower(), group="Server")
+        cls = access_registered(name=protocol, group="NetworkServer")
     except KeyError as exc:
         raise KeyError(
-            f"Failed to retrieve Server class for protocol '{protocol}'."
+            "Failed to retrieve NetworkServer "
+            f"class for protocol '{protocol}'."
         ) from exc
-    assert issubclass(cls, Server)  # guaranteed by TypesRegistry
+    assert issubclass(cls, NetworkServer)  # guaranteed by TypesRegistry
     return cls(
         host, port, certificate, private_key, password, logger, **kwargs
     )
@@ -197,7 +193,7 @@ class NetworkServerConfig:
         `declearn.utils.get_logger`. If None, use `type(server)`.
     kwargs: dict[str, None]
         Any valid additional keyword parameter may be passed as well.
-        Refer to the target `Server` subclass for details.
+        Refer to the target `NetworkServer` subclass for details.
 
     Notes
     -----
@@ -221,8 +217,8 @@ class NetworkServerConfig:
         """Convert this dataclass to a JSON-serializable dictionary."""
         return dataclasses.asdict(self)
 
-    def build_server(self) -> Server:
-        """Instantiate a communication Server based on this config."""
+    def build_server(self) -> NetworkServer:
+        """Instantiate a NetworkServer based on this config."""
         params = self.to_dict()
         kwargs = params.pop("kwargs", {})
         return build_server(**params, **kwargs)

@@ -15,16 +15,13 @@ This module contains the following submodules:
 
 It also exposes the following functions:
 * build_client:
-    Instantiate a Client, selecting its subclass based on protocol name.
+    Instantiate a NetworkClient, selecting its subclass based on protocol name.
 * build_server:
-    Instantiate a Server, selecting its subclass based on protocol name.
+    Instantiate a NetworkServer, selecting its subclass based on protocol name.
 
 Note: the latter two functions natively support the declearn-implemented
       network protocols listed above, but will be extended to any third-
-      party implementation of Client and Server subclasses, provided the
-      `declearn.utils.register_type(name=protocol_name, group="Client")`
-      decorator is used (with adequate protocol_name string and "Server"
-      group for Server subclasses).
+      party implementation of NetworkClient and NetworkServer subclasses.
 """
 
 # Messaging and Communications API and base tools:

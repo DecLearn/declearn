@@ -2,11 +2,11 @@
 
 """Functional test for declearn.communication classes.
 
-The test implemented here spawns a Server endpoint as well as one
-or multiple Client ones, then runs parallelly routines that have
-the clients register, and both sides exchange dummy messages. As
-such, it only verifies that messages passing works, and does not
-constitute a proper (ensemble of) unit test(s) of the classes.
+The test implemented here spawns a NetworkServer endpoint as well as one
+or multiple NetworkClient ones, then runs parallelly routines that have
+the clients register, and both sides exchange dummy messages. As such,
+it only verifies that messages passing works, and does not constitute a
+proper (ensemble of) unit test(s) of the classes.
 
 However, if this passes, it means that registration and basic
 message passing work properly, using the following scenarios:
@@ -32,13 +32,13 @@ import pytest
 from typing_extensions import Literal  # future: import from typing (Py>=3.8)
 
 from declearn.communication import build_client, build_server
-from declearn.communication.api import Client, Server
+from declearn.communication.api import NetworkClient, NetworkServer
 from declearn.communication.messaging import GenericMessage
 from declearn.test_utils import run_as_processes
 
 
 async def client_routine(
-    client: Client,
+    client: NetworkClient,
 ) -> None:
     """Basic client testing routine."""
     print("Registering")
@@ -57,7 +57,7 @@ async def client_routine(
 
 
 async def server_routine(
-    server: Server,
+    server: NetworkServer,
     nb_clients: int = 1,
 ) -> None:
     """Basic server testing routine."""
@@ -120,14 +120,14 @@ def _build_server_func(
     use_ssl: bool,
     ssl_cert: Dict[str, str],
 ) -> Tuple[Callable[..., None], Tuple[Any, ...]]:
-    """Set up and return a function that spawns and uses a Server."""
+    """Return arguments to spawn and use a NetworkServer in a process."""
     server_cfg = {
         "protocol": protocol,
         "host": "127.0.0.1",
         "port": 8765,
         "certificate": ssl_cert["server_cert"] if use_ssl else None,
         "private_key": ssl_cert["server_pkey"] if use_ssl else None,
-    }
+    }  # type: Dict[str, Any]
     # Define a coroutine that spawns and runs a server.
     async def server_coroutine() -> None:
         """Spawn a client and run `server_routine` in its context."""
@@ -150,7 +150,7 @@ def _build_client_funcs(
     use_ssl: bool,
     ssl_cert: Dict[str, str],
 ) -> List[Tuple[Callable[..., None], Tuple[Any, ...]]]:
-    """Set up and return mp.Process that spawn and use Client objects."""
+    """Return arguments to spawn and use NetworkClient objects in processes."""
     certificate = ssl_cert["client_cert"] if use_ssl else None
     server_uri = "localhost:8765"
     if protocol == "websockets":

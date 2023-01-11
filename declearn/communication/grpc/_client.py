@@ -7,13 +7,12 @@ from typing import Any, Dict, Optional, Union
 
 import grpc  # type: ignore
 
-from declearn.communication.api import Client
+from declearn.communication.api import NetworkClient
 from declearn.communication.messaging import Message, parse_message_from_string
 from declearn.communication.grpc.protobufs import message_pb2
 from declearn.communication.grpc.protobufs.message_pb2_grpc import (
     MessageBoardStub,
 )
-from declearn.utils import register_type
 
 
 __all__ = [
@@ -24,9 +23,10 @@ __all__ = [
 CHUNK_LENGTH = 2**22 - 50  # 2**22 - sys.getsizeof("") - 1
 
 
-@register_type(name="grpc", group="Client")
-class GrpcClient(Client):
+class GrpcClient(NetworkClient):
     """Client-side communication endpoint using gRPC."""
+
+    protocol = "grpc"
 
     def __init__(
         self,

@@ -375,7 +375,7 @@ new custom concrete implementations inheriting the abstraction.
     - `declearn.optimizer.modules.ScaffoldServerModule`
   - Extend:
     - Simply inherit from `OptiModule` (registration is automated).
-    - To avoid it, use `class MyModule(OptiModule, register=False)`
+    - To avoid it, use `class MyModule(OptiModule, register=False)`.
 
 - `declearn.optimizer.modules.Regularizer`:
   - Object: Define loss-regularization terms as gradients modifiers.
@@ -386,23 +386,27 @@ new custom concrete implementations inheriting the abstraction.
     - `declearn.optimizer.regularizer.RidgeRegularizer`
   - Extend:
     - Simply inherit from `Regularizer` (registration is automated).
-    - To avoid it, use `class MyRegularizer(Regularizer, register=False)`
+    - To avoid it, use `class MyRegularizer(Regularizer, register=False)`.
 
-- `declearn.communication.api.Client`:
+- `declearn.communication.api.NetworkClient`:
   - Object: Instantiate a network communication client endpoint.
   - Usage: Register for training, send and receive messages.
   - Examples:
     - `declearn.communication.grpc.GrpcClient`
     - `declearn.communication.websockets.WebsocketsClient`
-  - Extend: use `declearn.utils.register_type(group="Client")`
+  - Extend:
+    - Simply inherit from `NetworkClient` (registration is automated).
+    - To avoid it, use `class MyClient(NetworkClient, register=False)`.
 
-- `declearn.communication.api.Server`:
+- `declearn.communication.api.NetworkServer`:
   - Object: Instantiate a network communication server endpoint.
   - Usage: Receive clients' requests, send and receive messages.
   - Examples:
     - `declearn.communication.grpc.GrpcServer`
     - `declearn.communication.websockets.WebsocketsServer`
-  - Extend: use `declearn.utils.register_type(group="Server")`
+  - Extend:
+    - Simply inherit from `NetworkServer` (registration is automated).
+    - To avoid it, use `class MyServer(NetworkServer, register=False)`.
 
 - `declearn.dataset.Dataset`:
   - Object: Interface data sources agnostic to their format.
@@ -451,13 +455,13 @@ details on this example and on how to run it, please refer to its own
      components (note that 'aggregator' and 'server_opt' have default values
      and may therefore be left unspecified).
 
-3. Define a communication Server:
+3. Define a communication server endpoint:
 
    - Select a communication protocol (_e.g._ "grpc" or "websockets").
    - Select the host address and port to use.
    - Preferably provide paths to PEM files storing SSL-required information.
    - Wrap this into a config dict or use `declearn.communication.build_server`
-       to instantiate a `declearn.communication.api.Server` that will be used.
+       to instantiate a `declearn.communication.api.NetworkServer` to be used.
 
 4. Instantiate and run a FederatedServer:
 
@@ -499,14 +503,14 @@ details on this example and on how to run it, please refer to its own
        used in evaluation rounds. Otherwise, those rounds will be run using
        the training dataset - which can be slow and/or lead to overfitting.
 
-3. Define a communication Client:
+3. Define a communication client endpoint:
 
    - Select the communication protocol used (_e.g._ "grpc" or "websockets").
    - Provide the server URI to connect to.
    - Preferable provide the path to a PEM file storing SSL-required information
        (matching those used on the Server side).
    - Wrap this into a config dict or use `declearn.communication.build_client`
-       to instantiate a `declearn.communication.api.Client` that will be used.
+       to instantiate a `declearn.communication.api.NetworkClient` to be used.
 
 4. Run any necessary import statement:
 
@@ -516,7 +520,7 @@ details on this example and on how to run it, please refer to its own
 5. Instantiate a FederatedClient and run it:
 
    - Instantiate a `declearn.main.FederatedClient`:
-     - Provide the communication Client and Dataset objects or configurations.
+     - Provide the NetworkClient and Dataset objects or configurations.
      - Optionally provide the path to a folder where to write output files
        (model checkpoints and local loss history).
    - Call the client's `run` method and let the magic happen.

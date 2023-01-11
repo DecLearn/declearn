@@ -11,21 +11,21 @@ import websockets as ws
 from websockets.server import WebSocketServer, WebSocketServerProtocol
 from websockets.exceptions import ConnectionClosedOK, ConnectionClosedError
 
-from declearn.communication.api import Server
+from declearn.communication.api import NetworkServer
 from declearn.communication.websockets._tools import (
     StreamRefusedError,
     receive_websockets_message,
     send_websockets_message,
 )
-from declearn.utils import register_type
 
 
 ADD_HEADER = False  # revise: drop this constant (choose a behaviour)
 
 
-@register_type(name="websockets", group="Server")
-class WebsocketsServer(Server):
+class WebsocketsServer(NetworkServer):
     """Server-side communication endpoint using WebSockets."""
+
+    protocol = "websockets"
 
     def __init__(
         self,
