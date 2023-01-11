@@ -4,11 +4,11 @@
 
 import dataclasses
 import logging
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 
 from declearn.communication.api import NetworkClient, NetworkServer
-from declearn.utils import access_registered
+from declearn.utils import access_registered, access_types_mapping
 
 
 __all__ = [
@@ -16,6 +16,7 @@ __all__ = [
     "NetworkServerConfig",
     "build_client",
     "build_server",
+    "list_available_protocols",
 ]
 
 
@@ -222,3 +223,26 @@ class NetworkServerConfig:
         params = self.to_dict()
         kwargs = params.pop("kwargs", {})
         return build_server(**params, **kwargs)
+
+
+def list_available_protocols() -> List[str]:
+    """Return the list of available network protocols.
+
+    List protocol names that are associated with both a registered
+    NetworkClient child class and a registered NetworkServer one.
+
+    Note that registered implementations might include third-party ones
+    thanks to the (automated) type-registration system attached to the
+    base classes.
+
+    Returns
+    -------
+    protocols: list[str]
+        List of valid names that may be passed as 'protocol' so as
+        to instantiate network endpoints through a generic builder
+        such as the `build_client` or `build_server` exposed under
+        `declearn.communication`.
+    """
+    client = access_types_mapping("NetworkClient")
+    server = access_types_mapping("NetworkServer")
+    return list(set(client).intersection(server))

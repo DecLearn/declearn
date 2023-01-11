@@ -29,9 +29,12 @@ import asyncio
 from typing import Any, Callable, Dict, List, Tuple
 
 import pytest
-from typing_extensions import Literal  # future: import from typing (Py>=3.8)
 
-from declearn.communication import build_client, build_server
+from declearn.communication import (
+    build_client,
+    build_server,
+    list_available_protocols,
+)
 from declearn.communication.api import NetworkClient, NetworkServer
 from declearn.communication.messaging import GenericMessage
 from declearn.test_utils import run_as_processes
@@ -86,9 +89,9 @@ async def server_routine(
 
 @pytest.mark.parametrize("nb_clients", [1, 3], ids=["1_client", "3_clients"])
 @pytest.mark.parametrize("use_ssl", [False, True], ids=["ssl", "unsafe"])
-@pytest.mark.parametrize("protocol", ["grpc", "websockets"])
+@pytest.mark.parametrize("protocol", list_available_protocols())
 def test_routines(
-    protocol: Literal["grpc", "websockets"],
+    protocol: str,
     nb_clients: int,
     use_ssl: bool,
     ssl_cert: Dict[str, str],
@@ -98,7 +101,7 @@ def test_routines(
 
 
 def run_test_routines(
-    protocol: Literal["grpc", "websockets"],
+    protocol: str,
     nb_clients: int,
     use_ssl: bool,
     ssl_cert: Dict[str, str],
@@ -115,7 +118,7 @@ def run_test_routines(
 
 
 def _build_server_func(
-    protocol: Literal["grpc", "websockets"],
+    protocol: str,
     nb_clients: int,
     use_ssl: bool,
     ssl_cert: Dict[str, str],
@@ -145,7 +148,7 @@ def _build_server_func(
 
 
 def _build_client_funcs(
-    protocol: Literal["grpc", "websockets"],
+    protocol: str,
     nb_clients: int,
     use_ssl: bool,
     ssl_cert: Dict[str, str],

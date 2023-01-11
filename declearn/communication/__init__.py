@@ -18,10 +18,11 @@ It also exposes the following functions:
     Instantiate a NetworkClient, selecting its subclass based on protocol name.
 * build_server:
     Instantiate a NetworkServer, selecting its subclass based on protocol name.
+* list_available_protocols:
+    List the protocol names for which both a NetworkClient and NetworkServer
+    classes are registered (hence available to `build_client`/`build_server`).
 
-Note: the latter two functions natively support the declearn-implemented
-      network protocols listed above, but will be extended to any third-
-      party implementation of NetworkClient and NetworkServer subclasses.
+
 """
 
 # Messaging and Communications API and base tools:
@@ -32,6 +33,7 @@ from ._build import (
     NetworkServerConfig,
     build_client,
     build_server,
+    list_available_protocols,
 )
 
 # Concrete implementations using various protocols:
