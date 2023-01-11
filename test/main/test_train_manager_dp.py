@@ -6,8 +6,8 @@ import sys
 from typing import Any, Optional
 
 import pytest
-from opacus.accountants import RDPAccountant
-from opacus.accountants.utils import get_noise_multiplier
+from opacus.accountants import RDPAccountant  # type: ignore
+from opacus.accountants.utils import get_noise_multiplier  # type: ignore
 
 from declearn.communication import messaging
 from declearn.dataset import DataSpecs

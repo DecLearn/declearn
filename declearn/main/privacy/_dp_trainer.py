@@ -5,8 +5,8 @@
 import logging
 from typing import Optional, Tuple, Union
 
-from opacus.accountants import IAccountant, create_accountant
-from opacus.accountants.utils import get_noise_multiplier
+from opacus.accountants import IAccountant, create_accountant  # type: ignore
+from opacus.accountants.utils import get_noise_multiplier  # type: ignore
 
 from declearn.communication import messaging
 from declearn.dataset import Dataset
