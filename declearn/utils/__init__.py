@@ -24,6 +24,8 @@ Tools to map class constructors to (name, group) string tuples.
     Retrieve a registered type from its name and (opt.) group name.
 * access_registration_info:
     Retrieve the name (and opt. group) under which a type is registered.
+* access_types_mapping:
+    Return a copy of the `{name: type}` mapping of a given group.
 * create_types_registry:
     Create a types group from a base class (as a function or class-decorator).
 * register_type:
@@ -84,6 +86,7 @@ from ._numpy import (
 from ._register import (
     access_registered,
     access_registration_info,
+    access_types_mapping,
     create_types_registry,
     register_type,
 )

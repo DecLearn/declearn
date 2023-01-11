@@ -9,6 +9,7 @@ from typing import Dict, Optional, Tuple, Type
 __all__ = [
     "access_registered",
     "access_registration_info",
+    "access_types_mapping",
     "create_types_registry",
     "register_type",
 ]
@@ -33,6 +34,16 @@ class TypesRegistry:
         self.name = name
         self.base = base
         self._reg = {}  # type: Dict[str, Type]
+
+    def get_mapping(self) -> Dict[str, Type]:
+        """Return a copy of the mapping managed by this TypesRegistry.
+
+        Returns
+        -------
+        mapping: Dict[str, type]
+            `{name: type}` dict mapping of registered types.
+        """
+        return self._reg.copy()
 
     def register(
         self,
@@ -216,9 +227,14 @@ def access_registered(
         return the first-found match or raise a KeyError.
 
     Returns
-    -------, Optional
+    -------
     cls: type
         Type retrieved from a types registry.
+
+    Raises
+    ------
+    KeyError:
+        If no registered type matching the input parameters is found.
     """
     # If group is unspecified, look the name up in each and every registry.
     if group is None:
@@ -255,6 +271,11 @@ def access_registration_info(
         Name under which the type is registered.
     group: str
         Name of the TypesRegistry in which the type is registered.
+
+    Raises
+    ------
+    KeyError:
+        If the provided information does not match a registered type.
     """
     # If group is unspecified, look the type up in each and every registry.
     if group is None:
@@ -270,3 +291,29 @@ def access_registration_info(
     if group not in REGISTRIES:
         raise KeyError(f"Type registry '{group}' does not exist.")
     return REGISTRIES[group].get_name(cls), group
+
+
+def access_types_mapping(
+    group: str,
+) -> Dict[str, Type]:
+    """Return a copy of the `{name: type}` mapping of a given group.
+
+    Parameters
+    ----------
+    group: str
+        Name of a TypesRegistry, the mapping from which to return.
+
+    Returns
+    -------
+    mapping: Dict[str, type]
+        `{name: type}` dict mapping of registered types.
+        Note that this is a copy of the actual registry.
+
+    Raises
+    ------
+    KeyError:
+        If the `group` types registry does not exist.
+    """
+    if group not in REGISTRIES:
+        raise KeyError(f"Type registry '{group}' does not exist.")
+    return REGISTRIES[group].get_mapping()
