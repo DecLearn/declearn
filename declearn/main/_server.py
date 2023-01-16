@@ -40,7 +40,7 @@ class FederatedServer:
     def __init__(
         self,
         model: Union[Model, str, Dict[str, Any]],
-        netwk: Union[NetworkServer, NetworkServerConfig, Dict[str, Any]],
+        netwk: Union[NetworkServer, NetworkServerConfig, Dict[str, Any], str],
         optim: Union[FLOptimConfig, str, Dict[str, Any]],
         folder: Optional[str] = None,
         logger: Union[logging.Logger, str, None] = None,
@@ -52,11 +52,11 @@ class FederatedServer:
         model: Model or dict or str
             Model instance, that may be serialized as an ObjectConfig,
             a config dict or a JSON file the path to which is provided.
-        netwk: NetworkServer or NetworkServerConfig or dict
+        netwk: NetworkServer or NetworkServerConfig or dict or str
             NetworkServer communication endpoint instance, or configuration
-            dict or dataclass enabling its instantiation.
-            In the latter two cases, the object's default logger will
-            be set to that of this `FederatedClient`.
+            dict, dataclass or path to a TOML file enabling its instantiation.
+            In the latter three cases, the object's default logger will
+            be set to that of this `FederatedServer`.
         optim: FLOptimConfig or dict or str
             FLOptimConfig instance or instantiation dict (using
             the `from_params` method) or TOML configuration file path.
@@ -85,14 +85,15 @@ class FederatedServer:
             )
         self.model = model
         # Assign the wrapped NetworkServer.
-        if isinstance(netwk, dict):
-            netwk.setdefault("logger", self.logger)
-            netwk = NetworkServerConfig(**netwk).build_server()
-        elif isinstance(netwk, NetworkServerConfig):
+        if isinstance(netwk, str):
+            netwk = NetworkServerConfig.from_toml(netwk)
+        elif isinstance(netwk, dict):
+            netwk = NetworkServerConfig(**netwk)
+        if isinstance(netwk, NetworkServerConfig):
             if netwk.logger is None:
                 netwk.logger = self.logger
             netwk = netwk.build_server()
-        elif not isinstance(netwk, NetworkServer):
+        if not isinstance(netwk, NetworkServer):
             raise TypeError(
                 "'netwk' should be a declearn.communication.api.NetworkServer,"
                 " or the valid configuration of one."

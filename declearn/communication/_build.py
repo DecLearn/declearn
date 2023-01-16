@@ -2,13 +2,17 @@
 
 """Communication endpoints generic instantiation utils."""
 
-import dataclasses
 import logging
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 
 from declearn.communication.api import NetworkClient, NetworkServer
-from declearn.utils import access_registered, access_types_mapping
+from declearn.utils import (
+    TomlConfig,
+    access_registered,
+    access_types_mapping,
+    dataclass_from_func,
+)
 
 
 __all__ = [
@@ -81,55 +85,6 @@ def build_client(
     return cls(server_uri, name, certificate, logger, **kwargs)
 
 
-@dataclasses.dataclass
-class NetworkClientConfig:
-    """Dataclass to store the configuration of a NetowkClient.
-
-    Attributes
-    ----------
-    protocol: str
-        Name of the communications protocol backend, based on which
-        the Client subclass to instantiate will be retrieved.
-    server_uri: str
-        Public uri of the server to which this client is to connect.
-    name: str
-        Name of this client, reported to the server for logging and
-        messages' addressing purposes.
-    certificate: str or None, default=None,
-        Path to a certificate (publickey) PEM file, to use SSL/TLS
-        communcations encryption.
-    logger: logging.Logger or str or None, default=None,
-        Logger to use, or name of a logger to set up using
-        `declearn.utils.get_logger`. If None, use `type(client)-name`.
-    kwargs: dict[str, None]
-        Any valid additional keyword parameter may be passed as well.
-        Refer to the target `NetworkClient` subclass for details.
-
-    Notes
-    -----
-    This dataclass interfaces `declearn.communication.build_client`.
-    Refer to it (and to the `declearn.communication` submodule) for
-    additional details.
-    """
-
-    protocol: str
-    server_uri: str
-    name: str
-    certificate: Optional[str] = None
-    logger: Union[logging.Logger, str, None] = None
-    kwargs: Dict[str, Any] = dataclasses.field(default_factory=dict)
-
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert this dataclass to a JSON-serializable dictionary."""
-        return dataclasses.asdict(self)
-
-    def build_client(self) -> NetworkClient:
-        """Instantiate a NetworkClient based on this config."""
-        params = self.to_dict()
-        kwargs = params.pop("kwargs", {})
-        return build_client(**params, **kwargs)
-
-
 def build_server(
     protocol: str,
     host: str,
@@ -185,64 +140,26 @@ def build_server(
     )
 
 
-@dataclasses.dataclass
-class NetworkServerConfig:
-    """Dataclass to store the configuration of a communication Client.
+BuildClientConfig = dataclass_from_func(build_client)
 
-    Attributes
-    ----------
-    protocol: str
-        Name of the communications protocol backend, based on which
-        the Server subclass to instantiate will be retrieved.
-    host: str
-        Host name (e.g. IP address) of the server.
-    port: int
-        Communications port to use.
-    certificate: str or None, default=None
-        Path to the server certificate (publickey) to use SSL/TLS
-        communications encryption. If provided, `private_key` must
-        be set as well.
-    private_key: str or None, default=None
-        Path to the server private key to use SSL/TLS communications
-        encryption. If provided, `certificate` must be set as well.
-    password: str or None, default=None
-        Optional password used to access `private_key`, or path to a
-        file from which to read such a password.
-        If None but a password is needed, an input will be prompted.
-    logger: logging.Logger or str or None, default=None,
-        Logger to use, or name of a logger to set up with
-        `declearn.utils.get_logger`. If None, use `type(server)`.
-    kwargs: dict[str, None]
-        Any valid additional keyword parameter may be passed as well.
-        Refer to the target `NetworkServer` subclass for details.
 
-    Notes
-    -----
-    This dataclass interfaces `declearn.communication.build_server`.
-    Refer to it (and to the `declearn.communication` submodule) for
-    additional details.
-    """
+BuildServerConfig = dataclass_from_func(build_server)
 
-    # inherited signature; pylint: disable=too-many-instance-attributes
 
-    protocol: str
-    host: str
-    port: int
-    certificate: Optional[str] = None
-    private_key: Optional[str] = None
-    password: Optional[str] = None
-    logger: Union[logging.Logger, str, None] = None
-    kwargs: Dict[str, Any] = dataclasses.field(default_factory=dict)
+class NetworkClientConfig(BuildClientConfig, TomlConfig):  # type: ignore
+    """TOML-parsable dataclass for network clients' instantiation."""
 
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert this dataclass to a JSON-serializable dictionary."""
-        return dataclasses.asdict(self)
+    def build_client(self) -> NetworkClient:
+        """Build a NetworkClient from the wrapped parameters."""
+        return self.call()
+
+
+class NetworkServerConfig(BuildServerConfig, TomlConfig):  # type: ignore
+    """TOML-parsable dataclass for network servers' instantiation."""
 
     def build_server(self) -> NetworkServer:
-        """Instantiate a NetworkServer based on this config."""
-        params = self.to_dict()
-        kwargs = params.pop("kwargs", {})
-        return build_server(**params, **kwargs)
+        """Build a NetworkServer from the wrapped parameters."""
+        return self.call()
 
 
 def list_available_protocols() -> List[str]:

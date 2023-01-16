@@ -26,7 +26,7 @@ class FederatedClient:
 
     def __init__(
         self,
-        netwk: Union[NetworkClient, NetworkClientConfig, Dict[str, Any]],
+        netwk: Union[NetworkClient, NetworkClientConfig, Dict[str, Any], str],
         train_data: Union[Dataset, str],
         valid_data: Optional[Union[Dataset, str]] = None,
         folder: Optional[str] = None,
@@ -36,11 +36,11 @@ class FederatedClient:
 
         Parameters
         ----------
-        netwk: NetworkClient or NetworkClientConfig or dict
+        netwk: NetworkClient or NetworkClientConfig or dict or str
             NetworkClient communication endpoint instance, or configuration
-            dict or dataclass enabling its instantiation.
-            In the latter two cases, the object's default logger will
-            be set to that of this `FederatedClient`.
+            dict, dataclass or path to a TOML file enabling its instantiation.
+            In the latter three cases, the object's default logger will be set
+            to that of this `FederatedClient`.
         train_data: Dataset or str
             Dataset instance wrapping the training data, or path to
             a JSON file from which it can be instantiated.
@@ -61,13 +61,14 @@ class FederatedClient:
         # arguments serve modularity; pylint: disable=too-many-arguments
         # Assign the wrapped NetworkClient.
         replace_netwk_logger = False
-        if isinstance(netwk, dict):
-            replace_netwk_logger = netwk.get("logger", None) is None
-            netwk = NetworkClientConfig(**netwk).build_client()
-        elif isinstance(netwk, NetworkClientConfig):
+        if isinstance(netwk, str):
+            netwk = NetworkClientConfig.from_toml(netwk)
+        elif isinstance(netwk, dict):
+            netwk = NetworkClientConfig.from_params(**netwk)
+        if isinstance(netwk, NetworkClientConfig):
             replace_netwk_logger = netwk.logger is None
             netwk = netwk.build_client()
-        elif not isinstance(netwk, NetworkClient):
+        if not isinstance(netwk, NetworkClient):
             raise TypeError(
                 "'netwk' should be a declearn.communication.api.NetworkClient,"
                 " or the valid configuration of one."
