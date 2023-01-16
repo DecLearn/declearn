@@ -3,5 +3,5 @@
 """Framework-agnostic Vector aggregation API and tools."""
 
 from ._api import Aggregator
-from ._avg import AveragingAggregator
+from ._base import AveragingAggregator
 from ._gma import GradientMaskedAveraging

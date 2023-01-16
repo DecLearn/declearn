@@ -1,12 +1,12 @@
 # coding: utf-8
 
-"""FedAvg-like mean-aggregation class."""
+"""Gradient Masked Averaging aggregation class."""
 
 from typing import Any, Dict, Optional
 
 
 from declearn.model.api import Vector
-from declearn.aggregator._avg import AveragingAggregator
+from declearn.aggregator._base import AveragingAggregator
 
 
 __all__ = [
