@@ -10,7 +10,6 @@ from declearn.optimizer.modules import OptiModule
 from declearn.optimizer.regularizers import Regularizer
 from declearn.typing import Batch
 
-
 __all__ = [
     "Optimizer",
 ]
@@ -366,3 +365,13 @@ class Optimizer:
         """
         updates = self.compute_updates_from_gradients(model, gradients)
         model.apply_updates(updates)
+
+    def get_state(self) -> Dict[str, Any]:
+        """Return a JSON-serializable dict with this optimizer's state."""
+        return {mod.name: mod.get_state() for mod in self.modules}
+
+    def set_state(self, states: Dict[str, Any]) -> None:
+        """Load a saved state dict into an optimizer instance."""
+        for mod in self.modules:
+            if states.get(mod.name, None):
+                mod.set_state(states[mod.name])

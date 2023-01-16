@@ -241,3 +241,40 @@ class OptiModule(metaclass=ABCMeta):
         if not issubclass(cls, OptiModule):
             raise TypeError("Retrieved a non-OptiModule class.")
         return cls.from_config(config)
+
+    def get_state(
+        self,
+    ) -> Dict[str, Any]:
+        """Return a JSON-serializable dict with this module's state(s).
+
+        The counterpart to this method is `OptiModule.set_state`.
+
+        Returns
+        -------
+        state: dict[str, any]
+            JSON-serializable dict storing this module's inner state
+            variables.
+        """
+        return {}
+
+    def set_state(
+        self,
+        state: Dict[str, Any],
+    ) -> None:
+        """Load a state dict into an instantiated module.
+
+        The counterpart to this method is `OptiModule.get_state`.
+
+        Parameters
+        ----------
+        state: dict[str, any]
+            Dict storing values to assign to this module's inner
+            state variables.
+
+        Raises
+        ------
+        KeyError:
+            If an expected state variable is missing from `state`.
+        """
+        # API-defining method; pylint: disable=unused-argument
+        return None

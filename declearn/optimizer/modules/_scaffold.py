@@ -308,3 +308,18 @@ class ScaffoldServerModule(OptiModule):
         self.s_loc.update(s_new)
         update = update / len(self.s_loc)
         self.state = self.state + update
+
+    def get_state(
+        self,
+    ) -> Dict[str, Any]:
+        return {"state": self.state, "s_loc": self.s_loc}
+
+    def set_state(
+        self,
+        state: Dict[str, Any],
+    ) -> None:
+        for key in ("state", "s_loc"):
+            if key not in state:
+                raise KeyError(f"Missing required state variable '{key}'.")
+        self.state = state["state"]
+        self.s_loc = state["s_loc"]
