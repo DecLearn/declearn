@@ -240,6 +240,71 @@ class FederatedClient:
         self.checkpointer = Checkpointer(message.model, self.folder)
         self.checkpointer.save_model()
         self.checkpointer.checkpoint(float("inf"))  # initial weights
+        # If instructed to do so, await a PrivacyRequest to set up DP-SGD.
+        if message.dpsgd:
+            await self._initialize_dpsgd()
+
+    async def _initialize_dpsgd(
+        self,
+    ) -> None:
+        """Set up differentially-private training as part of initialization.
+
+        This method wraps the `make_private` one in the context of
+        `initialize` and should never be called in another context.
+        """
+        message = await self.netwk.check_message()
+        if not isinstance(message, messaging.PrivacyRequest):
+            msg = f"Expected a PrivacyRequest but received a '{type(message)}'"
+            self.logger.error(msg)
+            await self.netwk.send_message(messaging.Error(msg))
+            raise RuntimeError(f"DP-SGD initialization failed: {msg}.")
+        self.logger.info("Received a request to set up DP-SGD.")
+        try:
+            self.make_private(message)
+        except Exception as exc:  # pylint: disable=broad-except
+            self.logger.error(
+                "Exception encountered in `make_private`: %s", exc
+            )
+            await self.netwk.send_message(messaging.Error(repr(exc)))
+            raise RuntimeError("DP-SGD initialization failed.") from exc
+        # If things went right, notify the server.
+        self.logger.info("Notifying the server that DP-SGD setup went fine.")
+        await self.netwk.send_message(
+            messaging.GenericMessage(action="privacy-ok", params={})
+        )
+
+    def make_private(
+        self,
+        message: messaging.PrivacyRequest,
+    ) -> None:
+        """Set up differentially-private training, using DP-SGD.
+
+        Based on the server message, replace the wrapped `trainmanager`
+        attribute by an instance of a subclass that provides with DP-SGD.
+
+        Note that this method triggers the import of `declearn.main.privacy`
+        which may result in an error if the third-party dependency 'opacus'
+        is not available.
+
+        Parameters:
+        ----------
+        message: PrivacyRequest
+            Instructions from the server regarding the DP-SGD setup.
+        """
+        assert self.trainmanager is not None
+        # fmt: off
+        # lazy-import the DPTrainingManager, that involves some optional,
+        # heavy-loadtime dependencies; pylint: disable=import-outside-toplevel
+        from declearn.main.privacy import DPTrainingManager
+        # pylint: enable=import-outside-toplevel
+        self.trainmanager = DPTrainingManager(
+            self.trainmanager.model,
+            self.trainmanager.optim,
+            self.trainmanager.train_data,
+            self.trainmanager.valid_data,
+            self.trainmanager.logger,
+        )
+        self.trainmanager.make_private(message)
 
     async def training_round(
         self,

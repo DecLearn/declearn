@@ -80,6 +80,7 @@ class Dataset(metaclass=ABCMeta):
         batch_size: int,
         shuffle: bool = False,
         drop_remainder: bool = True,
+        poisson: bool = False,
     ) -> Iterator[Batch]:
         """Yield batches of data samples.
 
@@ -94,6 +95,14 @@ class Dataset(metaclass=ABCMeta):
         drop_remainder: bool, default=True
             Whether to drop the last batch if it contains less
             samples than `batch_size`, or yield it anyway.
+            If `poisson=True`, this is used to determine the number
+            of returned batches (notwithstanding their actual size).
+        poisson: bool, default=False
+            Whether to use Poisson sampling, i.e. make up batches by
+            drawing samples with replacement, resulting in variable-
+            size batches and samples possibly appearing in zero or in
+            multiple emitted batches (but at most once per batch).
+            Useful to maintain tight Differential Privacy guarantees.
 
         Yields
         ------

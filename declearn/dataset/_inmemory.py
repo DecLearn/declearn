@@ -409,6 +409,7 @@ class InMemoryDataset(Dataset):
         batch_size: int,
         shuffle: bool = False,
         drop_remainder: bool = True,
+        poisson: bool = False,
     ) -> Iterator[Batch]:
         """Yield batches of data samples.
 
@@ -416,6 +417,7 @@ class InMemoryDataset(Dataset):
         ----------
         batch_size: int
             Number of samples per batch.
+            If `poisson=True`, this is the average batch size.
         shuffle: bool, default=False
             Whether to shuffle data samples prior to batching.
             Note that the shuffling will differ on each call
@@ -423,6 +425,14 @@ class InMemoryDataset(Dataset):
         drop_remainder: bool, default=True
             Whether to drop the last batch if it contains less
             samples than `batch_size`, or yield it anyway.
+            If `poisson=True`, this is used to determine the number
+            of returned batches (notwithstanding their actual size).
+        poisson: bool, default=False
+            Whether to use Poisson sampling, i.e. make up batches by
+            drawing samples with replacement, resulting in variable-
+            size batches and samples possibly appearing in zero or in
+            multiple emitted batches (but at most once per batch).
+            Useful to maintain tight Differential Privacy guarantees.
 
         Yields
         ------
@@ -437,11 +447,53 @@ class InMemoryDataset(Dataset):
               scipy sparse matrix, pandas dataframe or pandas series.
         Note: batched arrays are aligned along their first axis.
         """
+        if poisson:
+            order = self._poisson_sampling(batch_size, drop_remainder)
+            # Enable slicing of the produced boolean mask in `_build_iterator`.
+            batch_size = order.shape[1]  # n_samples
+            order = order.flatten()
+        else:
+            order = self._samples_batching(batch_size, shuffle, drop_remainder)
+        # Build array-wise batch iterators.
+        iterators = [
+            self._build_iterator(data, batch_size, order)
+            for data in (self.feats, self.target, self.weights)
+        ]
+        # Yield tuples zipping the former.
+        yield from zip(*iterators)
+
+    def _samples_batching(
+        self,
+        batch_size: int,
+        shuffle: bool = False,
+        drop_remainder: bool = True,
+    ) -> np.ndarray:
+        """Create an ordering of samples to conduct their batching.
+
+        Parameters
+        ----------
+        batch_size: int
+            Number of samples per batch.
+        shuffle: bool, default=False
+            Whether to shuffle data samples prior to batching.
+            Note that the shuffling will differ on each call
+            to this method.
+        drop_remainder: bool, default=True
+            Whether to drop the last batch if it contains less
+            samples than `batch_size`, or yield it anyway.
+
+        Returns
+        -------
+        order: 1-d numpy.ndarray
+            Array indexing the raw samples for their batching.
+            The `_build_iterator` method may be used to slice
+            through this array to extract batches from the raw
+            data arrays.
+        """
+        order = np.arange(self.feats.shape[0])
         # Optionally set up samples' shuffling.
         if shuffle:
-            order = self._rng.permutation(self.feats.shape[0])
-        else:
-            order = np.arange(self.feats.shape[0])
+            order = self._rng.permutation(order)
         # Optionally drop last batch if its size is too small.
         if drop_remainder:
             limit = len(order) - (len(order) % batch_size)
@@ -451,13 +503,50 @@ class InMemoryDataset(Dataset):
                     "The dataset is smaller than `batch_size`, so that "
                     "`drop_remainder=True` results in an empty iterator."
                 )
-        # Build array-wise batch iterators.
-        iterators = [
-            self._build_iterator(data, batch_size, order)
-            for data in (self.feats, self.target, self.weights)
-        ]
-        # Yield tuples zipping the former.
-        yield from zip(*iterators)
+        # Return the ordering.
+        return order
+
+    def _poisson_sampling(
+        self,
+        batch_size: int,
+        drop_remainder: bool = True,
+    ) -> np.ndarray:
+        """Create a boolean masking of samples to conduct their batching.
+
+        Poisson sampling consists in making up batches by drawing from a
+        bernoulli distribution for each and every sample in the dataset,
+        to decide whether it should be included in the batch. As a result
+        batches vary in size, and a sample may appear zero or multiple
+        times in the set of batches drawn for a (pseudo-)epoch.
+
+        Parameters
+        ----------
+        batch_size: int
+            Desired average number of samples per batch.
+            The sample rate for the Poisson sampling procedure
+            is set to `batch_size / n_samples`.
+        drop_remainder: bool, default=True
+            Since Poisson sampling does not result in fixed-size
+            batches, this parameter is interpreted as whether to
+            set the number of batches to `floor(1 / sample_rate)`
+            rather than `ceil(1 / sample_rate)`.
+
+        Returns
+        -------
+        bmask: 2-d numpy.ndarray
+            Array with shape `(n_batches, n_samples)`, each row
+            of which provides with a boolean mask that should be
+            used to produce a batch from the raw data samples.
+        """
+        # Compute the desired sample rate and number of batches.
+        n_samples = self.feats.shape[0]
+        sample_rate = batch_size / n_samples
+        n_batches = n_samples // batch_size
+        if (n_samples % batch_size) and not drop_remainder:
+            n_batches += 1
+        # Conduct Poisson sampling of all batches.
+        bmask = self._rng.uniform(size=(n_batches, n_samples)) < sample_rate
+        return bmask
 
     def _build_iterator(
         self,

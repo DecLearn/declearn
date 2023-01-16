@@ -86,13 +86,13 @@ class ModelTestSuite:
         model = test_case.model
         my_batch = test_case.dataset[0]
         assert isinstance(my_batch[0], test_case.tensor_cls)
-        np_batch = [
+        np_batch = tuple(
             None if arr is None else test_case.to_numpy(arr)
             for arr in my_batch
-        ]
+        )
         assert isinstance(np_batch[0], np.ndarray)
         # Compute gradients in both cases.
-        np_grads = model.compute_batch_gradients(np_batch)
+        np_grads = model.compute_batch_gradients(np_batch)  # type: ignore
         assert isinstance(np_grads, test_case.vector_cls)
         my_grads = model.compute_batch_gradients(my_batch)
         assert my_grads == np_grads

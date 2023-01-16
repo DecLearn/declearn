@@ -5,7 +5,7 @@
 import dataclasses
 import json
 from abc import ABCMeta
-from typing import Any, Dict, List, Optional, Type
+from typing import Any, Dict, List, Optional, Tuple, Type
 
 
 from declearn.model.api import Model, Vector
@@ -30,6 +30,7 @@ __all__ = [
     "JoinReply",
     "JoinRequest",
     "Message",
+    "PrivacyRequest",
     "StopTraining",
     "TrainReply",
     "TrainRequest",
@@ -132,11 +133,13 @@ class InitRequest(Message):
 
     model: Model
     optim: Optimizer
+    dpsgd: bool = False
 
     def to_string(self) -> str:
         data = {"typekey": self.typekey}  # type: Dict[str, Any]
         data["model"] = serialize_object(self.model, group="Model").to_dict()
         data["optim"] = self.optim.get_config()
+        data["dpsgd"] = self.dpsgd
         return json.dumps(data, default=json_pack)
 
     @classmethod
@@ -164,6 +167,27 @@ class JoinReply(Message):
 
     accept: bool
     flag: str
+
+
+@dataclasses.dataclass
+class PrivacyRequest(Message):
+    """Server-emitted request to set up local differential privacy."""
+
+    # dataclass; pylint: disable=too-many-instance-attributes
+
+    typekey = "privacy_request"
+
+    # PrivacyConfig
+    budget: Tuple[float, float]
+    sclip_norm: float
+    accountant: str
+    use_csprng: bool
+    seed: Optional[int]
+    # TrainingConfig + rounds
+    rounds: int
+    batches: Dict[str, Any]
+    n_epoch: Optional[int]
+    n_steps: Optional[int]
 
 
 @dataclasses.dataclass
@@ -216,6 +240,7 @@ _MESSAGE_CLASSES = [
     InitRequest,
     JoinReply,
     JoinRequest,
+    PrivacyRequest,
     StopTraining,
     TrainReply,
     TrainRequest,

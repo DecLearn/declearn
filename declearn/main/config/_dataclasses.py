@@ -3,12 +3,11 @@
 """Dataclasses to wrap and parse some training-related hyperparameters."""
 
 import dataclasses
-
-from typing import Any, Dict, Optional
-
+from typing import Any, Dict, Optional, Tuple
 
 __all__ = [
     "EvaluateConfig",
+    "PrivacyConfig",
     "RegisterConfig",
     "TrainingConfig",
 ]
@@ -43,9 +42,9 @@ class RegisterConfig:
 class TrainingConfig:
     """Dataclass wrapping parameters for a training round.
 
-    The parameters wrapped by this class are those
-    of `declearn.dataset.Dataset.generate_batches`
-    and `declearn.main.FederatedClient._train_for`.
+    The parameters wrapped by this class are those of
+    `declearn.dataset.Dataset.generate_batches` and
+    `declearn.communication.messaging.TrainRequest`.
 
     Attributes
     ----------
@@ -56,6 +55,9 @@ class TrainingConfig:
     drop_remainder: bool
         Whether to drop the last batch if it contains less
         samples than `batch_size`, or yield it anyway.
+    poisson: bool
+        Whether to use Poisson sampling to generate the batches.
+        Useful to maintain tight Differential Privacy guarantees.
     n_epoch: int or None
         Maximum number of local data-processing epochs to
         perform. May be overridden by `n_steps` or `timeout`.
@@ -71,6 +73,7 @@ class TrainingConfig:
     batch_size: int
     shuffle: bool = False
     drop_remainder: bool = True
+    poisson: bool = False
     # training effort constraints
     n_epoch: Optional[int] = 1
     n_steps: Optional[int] = None
@@ -90,6 +93,7 @@ class TrainingConfig:
             "batch_size": self.batch_size,
             "shuffle": self.shuffle,
             "drop_remainder": self.drop_remainder,
+            "poisson": self.poisson,
         }
 
     @property
@@ -120,3 +124,82 @@ class EvaluateConfig(TrainingConfig):
         params = super().message_params
         params.pop("n_epoch")
         return params
+
+
+@dataclasses.dataclass
+class PrivacyConfig:
+    """Dataclass wrapping parameters to set up local differential privacy.
+
+    The parameters wrapped by this class specify the DP-SGD algorithm [1],
+    providing with a budget, an accountant method, a sensitivity clipping
+    threshold, and RNG-related parameters for the noise-addition module.
+
+    Accountants supported by Opacus 1.2.0 include:
+    * rdp : Renyi-DP accountant, see [1]
+    * gdp : Gaussian-DP, see [2]
+    * prv : Privacy loss Random Variables privacy accountant, see [3]
+
+    Note : for more details, refer to the Opacus source code and the
+    doctrings of each accountant. See
+    https://github.com/pytorch/opacus/tree/main/opacus/accountants
+
+    Attributes
+    ----------
+    budget: (float, float)
+        Target total privacy budget per client, expressed in terms of
+        (epsilon-delta)-DP over the full training schedule.
+    accountant: str
+        Accounting mechanism used to estimate epsilon by Opacus.
+    sclip_norm: float
+        Clipping threshold of sample-wise gradients' euclidean norm.
+        This parameter binds the sensitivity of sample-wise gradients.
+    use_csprng: bool
+        Whether to use cryptographically-secure pseudo-random numbers
+        (CSPRNG) rather than the default numpy generator.
+        This is significantly slower than using the default numpy RNG.
+    seed: int or None
+        Optional seed to the noise-addition module's RNG.
+        Unused if `safe_mode=True`.
+
+    References
+    ----------
+    [1] Abadi et al, 2016.
+        Deep Learning with Differential Privacy.
+        https://arxiv.org/abs/1607.00133
+    [2] Dong et al, 2019.
+        Gaussian Differential Privacy.
+        https://arxiv.org/abs/1905.02383
+    [3] Gopi et al, 2021.
+        Numerical Composition of Differential Privacy.
+        https://arxiv.org/abs/2106.02848
+    """
+
+    budget: Tuple[float, float]
+    sclip_norm: float
+    accountant: str = "rdp"
+    use_csprng: bool = False
+    seed: Optional[int] = None
+
+    def __post_init__(self):
+        """Type- and value-check (some of) the wrapped parameters."""
+        # Verify budget validity.
+        if isinstance(self.budget, list):
+            self.budget = tuple(self.budget)
+        if not (
+            isinstance(self.budget, tuple)
+            and len(self.budget) == 2
+            and isinstance(self.budget[0], (float, int))
+            and self.budget[0] > 0
+            and isinstance(self.budget[1], (float, int))
+            and self.budget[1] >= 0
+        ):
+            raise TypeError("'budget' should be a tuple of positive floats.")
+        # Verify max_norm validity.
+        if not (
+            isinstance(self.sclip_norm, (float, int)) and self.sclip_norm > 0
+        ):
+            raise TypeError("'sclip_norm' should be a positive float.")
+        # Verify accountant validity.
+        accountants = ("rdp", "gdp", "prv")
+        if self.accountant not in accountants:
+            raise TypeError(f"'accountant' should be one of {accountants}")

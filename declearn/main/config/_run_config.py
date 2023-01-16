@@ -9,8 +9,9 @@ from typing import Any, Optional
 from declearn.main.utils import EarlyStopConfig
 from declearn.main.config._dataclasses import (
     EvaluateConfig,
-    TrainingConfig,
+    PrivacyConfig,
     RegisterConfig,
+    TrainingConfig,
 )
 from declearn.utils import TomlConfig
 
@@ -49,7 +50,10 @@ class FLRunConfig(TomlConfig):
         and data-batching instructions.
     evaluate: EvaluateConfig
         Parameters for validation rounds, similar to training ones.
-    early_stop: EarlyStopConfig or None, default=None
+    privacy: PrivacyConfig or None
+        Optional parameters to set up local differential privacy,
+        by having clients use the DP-SGD algorithm for training.
+    early_stop: EarlyStopConfig or None
         Optional parameters to set up an EarlyStopping criterion, to
         be leveraged so as to interrupt the federated learning process
         based on the tracking of a minimized quantity (e.g. model loss).
@@ -60,12 +64,23 @@ class FLRunConfig(TomlConfig):
         Instantiate by parsing a TOML configuration file.
     from_params:
         Instantiate by parsing inputs dicts (or objects).
+
+    Notes
+    -----
+    * `register` may be defined as a single integer (in `from_params` or in
+      a TOML file), that will be used as the exact number of clients.
+    * If `evaluate` is not provided to `from_params` or in the parsed TOML
+      file, default parameters will automatically be used and the training
+      batch size will be used for evaluation as well.
+    * If `privacy` is provided and the 'poisson' parameter is unspecified
+      for `training`, it will be set to True by default rather than False.
     """
 
     rounds: int
     register: RegisterConfig
     training: TrainingConfig
     evaluate: EvaluateConfig
+    privacy: Optional[PrivacyConfig] = None
     early_stop: Optional[EarlyStopConfig] = None  # type: ignore  # is a type
 
     @classmethod
@@ -102,5 +117,12 @@ class FLRunConfig(TomlConfig):
                 evaluate.setdefault("batch_size", training.get("batch_size"))
             elif isinstance(training, TrainingConfig):
                 evaluate.setdefault("batch_size", training.batch_size)
+        # If privacy is set and poisson sampling bool parameter is unspecified
+        # for the training dataset, make it True rather than False by default.
+        privacy = kwargs.get("privacy")
+        if isinstance(privacy, dict):
+            training = kwargs.get("training")
+            if isinstance(training, dict):
+                training.setdefault("poisson", True)
         # Delegate the rest of the work to the parent method.
         return super().from_params(**kwargs)

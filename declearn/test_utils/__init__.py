@@ -4,3 +4,8 @@
 
 from ._gen_ssl import generate_ssl_certificates
 from ._multiprocess import run_as_processes
+from ._vectors import (
+    FrameworkType,
+    GradientsTestCase,
+    list_available_frameworks,
+)

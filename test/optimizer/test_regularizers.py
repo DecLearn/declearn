@@ -26,11 +26,12 @@ import pytest
 from declearn.optimizer.regularizers import Regularizer
 from declearn.utils._register import REGISTRIES
 
-
-# dirty trick to import from `model_testing.py`;
-# pylint: disable=wrong-import-order, wrong-import-position
+# relative import; pylint: disable=wrong-import-order, wrong-import-position
+# fmt: off
 sys.path.append(".")
 from optim_testing import PluginTestBase
+sys.path.pop()
+# fmt: on
 
 # unproper but efficient way to list plugins; pylint: disable=protected-access
 REGULARIZER_SUBCLASSES = REGISTRIES["Regularizer"]._reg
