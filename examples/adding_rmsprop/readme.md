@@ -27,10 +27,6 @@ in the code in the `__init__` and `get_config` method.
 * The transformations applied to the gradients, corresponding to the `run`
 method.
 
-**Also make sure** to register your new `OptiModule` subtype, as demonstrated
-below. This is what makes your module (de)serializable using `declearn`'s
-internal tools.
-
 **If you are contributing** to `declearn`, please write your code to an appropriate
 file under `declearn.optimizer.modules`, include it to the `__all__` global
 variable and import it as part of the `__init__.py` file at its import level.
@@ -61,21 +57,17 @@ added to `_adaptative.py` file.
 
 ```python
 from declearn.optimizer.modules import OptiModule
-from declearn.utils import register_type
 
 
-# Start by registering the new optimzer using the dedicated decorator
-
-@register_type(name="RMSProp", group="OptiModule")
 class RMSPropModule(OptiModule):
     """[Docstring removed for conciseness]"""
 
-    # Convention, used when a module uses synchronized server
-    # and client elements, that need to share the same name
+    # Identifier, that must be unique across modules for type-registration
+    # purposes. This enables specifying the module in configuration files.
 
     name = "rmsprop"
 
-    # Define optimizer parameter, here beta and eps
+    # Define optimizer parameters, here beta and eps
 
     def __init__(self, beta: float = 0.9, eps: float = 1e-7) -> None:
         """Instantiate the RMSProp gradients-adaptation module.

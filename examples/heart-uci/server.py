@@ -118,7 +118,7 @@ if __name__ == "__main__":
         dest="key_path",
         type=str,
         help="path to the server-side ssl private key",
-        default=os.path.join(FILEDIR, "server-key.pem"),
+        default=os.path.join(FILEDIR, "server-pkey.pem"),
     )
     args = parser.parse_args()
     # Run the server routine.
