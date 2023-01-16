@@ -1,79 +1,24 @@
 # coding: utf-8
 
-"""Shared code to instantiate framework-specific vectors."""
+"""Shared code to define unit tests for declearn optimizer plug-in classes."""
 
 import warnings
-from typing import Dict, List, Tuple, Type, Union
+from typing import List, Tuple, Type, Union
 
 import numpy as np
-import pytest
-
-with warnings.catch_warnings():  # silence tensorflow import-time warnings
-    warnings.simplefilter("ignore")
-    import tensorflow as tf  # type: ignore
-import torch
-from numpy.typing import ArrayLike
-from typing_extensions import Literal  # future: import from typing (Py>=3.8)
 
 from declearn.model.api import Vector
 from declearn.model.sklearn import NumpyVector
-from declearn.model.tensorflow import TensorflowVector
-from declearn.model.torch import TorchVector
 from declearn.optimizer.modules import OptiModule
 from declearn.optimizer.regularizers import Regularizer
+from declearn.test_utils import (
+    FrameworkType,
+    GradientsTestCase,
+    list_available_frameworks,
+)
 
 
-Framework = Literal["numpy", "tflow", "torch"]
-FRAMEWORKS = ["numpy", "tflow", "torch"]  # type: List[Framework]
 Plugin = Union[OptiModule, Regularizer]
-
-
-class GradientsTestCase:
-    """Framework-parametrized OptiModule testing fixtures provider."""
-
-    def __init__(self, framework: Framework) -> None:
-        """Instantiate the parametrized test-case."""
-        self.framework = framework
-
-    @property
-    def vector_cls(self) -> Type[Vector]:
-        """Vector subclass suitable to the tested framework."""
-        classes = {
-            "numpy": NumpyVector,
-            "tflow": TensorflowVector,
-            "torch": TorchVector,
-        }  # type: Dict[str, Type[Vector]]
-        return classes[self.framework]
-
-    def convert(self, array: np.ndarray) -> ArrayLike:
-        """Convert an input numpy array to a framework-based structure."""
-        functions = {
-            "numpy": np.array,
-            "tflow": tf.convert_to_tensor,
-            "torch": torch.from_numpy,  # pylint: disable=no-member
-        }
-        return functions[self.framework](array)  # type: ignore
-
-    def to_numpy(self, array: ArrayLike) -> np.ndarray:
-        """Convert an input framework-based structure to a numpy array."""
-        if isinstance(array, np.ndarray):
-            return array
-        return array.numpy()  # type: ignore
-
-    @property
-    def mock_gradient(self) -> Vector:
-        """Instantiate a Vector with random-valued mock gradients.
-
-        Note: the RNG used to generate gradients has a fixed seed,
-              to that gradients have the same values whatever the
-              tensor framework used is.
-        """
-        rng = np.random.default_rng(seed=0)
-        shapes = [(64, 32), (32,), (32, 16), (16,), (16, 1), (1,)]
-        values = [rng.normal(size=shape) for shape in shapes]
-        return self.vector_cls(
-            {str(idx): self.convert(value) for idx, value in enumerate(values)}
-        )
 
 
 class PluginTestBase:
@@ -113,21 +58,6 @@ class PluginTestBase:
         config = plugin.get_config()
         self.assert_equivalent(plugin, base.from_specs(name, config))
 
-    @pytest.mark.parametrize("framework", FRAMEWORKS)
-    def test_run(self, cls: Type[Plugin], framework: Framework) -> None:
-        """Test an Regularizer's run method using a given framework.
-
-        Note: Only check that input and output gradients have
-              same specs, not their algorithmic correctness.
-        """
-        test_case = GradientsTestCase(framework)
-        plugin = cls()
-        inputs, output = self._run_plugin(plugin, test_case)
-        assert isinstance(output, test_case.vector_cls)
-        assert output.coefs.keys() == inputs.coefs.keys()
-        assert output.shapes() == inputs.shapes()
-        assert output.dtypes() == inputs.dtypes()
-
     @staticmethod
     def _run_plugin(
         plugin: Plugin,
@@ -145,8 +75,22 @@ class PluginTestBase:
             output = plugin.run(inputs, params)
         return inputs, output
 
+    def test_run(self, cls: Type[Plugin], framework: FrameworkType) -> None:
+        """Test a plug-in's run method using a given framework.
+
+        Note: Only check that input and output gradients have
+              same specs, not their algorithmic correctness.
+        """
+        test_case = GradientsTestCase(framework)
+        plugin = cls()
+        inputs, output = self._run_plugin(plugin, test_case)
+        assert isinstance(output, test_case.vector_cls)
+        assert output.coefs.keys() == inputs.coefs.keys()
+        assert output.shapes() == inputs.shapes()
+        assert output.dtypes() == inputs.dtypes()
+
     def test_run_equivalence(self, cls: Type[Plugin]) -> None:
-        """Test that an Regularizer's run is equivalent for all frameworks.
+        """Test that a plug-in's run is equivalent for all frameworks.
 
         Note: If a framework's run fails, warn about it but keep going,
               as `test_run` is sufficient to report framework failure.
@@ -154,14 +98,14 @@ class PluginTestBase:
         """
         # Collect outputs from a newly-created plugin for each framework.
         results = []  # type: List[NumpyVector]
-        for framework in FRAMEWORKS:
-            f_case = GradientsTestCase(framework)
+        for fwk in list_available_frameworks():
+            f_case = GradientsTestCase(fwk)  # type: ignore
             plugin = cls()
             try:
                 _, output = self._run_plugin(plugin, f_case)
             except Exception:  # pylint: disable=broad-except
                 warnings.warn(
-                    f"Skipping framework '{framework}' in equivalence test."
+                    f"Skipping framework '{fwk}' in equivalence test."
                 )
             finally:
                 coefs = {

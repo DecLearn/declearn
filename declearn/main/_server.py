@@ -3,6 +3,7 @@
 """Server-side main Federated Learning orchestrating class."""
 
 import asyncio
+import dataclasses
 import logging
 from typing import Any, Dict, Optional, Set, Type, TypeVar, Union
 
@@ -214,6 +215,7 @@ class FederatedServer:
         message = messaging.InitRequest(
             model=self.model,
             optim=self.c_opt,
+            dpsgd=config.privacy is not None,
         )
         self.logger.info("Sending initialization requests to clients.")
         await self.netwk.broadcast_message(message)
@@ -225,6 +227,9 @@ class FederatedServer:
             msgtype=messaging.GenericMessage,
             context="initialization",
         )
+        # If local differential privacy is configured, set it up.
+        if config.privacy is not None:
+            await self._initialize_dpsgd(config)
         self.logger.info("Initialization was successful.")
 
     async def _process_data_info(
@@ -261,6 +266,38 @@ class FederatedServer:
             raise exc
         # Otherwise, initialize the model based on the aggregated information.
         self.model.initialize(info)
+
+    async def _initialize_dpsgd(
+        self,
+        config: FLRunConfig,
+    ) -> None:
+        """Send a differential privacy setup request to all registered clients.
+
+        Parameters
+        ----------
+        config: FLRunConfig
+            FLRunConfig wrapping information on the overall FL process
+            and on the local DP parameters. Its `privacy` section must
+            be defined.
+        """
+        self.logger.info("Sending privacy requests to all clients.")
+        assert config.privacy is not None  # else this method is not called
+        params = {
+            "rounds": config.rounds,
+            "batches": config.training.batch_cfg,
+            "n_epoch": config.training.n_epoch,
+            "n_steps": config.training.n_steps,
+            **dataclasses.asdict(config.privacy),
+        }  # type: Dict[str, Any]
+        message = messaging.PrivacyRequest(**params)
+        await self.netwk.broadcast_message(message)
+        self.logger.info("Waiting for clients' responses.")
+        await self._collect_results(
+            clients=self.netwk.client_names,
+            msgtype=messaging.GenericMessage,
+            context="Privacy initialization",
+        )
+        self.logger.info("Privacy requests were processed by clients.")
 
     async def training_round(
         self,

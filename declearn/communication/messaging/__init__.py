@@ -15,6 +15,7 @@ from ._messages import (
     JoinReply,
     JoinRequest,
     Message,
+    PrivacyRequest,
     StopTraining,
     TrainReply,
     TrainRequest,

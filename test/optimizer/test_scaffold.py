@@ -2,30 +2,23 @@
 
 """Unit tests for Scaffold OptiModule subclasses."""
 
-import sys
 
 import pytest
-
 from declearn.model.api import Vector
 from declearn.optimizer.modules import (
     ScaffoldClientModule,
     ScaffoldServerModule,
 )
-
-# dirty trick to import from `test_modules.py`;
-# pylint: disable=wrong-import-order, wrong-import-position
-sys.path.append(".")
-from optim_testing import GradientsTestCase, Framework, FRAMEWORKS
+from declearn.test_utils import FrameworkType, GradientsTestCase
 
 
 @pytest.fixture(name="mock_gradients")
-def fixture_mock_gradients(framework: Framework) -> Vector:
+def fixture_mock_gradients(framework: FrameworkType) -> Vector:
     """Framework-specific, fixed-rng-based-valued mock gradients Vector."""
     test_case = GradientsTestCase(framework)
     return test_case.mock_gradient
 
 
-@pytest.mark.parametrize("framework", FRAMEWORKS)
 def test_scaffold_client(mock_gradients: Vector) -> None:
     """Conduct a series of co-dependent unit tests on ScaffoldClientModule."""
     module = ScaffoldClientModule()
@@ -49,7 +42,6 @@ def test_scaffold_client(mock_gradients: Vector) -> None:
     assert module.run(mock_gradients) == zeros
 
 
-@pytest.mark.parametrize("framework", FRAMEWORKS)
 def test_scaffold_server(mock_gradients: Vector) -> None:
     """Conduct a series of co-dependent unit tests on ScaffoldServerModule."""
     module = ScaffoldServerModule()
@@ -81,7 +73,6 @@ def test_scaffold_server(mock_gradients: Vector) -> None:
 @pytest.mark.parametrize(
     "client_aware", [True, False], ids=["ClientAware", "ClientBlind"]
 )
-@pytest.mark.parametrize("framework", FRAMEWORKS)
 def test_scaffold_routine(client_aware: bool, mock_gradients: Vector) -> None:
     """Conduct a mock client/server SCAFFOLD training routine.
 
