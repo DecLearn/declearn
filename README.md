@@ -178,7 +178,7 @@ netwk = declearn.communication.NetworkServerConfig(
     certificate="path/to/certificate.pem",
     private_key="path/to/private_key.pem"
 )
-optim = declearn.main.FLOptimConfig.from_params(
+optim = declearn.main.config.FLOptimConfig.from_params(
     aggregator="averaging",
     client_opt=0.001,
 )
@@ -188,7 +188,7 @@ server = declearn.main.FederatedServer(
 config = declearn.main.config.FLRunConfig.from_params(
     rounds=10,
     register={"min_clients": 1, "max_clients": 3, "timeout": 180},
-    training={"n_epochs": 5, "batch_size": 128, "drop_remainder": False},
+    training={"n_epoch": 5, "batch_size": 128, "drop_remainder": False},
 )
 server.run(config)
 ```
@@ -199,6 +199,7 @@ server.run(config)
 import declearn
 
 netwk = declearn.communication.NetworkClientConfig(
+    protocol="grpc",
     server_uri="example.com:8888",
     name="client_name",
     certificate="path/to/client_cert.pem"

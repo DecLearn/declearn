@@ -100,7 +100,7 @@ class FLRunConfig(TomlConfig):
         if inputs is None:
             return RegisterConfig()
         if isinstance(inputs, int):
-            return RegisterConfig(min_clients=1)
+            return RegisterConfig(min_clients=inputs)
         return cls.default_parser(field, inputs)
 
     @classmethod

@@ -240,7 +240,7 @@ class OptiModule(metaclass=ABCMeta):
             Name based on which the module can be retrieved.
             Available as a class attribute.
         config: dict[str, any]
-            Configuration dict of the regularizer, that is to be
+            Configuration dict of the module, that is to be
             passed to its `from_config` class constructor.
         """
         cls = access_registered(name, group="OptiModule")
