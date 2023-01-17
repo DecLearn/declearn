@@ -4,7 +4,7 @@
 
 import tempfile
 import warnings
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 import numpy as np
 import pytest
@@ -23,7 +23,6 @@ from declearn.model.sklearn import SklearnSGDModel
 from declearn.model.tensorflow import TensorflowModel
 from declearn.model.torch import TorchModel
 from declearn.main import FederatedClient, FederatedServer
-from declearn.strategy import FedAvg, FedAvgM, Scaffold, ScaffoldM
 from declearn.test_utils import run_as_processes
 
 
@@ -46,9 +45,7 @@ class DeclearnTestCase:
         # arguments provide modularity; pylint: disable=too-many-arguments
         self.kind = kind
         self.framework = framework
-        self.strategy = {
-            cls.__name__: cls for cls in (FedAvg, FedAvgM, Scaffold, ScaffoldM)
-        }[strategy]
+        self.strategy = strategy
         self.nb_clients = nb_clients
         self.protocol = protocol
         self.use_ssl = use_ssl
@@ -169,15 +166,30 @@ class DeclearnTestCase:
             certificate=self.ssl_cert["client_cert"] if self.use_ssl else None,
         )
 
+    def build_optim_config(self) -> Dict[str, Any]:
+        """Return parameters to instantiate a FLOptimConfig."""
+        client_modules = []
+        server_modules = []
+        if self.strategy == "Scaffold":
+            client_modules.append("scaffold-client")
+            server_modules.append("scaffold-server")
+        if self.strategy in ("FedAvgM", "ScaffoldM"):
+            server_modules.append("momentum")
+        return {
+            "aggregator": "averaging",
+            "client_opt": {"lrate": 0.01, "modules": client_modules},
+            "server_opt": {"lrate": 1.0, "modules": server_modules},
+        }
+
     def run_federated_server(
         self,
     ) -> None:
         """Set up and run a FederatedServer."""
         model = self.build_model()
         netwk = self.build_netwk_server()
-        strat = self.strategy(eta_l=0.01)
+        optim = self.build_optim_config()
         with tempfile.TemporaryDirectory() as folder:
-            server = FederatedServer(model, netwk, strat, folder=folder)
+            server = FederatedServer(model, netwk, optim, folder=folder)
             config = {
                 "rounds": self.rounds,
                 "register": {"max_clients": self.nb_clients, "timeout": 20},

@@ -58,12 +58,12 @@ def isinstance_generic(inputs: Any, typevar: Type) -> bool:
     origin = typing.get_origin(typevar)
     # Case of a raw, unit type.
     if origin is None:
-        return isinstance(inputs, typevar)
+        return (typevar is Any) or isinstance(inputs, typevar)
     # Case of a typing generic.
     args = typing.get_args(typevar)
     # Case of a Union generic.
     if origin is typing.Union:
-        return isinstance(inputs, args)
+        return any(isinstance_generic(inputs, typevar) for typevar in args)
     # Case of a Dict[..., ...] generic.
     if origin is dict:
         return (
@@ -134,7 +134,9 @@ class TomlConfig:
 
     This class aims at wrapping multiple, possibly optional, sets of
     hyper-parameters, each of which is specified through a dedicated
-    dataclass, or as a unit type.
+    class, dataclass, or base python type. The use of some type-hint
+    annotations is supported: List, Tuple, Optional and Union may be
+    used as long as they are annotated with concrete types.
 
     It also enables parsing these configuration from a TOML file, as
     well as instantiating from Python objects, possibly using field-
