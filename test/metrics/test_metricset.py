@@ -1,0 +1,129 @@
+# coding: utf-8
+
+"""Unit tests for `declearn.metrics.MetricSet`."""
+
+from unittest import mock
+from typing import Tuple
+
+import numpy as np
+import pytest
+
+from declearn.metrics import MeanAbsoluteError, MeanSquaredError, MetricSet
+
+
+def get_mock_metricset() -> Tuple[
+    MeanAbsoluteError, MeanSquaredError, MetricSet
+]:
+    """Provide with a MetricSet wrapping mock metrics."""
+    mae = mock.create_autospec(MeanAbsoluteError, instance=True)
+    mae.name = MeanAbsoluteError.name
+    mse = mock.create_autospec(MeanSquaredError, instance=True)
+    mse.name = MeanSquaredError.name
+    metrics = MetricSet([mae, mse])
+    return mae, mse, metrics
+
+
+class TestMetricSet:
+    """Unit tests for `declearn.metrics.MetricSet`."""
+
+    def test_init_by_object(self) -> None:
+        """Test that instanciation with a pre-instantiated Metric works."""
+        metric = MeanAbsoluteError()
+        metrics = MetricSet([metric])
+        assert metrics.metrics == [metric]
+
+    def test_init_by_name(self) -> None:
+        """Test that instanciation with a Metric's identifier name works."""
+        metrics = MetricSet(["mae"])
+        assert isinstance(metrics.metrics, list) and len(metrics.metrics) == 1
+        assert isinstance(metrics.metrics[0], MeanAbsoluteError)
+
+    def test_init_by_specs(self) -> None:
+        """Test that instanciation with a Metric's specs works."""
+        metrics = MetricSet([("mae", {})])
+        assert isinstance(metrics.metrics, list) and len(metrics.metrics) == 1
+        assert isinstance(metrics.metrics[0], MeanAbsoluteError)
+
+    def test_init_errors(self) -> None:
+        """Test that `MetricSet.__init__` documented exceptions are raised."""
+        # Test that wrapping multiple instances of the same Metric fails.
+        mae_a = MeanAbsoluteError()
+        mae_b = MeanAbsoluteError()
+        with pytest.raises(RuntimeError):
+            MetricSet([mae_a, mae_b])
+        # Test that providing with a non-Metric instance raises a TypeError.
+        wrong_inputs = [{0: "mae"}]
+        with pytest.raises(TypeError):
+            MetricSet(wrong_inputs)  # type: ignore  # voluntary mistake
+        # Test that providing with unmapped identifier raises a KeyError.
+        with pytest.raises(KeyError):
+            MetricSet([f"random-name-{np.random.uniform()}"])
+
+    def test_get_result(self) -> None:
+        """Test that `MetricSet.get_result` works as expected."""
+        mae, mse, metrics = get_mock_metricset()
+        results = metrics.get_result()
+        assert isinstance(results, dict)
+        mae.get_result.assert_called_once()  # type: ignore  # mock
+        mse.get_result.assert_called_once()  # type: ignore  # mock
+
+    def test_update(self) -> None:
+        """Test that `MetricSet.update` works as expected."""
+        mae, mse, metrics = get_mock_metricset()
+        inputs = {
+            "y_true": np.random.normal((8, 32)),
+            "y_pred": np.random.normal((8, 32)),
+            "s_wght": None,
+        }
+        metrics.update(**inputs)
+        mae.update.assert_called_once_with(**inputs)  # type: ignore  # mock
+        mse.update.assert_called_once_with(**inputs)  # type: ignore  # mock
+
+    def test_reset(self) -> None:
+        """Test that `MetricSet.reset` works as expected."""
+        mae, mse, metrics = get_mock_metricset()
+        metrics.reset()
+        mae.reset.assert_called_once()  # type: ignore  # mock
+        mse.reset.assert_called_once()  # type: ignore  # mock
+
+    def test_get_states(self) -> None:
+        """Test that `MetricSet.get_states` works as expected."""
+        mae, mse, metrics = get_mock_metricset()
+        states = metrics.get_states()
+        assert isinstance(states, dict)
+        mae.get_states.assert_called_once()  # type: ignore  # mock
+        mse.get_states.assert_called_once()  # type: ignore  # mock
+
+    def test_agg_states(self) -> None:
+        """Test that `MetricSet.agg_states` works as expected."""
+        mae, mse, metrics = get_mock_metricset()
+        states = {
+            "mae": mae.get_states(),
+            "mse": mse.get_states(),
+        }
+        metrics.agg_states(states)
+        mae.agg_states.assert_called_once_with(states["mae"])  # type: ignore
+        mse.agg_states.assert_called_once_with(states["mse"])  # type: ignore
+
+    def test_get_config(self) -> None:
+        """Test that `MetricSet.get_config` works as expected."""
+        mae = MeanAbsoluteError()
+        mse = MeanSquaredError()
+        metrics = MetricSet([mae, mse])
+        config = metrics.get_config()
+        m_conf = [(mae.name, mae.get_config()), (mse.name, mse.get_config())]
+        assert isinstance(config, dict)
+        assert config == {"metrics": m_conf}
+
+    def test_from_config(self) -> None:
+        """Test that `MetricSet.from_config` works as expected."""
+        mae = MeanAbsoluteError()
+        mse = MeanSquaredError()
+        m_conf = [(mae.name, mae.get_config()), (mse.name, mse.get_config())]
+        config = {"metrics": m_conf}
+        metrics = MetricSet.from_config(config)
+        assert isinstance(metrics, MetricSet)
+        assert len(metrics.metrics) == 2
+        assert isinstance(metrics.metrics[0], MeanAbsoluteError)
+        assert isinstance(metrics.metrics[1], MeanSquaredError)
+        assert metrics.get_config() == config
