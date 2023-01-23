@@ -38,6 +38,7 @@ dependencies = [
     "pandas >= 1.2",
     "protobuf >= 3.19",
     "scikit-learn >= 1.0",
+    "tomli >= 2.0 ; python_version < '3.11'",
     "typing_extensions >= 4.0",
     "websockets >= 10.1",
 ]
