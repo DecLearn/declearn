@@ -60,7 +60,7 @@ def test_case_fixture(
     agg_scores["confusion"] = agg_states["confm"]
     # Wrap it all up into a MetricTestCase container.
     metric = MulticlassAccuracyPrecisionRecall(
-        labels=["a", "b", "c"] if use_lnames else [0, 1, 2]
+        labels=["a", "b", "c"] if use_lnames else [0, 1, 2]  # type: ignore
     )
     return MetricTestCase(
         metric, inputs, states, scores, agg_states, agg_scores  # type: ignore

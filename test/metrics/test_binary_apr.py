@@ -65,15 +65,15 @@ def _test_case_1d(
         0.7: {"tpos": 1.0, "tneg": 1.0, "fpos": 1.0, "fneg": 1.0},
     }[
         thresh
-    ]  # type: Dict[str, Union[float, np.ndarray]]
+    ]
     scores = {
         0.3: {"accuracy": 2 / 4, "precision": 2 / 4, "recall": 2 / 2},
         0.5: {"accuracy": 3 / 4, "precision": 2 / 3, "recall": 2 / 2},
         0.7: {"accuracy": 2 / 4, "precision": 1 / 2, "recall": 1 / 2},
     }[
         thresh
-    ]  # type: Dict[str, Union[float, np.ndarray]]
-    return inputs, states, scores
+    ]
+    return inputs, states, scores  # type: ignore
 
 
 def _test_case_2d(
@@ -107,15 +107,15 @@ def _test_case_2d(
         0.7: {"tpos": 3.0, "tneg": 6.0, "fpos": 0.0, "fneg": 3.0},
     }[
         thresh
-    ]  # type: Dict[str, Union[float, np.ndarray]]
+    ]
     scores = {
         0.3: {"accuracy": 11 / 12, "precision": 6 / 7, "recall": 6 / 6},
         0.5: {"accuracy": 9 / 12, "precision": 4 / 5, "recall": 4 / 6},
         0.7: {"accuracy": 9 / 12, "precision": 3 / 3, "recall": 3 / 6},
     }[
         thresh
-    ]  # type: Dict[str, Union[float, np.ndarray]]
-    return inputs, states, scores
+    ]
+    return inputs, states, scores  # type: ignore
 
 
 @pytest.mark.parametrize("thresh", [0.3, 0.5, 0.7])

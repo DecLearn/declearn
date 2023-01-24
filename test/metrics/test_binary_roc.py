@@ -8,7 +8,7 @@ from typing import Dict, Union, Tuple
 
 import numpy as np
 import pytest
-import sklearn
+import sklearn  # type: ignore
 from typing_extensions import Literal  # future: import from typing (py>=3.8)
 
 from declearn.metrics import BinaryRocAUC
@@ -73,10 +73,12 @@ def _test_case_1d() -> Tuple[
     Dict[str, Union[float, np.ndarray]],
 ]:
     """Return a test case with 1-D samples (standard binary classif)."""
+    # similar inputs as for Binary APR; pylint: disable=duplicate-code
     inputs = {
         "y_true": np.array([0, 0, 1, 1]),
         "y_pred": np.array([4, 8, 6, 8]) / 10,
     }
+    # pylint: enable=duplicate-code
     states = {
         "tpos": np.array(
             [2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 1.0, 1.0, 0.0, 0.0]
@@ -115,6 +117,7 @@ def _test_case_2d() -> Tuple[
     Dict[str, Union[float, np.ndarray]],
 ]:
     """Return a test case with 2-D samples (multilabel binary classif)."""
+    # similar inputs as for Binary APR; pylint: disable=duplicate-code
     inputs = {
         "y_true": np.array(
             [
@@ -132,6 +135,7 @@ def _test_case_2d() -> Tuple[
             ]
         ),
     }
+    # pylint: enable=duplicate-code
     states = {
         "tpos": np.array(
             [6.0, 6.0, 6.0, 6.0, 6.0, 4.0, 4.0, 3.0, 3.0, 2.0, 0.0]
