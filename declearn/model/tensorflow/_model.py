@@ -5,6 +5,7 @@
 from copy import deepcopy
 from typing import Any, Dict, Iterable, List, Optional, Set, Tuple, Union
 
+import numpy as np
 import tensorflow as tf  # type: ignore
 from numpy.typing import ArrayLike
 
@@ -228,20 +229,6 @@ class TensorflowModel(Model):
         with tf.control_dependencies([upd_op]):
             return None
 
-    def compute_loss(
-        self,
-        dataset: Iterable[Batch],
-    ) -> float:
-        total = 0.0
-        n_btc = 0.0
-        for batch in dataset:
-            inputs, y_true, s_wght = self._unpack_batch(batch)
-            y_pred = self._model(inputs, training=False)
-            loss = self._model.compute_loss(inputs, y_true, y_pred, s_wght)
-            total += loss.numpy().mean()
-            n_btc += 1 if s_wght is None else s_wght.numpy().mean()
-        return total / n_btc
-
     def evaluate(
         self,
         dataset: Iterable[Batch],
@@ -258,7 +245,33 @@ class TensorflowModel(Model):
         Returns
         -------
         metrics: dict[str, float]
-            Dictionary associating evaluation metrics' values to their
-            name.
+            Dictionary associating evaluation metrics' values to their name.
         """
         return self._model.evaluate(dataset, return_dict=True)  # type: ignore
+
+    def compute_batch_predictions(
+        self,
+        batch: Batch,
+    ) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray]]:
+        inputs, y_true, s_wght = self._unpack_batch(batch)
+        if y_true is None:
+            raise TypeError(
+                "`TensorflowModel.compute_batch_predictions` received a "
+                "batch with `y_true=None`, which is unsupported. Please "
+                "correct the inputs, or override this method to support "
+                "creating labels from the base inputs."
+            )
+        y_pred = self._model(inputs, training=False).numpy()
+        y_true = y_true.numpy()
+        s_wght = s_wght.numpy() if s_wght is not None else s_wght
+        return y_true, y_pred, s_wght
+
+    def loss_function(
+        self,
+        y_true: np.ndarray,
+        y_pred: np.ndarray,
+    ) -> np.ndarray:
+        tns_true = tf.convert_to_tensor(y_true)
+        tns_pred = tf.convert_to_tensor(y_pred)
+        s_loss = self._model.compute_loss(y=tns_true, y_pred=tns_pred)
+        return s_loss.numpy().squeeze()

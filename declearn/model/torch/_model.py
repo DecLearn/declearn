@@ -4,9 +4,10 @@
 
 import io
 import warnings
-from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 
 import functorch  # type: ignore
+import numpy as np
 import torch
 
 from declearn.model.api import Model
@@ -33,7 +34,6 @@ class TorchModel(Model):
         self,
         model: torch.nn.Module,
         loss: torch.nn.Module,
-        # metrics: ,
     ) -> None:
         """Instantiate a Model interface wrapping a torch.nn.Module.
 
@@ -121,6 +121,7 @@ class TorchModel(Model):
         batch: Batch,
         max_norm: Optional[float] = None,
     ) -> TorchVector:
+        self._model.train()
         if max_norm:
             return self._compute_clipped_gradients(batch, max_norm)
         return self._compute_batch_gradients(batch)
@@ -302,21 +303,31 @@ class TorchModel(Model):
                     "Invalid model parameter name(s) found in updates."
                 ) from exc
 
-    def compute_loss(
+    def compute_batch_predictions(
         self,
-        dataset: Iterable[Batch],
-    ) -> float:
-        total = 0.0
-        n_btc = 0.0
-        try:
-            self._model.eval()
-            with torch.no_grad():
-                for batch in dataset:
-                    inputs, y_true, s_wght = self._unpack_batch(batch)
-                    y_pred = self._model(*inputs)
-                    loss = self._compute_loss(y_pred, y_true, s_wght)
-                    total += loss.numpy()
-                    n_btc += 1 if s_wght is None else s_wght.mean().numpy()
-        finally:
-            self._model.train()
-        return total / n_btc
+        batch: Batch,
+    ) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray],]:
+        inputs, y_true, s_wght = self._unpack_batch(batch)
+        if y_true is None:
+            raise TypeError(
+                "`TorchModel.compute_batch_predictions` received a "
+                "batch with `y_true=None`, which is unsupported. Please "
+                "correct the inputs, or override this method to support "
+                "creating labels from the base inputs."
+            )
+        self._model.eval()
+        with torch.no_grad():
+            y_pred = self._model(*inputs).numpy()
+        y_true = y_true.numpy()
+        s_wght = s_wght.numpy() if s_wght is not None else s_wght
+        return y_true, y_pred, s_wght  # type: ignore
+
+    def loss_function(
+        self,
+        y_true: np.ndarray,
+        y_pred: np.ndarray,
+    ) -> np.ndarray:
+        tns_pred = torch.from_numpy(y_pred)  # pylint: disable=no-member
+        tns_true = torch.from_numpy(y_true)  # pylint: disable=no-member
+        s_loss = self._loss_fn(tns_pred, tns_true)
+        return s_loss.numpy().squeeze()
