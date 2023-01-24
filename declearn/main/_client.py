@@ -234,6 +234,7 @@ class FederatedClient:
             optim=message.optim,
             train_data=self.train_data,
             valid_data=self.valid_data,
+            # REVISE: add Metrics
             logger=self.logger,
         )
         # Instantiate a checkpointer and save the initial model.
@@ -298,11 +299,12 @@ class FederatedClient:
         from declearn.main.privacy import DPTrainingManager
         # pylint: enable=import-outside-toplevel
         self.trainmanager = DPTrainingManager(
-            self.trainmanager.model,
-            self.trainmanager.optim,
-            self.trainmanager.train_data,
-            self.trainmanager.valid_data,
-            self.trainmanager.logger,
+            model=self.trainmanager.model,
+            optim=self.trainmanager.optim,
+            train_data=self.trainmanager.train_data,
+            valid_data=self.trainmanager.valid_data,
+            metrics=self.trainmanager.metrics,
+            logger=self.trainmanager.logger,
         )
         self.trainmanager.make_private(message)
 
