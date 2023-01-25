@@ -78,14 +78,21 @@ class BinaryAccuracyPrecisionRecall(Metric):
         tneg = self._states["tneg"]
         fpos = self._states["fpos"]
         fneg = self._states["fneg"]
-        # Compute and return metrics.
-        return {
-            "accuracy": (tpos + tneg) / (tpos + tneg + fpos + fneg),
-            "precision": tpos / (tpos + fpos),
-            "recall": tpos / (tpos + fneg),
-            "f-score": (tpos + tpos) / (tpos + tpos + fpos + fneg),
-            "confusion": np.array([[tneg, fpos], [fneg, tpos]]),
-        }
+        # Compute metrics, avoiding division-by-zero errors.
+        if tpos != 0:
+            scores = {
+                "accuracy": (tpos + tneg) / (tpos + tneg + fpos + fneg),
+                "precision": tpos / (tpos + fpos),
+                "recall": tpos / (tpos + fneg),
+                "f-score": (tpos + tpos) / (tpos + tpos + fpos + fneg),
+            }
+        else:
+            scores = {
+                k: 0.0 for k in ("accuracy", "precision", "recall", "f-score")
+            }
+        # Add the confusion matrix and return.
+        scores["confusion"] = np.array([[tneg, fpos], [fneg, tpos]])
+        return scores
 
     def update(
         self,
@@ -96,10 +103,10 @@ class BinaryAccuracyPrecisionRecall(Metric):
         pos = y_true.flatten() == self.label
         tru = (y_pred.flatten() >= self.thresh) == pos
         s_wght = np.ones_like(tru) if s_wght is None else s_wght.flatten()
-        self._states["tpos"] += sum(s_wght * (tru & pos))
-        self._states["tneg"] += sum(s_wght * (tru & ~pos))
-        self._states["fpos"] += sum(s_wght * ~(tru | pos))
-        self._states["fneg"] += sum(s_wght * (~tru & pos))
+        self._states["tpos"] += float(sum(s_wght * (tru & pos)))
+        self._states["tneg"] += float(sum(s_wght * (tru & ~pos)))
+        self._states["fpos"] += float(sum(s_wght * ~(tru | pos)))
+        self._states["fneg"] += float(sum(s_wght * (~tru & pos)))
 
 
 class MulticlassAccuracyPrecisionRecall(Metric):
@@ -152,17 +159,23 @@ class MulticlassAccuracyPrecisionRecall(Metric):
     def get_result(
         self,
     ) -> Dict[str, Union[float, np.ndarray]]:
+        # Compute the metrics, silencing division-by-zero errors.
         confm = self._states["confm"]  # type: np.ndarray  # type: ignore
         diag = np.diag(confm)  # label-wise true positives
         pred = confm.sum(axis=0)  # label-wise number of predictions
         true = confm.sum(axis=1)  # label-wise number of labels (support)
-        return {
-            "accuracy": diag.sum() / confm.sum(),
-            "precision": diag / pred,
-            "recall": diag / true,
-            "f-score": 2 * diag / (pred + true),
-            "confusion": confm.copy(),
-        }
+        with np.errstate(invalid="ignore"):
+            scores = {
+                "accuracy": diag.sum() / confm.sum(),
+                "precision": diag / pred,
+                "recall": diag / true,
+                "f-score": 2 * diag / (pred + true),
+            }
+        # Convert NaNs resulting from zero-division to zero.
+        scores = {k: np.nan_to_num(v, copy=False) for k, v in scores.items()}
+        # Add a copy of the confusion matrix and return.
+        scores["confusion"] = confm.copy()
+        return scores
 
     def update(
         self,

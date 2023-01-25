@@ -73,6 +73,13 @@ class MetricTestSuite:
         assert not self.dicts_equal(before, after)
         assert self.dicts_equal(after, test_case.states)
 
+    def test_zero_results(self, test_case: MetricTestCase) -> None:
+        """Test that `get_result` works for un-updated metrics."""
+        metric = test_case.metric
+        result = metric.get_result()
+        assert isinstance(result, dict)
+        assert result.keys() == test_case.scores.keys()
+
     def test_results(self, test_case: MetricTestCase) -> None:
         """Test that the `update` and `get_result` methods work as expected."""
         metric = test_case.metric
