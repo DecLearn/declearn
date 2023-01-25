@@ -23,7 +23,7 @@ import json
 import os
 import sys
 import tempfile
-from typing import Type
+from typing import Any, Dict, Type
 
 import pytest
 from declearn.optimizer.modules import NoiseModule, OptiModule
@@ -48,6 +48,15 @@ OPTIMODULE_SUBCLASSES = REGISTRIES["OptiModule"]._reg
 )
 class TestOptiModule(PluginTestBase):
     """Unit tests for declearn.optimizer.modules.OptiModule subclasses."""
+
+    @staticmethod
+    def assert_json_serializable(sdict: Dict[str, Any]) -> None:
+        """Assert that an input is JSON-serializable using declearn hooks."""
+        dump = json.dumps(sdict, default=json_pack)
+        load = json.loads(dump, object_hook=json_unpack)
+        assert isinstance(load, dict)
+        assert load.keys() == sdict.keys()
+        assert all(load[key] == sdict[key] for key in sdict)
 
     def test_serialization(self, cls: Type[OptiModule]) -> None:
         """Test an OptiModule's (de)?serialize methods."""
@@ -74,9 +83,60 @@ class TestOptiModule(PluginTestBase):
         aux_var = module.collect_aux_var()
         assert (aux_var is None) or isinstance(aux_var, dict)
         if isinstance(aux_var, dict):
-            dump = json.dumps(aux_var, default=json_pack)
-            assert isinstance(dump, str)
-            assert json.loads(dump, object_hook=json_unpack) == aux_var
+            self.assert_json_serializable(aux_var)
+
+    def test_get_state_initial(self, cls: Type[OptiModule]) -> None:
+        """Test an OptiModule's get_state method at instanciation."""
+        module = cls()
+        states = module.get_state()
+        assert isinstance(states, dict)
+        self.assert_json_serializable(states)
+
+    def test_get_state_updated(
+        self, cls: Type[OptiModule], framework: FrameworkType
+    ) -> None:
+        """Test an OptiModule's get_state method after an update."""
+        module = cls()
+        if module.get_state():  # skip the test if the module is stateless
+            test_case = GradientsTestCase(framework)
+            module.run(test_case.mock_gradient)
+            states = module.get_state()
+            assert isinstance(states, dict)
+            self.assert_json_serializable(states)
+
+    def test_set_state_initial(
+        self, cls: Type[OptiModule], framework: FrameworkType
+    ) -> None:
+        """Test an OptiModule's set_state method to reset states."""
+        module = cls()
+        initial = module.get_state()
+        if initial:  # skip the test if the module is stateless
+            test_case = GradientsTestCase(framework)
+            module.run(test_case.mock_gradient)
+            module.set_state(initial)
+            assert module.get_state() == initial
+
+    def test_set_state_updated(
+        self, cls: Type[OptiModule], framework: FrameworkType
+    ) -> None:
+        """Test an OptiModule's set_state method to fast-forward states."""
+        module = cls()
+        if module.get_state():  # skip the test if the module is stateless
+            test_case = GradientsTestCase(framework)
+            module.run(test_case.mock_gradient)
+            states = module.get_state()
+            module = cls()
+            module.set_state(states)
+            assert module.get_state() == states
+
+    def test_set_state_failure(self, cls: Type[OptiModule]) -> None:
+        """Test that an OptiModule's set_state raises an excepted error."""
+        module = cls()
+        states = module.get_state()
+        if states:  # skip the test if the module is stateless
+            with pytest.raises(KeyError):
+                states.pop(list(states)[0])  # remove a state variable
+                module.set_state(states)
 
     def test_run_equivalence(  # type: ignore
         self, cls: Type[OptiModule]
