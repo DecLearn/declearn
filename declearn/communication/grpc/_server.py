@@ -11,7 +11,7 @@ from typing import AsyncIterator, Optional, Union
 import grpc  # type: ignore
 from cryptography.hazmat.primitives import serialization
 
-from declearn.communication.api import Server
+from declearn.communication.api import NetworkServer
 from declearn.communication.api._service import MessagesHandler
 from declearn.communication.grpc.protobufs import message_pb2
 from declearn.communication.grpc.protobufs.message_pb2_grpc import (
@@ -19,7 +19,6 @@ from declearn.communication.grpc.protobufs.message_pb2_grpc import (
     add_MessageBoardServicer_to_server,
 )
 from declearn.communication.messaging import Error
-from declearn.utils import register_type
 
 
 __all__ = [
@@ -54,9 +53,10 @@ def load_pem_file(path: str, password: Optional[str] = None) -> bytes:
     return pem_bytes
 
 
-@register_type(name="grpc", group="Server")
-class GrpcServer(Server):
+class GrpcServer(NetworkServer):
     """Server-side communication endpoint using gRPC."""
+
+    protocol = "grpc"
 
     def __init__(
         self,

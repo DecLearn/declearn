@@ -11,27 +11,27 @@ from typing import Any, Dict, Optional, Set, Type, Union
 
 from declearn.communication.api._service import MessagesHandler
 from declearn.communication.messaging import Message
-from declearn.utils import create_types_registry, get_logger
+from declearn.utils import create_types_registry, get_logger, register_type
 
 
 __all__ = [
-    "Server",
+    "NetworkServer",
 ]
 
 
 @create_types_registry
-class Server(metaclass=ABCMeta):
+class NetworkServer(metaclass=ABCMeta):
     """Abstract class defining an API for server-side communication endpoints.
 
     This class defines the key methods used to communicate between
     a server and its clients during a federated learning process,
     agnostic to the actual communication protocol in use.
 
-    Instantiating a `Server` does not instantly serve the declearn
+    Instantiating a `NetworkServer` does not instantly serve the declearn
     messaging program on the selected host and port. To enable clients
-    to connect to the server via a `Server` object, its `start` method
-    must first be awaited, and conversely, its `stop` method should be
-    awaited to close the connection:
+    to connect to the server via a `NetworkServer` object, its `start`
+    method must first be awaited, and conversely, its `stop` method
+    should be awaited to close the connection:
     >>> server = ServerSubclass(
     ...     "example.domain.com", 8765, "cert_path", "pkey_path"
     ... )
@@ -48,11 +48,18 @@ class Server(metaclass=ABCMeta):
     >>>     data_info = server.wait_for_clients(...)
     >>>     ...
 
-    Note that a `Server` manages an allow-list of clients, which is
-    defined based on `Client.register(...)`-emitted requests during
-    a registration phase restricted to the context of the awaitable
-    `wait_for_clients` method.
+    Note that a `NetworkServer` manages an allow-list of clients,
+    which is defined based on `NetworkClient.register(...)`-emitted
+    requests during a registration phase restricted to the context
+    of the awaitable `wait_for_clients` method.
     """
+
+    protocol: str = NotImplemented
+
+    def __init_subclass__(cls, register: bool = True) -> None:
+        """Automate the type-registration of NetworkServer subclasses."""
+        if register:
+            register_type(cls, cls.protocol, group="NetworkServer")
 
     @abstractmethod
     def __init__(
@@ -153,7 +160,7 @@ class Server(metaclass=ABCMeta):
 
     async def __aenter__(
         self,
-    ) -> "Server":
+    ) -> "NetworkServer":
         await self.start()
         return self
 

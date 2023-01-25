@@ -16,26 +16,26 @@ from declearn.communication.messaging import (
     JoinRequest,
     Message,
 )
-from declearn.utils import create_types_registry, get_logger
+from declearn.utils import create_types_registry, get_logger, register_type
 
 
 __all__ = [
-    "Client",
+    "NetworkClient",
 ]
 
 
 @create_types_registry
-class Client(metaclass=ABCMeta):
+class NetworkClient(metaclass=ABCMeta):
     """Abstract class defining an API for client-side communication endpoints.
 
     This class defines the key methods used to communicate between a
     client and the orchestrating server during a federated learning
     process, agnostic to the actual communication protocol in use.
 
-    Instantiating a `Client` does not trigger a connection to the
-    target server. To enable communicating with the server via a
-    `Client` object, its `start` method must first be awaited and
-    conversely, its `stop` method should be awaited to close the
+    Instantiating a `NetworkClient` does not trigger a connection to
+    the target server. To enable communicating with the server via a
+    `NetworkClient` object, its `start` method must first be awaited
+    and conversely, its `stop` method should be awaited to close the
     connection:
     >>> client = ClientSubclass("example.domain.com:8765", "name", "cert_path")
     >>> await client.start()
@@ -51,12 +51,19 @@ class Client(metaclass=ABCMeta):
     >>>     client.register(data_info)
     >>>     ...
 
-    Note that a declearn `Server` manages an allow-list of clients,
-    which is defined during a registration phase of limited time,
-    based on requests emitted through the `Client.register` method.
-    Any message emitted using `Client.send_message` will probably
-    be rejected by the server if the client has not been registered.
+    Note that a declearn `NetworkServer` manages an allow-list of
+    clients, which is defined during a registration phase of limited
+    time, based on requests emitted through the `NetworkClient.register`
+    method. Any message emitted using `NetworkClient.send_message` will
+    probably be rejected by the server if the client has not registered.
     """
+
+    protocol: str = NotImplemented
+
+    def __init_subclass__(cls, register: bool = True) -> None:
+        """Automate the type-registration of NetworkClient subclasses."""
+        if register:
+            register_type(cls, cls.protocol, group="NetworkClient")
 
     @abstractmethod
     def __init__(
@@ -102,7 +109,7 @@ class Client(metaclass=ABCMeta):
         """
         return NotImplemented
 
-    # similar to Server API; pylint: disable=duplicate-code
+    # similar to NetworkServer API; pylint: disable=duplicate-code
 
     @abstractmethod
     async def start(self) -> None:
@@ -124,7 +131,7 @@ class Client(metaclass=ABCMeta):
 
     async def __aenter__(
         self,
-    ) -> "Client":
+    ) -> "NetworkClient":
         await self.start()
         return self
 
@@ -188,10 +195,10 @@ class Client(metaclass=ABCMeta):
     ) -> Message:
         """Send a message to the server and return the obtained reply.
 
-        This method should be defined by concrete Client subclasses,
-        and implement communication-protocol-specific code to send a
-        Message (of any kind) to the server and await the primary
-        reply from the `MessagesHandler` used by the server.
+        This method should be defined by concrete NetworkClient child
+        classes, and implement communication-protocol-specific code
+        to send a Message (of any kind) to the server and await the
+        primary reply from the `MessagesHandler` used by the server.
         """
         return NotImplemented
 
@@ -217,7 +224,7 @@ class Client(metaclass=ABCMeta):
         Note
         ----
         The message sent here is designed to be received using the
-        `Server.wait_for_messages` method.
+        `NetworkServer.wait_for_messages` method.
         """
         reply = await self._send_message(message)
         if isinstance(reply, Empty):
@@ -243,7 +250,7 @@ class Client(metaclass=ABCMeta):
         Note
         ----
         The message received here is expected to have been sent
-        using one of the following `Server` methods: `send_message`,
-        `send_messages`, or `broadcast_message`.
+        using one of the following `NetorkServer` methods:
+        `send_message`, `send_messages`, or `broadcast_message`.
         """
         return await self._send_message(GetMessageRequest(timeout))
