@@ -331,4 +331,4 @@ class YogiModule(AdamModule):
             to the (divisor) adapative scaling term.
         """
         super().__init__(beta_1, beta_2, amsgrad=amsgrad, eps=eps)
-        self.mom_2 = YogiMomentumModule(beta=beta_2)
+        self.ewma_2 = YogiMomentumModule(beta=beta_2)
