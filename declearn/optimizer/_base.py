@@ -191,7 +191,17 @@ class Optimizer:
     def get_config(
         self,
     ) -> Dict[str, Any]:
-        """Return a JSON-serializable dict with this optimizer's parameters."""
+        """Return a JSON-serializable dict with this optimizer's parameters.
+
+        The counterpart to this method is the `from_config` classmethod.
+        To access the optimizer's inner states, see the `get_state` method.
+
+        Returns
+        -------
+        config: dict[str, any]
+            JSON-serializable dict storing this optimizer's instantiation
+            configuration.
+        """
         regulzr = {reg.name: reg.get_config() for reg in self.regularizers}
         modules = {mod.name: mod.get_config() for mod in self.modules}
         return {
@@ -206,7 +216,22 @@ class Optimizer:
         cls,
         config: Dict[str, Any],
     ) -> "Optimizer":
-        """Instantiate an Optimizer from its configuration dict."""
+        """Instantiate an Optimizer from its configuration dict.
+
+        The counterpart to this classmethod is the `get_config` method.
+        To restore the optimizer's inner states, see its `get_state` method.
+
+        Parameters
+        ----------
+        config: dict[str, Any]
+            Dict storing the optimizer's instantiation configuration.
+
+        Raises
+        ------
+        KeyError:
+            If the provided `config` lacks some required parameters
+            and/or contains some unused ones.
+        """
         config = deepcopy(config)  # avoid side-effects
         config["regularizers"] = [
             Regularizer.from_specs(name, config)

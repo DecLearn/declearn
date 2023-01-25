@@ -96,7 +96,11 @@ class OptiModule(metaclass=ABCMeta):
         self,
         gradients: Vector,
     ) -> Vector:
-        """Apply an adaptation algorithm to input gradients.
+        """Apply the module's algorithm to input gradients.
+
+        Please refer to the module's main docstring for details
+        on the implemented algorithm and the way it transforms
+        input gradients.
 
         Parameters
         ----------
@@ -190,7 +194,17 @@ class OptiModule(metaclass=ABCMeta):
     def get_config(
         self,
     ) -> Dict[str, Any]:
-        """Return a JSON-serializable dict with this module's parameters."""
+        """Return a JSON-serializable dict with this module's parameters.
+
+        The counterpart to this method is the `from_config` classmethod.
+        To access the module's inner states, see the `get_state` method.
+
+        Returns
+        -------
+        config: dict[str, any]
+            JSON-serializable dict storing this module's instantiation
+            configuration.
+        """
         return {}
 
     @classmethod
@@ -198,7 +212,23 @@ class OptiModule(metaclass=ABCMeta):
         cls,
         config: Dict[str, Any],
     ) -> "OptiModule":
-        """Instantiate an OptiModule from its configuration dict."""
+        """Instantiate an OptiModule from its configuration dict.
+
+        The counterpart to this classmethod is the `get_config` method.
+        To restore the module's inner states, see its `get_state` method.
+
+        Parameters
+        ----------
+        config: dict[str, Any]
+            Dict storing the module's instantiation configuration.
+            This must match the target subclass's requirements.
+
+        Raises
+        ------
+        KeyError:
+            If the provided `config` lacks some required parameters
+            and/or contains some unused ones.
+        """
         return cls(**config)
 
     def serialize(
@@ -247,7 +277,7 @@ class OptiModule(metaclass=ABCMeta):
     ) -> Dict[str, Any]:
         """Return a JSON-serializable dict with this module's state(s).
 
-        The counterpart to this method is `OptiModule.set_state`.
+        The counterpart to this method is the `set_state` one.
 
         Returns
         -------
@@ -263,7 +293,7 @@ class OptiModule(metaclass=ABCMeta):
     ) -> None:
         """Load a state dict into an instantiated module.
 
-        The counterpart to this method is `OptiModule.get_state`.
+        The counterpart to this method is the `get_state` one.
 
         Parameters
         ----------

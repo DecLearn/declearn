@@ -58,14 +58,12 @@ class AdaGradModule(OptiModule):
     def get_config(
         self,
     ) -> Dict[str, Any]:
-        """Return a JSON-serializable dict with this module's parameters."""
         return {"eps": self.eps}
 
     def run(
         self,
         gradients: Vector,
     ) -> Vector:
-        """Apply Adagrad adaptation to input (pseudo-)gradients."""
         self.state = self.state + (gradients**2)
         scaling = (self.state**0.5) + self.eps
         return gradients / scaling
@@ -128,14 +126,12 @@ class RMSPropModule(OptiModule):
     def get_config(
         self,
     ) -> Dict[str, Any]:
-        """Return a JSON-serializable dict with this module's parameters."""
         return {"beta": self.ewma.beta, "eps": self.eps}
 
     def run(
         self,
         gradients: Vector,
     ) -> Vector:
-        """Apply RMSProp adaptation to input (pseudo-)gradients."""
         v_t = self.ewma.run(gradients**2)
         scaling = (v_t**0.5) + self.eps
         return gradients / scaling
@@ -224,7 +220,6 @@ class AdamModule(OptiModule):
     def get_config(
         self,
     ) -> Dict[str, Any]:
-        """Return a JSON-serializable dict with this module's parameters."""
         return {
             "beta_1": self.ewma_1.beta,
             "beta_2": self.ewma_2.beta,
@@ -236,7 +231,6 @@ class AdamModule(OptiModule):
         self,
         gradients: Vector,
     ) -> Vector:
-        """Apply Adam adaptation to input (pseudo-)gradients."""
         # Compute momentum-corrected state variables.
         m_t = self.ewma_1.run(gradients)
         v_t = self.ewma_2.run(gradients**2)

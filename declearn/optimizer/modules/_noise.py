@@ -58,14 +58,12 @@ class NoiseModule(OptiModule, metaclass=ABCMeta, register=False):
     def get_config(
         self,
     ) -> Dict[str, Any]:
-        """Return a JSON-serializable dict with this module's parameters."""
         return {"safe_mode": self.safe_mode, "seed": self.seed}
 
     def run(
         self,
         gradients: Vector,
     ) -> Vector:
-        """Apply noise addition to the gradients with selected generator."""
         if not NumpyVector in gradients.compatible_vector_types:
             raise TypeError(
                 f"{self.__class__.__name__} requires input gradients to "
@@ -129,7 +127,6 @@ class GaussianNoiseModule(NoiseModule):
     def get_config(
         self,
     ) -> Dict[str, Any]:
-        """Return a JSON-serializable dict with this module's parameters."""
         config = super().get_config()
         config["std"] = self.std
         return config

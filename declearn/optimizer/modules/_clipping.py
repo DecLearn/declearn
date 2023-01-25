@@ -52,7 +52,6 @@ class L2Clipping(OptiModule):
         self,
         gradients: Vector,
     ) -> Vector:
-        """Apply L2-norm clipping to input gradients."""
         l2_norm = (gradients**2).sum() ** 0.5
         c_scale = (l2_norm / self.max_norm).minimum(1.0)
         return gradients * c_scale
@@ -60,5 +59,4 @@ class L2Clipping(OptiModule):
     def get_config(
         self,
     ) -> Dict[str, Any]:
-        """Return a JSON-serializable dict with this module's parameters."""
         return {"max_norm": self.max_norm}
