@@ -35,6 +35,9 @@ class BinaryAccuracyPrecisionRecall(Metric):
     * recall: float
         Recall score, i.e. P(pred=1|true=1).
         Formula: TP / (TP + FN)
+    * f-score: float
+        F1-score, i.e. harmonic mean of precision and recall.
+        Formula: (2*TP) / (2*TP + FP + FN)
     * confusion: 2-d numpy.ndarray
         Confusion matrix of predictions. Values: [[TN, FP], [FN, TP]]
     """
@@ -80,6 +83,7 @@ class BinaryAccuracyPrecisionRecall(Metric):
             "accuracy": (tpos + tneg) / (tpos + tneg + fpos + fneg),
             "precision": tpos / (tpos + fpos),
             "recall": tpos / (tpos + fneg),
+            "f-score": (tpos + tpos) / (tpos + tpos + fpos + fneg),
             "confusion": np.array([[tneg, fpos], [fneg, tpos]]),
         }
 
@@ -113,6 +117,8 @@ class MulticlassAccuracyPrecisionRecall(Metric):
         Label-wise precision score, i.e. P(true=k|pred=k).
     * recall: 1-d numpy.ndarray
         Label-wise recall score, i.e. P(pred=k|true=k).
+    * f-score: 1-d numpy.ndarray
+        Label-wise f1-score, i.e. harmonic mean of precision and recall.
     * confusion: 2-d numpy.ndarray
         Confusion matrix of predictions, where C[i, j] indicates the
         (opt. weighted) number of samples belonging to label i that
@@ -147,11 +153,14 @@ class MulticlassAccuracyPrecisionRecall(Metric):
         self,
     ) -> Dict[str, Union[float, np.ndarray]]:
         confm = self._states["confm"]  # type: np.ndarray  # type: ignore
-        diag = np.diag(confm)
+        diag = np.diag(confm)  # label-wise true positives
+        pred = confm.sum(axis=0)  # label-wise number of predictions
+        true = confm.sum(axis=1)  # label-wise number of labels (support)
         return {
             "accuracy": diag.sum() / confm.sum(),
-            "precision": diag / confm.sum(axis=0),
-            "recall": diag / confm.sum(axis=1),
+            "precision": diag / pred,
+            "recall": diag / true,
+            "f-score": 2 * diag / (pred + true),
             "confusion": confm.copy(),
         }
 

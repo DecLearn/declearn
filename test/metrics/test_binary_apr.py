@@ -30,6 +30,11 @@ def test_case_fixture(
     inputs, states, scores = (
         _test_case_1d(thresh) if case == "1d" else _test_case_2d(thresh)
     )
+    # Add the F1-score to expected scores.
+    scores["f-score"] = (
+        (states["tpos"] + states["tpos"])
+        / (states["tpos"] + states["tpos"] + states["fpos"] + states["fneg"])
+    )
     # Add the confusion matrix to expected scores.
     confmt = [
         [states["tneg"], states["fpos"]],

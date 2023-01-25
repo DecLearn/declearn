@@ -52,6 +52,7 @@ def test_case_fixture(
         "accuracy": 2 / 3,
         "precision": np.array([2 / 3, 1 / 2, 1.0]),
         "recall": np.array([2 / 3, 1.0, 1 / 2]),
+        "f-score": np.array([2 / 3, 2 / 3, 2 / 3]),
         "confusion": confmt,
     }
     # Compute expected values of aggregated states and scores.
