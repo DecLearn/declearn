@@ -2,7 +2,6 @@
 
 """Base class to define gradient-descent-based optimizers."""
 
-from copy import deepcopy
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Type, Union
 
 from declearn.model.api import Model, Vector
@@ -202,8 +201,8 @@ class Optimizer:
             JSON-serializable dict storing this optimizer's instantiation
             configuration.
         """
-        regulzr = {reg.name: reg.get_config() for reg in self.regularizers}
-        modules = {mod.name: mod.get_config() for mod in self.modules}
+        regulzr = [(reg.name, reg.get_config()) for reg in self.regularizers]
+        modules = [(mod.name, mod.get_config()) for mod in self.modules]
         return {
             "lrate": self.lrate,
             "w_decay": self.w_decay,
@@ -232,15 +231,6 @@ class Optimizer:
             If the provided `config` lacks some required parameters
             and/or contains some unused ones.
         """
-        config = deepcopy(config)  # avoid side-effects
-        config["regularizers"] = [
-            Regularizer.from_specs(name, config)
-            for name, config in config.pop("regularizers", {}).items()
-        ]
-        config["modules"] = [
-            OptiModule.from_specs(name, config)
-            for name, config in config.pop("modules", {}).items()
-        ]
         return cls(**config)
 
     def compute_updates_from_gradients(
@@ -391,12 +381,81 @@ class Optimizer:
         updates = self.compute_updates_from_gradients(model, gradients)
         model.apply_updates(updates)
 
-    def get_state(self) -> Dict[str, Any]:
-        """Return a JSON-serializable dict with this optimizer's state."""
-        return {mod.name: mod.get_state() for mod in self.modules}
+    def get_state(
+        self,
+    ) -> Dict[str, Any]:
+        """Return a JSON-serializable dict with this optimizer's state.
 
-    def set_state(self, states: Dict[str, Any]) -> None:
-        """Load a saved state dict into an optimizer instance."""
-        for mod in self.modules:
-            if states.get(mod.name, None):
-                mod.set_state(states[mod.name])
+        The counterpart to this method is the `set_state` one.
+
+        Returns
+        -------
+        state: dict[str, any]
+            JSON-serializable dict storing this optimizer's inner state
+            variables (i.e. those from its modules).
+        """
+        modules = [(mod.name, mod.get_state()) for mod in self.modules]
+        return {"modules": modules}
+
+    def set_state(
+        self,
+        states: Dict[str, Any],
+    ) -> None:
+        """Load a saved state dict into an optimizer instance.
+
+        The counterpart to this method is the `get_state` one.
+
+        Parameters
+        ----------
+        state: dict[str, any]
+            Dict storing values to assign to this optimizer's inner
+            state variables (i.e. those from its modules).
+
+        Raises
+        ------
+        KeyError:
+            If the received states do not match the expected config,
+            whether because a module is missing or one of its states
+            is missing.
+            In both cases, the Optimizer's states will be reverted
+            to their values prior to the failed call to this method.
+        RuntimeError:
+            If a KeyError was raised both when trying to apply the
+            input `state` and when trying to revert the states to
+            their initial values after that first error was raised.
+            This should never happen and indicates a source code
+            error in a wrapped module, or even in this class.
+        """
+        if "modules" not in states:
+            raise KeyError("Optimizer input 'states' lack a 'modules' field.")
+        if len(states["modules"]) != len(self.modules):
+            raise KeyError("Optimizer 'states' do not match modules config.")
+        initial = self.get_state()
+        try:
+            self._set_state(states)
+        except KeyError as exc:
+            try:
+                self._set_state(initial)
+            except KeyError as exc_bis:
+                raise RuntimeError(
+                    "`Optimizer.set_state` failed to restore initial states "
+                    "after a KeyError was raised during states' attempted "
+                    "update. There probably is a source code error with one "
+                    "of the wrapped modules.\n"
+                    f"Error when reverting states: {exc_bis}\n"
+                    f"Initial update error: {exc}\n"
+                ) from exc_bis
+            raise exc
+
+    def _set_state(
+        self,
+        states: Dict[str, Any],
+    ) -> None:
+        """Backend to the `set_state` method, lacking exception-catching."""
+        for mod, (name, state) in zip(self.modules, states["modules"]):
+            if mod.name != name:
+                raise KeyError(
+                    "Optimizer 'states' do not match modules config."
+                )
+            # Note: this may raise a KeyError if 'state' is misspecified.
+            mod.set_state(state)
