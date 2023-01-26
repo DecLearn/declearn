@@ -111,7 +111,6 @@ class OptiModule(metaclass=ABCMeta):
             fully compatible with the input one - only the values
             of the wrapped coefficients may have changed.
         """
-        return NotImplemented
 
     def collect_aux_var(
         self,
@@ -186,7 +185,6 @@ class OptiModule(metaclass=ABCMeta):
             is not formatted as it should be.
         """
         # API-defining method; pylint: disable=unused-argument
-        return None
 
     def get_config(
         self,
@@ -245,8 +243,7 @@ class OptiModule(metaclass=ABCMeta):
             passed to its `from_config` class constructor.
         """
         cls = access_registered(name, group="OptiModule")
-        if not issubclass(cls, OptiModule):
-            raise TypeError("Retrieved a non-OptiModule class.")
+        assert issubclass(cls, OptiModule)  # force-tested by access_registered
         return cls.from_config(config)
 
     def get_state(
@@ -284,4 +281,3 @@ class OptiModule(metaclass=ABCMeta):
             If an expected state variable is missing from `state`.
         """
         # API-defining method; pylint: disable=unused-argument
-        return None
