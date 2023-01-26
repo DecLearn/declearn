@@ -24,7 +24,7 @@ from typing import Type
 import pytest
 
 from declearn.optimizer.regularizers import Regularizer
-from declearn.utils._register import REGISTRIES
+from declearn.utils import access_types_mapping
 
 # relative import; pylint: disable=wrong-import-order, wrong-import-position
 # fmt: off
@@ -33,9 +33,8 @@ from optim_testing import PluginTestBase
 sys.path.pop()
 # fmt: on
 
-# unproper but efficient way to list plugins; pylint: disable=protected-access
-REGULARIZER_SUBCLASSES = REGISTRIES["Regularizer"]._reg
-# pylint: enable=protected-access
+
+REGULARIZER_SUBCLASSES = access_types_mapping(group="Regularizer")
 
 
 @pytest.mark.parametrize(

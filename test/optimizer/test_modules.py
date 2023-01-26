@@ -28,8 +28,7 @@ from typing import Any, Dict, Type
 import pytest
 from declearn.optimizer.modules import NoiseModule, OptiModule
 from declearn.test_utils import FrameworkType, GradientsTestCase
-from declearn.utils import json_pack, json_unpack
-from declearn.utils._register import REGISTRIES
+from declearn.utils import access_types_mapping, json_pack, json_unpack
 
 # relative import; pylint: disable=wrong-import-order, wrong-import-position
 # fmt: off
@@ -38,9 +37,8 @@ from optim_testing import PluginTestBase
 sys.path.pop()
 # fmt: on
 
-# unproper but efficient way to list modules; pylint: disable=protected-access
-OPTIMODULE_SUBCLASSES = REGISTRIES["OptiModule"]._reg
-# pylint: enable=protected-access
+
+OPTIMODULE_SUBCLASSES = access_types_mapping(group="OptiModule")
 
 
 @pytest.mark.parametrize(
