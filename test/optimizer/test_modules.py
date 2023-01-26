@@ -19,9 +19,7 @@ of these.
 """
 
 import functools
-import os
 import sys
-import tempfile
 from typing import Type
 
 import pytest
@@ -49,21 +47,6 @@ OPTIMODULE_SUBCLASSES = access_types_mapping(group="OptiModule")
 )
 class TestOptiModule(PluginTestBase):
     """Unit tests for declearn.optimizer.modules.OptiModule subclasses."""
-
-    def test_serialization(self, cls: Type[OptiModule]) -> None:
-        """Test an OptiModule's (de)?serialize methods."""
-        module = cls()
-        cfg = module.serialize()
-        self.assert_equivalent(module, cls.deserialize(cfg))
-
-    def test_serialization_json(self, cls: Type[OptiModule]) -> None:
-        """Test an OptiModule's JSON-file deserialization."""
-        module = cls()
-        cfg = module.serialize()
-        with tempfile.TemporaryDirectory() as folder:
-            path = os.path.join(folder, "module.json")
-            cfg.to_json(path)
-            self.assert_equivalent(module, cls.deserialize(path))
 
     def test_collect_aux_var(
         self, cls: Type[OptiModule], framework: FrameworkType

@@ -3,16 +3,13 @@
 """Base API for plug-in gradients-alteration algorithms."""
 
 from abc import ABCMeta, abstractmethod
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Optional
 
 from declearn.model.api import Vector
 from declearn.utils import (
-    ObjectConfig,
     access_registered,
     create_types_registry,
-    deserialize_object,
     register_type,
-    serialize_object,
 )
 
 __all__ = [
@@ -230,26 +227,6 @@ class OptiModule(metaclass=ABCMeta):
             and/or contains some unused ones.
         """
         return cls(**config)
-
-    def serialize(
-        self,
-    ) -> ObjectConfig:
-        """Return an ObjectConfig serialization of this instance."""
-        return serialize_object(self, group="OptiModule")
-
-    @classmethod
-    def deserialize(
-        cls,
-        config: Union[str, ObjectConfig],
-    ) -> "OptiModule":
-        """Instantiate an OptiModule from a JSON configuration file or dict."""
-        obj = deserialize_object(config, custom=None)
-        if not isinstance(obj, cls):
-            raise TypeError(
-                f"Configuration specifies a '{type(obj).__name__}' object, "
-                f"which is not a subclass of '{cls.__name__}'."
-            )
-        return obj
 
     @staticmethod
     def from_specs(
