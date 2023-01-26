@@ -77,6 +77,8 @@ class Optimizer:
         Pass auxiliary variables to plug-in modules for processing.
     run_train_step(Model, batch) -> None:
         Compute gradients of a Model over a Batch and apply updates.
+    start_round() -> None:
+        Signal that a new training round is starting to wrapped regularizers.
 
     References
     ----------
@@ -329,6 +331,18 @@ class Optimizer:
                     "auxiliary variables."
                 )
             module.process_aux_var(auxv)
+
+    def start_round(
+        self,
+    ) -> None:
+        """Perform any required action at the start of a training round.
+
+        This method calls the `on_round_start` callback of each and every
+        wrapped `Regularizer` which may be used to regulate some internal
+        state variables.
+        """
+        for regularizer in self.regularizers:
+            regularizer.on_round_start()
 
     def run_train_step(
         self,

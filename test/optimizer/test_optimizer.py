@@ -198,6 +198,16 @@ class TestOptimizer:
         with pytest.raises(KeyError):
             optim.process_aux_var({"mock": {"mock": "aux_vars"}})
 
+    def test_start_round(self) -> None:
+        """Test, using mocks, that `Optimizer.start_round` works."""
+        optim = Optimizer(
+            lrate=0.001,
+            regularizers=[mock.create_autospec(Regularizer)],
+        )
+        assert optim.start_round() is None
+        for reg in optim.regularizers:
+            reg.on_round_start.assert_called_once()
+
     def test_run_train_step(self) -> None:
         """Test, using mocks, that `Optimizer.run_train_step` works."""
         # Set up an Optimizer, and mock inputs to `run_train_step`.

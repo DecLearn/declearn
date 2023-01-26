@@ -96,6 +96,7 @@ class TrainingManager:
         self.logger.info("Applying server updates to local objects.")
         self.model.set_weights(message.weights)
         self.optim.process_aux_var(message.aux_var)
+        self.optim.start_round()  # trigger loss regularizer's `on_round_start`
         # Train under instructed effort constraints.
         params = message.n_epoch, message.n_steps, message.timeout
         self.logger.info(
