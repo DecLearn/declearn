@@ -19,16 +19,19 @@ of these.
 """
 
 import functools
-import json
 import os
 import sys
 import tempfile
-from typing import Any, Dict, Type
+from typing import Type
 
 import pytest
 from declearn.optimizer.modules import NoiseModule, OptiModule
-from declearn.test_utils import FrameworkType, GradientsTestCase
-from declearn.utils import access_types_mapping, json_pack, json_unpack
+from declearn.test_utils import (
+    FrameworkType,
+    GradientsTestCase,
+    assert_json_serializable_dict,
+)
+from declearn.utils import access_types_mapping
 
 # relative import; pylint: disable=wrong-import-order, wrong-import-position
 # fmt: off
@@ -46,15 +49,6 @@ OPTIMODULE_SUBCLASSES = access_types_mapping(group="OptiModule")
 )
 class TestOptiModule(PluginTestBase):
     """Unit tests for declearn.optimizer.modules.OptiModule subclasses."""
-
-    @staticmethod
-    def assert_json_serializable(sdict: Dict[str, Any]) -> None:
-        """Assert that an input is JSON-serializable using declearn hooks."""
-        dump = json.dumps(sdict, default=json_pack)
-        load = json.loads(dump, object_hook=json_unpack)
-        assert isinstance(load, dict)
-        assert load.keys() == sdict.keys()
-        assert all(load[key] == sdict[key] for key in sdict)
 
     def test_serialization(self, cls: Type[OptiModule]) -> None:
         """Test an OptiModule's (de)?serialize methods."""
@@ -81,14 +75,13 @@ class TestOptiModule(PluginTestBase):
         aux_var = module.collect_aux_var()
         assert (aux_var is None) or isinstance(aux_var, dict)
         if isinstance(aux_var, dict):
-            self.assert_json_serializable(aux_var)
+            assert_json_serializable_dict(aux_var)
 
     def test_get_state_initial(self, cls: Type[OptiModule]) -> None:
         """Test an OptiModule's get_state method at instanciation."""
         module = cls()
         states = module.get_state()
-        assert isinstance(states, dict)
-        self.assert_json_serializable(states)
+        assert_json_serializable_dict(states)
 
     def test_get_state_updated(
         self, cls: Type[OptiModule], framework: FrameworkType
@@ -99,8 +92,7 @@ class TestOptiModule(PluginTestBase):
             test_case = GradientsTestCase(framework)
             module.run(test_case.mock_gradient)
             states = module.get_state()
-            assert isinstance(states, dict)
-            self.assert_json_serializable(states)
+            assert_json_serializable_dict(states)
 
     def test_set_state_initial(
         self, cls: Type[OptiModule], framework: FrameworkType
