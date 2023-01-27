@@ -69,6 +69,8 @@ def run_client(
 
     client = FederatedClient(
         network, train, valid, folder=f"{FILEDIR}/results/{name}"
+        # Note: you may add `share_metrics=False` to prevent sending
+        # evaluation metrics to the server, out of privacy concerns
     )
     client.run()
 

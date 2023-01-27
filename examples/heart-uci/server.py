@@ -81,8 +81,14 @@ def run_server(
 
     # (4) Instantiate and run a FederatedServer.
 
-    server = FederatedServer(model, network, optim)
-    # Here, we setup 20 rounds of training, with 30 samples per batch
+    # Here, we add instructions to compute accuracy, precision, recall,
+    # f1-score and roc auc (with plot-enabling fpr/tpr curves) during
+    # evaluation rounds.
+    server = FederatedServer(
+        model, network, optim, metrics=["binary-classif", "binary-roc"]
+    )
+
+    # Here, we set up 20 rounds of training, with 30 samples per batch
     # during training and 50 during validation; plus an early-stopping
     # criterion if the global validation loss stops decreasing for 5 rounds.
     run_cfg = FLRunConfig.from_params(
