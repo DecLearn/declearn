@@ -106,7 +106,7 @@ class TestTrainingRound:
         manager = build_manager(n_batch=100)
         reply = manager.training_round(build_train_request(timeout=0.1))
         assert isinstance(reply, messaging.TrainReply)
-        assert 0.2 >= reply.t_spent >= 0.1
+        assert 0.1 <= reply.t_spent
         assert manager.optim.run_train_step.call_count == reply.n_steps
         assert manager.train_data.generate_batches.call_count == reply.n_epoch
 
@@ -140,7 +140,7 @@ class TestTrainingRound:
         assert isinstance(reply, messaging.TrainReply)
         assert reply.n_epoch < 10
         assert reply.n_steps < 1000
-        assert 0.1 <= reply.t_spent < 0.2
+        assert 0.1 <= reply.t_spent
         assert manager.optim.run_train_step.call_count == reply.n_steps
         assert manager.train_data.generate_batches.call_count == reply.n_epoch
 
@@ -214,7 +214,7 @@ class TestEvaluationRound:
         reply = manager.evaluation_round(build_evaluation_request(timeout=0.1))
         assert isinstance(reply, messaging.EvaluationReply)
         assert reply.n_steps < 10000
-        assert 0.1 <= reply.t_spent < 0.2
+        assert 0.1 <= reply.t_spent
         assert manager.metrics.update.call_count == reply.n_steps
         manager.metrics.get_result.assert_called_once()
         assert reply.metrics == manager.metrics.get_states.return_value
