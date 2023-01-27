@@ -2,29 +2,32 @@
 
 """Submodule implementing client/server communications.
 
-This module contains the following submodules:
+This module contains the following core submodules:
 * api:
     Base API to define client- and server-side communication endpoints.
 * messaging:
     Message dataclasses defining information containers to be exchanged
     between communication endpoints.
+
+
+It also exposes the following core utility functions:
+* build_client:
+    Instantiate a NetworkClient, selecting its subclass based on protocol name.
+* build_server:
+    Instantiate a NetworkServer, selecting its subclass based on protocol name.
+* list_available_protocols:
+    List the protocol names for which both a NetworkClient and NetworkServer
+    classes are registered (hence available to `build_client`/`build_server`).
+
+
+Finally, it defines the following protocol-specific submodules, provided
+the associated third-party dependencies are available:
 * grpc:
     gRPC-based network communication endpoints.
+    Requires the `grpcio` and `protobuf` third-party packages.
 * websockets:
     WebSockets-based network communication endpoints.
-
-It also exposes the following functions:
-* build_client:
-    Instantiate a Client, selecting its subclass based on protocol name.
-* build_server:
-    Instantiate a Server, selecting its subclass based on protocol name.
-
-Note: the latter two functions natively support the declearn-implemented
-      network protocols listed above, but will be extended to any third-
-      party implementation of Client and Server subclasses, provided the
-      `declearn.utils.register_type(name=protocol_name, group="Client")`
-      decorator is used (with adequate protocol_name string and "Server"
-      group for Server subclasses).
+    Requires the `websockets` third-party package.
 """
 
 # Messaging and Communications API and base tools:
@@ -35,8 +38,16 @@ from ._build import (
     NetworkServerConfig,
     build_client,
     build_server,
+    list_available_protocols,
+    _INSTALLABLE_BACKENDS,
 )
 
 # Concrete implementations using various protocols:
-from . import grpc
-from . import websockets
+try:
+    from . import grpc
+except ImportError:
+    _INSTALLABLE_BACKENDS["grpc"] = ("grpcio", "protobuf")
+try:
+    from . import websockets
+except ImportError:
+    _INSTALLABLE_BACKENDS["websockets"] = ("websockets",)

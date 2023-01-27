@@ -15,8 +15,12 @@ with warnings.catch_warnings():  # silence tensorflow import-time warnings
 import torch
 from typing_extensions import Literal  # future: import from typing (Py>=3.8)
 
-from declearn.communication import build_client, build_server
-from declearn.communication.api import Client, Server
+from declearn.communication import (
+    build_client,
+    build_server,
+    list_available_protocols,
+)
+from declearn.communication.api import NetworkClient, NetworkServer
 from declearn.dataset import InMemoryDataset
 from declearn.model.api import Model
 from declearn.model.sklearn import SklearnSGDModel
@@ -141,8 +145,8 @@ class DeclearnTestCase:
 
     def build_netwk_server(
         self,
-    ) -> Server:
-        """Return a communication Server."""
+    ) -> NetworkServer:
+        """Return a NetworkServer instance."""
         return build_server(
             self.protocol,
             host="127.0.0.1",
@@ -154,8 +158,8 @@ class DeclearnTestCase:
     def build_netwk_client(
         self,
         name: str = "client",
-    ) -> Client:
-        """Return a communication Client."""
+    ) -> NetworkClient:
+        """Return a NetworkClient instance."""
         server_uri = "localhost:8765"
         if self.protocol == "websockets":
             server_uri = f"ws{'s' * self.use_ssl}://" + server_uri
@@ -257,12 +261,19 @@ def test_declearn(
     Note: Use unsecured websockets communication, which are less
           costful to establish than gRPC and/or SSL-secured ones
           (the latter due to the certificates-generation costs).
+    Note: if websockets is unavailable, use gRPC (warn) or fail.
     """
     if not fulltest:
         if (kind != "Reg") or (strategy == "FedAvgM"):
             pytest.skip("skip scenario (no --fulltest option)")
+    protocol = "websockets"  # type: Literal["grpc", "websockets"]
+    if "websockets" not in list_available_protocols():
+        if "grpc" not in list_available_protocols():
+            pytest.fail("Both 'grpc' and 'websockets' are unavailable.")
+        protocol = "grpc"
+        warnings.warn("Using 'grpc' as 'websockets' is unavailable.")
     # fmt: off
     run_test_case(
         kind, framework, strategy,
-        nb_clients=2, protocol="websockets", use_ssl=False, rounds=2,
+        nb_clients=2, protocol=protocol, use_ssl=False, rounds=2,
     )

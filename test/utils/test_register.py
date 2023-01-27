@@ -9,6 +9,7 @@ import pytest
 from declearn.utils import (
     access_registered,
     access_registration_info,
+    access_types_mapping,
     create_types_registry,
     register_type,
 )
@@ -110,3 +111,28 @@ def test_access_registeration_info() -> None:
         access_registration_info(Class_2, group=name)
     with pytest.raises(KeyError):
         access_registration_info(Class_2, group=None)
+
+
+def test_access_types_mapping() -> None:
+    """Unit tests for 'access_types_mapping'."""
+    group = f"test_{time.time_ns()}"
+    # Define mock custom type-registered classes.
+    @register_type(name="base", group=group)
+    @create_types_registry(name=group)
+    class BaseClass:  # pylint: disable=all
+        pass
+
+    @register_type(name="child", group=group)
+    class ChildClass(BaseClass):  # pylint: disable=all
+        pass
+
+    # Test that the created mapping may be accessed.
+    mapping = access_types_mapping(group=group)
+    assert mapping == {"base": BaseClass, "child": ChildClass}
+
+    # Test that the accessed mapping is a copy, with no side effect on the
+    # true underlying mapping (editable through registration functions).
+    mapping["renamed"] = mapping.pop("child")
+    assert mapping != access_types_mapping(group=group)
+    with pytest.raises(KeyError):
+        access_registered("renamed", group=group)
