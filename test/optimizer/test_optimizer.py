@@ -22,6 +22,7 @@ class MockOptiModule(OptiModule):
     name = f"mock-{uuid4()}"
 
     def __init__(self, **kwargs: Any) -> None:
+        super().__init__()
         self.kwargs = kwargs
 
     def run(self, gradients: Vector) -> Vector:
@@ -37,6 +38,7 @@ class MockRegularizer(Regularizer):
     name = f"mock-{uuid4()}"
 
     def __init__(self, **kwargs: Any) -> None:
+        super().__init__()
         self.kwargs = kwargs
 
     def run(self, gradients: Vector, weights: Vector) -> Vector:
@@ -49,13 +51,17 @@ class MockRegularizer(Regularizer):
 class TestOptimizer:
     """Unit tests for `declearn.optimizer.Optimizer`."""
 
+    # test-grouping class; pylint: disable=too-many-public-methods
+
     def test_init_vanilla(self) -> None:
         """Test `Optimizer` instantiation without plug-ins."""
         optimizer = Optimizer(lrate=0.001)
         assert optimizer.lrate == 0.001
         assert optimizer.w_decay == 0.0
-        assert optimizer.regularizers == []
-        assert optimizer.modules == []
+        assert isinstance(optimizer.regularizers, list)
+        assert not optimizer.regularizers
+        assert isinstance(optimizer.modules, list)
+        assert not optimizer.modules
 
     def test_init_with_plugin_instances(self) -> None:
         """Test `Optimizer` instantiation with plug-in instances."""
@@ -222,6 +228,7 @@ class TestOptimizer:
             model.compute_batch_gradients.assert_called_once_with(
                 batch=batch, max_norm=5.0
             )
+            # mock-patched; pylint: disable=no-member
             optim.apply_gradients.assert_called_once_with(model, grads)
 
     def test_apply_gradients(self) -> None:
@@ -235,6 +242,7 @@ class TestOptimizer:
         with mock.patch.object(optim, "compute_updates_from_gradients"):
             optim.compute_updates_from_gradients.return_value = updts
             assert optim.apply_gradients(model, grads) is None
+            # mock-patched; pylint: disable=no-member
             optim.compute_updates_from_gradients.assert_called_once_with(
                 model, grads
             )
