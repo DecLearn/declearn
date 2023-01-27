@@ -163,7 +163,8 @@ class FederatedServer:
             Container instance wrapping grouped hyper-parameters that
             specify the federated learning process, including clients
             registration, training and validation rounds' setup, plus
-            an optional early-stopping criterion.
+            optional elements: local differential-privacy parameters,
+            and/or an early-stopping criterion.
         """
         # Instantiate the early-stopping criterion, if any.
         early_stop = None  # type: Optional[EarlyStopping]
@@ -278,6 +279,64 @@ class FederatedServer:
         # Otherwise, initialize the model based on the aggregated information.
         self.model.initialize(info)
 
+    async def _collect_results(
+        self,
+        clients: Set[str],
+        msgtype: Type[MessageT],
+        context: str,
+    ) -> Dict[str, MessageT]:
+        """Collect some results sent by clients and ensure they are okay.
+
+        Parameters
+        ----------
+        clients: set[str]
+            Names of the clients that are expected to send messages.
+        msgtype: type[messaging.Message]
+            Type of message that clients are expected to send.
+        context: str
+            Context of the results collection (e.g. "training" or
+            "evaluation"), used in logging or error messages.
+
+        Raises
+        ------
+        RuntimeError:
+            If any client sent an incorrect message or reported
+            failure to conduct the evaluation step properly.
+            Send CancelTraining to all clients before raising.
+
+        Returns
+        -------
+        results: dict[str, `msgtype`]
+            Client-wise collected messages.
+        """
+        # Await clients' responses and type-check them.
+        replies = await self.netwk.wait_for_messages(clients)
+        results = {}  # type: Dict[str, MessageT]
+        errors = {}  # type: Dict[str, str]
+        for client, message in replies.items():
+            if isinstance(message, msgtype):
+                results[client] = message
+            elif isinstance(message, messaging.Error):
+                errors[client] = f"{context} failed: {message.message}"
+            else:
+                errors[client] = f"Unexpected message: {message}"
+        # If any client has failed to send proper results, raise.
+        # future: modularize errors-handling behaviour
+        if errors:
+            err_msg = f"{context} failed for another client."
+            messages = {
+                client: messaging.CancelTraining(errors.get(client, err_msg))
+                for client in self.netwk.client_names
+            }  # type: Dict[str, messaging.Message]
+            await self.netwk.send_messages(messages)
+            err_msg = f"{context} failed for {len(errors)} clients:" + "".join(
+                f"\n    {client}: {error}" for client, error in errors.items()
+            )
+            self.logger.error(err_msg)
+            raise RuntimeError(err_msg)
+        # Otherwise, return collected results.
+        return results
+
     async def _initialize_dpsgd(
         self,
         config: FLRunConfig,
@@ -375,64 +434,6 @@ class FederatedServer:
             messages[client] = messaging.TrainRequest(**params)
         # Send client-wise messages.
         await self.netwk.send_messages(messages)
-
-    async def _collect_results(
-        self,
-        clients: Set[str],
-        msgtype: Type[MessageT],
-        context: str,
-    ) -> Dict[str, MessageT]:
-        """Collect some results sent by clients and ensure they are okay.
-
-        Parameters
-        ----------
-        clients: set[str]
-            Names of the clients that are expected to send messages.
-        msgtype: type[messaging.Message]
-            Type of message that clients are expected to send.
-        context: str
-            Context of the results collection (e.g. "training" or
-            "evaluation"), used in logging or error messages.
-
-        Raises
-        ------
-        RuntimeError:
-            If any client sent an incorrect message or reported
-            failure to conduct the evaluation step properly.
-            Send CancelTraining to all clients before raising.
-
-        Returns
-        -------
-        results: dict[str, `msgtype`]
-            Client-wise collected messages.
-        """
-        # Await clients' responses and type-check them.
-        replies = await self.netwk.wait_for_messages(clients)
-        results = {}  # type: Dict[str, MessageT]
-        errors = {}  # type: Dict[str, str]
-        for client, message in replies.items():
-            if isinstance(message, msgtype):
-                results[client] = message
-            elif isinstance(message, messaging.Error):
-                errors[client] = f"{context} failed: {message.message}"
-            else:
-                errors[client] = f"Unexpected message: {message}"
-        # If any client has failed to send proper results, raise.
-        # future: modularize errors-handling behaviour
-        if errors:
-            err_msg = f"{context} failed for another client."
-            messages = {
-                client: messaging.CancelTraining(errors.get(client, err_msg))
-                for client in self.netwk.client_names
-            }  # type: Dict[str, messaging.Message]
-            await self.netwk.send_messages(messages)
-            err_msg = f"{context} failed for {len(errors)} clients:" + "".join(
-                f"\n    {client}: {error}" for client, error in errors.items()
-            )
-            self.logger.error(err_msg)
-            raise RuntimeError(err_msg)
-        # Otherwise, return collected results.
-        return results
 
     def _conduct_global_update(
         self,
