@@ -39,6 +39,8 @@ MessageT = TypeVar("MessageT", bound=messaging.Message)
 class FederatedServer:
     """Server-side Federated Learning orchestrating class."""
 
+    # one-too-many attribute; pylint: disable=too-many-instance-attributes
+
     def __init__(
         self,
         model: Union[Model, str, Dict[str, Any]],
@@ -544,12 +546,21 @@ class FederatedServer:
         dvsr = 0.0
         self.metrics.reset()
         # Iteratively update the MetricSet and loss floats based on results.
-        for _, reply in results.items():
-            states = reply.metrics.copy()
-            s_loss = states.pop("loss")
-            loss += s_loss["current"]  # type: ignore
-            dvsr += s_loss["divisor"]  # type: ignore
-            self.metrics.agg_states(states)
+        for client, reply in results.items():
+            # Case when the client reported some metrics.
+            if reply.metrics:
+                states = reply.metrics.copy()
+                s_loss = states.pop("loss")
+                loss += s_loss["current"]  # type: ignore
+                dvsr += s_loss["divisor"]  # type: ignore
+                self.metrics.agg_states(states)
+            # Case when the client only reported the aggregated local loss.
+            else:
+                self.logger.info(
+                    "Client %s refused to share their local metrics.", client
+                )
+                loss += reply.loss
+                dvsr += reply.n_steps
         # Compute the final results.
         metrics = self.metrics.get_result()
         loss = loss / dvsr
