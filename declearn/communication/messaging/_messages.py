@@ -5,9 +5,11 @@
 import dataclasses
 import json
 from abc import ABCMeta
-from typing import Any, Dict, List, Optional, Tuple, Type
+from typing import Any, Dict, List, Optional, Tuple, Type, Union
 
+import numpy as np
 
+from declearn.metrics import MetricInputType
 from declearn.model.api import Model, Vector
 from declearn.optimizer import Optimizer
 from declearn.utils import (
@@ -104,6 +106,9 @@ class EvaluationReply(Message):
     loss: float
     n_steps: int
     t_spent: float
+    metrics: Dict[
+        str, Dict[str, Union[float, np.ndarray]]
+    ] = dataclasses.field(default_factory=dict)
 
 
 @dataclasses.dataclass
@@ -133,12 +138,14 @@ class InitRequest(Message):
 
     model: Model
     optim: Optimizer
+    metrics: List[MetricInputType] = dataclasses.field(default_factory=list)
     dpsgd: bool = False
 
     def to_string(self) -> str:
         data = {"typekey": self.typekey}  # type: Dict[str, Any]
         data["model"] = serialize_object(self.model, group="Model").to_dict()
         data["optim"] = self.optim.get_config()
+        data["metrics"] = self.metrics
         data["dpsgd"] = self.dpsgd
         return json.dumps(data, default=json_pack)
 

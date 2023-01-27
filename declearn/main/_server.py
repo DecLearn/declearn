@@ -5,8 +5,9 @@
 import asyncio
 import dataclasses
 import logging
-from typing import Any, Dict, Optional, Set, Type, TypeVar, Union
+from typing import Any, Dict, List, Optional, Set, Tuple, Type, TypeVar, Union
 
+import numpy as np
 
 from declearn.communication import NetworkServerConfig, messaging
 from declearn.communication.api import Server
@@ -22,6 +23,7 @@ from declearn.main.utils import (
     EarlyStopping,
     aggregate_clients_data_info,
 )
+from declearn.metrics import MetricInputType, MetricSet
 from declearn.model.api import Model
 from declearn.utils import deserialize_object, get_logger
 
@@ -42,6 +44,7 @@ class FederatedServer:
         model: Union[Model, str, Dict[str, Any]],
         netwk: Union[Server, NetworkServerConfig, Dict[str, Any]],
         optim: Union[FLOptimConfig, str, Dict[str, Any]],
+        metrics: Union[MetricSet, List[MetricInputType], None] = None,
         folder: Optional[str] = None,
         logger: Union[logging.Logger, str, None] = None,
     ) -> None:
@@ -62,6 +65,11 @@ class FederatedServer:
             the `from_params` method) or TOML configuration file path.
             This object specifies the optimizers to use by the clients
             and the server, as well as the client-updates aggregator.
+        metrics: MetricSet or list[MetricInputType] or None, default=None
+            MetricSet instance or list of Metric instances and/or specs
+            to wrap into one, defining evaluation metrics to compute in
+            addition to the model's loss.
+            If None, only compute and report the model's loss.
         folder: str or None, default=None
             Optional folder where to write out a model dump, round-
             wise weights checkpoints and global validation losses.
@@ -112,6 +120,8 @@ class FederatedServer:
         self.aggrg = optim.aggregator
         self.optim = optim.server_opt
         self.c_opt = optim.client_opt
+        # Assign the wrapped MetricSet.
+        self.metrics = MetricSet.from_specs(metrics)
         # Assign a model checkpointer.
         self.checkpointer = Checkpointer(self.model, folder)
 
@@ -215,6 +225,7 @@ class FederatedServer:
         message = messaging.InitRequest(
             model=self.model,
             optim=self.c_opt,
+            metrics=self.metrics.get_config()["metrics"],
             dpsgd=config.privacy is not None,
         )
         self.logger.info("Sending initialization requests to clients.")
@@ -471,8 +482,10 @@ class FederatedServer:
             clients, messaging.EvaluationReply, "evaluation"
         )
         self.logger.info("Aggregating evaluation results.")
-        loss = self._aggregate_evaluation_results(results)
+        loss, metrics = self._aggregate_evaluation_results(results)
         self.logger.info("Global loss is: %s", loss)
+        if metrics:
+            self.logger.info("Other global metrics are: %s", metrics)
         self.checkpointer.checkpoint(loss)
 
     def _select_evaluation_round_participants(
@@ -509,7 +522,7 @@ class FederatedServer:
     def _aggregate_evaluation_results(
         self,
         results: Dict[str, messaging.EvaluationReply],
-    ) -> float:
+    ) -> Tuple[float, Dict[str, Union[float, np.ndarray]]]:
         """Aggregate evaluation results from clients into a global loss.
 
         Parameters
@@ -522,13 +535,24 @@ class FederatedServer:
         -------
         loss: float
             The aggregated loss score computed from clients' ones.
+        metrics: dict[str, (float | np.ndarray)]
+            The aggregated evaluation metrics computes from clients' ones.
         """
-        total = 0.0
-        n_stp = 0
-        for reply in results.values():  # future: enable re-weighting?
-            total += reply.loss * reply.n_steps
-            n_stp += reply.n_steps
-        return total / n_stp
+        # Reset the local MetricSet and set up ad hoc variables for the loss.
+        loss = 0.0
+        dvsr = 0.0
+        self.metrics.reset()
+        # Iteratively update the MetricSet and loss floats based on results.
+        for _, reply in results.items():
+            states = reply.metrics.copy()
+            s_loss = states.pop("loss")
+            loss += s_loss["current"]  # type: ignore
+            dvsr += s_loss["divisor"]  # type: ignore
+            self.metrics.agg_states(states)
+        # Compute the final results.
+        metrics = self.metrics.get_result()
+        loss = loss / dvsr
+        return loss, metrics
 
     def _keep_training(
         self,

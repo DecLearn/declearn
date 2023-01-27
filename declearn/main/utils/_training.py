@@ -325,10 +325,13 @@ class TrainingManager:
         # Gather the computed metrics and computational effort information.
         effort = constraints.get_values()
         result = self.metrics.get_result()
+        states = self.metrics.get_states()
+        self.logger.info("Local evaluation metrics: %s", result)
         # Pack the result and computational effort information into a message.
+        self.logger.info("Packing local results to be sent to the server.")
         return messaging.EvaluationReply(
             loss=float(result["loss"]),
-            # REVISE: add other metrics to the report
+            metrics=states,
             n_steps=int(effort["n_steps"]),
             t_spent=round(effort["t_spent"], 3),
         )

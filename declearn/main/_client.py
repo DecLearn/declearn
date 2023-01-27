@@ -234,7 +234,7 @@ class FederatedClient:
             optim=message.optim,
             train_data=self.train_data,
             valid_data=self.valid_data,
-            # REVISE: add Metrics
+            metrics=message.metrics,
             logger=self.logger,
         )
         # Instantiate a checkpointer and save the initial model.
