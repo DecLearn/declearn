@@ -78,6 +78,44 @@ class MetricSet:
                 "'MetricSet' cannot wrap multiple metrics of the same type."
             )
 
+    @classmethod
+    def from_specs(
+        cls,
+        metrics: Union[List[MetricInputType], "MetricSet", None],
+    ) -> "MetricSet":
+        """Type-check and/or transform inputs into a MetricSet instance.
+
+        This classmethod is merely implemented to avoid duplicate and
+        boilerplate code from polluting FL orchestrating classes.
+
+        Parameters
+        ----------
+        metrics: list[MetricInputType] or MetricSet or None
+            Inputs set up a MetricSet instance, instance to type-check
+            or None, resulting in an empty MetricSet being returned.
+
+        Returns
+        -------
+        metricset: MetricSet
+            MetricSet instance, type-checked or instantiated from inputs.
+
+        Raises
+        ------
+        TypeError:
+            If `metrics` is of unproper type.
+        Other exceptions may be raised when calling this class's `__init__`.
+        """
+        if metrics is None:
+            metrics = cls([])
+        if isinstance(metrics, list):
+            metrics = cls(metrics)
+        if not isinstance(metrics, cls):
+            raise TypeError(
+                "'metrics' should be a `{cls.name}`, a valid list of Metric "
+                "instances and/or specs to wrap into one, or None."
+            )
+        return metrics
+
     def get_result(
         self,
     ) -> Dict[str, Union[float, np.ndarray]]:

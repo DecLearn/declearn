@@ -127,3 +127,26 @@ class TestMetricSet:
         assert isinstance(metrics.metrics[0], MeanAbsoluteError)
         assert isinstance(metrics.metrics[1], MeanSquaredError)
         assert metrics.get_config() == config
+
+    def test_from_specs_none(self) -> None:
+        """Test that `MetricSet.from_specs(None)` works as expected."""
+        metrics = MetricSet.from_specs(None)
+        assert isinstance(metrics, MetricSet)
+        assert not metrics.metrics
+
+    def test_from_specs_list(self) -> None:
+        """Test that `MetricSet.from_specs([...])` works as expected."""
+        mae = MeanAbsoluteError()
+        metrics = MetricSet.from_specs([mae])
+        assert isinstance(metrics, MetricSet)
+        assert metrics.metrics == [mae]
+
+    def test_from_specs_instance(self) -> None:
+        """Test that `MetricSet.from_specs(MetricSet)` works as expected."""
+        metrics = MetricSet(["mae"])
+        assert MetricSet.from_specs(metrics) is metrics
+
+    def test_from_specs_error(self) -> None:
+        """Test that `MetricSet.from_specs` raises the expected TypeError."""
+        with pytest.raises(TypeError):
+            MetricSet.from_specs("invalid-specs")  # type: ignore

@@ -76,16 +76,7 @@ class TrainingManager:
     ) -> MetricSet:
         """Parse the `metrics` instantiation inputs into a MetricSet."""
         # Type-check and/or transform the inputs into a MetricSet instance.
-        if metrics is None:
-            metrics = MetricSet([])
-        if isinstance(metrics, list):
-            metrics = MetricSet(metrics)
-        if not isinstance(metrics, MetricSet):
-            raise TypeError(
-                "'metrics' should be a `declearn.metrics.MetricSet`, or a "
-                "valid list of Metric instances and/or specs to wrap into "
-                "one, or None."
-            )
+        metrics = MetricSet.from_specs(metrics)
         # If a model loss metric is part of the set, remove it.
         for i, metric in enumerate(metrics.metrics):
             if metric.name == "loss":
