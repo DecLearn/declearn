@@ -14,7 +14,6 @@ from declearn.utils import (
     register_type,
 )
 
-
 __all__ = [
     "Metric",
 ]
@@ -166,6 +165,23 @@ class Metric(metaclass=ABCMeta):
             Optional sample weights to take into account in scores.
         """
 
+    @staticmethod
+    def normalize_weights(s_wght: np.ndarray) -> np.ndarray:
+        """Utility method to ensure weights sum to one.
+
+        Note that this method may or may not be used depending on
+        the actual `Metric` considered, and is merely provided as
+        a utility to metric developers.
+        """
+        if s_wght.sum():
+            s_wght /= s_wght.sum()
+        else:
+            raise ValueError(
+                "Weights provided sum to zero, please provide only "
+                "positive weights with at least one non-zero weight."
+            )
+        return s_wght
+
     def reset(
         self,
     ) -> None:
@@ -264,7 +280,7 @@ class Metric(metaclass=ABCMeta):
         name: str
             Name based on which the metric can be retrieved.
             Available as a class attribute.
-        config: dict[str, any]
+        config: dict[str, any] or None
             Configuration dict of the metric, that is to be
             passed to its `from_config` class constructor.
 

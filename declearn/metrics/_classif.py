@@ -10,7 +10,6 @@ import sklearn.metrics  # type: ignore
 
 from declearn.metrics._api import Metric
 
-
 __all__ = [
     "BinaryAccuracyPrecisionRecall",
     "MulticlassAccuracyPrecisionRecall",

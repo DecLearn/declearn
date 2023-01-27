@@ -9,7 +9,6 @@ import numpy as np
 
 from declearn.metrics._api import Metric
 
-
 __all__ = [
     "MeanMetric",
     "MeanAbsoluteError",
