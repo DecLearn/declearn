@@ -242,8 +242,8 @@ class SklearnSGDModel(Model):
                 raise TypeError(
                     f"Missing required '{key}' in the received vector."
                 )
-        self._model.coef_ = weights.coefs["coef"]
-        self._model.intercept_ = weights.coefs["intercept"]
+        self._model.coef_ = weights.coefs["coef"].copy()
+        self._model.intercept_ = weights.coefs["intercept"].copy()
 
     def compute_batch_gradients(
         self,
