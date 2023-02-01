@@ -388,8 +388,7 @@ class MessagesHandler:
             self.registration_status = flags.REGISTRATION_UNSTARTED
             await self.purge()
             raise exc
-        else:
-            return self.data_info.copy()
+        return self.data_info.copy()
 
     async def _wait_for_clients(
         self,
