@@ -5,7 +5,7 @@
 import asyncio
 import logging
 import ssl
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Optional, Union, ClassVar
 
 import websockets as ws
 from websockets.client import WebSocketClientProtocol
@@ -25,7 +25,7 @@ CHUNK_LENGTH = 100000
 class WebsocketsClient(NetworkClient):
     """Client-side communication endpoint using WebSockets."""
 
-    protocol = "websockets"
+    protocol: ClassVar[str] = "websockets"
 
     def __init__(
         self,

@@ -3,12 +3,10 @@
 """Model updates aggregation API."""
 
 from abc import ABCMeta, abstractmethod
-from typing import Any, Dict
-
+from typing import Any, ClassVar, Dict
 
 from declearn.model.api import Vector
 from declearn.utils import create_types_registry, register_type
-
 
 __all__ = [
     "Aggregator",
@@ -59,7 +57,7 @@ class Aggregator(metaclass=ABCMeta):
     See `declearn.utils.register_type` for details on types registration.
     """
 
-    name: str = NotImplemented
+    name: ClassVar[str] = NotImplemented
 
     def __init_subclass__(
         cls,

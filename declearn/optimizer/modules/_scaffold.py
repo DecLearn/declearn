@@ -16,12 +16,10 @@ References:
     https://arxiv.org/abs/1910.06378
 """
 
-from typing import Any, Dict, List, Optional, Union
-
+from typing import Any, ClassVar, Dict, List, Optional, Union
 
 from declearn.model.api import Vector
 from declearn.optimizer.modules._api import OptiModule
-
 
 __all__ = [
     "ScaffoldClientModule",
@@ -80,8 +78,8 @@ class ScaffoldClientModule(OptiModule):
         https://arxiv.org/abs/1910.06378
     """
 
-    name = "scaffold-client"
-    aux_name = "scaffold"
+    name: ClassVar[str] = "scaffold-client"
+    aux_name: ClassVar[str] = "scaffold"
 
     def __init__(
         self,
@@ -214,8 +212,8 @@ class ScaffoldServerModule(OptiModule):
         https://arxiv.org/abs/1910.06378
     """
 
-    name = "scaffold-server"
-    aux_name = "scaffold"
+    name: ClassVar[str] = "scaffold-server"
+    aux_name: ClassVar[str] = "scaffold"
 
     def __init__(
         self,

@@ -3,7 +3,7 @@
 """Iterative and federative generic evaluation metrics."""
 
 from abc import ABCMeta, abstractmethod
-from typing import Dict, Optional, Union
+from typing import ClassVar, Dict, Optional, Union
 
 import numpy as np
 
@@ -110,7 +110,7 @@ class MeanAbsoluteError(MeanMetric):
         summed over channels for (>=2)-dimensional inputs).
     """
 
-    name = "mae"
+    name: ClassVar[str] = "mae"
 
     def metric_func(
         self,
@@ -138,7 +138,7 @@ class MeanSquaredError(MeanMetric):
         summed over channels for (>=2)-dimensional inputs).
     """
 
-    name = "mse"
+    name: ClassVar[str] = "mse"
 
     def metric_func(
         self,

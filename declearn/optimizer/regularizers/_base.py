@@ -2,11 +2,10 @@
 
 """Common plug-in loss-regularization plug-ins."""
 
-from typing import Optional
+from typing import ClassVar, Optional
 
 from declearn.model.api import Vector
 from declearn.optimizer.regularizers._api import Regularizer
-
 
 __all__ = [
     "FedProxRegularizer",
@@ -40,7 +39,7 @@ class FedProxRegularizer(Regularizer):
         https://arxiv.org/abs/1812.06127
     """
 
-    name = "fedprox"
+    name: ClassVar[str] = "fedprox"
 
     def __init__(
         self,
@@ -76,7 +75,7 @@ class LassoRegularizer(Regularizer):
         grads += alpha * sign(weights)
     """
 
-    name = "lasso"
+    name: ClassVar[str] = "lasso"
 
     def run(
         self,
@@ -97,7 +96,7 @@ class RidgeRegularizer(Regularizer):
         grads += alpha * 2 * weights
     """
 
-    name = "ridge"
+    name: ClassVar[str] = "ridge"
 
     def run(
         self,

@@ -2,12 +2,10 @@
 
 """Gradient Masked Averaging aggregation class."""
 
-from typing import Any, Dict, Optional
+from typing import Any, ClassVar, Dict, Optional
 
-
-from declearn.model.api import Vector
 from declearn.aggregator._base import AveragingAggregator
-
+from declearn.model.api import Vector
 
 __all__ = [
     "GradientMaskedAveraging",
@@ -42,7 +40,7 @@ class GradientMaskedAveraging(AveragingAggregator):
         https://arxiv.org/abs/2201.11986
     """
 
-    name = "gradient-masked-averaging"
+    name: ClassVar[str] = "gradient-masked-averaging"
 
     def __init__(
         self,

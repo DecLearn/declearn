@@ -4,7 +4,7 @@
 
 from abc import ABCMeta, abstractmethod
 from random import SystemRandom
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, ClassVar, Dict, Optional, Tuple
 
 import numpy as np
 import scipy.stats  # type: ignore
@@ -26,7 +26,7 @@ class NoiseModule(OptiModule, metaclass=ABCMeta, register=False):
     or slower cryptographically secure pseudo-random numbers (CSPRN).
     """
 
-    name = "abstract-noise"
+    name: ClassVar[str] = "abstract-noise"
 
     def __init__(
         self,
@@ -98,7 +98,7 @@ class GaussianNoiseModule(NoiseModule):
     or slower cryptographically secure pseudo-random numbers (CSPRN).
     """
 
-    name = "gaussian-noise"
+    name: ClassVar[str] = "gaussian-noise"
 
     def __init__(
         self,

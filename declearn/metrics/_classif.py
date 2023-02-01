@@ -2,7 +2,7 @@
 
 """Iterative and federative classification evaluation metrics."""
 
-from typing import Any, Collection, Dict, Optional, Union
+from typing import Any, ClassVar, Collection, Dict, Optional, Union
 
 import numpy as np
 import sklearn  # type: ignore
@@ -41,7 +41,7 @@ class BinaryAccuracyPrecisionRecall(Metric):
         Confusion matrix of predictions. Values: [[TN, FP], [FN, TP]]
     """
 
-    name = "binary-classif"
+    name: ClassVar[str] = "binary-classif"
 
     def __init__(
         self,
@@ -131,7 +131,7 @@ class MulticlassAccuracyPrecisionRecall(Metric):
         were predicted to belong to label j.
     """
 
-    name = "multi-classif"
+    name: ClassVar[str] = "multi-classif"
 
     def __init__(
         self,

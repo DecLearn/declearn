@@ -4,11 +4,10 @@
 
 from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Iterator, Optional, Set
+from typing import Any, ClassVar, Iterator, Optional, Set
 
 from declearn.typing import Batch
 from declearn.utils import access_registered, create_types_registry, json_load
-
 
 __all__ = [
     "DataSpecs",
@@ -41,7 +40,7 @@ class Dataset(metaclass=ABCMeta):
     straightforward to specify as part of FL algorithms.
     """
 
-    _type_key: str = NotImplemented
+    _type_key: ClassVar[str] = NotImplemented
 
     @abstractmethod
     def save_to_json(

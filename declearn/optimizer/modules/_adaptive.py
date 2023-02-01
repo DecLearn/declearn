@@ -2,12 +2,11 @@
 
 """Adaptive algorithms for optimizers, implemented as plug-in modules."""
 
-from typing import Any, Dict, Optional, Union
+from typing import Any, ClassVar, Dict, Optional, Union
 
 from declearn.model.api import Vector
 from declearn.optimizer.modules._api import OptiModule
 from declearn.optimizer.modules._momentum import EWMAModule, YogiMomentumModule
-
 
 __all__ = [
     "AdaGradModule",
@@ -38,7 +37,7 @@ class AdaGradModule(OptiModule):
         https://jmlr.org/papers/v12/duchi11a.html
     """
 
-    name = "adagrad"
+    name: ClassVar[str] = "adagrad"
 
     def __init__(
         self,
@@ -102,7 +101,7 @@ class RMSPropModule(OptiModule):
         Average of its Recent Magnitude.
     """
 
-    name = "rmsprop"
+    name: ClassVar[str] = "rmsprop"
 
     def __init__(
         self,
@@ -184,7 +183,7 @@ class AdamModule(OptiModule):
         https://arxiv.org/abs/1904.09237
     """
 
-    name = "adam"
+    name: ClassVar[str] = "adam"
 
     def __init__(
         self,
@@ -304,7 +303,7 @@ class YogiModule(AdamModule):
         https://arxiv.org/abs/1904.09237
     """
 
-    name = "yogi"
+    name: ClassVar[str] = "yogi"
 
     def __init__(
         self,

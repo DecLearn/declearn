@@ -3,7 +3,7 @@
 
 """Unit tests for `declearn.optimizer.Optimizer`."""
 
-from typing import Any, Dict, Tuple
+from typing import Any, ClassVar, Dict, Tuple
 from unittest import mock
 from uuid import uuid4
 
@@ -19,7 +19,7 @@ from declearn.test_utils import assert_json_serializable_dict
 class MockOptiModule(OptiModule):
     """Type-registered mock OptiModule subclass."""
 
-    name = f"mock-{uuid4()}"
+    name: ClassVar[str] = f"mock-{uuid4()}"
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__()
@@ -35,7 +35,7 @@ class MockOptiModule(OptiModule):
 class MockRegularizer(Regularizer):
     """Type-registered mock Regularizer subclass."""
 
-    name = f"mock-{uuid4()}"
+    name: ClassVar[str] = f"mock-{uuid4()}"
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__()

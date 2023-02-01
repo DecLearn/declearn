@@ -2,7 +2,7 @@
 
 """Base API and common examples of plug-in gradients-alteration algorithms."""
 
-from typing import Any, Dict, Union
+from typing import Any, ClassVar, Dict, Union
 
 from declearn.model.api import Vector
 from declearn.optimizer.modules._api import OptiModule
@@ -48,7 +48,7 @@ class MomentumModule(OptiModule):
         https://proceedings.mlr.press/v28/sutskever13.pdf
     """
 
-    name = "momentum"
+    name: ClassVar[str] = "momentum"
 
     def __init__(
         self,
@@ -114,7 +114,7 @@ class EWMAModule(OptiModule):
     decaying moving-average of past gradients.
     """
 
-    name = "ewma"
+    name: ClassVar[str] = "ewma"
 
     def __init__(
         self,
@@ -184,7 +184,7 @@ class YogiMomentumModule(EWMAModule):
         Adaptive Methods for Nonconvex Optimization.
     """
 
-    name = "yogi-momentum"
+    name: ClassVar[str] = "yogi-momentum"
 
     def run(
         self,

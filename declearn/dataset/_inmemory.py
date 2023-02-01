@@ -4,7 +4,7 @@
 
 import functools
 import os
-from typing import Any, Dict, Iterator, List, Optional, Set, Union
+from typing import Any, ClassVar, Dict, Iterator, List, Optional, Set, Union
 
 import numpy as np
 import pandas as pd  # type: ignore
@@ -16,7 +16,6 @@ from declearn.dataset._base import Dataset, DataSpecs
 from declearn.dataset._sparse import sparse_from_file, sparse_to_file
 from declearn.typing import Batch
 from declearn.utils import json_dump, json_load, register_type
-
 
 __all__ = [
     "InMemoryDataset",
@@ -56,7 +55,7 @@ class InMemoryDataset(Dataset):
 
     # attributes serve clarity; pylint: disable=too-many-instance-attributes
 
-    _type_key = "InMemoryDataset"
+    _type_key: ClassVar[str] = "InMemoryDataset"
 
     def __init__(
         self,

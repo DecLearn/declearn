@@ -6,7 +6,7 @@ import asyncio
 import logging
 import types
 from abc import ABCMeta, abstractmethod
-from typing import Any, Dict, Optional, Set, Type, Union
+from typing import Any, Dict, Optional, Set, Type, Union, ClassVar
 
 
 from declearn.communication.api._service import MessagesHandler
@@ -54,7 +54,7 @@ class NetworkServer(metaclass=ABCMeta):
     of the awaitable `wait_for_clients` method.
     """
 
-    protocol: str = NotImplemented
+    protocol: ClassVar[str] = NotImplemented
 
     def __init_subclass__(cls, register: bool = True) -> None:
         """Automate the type-registration of NetworkServer subclasses."""

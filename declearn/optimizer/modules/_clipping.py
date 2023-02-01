@@ -2,12 +2,10 @@
 
 """Batch-averaged gradients clipping plug-in modules."""
 
-from typing import Any, Dict
-
+from typing import Any, ClassVar, Dict
 
 from declearn.model.api import Vector
 from declearn.optimizer.modules._api import OptiModule
-
 
 __all__ = ["L2Clipping"]
 
@@ -32,7 +30,7 @@ class L2Clipping(OptiModule):
     to bound the sensitivity associated to that action.
     """
 
-    name = "l2-clipping"
+    name: ClassVar[str] = "l2-clipping"
 
     def __init__(
         self,

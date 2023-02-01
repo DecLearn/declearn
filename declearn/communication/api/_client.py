@@ -5,8 +5,7 @@
 import logging
 import types
 from abc import ABCMeta, abstractmethod
-from typing import Any, Dict, Optional, Type, Union
-
+from typing import Any, ClassVar, Dict, Optional, Type, Union
 
 from declearn.communication.messaging import (
     Empty,
@@ -17,7 +16,6 @@ from declearn.communication.messaging import (
     Message,
 )
 from declearn.utils import create_types_registry, get_logger, register_type
-
 
 __all__ = [
     "NetworkClient",
@@ -58,7 +56,7 @@ class NetworkClient(metaclass=ABCMeta):
     probably be rejected by the server if the client has not registered.
     """
 
-    protocol: str = NotImplemented
+    protocol: ClassVar[str] = NotImplemented
 
     def __init_subclass__(cls, register: bool = True) -> None:
         """Automate the type-registration of NetworkClient subclasses."""
@@ -107,7 +105,6 @@ class NetworkClient(metaclass=ABCMeta):
 
         The return type is communication-protocol dependent.
         """
-        return NotImplemented
 
     # similar to NetworkServer API; pylint: disable=duplicate-code
 
@@ -118,7 +115,6 @@ class NetworkClient(metaclass=ABCMeta):
         Note: this method can be called safely even if the
         client is already running (simply having no effect).
         """
-        return None
 
     @abstractmethod
     async def stop(self) -> None:

@@ -3,7 +3,7 @@
 """Wrapper to run local training and evaluation rounds in a FL process."""
 
 import logging
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, ClassVar, Dict, List, Optional, Union
 
 import numpy as np
 
@@ -96,7 +96,7 @@ class TrainingManager:
         class LossMetric(MeanMetric, register=False):
             """Ad hoc Metric wrapping a model's loss function."""
 
-            name = "loss"
+            name: ClassVar[str] = "loss"
 
             def metric_func(
                 self, y_true: np.ndarray, y_pred: np.ndarray

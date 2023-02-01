@@ -34,7 +34,7 @@ data_info fields, are implemented (although unexposed) here.
 
 import warnings
 from abc import ABCMeta, abstractmethod
-from typing import Any, Dict, List, Optional, Set, Tuple, Type
+from typing import Any, Dict, List, Optional, Set, Tuple, Type, ClassVar
 
 
 __all__ = [
@@ -75,9 +75,9 @@ class DataInfoField(metaclass=ABCMeta):
         is called, run `is_valid` on each and every input.
     """
 
-    field: str
-    types: Tuple[Type, ...]
-    doc: str
+    field: ClassVar[str] = NotImplemented
+    types: ClassVar[Tuple[Type, ...]] = NotImplemented
+    doc: ClassVar[str] = NotImplemented
 
     @classmethod
     def is_valid(
@@ -85,6 +85,7 @@ class DataInfoField(metaclass=ABCMeta):
         value: Any,
     ) -> bool:
         """Check that a given value may belong to this field."""
+        # false-pos; pylint: disable=isinstance-second-argument-not-valid-type
         return isinstance(value, cls.types)
 
     @classmethod

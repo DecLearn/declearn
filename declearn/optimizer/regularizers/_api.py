@@ -3,7 +3,7 @@
 """Base API for loss regularization optimizer plug-ins."""
 
 from abc import ABCMeta, abstractmethod
-from typing import Any, Dict
+from typing import Any, ClassVar, Dict
 
 from declearn.model.api import Vector
 from declearn.utils import (
@@ -11,7 +11,6 @@ from declearn.utils import (
     create_types_registry,
     register_type,
 )
-
 
 __all__ = [
     "Regularizer",
@@ -68,7 +67,7 @@ class Regularizer(metaclass=ABCMeta):
     See `declearn.utils.register_type` for details on types registration.
     """
 
-    name: str = NotImplemented
+    name: ClassVar[str] = NotImplemented
 
     def __init_subclass__(
         cls,

@@ -3,7 +3,7 @@
 """Base API for plug-in gradients-alteration algorithms."""
 
 from abc import ABCMeta, abstractmethod
-from typing import Any, Dict, Optional
+from typing import Any, ClassVar, Dict, Optional
 
 from declearn.model.api import Vector
 from declearn.utils import (
@@ -76,9 +76,8 @@ class OptiModule(metaclass=ABCMeta):
     See `declearn.utils.register_type` for details on types registration.
     """
 
-    name: str = NotImplemented
-
-    aux_name: Optional[str] = None
+    name: ClassVar[str] = NotImplemented
+    aux_name: ClassVar[Optional[str]] = None
 
     def __init_subclass__(
         cls,

@@ -2,14 +2,13 @@
 
 """Iterative and federative ROC AUC evaluation metrics."""
 
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any, ClassVar, Dict, Optional, Tuple, Union
 
 import numpy as np
 import sklearn  # type: ignore
 import sklearn.metrics  # type: ignore
 
 from declearn.metrics._api import Metric
-
 
 __all__ = [
     "BinaryRocAUC",
@@ -42,7 +41,7 @@ class BinaryRocAUC(Metric):
     unless its
     """
 
-    name = "binary-roc"
+    name: ClassVar[str] = "binary-roc"
 
     def __init__(
         self,

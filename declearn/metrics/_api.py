@@ -104,7 +104,7 @@ class Metric(metaclass=ABCMeta):
     See `declearn.utils.register_type` for details on types registration.
     """
 
-    name: ClassVar[str]
+    name: ClassVar[str] = NotImplemented
 
     def __init__(
         self,

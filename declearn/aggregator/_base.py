@@ -2,12 +2,10 @@
 
 """FedAvg-like mean-aggregation class."""
 
-from typing import Any, Dict, Optional
+from typing import Any, ClassVar, Dict, Optional
 
-
-from declearn.model.api import Vector
 from declearn.aggregator._api import Aggregator
-
+from declearn.model.api import Vector
 
 __all__ = [
     "AveragingAggregator",
@@ -24,7 +22,7 @@ class AveragingAggregator(Aggregator):
     that use simple weighting schemes.
     """
 
-    name = "averaging"
+    name: ClassVar[str] = "averaging"
 
     def __init__(
         self,
