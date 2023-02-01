@@ -58,17 +58,28 @@ class AdaGradModule(OptiModule):
     def get_config(
         self,
     ) -> Dict[str, Any]:
-        """Return a JSON-serializable dict with this module's parameters."""
         return {"eps": self.eps}
 
     def run(
         self,
         gradients: Vector,
     ) -> Vector:
-        """Apply Adagrad adaptation to input (pseudo-)gradients."""
         self.state = self.state + (gradients**2)
         scaling = (self.state**0.5) + self.eps
         return gradients / scaling
+
+    def get_state(
+        self,
+    ) -> Dict[str, Any]:
+        return {"state": self.state}
+
+    def set_state(
+        self,
+        state: Dict[str, Any],
+    ) -> None:
+        if "state" not in state:
+            raise KeyError("Missing required state variable 'state'.")
+        self.state = state["state"]
 
 
 class RMSPropModule(OptiModule):
@@ -115,17 +126,26 @@ class RMSPropModule(OptiModule):
     def get_config(
         self,
     ) -> Dict[str, Any]:
-        """Return a JSON-serializable dict with this module's parameters."""
         return {"beta": self.ewma.beta, "eps": self.eps}
 
     def run(
         self,
         gradients: Vector,
     ) -> Vector:
-        """Apply RMSProp adaptation to input (pseudo-)gradients."""
         v_t = self.ewma.run(gradients**2)
         scaling = (v_t**0.5) + self.eps
         return gradients / scaling
+
+    def get_state(
+        self,
+    ) -> Dict[str, Any]:
+        return self.ewma.get_state()
+
+    def set_state(
+        self,
+        state: Dict[str, Any],
+    ) -> None:
+        self.ewma.set_state(state)
 
 
 class AdamModule(OptiModule):
@@ -195,12 +215,11 @@ class AdamModule(OptiModule):
         self.steps = 0
         self.eps = eps
         self.amsgrad = amsgrad
-        self._vmax = None  # type: Optional[Vector]
+        self.vmax = None  # type: Optional[Vector]
 
     def get_config(
         self,
     ) -> Dict[str, Any]:
-        """Return a JSON-serializable dict with this module's parameters."""
         return {
             "beta_1": self.ewma_1.beta,
             "beta_2": self.ewma_2.beta,
@@ -212,7 +231,6 @@ class AdamModule(OptiModule):
         self,
         gradients: Vector,
     ) -> Vector:
-        """Apply Adam adaptation to input (pseudo-)gradients."""
         # Compute momentum-corrected state variables.
         m_t = self.ewma_1.run(gradients)
         v_t = self.ewma_2.run(gradients**2)
@@ -221,13 +239,36 @@ class AdamModule(OptiModule):
         v_h = v_t / (1 - (self.ewma_2.beta ** (self.steps + 1)))
         # Optionally implement the AMSGrad algorithm.
         if self.amsgrad:
-            if self._vmax is not None:
-                v_h = v_h.maximum(self._vmax)
-            self._vmax = v_h
+            if self.vmax is not None:
+                v_h = v_h.maximum(self.vmax)
+            self.vmax = v_h
         # Compute and return the adapted gradients.
         gradients = m_h / ((v_h**0.5) + self.eps)
         self.steps += 1
         return gradients
+
+    def get_state(
+        self,
+    ) -> Dict[str, Any]:
+        state = {
+            "steps": self.steps,
+            "vmax": self.vmax,
+        }  # type: Dict[str, Any]
+        state["momentum"] = self.ewma_1.get_state()
+        state["velocity"] = self.ewma_2.get_state()
+        return state
+
+    def set_state(
+        self,
+        state: Dict[str, Any],
+    ) -> None:
+        for key in ("momentum", "velocity", "steps", "vmax"):
+            if key not in state:
+                raise KeyError(f"Missing required state variable '{key}'.")
+        self.ewma_1.set_state(state["momentum"])
+        self.ewma_2.set_state(state["velocity"])
+        self.steps = state["steps"]
+        self.vmax = state["vmax"]
 
 
 class YogiModule(AdamModule):
@@ -290,4 +331,4 @@ class YogiModule(AdamModule):
             to the (divisor) adapative scaling term.
         """
         super().__init__(beta_1, beta_2, amsgrad=amsgrad, eps=eps)
-        self.mom_2 = YogiMomentumModule(beta=beta_2)
+        self.ewma_2 = YogiMomentumModule(beta=beta_2)

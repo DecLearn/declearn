@@ -2,14 +2,12 @@
 
 """Base class to define gradient-descent-based optimizers."""
 
-from copy import deepcopy
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Type, Union
 
 from declearn.model.api import Model, Vector
 from declearn.optimizer.modules import OptiModule
 from declearn.optimizer.regularizers import Regularizer
 from declearn.typing import Batch
-
 
 __all__ = [
     "Optimizer",
@@ -79,6 +77,8 @@ class Optimizer:
         Pass auxiliary variables to plug-in modules for processing.
     run_train_step(Model, batch) -> None:
         Compute gradients of a Model over a Batch and apply updates.
+    start_round() -> None:
+        Signal that a new training round is starting to wrapped regularizers.
 
     References
     ----------
@@ -192,9 +192,19 @@ class Optimizer:
     def get_config(
         self,
     ) -> Dict[str, Any]:
-        """Return a JSON-serializable dict with this optimizer's parameters."""
-        regulzr = {reg.name: reg.get_config() for reg in self.regularizers}
-        modules = {mod.name: mod.get_config() for mod in self.modules}
+        """Return a JSON-serializable dict with this optimizer's parameters.
+
+        The counterpart to this method is the `from_config` classmethod.
+        To access the optimizer's inner states, see the `get_state` method.
+
+        Returns
+        -------
+        config: dict[str, any]
+            JSON-serializable dict storing this optimizer's instantiation
+            configuration.
+        """
+        regulzr = [(reg.name, reg.get_config()) for reg in self.regularizers]
+        modules = [(mod.name, mod.get_config()) for mod in self.modules]
         return {
             "lrate": self.lrate,
             "w_decay": self.w_decay,
@@ -207,16 +217,22 @@ class Optimizer:
         cls,
         config: Dict[str, Any],
     ) -> "Optimizer":
-        """Instantiate an Optimizer from its configuration dict."""
-        config = deepcopy(config)  # avoid side-effects
-        config["regularizers"] = [
-            Regularizer.from_specs(name, config)
-            for name, config in config.pop("regularizers", {}).items()
-        ]
-        config["modules"] = [
-            OptiModule.from_specs(name, config)
-            for name, config in config.pop("modules", {}).items()
-        ]
+        """Instantiate an Optimizer from its configuration dict.
+
+        The counterpart to this classmethod is the `get_config` method.
+        To restore the optimizer's inner states, see its `get_state` method.
+
+        Parameters
+        ----------
+        config: dict[str, Any]
+            Dict storing the optimizer's instantiation configuration.
+
+        Raises
+        ------
+        KeyError:
+            If the provided `config` lacks some required parameters
+            and/or contains some unused ones.
+        """
         return cls(**config)
 
     def compute_updates_from_gradients(
@@ -316,6 +332,18 @@ class Optimizer:
                 )
             module.process_aux_var(auxv)
 
+    def start_round(
+        self,
+    ) -> None:
+        """Perform any required action at the start of a training round.
+
+        This method calls the `on_round_start` callback of each and every
+        wrapped `Regularizer` which may be used to regulate some internal
+        state variables.
+        """
+        for regularizer in self.regularizers:
+            regularizer.on_round_start()
+
     def run_train_step(
         self,
         model: Model,
@@ -366,3 +394,82 @@ class Optimizer:
         """
         updates = self.compute_updates_from_gradients(model, gradients)
         model.apply_updates(updates)
+
+    def get_state(
+        self,
+    ) -> Dict[str, Any]:
+        """Return a JSON-serializable dict with this optimizer's state.
+
+        The counterpart to this method is the `set_state` one.
+
+        Returns
+        -------
+        state: dict[str, any]
+            JSON-serializable dict storing this optimizer's inner state
+            variables (i.e. those from its modules).
+        """
+        modules = [(mod.name, mod.get_state()) for mod in self.modules]
+        return {"modules": modules}
+
+    def set_state(
+        self,
+        states: Dict[str, Any],
+    ) -> None:
+        """Load a saved state dict into an optimizer instance.
+
+        The counterpart to this method is the `get_state` one.
+
+        Parameters
+        ----------
+        state: dict[str, any]
+            Dict storing values to assign to this optimizer's inner
+            state variables (i.e. those from its modules).
+
+        Raises
+        ------
+        KeyError:
+            If the received states do not match the expected config,
+            whether because a module is missing or one of its states
+            is missing.
+            In both cases, the Optimizer's states will be reverted
+            to their values prior to the failed call to this method.
+        RuntimeError:
+            If a KeyError was raised both when trying to apply the
+            input `state` and when trying to revert the states to
+            their initial values after that first error was raised.
+            This should never happen and indicates a source code
+            error in a wrapped module, or even in this class.
+        """
+        if "modules" not in states:
+            raise KeyError("Optimizer input 'states' lack a 'modules' field.")
+        if len(states["modules"]) != len(self.modules):
+            raise KeyError("Optimizer 'states' do not match modules config.")
+        initial = self.get_state()
+        try:
+            self._set_state(states)
+        except KeyError as exc:
+            try:
+                self._set_state(initial)
+            except KeyError as exc_bis:
+                raise RuntimeError(
+                    "`Optimizer.set_state` failed to restore initial states "
+                    "after a KeyError was raised during states' attempted "
+                    "update. There probably is a source code error with one "
+                    "of the wrapped modules.\n"
+                    f"Error when reverting states: {exc_bis}\n"
+                    f"Initial update error: {exc}\n"
+                ) from exc_bis
+            raise exc
+
+    def _set_state(
+        self,
+        states: Dict[str, Any],
+    ) -> None:
+        """Backend to the `set_state` method, lacking exception-catching."""
+        for mod, (name, state) in zip(self.modules, states["modules"]):
+            if mod.name != name:
+                raise KeyError(
+                    "Optimizer 'states' do not match modules config."
+                )
+            # Note: this may raise a KeyError if 'state' is misspecified.
+            mod.set_state(state)

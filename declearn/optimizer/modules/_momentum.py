@@ -64,7 +64,6 @@ class MomentumModule(OptiModule):
         nesterov : bool, default=False
             Whether to use Nesterov-accelerated momentum.
         """
-
         if not isinstance(beta, float):
             raise TypeError("'beta' should be of type float.")
         if not 0 <= beta < 1:
@@ -76,18 +75,29 @@ class MomentumModule(OptiModule):
     def get_config(
         self,
     ) -> Dict[str, Any]:
-        """Return a JSON-serializable dict with this module's parameters."""
         return {"beta": self.beta, "nesterov": self.nesterov}
 
     def run(
         self,
         gradients: Vector,
     ) -> Vector:
-        """Apply Momentum acceleration to input (pseudo-)gradients."""
         self.velocity = (self.beta * self.velocity) + gradients
         if self.nesterov:
             return (self.beta * self.velocity) + gradients
         return self.velocity
+
+    def get_state(
+        self,
+    ) -> Dict[str, Any]:
+        return {"velocity": self.velocity}
+
+    def set_state(
+        self,
+        state: Dict[str, Any],
+    ) -> None:
+        if "velocity" not in state:
+            raise KeyError("Missing required state variable 'velocity'.")
+        self.velocity = state["velocity"]
 
 
 class EWMAModule(OptiModule):
@@ -128,16 +138,27 @@ class EWMAModule(OptiModule):
     def get_config(
         self,
     ) -> Dict[str, Any]:
-        """Return a JSON-serializable dict with this module's parameters."""
         return {"beta": self.beta}
 
     def run(
         self,
         gradients: Vector,
     ) -> Vector:
-        """Apply exponentially-weighted moving-average to the inputs."""
         self.state = (self.beta * self.state) + ((1 - self.beta) * gradients)
         return self.state
+
+    def get_state(
+        self,
+    ) -> Dict[str, Any]:
+        return {"state": self.state}
+
+    def set_state(
+        self,
+        state: Dict[str, Any],
+    ) -> None:
+        if "state" not in state:
+            raise KeyError("Missing required state variable 'state'.")
+        self.state = state["state"]
 
 
 class YogiMomentumModule(EWMAModule):
@@ -169,7 +190,6 @@ class YogiMomentumModule(EWMAModule):
         self,
         gradients: Vector,
     ) -> Vector:
-        """Apply Momentum acceleration to input (pseudo-)gradients."""
         sign = (self.state - gradients).sign()
         self.state = self.state - (sign * (1 - self.beta) * gradients)
         return self.state

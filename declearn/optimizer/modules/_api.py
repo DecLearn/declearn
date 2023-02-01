@@ -3,16 +3,13 @@
 """Base API for plug-in gradients-alteration algorithms."""
 
 from abc import ABCMeta, abstractmethod
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Optional
 
 from declearn.model.api import Vector
 from declearn.utils import (
-    ObjectConfig,
     access_registered,
     create_types_registry,
-    deserialize_object,
     register_type,
-    serialize_object,
 )
 
 __all__ = [
@@ -96,7 +93,11 @@ class OptiModule(metaclass=ABCMeta):
         self,
         gradients: Vector,
     ) -> Vector:
-        """Apply an adaptation algorithm to input gradients.
+        """Apply the module's algorithm to input gradients.
+
+        Please refer to the module's main docstring for details
+        on the implemented algorithm and the way it transforms
+        input gradients.
 
         Parameters
         ----------
@@ -110,7 +111,6 @@ class OptiModule(metaclass=ABCMeta):
             fully compatible with the input one - only the values
             of the wrapped coefficients may have changed.
         """
-        return NotImplemented
 
     def collect_aux_var(
         self,
@@ -185,12 +185,21 @@ class OptiModule(metaclass=ABCMeta):
             is not formatted as it should be.
         """
         # API-defining method; pylint: disable=unused-argument
-        return None
 
     def get_config(
         self,
     ) -> Dict[str, Any]:
-        """Return a JSON-serializable dict with this module's parameters."""
+        """Return a JSON-serializable dict with this module's parameters.
+
+        The counterpart to this method is the `from_config` classmethod.
+        To access the module's inner states, see the `get_state` method.
+
+        Returns
+        -------
+        config: dict[str, any]
+            JSON-serializable dict storing this module's instantiation
+            configuration.
+        """
         return {}
 
     @classmethod
@@ -198,28 +207,24 @@ class OptiModule(metaclass=ABCMeta):
         cls,
         config: Dict[str, Any],
     ) -> "OptiModule":
-        """Instantiate an OptiModule from its configuration dict."""
+        """Instantiate an OptiModule from its configuration dict.
+
+        The counterpart to this classmethod is the `get_config` method.
+        To restore the module's inner states, see its `get_state` method.
+
+        Parameters
+        ----------
+        config: dict[str, Any]
+            Dict storing the module's instantiation configuration.
+            This must match the target subclass's requirements.
+
+        Raises
+        ------
+        KeyError:
+            If the provided `config` lacks some required parameters
+            and/or contains some unused ones.
+        """
         return cls(**config)
-
-    def serialize(
-        self,
-    ) -> ObjectConfig:
-        """Return an ObjectConfig serialization of this instance."""
-        return serialize_object(self, group="OptiModule")
-
-    @classmethod
-    def deserialize(
-        cls,
-        config: Union[str, ObjectConfig],
-    ) -> "OptiModule":
-        """Instantiate an OptiModule from a JSON configuration file or dict."""
-        obj = deserialize_object(config, custom=None)
-        if not isinstance(obj, cls):
-            raise TypeError(
-                f"Configuration specifies a '{type(obj).__name__}' object, "
-                f"which is not a subclass of '{cls.__name__}'."
-            )
-        return obj
 
     @staticmethod
     def from_specs(
@@ -238,6 +243,41 @@ class OptiModule(metaclass=ABCMeta):
             passed to its `from_config` class constructor.
         """
         cls = access_registered(name, group="OptiModule")
-        if not issubclass(cls, OptiModule):
-            raise TypeError("Retrieved a non-OptiModule class.")
+        assert issubclass(cls, OptiModule)  # force-tested by access_registered
         return cls.from_config(config)
+
+    def get_state(
+        self,
+    ) -> Dict[str, Any]:
+        """Return a JSON-serializable dict with this module's state(s).
+
+        The counterpart to this method is the `set_state` one.
+
+        Returns
+        -------
+        state: dict[str, any]
+            JSON-serializable dict storing this module's inner state
+            variables.
+        """
+        return {}
+
+    def set_state(
+        self,
+        state: Dict[str, Any],
+    ) -> None:
+        """Load a state dict into an instantiated module.
+
+        The counterpart to this method is the `get_state` one.
+
+        Parameters
+        ----------
+        state: dict[str, any]
+            Dict storing values to assign to this module's inner
+            state variables.
+
+        Raises
+        ------
+        KeyError:
+            If an expected state variable is missing from `state`.
+        """
+        # API-defining method; pylint: disable=unused-argument

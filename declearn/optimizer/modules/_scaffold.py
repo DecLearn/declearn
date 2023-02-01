@@ -95,7 +95,6 @@ class ScaffoldClientModule(OptiModule):
         self,
         gradients: Vector,
     ) -> Vector:
-        """Apply Scaffold correction to input local gradients."""
         # Accumulate the uncorrected gradients.
         self._grads = self._grads + gradients
         self._steps += 1
@@ -246,14 +245,13 @@ class ScaffoldServerModule(OptiModule):
     def get_config(
         self,
     ) -> Dict[str, Any]:
-        """Return a JSON-serializable dict with this module's parameters."""
         return {"clients": list(self.s_loc)}
 
     def run(
         self,
         gradients: Vector,
     ) -> Vector:
-        """Pass gradients through the Scaffold module (no effect)."""
+        # Note: ScaffoldServer only manages auxiliary variables.
         return gradients
 
     def collect_aux_var(
@@ -308,3 +306,18 @@ class ScaffoldServerModule(OptiModule):
         self.s_loc.update(s_new)
         update = update / len(self.s_loc)
         self.state = self.state + update
+
+    def get_state(
+        self,
+    ) -> Dict[str, Any]:
+        return {"state": self.state, "s_loc": self.s_loc}
+
+    def set_state(
+        self,
+        state: Dict[str, Any],
+    ) -> None:
+        for key in ("state", "s_loc"):
+            if key not in state:
+                raise KeyError(f"Missing required state variable '{key}'.")
+        self.state = state["state"]
+        self.s_loc = state["s_loc"]
