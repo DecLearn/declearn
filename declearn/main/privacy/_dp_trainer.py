@@ -3,7 +3,7 @@
 """TrainingManager subclass implementing Differential Privacy mechanisms."""
 
 import logging
-from typing import Optional, Tuple, Union
+from typing import List, Optional, Tuple, Union
 
 from opacus.accountants import IAccountant, create_accountant  # type: ignore
 from opacus.accountants.utils import get_noise_multiplier  # type: ignore
@@ -11,6 +11,7 @@ from opacus.accountants.utils import get_noise_multiplier  # type: ignore
 from declearn.communication import messaging
 from declearn.dataset import Dataset
 from declearn.main.utils import TrainingManager
+from declearn.metrics import MetricInputType, MetricSet
 from declearn.model.api import Model
 from declearn.optimizer import Optimizer
 from declearn.optimizer.modules import GaussianNoiseModule
@@ -47,10 +48,11 @@ class DPTrainingManager(TrainingManager):
         optim: Optimizer,
         train_data: Dataset,
         valid_data: Optional[Dataset] = None,
+        metrics: Union[MetricSet, List[MetricInputType], None] = None,
         logger: Union[logging.Logger, str, None] = None,
     ) -> None:
         # inherited signature; pylint: disable=too-many-arguments
-        super().__init__(model, optim, train_data, valid_data, logger)
+        super().__init__(model, optim, train_data, valid_data, metrics, logger)
         # Add DP-related fields: accountant, clipping norm and budget.
         self.accountant = None  # type: Optional[IAccountant]
         self.sclip_norm = None  # type: Optional[float]

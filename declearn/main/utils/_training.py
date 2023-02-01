@@ -3,7 +3,9 @@
 """Wrapper to run local training and evaluation rounds in a FL process."""
 
 import logging
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, List, Optional, Union
+
+import numpy as np
 
 from declearn.communication import messaging
 from declearn.dataset import Dataset
@@ -12,6 +14,7 @@ from declearn.main.utils._constraints import (
     ConstraintSet,
     TimeoutConstraint,
 )
+from declearn.metrics import MeanMetric, Metric, MetricInputType, MetricSet
 from declearn.model.api import Model
 from declearn.optimizer import Optimizer
 from declearn.typing import Batch
@@ -31,6 +34,7 @@ class TrainingManager:
         optim: Optimizer,
         train_data: Dataset,
         valid_data: Optional[Dataset] = None,
+        metrics: Union[MetricSet, List[MetricInputType], None] = None,
         logger: Union[logging.Logger, str, None] = None,
     ) -> None:
         """Instantiate the client-side training and evaluation process.
@@ -46,15 +50,61 @@ class TrainingManager:
         valid_data: Dataset or None, default=None
             Dataset instance wrapping the local validation dataset.
             If None, use `train_data` in the evaluation rounds.
+        metrics: MetricSet or list[MetricInputType] or None, default=None
+            MetricSet instance or list of Metric instances and/or specs
+            to wrap into one, defining evaluation metrics to compute in
+            addition to the model's loss.
+            If None, only compute and report the model's loss.
+        logger: logging.Logger or str or None, default=None,
+            Logger to use, or name of a logger to set up with
+            `declearn.utils.get_logger`.
+            If None, use `type(self).__name__`.
         """
         # arguments serve modularity; pylint: disable=too-many-arguments
         self.model = model
         self.optim = optim
         self.train_data = train_data
         self.valid_data = valid_data
+        self.metrics = self._prepare_metrics(metrics)
         if not isinstance(logger, logging.Logger):
             logger = get_logger(logger or f"{type(self).__name__}")
         self.logger = logger
+
+    def _prepare_metrics(
+        self,
+        metrics: Union[MetricSet, List[MetricInputType], None],
+    ) -> MetricSet:
+        """Parse the `metrics` instantiation inputs into a MetricSet."""
+        # Type-check and/or transform the inputs into a MetricSet instance.
+        metrics = MetricSet.from_specs(metrics)
+        # If a model loss metric is part of the set, remove it.
+        for i, metric in enumerate(metrics.metrics):
+            if metric.name == "loss":
+                metrics.metrics.pop(i)
+        # Add the wrapped model's loss to the metrics.
+        loss = self._setup_loss_metric()
+        metrics.metrics.append(loss)
+        # Return the prepared object for assignment as `metrics` attribute.
+        return metrics
+
+    def _setup_loss_metric(
+        self,
+    ) -> Metric:
+        """Return an ad-hoc Metric object to compute the model's loss."""
+        loss_fn = self.model.loss_function
+        # Write a custom, unregistered Metric subclass.
+        class LossMetric(MeanMetric, register=False):
+            """Ad hoc Metric wrapping a model's loss function."""
+
+            name = "loss"
+
+            def metric_func(
+                self, y_true: np.ndarray, y_pred: np.ndarray
+            ) -> np.ndarray:
+                return loss_fn(y_true, y_pred)
+
+        # Instantiate and return the ad-hoc loss metric.
+        return LossMetric()
 
     def training_round(
         self,
@@ -263,18 +313,26 @@ class TrainingManager:
             Constraint(limit=n_steps, name="n_steps"),
             TimeoutConstraint(limit=timeout, name="t_spent"),
         )
+        # Ensure evaluation metrics start from their base state.
+        self.metrics.reset()
         # Run batch evaluation steps for as long as constraints allow it.
-        loss = 0.0
         dataset = self.valid_data or self.train_data
         for batch in dataset.generate_batches(**batch_cfg):
-            loss += self.model.compute_loss([batch])
+            inputs = self.model.compute_batch_predictions(batch)
+            self.metrics.update(*inputs)
             constraints.increment()
             if constraints.saturated:
                 break
-        # Pack the result and computational effort information into a message.
+        # Gather the computed metrics and computational effort information.
         effort = constraints.get_values()
+        result = self.metrics.get_result()
+        states = self.metrics.get_states()
+        self.logger.info("Local evaluation metrics: %s", result)
+        # Pack the result and computational effort information into a message.
+        self.logger.info("Packing local results to be sent to the server.")
         return messaging.EvaluationReply(
-            loss=loss / effort["n_steps"],
+            loss=float(result["loss"]),
+            metrics=states,
             n_steps=int(effort["n_steps"]),
             t_spent=round(effort["t_spent"], 3),
         )

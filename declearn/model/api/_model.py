@@ -2,8 +2,11 @@
 
 """Model abstraction API."""
 
+import warnings
 from abc import ABCMeta, abstractmethod
-from typing import Any, Dict, Iterable, Optional, Set
+from typing import Any, Dict, Iterable, Optional, Set, Tuple
+
+import numpy as np
 
 from declearn.model.api._vector import Vector
 from declearn.typing import Batch
@@ -142,6 +145,75 @@ class Model(metaclass=ABCMeta):
         return None
 
     @abstractmethod
+    def compute_batch_predictions(
+        self,
+        batch: Batch,
+    ) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray]]:
+        """Compute and return model predictions on given inputs.
+
+        This method is designed to return numpy arrays independently
+        from the wrapped model's actual framework, for compatibility
+        purposed with the `declearn.metrics.Metric` API.
+
+        Note that in most cases, the returned `y_true` and `s_wght`
+        are directly taken from the input batch. Their inclusion in
+        the inputs and outputs of this method aims to enable using
+        some non-standard data-flow schemes, such as that of auto-
+        encoder models, that re-use their inputs as labels.
+
+        Parameters
+        ----------
+        batch: declearn.typing.Batch
+            Tuple wrapping input data, (opt.) target values and (opt.)
+            sample weights. Note that in general, predictions should
+            only be computed from input data - but the API is flexible
+            for edge cases, e.g. auto-encoder models, as target labels
+            are equal to the input data.
+
+        Returns
+        -------
+        y_true: np.ndarray
+            Ground-truth labels, to which predictions are aligned
+            and should be compared for loss (and other evaluation
+            metrics) computation.
+        y_pred: np.ndarray
+            Output model predictions (scores or labels), wrapped as
+            a (>=1)-d numpy array, batched along the first axis.
+        s_wght: np.ndarray or None
+            Optional sample weights to be used to weight metrics.
+        """
+
+    @abstractmethod
+    def loss_function(
+        self,
+        y_true: np.ndarray,
+        y_pred: np.ndarray,
+    ) -> np.ndarray:
+        """Compute the model's sample-wise loss from labels and predictions.
+
+        This method is designed to be used when evaluating the model,
+        to compute a sample-wise loss from the predictions output by
+        `self.compute_batch_predictions`.
+
+        It may further be wrapped as an ad-hoc samples-averaged Metric
+        instance so as to mutualize the inference computations between
+        the loss's and other evaluation metrics' computation.
+
+        Parameters
+        ----------
+        y_true: np.ndarray
+            Target values or labels, wrapped as a (>=1)-d numpy array,
+            the first axis of which is the batching one.
+        y_pred: np.ndarray
+            Predicted values or scores, as a (>=1)-d numpy array aligned
+            with the `y_true` one.
+
+        Returns
+        -------
+        s_loss: np.ndarray
+            Sample-wise loss values, as a 1-d numpy array.
+        """
+
     def compute_loss(
         self,
         dataset: Iterable[Batch],
@@ -160,4 +232,18 @@ class Model(metaclass=ABCMeta):
         loss: float
             Average value of the model's loss over samples.
         """
-        return NotImplemented
+        warning = DeprecationWarning(
+            "The `Model.compute_loss` method is deprecated as of v2.0b4. "
+            "It will be removed in version 2.0, in favor of the Metric API."
+        )
+        warnings.warn(warning)
+        total = 0.0
+        n_btc = 0.0
+        for batch in dataset:
+            y_true, y_pred, s_wght = self.compute_batch_predictions(batch)
+            loss = self.loss_function(y_true, y_pred)
+            if s_wght is not None:
+                loss *= s_wght
+            total += loss.sum()
+            n_btc += len(loss) if s_wght is None else s_wght.sum()
+        return total / n_btc

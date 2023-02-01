@@ -3,7 +3,7 @@
 """Model subclass to wrap scikit-learn SGD classifier and regressor models."""
 
 import typing
-from typing import Any, Callable, Dict, Iterable, Optional, Set, Tuple, Union
+from typing import Any, Callable, Dict, Optional, Set, Tuple, Union
 
 import numpy as np
 from numpy.typing import ArrayLike
@@ -15,6 +15,11 @@ from declearn.model.api import Model
 from declearn.model.sklearn._np_vec import NumpyVector
 from declearn.typing import Batch
 from declearn.utils import register_type
+
+
+__all__ = [
+    "SklearnSGDModel",
+]
 
 
 LossesLiteral = Literal[
@@ -75,6 +80,14 @@ class SklearnSGDModel(Model):
         )
         super().__init__(model)
         self._initialized = False
+        self._predict = (
+            self._model.decision_function
+            if isinstance(model, SGDClassifier)
+            else self._model.predict
+        )
+        self._loss_fn = (
+            None
+        )  # type: Optional[Callable[[np.ndarray, np.ndarray], np.ndarray]]
 
     @property
     def required_data_info(
@@ -313,30 +326,22 @@ class SklearnSGDModel(Model):
         self._model.coef_ += updates.coefs["coef"]
         self._model.intercept_ += updates.coefs["intercept"]
 
-    def compute_loss(
+    def compute_batch_predictions(
         self,
-        dataset: Iterable[Batch],
-    ) -> float:
-        loss_fn = self._setup_loss_fn()
-        loss = 0.0
-        nsmp = 0.0
-        if isinstance(self._model, SGDClassifier):
-            predict = self._model.decision_function
-        else:
-            predict = self._model.predict
-        # Iteratively compute and accumulate batch- and sample-wise loss.
-        for batch in dataset:
-            inputs, y_true, s_wght = self._unpack_batch(batch)
-            y_pred = predict(inputs)
-            losses = loss_fn(y_pred, y_true)  # type: ignore
-            if s_wght is None:
-                loss += losses.sum()
-                nsmp += len(y_pred)
-            else:
-                loss += (s_wght * losses).sum()  # type: ignore
-                nsmp += np.mean(s_wght)  # type: ignore
-        # Reduce the results and return them.
-        return loss / nsmp
+        batch: Batch,
+    ) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray]]:
+        inputs, y_true, s_wght = self._unpack_batch(batch)
+        y_pred = self._predict(inputs)
+        return y_true, y_pred, s_wght  # type: ignore
+
+    def loss_function(
+        self,
+        y_true: np.ndarray,
+        y_pred: np.ndarray,
+    ) -> np.ndarray:
+        if self._loss_fn is None:
+            self._loss_fn = self._setup_loss_fn()
+        return self._loss_fn(y_true, y_pred)
 
     def _setup_loss_fn(
         self,
@@ -350,13 +355,13 @@ class SklearnSGDModel(Model):
             loss_cls, *args = self._model.loss_functions[self._model.loss]
             loss_smp = loss_cls(*args).py_loss
         # Wrap it to support batched inputs.
-        def loss_1d(y_pred: np.ndarray, y_true: np.ndarray) -> np.ndarray:
+        def loss_1d(y_true: np.ndarray, y_pred: np.ndarray) -> np.ndarray:
             return np.array([loss_smp(*smp) for smp in zip(y_pred, y_true)])
         # For multiclass classifiers, further wrap to support 2d predictions.
         if len(getattr(self._model, "classes_", [])) > 2:
-            def loss_fn(y_pred: np.ndarray, y_true: np.ndarray) -> np.ndarray:
+            def loss_fn(y_true: np.ndarray, y_pred: np.ndarray) -> np.ndarray:
                 return np.sum([  # type: ignore
-                    loss_1d(y_pred[:, i], y_true == val)
+                    loss_1d(y_true == val, y_pred[:, i])
                     for i, val in enumerate(self._model.classes_)
                 ], axis=0)
         else:

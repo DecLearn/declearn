@@ -5,14 +5,17 @@
 from unittest import mock
 from typing import Any, Iterator, Optional
 
+import numpy
 
 from declearn.communication import messaging
 from declearn.dataset import Dataset
 from declearn.main.utils import TrainingManager
+from declearn.metrics import Metric, MetricSet
 from declearn.model.api import Model, Vector
 from declearn.optimizer import Optimizer
 
 
+MockArray = mock.create_autospec(numpy.ndarray)
 MockVector = mock.create_autospec(Vector)
 BATCHES = {"batch_size": 42}  # default batch-generation kwargs
 
@@ -20,10 +23,13 @@ BATCHES = {"batch_size": 42}  # default batch-generation kwargs
 def build_manager(n_batch: int) -> Any:  # TrainingManager with Mock attributes
     """Return a TrainingManager instance with Mock attributes."""
     model = mock.create_autospec(Model, instance=True)
+    model.compute_batch_predictions.return_value = (MockArray, MockArray, None)
     optim = mock.create_autospec(Optimizer, instance=True)
     train_data = build_mock_dataset(n_batch)
     valid_data = build_mock_dataset(n_batch)
-    return TrainingManager(model, optim, train_data, valid_data)
+    metrics = mock.create_autospec(MetricSet, instance=True)
+    metrics.metrics = []
+    return TrainingManager(model, optim, train_data, valid_data, metrics)
 
 
 def build_mock_dataset(n_batch: int) -> Dataset:
@@ -162,13 +168,22 @@ class TestEvaluationRound:
     * reports accurate values for the number of steps taken
     """
 
+    def test_metrics_instantiation(self) -> None:
+        """Test that the model's loss is added to the wrapped metrics."""
+        manager = build_manager(n_batch=1)
+        assert len(manager.metrics.metrics) == 1
+        assert isinstance(manager.metrics.metrics[0], Metric)
+        assert manager.metrics.metrics[0].name == "loss"
+
     def test_evaluation_round_without_constraints(self) -> None:
         """Test running a 1-epoch evaluation round."""
         manager = build_manager(n_batch=100)
         reply = manager.evaluation_round(build_evaluation_request())
         assert isinstance(reply, messaging.EvaluationReply)
         assert reply.n_steps == 100
-        assert manager.model.compute_loss.call_count == 100
+        assert manager.metrics.update.call_count == 100
+        manager.metrics.get_result.assert_called_once()
+        assert reply.metrics == manager.metrics.get_states.return_value
         manager.valid_data.generate_batches.assert_called_once_with(**BATCHES)
 
     def test_evaluation_round_with_steps_constraint(self) -> None:
@@ -177,7 +192,9 @@ class TestEvaluationRound:
         reply = manager.evaluation_round(build_evaluation_request(n_steps=50))
         assert isinstance(reply, messaging.EvaluationReply)
         assert reply.n_steps == 50
-        assert manager.model.compute_loss.call_count == 50
+        assert manager.metrics.update.call_count == 50
+        manager.metrics.get_result.assert_called_once()
+        assert reply.metrics == manager.metrics.get_states.return_value
         manager.valid_data.generate_batches.assert_called_once_with(**BATCHES)
 
     def test_evaluation_round_with_loose_steps_constraint(self) -> None:
@@ -186,7 +203,9 @@ class TestEvaluationRound:
         reply = manager.evaluation_round(build_evaluation_request(n_steps=150))
         assert isinstance(reply, messaging.EvaluationReply)
         assert reply.n_steps == 100
-        assert manager.model.compute_loss.call_count == 100
+        assert manager.metrics.update.call_count == 100
+        manager.metrics.get_result.assert_called_once()
+        assert reply.metrics == manager.metrics.get_states.return_value
         manager.valid_data.generate_batches.assert_called_once_with(**BATCHES)
 
     def test_evaluation_round_with_timeout_constraint(self) -> None:
@@ -196,7 +215,9 @@ class TestEvaluationRound:
         assert isinstance(reply, messaging.EvaluationReply)
         assert reply.n_steps < 10000
         assert 0.1 <= reply.t_spent
-        assert manager.model.compute_loss.call_count == reply.n_steps
+        assert manager.metrics.update.call_count == reply.n_steps
+        manager.metrics.get_result.assert_called_once()
+        assert reply.metrics == manager.metrics.get_states.return_value
         manager.valid_data.generate_batches.assert_called_once_with(**BATCHES)
 
     def test_evaluation_round_with_multiple_constraints_1(self) -> None:
@@ -207,7 +228,9 @@ class TestEvaluationRound:
         assert isinstance(reply, messaging.EvaluationReply)
         assert reply.n_steps == 50
         assert reply.t_spent < 20
-        assert manager.model.compute_loss.call_count == 50
+        assert manager.metrics.update.call_count == 50
+        manager.metrics.get_result.assert_called_once()
+        assert reply.metrics == manager.metrics.get_states.return_value
         manager.valid_data.generate_batches.assert_called_once_with(**BATCHES)
 
     def test_evaluation_round_with_multiple_constraints_2(self) -> None:
@@ -218,5 +241,7 @@ class TestEvaluationRound:
         assert isinstance(reply, messaging.EvaluationReply)
         assert reply.n_steps < 10000
         assert 0.1 <= reply.t_spent
-        assert manager.model.compute_loss.call_count == reply.n_steps
+        assert manager.metrics.update.call_count == reply.n_steps
+        manager.metrics.get_result.assert_called_once()
+        assert reply.metrics == manager.metrics.get_states.return_value
         manager.valid_data.generate_batches.assert_called_once_with(**BATCHES)

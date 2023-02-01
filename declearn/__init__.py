@@ -27,6 +27,8 @@ The package is organized into the following submodules:
     Data interfacing API and implementations.
 * main:
     Main classes implementing a Federated Learning process.
+* metrics:
+    Iterative and federative evaluation metrics computation tools.
 * model:
     Model interfacing API and implementations.
 * optimizer:
@@ -42,6 +44,7 @@ from . import utils
 from . import communication
 from . import data_info
 from . import dataset
+from . import metrics
 from . import model
 from . import optimizer
 from . import aggregator

@@ -182,7 +182,7 @@ optim = declearn.main.FLOptimConfig.from_params(
     aggregator="averaging",
     client_opt=0.001,
 )
-server = declearn.main.FederatedServer(model, netwk, strat, folder="outputs")
+server = declearn.main.FederatedServer(model, netwk, optim, folder="outputs")
 config = declearn.main.config.FLRunConfig.from_params(
     rounds=10,
     register={"min_clients": 1, "max_clients": 3, "timeout": 180},
@@ -276,9 +276,9 @@ exposed here.
   - Server:
     - validate and aggregate clients-transmitted metadata
     - finalize the model's initialization using those metadata
-    - send the model and local optimizer's specs to all clients
+    - send the model, local optimizer and evaluation metrics specs to clients
   - Client:
-    - instantiate the model and optimizer based on server instructions
+    - instantiate the model, optimizer and metrics based on server instructions
   - messaging: (InitRequest <-> GenericMessage)
 
 - **(Opt.) Local differential privacy initialization**
@@ -317,11 +317,15 @@ exposed here.
     - (_send effort constraints, unused for now_)
   - Client:
     - update model weights
-    - compute the model's loss over the entire validation dataset
-    - checkpoint the model, then send back the loss to the server
+    - perform evaluation steps based on effort constraints
+    - step: update evaluation metrics, including the model's loss, over a batch
+    - checkpoint the model, then send results to the server
+    - optionally prevent sharing detailed metrics with the server; always
+      include the scalar validation loss value
   - messaging: (EvaluateRequest <-> EvaluateReply)
   - Server:
     - aggregate local loss values into a global loss metric
+    - aggregate all other evaluation metrics and log their values
     - checkpoint the model and the global loss
 
 ### Overview of the declearn API
@@ -330,6 +334,8 @@ exposed here.
 
 The package is organized into the following submodules:
 
+- `aggregator`:<br/>
+  &emsp; Model updates aggregating API and implementations.
 - `communication`:<br/>
   &emsp; Client-Server network communications API and implementations.
 - `data_info`:<br/>
@@ -338,6 +344,8 @@ The package is organized into the following submodules:
   &emsp; Data interfacing API and implementations.
 - `main`:<br/>
   &emsp; Main classes implementing a Federated Learning process.
+- `metrics`:<br/>
+  &emsp; Iterative and federative evaluation metrics computation tools.
 - `model`:<br/>
   &emsp; Model interfacing API and implementations.
 - `optimizer`:<br/>
@@ -396,6 +404,17 @@ new custom concrete implementations inheriting the abstraction.
   - Extend:
     - Simply inherit from `Regularizer` (registration is automated).
     - To avoid it, use `class MyRegularizer(Regularizer, register=False)`.
+
+- `declearn.metrics.Metric`:
+  - Object: Define evaluation metrics to compute iteratively and federatively.
+  - Usage: Compute local and federated metrics based on local data streams.
+  - Examples:
+    - `declearn.metric.BinaryRocAuc`
+    - `declearn.metric.MeanSquaredError`
+    - `declearn.metric.MuticlassAccuracyPrecisionRecall`
+  - Extend:
+    - Simply inherit from `Metric` (registration is automated).
+    - To avoid it, use `class MyMetric(Metric, register=False)`
 
 - `declearn.communication.api.NetworkClient`:
   - Object: Instantiate a network communication client endpoint.
@@ -476,6 +495,9 @@ details on this example and on how to run it, please refer to its own
 
    - Instantiate a `declearn.main.FederatedServer`:
      - Provide the Model, FLOptimConfig and Server objects or configurations.
+     - Optionally provide a MetricSet object or its specs (i.e. a list of
+       Metric instances, identifier names of (name, config) tuples), that
+       defines metrics to be computed by clients on their validation data.
      - Optionally provide the path to a folder where to write output files
        (model checkpoints and global loss history).
    - Instantiate a `declearn.main.config.FLRunConfig` to specify the process:
@@ -530,6 +552,9 @@ details on this example and on how to run it, please refer to its own
 
    - Instantiate a `declearn.main.FederatedClient`:
      - Provide the NetworkClient and Dataset objects or configurations.
+     - Optionally specify `share_metrics=False` to prevent sharing evaluation
+       metrics (apart from the aggregated loss) with the server out of privacy
+       concerns.
      - Optionally provide the path to a folder where to write output files
        (model checkpoints and local loss history).
    - Call the client's `run` method and let the magic happen.

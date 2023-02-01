@@ -24,12 +24,15 @@ __all__ = [
 class FederatedClient:
     """Client-side Federated Learning orchestrating class."""
 
+    # one-too-many attribute; pylint: disable=too-many-instance-attributes
+
     def __init__(
         self,
         netwk: Union[NetworkClient, NetworkClientConfig, Dict[str, Any], str],
         train_data: Union[Dataset, str],
         valid_data: Optional[Union[Dataset, str]] = None,
         folder: Optional[str] = None,
+        share_metrics: bool = True,
         logger: Union[logging.Logger, str, None] = None,
     ) -> None:
         """Instantiate a client to participate in a federated learning task.
@@ -53,6 +56,11 @@ class FederatedClient:
             wise weights checkpoints and local validation losses.
             If None, only record the loss metric and lowest-loss-
             yielding weights in memory (under `self.checkpoint`).
+        share_metrics: bool, default=True
+            Whether to share evaluation metrics with the server,
+            or save them locally and only send the model's loss.
+            This may prevent information leakage, e.g. as to the
+            local distribution of target labels or values.
         logger: logging.Logger or str or None, default=None,
             Logger to use, or name of a logger to set up with
             `declearn.utils.get_logger`.
@@ -97,6 +105,9 @@ class FederatedClient:
         # Record the checkpointing folder and create a Checkpointer slot.
         self.folder = folder
         self.checkpointer = None  # type: Optional[Checkpointer]
+        # Record the metric-sharing boolean switch.
+        self.share_metrics = bool(share_metrics)
+        # Create a TrainingManager slot, populated at initialization phase.
         self.trainmanager = None  # type: Optional[TrainingManager]
 
     def run(
@@ -235,6 +246,7 @@ class FederatedClient:
             optim=message.optim,
             train_data=self.train_data,
             valid_data=self.valid_data,
+            metrics=message.metrics,
             logger=self.logger,
         )
         # Instantiate a checkpointer and save the initial model.
@@ -299,11 +311,12 @@ class FederatedClient:
         from declearn.main.privacy import DPTrainingManager
         # pylint: enable=import-outside-toplevel
         self.trainmanager = DPTrainingManager(
-            self.trainmanager.model,
-            self.trainmanager.optim,
-            self.trainmanager.train_data,
-            self.trainmanager.valid_data,
-            self.trainmanager.logger,
+            model=self.trainmanager.model,
+            optim=self.trainmanager.optim,
+            train_data=self.trainmanager.train_data,
+            valid_data=self.trainmanager.valid_data,
+            metrics=self.trainmanager.metrics,
+            logger=self.trainmanager.logger,
         )
         self.trainmanager.make_private(message)
 
@@ -353,12 +366,14 @@ class FederatedClient:
         assert self.trainmanager is not None
         # Run the evaluation round.
         reply = self.trainmanager.evaluation_round(message)
-        # If possible, checkpoint the model and record the local loss.
-        if (
-            isinstance(reply, messaging.EvaluationReply)  # not an Error
-            and self.checkpointer is not None  # True in `run` context
-        ):
-            self.checkpointer.checkpoint(reply.loss)
+        # Post-process the results.
+        if isinstance(reply, messaging.EvaluationReply):  # not an Error
+            # Checkpoint the model and record the local loss.
+            if self.checkpointer is not None:  # True in `run` context
+                self.checkpointer.checkpoint(reply.loss)
+            # Optionally prevent sharing metrics (save for the loss).
+            if not self.share_metrics:
+                reply.metrics.clear()
         # Send evaluation results (or error message) to the server.
         await self.netwk.send_message(reply)
 

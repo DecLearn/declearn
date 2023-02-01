@@ -6,6 +6,7 @@ import json
 from typing import Any, List, Protocol, Tuple, Type, Union
 
 import numpy as np
+import pytest
 
 from declearn.model.api import Model, Vector
 from declearn.typing import Batch
@@ -161,5 +162,41 @@ class ModelTestSuite:
         test_case: ModelTestCase,
     ) -> None:
         """Test that loss computation abides by its specs."""
-        loss = test_case.model.compute_loss(test_case.dataset)
+        with pytest.warns(DeprecationWarning):
+            loss = test_case.model.compute_loss(test_case.dataset)
         assert isinstance(loss, float)
+
+    def test_compute_batch_predictions(
+        self,
+        test_case: ModelTestCase,
+    ) -> None:
+        """Test that predictions' computation abids by its specs."""
+        model = test_case.model
+        batch = test_case.dataset[0]
+        y_true, y_pred, s_wght = model.compute_batch_predictions(batch)
+        assert isinstance(y_pred, np.ndarray) and y_pred.ndim >= 1
+        assert isinstance(y_true, np.ndarray) and y_true.ndim >= 1
+        assert len(y_pred) == len(y_true)
+        if batch[2] is None:
+            assert s_wght is None
+        else:
+            assert isinstance(s_wght, np.ndarray) and s_wght.ndim == 1
+            assert len(s_wght) == len(y_true)
+
+    def test_loss_function(
+        self,
+        test_case: ModelTestCase,
+    ) -> None:
+        """Test that the exposed loss function abides by its specs."""
+        model = test_case.model
+        batch = test_case.dataset[0]
+        y_true, y_pred, s_wght = model.compute_batch_predictions(batch)
+        s_loss = model.loss_function(y_true, y_pred).squeeze()
+        assert isinstance(s_loss, np.ndarray) and s_loss.ndim == 1
+        assert len(s_loss) == len(s_wght if s_wght is not None else y_true)
+        if s_wght is None:
+            s_wght = np.ones_like(s_loss)
+        r_loss = (s_loss * s_wght).sum() / s_wght.sum()
+        with pytest.warns(DeprecationWarning):
+            loss = model.compute_loss([batch])
+        assert r_loss == loss
