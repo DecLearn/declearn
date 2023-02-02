@@ -56,8 +56,13 @@ class NetworkServer(metaclass=ABCMeta):
 
     protocol: ClassVar[str] = NotImplemented
 
-    def __init_subclass__(cls, register: bool = True) -> None:
+    def __init_subclass__(
+        cls,
+        register: bool = True,
+        **kwargs: Any,
+    ) -> None:
         """Automate the type-registration of NetworkServer subclasses."""
+        super().__init_subclass__(**kwargs)
         if register:
             register_type(cls, cls.protocol, group="NetworkServer")
 

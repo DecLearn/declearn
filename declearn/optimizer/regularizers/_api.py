@@ -72,8 +72,10 @@ class Regularizer(metaclass=ABCMeta):
     def __init_subclass__(
         cls,
         register: bool = True,
+        **kwargs: Any,
     ) -> None:
         """Automatically type-register Regularizer subclasses."""
+        super().__init_subclass__(**kwargs)
         if register:
             register_type(cls, cls.name, group="Regularizer")
 

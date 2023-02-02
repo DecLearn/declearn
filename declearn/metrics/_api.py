@@ -249,8 +249,10 @@ class Metric(metaclass=ABCMeta):
     def __init_subclass__(
         cls,
         register: bool = True,
+        **kwargs: Any,
     ) -> None:
         """Automatically type-register Metric subclasses."""
+        super().__init_subclass__(**kwargs)
         if register:
             register_type(cls, name=cls.name, group="Metric")
 
