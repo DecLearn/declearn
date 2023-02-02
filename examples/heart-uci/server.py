@@ -5,9 +5,8 @@ import os
 
 from declearn.communication import NetworkServerConfig
 from declearn.main import FederatedServer
-from declearn.main.config import FLRunConfig, FLOptimConfig
+from declearn.main.config import FLOptimConfig, FLRunConfig
 from declearn.model.sklearn import SklearnSGDModel
-
 
 FILEDIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -85,7 +84,10 @@ def run_server(
     # f1-score and roc auc (with plot-enabling fpr/tpr curves) during
     # evaluation rounds.
     server = FederatedServer(
-        model, network, optim, metrics=["binary-classif", "binary-roc"]
+        # fmt: off
+        model, network, optim,
+        metrics=["binary-classif", "binary-roc"],
+        checkpoint=f"{FILEDIR}/results/server"
     )
 
     # Here, we set up 20 rounds of training, with 30 samples per batch

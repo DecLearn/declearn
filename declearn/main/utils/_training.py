@@ -327,7 +327,10 @@ class TrainingManager:
         effort = constraints.get_values()
         result = self.metrics.get_result()
         states = self.metrics.get_states()
-        self.logger.info("Local evaluation metrics: %s", result)
+        self.logger.info(
+            "Local scalar evaluation metrics: %s",
+            {k: v for k, v in result.items() if isinstance(v, float)},
+        )
         # Pack the result and computational effort information into a message.
         self.logger.info("Packing local results to be sent to the server.")
         return messaging.EvaluationReply(

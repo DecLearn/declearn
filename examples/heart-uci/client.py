@@ -68,7 +68,8 @@ def run_client(
     # (5) Instantiate a FederatedClient and run it.
 
     client = FederatedClient(
-        network, train, valid, folder=f"{FILEDIR}/results/{name}"
+        # fmt: off
+        network, train, valid, checkpoint=f"{FILEDIR}/results/{name}"
         # Note: you may add `share_metrics=False` to prevent sending
         # evaluation metrics to the server, out of privacy concerns
     )

@@ -5,15 +5,13 @@
 import asyncio
 import dataclasses
 import logging
-import os
 from typing import Any, Dict, Optional, Union
-
 
 from declearn.communication import NetworkClientConfig, messaging
 from declearn.communication.api import NetworkClient
 from declearn.dataset import Dataset, load_dataset_from_json
 from declearn.main.utils import Checkpointer, TrainingManager
-from declearn.utils import get_logger, json_dump
+from declearn.utils import get_logger
 
 
 __all__ = [
@@ -31,7 +29,7 @@ class FederatedClient:
         netwk: Union[NetworkClient, NetworkClientConfig, Dict[str, Any], str],
         train_data: Union[Dataset, str],
         valid_data: Optional[Union[Dataset, str]] = None,
-        folder: Optional[str] = None,
+        checkpoint: Union[Checkpointer, Dict[str, Any], str, None] = None,
         share_metrics: bool = True,
         logger: Union[logging.Logger, str, None] = None,
     ) -> None:
@@ -51,11 +49,11 @@ class FederatedClient:
             Optional Dataset instance wrapping validation data, or
             path to a JSON file from which it can be instantiated.
             If None, run evaluation rounds over `train_data`.
-        folder: str or None, default=None
-            Optional folder where to write out a model dump, round-
-            wise weights checkpoints and local validation losses.
-            If None, only record the loss metric and lowest-loss-
-            yielding weights in memory (under `self.checkpoint`).
+        checkpoint: Checkpointer or dict or str or None, default=None
+            Optional Checkpointer instance or instantiation dict to be
+            used so as to save round-wise model, optimizer and metrics.
+            If a single string is provided, treat it as the checkpoint
+            folder path and use default values for other parameters.
         share_metrics: bool, default=True
             Whether to share evaluation metrics with the server,
             or save them locally and only send the model's loss.
@@ -102,9 +100,10 @@ class FederatedClient:
         if not (valid_data is None or isinstance(valid_data, Dataset)):
             raise TypeError("'valid_data' should be a Dataset or path to one.")
         self.valid_data = valid_data
-        # Record the checkpointing folder and create a Checkpointer slot.
-        self.folder = folder
-        self.checkpointer = None  # type: Optional[Checkpointer]
+        # Assign an optional checkpointer.
+        if checkpoint is not None:
+            checkpoint = Checkpointer.from_specs(checkpoint)
+        self.ckptr = checkpoint
         # Record the metric-sharing boolean switch.
         self.share_metrics = bool(share_metrics)
         # Create a TrainingManager slot, populated at initialization phase.
@@ -249,13 +248,16 @@ class FederatedClient:
             metrics=message.metrics,
             logger=self.logger,
         )
-        # Instantiate a checkpointer and save the initial model.
-        self.checkpointer = Checkpointer(message.model, self.folder)
-        self.checkpointer.save_model()
-        self.checkpointer.checkpoint(float("inf"))  # initial weights
         # If instructed to do so, await a PrivacyRequest to set up DP-SGD.
         if message.dpsgd:
             await self._initialize_dpsgd()
+        # Optionally checkpoint the received model and optimizer.
+        if self.ckptr:
+            self.ckptr.checkpoint(
+                model=self.trainmanager.model,
+                optimizer=self.trainmanager.optim,
+                first_call=True,
+            )
 
     async def _initialize_dpsgd(
         self,
@@ -309,6 +311,7 @@ class FederatedClient:
         # lazy-import the DPTrainingManager, that involves some optional,
         # heavy-loadtime dependencies; pylint: disable=import-outside-toplevel
         from declearn.main.privacy import DPTrainingManager
+
         # pylint: enable=import-outside-toplevel
         self.trainmanager = DPTrainingManager(
             model=self.trainmanager.model,
@@ -368,9 +371,13 @@ class FederatedClient:
         reply = self.trainmanager.evaluation_round(message)
         # Post-process the results.
         if isinstance(reply, messaging.EvaluationReply):  # not an Error
-            # Checkpoint the model and record the local loss.
-            if self.checkpointer is not None:  # True in `run` context
-                self.checkpointer.checkpoint(reply.loss)
+            # Optionnally checkpoint the model, optimizer and local loss.
+            if self.ckptr:
+                self.ckptr.checkpoint(
+                    model=self.trainmanager.model,
+                    optimizer=self.trainmanager.optim,
+                    metrics=self.trainmanager.metrics.get_result(),
+                )
             # Optionally prevent sharing metrics (save for the loss).
             if not self.share_metrics:
                 reply.metrics.clear()
@@ -393,17 +400,12 @@ class FederatedClient:
             message.rounds,
             message.loss,
         )
-        if self.folder is not None:
-            # Save the locally-best-performing model weights.
-            if self.checkpointer is not None:  # True in `run` context
-                path = os.path.join(self.folder, "best_local_weights.json")
-                self.logger.info("Saving best local weights in '%s'.", path)
-                self.checkpointer.reset_best_weights()
-                json_dump(self.checkpointer.model.get_weights(), path)
-            # Save the globally-best-performing model weights.
-            path = os.path.join(self.folder, "final_weights.json")
-            self.logger.info("Saving final weights in '%s'.", path)
-            json_dump(message.weights, path)
+        if self.ckptr:
+            path = f"{self.ckptr.folder}/model_state_best.json"
+            self.logger.info("Checkpointing final weights under %s.", path)
+            assert self.trainmanager is not None  # for mypy
+            self.trainmanager.model.set_weights(message.weights)
+            self.ckptr.save_model(self.trainmanager.model, timestamp="best")
 
     async def cancel_training(
         self,

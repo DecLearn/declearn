@@ -24,7 +24,7 @@ from declearn.main.utils import (
     aggregate_clients_data_info,
 )
 from declearn.metrics import MetricInputType, MetricSet
-from declearn.model.api import Model
+from declearn.model.api import Model, Vector
 from declearn.utils import deserialize_object, get_logger
 
 
@@ -47,7 +47,7 @@ class FederatedServer:
         netwk: Union[NetworkServer, NetworkServerConfig, Dict[str, Any], str],
         optim: Union[FLOptimConfig, str, Dict[str, Any]],
         metrics: Union[MetricSet, List[MetricInputType], None] = None,
-        folder: Optional[str] = None,
+        checkpoint: Union[Checkpointer, Dict[str, Any], str, None] = None,
         logger: Union[logging.Logger, str, None] = None,
     ) -> None:
         """Instantiate the orchestrating server for a federated learning task.
@@ -72,11 +72,11 @@ class FederatedServer:
             to wrap into one, defining evaluation metrics to compute in
             addition to the model's loss.
             If None, only compute and report the model's loss.
-        folder: str or None, default=None
-            Optional folder where to write out a model dump, round-
-            wise weights checkpoints and global validation losses.
-            If None, only record the loss metric and lowest-loss-
-            yielding weights in memory (under `self.checkpoint`).
+        checkpoint: Checkpointer or dict or str or None, default=None
+            Optional Checkpointer instance or instantiation dict to be
+            used so as to save round-wise model, optimizer and metrics.
+            If a single string is provided, treat it as the checkpoint
+            folder path and use default values for other parameters.
         logger: logging.Logger or str or None, default=None,
             Logger to use, or name of a logger to set up with
             `declearn.utils.get_logger`. If None, use `type(self)`.
@@ -125,8 +125,13 @@ class FederatedServer:
         self.c_opt = optim.client_opt
         # Assign the wrapped MetricSet.
         self.metrics = MetricSet.from_specs(metrics)
-        # Assign a model checkpointer.
-        self.checkpointer = Checkpointer(self.model, folder)
+        # Assign an optional checkpointer.
+        if checkpoint is not None:
+            checkpoint = Checkpointer.from_specs(checkpoint)
+        self.ckptr = checkpoint
+        # Set up private attributes to record the loss values and best weights.
+        self._loss = {}  # type: Dict[int, float]
+        self._best = None  # type: Optional[Vector]
 
     def run(
         self,
@@ -177,8 +182,8 @@ class FederatedServer:
         async with self.netwk:
             # Conduct the initialization phase.
             await self.initialization(config)
-            self.checkpointer.save_model()
-            self.checkpointer.checkpoint(float("inf"))  # save initial weights
+            if self.ckptr:
+                self.ckptr.checkpoint(self.model, self.optim, first_call=True)
             # Iteratively run training and evaluation rounds.
             round_i = 0
             while True:
@@ -478,6 +483,7 @@ class FederatedServer:
             EvaluateConfig dataclass instance wrapping data-batching
             and computational effort constraints hyper-parameters.
         """
+        # Send evaluation requests and collect clients' replies.
         self.logger.info("Initiating evaluation round %s", round_i)
         clients = self._select_evaluation_round_participants()
         await self._send_evaluation_instructions(clients, round_i, valid_cfg)
@@ -485,12 +491,22 @@ class FederatedServer:
         results = await self._collect_results(
             clients, messaging.EvaluationReply, "evaluation"
         )
+        # Compute and report aggregated evaluation metrics.
         self.logger.info("Aggregating evaluation results.")
         loss, metrics = self._aggregate_evaluation_results(results)
-        self.logger.info("Global loss is: %s", loss)
+        self.logger.info("Averaged loss is: %s", loss)
         if metrics:
-            self.logger.info("Other global metrics are: %s", metrics)
-        self.checkpointer.checkpoint(loss)
+            self.logger.info(
+                "Other averaged scalar metrics are: %s",
+                {k: v for k, v in metrics.items() if isinstance(v, float)},
+            )
+        # Optionally checkpoint the model, optimizer and metrics.
+        if self.ckptr:
+            self._checkpoint_after_evaluation(metrics, results)
+        # Record the global loss, and update the kept "best" weights.
+        self._loss[round_i] = loss
+        if loss == min(self._loss.values()):
+            self._best = self.model.get_weights()
 
     def _select_evaluation_round_participants(
         self,
@@ -551,6 +567,7 @@ class FederatedServer:
             # Case when the client reported some metrics.
             if reply.metrics:
                 states = reply.metrics.copy()
+                # Update the global metrics based on the local ones.
                 s_loss = states.pop("loss")
                 loss += s_loss["current"]  # type: ignore
                 dvsr += s_loss["divisor"]  # type: ignore
@@ -566,6 +583,50 @@ class FederatedServer:
         metrics = self.metrics.get_result()
         loss = loss / dvsr
         return loss, metrics
+
+    def _checkpoint_after_evaluation(
+        self,
+        metrics: Dict[str, Union[float, np.ndarray]],
+        results: Dict[str, messaging.EvaluationReply],
+    ) -> None:
+        """Checkpoint the current model, optimizer and evaluation metrics.
+
+        This method is meant to be called at the end of an evaluation round.
+
+        Parameters
+        ----------
+        metrics: dict[str, (float|np.ndarray)]
+            Aggregated evaluation metrics to checkpoint.
+        results: dict[str, EvaluationReply]
+            Client-wise EvaluationReply messages, based on which
+            `metrics` were already computed.
+        """
+        # This method only works when a checkpointer is used.
+        if self.ckptr is None:
+            raise RuntimeError(
+                "`_checkpoint_after_evaluation` was called without "
+                "the FederatedServer having a Checkpointer."
+            )
+        # Checkpoint the model, optimizer and global evaluation metrics.
+        timestamp = self.ckptr.checkpoint(
+            model=self.model, optimizer=self.optim, metrics=metrics
+        )
+        # Checkpoint the client-wise metrics (or at least their loss).
+        # Use the same timestamp label as for global metrics and states.
+        local = MetricSet.from_config(self.metrics.get_config())
+        for client, reply in results.items():
+            if reply.metrics:
+                local.reset()
+                local.agg_states(reply.metrics)
+                metrics = local.get_result()
+            else:
+                metrics = {"loss": reply.loss}
+            self.ckptr.save_metrics(
+                metrics=local.get_result(),
+                prefix=f"metrics_{client}",
+                append=bool(self._loss),
+                timestamp=timestamp,
+            )
 
     def _keep_training(
         self,
@@ -589,7 +650,7 @@ class FederatedServer:
             self.logger.info("Maximum number of training rounds reached.")
             return False
         if early_stop is not None:
-            early_stop.update(self.checkpointer.get_loss(round_i))
+            early_stop.update(self._loss[round_i])
             if not early_stop.keep_training:
                 self.logger.info("Early stopping criterion reached.")
                 return False
@@ -606,11 +667,16 @@ class FederatedServer:
         rounds: int
             Number of training rounds taken until now.
         """
-        self.checkpointer.reset_best_weights()
+        self.logger.info("Recovering weights that yielded the lowest loss.")
         message = messaging.StopTraining(
-            weights=self.model.get_weights(),
-            loss=min(self.checkpointer.get_loss(i) for i in range(rounds)),
+            weights=self._best or self.model.get_weights(),
+            loss=min(self._loss.values()) if self._loss else float("nan"),
             rounds=rounds,
         )
         self.logger.info("Notifying clients that training is over.")
         await self.netwk.broadcast_message(message)
+        if self.ckptr:
+            path = f"{self.ckptr.folder}/model_state_best.json"
+            self.logger.info("Checkpointing final weights under %s.", path)
+            self.model.set_weights(message.weights)
+            self.ckptr.save_model(self.model, timestamp="best")
