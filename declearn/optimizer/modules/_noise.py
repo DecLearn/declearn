@@ -88,7 +88,6 @@ class NoiseModule(OptiModule, metaclass=ABCMeta, register=False):
         dtype: str,
     ) -> np.ndarray:
         """Sample a noise tensor from a module-specific distribution."""
-        return NotImplemented
 
 
 class GaussianNoiseModule(NoiseModule):

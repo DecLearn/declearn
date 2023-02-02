@@ -113,7 +113,6 @@ class NetworkServer(metaclass=ABCMeta):
     @abstractmethod
     def uri(self) -> str:
         """URI on which this server is exposed, to be requested by clients."""
-        return NotImplemented
 
     @property
     def client_names(self) -> Set[str]:
@@ -147,21 +146,18 @@ class NetworkServer(metaclass=ABCMeta):
         password: Optional[str] = None,
     ) -> Any:
         """Set up and return a SSL context object suitable for this class."""
-        return NotImplemented
 
     @abstractmethod
     async def start(
         self,
     ) -> None:
         """Initialize the server and start welcoming communications."""
-        return None
 
     @abstractmethod
     async def stop(
         self,
     ) -> None:
         """Stop the server and purge information about clients."""
-        return None
 
     async def __aenter__(
         self,

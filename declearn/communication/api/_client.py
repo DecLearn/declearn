@@ -128,7 +128,6 @@ class NetworkClient(metaclass=ABCMeta):
         Note: this method can be called safely even if the
         client is not running (simply having no effect).
         """
-        return None
 
     async def __aenter__(
         self,
@@ -201,7 +200,6 @@ class NetworkClient(metaclass=ABCMeta):
         to send a Message (of any kind) to the server and await the
         primary reply from the `MessagesHandler` used by the server.
         """
-        return NotImplemented
 
     async def send_message(
         self,

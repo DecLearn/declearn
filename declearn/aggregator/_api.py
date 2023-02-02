@@ -92,7 +92,6 @@ class Aggregator(metaclass=ABCMeta):
             Aggregated updates, as a Vector - treated as gradients by
             the server-side optimizer.
         """
-        return NotImplemented
 
     def get_config(
         self,

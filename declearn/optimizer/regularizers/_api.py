@@ -116,7 +116,6 @@ class Regularizer(metaclass=ABCMeta):
             fully compatible with the input one - only the values
             of the wrapped coefficients may have changed.
         """
-        return NotImplemented
 
     def on_round_start(
         self,

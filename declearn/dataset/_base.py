@@ -55,7 +55,6 @@ class Dataset(metaclass=ABCMeta):
             Path to the main JSON file where to dump the dataset.
             Additional files may be created in the same folder.
         """
-        return None
 
     @classmethod
     @abstractmethod
@@ -64,14 +63,12 @@ class Dataset(metaclass=ABCMeta):
         path: str,
     ) -> "Dataset":
         """Instantiate a dataset based on local files."""
-        return NotImplemented
 
     @abstractmethod
     def get_data_specs(
         self,
     ) -> DataSpecs:
         """Return a DataSpecs object describing this dataset."""
-        return NotImplemented
 
     @abstractmethod
     def generate_batches(
@@ -114,7 +111,6 @@ class Dataset(metaclass=ABCMeta):
             Optional weights associated with the samples, that are
             typically used to balance a model's loss or metrics.
         """
-        return NotImplemented
 
 
 def load_dataset_from_json(path: str) -> Dataset:

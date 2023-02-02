@@ -102,7 +102,6 @@ class DataInfoField(metaclass=ABCMeta):
             raise ValueError(
                 f"Cannot combine '{cls.field}': invalid values encountered."
             )
-        return NotImplemented
 
 
 DATA_INFO_FIELDS = {}  # type: Dict[str, Type[DataInfoField]]

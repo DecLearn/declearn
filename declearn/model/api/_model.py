@@ -47,7 +47,6 @@ class Model(metaclass=ABCMeta):
         Note: these fields should match a registered specification
               (see `declearn.data_info` submodule)
         """
-        return NotImplemented
 
     @abstractmethod
     def initialize(
@@ -72,14 +71,12 @@ class Model(metaclass=ABCMeta):
         See the `aggregate_data_info` method to derive `data_info`
         from client-wise dict.
         """
-        return None
 
     @abstractmethod
     def get_config(
         self,
     ) -> Dict[str, Any]:
         """Return the model's parameters as a JSON-serializable dict."""
-        return NotImplemented
 
     @classmethod
     @abstractmethod
@@ -88,14 +85,12 @@ class Model(metaclass=ABCMeta):
         config: Dict[str, Any],
     ) -> "Model":
         """Instantiate a model from a configuration dict."""
-        return NotImplemented
 
     @abstractmethod
     def get_weights(
         self,
     ) -> Vector:
         """Return the model's trainable weights."""
-        return NotImplemented
 
     @abstractmethod
     def set_weights(
@@ -103,7 +98,6 @@ class Model(metaclass=ABCMeta):
         weights: Vector,
     ) -> None:
         """Assign values to the model's trainable weights."""
-        return None
 
     @abstractmethod
     def compute_batch_gradients(
@@ -134,7 +128,6 @@ class Model(metaclass=ABCMeta):
             Batch-averaged gradients, wrapped into a Vector (using
             a suited Vector subclass depending on the Model class).
         """
-        return NotImplemented
 
     @abstractmethod
     def apply_updates(
@@ -142,7 +135,6 @@ class Model(metaclass=ABCMeta):
         updates: Vector,
     ) -> None:
         """Apply updates to the model's weights."""
-        return None
 
     @abstractmethod
     def compute_batch_predictions(
