@@ -2,7 +2,7 @@
 
 import argparse
 import os
-from typing import List
+from typing import Collection
 
 import pandas as pd
 
@@ -29,14 +29,14 @@ DATADIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
 
 
 def get_data(
-    dir: str = DATADIR,
-    names: List[str] = NAMES,
+    folder: str = DATADIR,
+    names: Collection[str] = NAMES,
 ) -> None:
     """Download and process the UCI heart disease dataset.
 
     Arguments
     ---------
-    dir: str
+    folder: str
         Path to the folder where to write output csv files.
     names: list[str]
         Names of centers, the dataset from which to download,
@@ -61,8 +61,8 @@ def get_data(
         # Binarize the target variable.
         df["num"] = (df["num"] > 0).astype(int)
         # Export the resulting dataset to a csv file.
-        os.makedirs(dir, exist_ok=True)
-        df.to_csv(f"{dir}/{name}.csv", index=False)
+        os.makedirs(folder, exist_ok=True)
+        df.to_csv(f"{folder}/{name}.csv", index=False)
 
 
 # Code executed when the script is called directly.
@@ -70,7 +70,7 @@ if __name__ == "__main__":
     # Parse commandline parameters.
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--dir",
+        "--folder",
         type=str,
         default=DATADIR,
         help="folder where to write output csv files",
@@ -84,4 +84,4 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     # Download and pre-process the selected dataset(s).
-    get_data(dir=args.dir, names=args.names)
+    get_data(folder=args.folder, names=args.names)

@@ -182,7 +182,9 @@ optim = declearn.main.FLOptimConfig.from_params(
     aggregator="averaging",
     client_opt=0.001,
 )
-server = declearn.main.FederatedServer(model, netwk, optim, folder="outputs")
+server = declearn.main.FederatedServer(
+    model, netwk, optim, checkpoint="outputs"
+)
 config = declearn.main.config.FLRunConfig.from_params(
     rounds=10,
     register={"min_clients": 1, "max_clients": 3, "timeout": 180},
@@ -206,7 +208,7 @@ train = declearn.dataset.InMemoryDataset(
     expose_classes=True  # enable sharing of unique target values
 )
 valid = declearn.dataset.InMemoryDataset("path/to/valid.csv", target="label")
-client = declearn.main.FederatedClient(netwk, train, valid, folder="outputs")
+client = declearn.main.FederatedClient(netwk, train, valid, checkpoint="outputs")
 client.run()
 ```
 
@@ -249,9 +251,10 @@ exposed here.
   - decide whether to continue, based on the number of
     rounds taken or on the evolution of the global loss
 - Finally:
+  - restore the model weights that yielded the lowest global loss
   - notify clients that training is over, so they can disconnect
-    and run their final routine (e.g. model saving)
-  - optionally save the model (through a checkpointer)
+    and run their final routine (e.g. save the "best" model)
+  - optionally checkpoint the "best" model
   - close the network server and end the process
 
 #### Detail of the process phases
@@ -319,14 +322,15 @@ exposed here.
     - update model weights
     - perform evaluation steps based on effort constraints
     - step: update evaluation metrics, including the model's loss, over a batch
-    - checkpoint the model, then send results to the server
-    - optionally prevent sharing detailed metrics with the server; always
-      include the scalar validation loss value
+    - optionally checkpoint the model, local optimizer and evaluation metrics
+    - send results to the server: optionally prevent sharing detailed metrics;
+      always include the scalar validation loss value
   - messaging: (EvaluateRequest <-> EvaluateReply)
   - Server:
     - aggregate local loss values into a global loss metric
     - aggregate all other evaluation metrics and log their values
-    - checkpoint the model and the global loss
+    - optionally checkpoint the model, optimizer, aggregated evaluation
+      metrics and client-wise ones
 
 ### Overview of the declearn API
 

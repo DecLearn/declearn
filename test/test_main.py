@@ -193,7 +193,7 @@ class DeclearnTestCase:
         netwk = self.build_netwk_server()
         optim = self.build_optim_config()
         with tempfile.TemporaryDirectory() as folder:
-            server = FederatedServer(model, netwk, optim, folder=folder)
+            server = FederatedServer(model, netwk, optim, checkpoint=folder)
             config = {
                 "rounds": self.rounds,
                 "register": {"max_clients": self.nb_clients, "timeout": 20},
