@@ -69,7 +69,7 @@ def dataclass_from_func(
     # Parse the function's signature into dataclass Field instances.
     signature = inspect.signature(func)
     parameters = list(signature.parameters.values())
-    fields = parameters_to_fields(parameters)
+    fields = _parameters_to_fields(parameters)
     # Make a dataclass out of the former fields.
     if not name:
         name = "".join(w.capitalize() for w in func.__name__.split("_"))
@@ -134,7 +134,7 @@ def dataclass_from_init(
     """
     # Parse the class's __init__ signature into dataclass Field instances.
     parameters = list(inspect.signature(cls.__init__).parameters.values())[1:]
-    fields = parameters_to_fields(parameters)
+    fields = _parameters_to_fields(parameters)
     # Make a dataclass out of the former fields.
     name = name or f"{cls.__name__}Config"
     dcls = dataclasses.make_dataclass(name, fields)  # type: Type
@@ -168,7 +168,7 @@ def dataclass_from_init(
     return dcls  # type: ignore
 
 
-def parameters_to_fields(
+def _parameters_to_fields(
     params: List[inspect.Parameter],
 ) -> List[Tuple[str, Type, dataclasses.Field]]:
     """Parse function or method parameters into dataclass fields."""

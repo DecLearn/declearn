@@ -158,7 +158,7 @@ class BinaryRocAUC(Metric):
             "fneg": (s_wght * (~tru & pos)).sum(axis=0),
         }
         # Aggregate these scores into the retained states.
-        thresh, states = combine_roc_states(
+        thresh, states = _combine_roc_states(
             thresh,
             states,
             self._states["thr"],  # type: ignore
@@ -187,14 +187,14 @@ class BinaryRocAUC(Metric):
                 msg = "Input thresholds differ from bounded self ones."
                 raise ValueError(msg)
         # Combine input states with self ones.
-        thresh, states = combine_roc_states(  # type: ignore
+        thresh, states = _combine_roc_states(  # type: ignore
             thr_own, self._states, thr_oth, states  # type: ignore
         )
         self._states = states
         self._states["thr"] = thresh
 
 
-def combine_roc_states(
+def _combine_roc_states(
     thresh_a: np.ndarray,
     states_a: Dict[str, np.ndarray],
     thresh_b: np.ndarray,
@@ -228,13 +228,13 @@ def combine_roc_states(
         return thresh_a, states
     # Case when thresholds need alignment.
     thresh = np.union1d(thresh_a, thresh_b)
-    states_a = interpolate_roc_states(thresh, thresh_a, states_a)
-    states_b = interpolate_roc_states(thresh, thresh_b, states_b)
+    states_a = _interpolate_roc_states(thresh, thresh_a, states_a)
+    states_b = _interpolate_roc_states(thresh, thresh_b, states_b)
     states = {key: states_a[key] + states_b[key] for key in states_a}
     return thresh, states
 
 
-def interpolate_roc_states(
+def _interpolate_roc_states(
     thresh_r: np.ndarray,
     thresh_p: np.ndarray,
     states_p: Dict[str, np.ndarray],

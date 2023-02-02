@@ -10,10 +10,10 @@ try:
     import tomllib  # type: ignore
 except ModuleNotFoundError:
     import tomli as tomllib  # type: ignore  # required re-definition
+
 from typing import Any, Dict, Optional, Type, TypeVar, Union
 
 from typing_extensions import Self  # future: import from typing (py >=3.11)
-
 
 __all__ = [
     "TomlConfig",
@@ -23,7 +23,7 @@ __all__ = [
 T = TypeVar("T")
 
 
-def isinstance_generic(inputs: Any, typevar: Type) -> bool:
+def _isinstance_generic(inputs: Any, typevar: Type) -> bool:
     """Override of `isinstance` built-in that supports some typing generics.
 
     Note
@@ -63,25 +63,25 @@ def isinstance_generic(inputs: Any, typevar: Type) -> bool:
     args = typing.get_args(typevar)
     # Case of a Union generic.
     if origin is typing.Union:
-        return any(isinstance_generic(inputs, typevar) for typevar in args)
+        return any(_isinstance_generic(inputs, typevar) for typevar in args)
     # Case of a Dict[..., ...] generic.
     if origin is dict:
         return (
             isinstance(inputs, dict)
-            and all(isinstance_generic(k, args[0]) for k in inputs)
-            and all(isinstance_generic(v, args[1]) for v in inputs.values())
+            and all(_isinstance_generic(k, args[0]) for k in inputs)
+            and all(_isinstance_generic(v, args[1]) for v in inputs.values())
         )
     # Case of a List[...] generic.
     if origin is list:
         return isinstance(inputs, list) and all(
-            isinstance_generic(e, args[0]) for e in inputs
+            _isinstance_generic(e, args[0]) for e in inputs
         )
     # Case of a Tuple[...] generic.
     if origin is tuple:
         return (
             isinstance(inputs, tuple)
             and len(inputs) == len(args)
-            and all(isinstance_generic(e, t) for e, t in zip(inputs, args))
+            and all(_isinstance_generic(e, t) for e, t in zip(inputs, args))
         )
     # Unsupported cases.
     raise TypeError(
@@ -90,12 +90,12 @@ def isinstance_generic(inputs: Any, typevar: Type) -> bool:
     )
 
 
-def parse_float(src: str) -> Optional[float]:
+def _parse_float(src: str) -> Optional[float]:
     """Custom float parser that replaces nan values with None."""
     return None if src == "nan" else float(src)
 
 
-def instantiate_field(
+def _instantiate_field(
     field: dataclasses.Field,  # future: dataclasses.Field[T] (Py >=3.9)
     *args: Any,
     **kwargs: Any,
@@ -244,7 +244,7 @@ class TomlConfig:
             Instantiated object that matches the field's specifications.
         """
         # Case of valid inputs: return them as-is (including valid None).
-        if isinstance_generic(inputs, field.type):  # see function's notes
+        if _isinstance_generic(inputs, field.type):  # see function's notes
             return inputs
         # Case of None inputs: return default value if any, else raise.
         if inputs is None:
@@ -262,16 +262,16 @@ class TomlConfig:
                 return field.type.from_toml(inputs)  # type: ignore
             # Otherwise, conduct minimal parsing.
             with open(inputs, "rb") as file:
-                config = tomllib.load(file, parse_float=parse_float)
+                config = tomllib.load(file, parse_float=_parse_float)
             section = config.get(field.name, config)  # subsection or full file
             return (
-                instantiate_field(field, **section)
+                _instantiate_field(field, **section)
                 if isinstance(section, dict)
-                else instantiate_field(field, section)
+                else _instantiate_field(field, section)
             )
         # Case of dict inputs: try instantiating the target type.
         if isinstance(inputs, dict):
-            return instantiate_field(field, **inputs)
+            return _instantiate_field(field, **inputs)
         # Otherwise, raise a TypeError.
         raise TypeError(f"Failed to parse inputs for field {field.name}.")
 
@@ -315,7 +315,7 @@ class TomlConfig:
         # Parse the TOML configuration file.
         try:
             with open(path, "rb") as file:
-                config = tomllib.load(file, parse_float=parse_float)
+                config = tomllib.load(file, parse_float=_parse_float)
         except tomllib.TOMLDecodeError as exc:
             raise RuntimeError(
                 "Failed to parse the TOML configuration file."
