@@ -277,14 +277,19 @@ class Vector(metaclass=ABCMeta):
 
     @abstractmethod
     def __eq__(self, other: Any) -> bool:
-        raise NotImplementedError
+        """Equality operator for Vector classes.
+
+        Two Vectors should be deemed equal if they have the same
+        specs (same keys, shapes and dtypes) and the same values.
+
+        Otherwise, this magic method should return False.
+        """
 
     @abstractmethod
     def sign(
         self,
     ) -> "Vector":
         """Return a Vector storing the sign of each coefficient."""
-        raise NotImplementedError
 
     @abstractmethod
     def minimum(
@@ -292,7 +297,6 @@ class Vector(metaclass=ABCMeta):
         other: Union["Vector", float, ArrayLike],
     ) -> "Vector":
         """Compute coef.-wise, element-wise minimum wrt to another Vector."""
-        raise NotImplementedError
 
     @abstractmethod
     def maximum(
@@ -300,14 +304,12 @@ class Vector(metaclass=ABCMeta):
         other: Union["Vector", float, ArrayLike],
     ) -> "Vector":
         """Compute coef.-wise, element-wise maximum wrt to another Vector."""
-        raise NotImplementedError
 
     @abstractmethod
     def sum(
         self,
     ) -> "Vector":
         """Compute coefficient-wise sum of elements."""
-        raise NotImplementedError
 
 
 def register_vector_type(

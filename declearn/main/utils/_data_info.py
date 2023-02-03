@@ -94,10 +94,6 @@ def aggregate_clients_data_info(
         _raise_incompatible_fields(clients_data_info, exc)
     except Exception as exc:  # re-raise; pylint: disable=broad-except
         _raise_aggregation_fails(clients_data_info, exc)
-    # Unreachable as the broad except raises.
-    raise NotImplementedError(
-        "Unreachable code reached in 'aggregate_clients_data_info'."
-    )
 
 
 def _raise_on_missing_fields(
