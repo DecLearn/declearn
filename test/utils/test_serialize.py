@@ -44,6 +44,7 @@ class MockClass:
 @pytest.fixture(name="registered_class")
 def fixture_registered_class() -> Tuple[Type[MockClass], str]:
     """Provide with a type-registered MockClass subclass."""
+
     # Declare a subtype to avoid side effects between tests.
     class SubClass(MockClass):  # pylint: disable=all
         pass

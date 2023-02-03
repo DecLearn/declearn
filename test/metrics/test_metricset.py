@@ -11,9 +11,9 @@ import pytest
 from declearn.metrics import MeanAbsoluteError, MeanSquaredError, MetricSet
 
 
-def get_mock_metricset() -> Tuple[
-    MeanAbsoluteError, MeanSquaredError, MetricSet
-]:
+def get_mock_metricset() -> (
+    Tuple[MeanAbsoluteError, MeanSquaredError, MetricSet]
+):
     """Provide with a MetricSet wrapping mock metrics."""
     mae = mock.create_autospec(MeanAbsoluteError, instance=True)
     mae.name = MeanAbsoluteError.name

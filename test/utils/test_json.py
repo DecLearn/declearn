@@ -46,6 +46,7 @@ def test_add_json_support() -> None:
     not that the associated mechanics perform well. These are
     tested in `test_json_pack` and `test_json_unpack_known`.
     """
+
     # Declare a second, empty custom type for this test only.
     class OtherType:  # pylint: disable=all
         pass
@@ -66,6 +67,7 @@ def test_add_json_support() -> None:
 
 def test_json_pack() -> None:
     """Unit tests for `json_pack` with custom-specified objects."""
+
     # Define a subtype of CustomType (to ensure it is not supported).
     class SubType(CustomType):  # pylint: disable=all
         pass

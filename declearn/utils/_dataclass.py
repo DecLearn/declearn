@@ -151,6 +151,7 @@ def dataclass_from_init(
             args_field = param.name
         if param.kind is param.VAR_KEYWORD:
             kwargs_field = param.name
+
     # Add a method to instantiate from the dataclass.
     def instantiate(self) -> cls:  # type: ignore
         """Instantiate from the wrapped init parameters."""

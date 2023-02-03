@@ -347,6 +347,7 @@ def register_vector_type(
         as a class decorator.
     """
     v_types = (v_type, *types)
+
     # Set up a registration function.
     def register(cls: Type[Vector]) -> Type[Vector]:
         nonlocal name, v_types

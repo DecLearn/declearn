@@ -92,6 +92,7 @@ class TrainingManager:
     ) -> Metric:
         """Return an ad-hoc Metric object to compute the model's loss."""
         loss_fn = self.model.loss_function
+
         # Write a custom, unregistered Metric subclass.
         class LossMetric(MeanMetric, register=False):
             """Ad hoc Metric wrapping a model's loss function."""
