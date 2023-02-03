@@ -86,7 +86,7 @@ class NumpyVector(Vector):
         keepdims: bool = False,
     ) -> Self:  # type: ignore
         coefs = {
-            key: np.sum(val, axis=axis, keepdims=keepdims)
+            key: np.array(np.sum(val, axis=axis, keepdims=keepdims))
             for key, val in self.coefs.items()
         }
         return self.__class__(coefs)

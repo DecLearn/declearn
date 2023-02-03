@@ -123,7 +123,7 @@ class TorchVector(Vector):
     ) -> Self:  # type: ignore
         # false-positive; pylint: disable=no-member
         if isinstance(other, Vector):
-            return self._apply_operation(other, torch.minimum)
+            return self._apply_operation(other, torch.maximum)
         if isinstance(other, float):
             other = torch.Tensor([other])
         return self.apply_func(torch.maximum, other)
