@@ -1,5 +1,20 @@
 # coding: utf-8
 
+# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# et Automatique)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Functional test for declearn.communication classes.
 
 The test implemented here spawns a NetworkServer endpoint as well as one
@@ -131,6 +146,7 @@ def _build_server_func(
         "certificate": ssl_cert["server_cert"] if use_ssl else None,
         "private_key": ssl_cert["server_pkey"] if use_ssl else None,
     }  # type: Dict[str, Any]
+
     # Define a coroutine that spawns and runs a server.
     async def server_coroutine() -> None:
         """Spawn a client and run `server_routine` in its context."""
@@ -158,6 +174,7 @@ def _build_client_funcs(
     server_uri = "localhost:8765"
     if protocol == "websockets":
         server_uri = f"ws{'s' * use_ssl}://{server_uri}"
+
     # Define a coroutine that spawns and runs a client.
     async def client_coroutine(
         name: str,

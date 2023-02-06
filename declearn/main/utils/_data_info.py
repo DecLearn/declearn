@@ -1,8 +1,23 @@
 # coding: utf-8
 
+# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# et Automatique)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Dependency functions for a FL server to process 'data_info'."""
 
-from typing import Any, Dict, Set
+from typing import Any, Dict, Set, NoReturn
 
 
 from declearn.data_info import aggregate_data_info
@@ -94,10 +109,6 @@ def aggregate_clients_data_info(
         _raise_incompatible_fields(clients_data_info, exc)
     except Exception as exc:  # re-raise; pylint: disable=broad-except
         _raise_aggregation_fails(clients_data_info, exc)
-    # Unreachable as the broad except raises.
-    raise NotImplementedError(
-        "Unreachable code reached in 'aggregate_clients_data_info'."
-    )
 
 
 def _raise_on_missing_fields(
@@ -135,7 +146,7 @@ def _raise_on_missing_fields(
 def _raise_aggregation_fails(
     clients_data_info: Dict[str, Dict[str, Any]],
     exception: Exception,
-) -> None:
+) -> NoReturn:
     """Raise information about aggregation failure for unexpected cause.
 
     Raise a RuntimeError containing client-wise messages and server error.
@@ -185,7 +196,7 @@ def _raise_on_invalid_fields(
 def _raise_incompatible_fields(
     clients_data_info: Dict[str, Dict[str, Any]],
     exception: ValueError,
-) -> None:
+) -> NoReturn:
     """Raise information about incompatible-due data_info agg. failure.
 
     Raise a RuntimeError containing client-wise messages and server error.

@@ -9,7 +9,7 @@
   - [Hands-on usage](#hands-on-usage)
   - [Overview of local differential-privacy capabilities](#local-differential-privacy)
 - [Developers](#developers)
-
+- [Copyright](#copyright)
 --------------------
 
 ## Introduction
@@ -178,7 +178,7 @@ netwk = declearn.communication.NetworkServerConfig(
     certificate="path/to/certificate.pem",
     private_key="path/to/private_key.pem"
 )
-optim = declearn.main.FLOptimConfig.from_params(
+optim = declearn.main.config.FLOptimConfig.from_params(
     aggregator="averaging",
     client_opt=0.001,
 )
@@ -188,7 +188,7 @@ server = declearn.main.FederatedServer(
 config = declearn.main.config.FLRunConfig.from_params(
     rounds=10,
     register={"min_clients": 1, "max_clients": 3, "timeout": 180},
-    training={"n_epochs": 5, "batch_size": 128, "drop_remainder": False},
+    training={"n_epoch": 5, "batch_size": 128, "drop_remainder": False},
 )
 server.run(config)
 ```
@@ -199,6 +199,7 @@ server.run(config)
 import declearn
 
 netwk = declearn.communication.NetworkClientConfig(
+    protocol="grpc",
     server_uri="example.com:8888",
     name="client_name",
     certificate="path/to/client_cert.pem"
@@ -862,3 +863,37 @@ mypy declearn
 Note that the test suite run with tox comprises the previous command. If mypy
 identifies errors, the test suite will fail - notably preventing acceptance
 of merge requests.
+
+
+## Copyright
+
+Declearn is an open-source software developed by people from the
+[Magnet](https://team.inria.fr/magnet/) team at [Inria](https://www.inria.fr/).
+
+### Authors
+
+Current core developers are listed under the `pyproject.toml` file. A more
+detailed acknowledgement and history of authors and contributors to declearn
+can be found in the `AUTHORS` file.
+
+### License
+
+Declearn distributed under the Apache-2.0 license. All code files should
+therefore contain the following mention, which also applies to the present
+README file:
+```
+Copyright 2023 Inria (Institut National de la Recherche en Informatique
+et Automatique)
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+```

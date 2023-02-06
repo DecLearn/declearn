@@ -1,15 +1,29 @@
 # coding: utf-8
 
+# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# et Automatique)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Iterative and federative ROC AUC evaluation metrics."""
 
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any, ClassVar, Dict, Optional, Tuple, Union
 
 import numpy as np
 import sklearn  # type: ignore
 import sklearn.metrics  # type: ignore
 
 from declearn.metrics._api import Metric
-
 
 __all__ = [
     "BinaryRocAUC",
@@ -42,7 +56,7 @@ class BinaryRocAUC(Metric):
     unless its
     """
 
-    name = "binary-roc"
+    name: ClassVar[str] = "binary-roc"
 
     def __init__(
         self,
@@ -159,7 +173,7 @@ class BinaryRocAUC(Metric):
             "fneg": (s_wght * (~tru & pos)).sum(axis=0),
         }
         # Aggregate these scores into the retained states.
-        thresh, states = combine_roc_states(
+        thresh, states = _combine_roc_states(
             thresh,
             states,
             self._states["thr"],  # type: ignore
@@ -188,14 +202,14 @@ class BinaryRocAUC(Metric):
                 msg = "Input thresholds differ from bounded self ones."
                 raise ValueError(msg)
         # Combine input states with self ones.
-        thresh, states = combine_roc_states(  # type: ignore
+        thresh, states = _combine_roc_states(  # type: ignore
             thr_own, self._states, thr_oth, states  # type: ignore
         )
         self._states = states
         self._states["thr"] = thresh
 
 
-def combine_roc_states(
+def _combine_roc_states(
     thresh_a: np.ndarray,
     states_a: Dict[str, np.ndarray],
     thresh_b: np.ndarray,
@@ -229,13 +243,13 @@ def combine_roc_states(
         return thresh_a, states
     # Case when thresholds need alignment.
     thresh = np.union1d(thresh_a, thresh_b)
-    states_a = interpolate_roc_states(thresh, thresh_a, states_a)
-    states_b = interpolate_roc_states(thresh, thresh_b, states_b)
+    states_a = _interpolate_roc_states(thresh, thresh_a, states_a)
+    states_b = _interpolate_roc_states(thresh, thresh_b, states_b)
     states = {key: states_a[key] + states_b[key] for key in states_a}
     return thresh, states
 
 
-def interpolate_roc_states(
+def _interpolate_roc_states(
     thresh_r: np.ndarray,
     thresh_p: np.ndarray,
     states_p: Dict[str, np.ndarray],

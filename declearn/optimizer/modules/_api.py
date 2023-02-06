@@ -1,9 +1,24 @@
 # coding: utf-8
 
+# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# et Automatique)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Base API for plug-in gradients-alteration algorithms."""
 
 from abc import ABCMeta, abstractmethod
-from typing import Any, Dict, Optional
+from typing import Any, ClassVar, Dict, Optional
 
 from declearn.model.api import Vector
 from declearn.utils import (
@@ -76,15 +91,16 @@ class OptiModule(metaclass=ABCMeta):
     See `declearn.utils.register_type` for details on types registration.
     """
 
-    name: str = NotImplemented
-
-    aux_name: Optional[str] = None
+    name: ClassVar[str] = NotImplemented
+    aux_name: ClassVar[Optional[str]] = None
 
     def __init_subclass__(
         cls,
         register: bool = True,
+        **kwargs: Any,
     ) -> None:
         """Automatically type-register OptiModule subclasses."""
+        super().__init_subclass__(**kwargs)
         if register:
             register_type(cls, cls.name, group="OptiModule")
 
@@ -239,7 +255,7 @@ class OptiModule(metaclass=ABCMeta):
             Name based on which the module can be retrieved.
             Available as a class attribute.
         config: dict[str, any]
-            Configuration dict of the regularizer, that is to be
+            Configuration dict of the module, that is to be
             passed to its `from_config` class constructor.
         """
         cls = access_registered(name, group="OptiModule")

@@ -1,5 +1,20 @@
 # coding: utf-8
 
+# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# et Automatique)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Dataclass-generation tools.
 
 These tools are meant to reduce redundant code and ease maintanability
@@ -69,7 +84,7 @@ def dataclass_from_func(
     # Parse the function's signature into dataclass Field instances.
     signature = inspect.signature(func)
     parameters = list(signature.parameters.values())
-    fields = parameters_to_fields(parameters)
+    fields = _parameters_to_fields(parameters)
     # Make a dataclass out of the former fields.
     if not name:
         name = "".join(w.capitalize() for w in func.__name__.split("_"))
@@ -134,7 +149,7 @@ def dataclass_from_init(
     """
     # Parse the class's __init__ signature into dataclass Field instances.
     parameters = list(inspect.signature(cls.__init__).parameters.values())[1:]
-    fields = parameters_to_fields(parameters)
+    fields = _parameters_to_fields(parameters)
     # Make a dataclass out of the former fields.
     name = name or f"{cls.__name__}Config"
     dcls = dataclasses.make_dataclass(name, fields)  # type: Type
@@ -151,6 +166,7 @@ def dataclass_from_init(
             args_field = param.name
         if param.kind is param.VAR_KEYWORD:
             kwargs_field = param.name
+
     # Add a method to instantiate from the dataclass.
     def instantiate(self) -> cls:  # type: ignore
         """Instantiate from the wrapped init parameters."""
@@ -168,7 +184,7 @@ def dataclass_from_init(
     return dcls  # type: ignore
 
 
-def parameters_to_fields(
+def _parameters_to_fields(
     params: List[inspect.Parameter],
 ) -> List[Tuple[str, Type, dataclasses.Field]]:
     """Parse function or method parameters into dataclass fields."""

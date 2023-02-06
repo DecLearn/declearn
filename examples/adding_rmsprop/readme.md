@@ -65,7 +65,7 @@ class RMSPropModule(OptiModule):
     # Identifier, that must be unique across modules for type-registration
     # purposes. This enables specifying the module in configuration files.
 
-    name = "rmsprop"
+    name:ClassVar[str] = "rmsprop"
 
     # Define optimizer parameters, here beta and eps
 

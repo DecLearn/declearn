@@ -1,19 +1,32 @@
 # coding: utf-8
 
+# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# et Automatique)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Shared objects for testing purposes."""
 
 import importlib
 import typing
-from typing import List, Optional, Type
+from typing import List, Literal, Optional, Type
 
 import numpy as np
 import pkg_resources
 from numpy.typing import ArrayLike
-from typing_extensions import Literal  # future: import from typing (Py>=3.8)
 
 from declearn.model.api import Vector
 from declearn.model.sklearn import NumpyVector
-
 
 __all__ = [
     "FrameworkType",
@@ -102,14 +115,28 @@ class GradientsTestCase:
         )
 
     @property
-    def mock_allzero_gradient(self) -> Vector:
+    def mock_ones(self) -> Vector:
         """Instantiate a Vector with random-valued mock gradients.
 
         Note: the RNG used to generate gradients has a fixed seed,
                 to that gradients have the same values whatever the
                 tensor framework used is.
         """
-        shapes = [(64, 32), (32,), (32, 16), (16,), (16, 1), (1,)]
+        shapes = [(5, 5), (4,), (1,)]
+        values = [np.ones(shape) for shape in shapes]
+        return self.vector_cls(
+            {str(idx): self.convert(value) for idx, value in enumerate(values)}
+        )
+
+    @property
+    def mock_zeros(self) -> Vector:
+        """Instantiate a Vector with random-valued mock gradients.
+
+        Note: the RNG used to generate gradients has a fixed seed,
+                to that gradients have the same values whatever the
+                tensor framework used is.
+        """
+        shapes = [(5, 5), (4,), (1,)]
         values = [np.zeros(shape) for shape in shapes]
         return self.vector_cls(
             {str(idx): self.convert(value) for idx, value in enumerate(values)}

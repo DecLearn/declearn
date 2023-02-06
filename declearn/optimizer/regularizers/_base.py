@@ -1,12 +1,26 @@
 # coding: utf-8
 
+# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# et Automatique)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Common plug-in loss-regularization plug-ins."""
 
-from typing import Optional
+from typing import ClassVar, Optional
 
 from declearn.model.api import Vector
 from declearn.optimizer.regularizers._api import Regularizer
-
 
 __all__ = [
     "FedProxRegularizer",
@@ -40,7 +54,7 @@ class FedProxRegularizer(Regularizer):
         https://arxiv.org/abs/1812.06127
     """
 
-    name = "fedprox"
+    name: ClassVar[str] = "fedprox"
 
     def __init__(
         self,
@@ -76,7 +90,7 @@ class LassoRegularizer(Regularizer):
         grads += alpha * sign(weights)
     """
 
-    name = "lasso"
+    name: ClassVar[str] = "lasso"
 
     def run(
         self,
@@ -97,7 +111,7 @@ class RidgeRegularizer(Regularizer):
         grads += alpha * 2 * weights
     """
 
-    name = "ridge"
+    name: ClassVar[str] = "ridge"
 
     def run(
         self,

@@ -8,26 +8,29 @@ requires = [
 
 [project]
 name = "declearn"
-version = "2.0.0.beta3"
-description = "Declearn - a python package for decentralized learning."
+version = "2.0.0"
+description = "Declearn - a python package for private decentralized learning."
 readme = "README.md"
-requires-python = ">=3.7"
-license = {text = "MIT"}
+requires-python = ">=3.8"
+license = {file = "LICENSE"}
 authors = [
     {name = "Paul Andrey", email = "paul.andrey@inria.fr"},
     {name = "Nathan Bigaud", email = "nathan.bigaud@inria.fr"},
-    {name = "Nathalie Vauquier", email = "nathalie.vauquier@inria.fr"},
 ]
 maintainers = [
     {name = "Paul Andrey", email = "paul.andrey@inria.fr"},
-    {name = "Nathalie Vauquier", email = "nathalie.vauquier@inria.fr"},
+    {name = "Nathan Bigaud", email = "nathan.bigaud@inria.fr"},
 ]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: Apache Software License",
     "Operating System :: UNIX",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Topic :: Scientific/Engineering :: Mathematics",
     "Typing :: Typed",
@@ -36,59 +39,59 @@ dependencies = [
     "cryptography >= 35.0",
     "grpcio >= 1.45",
     "pandas >= 1.2",
-
     "scikit-learn >= 1.0",
     "tomli >= 2.0 ; python_version < '3.11'",
     "typing_extensions >= 4.0",
-    "websockets >= 10.1",
+    "websockets ~= 10.1",
 ]
 
 [project.optional-dependencies]
 all = [  # all non-tests extra dependencies
-    "functorch >= 0.1",
+    "functorch",
     "grpcio >= 1.45",
-    "opacus >= 1.1",
+    "opacus ~= 1.1",
     "protobuf >= 3.19",
-    "tensorflow >= 2.5",
-    "torch >= 1.10",
-    "websockets >= 10.1",
+    "tensorflow ~= 2.5",
+    "torch ~= 1.10",
+    "websockets ~= 10.1",
 ]
 dp = [
-    "opacus >= 1.1",
+    "opacus ~= 1.1",
 ]
 grpc = [
     "grpcio >= 1.45",
     "protobuf >= 3.19",
 ]
 tensorflow = [
-    "tensorflow >= 2.5",
+    "tensorflow ~= 2.5",
 ]
 torch = [
-    "functorch >= 0.1",  # note: functorch is included with torch>=1.13
-    "torch >= 1.10",
+    "functorch",  # note: functorch is included with torch>=1.13
+    "torch ~= 1.10",
 ]
 websockets = [
-    "websockets >= 10.1",
+    "websockets ~= 10.1",
 ]
 tests = [
     # test-specific dependencies
-    "black ~= 22.0",
+    "black ~= 23.0",
     "mypy >= 0.930",
     "pylint >= 2.14",
     "pytest >= 6.1",
     "pytest-asyncio",
     # other extra dependencies (copy of "all")
-    "functorch >= 0.1",
+    "functorch",
     "grpcio >= 1.45",
-    "opacus >= 1.1",
+    "opacus ~= 1.1",
     "protobuf >= 3.19",
-    "tensorflow >= 2.5",
-    "torch >= 1.10",
-    "websockets >= 10.1",
+    "tensorflow ~= 2.5",
+    "torch ~= 1.10",
+    "websockets ~= 10.1",
 ]
 
 [project.urls]
-source = "https://gitlab.inria.fr/magnet/declearn/declearn2"
+homepage = "https://gitlab.inria.fr/magnet/declearn/declearn2"
+repository = "https://gitlab.inria.fr/magnet/declearn/declearn2.git"
 
 [tool.black]
 line-length = 79

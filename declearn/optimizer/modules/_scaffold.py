@@ -1,5 +1,20 @@
 # coding: utf-8
 
+# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# et Automatique)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """SCAFFOLD algorithm for FL, implemented as a pair of plug-in modules.
 
 The pair of `OptiModule` classes implemented here serve to implement
@@ -16,12 +31,10 @@ References:
     https://arxiv.org/abs/1910.06378
 """
 
-from typing import Any, Dict, List, Optional, Union
-
+from typing import Any, ClassVar, Dict, List, Optional, Union
 
 from declearn.model.api import Vector
 from declearn.optimizer.modules._api import OptiModule
-
 
 __all__ = [
     "ScaffoldClientModule",
@@ -80,8 +93,8 @@ class ScaffoldClientModule(OptiModule):
         https://arxiv.org/abs/1910.06378
     """
 
-    name = "scaffold-client"
-    aux_name = "scaffold"
+    name: ClassVar[str] = "scaffold-client"
+    aux_name: ClassVar[str] = "scaffold"
 
     def __init__(
         self,
@@ -214,8 +227,8 @@ class ScaffoldServerModule(OptiModule):
         https://arxiv.org/abs/1910.06378
     """
 
-    name = "scaffold-server"
-    aux_name = "scaffold"
+    name: ClassVar[str] = "scaffold-server"
+    aux_name: ClassVar[str] = "scaffold"
 
     def __init__(
         self,

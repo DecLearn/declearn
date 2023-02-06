@@ -1,8 +1,23 @@
 # coding: utf-8
 
+# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# et Automatique)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Base API and common examples of plug-in gradients-alteration algorithms."""
 
-from typing import Any, Dict, Union
+from typing import Any, ClassVar, Dict, Union
 
 from declearn.model.api import Vector
 from declearn.optimizer.modules._api import OptiModule
@@ -48,7 +63,7 @@ class MomentumModule(OptiModule):
         https://proceedings.mlr.press/v28/sutskever13.pdf
     """
 
-    name = "momentum"
+    name: ClassVar[str] = "momentum"
 
     def __init__(
         self,
@@ -114,7 +129,7 @@ class EWMAModule(OptiModule):
     decaying moving-average of past gradients.
     """
 
-    name = "ewma"
+    name: ClassVar[str] = "ewma"
 
     def __init__(
         self,
@@ -184,7 +199,7 @@ class YogiMomentumModule(EWMAModule):
         Adaptive Methods for Nonconvex Optimization.
     """
 
-    name = "yogi-momentum"
+    name: ClassVar[str] = "yogi-momentum"
 
     def run(
         self,

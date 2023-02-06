@@ -1,5 +1,20 @@
 # coding: utf-8
 
+# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# et Automatique)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Vector abstraction API."""
 
 import operator
@@ -91,7 +106,15 @@ class Vector(metaclass=ABCMeta):
         self,
         coefs: Dict[str, Any],
     ) -> None:
-        """Instantiate the Vector to wrap a collection of data arrays."""
+        """Instantiate the Vector to wrap a collection of data arrays.
+
+        Parameters
+        ----------
+        coefs: dict[str, any]
+            Dict grouping a named collection of data arrays.
+            The supported types of that dict's values depends
+            on the concrete `Vector` subclass being used.
+        """
         self.coefs = coefs
 
     @staticmethod
@@ -106,6 +129,18 @@ class Vector(metaclass=ABCMeta):
         implemented Vector subclasses can be made buildable through
         this staticmethod, which relies on input coefficients' type
         analysis to infer the Vector type to instantiate and return.
+
+        Parameters
+        ----------
+        coefs: dict[str, any]
+            Dict grouping a named collection of data arrays, that
+            all belong to the same framework.
+
+        Returns
+        -------
+        vector: Vector
+            Vector instance, the concrete class of which depends
+            on that of the values of the `coefs` dict.
         """
         # Type-check the inputs and look up the Vector subclass to use.
         if not (isinstance(coefs, dict) and coefs):
@@ -141,7 +176,14 @@ class Vector(metaclass=ABCMeta):
     def shapes(
         self,
     ) -> Dict[str, Tuple[int, ...]]:
-        """Return a dict storing the shape of each coefficient."""
+        """Return a dict storing the shape of each coefficient.
+
+        Returns
+        -------
+        shapes: dict[str, tuple(int, ...)]
+            Dict containing the shape of each of the wrapped data array,
+            indexed by the coefficient's name.
+        """
         try:
             return {key: coef.shape for key, coef in self.coefs.items()}
         except AttributeError as exc:
@@ -153,7 +195,16 @@ class Vector(metaclass=ABCMeta):
     def dtypes(
         self,
     ) -> Dict[str, str]:
-        """Return a dict storing the dtype of each coefficient."""
+        """Return a dict storing the dtype of each coefficient.
+
+        Returns
+        -------
+        dtypes: dict[str, tuple(int, ...)]
+            Dict containing the dtype of each of the wrapped data array,
+            indexed by the coefficient's name. The dtypes are parsed as
+            a string, the values of which may vary depending on the
+            concrete framework of the Vector.
+        """
         try:
             return {key: str(coef.dtype) for key, coef in self.coefs.items()}
         except AttributeError as exc:
@@ -165,7 +216,22 @@ class Vector(metaclass=ABCMeta):
     def pack(
         self,
     ) -> Dict[str, Any]:
-        """Return a JSON-serializable dict representation of this Vector."""
+        """Return a JSON-serializable dict representation of this Vector.
+
+        This method must return a dict that can be serialized to and from
+        JSON using the JSON-extending declearn hooks (see `json_pack` and
+        `json_unpack` functions from the `declearn.utils` module).
+
+        The counterpart `unpack` method may be used to re-create a Vector
+        from its "packed" dict representation.
+
+        Returns
+        -------
+        packed: dict[str, any]
+            Dict with str keys, that may be serialized to and from JSON
+            using the `declearn.utils.json_pack` and `json_unpack` util
+            functions.
+        """
         return self.coefs
 
     @classmethod
@@ -173,13 +239,43 @@ class Vector(metaclass=ABCMeta):
         cls,
         data: Dict[str, Any],
     ) -> "Vector":
-        """Instantiate a Vector from its "packed" dict representation."""
+        """Instantiate a Vector from its "packed" dict representation.
+
+        This method is the counterpart to the `pack` one.
+
+        Parameters
+        ----------
+        data: dict[str, any]
+            Dict produced by the `pack` method of an instance of this class.
+
+        Returns
+        -------
+        vector: Self
+            Instance of this Vector subclass, (re-)created from the inputs.
+        """
         return cls(data)
 
     def apply_func(
-        self, func: Callable[..., Any], *args: Any, **kwargs: Any
+        self,
+        func: Callable[..., Any],
+        *args: Any,
+        **kwargs: Any,
     ) -> "Vector":
-        """Apply a given function to the wrapped coefficients."""
+        """Apply a given function to the wrapped coefficients.
+
+        Parameters
+        ----------
+        func: function(<T>, *args, **kwargs) -> <T>
+            Function to be applied to each and every coefficient (data
+            array) wrapped by this Vector, that must return a similar
+            array (same type, shape and dtype).
+        *args and **kwargs to `func` may also be passed.
+
+        Returns
+        -------
+        vector: Self
+            Vector similar to the present one, wrapping the resulting data.
+        """
         coefs = {
             key: func(coef, *args, **kwargs)
             for key, coef in self.coefs.items()
@@ -191,7 +287,21 @@ class Vector(metaclass=ABCMeta):
         other: Any,
         func: Callable[[Any, Any], Any],
     ) -> "Vector":
-        """Apply an operation to combine this vector with another."""
+        """Apply an operation to combine this vector with another.
+
+        Parameters
+        ----------
+        other: Vector
+            Vector with the same names, shapes and dtypes as this one.
+        func: function(<T>, <T>) -> <T>
+            Function to be applied to combine the data arrays stored
+            in this vector and the `other` one.
+
+        Returns
+        -------
+        vector: Self
+            Vector similar to the present one, wrapping the resulting data.
+        """
         # Case when operating on two Vector objects.
         if isinstance(other, tuple(self.compatible_vector_types)):
             if self.coefs.keys() != other.coefs.keys():
@@ -277,14 +387,19 @@ class Vector(metaclass=ABCMeta):
 
     @abstractmethod
     def __eq__(self, other: Any) -> bool:
-        raise NotImplementedError
+        """Equality operator for Vector classes.
+
+        Two Vectors should be deemed equal if they have the same
+        specs (same keys, shapes and dtypes) and the same values.
+
+        Otherwise, this magic method should return False.
+        """
 
     @abstractmethod
     def sign(
         self,
     ) -> "Vector":
         """Return a Vector storing the sign of each coefficient."""
-        raise NotImplementedError
 
     @abstractmethod
     def minimum(
@@ -292,7 +407,6 @@ class Vector(metaclass=ABCMeta):
         other: Union["Vector", float, ArrayLike],
     ) -> "Vector":
         """Compute coef.-wise, element-wise minimum wrt to another Vector."""
-        raise NotImplementedError
 
     @abstractmethod
     def maximum(
@@ -300,14 +414,12 @@ class Vector(metaclass=ABCMeta):
         other: Union["Vector", float, ArrayLike],
     ) -> "Vector":
         """Compute coef.-wise, element-wise maximum wrt to another Vector."""
-        raise NotImplementedError
 
     @abstractmethod
     def sum(
         self,
     ) -> "Vector":
         """Compute coefficient-wise sum of elements."""
-        raise NotImplementedError
 
 
 def register_vector_type(
@@ -345,6 +457,7 @@ def register_vector_type(
         as a class decorator.
     """
     v_types = (v_type, *types)
+
     # Set up a registration function.
     def register(cls: Type[Vector]) -> Type[Vector]:
         nonlocal name, v_types

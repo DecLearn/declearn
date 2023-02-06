@@ -1,5 +1,20 @@
 # coding: utf-8
 
+# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# et Automatique)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """NumpyVector data arrays container."""
 
 from typing import Any, Callable, Dict, Optional, Union
@@ -9,7 +24,6 @@ from numpy.typing import ArrayLike
 from typing_extensions import Self  # future: import from typing (Py>=3.11)
 
 from declearn.model.api._vector import Vector, register_vector_type
-
 
 __all__ = [
     "NumpyVector",
@@ -54,10 +68,14 @@ class NumpyVector(Vector):
 
     def __eq__(self, other: Any) -> bool:
         valid = isinstance(other, NumpyVector)
-        valid = valid and (self.coefs.keys() == other.coefs.keys())
-        return valid and all(
-            np.array_equal(self.coefs[k], other.coefs[k]) for k in self.coefs
-        )
+        if valid:
+            valid = self.coefs.keys() == other.coefs.keys()
+        if valid:
+            valid = all(
+                np.array_equal(self.coefs[k], other.coefs[k])
+                for k in self.coefs
+            )
+        return valid
 
     def sign(
         self,
@@ -86,7 +104,7 @@ class NumpyVector(Vector):
         keepdims: bool = False,
     ) -> Self:  # type: ignore
         coefs = {
-            key: np.sum(val, axis=axis, keepdims=keepdims)
+            key: np.array(np.sum(val, axis=axis, keepdims=keepdims))
             for key, val in self.coefs.items()
         }
         return self.__class__(coefs)

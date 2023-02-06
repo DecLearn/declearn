@@ -1,12 +1,26 @@
 # coding: utf-8
 
+# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# et Automatique)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Abstract class defining an API for client-side communication endpoints."""
 
 import logging
 import types
 from abc import ABCMeta, abstractmethod
-from typing import Any, Dict, Optional, Type, Union
-
+from typing import Any, ClassVar, Dict, Optional, Type, Union
 
 from declearn.communication.messaging import (
     Empty,
@@ -17,7 +31,6 @@ from declearn.communication.messaging import (
     Message,
 )
 from declearn.utils import create_types_registry, get_logger, register_type
-
 
 __all__ = [
     "NetworkClient",
@@ -58,10 +71,15 @@ class NetworkClient(metaclass=ABCMeta):
     probably be rejected by the server if the client has not registered.
     """
 
-    protocol: str = NotImplemented
+    protocol: ClassVar[str] = NotImplemented
 
-    def __init_subclass__(cls, register: bool = True) -> None:
+    def __init_subclass__(
+        cls,
+        register: bool = True,
+        **kwargs: Any,
+    ) -> None:
         """Automate the type-registration of NetworkClient subclasses."""
+        super().__init_subclass__(**kwargs)
         if register:
             register_type(cls, cls.protocol, group="NetworkClient")
 
@@ -107,7 +125,6 @@ class NetworkClient(metaclass=ABCMeta):
 
         The return type is communication-protocol dependent.
         """
-        return NotImplemented
 
     # similar to NetworkServer API; pylint: disable=duplicate-code
 
@@ -118,7 +135,6 @@ class NetworkClient(metaclass=ABCMeta):
         Note: this method can be called safely even if the
         client is already running (simply having no effect).
         """
-        return None
 
     @abstractmethod
     async def stop(self) -> None:
@@ -127,7 +143,6 @@ class NetworkClient(metaclass=ABCMeta):
         Note: this method can be called safely even if the
         client is not running (simply having no effect).
         """
-        return None
 
     async def __aenter__(
         self,
@@ -200,7 +215,6 @@ class NetworkClient(metaclass=ABCMeta):
         to send a Message (of any kind) to the server and await the
         primary reply from the `MessagesHandler` used by the server.
         """
-        return NotImplemented
 
     async def send_message(
         self,

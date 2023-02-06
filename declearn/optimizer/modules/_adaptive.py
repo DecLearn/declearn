@@ -1,13 +1,27 @@
 # coding: utf-8
 
+# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# et Automatique)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Adaptive algorithms for optimizers, implemented as plug-in modules."""
 
-from typing import Any, Dict, Optional, Union
+from typing import Any, ClassVar, Dict, Optional, Union
 
 from declearn.model.api import Vector
 from declearn.optimizer.modules._api import OptiModule
 from declearn.optimizer.modules._momentum import EWMAModule, YogiMomentumModule
-
 
 __all__ = [
     "AdaGradModule",
@@ -38,7 +52,7 @@ class AdaGradModule(OptiModule):
         https://jmlr.org/papers/v12/duchi11a.html
     """
 
-    name = "adagrad"
+    name: ClassVar[str] = "adagrad"
 
     def __init__(
         self,
@@ -102,7 +116,7 @@ class RMSPropModule(OptiModule):
         Average of its Recent Magnitude.
     """
 
-    name = "rmsprop"
+    name: ClassVar[str] = "rmsprop"
 
     def __init__(
         self,
@@ -184,7 +198,7 @@ class AdamModule(OptiModule):
         https://arxiv.org/abs/1904.09237
     """
 
-    name = "adam"
+    name: ClassVar[str] = "adam"
 
     def __init__(
         self,
@@ -304,7 +318,7 @@ class YogiModule(AdamModule):
         https://arxiv.org/abs/1904.09237
     """
 
-    name = "yogi"
+    name: ClassVar[str] = "yogi"
 
     def __init__(
         self,

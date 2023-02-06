@@ -1,5 +1,20 @@
 # coding: utf-8
 
+# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# et Automatique)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Unit tests for 'declearn.utils._register' tools."""
 
 import time
@@ -25,6 +40,7 @@ def test_create_types_registry() -> None:
 
 def test_register_type() -> None:
     """Unit tests for 'register_type' using valid instructions."""
+
     # Define mock custom classes.
     class BaseClass:  # pylint: disable=all
         pass
@@ -38,6 +54,7 @@ def test_register_type() -> None:
     assert register_type(BaseClass, name="base", group=group) is BaseClass
     # Register ChildClass.
     assert register_type(ChildClass, name="child", group=group) is ChildClass
+
     # Register another BaseClass-inheriting class using decorator syntax.
     @register_type(name="other", group=group)
     class OtherChild(BaseClass):
@@ -46,6 +63,7 @@ def test_register_type() -> None:
 
 def test_register_type_fails() -> None:
     """Unit tests for 'register_type' using invalid instructions."""
+
     # Define mock custom classes.
     class BaseClass:  # pylint: disable=all
         pass
@@ -69,6 +87,7 @@ def test_register_type_fails() -> None:
 
 def test_access_registered() -> None:
     """Unit tests for 'access_registered'."""
+
     # Define a mock custom class.
     class Class:  # pylint: disable=all
         pass
@@ -90,6 +109,7 @@ def test_access_registered() -> None:
 
 def test_access_registeration_info() -> None:
     """Unit tests for 'access_registration_info'."""
+
     # Define a pair of mock custom class.
     class Class_1:  # pylint: disable=all
         pass
@@ -116,6 +136,7 @@ def test_access_registeration_info() -> None:
 def test_access_types_mapping() -> None:
     """Unit tests for 'access_types_mapping'."""
     group = f"test_{time.time_ns()}"
+
     # Define mock custom type-registered classes.
     @register_type(name="base", group=group)
     @create_types_registry(name=group)

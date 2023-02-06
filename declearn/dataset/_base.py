@@ -1,14 +1,28 @@
 # coding: utf-8
 
+# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# et Automatique)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Dataset abstraction API."""
 
 from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Iterator, Optional, Set
+from typing import Any, ClassVar, Iterator, Optional, Set
 
 from declearn.typing import Batch
 from declearn.utils import access_registered, create_types_registry, json_load
-
 
 __all__ = [
     "DataSpecs",
@@ -41,7 +55,7 @@ class Dataset(metaclass=ABCMeta):
     straightforward to specify as part of FL algorithms.
     """
 
-    _type_key: str = NotImplemented
+    _type_key: ClassVar[str] = NotImplemented
 
     @abstractmethod
     def save_to_json(
@@ -56,7 +70,6 @@ class Dataset(metaclass=ABCMeta):
             Path to the main JSON file where to dump the dataset.
             Additional files may be created in the same folder.
         """
-        return None
 
     @classmethod
     @abstractmethod
@@ -65,14 +78,12 @@ class Dataset(metaclass=ABCMeta):
         path: str,
     ) -> "Dataset":
         """Instantiate a dataset based on local files."""
-        return NotImplemented
 
     @abstractmethod
     def get_data_specs(
         self,
     ) -> DataSpecs:
         """Return a DataSpecs object describing this dataset."""
-        return NotImplemented
 
     @abstractmethod
     def generate_batches(
@@ -115,7 +126,6 @@ class Dataset(metaclass=ABCMeta):
             Optional weights associated with the samples, that are
             typically used to balance a model's loss or metrics.
         """
-        return NotImplemented
 
 
 def load_dataset_from_json(path: str) -> Dataset:

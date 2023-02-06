@@ -1,12 +1,26 @@
 # coding: utf-8
 
+# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# et Automatique)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Shared testing code for TensorFlow and Torch models' unit tests."""
 
 import json
 from typing import Any, List, Protocol, Tuple, Type, Union
 
 import numpy as np
-import pytest
 
 from declearn.model.api import Model, Vector
 from declearn.typing import Batch
@@ -157,15 +171,6 @@ class ModelTestSuite:
         other = json.loads(gdump, object_hook=json_unpack)
         assert grads == other
 
-    def test_compute_loss(
-        self,
-        test_case: ModelTestCase,
-    ) -> None:
-        """Test that loss computation abides by its specs."""
-        with pytest.warns(DeprecationWarning):
-            loss = test_case.model.compute_loss(test_case.dataset)
-        assert isinstance(loss, float)
-
     def test_compute_batch_predictions(
         self,
         test_case: ModelTestCase,
@@ -190,13 +195,13 @@ class ModelTestSuite:
         """Test that the exposed loss function abides by its specs."""
         model = test_case.model
         batch = test_case.dataset[0]
+        # Test that sample-wise loss computation works.
         y_true, y_pred, s_wght = model.compute_batch_predictions(batch)
         s_loss = model.loss_function(y_true, y_pred).squeeze()
         assert isinstance(s_loss, np.ndarray) and s_loss.ndim == 1
         assert len(s_loss) == len(s_wght if s_wght is not None else y_true)
+        # Test that sample weights are properly combinable with that loss.
         if s_wght is None:
             s_wght = np.ones_like(s_loss)
         r_loss = (s_loss * s_wght).sum() / s_wght.sum()
-        with pytest.warns(DeprecationWarning):
-            loss = model.compute_loss([batch])
-        assert r_loss == loss
+        r_loss = float(r_loss)  # conversion from numpy.float

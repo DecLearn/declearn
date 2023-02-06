@@ -1,12 +1,27 @@
 # coding: utf-8
 
+# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# et Automatique)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Abstract class defining an API for server-side communication endpoints."""
 
 import asyncio
 import logging
 import types
 from abc import ABCMeta, abstractmethod
-from typing import Any, Dict, Optional, Set, Type, Union
+from typing import Any, Dict, Optional, Set, Type, Union, ClassVar
 
 
 from declearn.communication.api._service import MessagesHandler
@@ -54,10 +69,15 @@ class NetworkServer(metaclass=ABCMeta):
     of the awaitable `wait_for_clients` method.
     """
 
-    protocol: str = NotImplemented
+    protocol: ClassVar[str] = NotImplemented
 
-    def __init_subclass__(cls, register: bool = True) -> None:
+    def __init_subclass__(
+        cls,
+        register: bool = True,
+        **kwargs: Any,
+    ) -> None:
         """Automate the type-registration of NetworkServer subclasses."""
+        super().__init_subclass__(**kwargs)
         if register:
             register_type(cls, cls.protocol, group="NetworkServer")
 
@@ -108,7 +128,6 @@ class NetworkServer(metaclass=ABCMeta):
     @abstractmethod
     def uri(self) -> str:
         """URI on which this server is exposed, to be requested by clients."""
-        return NotImplemented
 
     @property
     def client_names(self) -> Set[str]:
@@ -142,21 +161,18 @@ class NetworkServer(metaclass=ABCMeta):
         password: Optional[str] = None,
     ) -> Any:
         """Set up and return a SSL context object suitable for this class."""
-        return NotImplemented
 
     @abstractmethod
     async def start(
         self,
     ) -> None:
         """Initialize the server and start welcoming communications."""
-        return None
 
     @abstractmethod
     async def stop(
         self,
     ) -> None:
         """Stop the server and purge information about clients."""
-        return None
 
     async def __aenter__(
         self,

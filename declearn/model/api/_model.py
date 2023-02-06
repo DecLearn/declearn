@@ -1,10 +1,24 @@
 # coding: utf-8
 
+# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# et Automatique)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Model abstraction API."""
 
-import warnings
 from abc import ABCMeta, abstractmethod
-from typing import Any, Dict, Iterable, Optional, Set, Tuple
+from typing import Any, Dict, Optional, Set, Tuple
 
 import numpy as np
 
@@ -47,7 +61,6 @@ class Model(metaclass=ABCMeta):
         Note: these fields should match a registered specification
               (see `declearn.data_info` submodule)
         """
-        return NotImplemented
 
     @abstractmethod
     def initialize(
@@ -72,14 +85,12 @@ class Model(metaclass=ABCMeta):
         See the `aggregate_data_info` method to derive `data_info`
         from client-wise dict.
         """
-        return None
 
     @abstractmethod
     def get_config(
         self,
     ) -> Dict[str, Any]:
         """Return the model's parameters as a JSON-serializable dict."""
-        return NotImplemented
 
     @classmethod
     @abstractmethod
@@ -88,14 +99,12 @@ class Model(metaclass=ABCMeta):
         config: Dict[str, Any],
     ) -> "Model":
         """Instantiate a model from a configuration dict."""
-        return NotImplemented
 
     @abstractmethod
     def get_weights(
         self,
     ) -> Vector:
         """Return the model's trainable weights."""
-        return NotImplemented
 
     @abstractmethod
     def set_weights(
@@ -103,7 +112,6 @@ class Model(metaclass=ABCMeta):
         weights: Vector,
     ) -> None:
         """Assign values to the model's trainable weights."""
-        return None
 
     @abstractmethod
     def compute_batch_gradients(
@@ -134,7 +142,6 @@ class Model(metaclass=ABCMeta):
             Batch-averaged gradients, wrapped into a Vector (using
             a suited Vector subclass depending on the Model class).
         """
-        return NotImplemented
 
     @abstractmethod
     def apply_updates(
@@ -142,7 +149,6 @@ class Model(metaclass=ABCMeta):
         updates: Vector,
     ) -> None:
         """Apply updates to the model's weights."""
-        return None
 
     @abstractmethod
     def compute_batch_predictions(
@@ -213,37 +219,3 @@ class Model(metaclass=ABCMeta):
         s_loss: np.ndarray
             Sample-wise loss values, as a 1-d numpy array.
         """
-
-    def compute_loss(
-        self,
-        dataset: Iterable[Batch],
-    ) -> float:
-        """Compute the average loss of the model on a given dataset.
-
-        Parameters
-        ----------
-        dataset: iterable of batches
-            Iterable yielding batch structures that are to be unpacked
-            into (input_features, target_labels, [sample_weights]).
-            If set, sample weights will affect the loss averaging.
-
-        Returns
-        -------
-        loss: float
-            Average value of the model's loss over samples.
-        """
-        warning = DeprecationWarning(
-            "The `Model.compute_loss` method is deprecated as of v2.0b4. "
-            "It will be removed in version 2.0, in favor of the Metric API."
-        )
-        warnings.warn(warning)
-        total = 0.0
-        n_btc = 0.0
-        for batch in dataset:
-            y_true, y_pred, s_wght = self.compute_batch_predictions(batch)
-            loss = self.loss_function(y_true, y_pred)
-            if s_wght is not None:
-                loss *= s_wght
-            total += loss.sum()
-            n_btc += len(loss) if s_wght is None else s_wght.sum()
-        return total / n_btc

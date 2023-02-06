@@ -1,5 +1,20 @@
 # coding: utf-8
 
+# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# et Automatique)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Iterative and federative evaluation metrics base class."""
 
 from abc import ABCMeta, abstractmethod
@@ -104,7 +119,7 @@ class Metric(metaclass=ABCMeta):
     See `declearn.utils.register_type` for details on types registration.
     """
 
-    name: ClassVar[str]
+    name: ClassVar[str] = NotImplemented
 
     def __init__(
         self,
@@ -249,8 +264,10 @@ class Metric(metaclass=ABCMeta):
     def __init_subclass__(
         cls,
         register: bool = True,
+        **kwargs: Any,
     ) -> None:
         """Automatically type-register Metric subclasses."""
+        super().__init_subclass__(**kwargs)
         if register:
             register_type(cls, name=cls.name, group="Metric")
 

@@ -1,19 +1,33 @@
 # coding: utf-8
 
+# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# et Automatique)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Client-side communication endpoint implementation using gRPC"""
 
 import logging
-from typing import Any, Dict, Optional, Union
+from typing import Any, ClassVar, Dict, Optional, Union
 
 import grpc  # type: ignore
 
 from declearn.communication.api import NetworkClient
-from declearn.communication.messaging import Message, parse_message_from_string
 from declearn.communication.grpc.protobufs import message_pb2
 from declearn.communication.grpc.protobufs.message_pb2_grpc import (
     MessageBoardStub,
 )
-
+from declearn.communication.messaging import Message, parse_message_from_string
 
 __all__ = [
     "GrpcClient",
@@ -26,7 +40,7 @@ CHUNK_LENGTH = 2**22 - 50  # 2**22 - sys.getsizeof("") - 1
 class GrpcClient(NetworkClient):
     """Client-side communication endpoint using gRPC."""
 
-    protocol = "grpc"
+    protocol: ClassVar[str] = "grpc"
 
     def __init__(
         self,

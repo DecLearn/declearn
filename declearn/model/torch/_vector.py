@@ -1,5 +1,20 @@
 # coding: utf-8
 
+# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# et Automatique)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """TorchVector data arrays container."""
 
 from typing import Any, Callable, Dict, Optional, Set, Tuple, Type
@@ -96,11 +111,14 @@ class TorchVector(Vector):
         other: Any,
     ) -> bool:
         valid = isinstance(other, TorchVector)
-        valid = valid and (self.coefs.keys() == other.coefs.keys())
-        return valid and all(
-            np.array_equal(self.coefs[k].numpy(), other.coefs[k].numpy())
-            for k in self.coefs
-        )
+        if valid:
+            valid = self.coefs.keys() == other.coefs.keys()
+        if valid:
+            valid = all(
+                np.array_equal(self.coefs[k].numpy(), other.coefs[k].numpy())
+                for k in self.coefs
+            )
+        return valid
 
     def sign(self) -> Self:  # type: ignore
         # false-positive; pylint: disable=no-member
@@ -123,7 +141,7 @@ class TorchVector(Vector):
     ) -> Self:  # type: ignore
         # false-positive; pylint: disable=no-member
         if isinstance(other, Vector):
-            return self._apply_operation(other, torch.minimum)
+            return self._apply_operation(other, torch.maximum)
         if isinstance(other, float):
             other = torch.Tensor([other])
         return self.apply_func(torch.maximum, other)

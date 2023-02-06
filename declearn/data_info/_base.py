@@ -1,5 +1,20 @@
 # coding: utf-8
 
+# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# et Automatique)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Tools to write 'data_info' metadata fields specifications.
 
 The 'data_info' dictionaries are a discrete yet important component of
@@ -34,7 +49,7 @@ data_info fields, are implemented (although unexposed) here.
 
 import warnings
 from abc import ABCMeta, abstractmethod
-from typing import Any, Dict, List, Optional, Set, Tuple, Type
+from typing import Any, Dict, List, Optional, Set, Tuple, Type, ClassVar
 
 
 __all__ = [
@@ -75,9 +90,9 @@ class DataInfoField(metaclass=ABCMeta):
         is called, run `is_valid` on each and every input.
     """
 
-    field: str
-    types: Tuple[Type, ...]
-    doc: str
+    field: ClassVar[str] = NotImplemented
+    types: ClassVar[Tuple[Type, ...]] = NotImplemented
+    doc: ClassVar[str] = NotImplemented
 
     @classmethod
     def is_valid(
@@ -85,6 +100,7 @@ class DataInfoField(metaclass=ABCMeta):
         value: Any,
     ) -> bool:
         """Check that a given value may belong to this field."""
+        # false-pos; pylint: disable=isinstance-second-argument-not-valid-type
         return isinstance(value, cls.types)
 
     @classmethod
@@ -101,7 +117,6 @@ class DataInfoField(metaclass=ABCMeta):
             raise ValueError(
                 f"Cannot combine '{cls.field}': invalid values encountered."
             )
-        return NotImplemented
 
 
 DATA_INFO_FIELDS = {}  # type: Dict[str, Type[DataInfoField]]

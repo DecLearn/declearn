@@ -1,13 +1,27 @@
 # coding: utf-8
 
+# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# et Automatique)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """DataInfoField subclasses specifying common 'data_info' metadata fields."""
 
-from typing import Any, List, Optional, Set
+from typing import Any, ClassVar, List, Optional, Set, Tuple, Type
 
 import numpy as np
 
 from declearn.data_info._base import DataInfoField, register_data_info_field
-
 
 __all__ = [
     "ClassesField",
@@ -21,9 +35,9 @@ __all__ = [
 class ClassesField(DataInfoField):
     """Specifications for 'classes' data_info field."""
 
-    field = "classes"
-    types = (list, set, tuple, np.ndarray)
-    doc = "Set of classification targets, combined by union."
+    field: ClassVar[str] = "classes"
+    types: ClassVar[Tuple[Type, ...]] = (list, set, tuple, np.ndarray)
+    doc: ClassVar[str] = "Set of classification targets, combined by union."
 
     @classmethod
     def is_valid(
@@ -47,9 +61,9 @@ class ClassesField(DataInfoField):
 class InputShapeField(DataInfoField):
     """Specifications for 'input_shape' data_info field."""
 
-    field = "input_shape"
-    types = (tuple, list)
-    doc = "Input features' batched shape, checked to be equal."
+    field: ClassVar[str] = "input_shape"
+    types: ClassVar[Tuple[Type, ...]] = (tuple, list)
+    doc: ClassVar[str] = "Input features' batched shape, checked to be equal."
 
     @classmethod
     def is_valid(
@@ -96,9 +110,9 @@ class InputShapeField(DataInfoField):
 class NbFeaturesField(DataInfoField):
     """Specifications for 'n_features' data_info field."""
 
-    field = "n_features"
-    types = (int,)
-    doc = "Number of input features, checked to be equal."
+    field: ClassVar[str] = "n_features"
+    types: ClassVar[Tuple[Type, ...]] = (int,)
+    doc: ClassVar[str] = "Number of input features, checked to be equal."
 
     @classmethod
     def is_valid(
@@ -128,9 +142,9 @@ class NbFeaturesField(DataInfoField):
 class NbSamplesField(DataInfoField):
     """Specifications for 'n_samples' data_info field."""
 
-    field = "n_samples"
-    types = (int,)
-    doc = "Number of data samples, combined by summation."
+    field: ClassVar[str] = "n_samples"
+    types: ClassVar[Tuple[Type, ...]] = (int,)
+    doc: ClassVar[str] = "Number of data samples, combined by summation."
 
     @classmethod
     def is_valid(
