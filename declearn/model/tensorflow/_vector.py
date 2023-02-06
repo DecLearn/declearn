@@ -25,10 +25,11 @@ import tensorflow as tf  # type: ignore
 from tensorflow.python.framework.ops import EagerTensor  # type: ignore
 # pylint: enable=no-name-in-module
 from typing_extensions import Self  # future: import from typing (Py>=3.11)
-# fmt: on
 
 from declearn.model.api import Vector, register_vector_type
 from declearn.model.sklearn import NumpyVector
+
+# fmt: on
 
 
 @register_vector_type(tf.Tensor, EagerTensor, tf.IndexedSlices)
@@ -131,11 +132,14 @@ class TensorflowVector(Vector):
         other: Any,
     ) -> bool:
         valid = isinstance(other, TensorflowVector)
-        valid = valid & (self.coefs.keys() == other.coefs.keys())
-        return valid and all(
-            self._tensor_equal(self.coefs[key], other.coefs[key])
-            for key in self.coefs
-        )
+        if valid:
+            valid = self.coefs.keys() == other.coefs.keys()
+        if valid:
+            valid = all(
+                self._tensor_equal(self.coefs[key], other.coefs[key])
+                for key in self.coefs
+            )
+        return valid
 
     @staticmethod
     def _tensor_equal(
