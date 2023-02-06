@@ -7,7 +7,11 @@ from typing import Any, List, Literal, Tuple
 
 import numpy as np
 import pytest
-import torch
+
+try:
+    import torch
+except ModuleNotFoundError:
+    pytest.skip("PyTorch is unavailable", allow_module_level=True)
 
 from declearn.model.torch import TorchModel, TorchVector
 from declearn.typing import Batch

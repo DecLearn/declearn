@@ -9,11 +9,6 @@ from typing import Any, Dict, Literal, Optional
 import numpy as np
 import pytest
 
-with warnings.catch_warnings():  # silence tensorflow import-time warnings
-    warnings.simplefilter("ignore")
-    import tensorflow as tf  # type: ignore
-import torch
-
 from declearn.communication import (
     build_client,
     build_server,
@@ -23,10 +18,25 @@ from declearn.communication.api import NetworkClient, NetworkServer
 from declearn.dataset import InMemoryDataset
 from declearn.model.api import Model
 from declearn.model.sklearn import SklearnSGDModel
-from declearn.model.tensorflow import TensorflowModel
-from declearn.model.torch import TorchModel
 from declearn.main import FederatedClient, FederatedServer
 from declearn.test_utils import run_as_processes
+
+# Select the subset of tests to run, based on framework availability.
+# Note: TensorFlow and Torch (-related) imports are delayed due to this.
+# pylint: disable=ungrouped-imports
+FRAMEWORKS = ["Sksgd", "Tflow", "Torch"]
+try:
+    import tensorflow as tf
+except ModuleNotFoundError:
+    FRAMEWORKS.remove("Tflow")
+else:
+    from declearn.model.tensorflow import TensorflowModel
+try:
+    import torch
+except ModuleNotFoundError:
+    FRAMEWORKS.remove("Torch")
+else:
+    from declearn.model.torch import TorchModel
 
 
 class DeclearnTestCase:
@@ -73,7 +83,7 @@ class DeclearnTestCase:
 
     def _build_tflow_model(
         self,
-    ) -> TensorflowModel:
+    ) -> Model:
         """Return a TensorflowModel suitable for the learning task."""
         if self.kind == "Reg":
             output_layer = tf.keras.layers.Dense(1)
@@ -97,8 +107,9 @@ class DeclearnTestCase:
 
     def _build_torch_model(
         self,
-    ) -> TorchModel:
+    ) -> Model:
         """Return a TorchModel suitable for the learning task."""
+        # Build the model and return it.
         stack = [
             torch.nn.Linear(32, 32),
             torch.nn.ReLU(),
@@ -245,7 +256,7 @@ def run_test_case(
 
 
 @pytest.mark.parametrize("strategy", ["FedAvg", "FedAvgM", "Scaffold"])
-@pytest.mark.parametrize("framework", ["Sksgd", "Tflow", "Torch"])
+@pytest.mark.parametrize("framework", FRAMEWORKS)
 @pytest.mark.parametrize("kind", ["Reg", "Bin", "Clf"])
 @pytest.mark.filterwarnings("ignore: PyTorch JSON serialization")
 def test_declearn(

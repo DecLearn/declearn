@@ -9,9 +9,12 @@ from typing import Any, List, Literal
 import numpy as np
 import pytest
 
-with warnings.catch_warnings():  # silence tensorflow import-time warnings
-    warnings.simplefilter("ignore")
-    import tensorflow as tf  # type: ignore
+try:
+    with warnings.catch_warnings():  # silence tensorflow import-time warnings
+        warnings.simplefilter("ignore")
+        import tensorflow as tf  # type: ignore
+except ModuleNotFoundError:
+    pytest.skip("TensorFlow is unavailable", allow_module_level=True)
 
 from declearn.model.tensorflow import TensorflowModel, TensorflowVector
 from declearn.typing import Batch
