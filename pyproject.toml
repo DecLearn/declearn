@@ -8,7 +8,7 @@ requires = [
 
 [project]
 name = "declearn"
-version = "2.0.0.beta3"
+version = "2.0.0"
 description = "Declearn - a python package for decentralized learning."
 readme = "README.md"
 requires-python = ">=3.8"
@@ -23,11 +23,15 @@ maintainers = [
     {name = "Nathalie Vauquier", email = "nathalie.vauquier@inria.fr"},
 ]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: Apache Software License",
     "Operating System :: UNIX",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Topic :: Scientific/Engineering :: Mathematics",
     "Typing :: Typed",
