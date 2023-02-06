@@ -15,7 +15,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Framework-agnostic Vector aggregation API and tools."""
+"""Model updates aggregating API and implementations. An Aggregator
+is typically meant to be used on a round-wise basis by the orchestrating
+server of a centralized federated learning process, to aggregate the
+client-wise model updated into a Vector that may then be used as "gradients"
+by the server's Optimizer to update the global model.
+
+This declearn submodule provides with:
+* Aggregator : abstract class defining an API for Vector aggregation
+* AveragingAggregator : average-based-aggregation Aggregator subclass
+* GradientMaskedAveraging : gradient Masked Averaging Aggregator subclass
+"""
 
 from ._api import Aggregator
 from ._base import AveragingAggregator

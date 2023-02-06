@@ -19,7 +19,8 @@
 
 This declearn submodule provides with:
 * Model and Vector abstractions, used as an API to design FL algorithms
-* Submodules implementing interfaces to various frameworks and models.
+* Submodules implementing interfaces to curretnly supported frameworks 
+and models.
 """
 
 from . import api

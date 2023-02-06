@@ -15,8 +15,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Framework-agnostic optimizer tools, both generic or FL-specific."""
+"""Framework-agnostic optimizer tools, both generic or FL-specific. In more
+details, we here define an `Optimizer` class that wraps together a set of 
+modules, used to implement various optimization and regularization techniques.
 
-from . import modules
-from . import regularizers
+Main class:
+* Optimizer: Base class to define gradient-descent-based optimizers.
+
+This module also implements the following submodules, used by the former:
+* modules: gradients-alteration algorithms, implemented as plug-in modules.
+* regularizers: loss-regularization algorithms, implemented as plug-in modules.
+
+ """
+
+
+from . import modules, regularizers
 from ._base import Optimizer

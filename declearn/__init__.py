@@ -15,21 +15,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Declearn - a python package for decentralized learning.
+"""Declearn - a python package for private decentralized learning.
 
-Declearn is a framework providing with tools to set up and
-run Federated Learning processes. It is being developed by
-the MAGNET team of INRIA Lille, with the aim of providing
-users with a modular and extensible framework to implement
-federated learning algorithms and apply them to real-world
-(or simulated) data using any model-defining framework one
-might want to use.
+Declearn is a modular framework to set up and run federated learning
+processes. It is being developed by the MAGNET team of INRIA Lille,
+with the aim of providing users with a modular and extensible framework
+to implement federated learning algorithms and apply them to real-world
+(or simulated) data using any common machine learning framework.
 
-Declearn provides with abstractions that enable algorithms
-to be written agnostic to the actual computation framework
-as well as with workable interfaces that cover some of the
-most popular frameworks, such as Scikit-Learn, TensorFlow
-and PyTorch.
+Declearn provides with abstractions that enable algorithms to be written 
+agnostic to the actual computation framework as well as with workable 
+interfaces that cover some of the most popular frameworks, such as 
+Scikit-Learn, TensorFlow and PyTorch.
 
 The package is organized into the following submodules:
 * aggregator:
@@ -54,15 +51,17 @@ The package is organized into the following submodules:
     Shared utils used (extensively) across all of declearn.
 """
 
-from . import typing
-from . import utils
-from . import communication
-from . import data_info
-from . import dataset
-from . import metrics
-from . import model
-from . import optimizer
-from . import aggregator
-from . import main
+from . import (
+    aggregator,
+    communication,
+    data_info,
+    dataset,
+    main,
+    metrics,
+    model,
+    optimizer,
+    typing,
+    utils,
+)
 
 __version__ = "2.0.0"

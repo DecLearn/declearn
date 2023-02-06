@@ -15,7 +15,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Submodule implementing client/server communications.
+"""Submodule implementing client/server communications. This is done by 
+defining server-side and client-side network communication endpoints for
+federated learning processes, as well as suitable messages to be transmitted,
+and the available communication protocols.
 
 This module contains the following core submodules:
 * api:
@@ -23,7 +26,6 @@ This module contains the following core submodules:
 * messaging:
     Message dataclasses defining information containers to be exchanged
     between communication endpoints.
-
 
 It also exposes the following core utility functions:
 * build_client:
@@ -33,7 +35,6 @@ It also exposes the following core utility functions:
 * list_available_protocols:
     List the protocol names for which both a NetworkClient and NetworkServer
     classes are registered (hence available to `build_client`/`build_server`).
-
 
 Finally, it defines the following protocol-specific submodules, provided
 the associated third-party dependencies are available:
@@ -46,15 +47,14 @@ the associated third-party dependencies are available:
 """
 
 # Messaging and Communications API and base tools:
-from . import messaging
-from . import api
+from . import api, messaging
 from ._build import (
+    _INSTALLABLE_BACKENDS,
     NetworkClientConfig,
     NetworkServerConfig,
     build_client,
     build_server,
     list_available_protocols,
-    _INSTALLABLE_BACKENDS,
 )
 
 # Concrete implementations using various protocols:

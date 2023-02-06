@@ -28,8 +28,7 @@ writing specifications for expected 'data_info' fields, and automating
 their use to validate and combine individual 'data_info' dicts into an
 aggregated one.
 
-DataInfoField API tools
------------------------
+DataInfoField API tools:
 * DataInfoField:
     Abstract class defining an API to write field-wise specifications.
 * register_data_info_field:
@@ -39,8 +38,7 @@ DataInfoField API tools
 * get_data_info_fields_documentation:
     Gather documentation for all fields that have registered specs.
 
-Field specifications
---------------------
+Field specifications:
 * ClassesField:
     Specification for the 'classes' field.
 * InputShapeField:
