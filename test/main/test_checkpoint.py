@@ -9,9 +9,9 @@ from typing import Dict, Iterator, List, Union
 from unittest import mock
 
 import numpy as np
-import pandas as pd
+import pandas as pd  # type: ignore
 import pytest
-from sklearn.linear_model import SGDClassifier
+from sklearn.linear_model import SGDClassifier  # type: ignore
 
 from declearn.main.utils import Checkpointer
 from declearn.model.api import Model
