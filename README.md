@@ -870,8 +870,17 @@ of merge requests.
 Declearn is an open-source software developed by people from the
 [Magnet](https://team.inria.fr/magnet/) team at [Inria](https://www.inria.fr/).
 
-It is distributed under the Apache-2.0 license. All code files should therefore
-contain the following mention, which also applies to the present README file:
+### Authors
+
+Current core developers are listed under the `pyproject.toml` file. A more
+detailed acknowledgement and history of authors and contributors to declearn
+can be found in the `AUTHORS` file.
+
+### License
+
+Declearn distributed under the Apache-2.0 license. All code files should
+therefore contain the following mention, which also applies to the present
+README file:
 ```
 Copyright 2023 Inria (Institut National de la Recherche en Informatique
 et Automatique)

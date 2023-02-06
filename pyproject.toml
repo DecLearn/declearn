@@ -16,11 +16,10 @@ license = {file = "LICENSE"}
 authors = [
     {name = "Paul Andrey", email = "paul.andrey@inria.fr"},
     {name = "Nathan Bigaud", email = "nathan.bigaud@inria.fr"},
-    {name = "Nathalie Vauquier", email = "nathalie.vauquier@inria.fr"},
 ]
 maintainers = [
     {name = "Paul Andrey", email = "paul.andrey@inria.fr"},
-    {name = "Nathalie Vauquier", email = "nathalie.vauquier@inria.fr"},
+    {name = "Nathan Bigaud", email = "nathan.bigaud@inria.fr"},
 ]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
