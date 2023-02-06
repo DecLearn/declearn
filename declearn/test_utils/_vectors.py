@@ -28,7 +28,6 @@ from numpy.typing import ArrayLike
 from declearn.model.api import Vector
 from declearn.model.sklearn import NumpyVector
 
-
 __all__ = [
     "FrameworkType",
     "GradientsTestCase",
@@ -116,14 +115,28 @@ class GradientsTestCase:
         )
 
     @property
-    def mock_allzero_gradient(self) -> Vector:
+    def mock_ones(self) -> Vector:
         """Instantiate a Vector with random-valued mock gradients.
 
         Note: the RNG used to generate gradients has a fixed seed,
                 to that gradients have the same values whatever the
                 tensor framework used is.
         """
-        shapes = [(64, 32), (32,), (32, 16), (16,), (16, 1), (1,)]
+        shapes = [(5, 5), (4,), (1,)]
+        values = [np.ones(shape) for shape in shapes]
+        return self.vector_cls(
+            {str(idx): self.convert(value) for idx, value in enumerate(values)}
+        )
+
+    @property
+    def mock_zeros(self) -> Vector:
+        """Instantiate a Vector with random-valued mock gradients.
+
+        Note: the RNG used to generate gradients has a fixed seed,
+                to that gradients have the same values whatever the
+                tensor framework used is.
+        """
+        shapes = [(5, 5), (4,), (1,)]
         values = [np.zeros(shape) for shape in shapes]
         return self.vector_cls(
             {str(idx): self.convert(value) for idx, value in enumerate(values)}

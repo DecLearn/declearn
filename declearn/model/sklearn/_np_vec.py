@@ -25,7 +25,6 @@ from typing_extensions import Self  # future: import from typing (Py>=3.11)
 
 from declearn.model.api._vector import Vector, register_vector_type
 
-
 __all__ = [
     "NumpyVector",
 ]
@@ -69,10 +68,14 @@ class NumpyVector(Vector):
 
     def __eq__(self, other: Any) -> bool:
         valid = isinstance(other, NumpyVector)
-        valid = valid and (self.coefs.keys() == other.coefs.keys())
-        return valid and all(
-            np.array_equal(self.coefs[k], other.coefs[k]) for k in self.coefs
-        )
+        if valid:
+            valid = self.coefs.keys() == other.coefs.keys()
+        if valid:
+            valid = all(
+                np.array_equal(self.coefs[k], other.coefs[k])
+                for k in self.coefs
+            )
+        return valid
 
     def sign(
         self,

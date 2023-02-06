@@ -111,11 +111,14 @@ class TorchVector(Vector):
         other: Any,
     ) -> bool:
         valid = isinstance(other, TorchVector)
-        valid = valid and (self.coefs.keys() == other.coefs.keys())
-        return valid and all(
-            np.array_equal(self.coefs[k].numpy(), other.coefs[k].numpy())
-            for k in self.coefs
-        )
+        if valid:
+            valid = self.coefs.keys() == other.coefs.keys()
+        if valid:
+            valid = all(
+                np.array_equal(self.coefs[k].numpy(), other.coefs[k].numpy())
+                for k in self.coefs
+            )
+        return valid
 
     def sign(self) -> Self:  # type: ignore
         # false-positive; pylint: disable=no-member
