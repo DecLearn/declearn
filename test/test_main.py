@@ -4,7 +4,7 @@
 
 import tempfile
 import warnings
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Literal, Optional
 
 import numpy as np
 import pytest
@@ -13,7 +13,6 @@ with warnings.catch_warnings():  # silence tensorflow import-time warnings
     warnings.simplefilter("ignore")
     import tensorflow as tf  # type: ignore
 import torch
-from typing_extensions import Literal  # future: import from typing (Py>=3.8)
 
 from declearn.communication import (
     build_client,

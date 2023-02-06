@@ -3,12 +3,11 @@
 """Model subclass to wrap scikit-learn SGD classifier and regressor models."""
 
 import typing
-from typing import Any, Callable, Dict, Optional, Set, Tuple, Union
+from typing import Any, Callable, Dict, Literal, Optional, Set, Tuple, Union
 
 import numpy as np
 from numpy.typing import ArrayLike
 from sklearn.linear_model import SGDClassifier, SGDRegressor  # type: ignore
-from typing_extensions import Literal  # future: import from typing (Py>=3.8)
 
 from declearn.data_info import aggregate_data_info
 from declearn.model.api import Model

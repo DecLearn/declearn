@@ -5,9 +5,7 @@
 import dataclasses
 import json
 import warnings
-from typing import Any, Callable, Dict, Optional, Type
-
-from typing_extensions import TypedDict  # future: import from typing (Py>=3.8)
+from typing import Any, Callable, Dict, Optional, Type, TypedDict
 
 
 __all__ = [

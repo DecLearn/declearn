@@ -4,12 +4,11 @@
 
 import os
 import sys
-from typing import Dict, Union, Tuple
+from typing import Dict, Literal, Union, Tuple
 
 import numpy as np
 import pytest
 import sklearn  # type: ignore
-from typing_extensions import Literal  # future: import from typing (py>=3.8)
 
 from declearn.metrics import BinaryRocAUC
 

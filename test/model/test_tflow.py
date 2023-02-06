@@ -4,7 +4,7 @@
 
 import warnings
 import sys
-from typing import Any, List
+from typing import Any, List, Literal
 
 import numpy as np
 import pytest
@@ -12,7 +12,6 @@ import pytest
 with warnings.catch_warnings():  # silence tensorflow import-time warnings
     warnings.simplefilter("ignore")
     import tensorflow as tf  # type: ignore
-from typing_extensions import Literal  # future: import from typing (Py>=3.8)
 
 from declearn.model.tensorflow import TensorflowModel, TensorflowVector
 from declearn.typing import Batch

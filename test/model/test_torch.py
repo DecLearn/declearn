@@ -3,12 +3,11 @@
 """Unit tests for TorchModel."""
 
 import sys
-from typing import Any, List, Tuple
+from typing import Any, List, Literal, Tuple
 
 import numpy as np
 import pytest
 import torch
-from typing_extensions import Literal  # future: import from typing (Py>=3.8)
 
 from declearn.model.torch import TorchModel, TorchVector
 from declearn.typing import Batch

@@ -3,13 +3,10 @@
 """Type hinting utils, defined and exposed for code readability purposes."""
 
 from abc import ABCMeta, abstractmethod
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Protocol, Tuple, Union
 
 from numpy.typing import ArrayLike
-from typing_extensions import (
-    Protocol,  # future: import from typing (Py>=3.8)
-    Self,  # future: import from typing (Py>=3.11)
-)
+from typing_extensions import Self  # future: import from typing (Py>=3.11)
 
 
 __all__ = [

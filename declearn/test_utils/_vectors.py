@@ -4,12 +4,11 @@
 
 import importlib
 import typing
-from typing import List, Optional, Type
+from typing import List, Literal, Optional, Type
 
 import numpy as np
 import pkg_resources
 from numpy.typing import ArrayLike
-from typing_extensions import Literal  # future: import from typing (Py>=3.8)
 
 from declearn.model.api import Vector
 from declearn.model.sklearn import NumpyVector
