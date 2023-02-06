@@ -41,7 +41,7 @@ from declearn.test_utils import run_as_processes
 # pylint: disable=ungrouped-imports
 FRAMEWORKS = ["Sksgd", "Tflow", "Torch"]
 try:
-    import tensorflow as tf
+    import tensorflow as tf  # type: ignore
 except ModuleNotFoundError:
     FRAMEWORKS.remove("Tflow")
 else:
