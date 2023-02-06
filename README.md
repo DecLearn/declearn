@@ -9,7 +9,7 @@
   - [Hands-on usage](#hands-on-usage)
   - [Overview of local differential-privacy capabilities](#local-differential-privacy)
 - [Developers](#developers)
-
+- [Copyright](#copyright)
 --------------------
 
 ## Introduction
@@ -863,3 +863,28 @@ mypy declearn
 Note that the test suite run with tox comprises the previous command. If mypy
 identifies errors, the test suite will fail - notably preventing acceptance
 of merge requests.
+
+
+## Copyright
+
+Declearn is an open-source software developed by people from the
+[Magnet](https://team.inria.fr/magnet/) team at [Inria](https://www.inria.fr/).
+
+It is distributed under the Apache-2.0 license. All code files should therefore
+contain the following mention, which also applies to the present README file:
+```
+Copyright 2023 Inria (Institut National de la Recherche en Informatique
+et Automatique)
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+```
