@@ -9,7 +9,7 @@ requires = [
 [project]
 name = "declearn"
 version = "2.0.0"
-description = "Declearn - a python package for decentralized learning."
+description = "Declearn - a python package for private decentralized learning."
 readme = "README.md"
 requires-python = ">=3.8"
 license = {file = "LICENSE"}
@@ -90,7 +90,8 @@ tests = [
 ]
 
 [project.urls]
-source = "https://gitlab.inria.fr/magnet/declearn/declearn2"
+homepage = "https://gitlab.inria.fr/magnet/declearn/declearn2"
+repository = "https://gitlab.inria.fr/magnet/declearn/declearn2.git"
 
 [tool.black]
 line-length = 79
