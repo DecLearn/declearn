@@ -15,14 +15,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Dataset-interface API and actual implementations module. A 'Dataset' 
-is an interface towards data that exposes methods to query batched data 
-samples and key metadata while remaining agnostic of the way the data 
-is actually being loaded (from a source file, a database, another API...).
+"""Dataset-interface API and actual implementations module.
+
+A 'Dataset'  is an interface towards data that exposes methods to query batched
+data  samples and key metadata while remaining agnostic of the way the data is
+actually being loaded (from a source file, a database, another API...).
 
 This declearn submodule provides with:
 * Dataset : abstract class defining an API to access training or testing data
-* InMemoryDataset : Dataset subclass serving numpy(-like) memory-loaded data 
+* InMemoryDataset : Dataset subclass serving numpy(-like) memory-loaded data
 arrays
 """
 

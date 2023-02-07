@@ -15,10 +15,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Submodule implementing client/server communications. This is done by 
-defining server-side and client-side network communication endpoints for
-federated learning processes, as well as suitable messages to be transmitted,
-and the available communication protocols.
+"""Submodule implementing client/server communications.
+
+This is done by  defining server-side and client-side network communication
+endpoints for federated learning processes, as well as suitable messages to
+be transmitted, and the available communication protocols.
 
 This module contains the following core submodules:
 * api:

@@ -15,11 +15,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Model updates aggregating API and implementations. An Aggregator
-is typically meant to be used on a round-wise basis by the orchestrating
-server of a centralized federated learning process, to aggregate the
-client-wise model updated into a Vector that may then be used as "gradients"
-by the server's Optimizer to update the global model.
+"""Model updates aggregating API and implementations.
+
+An Aggregator is typically meant to be used on a round-wise basis by
+the orchestrating server of a centralized federated learning process,
+to aggregate the client-wise model updated into a Vector that may then
+be used as "gradients" by the server's Optimizer to update the global
+model.
 
 This declearn submodule provides with:
 * Aggregator : abstract class defining an API for Vector aggregation
