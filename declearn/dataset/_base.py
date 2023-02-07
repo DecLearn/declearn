@@ -21,6 +21,8 @@ from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass
 from typing import Any, ClassVar, Iterator, Optional, Set
 
+from typing_extensions import Self  # future: import from typing (py >=3.11)
+
 from declearn.typing import Batch
 from declearn.utils import access_registered, create_types_registry, json_load
 
@@ -76,7 +78,7 @@ class Dataset(metaclass=ABCMeta):
     def load_from_json(
         cls,
         path: str,
-    ) -> "Dataset":
+    ) -> Self:
         """Instantiate a dataset based on local files."""
 
     @abstractmethod

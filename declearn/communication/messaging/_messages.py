@@ -23,6 +23,7 @@ from abc import ABCMeta
 from typing import Any, Dict, List, Optional, Tuple, Type, Union
 
 import numpy as np
+from typing_extensions import Self  # future: import from typing (py >=3.11)
 
 from declearn.metrics import MetricInputType
 from declearn.model.api import Model, Vector
@@ -67,7 +68,7 @@ class Message(metaclass=ABCMeta):
         return json.dumps(data, default=json_pack)
 
     @classmethod
-    def from_kwargs(cls, **kwargs: Any) -> "Message":
+    def from_kwargs(cls, **kwargs: Any) -> Self:
         """Parse the message from JSON-deserialized attributes."""
         # NOTE: override this method to de-serialize attributes
         #       that are not handled by declearn.utils.json_pack
@@ -165,7 +166,7 @@ class InitRequest(Message):
         return json.dumps(data, default=json_pack)
 
     @classmethod
-    def from_kwargs(cls, **kwargs: Any) -> "Message":
+    def from_kwargs(cls, **kwargs: Any) -> Self:
         kwargs["model"] = deserialize_object(kwargs["model"])
         kwargs["optim"] = Optimizer.from_config(kwargs["optim"])
         return cls(**kwargs)

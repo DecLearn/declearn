@@ -22,6 +22,7 @@ from copy import deepcopy
 from typing import Any, ClassVar, Dict, Optional, Union
 
 import numpy as np
+from typing_extensions import Self  # future: import from typing (py >=3.11)
 
 from declearn.utils import (
     access_registered,
@@ -281,7 +282,7 @@ class Metric(metaclass=ABCMeta):
     def from_config(
         cls,
         config: Dict[str, Any],
-    ) -> "Metric":
+    ) -> Self:
         """Instantiate a Metric from its configuration dict."""
         return cls(**config)
 

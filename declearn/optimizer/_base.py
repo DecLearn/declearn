@@ -19,6 +19,8 @@
 
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Type, Union
 
+from typing_extensions import Self  # future: import from typing (py >=3.11)
+
 from declearn.model.api import Model, Vector
 from declearn.optimizer.modules import OptiModule
 from declearn.optimizer.regularizers import Regularizer
@@ -231,7 +233,7 @@ class Optimizer:
     def from_config(
         cls,
         config: Dict[str, Any],
-    ) -> "Optimizer":
+    ) -> Self:
         """Instantiate an Optimizer from its configuration dict.
 
         The counterpart to this classmethod is the `get_config` method.

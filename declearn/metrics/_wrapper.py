@@ -20,6 +20,7 @@
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
+from typing_extensions import Self  # future: import from typing (py >=3.11)
 
 from declearn.metrics._api import Metric
 
@@ -97,7 +98,7 @@ class MetricSet:
     def from_specs(
         cls,
         metrics: Union[List[MetricInputType], "MetricSet", None],
-    ) -> "MetricSet":
+    ) -> Self:
         """Type-check and/or transform inputs into a MetricSet instance.
 
         This classmethod is merely implemented to avoid duplicate and
@@ -231,6 +232,6 @@ class MetricSet:
     def from_config(
         cls,
         config: Dict[str, Any],
-    ) -> "MetricSet":
+    ) -> Self:
         """Instantiate a MetricSet from its configuration dict."""
         return cls(**config)

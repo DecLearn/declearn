@@ -72,7 +72,7 @@ class TorchVector(Vector):
         self,
         other: Any,
         func: Callable[[Any, Any], Any],
-    ) -> "Vector":
+    ) -> Self:
         if isinstance(other, NumpyVector):
             # false-positive; pylint: disable=no-member
             coefs = {
@@ -101,7 +101,7 @@ class TorchVector(Vector):
     def unpack(
         cls,
         data: Dict[str, Any],
-    ) -> "TorchVector":
+    ) -> Self:
         # false-positive; pylint: disable=no-member
         coefs = {key: torch.from_numpy(dat) for key, dat in data.items()}
         return cls(coefs)
@@ -120,14 +120,14 @@ class TorchVector(Vector):
             )
         return valid
 
-    def sign(self) -> Self:  # type: ignore
+    def sign(self) -> Self:
         # false-positive; pylint: disable=no-member
         return self.apply_func(torch.sign)
 
     def minimum(
         self,
         other: Any,
-    ) -> Self:  # type: ignore
+    ) -> Self:
         # false-positive; pylint: disable=no-member
         if isinstance(other, Vector):
             return self._apply_operation(other, torch.minimum)
@@ -138,7 +138,7 @@ class TorchVector(Vector):
     def maximum(
         self,
         other: Any,
-    ) -> Self:  # type: ignore
+    ) -> Self:
         # false-positive; pylint: disable=no-member
         if isinstance(other, Vector):
             return self._apply_operation(other, torch.maximum)
@@ -150,7 +150,7 @@ class TorchVector(Vector):
         self,
         axis: Optional[int] = None,
         keepdims: bool = False,
-    ) -> Self:  # type: ignore
+    ) -> Self:
         coefs = {
             key: val.sum(dim=axis, keepdims=keepdims)
             for key, val in self.coefs.items()

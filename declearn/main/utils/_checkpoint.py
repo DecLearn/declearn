@@ -24,6 +24,7 @@ from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
 import pandas as pd  # type: ignore
+from typing_extensions import Self  # future: import from typing (py >=3.11)
 
 from declearn.model.api import Model
 from declearn.optimizer import Optimizer
@@ -86,8 +87,8 @@ class Checkpointer:
     @classmethod
     def from_specs(
         cls,
-        inputs: Union[str, Dict[str, Any], "Checkpointer"],
-    ) -> "Checkpointer":
+        inputs: Union[str, Dict[str, Any], Self],
+    ) -> Self:
         """Type-check and/or transform inputs into a Checkpointer instance.
 
         This classmethod is merely implemented to avoid duplicate and
@@ -115,7 +116,7 @@ class Checkpointer:
             inputs = {"folder": inputs}
         if isinstance(inputs, dict):
             inputs = cls(**inputs)
-        if not isinstance(inputs, Checkpointer):
+        if not isinstance(inputs, cls):
             raise TypeError("'inputs' should be a Checkpointer, dict or str.")
         return inputs
 

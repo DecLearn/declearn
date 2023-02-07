@@ -20,6 +20,8 @@
 from abc import ABCMeta, abstractmethod
 from typing import Any, ClassVar, Dict
 
+from typing_extensions import Self  # future: import from typing (py >=3.11)
+
 from declearn.model.api import Vector
 from declearn.utils import (
     access_registered,
@@ -148,7 +150,7 @@ class Regularizer(metaclass=ABCMeta):
     def from_config(
         cls,
         config: Dict[str, Any],
-    ) -> "Regularizer":
+    ) -> Self:
         """Instantiate a Regularizer from its configuration dict."""
         return cls(**config)
 

@@ -24,6 +24,7 @@ from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 import functorch  # type: ignore
 import numpy as np
 import torch
+from typing_extensions import Self  # future: import from typing (py >=3.11)
 
 from declearn.model.api import Model
 from declearn.model.torch._vector import TorchVector
@@ -106,7 +107,7 @@ class TorchModel(Model):
     def from_config(
         cls,
         config: Dict[str, Any],
-    ) -> "TorchModel":
+    ) -> Self:
         """Instantiate a TorchModel from a configuration dict."""
         with io.BytesIO(bytes.fromhex(config["model"])) as buffer:
             model = torch.load(buffer)

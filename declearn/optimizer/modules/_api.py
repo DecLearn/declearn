@@ -20,6 +20,8 @@
 from abc import ABCMeta, abstractmethod
 from typing import Any, ClassVar, Dict, Optional
 
+from typing_extensions import Self  # future: import from typing (py >=3.11)
+
 from declearn.model.api import Vector
 from declearn.utils import (
     access_registered,
@@ -222,7 +224,7 @@ class OptiModule(metaclass=ABCMeta):
     def from_config(
         cls,
         config: Dict[str, Any],
-    ) -> "OptiModule":
+    ) -> Self:
         """Instantiate an OptiModule from its configuration dict.
 
         The counterpart to this classmethod is the `get_config` method.

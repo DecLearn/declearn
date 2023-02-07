@@ -20,6 +20,8 @@
 from abc import ABCMeta, abstractmethod
 from typing import Any, ClassVar, Dict
 
+from typing_extensions import Self  # future: import from typing (py >=3.11)
+
 from declearn.model.api import Vector
 from declearn.utils import create_types_registry, register_type
 
@@ -118,6 +120,6 @@ class Aggregator(metaclass=ABCMeta):
     def from_config(
         cls,
         config: Dict[str, Any],
-    ) -> "Aggregator":
+    ) -> Self:
         """Instantiate an Aggregator from its configuration dict."""
         return cls(**config)

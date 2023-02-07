@@ -169,7 +169,7 @@ class TomlConfig:
     def from_params(
         cls,
         **kwargs: Any,
-    ) -> Self:  # type: ignore
+    ) -> Self:
         """Instantiate a structured configuration from input keyword arguments.
 
         The input keyword arguments should match this class's fields' names.
@@ -294,7 +294,7 @@ class TomlConfig:
     def from_toml(
         cls,
         path: str,
-    ) -> Self:  # type: ignore
+    ) -> Self:
         """Parse a structured configuration from a TOML file.
 
         The parsed TOML configuration file should be organized into sections

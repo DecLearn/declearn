@@ -21,6 +21,7 @@ from abc import ABCMeta, abstractmethod
 from typing import Any, Dict, Optional, Set, Tuple
 
 import numpy as np
+from typing_extensions import Self  # future: import from typing (py >=3.11)
 
 from declearn.model.api._vector import Vector
 from declearn.typing import Batch
@@ -97,7 +98,7 @@ class Model(metaclass=ABCMeta):
     def from_config(
         cls,
         config: Dict[str, Any],
-    ) -> "Model":
+    ) -> Self:
         """Instantiate a model from a configuration dict."""
 
     @abstractmethod

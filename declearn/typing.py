@@ -56,6 +56,6 @@ class SupportsConfig(Protocol, metaclass=ABCMeta):
     def from_config(
         cls,
         config: Dict[str, Any],
-    ) -> Self:  # type: ignore  # will be supported once Py 3.11 is out
+    ) -> Self:
         """Instantiate an object from its JSON-serializable config dict."""
         return cls(**config)

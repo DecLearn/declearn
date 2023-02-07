@@ -167,7 +167,7 @@ class FederatedServer:
         if isinstance(config, dict):
             config = FLRunConfig.from_params(**config)
         if isinstance(config, str):
-            config = FLRunConfig.from_toml(config)  # type: ignore
+            config = FLRunConfig.from_toml(config)
         if not isinstance(config, FLRunConfig):
             raise TypeError("'config' should be a FLRunConfig object or str.")
         asyncio.run(self.async_run(config))

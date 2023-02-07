@@ -73,7 +73,7 @@ class ObjectConfig:
         json_dump(self.to_dict(), path, indent=2)
 
     @classmethod
-    def from_json(cls, path: str) -> Self:  # type: ignore
+    def from_json(cls, path: str) -> Self:
         """Restore an ObjectConfig from a JSON file."""
         config = json_load(path)
         return cls(**config)

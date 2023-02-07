@@ -79,13 +79,13 @@ class NumpyVector(Vector):
 
     def sign(
         self,
-    ) -> Self:  # type: ignore
+    ) -> Self:
         return self.apply_func(np.sign)
 
     def minimum(
         self,
         other: Union["Vector", float, ArrayLike],
-    ) -> Self:  # type: ignore
+    ) -> Self:
         if isinstance(other, NumpyVector):
             return self._apply_operation(other, np.minimum)
         return self.apply_func(np.minimum, other)
@@ -93,7 +93,7 @@ class NumpyVector(Vector):
     def maximum(
         self,
         other: Union["Vector", float, ArrayLike],
-    ) -> Self:  # type: ignore
+    ) -> Self:
         if isinstance(other, Vector):
             return self._apply_operation(other, np.maximum)
         return self.apply_func(np.maximum, other)
@@ -102,7 +102,7 @@ class NumpyVector(Vector):
         self,
         axis: Optional[int] = None,
         keepdims: bool = False,
-    ) -> Self:  # type: ignore
+    ) -> Self:
         coefs = {
             key: np.array(np.sum(val, axis=axis, keepdims=keepdims))
             for key, val in self.coefs.items()

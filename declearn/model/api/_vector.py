@@ -22,8 +22,7 @@ from abc import ABCMeta, abstractmethod
 from typing import Any, Callable, Dict, Optional, Set, Tuple, Type, Union
 
 from numpy.typing import ArrayLike
-
-# future: `from typing_extensions import Self` and revise Vector return types
+from typing_extensions import Self  # future: import from typing (Py>=3.11)
 
 from declearn.utils import (
     add_json_support,
@@ -238,7 +237,7 @@ class Vector(metaclass=ABCMeta):
     def unpack(
         cls,
         data: Dict[str, Any],
-    ) -> "Vector":
+    ) -> Self:
         """Instantiate a Vector from its "packed" dict representation.
 
         This method is the counterpart to the `pack` one.
@@ -260,7 +259,7 @@ class Vector(metaclass=ABCMeta):
         func: Callable[..., Any],
         *args: Any,
         **kwargs: Any,
-    ) -> "Vector":
+    ) -> Self:
         """Apply a given function to the wrapped coefficients.
 
         Parameters
@@ -286,7 +285,7 @@ class Vector(metaclass=ABCMeta):
         self,
         other: Any,
         func: Callable[[Any, Any], Any],
-    ) -> "Vector":
+    ) -> Self:
         """Apply an operation to combine this vector with another.
 
         Parameters
@@ -334,59 +333,62 @@ class Vector(metaclass=ABCMeta):
     def __add__(
         self,
         other: Any,
-    ) -> "Vector":
+    ) -> Self:
         return self._apply_operation(other, self._op_add)
 
     def __radd__(
         self,
         other: Any,
-    ) -> "Vector":
+    ) -> Self:
         return self.__add__(other)
 
     def __sub__(
         self,
         other: Any,
-    ) -> "Vector":
+    ) -> Self:
         return self._apply_operation(other, self._op_sub)
 
     def __rsub__(
         self,
         other: Any,
-    ) -> "Vector":
+    ) -> Self:
         return -1 * self.__sub__(other)
 
     def __mul__(
         self,
         other: Any,
-    ) -> "Vector":
+    ) -> Self:
         return self._apply_operation(other, self._op_mul)
 
     def __rmul__(
         self,
         other: Any,
-    ) -> "Vector":
+    ) -> Self:
         return self.__mul__(other)
 
     def __truediv__(
         self,
         other: Any,
-    ) -> "Vector":
+    ) -> Self:
         return self._apply_operation(other, self._op_div)
 
     def __rtruediv__(
         self,
         other: Any,
-    ) -> "Vector":
+    ) -> Self:
         return self.__mul__(1 / other)
 
     def __pow__(
         self,
         other: Any,
-    ) -> "Vector":
+    ) -> Self:
         return self._apply_operation(other, self._op_pow)
 
     @abstractmethod
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(
+        self,
+        other: Any,
+    ) -> bool:
         """Equality operator for Vector classes.
 
         Two Vectors should be deemed equal if they have the same
@@ -398,27 +400,27 @@ class Vector(metaclass=ABCMeta):
     @abstractmethod
     def sign(
         self,
-    ) -> "Vector":
+    ) -> Self:
         """Return a Vector storing the sign of each coefficient."""
 
     @abstractmethod
     def minimum(
         self,
-        other: Union["Vector", float, ArrayLike],
-    ) -> "Vector":
+        other: Union[Self, float, ArrayLike],
+    ) -> Self:
         """Compute coef.-wise, element-wise minimum wrt to another Vector."""
 
     @abstractmethod
     def maximum(
         self,
-        other: Union["Vector", float, ArrayLike],
-    ) -> "Vector":
+        other: Union[Self, float, ArrayLike],
+    ) -> Self:
         """Compute coef.-wise, element-wise maximum wrt to another Vector."""
 
     @abstractmethod
     def sum(
         self,
-    ) -> "Vector":
+    ) -> Self:
         """Compute coefficient-wise sum of elements."""
 
 

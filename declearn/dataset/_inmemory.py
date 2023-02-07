@@ -26,6 +26,7 @@ import pandas as pd  # type: ignore
 from numpy.typing import ArrayLike
 from scipy.sparse import spmatrix  # type: ignore
 from sklearn.datasets import load_svmlight_file  # type: ignore
+from typing_extensions import Self  # future: import from typing (py >=3.11)
 
 from declearn.dataset._base import Dataset, DataSpecs
 from declearn.dataset._sparse import sparse_from_file, sparse_to_file
@@ -313,7 +314,7 @@ class InMemoryDataset(Dataset):
         path: str,
         f_cols: Optional[List[int]] = None,
         dtype: Union[str, np.dtype] = "float64",
-    ) -> "InMemoryDataset":
+    ) -> Self:
         """Instantiate a InMemoryDataset from a svmlight file.
 
         A SVMlight file contains both input features (as a sparse
@@ -381,7 +382,7 @@ class InMemoryDataset(Dataset):
     def load_from_json(
         cls,
         path: str,
-    ) -> "InMemoryDataset":
+    ) -> Self:
         """Instantiate a dataset based on local files.
 
         Parameters

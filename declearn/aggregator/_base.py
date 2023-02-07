@@ -19,6 +19,8 @@
 
 from typing import Any, ClassVar, Dict, Optional
 
+from typing_extensions import Self  # future: import from typing (py >=3.11)
+
 from declearn.aggregator._api import Aggregator
 from declearn.model.api import Vector
 
@@ -78,7 +80,7 @@ class AveragingAggregator(Aggregator):
     def from_config(
         cls,
         config: Dict[str, Any],
-    ) -> "AveragingAggregator":
+    ) -> Self:
         return cls(**config)
 
     def aggregate(

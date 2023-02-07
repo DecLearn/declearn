@@ -96,7 +96,7 @@ class TensorflowVector(Vector):
     def unpack(
         cls,
         data: Dict[str, Any],
-    ) -> "TensorflowVector":
+    ) -> Self:
         coef = {key: cls._unpack_tensor(dat) for key, dat in data.items()}
         return cls(coef)
 
@@ -154,13 +154,13 @@ class TensorflowVector(Vector):
             ) and TensorflowVector._tensor_equal(t_a.values, t_b.values)
         return tf.reduce_all(t_a == t_b).numpy()  # type: ignore
 
-    def sign(self) -> Self:  # type: ignore
+    def sign(self) -> Self:
         return self.apply_func(tf.sign)
 
     def minimum(
         self,
         other: Any,
-    ) -> Self:  # type: ignore
+    ) -> Self:
         if isinstance(other, Vector):
             return self._apply_operation(other, tf.minimum)
         return self.apply_func(tf.minimum, other)
@@ -168,7 +168,7 @@ class TensorflowVector(Vector):
     def maximum(
         self,
         other: Any,
-    ) -> Self:  # type: ignore
+    ) -> Self:
         if isinstance(other, Vector):
             return self._apply_operation(other, tf.maximum)
         return self.apply_func(tf.maximum, other)
@@ -177,7 +177,7 @@ class TensorflowVector(Vector):
         self,
         axis: Optional[int] = None,
         keepdims: bool = False,
-    ) -> Self:  # type: ignore
+    ) -> Self:
         coefs = {
             key: tf.reduce_sum(val, axis=axis, keepdims=keepdims)
             for key, val in self.coefs.items()

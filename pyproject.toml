@@ -75,7 +75,7 @@ websockets = [
 tests = [
     # test-specific dependencies
     "black ~= 23.0",
-    "mypy >= 0.930",
+    "mypy ~= 1.0",
     "pylint >= 2.14",
     "pytest >= 6.1",
     "pytest-asyncio",

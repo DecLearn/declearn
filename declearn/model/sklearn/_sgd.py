@@ -23,6 +23,7 @@ from typing import Any, Callable, Dict, Literal, Optional, Set, Tuple, Union
 import numpy as np
 from numpy.typing import ArrayLike
 from sklearn.linear_model import SGDClassifier, SGDRegressor  # type: ignore
+from typing_extensions import Self  # future: import from typing (py >=3.11)
 
 from declearn.data_info import aggregate_data_info
 from declearn.model.api import Model
@@ -142,7 +143,7 @@ class SklearnSGDModel(Model):
         epsilon: float = 0.1,
         fit_intercept: bool = True,
         n_jobs: Optional[int] = None,
-    ) -> "SklearnSGDModel":
+    ) -> Self:
         """Instantiate a SklearnSGDModel from model parameters.
 
         This classmethod is an alternative constructor to instantiate
@@ -236,7 +237,7 @@ class SklearnSGDModel(Model):
     def from_config(
         cls,
         config: Dict[str, Any],
-    ) -> "SklearnSGDModel":
+    ) -> Self:
         """Instantiate a SklearnSGDModel from a configuration dict."""
         for key in ("kind", "params"):
             if key not in config:

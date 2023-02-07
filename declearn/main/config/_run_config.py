@@ -20,6 +20,7 @@
 import dataclasses
 from typing import Any, Optional
 
+from typing_extensions import Self  # future: import from typing (py >=3.11)
 
 from declearn.main.utils import EarlyStopConfig
 from declearn.main.config._dataclasses import (
@@ -122,7 +123,7 @@ class FLRunConfig(TomlConfig):
     def from_params(
         cls,
         **kwargs: Any,
-    ) -> "FLRunConfig":
+    ) -> Self:
         # If evaluation batch size is not set, use the same as training.
         # Note: if inputs have invalid formats, let the parent method fail.
         evaluate = kwargs.setdefault("evaluate", {})

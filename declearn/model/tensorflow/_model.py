@@ -23,6 +23,7 @@ from typing import Any, Dict, Iterable, List, Optional, Set, Tuple, Union
 import numpy as np
 import tensorflow as tf  # type: ignore
 from numpy.typing import ArrayLike
+from typing_extensions import Self  # future: import from typing (py >=3.11)
 
 from declearn.data_info import aggregate_data_info
 from declearn.model.api import Model
@@ -110,7 +111,7 @@ class TensorflowModel(Model):
     def from_config(
         cls,
         config: Dict[str, Any],
-    ) -> "TensorflowModel":
+    ) -> Self:
         """Instantiate a TensorflowModel from a configuration dict."""
         for key in ("model", "loss", "kwargs"):
             if key not in config.keys():
