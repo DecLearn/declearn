@@ -88,7 +88,7 @@ class GrpcClient(NetworkClient):
                 if (self._ssl is not None)
                 else grpc.aio.insecure_channel(self.server_uri)
             )
-        self._service = MessageBoardStub(self._channel)  # type: ignore
+        self._service = MessageBoardStub(self._channel)
 
     async def stop(self) -> None:
         if self._channel is not None:

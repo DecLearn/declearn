@@ -135,7 +135,7 @@ class NbFeaturesField(DataInfoField):
             raise ValueError(
                 f"Cannot combine '{cls.field}': invalid unique value."
             )
-        return unique[0]  # type: ignore
+        return unique[0]
 
 
 @register_data_info_field

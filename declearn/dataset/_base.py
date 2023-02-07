@@ -148,4 +148,4 @@ def load_dataset_from_json(path: str) -> Dataset:
     """
     dump = json_load(path)
     cls = access_registered(dump["name"], group="Dataset")
-    return cls.load_from_json(path)  # type: ignore
+    return cls.load_from_json(path)

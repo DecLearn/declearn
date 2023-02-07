@@ -183,4 +183,4 @@ def deserialize_object(
             msg = f"No custom type provided for name '{config.name}'"
             raise KeyError(msg) from exception
         cls = custom[config.name]
-    return cls.from_config(config.config)  # type: ignore
+    return cls.from_config(config.config)

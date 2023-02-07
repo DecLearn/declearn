@@ -153,7 +153,7 @@ class GrpcServer(NetworkServer):
             else server.add_insecure_port(address)
         )
         servicer = GrpcServicer(self.handler)
-        add_MessageBoardServicer_to_server(servicer, server)  # type: ignore
+        add_MessageBoardServicer_to_server(servicer, server)
         return server
 
     async def stop(
@@ -185,7 +185,7 @@ class GrpcServicer(MessageBoardServicer):
     ) -> message_pb2.Empty:  # type: ignore
         """Handle a ping request from a client."""
         # async is needed; pylint: disable=invalid-overridden-method
-        return message_pb2.Empty()  # type: ignore
+        return message_pb2.Empty()
 
     async def _handle_and_reply(
         self,

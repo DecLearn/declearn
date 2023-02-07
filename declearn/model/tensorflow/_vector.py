@@ -53,23 +53,23 @@ class TensorflowVector(Vector):
 
     @property
     def _op_add(self) -> Callable[[Any, Any], Any]:
-        return tf.add  # type: ignore
+        return tf.add
 
     @property
     def _op_sub(self) -> Callable[[Any, Any], Any]:
-        return tf.subtract  # type: ignore
+        return tf.subtract
 
     @property
     def _op_mul(self) -> Callable[[Any, Any], Any]:
-        return tf.multiply  # type: ignore
+        return tf.multiply
 
     @property
     def _op_div(self) -> Callable[[Any, Any], Any]:
-        return tf.divide  # type: ignore
+        return tf.divide
 
     @property
     def _op_pow(self) -> Callable[[Any, Any], Any]:
-        return tf.pow  # type: ignore
+        return tf.pow
 
     @property
     def compatible_vector_types(self) -> Set[Type[Vector]]:
@@ -152,7 +152,7 @@ class TensorflowVector(Vector):
             return TensorflowVector._tensor_equal(
                 t_a.indices, t_b.indices
             ) and TensorflowVector._tensor_equal(t_a.values, t_b.values)
-        return tf.reduce_all(t_a == t_b).numpy()  # type: ignore
+        return tf.reduce_all(t_a == t_b).numpy()
 
     def sign(self) -> Self:
         return self.apply_func(tf.sign)

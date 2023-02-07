@@ -173,7 +173,7 @@ class TensorflowModel(Model):
                 return data
             return tf.convert_to_tensor(data)
         # Apply it to the the batched elements.
-        return tf.nest.map_structure(convert, batch)  # type: ignore
+        return tf.nest.map_structure(convert, batch)
 
     @tf.function  # optimize tensorflow runtime
     def _compute_batch_gradients(
@@ -188,7 +188,7 @@ class TensorflowModel(Model):
             loss = self._model.compute_loss(inputs, y_true, y_pred, s_wght)
             loss = tf.reduce_mean(loss)
             grad = tape.gradient(loss, self._model.trainable_weights)
-        return grad  # type: ignore
+        return grad
 
     @tf.function  # optimize tensorflow runtime
     def _compute_clipped_gradients(
@@ -203,7 +203,7 @@ class TensorflowModel(Model):
         if s_wght is None:
             s_wght = tf.cast(1, grad[0].dtype)
         grad = self._clip_and_average_gradients(grad, max_norm, s_wght)
-        return grad  # type: ignore
+        return grad
 
     @tf.function  # optimize tensorflow runtime
     def _compute_samplewise_gradients(
@@ -216,7 +216,7 @@ class TensorflowModel(Model):
             y_pred = self._model(inputs, training=True)
             loss = self._model.compute_loss(inputs, y_true, y_pred)
             grad = tape.jacobian(loss, self._model.trainable_weights)
-        return grad  # type: ignore
+        return grad
 
     @staticmethod
     @tf.function  # optimize tensorflow runtime
@@ -263,7 +263,7 @@ class TensorflowModel(Model):
         metrics: dict[str, float]
             Dictionary associating evaluation metrics' values to their name.
         """
-        return self._model.evaluate(dataset, return_dict=True)  # type: ignore
+        return self._model.evaluate(dataset, return_dict=True)
 
     def compute_batch_predictions(
         self,

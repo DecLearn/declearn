@@ -290,7 +290,7 @@ class SklearnSGDModel(Model):
             for vec in grad:
                 for arr in vec.coefs.values():
                     norm = np.sqrt(np.sum(np.square(arr)))
-                    arr *= min(max_norm / norm, 1)  # type: ignore
+                    arr *= min(max_norm / norm, 1)
         # Optionally re-weight gradients based on sample weights.
         if s_wght is not None:
             grad = [g * w for g, w in zip(grad, s_wght)]  # type: ignore
@@ -330,7 +330,7 @@ class SklearnSGDModel(Model):
         # Restore the model's weights.
         self.set_weights(w_srt)
         # Compute gradients based on weights' update.
-        return (w_srt - w_end) / self._model.eta0  # type: ignore
+        return (w_srt - w_end) / self._model.eta0
 
     def apply_updates(  # type: ignore  # Vector subtype specification
         self,
@@ -375,7 +375,7 @@ class SklearnSGDModel(Model):
         # For multiclass classifiers, further wrap to support 2d predictions.
         if len(getattr(self._model, "classes_", [])) > 2:
             def loss_fn(y_true: np.ndarray, y_pred: np.ndarray) -> np.ndarray:
-                return np.sum([  # type: ignore
+                return np.sum([
                     loss_1d(y_true == val, y_pred[:, i])
                     for i, val in enumerate(self._model.classes_)
                 ], axis=0)

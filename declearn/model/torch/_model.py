@@ -153,7 +153,7 @@ class TorchModel(Model):
         # Run the forward and backward pass to compute gradients.
         y_pred = self._model(*inputs)
         loss = self._compute_loss(y_pred, y_true, s_wght)
-        loss.backward()  # type: ignore
+        loss.backward()
         # Collect weights' gradients and return them in a Vector container.
         grads = {
             k: p.grad.detach().clone()
@@ -189,7 +189,7 @@ class TorchModel(Model):
         loss = self._loss_fn(y_pred, y_true)
         if s_wght is not None:
             loss.mul_(s_wght)
-        return loss.mean()  # type: ignore
+        return loss.mean()
 
     def _compute_samplewise_gradients(
         self,
@@ -219,11 +219,11 @@ class TorchModel(Model):
             self._prepare_samplewise_gradients_computations(batch)
         )
         # Compose it to clip output gradients on the way.
-        def clipped_grads_fn(inputs, y_true, s_wght, *params):  # type: ignore
+        def clipped_grads_fn(inputs, y_true, s_wght, *params):
             grads = grads_fn(inputs, y_true, None, *params)
             for grad in grads:
                 # future: use torch.linalg.norm when supported by functorch
-                norm = torch.norm(grad, p=2, keepdim=True)  # type: ignore
+                norm = torch.norm(grad, p=2, keepdim=True)
                 # false-positive; pylint: disable=no-member
                 grad.mul_(torch.clamp(max_norm / norm, max=1))
                 if s_wght is not None:
@@ -288,7 +288,7 @@ class TorchModel(Model):
                 pnames.append(name)
                 idxgrd.append(idx)
         # Define a differentiable function wrapping the forward pass.
-        def forward(inputs, y_true, s_wght, *params):  # type: ignore
+        def forward(inputs, y_true, s_wght, *params):
             y_pred = self._func_model(params, *inputs)
             return self._compute_loss(y_pred, y_true, s_wght)
         # Transform it into a sample-wise-gradients-computing function.

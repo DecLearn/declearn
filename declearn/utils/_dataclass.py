@@ -121,7 +121,7 @@ def dataclass_from_func(
     )
     dcls.call = call
     # Return the generated dataclass.
-    return dcls  # type: ignore
+    return dcls
 
 
 def dataclass_from_init(
@@ -181,7 +181,7 @@ def dataclass_from_init(
     )
     dcls.instantiate = instantiate
     # Return the generated dataclass.
-    return dcls  # type: ignore
+    return dcls
 
 
 def _parameters_to_fields(

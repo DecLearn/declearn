@@ -34,7 +34,7 @@ CallableLoss = Callable[[tf.Tensor, tf.Tensor], tf.Tensor]
 
 
 @tf.keras.utils.register_keras_serializable(package="declearn")
-class LossFunction(tf.keras.losses.Loss):  # type: ignore
+class LossFunction(tf.keras.losses.Loss):
     """Generic loss function container enabling reduction strategy control."""
 
     def __init__(

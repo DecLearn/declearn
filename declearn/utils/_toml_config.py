@@ -24,7 +24,7 @@ import warnings
 try:
     import tomllib  # type: ignore
 except ModuleNotFoundError:
-    import tomli as tomllib  # type: ignore  # required re-definition
+    import tomli as tomllib
 
 from typing import Any, Dict, Optional, Type, TypeVar, Union
 
@@ -274,7 +274,7 @@ class TomlConfig:
         if isinstance(inputs, str):
             # If the field implements TOML parsing, call it.
             if issubclass(field.type, TomlConfig):
-                return field.type.from_toml(inputs)  # type: ignore
+                return field.type.from_toml(inputs)
             # Otherwise, conduct minimal parsing.
             with open(inputs, "rb") as file:
                 config = tomllib.load(file, parse_float=_parse_float)
