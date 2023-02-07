@@ -99,13 +99,25 @@ conda activate declearn
 
 _Note: at the moment, conda installation is not recommended, because the
 package's installation is made slightly harder due to some dependencies being
-installable via conda while other are only available via pip/pypi, which can
+installable via conda while other are only available via pip/pypi, which caninstall
 lead to dependency-tracking trouble._
 
 ### Installation
 
-To install the package, simply clone the git repository and run `pip install .`
-from its root folder.
+#### Install from PyPI
+
+Stable releases of the package are uploaded to
+[PyPI](https://pypi.org/project/declearn/), enabling one to install with:
+
+```bash
+pip install declearn  # optionally with version constraints and/or extras
+```
+
+#### Install from source
+
+Alternatively, to install from source, one may clone the git repository (or
+download the source code from a release) and run `pip install .` from its
+root folder.
 
 ```bash
 git clone git@gitlab.inria.fr:magnet/declearn/declearn.git
@@ -113,29 +125,31 @@ cd declearn
 pip install .  # or pip install -e .
 ```
 
+#### Install extra dependencies
+
 To also install optional requirements, add the name of the extras between
 brackets to the `pip install` command, _e.g._ running one of the following:
 
 ```bash
 # Examples of cherry-picked installation instructions.
-pip install .[grpc]   # install dependencies to support gRPC communications
-pip install .[torch]  # install declearn.model.torch submodule dependencies
-pip install .[tensorflow,torch]  # install both tensorflow and torch
+pip install declearn[grpc]   # install dependencies to use gRPC communications
+pip install declearn[torch]  # install `declearn.model.torch` dependencies
+pip install declearn[tensorflow,torch]  # install both tensorflow and torch
 
 # Instructions to install bundles of optional components.
-pip install .[all]    # install all optional dependencies, save for testing
-pip install .[tests]  # install all optional dependencies plus testing ones
+pip install declearn[all]    # install all extra dependencies, save for testing
+pip install declearn[tests]  # install all extra dependencies plus testing ones
 ```
 
-**Notes**:
+#### Notes
 
-- If you are not using a virtual environment, select carefully the `pip`
-  binary being called (e.g. use `python -m pip`), and/or add a `--user`
-  flag to the pip command.
-- Developers may have better installing the package in editable mode,
-  using `pip install -e .`
-- If you are installing the package within a conda environment, it may
-  be better to run `pip install --no-deps .` so as to only install the
+- If you are not using a virtual environment, select carefully the `pip` binary
+  being called (e.g. use `python -m pip`), and/or add a `--user` flag to the
+  pip command.
+- Developers may have better installing the package in editable mode, using
+  `pip install -e .` from the repository's root folder.
+- If you are installing the package within a conda environment, it may be
+  better to run `pip install --no-deps declearn` so as to only install the
   package, and then to manually install the dependencies listed in the
   `pyproject.toml` file, using `conda install` rather than `pip install`
   whenever it is possible.
