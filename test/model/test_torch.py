@@ -96,7 +96,7 @@ class TorchTestCase(ModelTestCase):
     ) -> np.ndarray:
         """Convert an input tensor to a numpy array."""
         assert isinstance(tensor, torch.Tensor)
-        return tensor.numpy()  # type: ignore
+        return tensor.cpu().numpy()
 
     @property
     def dataset(
@@ -133,7 +133,7 @@ class TorchTestCase(ModelTestCase):
         elif self.kind == "RNN":
             stack = [
                 torch.nn.Embedding(100, 32),
-                torch.nn.LSTM(32, 16, batch_first=True),  # type: ignore
+                torch.nn.LSTM(32, 16, batch_first=True),
                 ExtractLSTMFinalOutput(),
                 torch.nn.Tanh(),
                 torch.nn.Linear(16, 1),

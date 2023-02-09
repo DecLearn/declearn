@@ -19,25 +19,44 @@
 
 from typing import Any, Callable, Dict, Optional, Set, Tuple, Type
 
-import numpy as np
 import torch
 from typing_extensions import Self  # future: import from typing (Py>=3.11)
 
 from declearn.model.api import Vector, register_vector_type
 from declearn.model.sklearn import NumpyVector
+from declearn.model.torch.utils import select_device
+from declearn.utils import get_device_policy
 
 
 @register_vector_type(torch.Tensor)
 class TorchVector(Vector):
     """Vector subclass to store PyTorch tensors.
 
-    This Vector is designed to store a collection of named
-    PyTorch tensors, enabling computations that are either
-    applied to each and every coefficient, or imply two sets
-    of aligned coefficients (i.e. two TorchVector with
-    similar specifications).
+    This Vector is designed to store a collection of named PyTorch
+    tensors, enabling computations that are either applied to each
+    and every coefficient, or imply two sets of aligned coefficients
+    (i.e. two TorchVector with similar specifications).
 
     Use `vector.coefs` to access the stored coefficients.
+
+    Notes regarding device management (CPU, GPU, etc.):
+    * The wrapped tensors may be placed on any device, and may not
+      be all on the same device.
+    * Wrapped tensors' placement will be preserved by self-altering
+      operations (e.g. using the `sign` method, or performing any
+      operation involving a scalar value).
+    * When combining a `TorchVector` and a `NumpyVector`, wrapped
+      tensors' placement will also be preserved.
+    * When combining two `TorchVector`, e.g. via addition, (but
+      really via any API-provided operation or method) the output
+      vector will use the device-placement of left-most vector.
+      Hence `gpu + cpu = gpu` while `cpu + gpu = cpu`.
+    * When deserializing a `TorchVector` (either by directly using
+      `TorchVector.unpack` or loading one from a JSON dump), loaded
+      tensors are placed based on the global device-placement policy
+      (accessed via `declearn.utils.get_device_policy`). Thus it may
+      have a different device-placement schema than at dump time but
+      should be coherent with that of `TorchModel` computations.
     """
 
     @property
@@ -73,10 +92,18 @@ class TorchVector(Vector):
         other: Any,
         func: Callable[[Any, Any], Any],
     ) -> Self:
+        # Convert 'other' NumpyVector to a (CPU-backed) TorchVector.
         if isinstance(other, NumpyVector):
             # false-positive; pylint: disable=no-member
             coefs = {
                 key: torch.from_numpy(val) for key, val in other.coefs.items()
+            }
+            other = TorchVector(coefs)
+        # Ensure 'other' TorchVector shares this vector's device placement.
+        if isinstance(other, TorchVector):
+            coefs = {
+                key: val.to(self.coefs[key].device)
+                for key, val in other.coefs.items()
             }
             other = TorchVector(coefs)
         return super()._apply_operation(other, func)
@@ -95,15 +122,20 @@ class TorchVector(Vector):
     def pack(
         self,
     ) -> Dict[str, Any]:
-        return {key: tns.numpy() for key, tns in self.coefs.items()}
+        return {key: tns.cpu().numpy() for key, tns in self.coefs.items()}
 
     @classmethod
     def unpack(
         cls,
         data: Dict[str, Any],
     ) -> Self:
-        # false-positive; pylint: disable=no-member
-        coefs = {key: torch.from_numpy(dat) for key, dat in data.items()}
+        policy = get_device_policy()
+        device = select_device(gpu=policy.gpu, idx=policy.idx)
+        coefs = {
+            # false-positive on `torch.from_numpy`; pylint: disable=no-member
+            key: torch.from_numpy(dat).to(device)
+            for key, dat in data.items()
+        }
         return cls(coefs)
 
     def __eq__(
@@ -115,8 +147,9 @@ class TorchVector(Vector):
             valid = self.coefs.keys() == other.coefs.keys()
         if valid:
             valid = all(
-                np.array_equal(self.coefs[k].numpy(), other.coefs[k].numpy())
-                for k in self.coefs
+                # false-positive on 'torch.equal'; pylint: disable=no-member
+                torch.equal(tns, other.coefs[key].to(tns.device))
+                for key, tns in self.coefs.items()
             )
         return valid
 

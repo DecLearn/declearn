@@ -15,20 +15,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tensorflow models interfacing tools.
+"""Utils for torch backend support code.
 
-This submodule provides with a generic interface to wrap up
-any PyTorch `nn.Module` instance that is to be trained with
-gradient descent.
-
-This module exposes:
-* TorchModel: Model subclass to wrap torch.nn.Module objects
-* TorchVector: Vector subclass to wrap torch.Tensor objects
-
-It also exposes the `utils` submodule, which mainly aims at
-providing tools used in the backend of the former objects.
+GPU/CPU backing device management utils:
+* AutoDeviceModule:
+    Wrapper for a `torch.nn.Module`, automating device-management.
+* select_device:
+    Select a backing device to use based on inputs and availability.
 """
 
-from . import utils
-from ._vector import TorchVector
-from ._model import TorchModel
+from ._gpu import AutoDeviceModule, select_device
