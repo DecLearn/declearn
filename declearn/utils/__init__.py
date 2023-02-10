@@ -67,6 +67,17 @@ And examples of pre-registered (de)serialization functions:
 * (deserialize_numpy, serialize_numpy):
     Pair of functions to (un)pack a numpy ndarray as JSON-serializable data.
 
+Device-policy utils
+-------------------
+Utils to access or update parameters defining a global device-selection policy.
+
+* DevicePolicy:
+    Dataclass to store parameters defining a device-selection policy.
+* get_device_policy:
+    Access a copy of the current global device policy.
+* set_device_policy:
+    Update the current global device policy.
+
 Miscellaneous
 -------------
 
@@ -83,6 +94,11 @@ Miscellaneous
 from ._dataclass import (
     dataclass_from_func,
     dataclass_from_init,
+)
+from ._device_policy import (
+    DevicePolicy,
+    get_device_policy,
+    set_device_policy,
 )
 from ._json import (
     add_json_support,
