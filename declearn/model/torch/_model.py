@@ -84,7 +84,16 @@ class TorchModel(Model):
         self,
         data_info: Dict[str, Any],
     ) -> None:
-        return None
+        # Warn about frozen weights.
+        if not all(p.requires_grad for p in self._model.parameters()):
+            warnings.warn(
+                "'TorchModel' wraps a model with frozen weights.\n"
+                "This is not fully compatible with declearn v2.0.x: the "
+                "use of weight decay and/or of a loss-regularization "
+                "plug-in in an Optimizer will fail to produce updates "
+                "for this model.\n"
+                "This issue will be fixed in declearn v2.1.0."
+            )
 
     def get_config(
         self,
