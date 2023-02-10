@@ -25,30 +25,52 @@ import tensorflow as tf  # type: ignore
 from tensorflow.python.framework.ops import EagerTensor  # type: ignore
 # pylint: enable=no-name-in-module
 from typing_extensions import Self  # future: import from typing (Py>=3.11)
+# fmt: on
 
 from declearn.model.api import Vector, register_vector_type
 from declearn.model.sklearn import NumpyVector
-
-# fmt: on
+from declearn.model.tensorflow.utils import (
+    preserve_tensor_device,
+    select_device,
+)
+from declearn.utils import get_device_policy
 
 
 @register_vector_type(tf.Tensor, EagerTensor, tf.IndexedSlices)
 class TensorflowVector(Vector):
     """Vector subclass to store tensorflow tensors.
 
-    This Vector is designed to store a collection of named
-    TensorFlow tensors, enabling computations that are either
-    applied to each and every coefficient, or imply two sets
-    of aligned coefficients (i.e. two TensorflowVector with
-    similar specifications).
+    This Vector is designed to store a collection of named TensorFlow
+    tensors, enabling computations that are either applied to each and
+    every coefficient, or imply two sets of aligned coefficients (i.e.
+    two TensorflowVector with similar specifications).
 
-    Note that support for IndexedSlices is implemented,
-    as these are a common type for auto-differentiated
-    gradients.
-    Note that this class does not (yet?) support special
-    tensor types such as SparseTensor or RaggedTensor.
+    Note that support for IndexedSlices is implemented, as these are a
+    common type for auto-differentiated gradients.
+
+    Note that this class does not (yet?) support special tensor types
+    such as SparseTensor or RaggedTensor.
 
     Use `vector.coefs` to access the stored coefficients.
+
+    Notes regarding device management (CPU, GPU, etc.):
+    * The wrapped tensors may be placed on any device, and may not
+      be all on the same device.
+    * Wrapped tensors' placement will be preserved by self-altering
+      operations (e.g. using the `sign` method, or performing any
+      operation involving a scalar value).
+    * When combining a `TensorflowVector` and a `NumpyVector`, the
+      wrapped tensors' placement will also be preserved.
+    * When combining two `TensorflowVector`, e.g. via addition, (but
+      really via any API-provided operation or method) the output
+      vector will use the device-placement of left-most vector.
+      Hence `gpu + cpu = gpu` while `cpu + gpu = cpu`.
+    * When deserializing a `TensorflowVector` (either by directly using
+      `TensorflowVector.unpack` or loading one from a JSON dump), loaded
+      tensors are placed based on the global device-placement policy
+      (accessed via `declearn.utils.get_device_policy`). Thus it may
+      have a different device-placement schema than at dump time but
+      should be coherent with that of `TensorflowModel` computations.
     """
 
     @property
@@ -81,6 +103,23 @@ class TensorflowVector(Vector):
     ) -> None:
         super().__init__(coefs)
 
+    def apply_func(
+        self,
+        func: Callable[..., Any],
+        *args: Any,
+        **kwargs: Any,
+    ) -> Self:
+        func = preserve_tensor_device(func)
+        return super().apply_func(func, *args, **kwargs)
+
+    def _apply_operation(
+        self,
+        other: Any,
+        func: Callable[[Any, Any], Any],
+    ) -> Self:
+        func = preserve_tensor_device(func)
+        return super()._apply_operation(other, func)
+
     def dtypes(
         self,
     ) -> Dict[str, str]:
@@ -97,7 +136,10 @@ class TensorflowVector(Vector):
         cls,
         data: Dict[str, Any],
     ) -> Self:
-        coef = {key: cls._unpack_tensor(dat) for key, dat in data.items()}
+        policy = get_device_policy()
+        device = select_device(gpu=policy.gpu, idx=policy.idx)
+        with tf.device(device):
+            coef = {key: cls._unpack_tensor(dat) for key, dat in data.items()}
         return cls(coef)
 
     @classmethod
@@ -149,10 +191,13 @@ class TensorflowVector(Vector):
         if not isinstance(t_a, type(t_b)):
             return False
         if isinstance(t_a, tf.IndexedSlices):
-            return TensorflowVector._tensor_equal(
-                t_a.indices, t_b.indices
-            ) and TensorflowVector._tensor_equal(t_a.values, t_b.values)
-        return tf.reduce_all(t_a == t_b).numpy()
+            # fmt: off
+            return (
+                TensorflowVector._tensor_equal(t_a.indices, t_b.indices)
+                and TensorflowVector._tensor_equal(t_a.values, t_b.values)
+            )
+        with tf.device(t_a.device):
+            return tf.reduce_all(t_a == t_b).numpy()
 
     def sign(self) -> Self:
         return self.apply_func(tf.sign)
@@ -178,8 +223,4 @@ class TensorflowVector(Vector):
         axis: Optional[int] = None,
         keepdims: bool = False,
     ) -> Self:
-        coefs = {
-            key: tf.reduce_sum(val, axis=axis, keepdims=keepdims)
-            for key, val in self.coefs.items()
-        }
-        return self.__class__(coefs)
+        return self.apply_func(tf.reduce_sum, axis=axis, keepdims=keepdims)

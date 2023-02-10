@@ -28,10 +28,19 @@ from typing_extensions import Self  # future: import from typing (py >=3.11)
 
 from declearn.data_info import aggregate_data_info
 from declearn.model.api import Model
-from declearn.model.tensorflow._utils import build_keras_loss
+from declearn.model.tensorflow.utils import (
+    build_keras_loss,
+    move_layer_to_device,
+    select_device,
+)
 from declearn.model.tensorflow._vector import TensorflowVector
 from declearn.typing import Batch
-from declearn.utils import register_type
+from declearn.utils import DevicePolicy, get_device_policy, register_type
+
+
+__all__ = [
+    "TensorflowModel",
+]
 
 
 @register_type(name="TensorflowModel", group="Model")
@@ -40,6 +49,20 @@ class TensorflowModel(Model):
 
     This `Model` subclass is designed to wrap a `tf.keras.Model`
     instance to be learned federatively.
+
+    Notes regarding device management (CPU, GPU, etc.):
+    * By default, tensorflow places data and operations on GPU whenever one
+      is available.
+    * Instead, `TensorflowModel` consults the device-placement policy (via
+      `declearn.utils.get_device_policy`), places the wrapped keras model's
+      weights there, and runs computations defined under public methods in
+      a `tensorflow.device` context, to enforce that policy.
+    * Note that there is no guarantee that calling a private method directly
+      will result in abiding by that policy. Hence, be careful when writing
+      custom code, and use your own context managers to get guarantees.
+    * Note that if the global device-placement policy is updated, this will
+      only be propagated to existing instances by manually calling their
+      `update_device_policy` method.
     """
 
     def __init__(
@@ -47,6 +70,7 @@ class TensorflowModel(Model):
         model: tf.keras.layers.Layer,
         loss: Union[str, tf.keras.losses.Loss],
         metrics: Optional[List[Union[str, tf.keras.metrics.Metric]]] = None,
+        _from_config: bool = False,
         **kwargs: Any,
     ) -> None:
         """Instantiate a Model interface wrapping a tensorflow.keras model.
@@ -66,7 +90,7 @@ class TensorflowModel(Model):
             compiled with the model and computed using the `evaluate`
             method of the returned TensorflowModel instance.
         **kwargs: Any
-            Any addition keyword argument to `tf.keras.Model.compile`
+            Any additional keyword argument to `tf.keras.Model.compile`
             may be passed.
         """
         # Type-check the input Model and wrap it up.
@@ -79,12 +103,52 @@ class TensorflowModel(Model):
         super().__init__(model)
         # Ensure the loss is a keras.Loss object and set its reduction to none.
         loss = build_keras_loss(loss, reduction=tf.keras.losses.Reduction.NONE)
-        # Compile the wrapped model and retain compilation arguments.
-        kwargs.update({"loss": loss, "metrics": metrics})
-        model.compile(**kwargs)
-        self._kwargs = kwargs
-        # Instantiate a SGD optimizer to apply updates as-provided.
-        self._sgd = tf.keras.optimizers.SGD(learning_rate=1.0)
+        # Select the device where to place computations and move the model.
+        policy = get_device_policy()
+        self._device = select_device(gpu=policy.gpu, idx=policy.idx)
+        if not _from_config:
+            self._model = move_layer_to_device(self._model, self._device)
+        # Finalize initialization using the selected device.
+        with tf.device(self._device):
+            # Compile the wrapped model and retain compilation arguments.
+            kwargs.update({"loss": loss, "metrics": metrics})
+            self._model.compile(**kwargs)
+            self._kwargs = kwargs
+            # Instantiate a SGD optimizer to apply updates as-provided.
+            self._sgd = tf.keras.optimizers.SGD(learning_rate=1.0)
+
+    def update_device_policy(
+        self,
+        policy: Optional[DevicePolicy] = None,
+    ) -> None:
+        """Update the device-placement policy of this model.
+
+        Parameters
+        ----------
+        policy: DevicePolicy or None, default=None
+            Optional DevicePolicy dataclass instance to be used.
+            If None, use the global device policy, accessed via
+            `declearn.utils.get_device_policy`.
+        """
+        if policy is None:
+            policy = get_device_policy()
+        device = select_device(gpu=policy.gpu, idx=policy.idx)
+        # When needed, re-create the model to force moving it to the device.
+        if self._device is not device:
+            self._device = device
+            self._model = move_layer_to_device(self._model, self._device)
+
+    @property
+    def device_policy(
+        self,
+    ) -> DevicePolicy:
+        """Return the device-placement policy currently used by this model."""
+        device = self._device
+        try:
+            idx = int(device.name.rsplit(":", 1)[-1])
+        except ValueError:
+            idx = None
+        return DevicePolicy(gpu=(device.device_type == "GPU"), idx=idx)
 
     @property
     def required_data_info(
@@ -98,7 +162,8 @@ class TensorflowModel(Model):
     ) -> None:
         if not self._model.built:
             data_info = aggregate_data_info([data_info], {"input_shape"})
-            self._model.build(data_info["input_shape"])
+            with tf.device(self._device):
+                self._model.build(data_info["input_shape"])
         # Warn about frozen weights.
         # similar to TorchModel warning; pylint: disable=duplicate-code
         if len(self._model.trainable_weights) < len(self._model.weights):
@@ -129,9 +194,15 @@ class TensorflowModel(Model):
         for key in ("model", "loss", "kwargs"):
             if key not in config.keys():
                 raise KeyError(f"Missing key '{key}' in the config dict.")
-        model = tf.keras.layers.deserialize(config["model"])
-        loss = tf.keras.losses.deserialize(config["loss"])
-        return cls(model, loss, **config["kwargs"])
+        # Set up the device policy.
+        policy = get_device_policy()
+        device = select_device(gpu=policy.gpu, idx=policy.idx)
+        # Deserialize the model and loss keras objects on the device.
+        with tf.device(device):
+            model = tf.keras.layers.deserialize(config["model"])
+            loss = tf.keras.losses.deserialize(config["loss"])
+        # Instantiate the TensorflowModel, avoiding device-to-device copies.
+        return cls(model, loss, **config["kwargs"], _from_config=True)
 
     def get_weights(
         self,
@@ -151,8 +222,9 @@ class TensorflowModel(Model):
             )
         self._verify_weights_compatibility(weights, trainable_only=False)
         variables = {var.name: var for var in self._model.weights}
-        for name, value in weights.coefs.items():
-            variables[name].assign(value, read_value=False)
+        with tf.device(self._device):
+            for name, value in weights.coefs.items():
+                variables[name].assign(value, read_value=False)
 
     def _verify_weights_compatibility(
         self,
@@ -197,12 +269,13 @@ class TensorflowModel(Model):
         batch: Batch,
         max_norm: Optional[float] = None,
     ) -> TensorflowVector:
-        data = self._unpack_batch(batch)
-        if max_norm is None:
-            grads = self._compute_batch_gradients(*data)
-        else:
-            norm = tf.constant(max_norm)
-            grads = self._compute_clipped_gradients(*data, norm)
+        with tf.device(self._device):
+            data = self._unpack_batch(batch)
+            if max_norm is None:
+                grads = self._compute_batch_gradients(*data)
+            else:
+                norm = tf.constant(max_norm)
+                grads = self._compute_clipped_gradients(*data, norm)
         grads_and_vars = zip(grads, self._model.trainable_weights)
         return TensorflowVector(
             {var.name: grad for grad, var in grads_and_vars}
@@ -285,13 +358,14 @@ class TensorflowModel(Model):
         updates: TensorflowVector,
     ) -> None:
         self._verify_weights_compatibility(updates, trainable_only=True)
-        # Delegate updates' application to a tensorflow Optimizer.
-        values = (-1 * updates).coefs.values()
-        zipped = zip(values, self._model.trainable_weights)
-        upd_op = self._sgd.apply_gradients(zipped)
-        # Ensure ops have been performed before exiting.
-        with tf.control_dependencies([upd_op]):
-            return None
+        with tf.device(self._device):
+            # Delegate updates' application to a tensorflow Optimizer.
+            values = (-1 * updates).coefs.values()
+            zipped = zip(values, self._model.trainable_weights)
+            upd_op = self._sgd.apply_gradients(zipped)
+            # Ensure ops have been performed before exiting.
+            with tf.control_dependencies([upd_op]):
+                return None
 
     def evaluate(
         self,
@@ -311,21 +385,23 @@ class TensorflowModel(Model):
         metrics: dict[str, float]
             Dictionary associating evaluation metrics' values to their name.
         """
-        return self._model.evaluate(dataset, return_dict=True)
+        with tf.device(self._device):
+            return self._model.evaluate(dataset, return_dict=True)
 
     def compute_batch_predictions(
         self,
         batch: Batch,
     ) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray]]:
-        inputs, y_true, s_wght = self._unpack_batch(batch)
-        if y_true is None:
-            raise TypeError(
-                "`TensorflowModel.compute_batch_predictions` received a "
-                "batch with `y_true=None`, which is unsupported. Please "
-                "correct the inputs, or override this method to support "
-                "creating labels from the base inputs."
-            )
-        y_pred = self._model(inputs, training=False).numpy()
+        with tf.device(self._device):
+            inputs, y_true, s_wght = self._unpack_batch(batch)
+            if y_true is None:
+                raise TypeError(
+                    "`TensorflowModel.compute_batch_predictions` received a "
+                    "batch with `y_true=None`, which is unsupported. Please "
+                    "correct the inputs, or override this method to support "
+                    "creating labels from the base inputs."
+                )
+            y_pred = self._model(inputs, training=False).numpy()
         y_true = y_true.numpy()
         s_wght = s_wght.numpy() if s_wght is not None else s_wght
         return y_true, y_pred, s_wght
@@ -335,7 +411,8 @@ class TensorflowModel(Model):
         y_true: np.ndarray,
         y_pred: np.ndarray,
     ) -> np.ndarray:
-        tns_true = tf.convert_to_tensor(y_true)
-        tns_pred = tf.convert_to_tensor(y_pred)
-        s_loss = self._model.compute_loss(y=tns_true, y_pred=tns_pred)
+        with tf.device(self._device):
+            tns_true = tf.convert_to_tensor(y_true)
+            tns_pred = tf.convert_to_tensor(y_pred)
+            s_loss = self._model.compute_loss(y=tns_true, y_pred=tns_pred)
         return s_loss.numpy().squeeze()
