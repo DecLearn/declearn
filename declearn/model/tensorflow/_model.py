@@ -17,6 +17,7 @@
 
 """Model subclass to wrap TensorFlow models."""
 
+import warnings
 from copy import deepcopy
 from typing import Any, Dict, Iterable, List, Optional, Set, Tuple, Union
 
@@ -98,6 +99,18 @@ class TensorflowModel(Model):
         if not self._model.built:
             data_info = aggregate_data_info([data_info], {"input_shape"})
             self._model.build(data_info["input_shape"])
+        # Warn about frozen weights.
+        # similar to TorchModel warning; pylint: disable=duplicate-code
+        if len(self._model.trainable_weights) < len(self._model.weights):
+            warnings.warn(
+                "'TensorflowModel' wraps a model with frozen weights.\n"
+                "This is not fully compatible with declearn v2.0.x: the "
+                "use of weight decay and/or of a loss-regularization "
+                "plug-in in an Optimizer will fail to produce updates "
+                "for this model.\n"
+                "This issue will be fixed in declearn v2.1.0."
+            )
+        # pylint: enable=duplicate-code
 
     def get_config(
         self,
