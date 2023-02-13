@@ -23,9 +23,9 @@ with the aim of providing users with a modular and extensible framework
 to implement federated learning algorithms and apply them to real-world
 (or simulated) data using any common machine learning framework.
 
-Declearn provides with abstractions that enable algorithms to be written 
-agnostic to the actual computation framework as well as with workable 
-interfaces that cover some of the most popular frameworks, such as 
+Declearn provides with abstractions that enable algorithms to be written
+agnostic to the actual computation framework as well as with workable
+interfaces that cover some of the most popular frameworks, such as
 Scikit-Learn, TensorFlow and PyTorch.
 
 The package is organized into the following submodules:
@@ -64,4 +64,4 @@ from . import (
     utils,
 )
 
-__version__ = "2.0.0"
+__version__ = "2.0.1"
