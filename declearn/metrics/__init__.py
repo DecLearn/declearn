@@ -59,4 +59,5 @@ from ._classif import (
 )
 from ._mean import MeanMetric, MeanAbsoluteError, MeanSquaredError
 from ._roc_auc import BinaryRocAUC
+from ._regression import R2
 from ._wrapper import MetricInputType, MetricSet
