@@ -699,7 +699,24 @@ forward framework evolutions and API revisions.
 
 To contribute directly to the code (beyond posting issues on gitlab), please
 create a dedicated branch, and submit a **Merge Request** once you want your
-work reviewed and further processed to end up integrated into the main branch.
+work reviewed and further processed to end up integrated into the package.
+
+The **git branching strategy** is the following:
+
+- 'main' matches the latest release's X.Y version, but may hold unreleased
+  patch changes; i.e. it can be seen as version X.Y.(Z+1)-beta
+- 'develop' holds finalized changes that should be made part of the next
+  minor version release; i.e. it can be seen as version X.(Y+1).0-beta
+- when necessary, intermediate release branches may be set up to cherry-pick
+  changes from 'develop' to be included in a given minor version release
+- 'main', 'develop' and any intermediate release branch are expected to be
+  stable at all times
+- feature branches should be created at will to develop features, enhancements,
+  or even hotfixes that will later be merged into 'develop' and eventually into
+  'main'.
+- it is legit to write up poc branches, as well as to split the development of
+  a feature into multiple branches that will incrementally be merged into an
+  intermediate feature branch that will eventually be merged into 'develop'
 
 The **coding rules** are fairly simple:
 
@@ -721,6 +738,10 @@ The **coding rules** are fairly simple:
 - reformat your code using [black](https://github.com/psf/black); do use
   (sparingly) "fmt: off/on" comments when you think it relevant
   (see dedicated sub-section [below](#running-black-to-format-the-code))
+- abide by [semver](https://semver.org/) when implementing new features or
+  changing the existing APIs; try making changes non-breaking, document and
+  warn about deprecations or behavior changes, or make a point for API-breaking
+  changes, which we are happy to consider but might take time to be released
 
 ### Unit tests and code analysis
 
