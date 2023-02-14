@@ -53,7 +53,9 @@ class BinaryRocAUC(Metric):
 
     Note that this class supports aggregating states from another
     BinaryRocAUC instance with different hyper-parameters into it,
-    unless its
+    unless its `bound` parameter is set - in which case thresholds
+    are not authorized to be dynamically updated, either at samples
+    processing or states-aggregating steps.
     """
 
     name: ClassVar[str] = "binary-roc"
