@@ -67,4 +67,5 @@ from . import sklearn
 OPTIONAL_MODULES = [
     "tensorflow",
     "torch",
+    "jax",
 ]
