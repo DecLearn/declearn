@@ -227,6 +227,34 @@ client = declearn.main.FederatedClient(netwk, train, valid, checkpoint="outputs"
 client.run()
 ```
 
+### Support for GPU acceleration
+
+TL;DR: GPU acceleration is natively available and active for model frameworks
+that support it, without any adaptation to your code.
+
+Details:
+
+Most machine learning frameworks enable accelerating computations by using
+computational devices other than CPU. This is notably the case of Tensorflow
+and Torch, which are both interfaced in declearn.
+
+declearn internalizes the framework-specific code adaptations to place the
+data, model weights and computations on such a device. declearn provides with
+a simple API to define a global policy as to the kind of device to use. At the
+moment, this enables using a single GPU to accelerate computations, or forcing
+the use of a CPU. By default, the policy is set to use the first available GPU,
+and otherwise use the CPU, with a warning that can safely be ignored.
+
+Setting the device policy to be used can be done with a single line of code in
+the script run locally, either as a client or as a server (since that policy is
+merely local and is not synchronized between federated learninng participants).
+Here are some examples of that line of code:
+```python
+declearn.utils.set_device_policy(gpu=False)  # disable GPU use
+declearn.utils.set_device_policy(gpu=True)  # use any available GPU
+declearn.utils.set_device_policy(gpu=True, idx=2)  # specifically use GPU n°2
+```
+
 ### Note on dependency sharing
 
 One important issue however that is not handled by declearn itself is that
