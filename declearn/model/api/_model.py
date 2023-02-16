@@ -25,7 +25,7 @@ from typing_extensions import Self  # future: import from typing (py >=3.11)
 
 from declearn.model.api._vector import Vector
 from declearn.typing import Batch
-from declearn.utils import create_types_registry
+from declearn.utils import DevicePolicy, create_types_registry
 
 
 __all__ = [
@@ -43,6 +43,13 @@ class Model(metaclass=ABCMeta):
     writing algorithms and operations agnostic to the framework
     in which the underlying model is implemented (e.g. PyTorch,
     TensorFlow, Scikit-Learn...).
+
+    Device-placement (i.e. running computations on CPU or GPU)
+    is also handled as part of Model classes' backend, mapping
+    the generic `declearn.utils.DevicePolicy` parameters to any
+    required framework-specific instruction to adequately pick
+    the device to use and ensure the wrapped model, input data
+    and interfaced computations are placed there.
     """
 
     def __init__(
@@ -51,6 +58,13 @@ class Model(metaclass=ABCMeta):
     ) -> None:
         """Instantiate a Model interface wrapping a 'model' object."""
         self._model = model
+
+    @property
+    @abstractmethod
+    def device_policy(
+        self,
+    ) -> DevicePolicy:
+        """Return the device-placement policy currently used by this model."""
 
     @property
     @abstractmethod
@@ -219,4 +233,28 @@ class Model(metaclass=ABCMeta):
         -------
         s_loss: np.ndarray
             Sample-wise loss values, as a 1-d numpy array.
+        """
+
+    @abstractmethod
+    def update_device_policy(
+        self,
+        policy: Optional[DevicePolicy] = None,
+    ) -> None:
+        """Update the device-placement policy of this model.
+
+        This method is designed to be called after a change in the global
+        device-placement policy (e.g. to disable using a GPU, or move to
+        a specific one), so as to place pre-existing Model instances and
+        avoid policy inconsistencies that might cause repeated memory or
+        runtime costs from moving data or weights around each time they
+        are used. You should otherwise not worry about a Model's device-
+        placement, as it is handled at instantiation based on the global
+        device policy (see `declearn.utils.set_device_policy`).
+
+        Parameters
+        ----------
+        policy: DevicePolicy or None, default=None
+            Optional DevicePolicy dataclass instance to be used.
+            If None, use the global device policy, accessed via
+            `declearn.utils.get_device_policy`.
         """

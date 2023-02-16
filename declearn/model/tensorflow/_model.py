@@ -47,8 +47,8 @@ __all__ = [
 class TensorflowModel(Model):
     """Model wrapper for TensorFlow Model instances.
 
-    This `Model` subclass is designed to wrap a `tf.keras.Model`
-    instance to be learned federatively.
+    This `Model` subclass is designed to wrap a `tf.keras.Model` instance
+    to be trained federatively.
 
     Notes regarding device management (CPU, GPU, etc.):
     * By default, tensorflow places data and operations on GPU whenever one
@@ -63,6 +63,8 @@ class TensorflowModel(Model):
     * Note that if the global device-placement policy is updated, this will
       only be propagated to existing instances by manually calling their
       `update_device_policy` method.
+    * You may consult the device policy currently enforced by a TensorflowModel
+      instance by accessing its `device_policy` property.
     """
 
     def __init__(
@@ -117,32 +119,10 @@ class TensorflowModel(Model):
             # Instantiate a SGD optimizer to apply updates as-provided.
             self._sgd = tf.keras.optimizers.SGD(learning_rate=1.0)
 
-    def update_device_policy(
-        self,
-        policy: Optional[DevicePolicy] = None,
-    ) -> None:
-        """Update the device-placement policy of this model.
-
-        Parameters
-        ----------
-        policy: DevicePolicy or None, default=None
-            Optional DevicePolicy dataclass instance to be used.
-            If None, use the global device policy, accessed via
-            `declearn.utils.get_device_policy`.
-        """
-        if policy is None:
-            policy = get_device_policy()
-        device = select_device(gpu=policy.gpu, idx=policy.idx)
-        # When needed, re-create the model to force moving it to the device.
-        if self._device is not device:
-            self._device = device
-            self._model = move_layer_to_device(self._model, self._device)
-
     @property
     def device_policy(
         self,
     ) -> DevicePolicy:
-        """Return the device-placement policy currently used by this model."""
         device = self._device
         try:
             idx = int(device.name.rsplit(":", 1)[-1])
@@ -416,3 +396,16 @@ class TensorflowModel(Model):
             tns_pred = tf.convert_to_tensor(y_pred)
             s_loss = self._model.compute_loss(y=tns_true, y_pred=tns_pred)
         return s_loss.numpy().squeeze()
+
+    def update_device_policy(
+        self,
+        policy: Optional[DevicePolicy] = None,
+    ) -> None:
+        # Select the device to use based on the provided or global policy.
+        if policy is None:
+            policy = get_device_policy()
+        device = select_device(gpu=policy.gpu, idx=policy.idx)
+        # When needed, re-create the model to force moving it to the device.
+        if self._device is not device:
+            self._device = device
+            self._model = move_layer_to_device(self._model, self._device)

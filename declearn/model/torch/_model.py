@@ -48,8 +48,22 @@ TensorBatch = Tuple[
 class TorchModel(Model):
     """Model wrapper for PyTorch Model instances.
 
-    This `Model` subclass is designed to wrap a `torch.nn.Module`
-    instance to be learned federatively.
+    This `Model` subclass is designed to wrap a `torch.nn.Module` instance
+    to be trained federatively.
+
+    Notes regarding device management (CPU, GPU, etc.):
+    * By default, torch does not move tensors between devices automatically,
+      meaning users have to be careful where these are placed for operations
+      to run without raising runtime errors.
+    * Instead, `TorchModel` consults the global device-placement policy (via
+      `declearn.utils.get_device_policy`), places the wrapped torch modules'
+      weights there, and automates the placement of input data on the same
+      device as the wrapped model.
+    * Note that if the global device-placement policy is updated, this will
+      only be propagated to existing instances by manually calling their
+      `update_device_policy` method.
+    * You may consult the device policy currently enforced by a TorchModel
+      instance by accessing its `device_policy` property.
     """
 
     def __init__(
@@ -84,30 +98,10 @@ class TorchModel(Model):
         # Compute and assign a functional version of the model.
         self._func_model = functorch.make_functional(self._model)[0]
 
-    def update_device_policy(
-        self,
-        policy: Optional[DevicePolicy] = None,
-    ) -> None:
-        """Update the device-placement policy of this model.
-
-        Parameters
-        ----------
-        policy: DevicePolicy or None, default=None
-            Optional DevicePolicy dataclass instance to be used.
-            If None, use the global device policy, accessed via
-            `declearn.utils.get_device_policy`.
-        """
-        if policy is None:
-            policy = get_device_policy()
-        device = select_device(gpu=policy.gpu, idx=policy.idx)
-        self._model.set_device(device)
-        self._loss_fn.set_device(device)
-
     @property
     def device_policy(
         self,
     ) -> DevicePolicy:
-        """Return the device-placement policy currently used by this model."""
         device = self._model.device
         return DevicePolicy(gpu=(device.type == "cuda"), idx=device.index)
 
@@ -391,3 +385,15 @@ class TorchModel(Model):
         tns_true = torch.from_numpy(y_true)  # pylint: disable=no-member
         s_loss = self._loss_fn(tns_pred, tns_true)
         return s_loss.cpu().numpy().squeeze()
+
+    def update_device_policy(
+        self,
+        policy: Optional[DevicePolicy] = None,
+    ) -> None:
+        # Select the device to use based on the provided or global policy.
+        if policy is None:
+            policy = get_device_policy()
+        device = select_device(gpu=policy.gpu, idx=policy.idx)
+        # Place the wrapped model and loss function modules on that device.
+        self._model.set_device(device)
+        self._loss_fn.set_device(device)
