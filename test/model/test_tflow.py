@@ -33,6 +33,7 @@ except ModuleNotFoundError:
 
 from declearn.model.tensorflow import TensorflowModel, TensorflowVector
 from declearn.typing import Batch
+from declearn.utils import set_device_policy
 
 # dirty trick to import from `model_testing.py`;
 # pylint: disable=wrong-import-order, wrong-import-position
@@ -67,11 +68,16 @@ class TensorflowTestCase(ModelTestCase):
     def __init__(
         self,
         kind: Literal["MLP", "RNN", "CNN"],
+        device: Literal["CPU", "GPU"],
     ) -> None:
         """Specify the desired model architecture."""
         if kind not in ("MLP", "RNN", "CNN"):
             raise ValueError(f"Invalid keras test architecture: '{kind}'.")
+        if device not in ("CPU", "GPU"):
+            raise ValueError(f"Invalid device choice for test: '{device}'.")
         self.kind = kind
+        self.device = device
+        set_device_policy(gpu=(device == "GPU"), idx=0)
 
     @staticmethod
     def to_numpy(
@@ -79,7 +85,7 @@ class TensorflowTestCase(ModelTestCase):
     ) -> np.ndarray:
         """Convert an input tensor to a numpy array."""
         assert isinstance(tensor, tf.Tensor)
-        return tensor.numpy()  # type: ignore
+        return tensor.numpy()
 
     @property
     def dataset(
@@ -132,16 +138,47 @@ class TensorflowTestCase(ModelTestCase):
         tfmod.build(shape)  # as model is built, no data_info is required
         return TensorflowModel(tfmod, loss="binary_crossentropy", metrics=None)
 
+    def assert_correct_device(
+        self,
+        vector: TensorflowVector,
+    ) -> None:
+        """Raise if a vector is backed on the wrong type of device."""
+        name = f"{self.device}:0"
+        assert all(
+            tensor.device.endswith(name) for tensor in vector.coefs.values()
+        )
+
 
 @pytest.fixture(name="test_case")
 def fixture_test_case(
-    kind: Literal["MLP", "RNN", "CNN"]
+    kind: Literal["MLP", "RNN", "CNN"],
+    device: Literal["CPU", "GPU"],
 ) -> TensorflowTestCase:
     """Fixture to access a TensorflowTestCase."""
-    return TensorflowTestCase(kind)
+    return TensorflowTestCase(kind, device)
 
 
+DEVICES = ["CPU"]
+if tf.config.list_logical_devices("GPU"):
+    DEVICES.append("GPU")
+
+
+@pytest.mark.parametrize("device", DEVICES)
 @pytest.mark.parametrize("kind", ["MLP", "RNN", "CNN"])
 @pytest.mark.filterwarnings("ignore:.*randrange.*:DeprecationWarning")
 class TestTensorflowModel(ModelTestSuite):
     """Unit tests for declearn.model.tensorflow.TensorflowModel."""
+
+    def test_proper_model_placement(
+        self,
+        test_case: TensorflowTestCase,
+    ) -> None:
+        """Check that at instantiation, model weights are properly placed."""
+        model = test_case.model
+        policy = model.device_policy
+        assert policy.gpu == (test_case.device == "GPU")
+        assert policy.idx == 0
+        tfmod = getattr(model, "_model")
+        device = f"{test_case.device}:0"
+        for var in tfmod.weights:
+            assert var.device.endswith(device)

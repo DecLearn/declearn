@@ -87,7 +87,8 @@ class GradientsTestCase:
             return array
         if self.framework == "tensorflow":
             tensorflow = importlib.import_module("tensorflow")
-            return tensorflow.convert_to_tensor(array)
+            with tensorflow.device("CPU"):
+                return tensorflow.convert_to_tensor(array)
         if self.framework == "torch":
             torch = importlib.import_module("torch")
             return torch.from_numpy(array)

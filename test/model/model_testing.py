@@ -18,7 +18,7 @@
 """Shared testing code for TensorFlow and Torch models' unit tests."""
 
 import json
-from typing import Any, List, Protocol, Tuple, Type, Union
+from typing import Any, Generic, List, Protocol, Tuple, Type, TypeVar, Union
 
 import numpy as np
 
@@ -27,10 +27,13 @@ from declearn.typing import Batch
 from declearn.utils import json_pack, json_unpack
 
 
-class ModelTestCase(Protocol):
+VectorT = TypeVar("VectorT", bound=Vector)
+
+
+class ModelTestCase(Protocol, Generic[VectorT]):
     """TestCase fixture-provider protocol."""
 
-    vector_cls: Type[Vector]
+    vector_cls: VectorT
     tensor_cls: Union[Type[Any], Tuple[Type[Any], ...]]
 
     @staticmethod
@@ -51,6 +54,12 @@ class ModelTestCase(Protocol):
     ) -> Model:
         """Suited toy binary-classification model."""
 
+    def assert_correct_device(
+        self,
+        vector: VectorT,
+    ) -> None:
+        """Raise if a vector is backed on the wrong type of device."""
+
 
 class ModelTestSuite:
     """Unit tests for a declearn Model."""
@@ -64,6 +73,7 @@ class ModelTestSuite:
         config = json.dumps(model.get_config())
         other = model.from_config(json.loads(config))
         assert model.get_config() == other.get_config()
+        assert model.device_policy == other.device_policy
 
     def test_get_set_weights(
         self,
@@ -75,7 +85,12 @@ class ModelTestSuite:
         assert isinstance(w_srt, test_case.vector_cls)
         w_end = w_srt + 1.0
         model.set_weights(w_end)
-        assert model.get_weights() == w_end
+        w_upd = model.get_weights()
+        assert w_upd == w_end
+        # Check that weight tensors are properly placed.
+        test_case.assert_correct_device(w_srt)
+        test_case.assert_correct_device(w_end)
+        test_case.assert_correct_device(w_upd)
 
     def test_compute_batch_gradients(
         self,
@@ -113,7 +128,13 @@ class ModelTestSuite:
         np_grads = model.compute_batch_gradients(np_batch)  # type: ignore
         assert isinstance(np_grads, test_case.vector_cls)
         my_grads = model.compute_batch_gradients(my_batch)
-        assert my_grads == np_grads
+        # Allow for a numerical imprecision of 10^-9.
+        diff = my_grads - np_grads
+        max_err = max(
+            np.abs(test_case.to_numpy(weight)).max()
+            for weight in diff.coefs.values()
+        )
+        assert max_err < 1e-8
 
     def test_compute_batch_gradients_clipped(
         self,
@@ -137,6 +158,9 @@ class ModelTestSuite:
             for k in grads_a.coefs
         )
         assert grads_a != grads_b
+        # Check that gradients are properly placed.
+        test_case.assert_correct_device(grads_a)
+        test_case.assert_correct_device(grads_b)
 
     def test_apply_updates(
         self,
@@ -157,9 +181,14 @@ class ModelTestSuite:
         # NOTE: if the model had frozen weights, this test would xfail.
         w_end = model.get_weights()
         assert w_end != w_srt
-        updt = [test_case.to_numpy(val) for val in grads.coefs.values()]
-        diff = list((w_end - w_srt).coefs.values())
-        assert all(np.abs(a - b).max() < 1e-6 for a, b in zip(diff, updt))
+        diff = (w_end - w_srt) - grads
+        assert all(
+            np.abs(test_case.to_numpy(weight)).max() < 1e-6
+            for weight in diff.coefs.values()
+        )
+        # Check that gradients and updated weights are properly placed.
+        test_case.assert_correct_device(grads)
+        test_case.assert_correct_device(w_end)
 
     def test_serialize_gradients(
         self,

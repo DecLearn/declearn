@@ -17,6 +17,7 @@
 
 """Unit tests for TorchModel."""
 
+import json
 import sys
 from typing import Any, List, Literal, Tuple
 
@@ -30,6 +31,7 @@ except ModuleNotFoundError:
 
 from declearn.model.torch import TorchModel, TorchVector
 from declearn.typing import Batch
+from declearn.utils import set_device_policy
 
 # dirty trick to import from `model_testing.py`;
 # pylint: disable=wrong-import-order, wrong-import-position
@@ -84,11 +86,14 @@ class TorchTestCase(ModelTestCase):
     def __init__(
         self,
         kind: Literal["MLP", "RNN", "CNN"],
+        device: Literal["CPU", "GPU"],
     ) -> None:
         """Specify the desired model architecture."""
         if kind not in ("MLP", "RNN", "CNN"):
             raise ValueError(f"Invalid torch test architecture: '{kind}'.")
         self.kind = kind
+        self.device = device
+        set_device_policy(gpu=(device == "GPU"), idx=0)
 
     @staticmethod
     def to_numpy(
@@ -154,13 +159,32 @@ class TorchTestCase(ModelTestCase):
         nnmod = torch.nn.Sequential(*stack)
         return TorchModel(nnmod, loss=torch.nn.BCELoss())
 
+    def assert_correct_device(
+        self,
+        vector: TorchVector,
+    ) -> None:
+        """Raise if a vector is backed on the wrong type of device."""
+        dev_type = "cuda" if self.device == "GPU" else "cpu"
+        assert all(
+            tensor.device.type == dev_type for tensor in vector.coefs.values()
+        )
+
 
 @pytest.fixture(name="test_case")
-def fixture_test_case(kind: Literal["MLP", "RNN", "CNN"]) -> TorchTestCase:
+def fixture_test_case(
+    kind: Literal["MLP", "RNN", "CNN"],
+    device: Literal["CPU", "GPU"],
+) -> TorchTestCase:
     """Fixture to access a TorchTestCase."""
-    return TorchTestCase(kind)
+    return TorchTestCase(kind, device)
 
 
+DEVICES = ["CPU"]
+if torch.cuda.device_count():
+    DEVICES.append("GPU")
+
+
+@pytest.mark.parametrize("device", DEVICES)
 @pytest.mark.parametrize("kind", ["MLP", "RNN", "CNN"])
 class TestTorchModel(ModelTestSuite):
     """Unit tests for declearn.model.torch.TorchModel."""
@@ -175,12 +199,33 @@ class TestTorchModel(ModelTestSuite):
             #       due to the (de)serialization of a custom nn.Module
             #       the expected model behaviour is, however, correct
             try:
-                super().test_serialization(test_case)
+                self._test_serialization(test_case)
             except AssertionError:
                 pytest.skip(
                     "skipping failed test due to custom nn.Module pickling"
                 )
-        super().test_serialization(test_case)
+        self._test_serialization(test_case)
+
+    def _test_serialization(
+        self,
+        test_case: ModelTestCase,
+    ) -> None:
+        """Check that the model can be JSON-(de)serialized properly.
+
+        This method replaces the parent `test_serialization` one.
+        """
+        # Same setup as in parent test: a model and a config-based other.
+        model = test_case.model
+        config = json.dumps(model.get_config())
+        other = model.from_config(json.loads(config))
+        # Verify that both models have the same device policy.
+        assert model.device_policy == other.device_policy
+        # Verify that both models have a similar structure of modules.
+        mod_a = list(getattr(model, "_model").modules())
+        mod_b = list(getattr(other, "_model").modules())
+        assert len(mod_a) == len(mod_b)
+        assert all(isinstance(a, type(b)) for a, b in zip(mod_a, mod_b))
+        assert all(repr(a) == repr(b) for a, b in zip(mod_a, mod_b))
 
     def test_compute_batch_gradients_clipped(
         self,
@@ -195,3 +240,17 @@ class TestTorchModel(ModelTestSuite):
                 )
         else:
             super().test_compute_batch_gradients_clipped(test_case)
+
+    def test_proper_model_placement(
+        self,
+        test_case: TorchTestCase,
+    ) -> None:
+        """Check that at instantiation, model weights are properly placed."""
+        model = test_case.model
+        policy = model.device_policy
+        assert policy.gpu == (test_case.device == "GPU")
+        assert (policy.idx == 0) if policy.gpu else (policy.idx is None)
+        ptmod = getattr(model, "_model").module
+        device_type = "cpu" if test_case.device == "CPU" else "cuda"
+        for param in ptmod.parameters():
+            assert param.device.type == device_type
