@@ -17,6 +17,7 @@
 
 """Iterative and federative evaluation metrics base class."""
 
+import warnings
 from abc import ABCMeta, abstractmethod
 from copy import deepcopy
 from typing import Any, ClassVar, Dict, Optional, Union
@@ -181,23 +182,6 @@ class Metric(metaclass=ABCMeta):
             Optional sample weights to take into account in scores.
         """
 
-    @staticmethod
-    def normalize_weights(s_wght: np.ndarray) -> np.ndarray:
-        """Utility method to ensure weights sum to one.
-
-        Note that this method may or may not be used depending on
-        the actual `Metric` considered, and is merely provided as
-        a utility to metric developers.
-        """
-        if s_wght.sum():
-            s_wght /= s_wght.sum()
-        else:
-            raise ValueError(
-                "Weights provided sum to zero, please provide only "
-                "positive weights with at least one non-zero weight."
-            )
-        return s_wght
-
     def reset(
         self,
     ) -> None:
@@ -352,5 +336,28 @@ class Metric(metaclass=ABCMeta):
             raise ValueError(
                 "Improper shape for 's_wght': should be a 1-d array "
                 "of sample-wise positive scalar weights."
+            )
+        return s_wght
+
+    @staticmethod
+    def normalize_weights(s_wght: np.ndarray) -> np.ndarray:
+        """Utility method to ensure weights sum to one.
+
+        Note that this method may or may not be used depending on
+        the actual `Metric` considered, and is merely provided as
+        a utility to metric developers.
+        """
+        warn = DeprecationWarning(
+            "'Metric.normalize_weights' is unfit for the iterative "
+            "nature of the metric-computation process. It will be "
+            "removed from the Metric API in declearn v3.0."
+        )
+        warnings.warn(warn)
+        if s_wght.sum():
+            s_wght /= s_wght.sum()
+        else:
+            raise ValueError(
+                "Weights provided sum to zero, please provide only "
+                "positive weights with at least one non-zero weight."
             )
         return s_wght
