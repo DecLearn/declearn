@@ -32,6 +32,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from metric_testing import MetricTestCase, MetricTestSuite
 sys.path.pop()
 # pylint: enable=wrong-import-order, wrong-import-position
+# fmt: on
 
 
 @pytest.fixture(name="test_case")

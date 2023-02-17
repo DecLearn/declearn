@@ -17,6 +17,7 @@
 
 """Iterative and federative evaluation metrics base class."""
 
+import warnings
 from abc import ABCMeta, abstractmethod
 from copy import deepcopy
 from typing import Any, ClassVar, Dict, Optional, Union
@@ -181,23 +182,6 @@ class Metric(metaclass=ABCMeta):
             Optional sample weights to take into account in scores.
         """
 
-    @staticmethod
-    def normalize_weights(s_wght: np.ndarray) -> np.ndarray:
-        """Utility method to ensure weights sum to one.
-
-        Note that this method may or may not be used depending on
-        the actual `Metric` considered, and is merely provided as
-        a utility to metric developers.
-        """
-        if s_wght.sum():
-            s_wght /= s_wght.sum()
-        else:
-            raise ValueError(
-                "Weights provided sum to zero, please provide only "
-                "positive weights with at least one non-zero weight."
-            )
-        return s_wght
-
     def reset(
         self,
     ) -> None:
@@ -315,3 +299,65 @@ class Metric(metaclass=ABCMeta):
                 f"Failed to retrieve Metric subclass from name '{name}'."
             ) from exc
         return cls.from_config(config or {})
+
+    @staticmethod
+    def _prepare_sample_weights(
+        s_wght: Optional[np.ndarray],
+        n_samples: int,
+    ) -> np.ndarray:
+        """Flatten or generate sample weights and validate their shape.
+
+        This method is a shared util that may or may not be used as part
+        of concrete Metric classes' backend depending on their formula.
+
+        Parameters
+        ----------
+        s_wght: np.ndarray or None
+            1-d (or squeezable) array of sample-wise positive scalar
+            weights. If None, one will be generated, with one values.
+        n_samples: int
+            Expected length of the sample weights.
+
+        Returns
+        -------
+        s_wght: np.ndarray
+            Input (opt. squeezed) `s_wght`, or `np.ones(n_samples)`
+            if input was None.
+
+        Raises
+        ------
+        ValueError:
+            If the input array has improper shape or negative values.
+        """
+        if s_wght is None:
+            return np.ones(shape=(n_samples,))
+        s_wght = s_wght.squeeze()
+        if s_wght.shape != (n_samples,) or np.any(s_wght < 0):
+            raise ValueError(
+                "Improper shape for 's_wght': should be a 1-d array "
+                "of sample-wise positive scalar weights."
+            )
+        return s_wght
+
+    @staticmethod
+    def normalize_weights(s_wght: np.ndarray) -> np.ndarray:
+        """Utility method to ensure weights sum to one.
+
+        Note that this method may or may not be used depending on
+        the actual `Metric` considered, and is merely provided as
+        a utility to metric developers.
+        """
+        warn = DeprecationWarning(
+            "'Metric.normalize_weights' is unfit for the iterative "
+            "nature of the metric-computation process. It will be "
+            "removed from the Metric API in declearn v3.0."
+        )
+        warnings.warn(warn)
+        if s_wght.sum():
+            s_wght /= s_wght.sum()
+        else:
+            raise ValueError(
+                "Weights provided sum to zero, please provide only "
+                "positive weights with at least one non-zero weight."
+            )
+        return s_wght
