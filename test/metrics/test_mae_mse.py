@@ -34,13 +34,13 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from metric_testing import MetricTestCase, MetricTestSuite
 sys.path.pop()
 # pylint: enable=wrong-import-order, wrong-import-position
+# fmt: on
 
 
 @pytest.fixture(name="test_case")
 def test_case_fixture(
     case: Literal["mae", "mse"],
     weighted: bool,
-    # n_dims: int,
 ) -> MetricTestCase:
     """Return a test case for a MAE or MSE metric, with opt. sample weights."""
     # Generate random inputs and compute the expected sum of errors.

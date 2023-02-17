@@ -33,6 +33,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from metric_testing import MetricTestCase, MetricTestSuite
 sys.path.pop()
 # pylint: enable=wrong-import-order, wrong-import-position
+# fmt: on
 
 
 @pytest.fixture(name="test_case")
@@ -45,9 +46,8 @@ def test_case_fixture(
         _test_case_1d(thresh) if case == "1d" else _test_case_2d(thresh)
     )
     # Add the F1-score to expected scores.
-    scores["f-score"] = (
-        (states["tpos"] + states["tpos"])
-        / (states["tpos"] + states["tpos"] + states["fpos"] + states["fneg"])
+    scores["f-score"] = (states["tpos"] + states["tpos"]) / (
+        states["tpos"] + states["tpos"] + states["fpos"] + states["fneg"]
     )
     # Add the confusion matrix to expected scores.
     confmt = [
@@ -82,16 +82,12 @@ def _test_case_1d(
         0.3: {"tpos": 2.0, "tneg": 0.0, "fpos": 2.0, "fneg": 0.0},
         0.5: {"tpos": 2.0, "tneg": 1.0, "fpos": 1.0, "fneg": 0.0},
         0.7: {"tpos": 1.0, "tneg": 1.0, "fpos": 1.0, "fneg": 1.0},
-    }[
-        thresh
-    ]
+    }[thresh]
     scores = {
         0.3: {"accuracy": 2 / 4, "precision": 2 / 4, "recall": 2 / 2},
         0.5: {"accuracy": 3 / 4, "precision": 2 / 3, "recall": 2 / 2},
         0.7: {"accuracy": 2 / 4, "precision": 1 / 2, "recall": 1 / 2},
-    }[
-        thresh
-    ]
+    }[thresh]
     return inputs, states, scores  # type: ignore
 
 
@@ -124,16 +120,12 @@ def _test_case_2d(
         0.3: {"tpos": 6.0, "tneg": 5.0, "fpos": 1.0, "fneg": 0.0},
         0.5: {"tpos": 4.0, "tneg": 5.0, "fpos": 1.0, "fneg": 2.0},
         0.7: {"tpos": 3.0, "tneg": 6.0, "fpos": 0.0, "fneg": 3.0},
-    }[
-        thresh
-    ]
+    }[thresh]
     scores = {
         0.3: {"accuracy": 11 / 12, "precision": 6 / 7, "recall": 6 / 6},
         0.5: {"accuracy": 9 / 12, "precision": 4 / 5, "recall": 4 / 6},
         0.7: {"accuracy": 9 / 12, "precision": 3 / 3, "recall": 3 / 6},
-    }[
-        thresh
-    ]
+    }[thresh]
     return inputs, states, scores  # type: ignore
 
 

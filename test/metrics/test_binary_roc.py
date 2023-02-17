@@ -34,6 +34,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from metric_testing import MetricTestCase, MetricTestSuite
 sys.path.pop()
 # pylint: enable=wrong-import-order, wrong-import-position
+# fmt: on
 
 
 @pytest.fixture(name="test_case")
@@ -81,11 +82,13 @@ def test_case_fixture(
     )
 
 
-def _test_case_1d() -> Tuple[
-    Dict[str, np.ndarray],
-    Dict[str, Union[float, np.ndarray]],
-    Dict[str, Union[float, np.ndarray]],
-]:
+def _test_case_1d() -> (
+    Tuple[
+        Dict[str, np.ndarray],
+        Dict[str, Union[float, np.ndarray]],
+        Dict[str, Union[float, np.ndarray]],
+    ]
+):
     """Return a test case with 1-D samples (standard binary classif)."""
     # similar inputs as for Binary APR; pylint: disable=duplicate-code
     inputs = {
@@ -125,11 +128,13 @@ def _test_case_1d() -> Tuple[
     return inputs, states, scores
 
 
-def _test_case_2d() -> Tuple[
-    Dict[str, np.ndarray],
-    Dict[str, Union[float, np.ndarray]],
-    Dict[str, Union[float, np.ndarray]],
-]:
+def _test_case_2d() -> (
+    Tuple[
+        Dict[str, np.ndarray],
+        Dict[str, Union[float, np.ndarray]],
+        Dict[str, Union[float, np.ndarray]],
+    ]
+):
     """Return a test case with 2-D samples (multilabel binary classif)."""
     # similar inputs as for Binary APR; pylint: disable=duplicate-code
     inputs = {
