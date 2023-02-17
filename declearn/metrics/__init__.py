@@ -43,13 +43,19 @@ Classification metrics:
     Identifier name: "multi-classif".
 * BinaryRocAuc:
     Receiver Operator Curve and its Area Under the Curve for binary classif.
-    Identified name: "binary-roc"
+    Identifier name: "binary-roc"
 
 Regression metrics:
 * MeanAbsoluteError:
     Mean absolute error, averaged across all samples (and channels).
+    Identifier name: "mae"
 * MeanSquaredError:
     Mean squared error, averaged across all samples (and channels).
+    Identifier name: "mse"
+* RSquared:
+    R^2 (R-Squared, coefficient of determination) regression metric.
+    Identifier name: "r2"
+
 """
 
 from ._api import Metric
@@ -59,5 +65,5 @@ from ._classif import (
 )
 from ._mean import MeanMetric, MeanAbsoluteError, MeanSquaredError
 from ._roc_auc import BinaryRocAUC
-from ._regression import R2
+from ._rsquared import RSquared
 from ._wrapper import MetricInputType, MetricSet

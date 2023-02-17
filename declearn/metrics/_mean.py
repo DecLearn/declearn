@@ -101,12 +101,7 @@ class MeanMetric(Metric, register=False, metaclass=ABCMeta):
             self._states["current"] += scores.sum()
             self._states["divisor"] += len(y_pred)
         else:
-            s_wght = s_wght.squeeze()
-            if s_wght.shape != (len(y_pred),):
-                raise ValueError(
-                    "Improper shape for 's_wght': should be a 1-d array "
-                    "of sample-wise scalar weights."
-                )
+            s_wght = self._prepare_sample_weights(s_wght, len(y_pred))
             self._states["current"] += (s_wght * scores).sum()
             self._states["divisor"] += np.sum(s_wght)
 
