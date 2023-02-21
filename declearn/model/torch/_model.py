@@ -52,13 +52,14 @@ class TorchModel(Model):
     to be trained federatively.
 
     Notes regarding device management (CPU, GPU, etc.):
-    * By default, torch does not move tensors between devices automatically,
-      meaning users have to be careful where these are placed for operations
-      to run without raising runtime errors.
-    * Instead, `TorchModel` consults the global device-placement policy (via
-      `declearn.utils.get_device_policy`), places the wrapped torch modules'
-      weights there, and automates the placement of input data on the same
-      device as the wrapped model.
+    * By default torch operates on CPU, and it does not automatically move
+      tensors between devices. This means users have to be careful where
+      tensors are placed to avoid operations between tensors on different
+      devices, leading to runtime errors.
+    * Our `TorchModel` instead consults the global device-placement policy
+      (via `declearn.utils.get_device_policy`), places the wrapped torch
+      modules' weights there, and automates the placement of input data on
+      the same device as the wrapped model.
     * Note that if the global device-placement policy is updated, this will
       only be propagated to existing instances by manually calling their
       `update_device_policy` method.

@@ -53,19 +53,22 @@ class TensorflowVector(Vector):
 
     Use `vector.coefs` to access the stored coefficients.
 
-    Notes regarding device management (CPU, GPU, etc.):
-    * The wrapped tensors may be placed on any device, and may not
-      be all on the same device.
-    * Wrapped tensors' placement will be preserved by self-altering
-      operations (e.g. using the `sign` method, or performing any
-      operation involving a scalar value).
-    * When combining a `TensorflowVector` and a `NumpyVector`, the
-      wrapped tensors' placement will also be preserved.
-    * When combining two `TensorflowVector`, e.g. via addition, (but
-      really via any API-provided operation or method) the output
-      vector will use the device-placement of left-most vector.
-      Hence `gpu + cpu = gpu` while `cpu + gpu = cpu`.
-    * When deserializing a `TensorflowVector` (either by directly using
+    Notes
+    -----
+    - A `TensorflowVector` can be operated with either a:
+      - scalar value
+      - `NumpyVector` that has similar specifications
+      - `TensorflowVector` that has similar specifications
+      => resulting in a `TensorflowVector` in each of these cases.
+    - The wrapped tensors may be placed on any device (CPU, GPU...)
+      and may not be all on the same device.
+    - The device-placement of the initial `TensorflowVector`'s data
+      is preserved by operations, including with `NumpyVector`.
+    - When combining two `TensorflowVector`, the device-placement
+      of the left-most one is used; in that case, one ends up with
+      `gpu + cpu = gpu` while `cpu + gpu = cpu`. In both cases, a
+      warning will be emitted to prevent silent un-optimized copies.
+    - When deserializing a `TensorflowVector` (either by directly using
       `TensorflowVector.unpack` or loading one from a JSON dump), loaded
       tensors are placed based on the global device-placement policy
       (accessed via `declearn.utils.get_device_policy`). Thus it may

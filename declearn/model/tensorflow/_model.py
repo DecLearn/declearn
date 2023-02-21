@@ -53,7 +53,7 @@ class TensorflowModel(Model):
     Notes regarding device management (CPU, GPU, etc.):
     * By default, tensorflow places data and operations on GPU whenever one
       is available.
-    * Instead, `TensorflowModel` consults the device-placement policy (via
+    * Our `TensorflowModel` instead consults the device-placement policy (via
       `declearn.utils.get_device_policy`), places the wrapped keras model's
       weights there, and runs computations defined under public methods in
       a `tensorflow.device` context, to enforce that policy.

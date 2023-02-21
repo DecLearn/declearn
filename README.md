@@ -229,26 +229,30 @@ client.run()
 
 ### Support for GPU acceleration
 
-TL;DR: GPU acceleration is natively available and active for model frameworks
-that support it, without any adaptation to your code.
+TL;DR: GPU acceleration is natively available in `declearn` for model 
+frameworks that support it, with one line of code and without changing 
+your original model.
 
 Details:
 
-Most machine learning frameworks enable accelerating computations by using
-computational devices other than CPU. This is notably the case of Tensorflow
-and Torch, which are both interfaced in declearn.
+Most machine learning frameworks, including Tensorflow and Torch, enable 
+accelerating computations by using computational devices other than CPU. 
+`declearn` interfaces supported frameworks to be able to set a device policy 
+in a single line of code, accross frameworks. 
 
-declearn internalizes the framework-specific code adaptations to place the
-data, model weights and computations on such a device. declearn provides with
-a simple API to define a global policy as to the kind of device to use. At the
-moment, this enables using a single GPU to accelerate computations, or forcing
-the use of a CPU. By default, the policy is set to use the first available GPU,
-and otherwise use the CPU, with a warning that can safely be ignored.
+`declearn` internalizes the framework-specific code adaptations to place the
+data, model weights and computations on such a device. `declearn` provides 
+with a simple API to define a global device policy. This enables using a 
+single GPU to accelerate computations, or forcing the use of a CPU. 
 
-Setting the device policy to be used can be done with a single line of code in
-the script run locally, either as a client or as a server (since that policy is
-merely local and is not synchronized between federated learninng participants).
-Here are some examples of that line of code:
+By default, the policy is set to use the first available GPU, and otherwise 
+use the CPU, with a warning that can safely be ignored.
+
+Setting the device policy to be used can be done in local scripts, either as a 
+client or as a server. Device policy is local and is not synchronized between 
+federated learninng participants.
+
+Here are some examples of the one-liner used:
 ```python
 declearn.utils.set_device_policy(gpu=False)  # disable GPU use
 declearn.utils.set_device_policy(gpu=True)  # use any available GPU
