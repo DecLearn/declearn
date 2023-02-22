@@ -170,7 +170,7 @@ class ModelTestSuite:
         model = test_case.model
         batch = test_case.dataset[0]
         # Compute gradients.
-        w_srt = model.get_weights()
+        w_srt = model.get_weights(trainable=True)
         grads = model.compute_batch_gradients(batch)
         # Check that updates can be obtained and applied.
         grads = -0.1 * grads
@@ -178,8 +178,7 @@ class ModelTestSuite:
         model.apply_updates(grads)
         # Verify the the updates were correctly applied.
         # Check up to 1e-6 numerical precision due to tensor/np conversion.
-        # NOTE: if the model had frozen weights, this test would xfail.
-        w_end = model.get_weights()
+        w_end = model.get_weights(trainable=True)
         assert w_end != w_srt
         diff = (w_end - w_srt) - grads
         assert all(

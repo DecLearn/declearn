@@ -118,15 +118,58 @@ class Model(metaclass=ABCMeta):
     @abstractmethod
     def get_weights(
         self,
+        trainable: bool = False,
     ) -> Vector:
-        """Return the model's trainable weights."""
+        """Return the model's weights, optionally excluding frozen ones.
+
+        Parameters
+        ----------
+        trainable: bool, default=False
+            Whether to restrict the returned weights to the trainable ones,
+            or include those that are frozen, i.e. are not updates as part
+            of the training process.
+
+        Returns
+        -------
+        weights: Vector
+            Vector wrapping the named weights data arrays.
+            The concrete type of the returned Vector depends on the concrete
+            `Model`, and is the same as with `compute_batch_gradients`.
+        """
 
     @abstractmethod
     def set_weights(
         self,
         weights: Vector,
+        trainable: bool = False,
     ) -> None:
-        """Assign values to the model's trainable weights."""
+        """Assign values to the model's weights.
+
+        This method can only be used to update the values of *all*
+        model weights, with the optional exception of frozen (i.e.
+        non-trainable) ones. It cannot be used to alter the values
+        of a subset of weight tensors.
+
+        Parameters
+        ----------
+        weights: Vector
+            Vector wrapping the named data arrays that should replace
+            the current weights' values.
+            The concrete type of Vector depends on the Model class,
+            and matches the `get_weights` method's return type.
+        trainable: bool, default=False
+            Whether the assigned weights only cover the trainable ones,
+            or include those that are frozen, i.e. are not updated as
+            part of the training process.
+
+        Raises
+        ------
+        KeyError:
+            If the input weights do not match the expected number and
+            names of weight tensors.
+        TypeError:
+            If the input weights are of unproper concrete Vector type.
+        """
 
     @abstractmethod
     def compute_batch_gradients(

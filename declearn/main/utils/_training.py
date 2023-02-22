@@ -160,7 +160,7 @@ class TrainingManager:
         """Backend to `training_round`, without exception capture hooks."""
         # Unpack and apply model weights and optimizer auxiliary variables.
         self.logger.info("Applying server updates to local objects.")
-        self.model.set_weights(message.weights)
+        self.model.set_weights(message.weights, trainable=True)
         self.optim.process_aux_var(message.aux_var)
         self.optim.start_round()  # trigger loss regularizer's `on_round_start`
         # Train under instructed effort constraints.
@@ -173,7 +173,7 @@ class TrainingManager:
         # Compute model updates and collect auxiliary variables.
         self.logger.info("Packing local updates to be sent to the server.")
         return messaging.TrainReply(
-            updates=message.weights - self.model.get_weights(),
+            updates=message.weights - self.model.get_weights(trainable=True),
             aux_var=self.optim.collect_aux_var(),
             n_epoch=int(effort["n_epoch"]),
             n_steps=int(effort["n_steps"]),
@@ -287,7 +287,8 @@ class TrainingManager:
         # Try running the evaluation round.
         try:
             # Update the model's weights and evaluate on the local dataset.
-            self.model.set_weights(message.weights)  # revise: optional
+            # Revise: make the weights' update optional.
+            self.model.set_weights(message.weights, trainable=True)
             return self._evaluate_under_constraints(
                 message.batches, message.n_steps, message.timeout
             )

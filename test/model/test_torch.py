@@ -85,11 +85,11 @@ class TorchTestCase(ModelTestCase):
 
     def __init__(
         self,
-        kind: Literal["MLP", "RNN", "CNN"],
+        kind: Literal["MLP", "MLP-tune", "RNN", "CNN"],
         device: Literal["CPU", "GPU"],
     ) -> None:
         """Specify the desired model architecture."""
-        if kind not in ("MLP", "RNN", "CNN"):
+        if kind not in ("MLP", "MLP-tune", "RNN", "CNN"):
             raise ValueError(f"Invalid torch test architecture: '{kind}'.")
         self.kind = kind
         self.device = device
@@ -110,7 +110,7 @@ class TorchTestCase(ModelTestCase):
         """Suited toy binary-classification dataset."""
         # false-positives; pylint: disable=no-member
         rng = torch.random.default_generator.manual_seed(0)
-        if self.kind == "MLP":
+        if self.kind.startswith("MLP"):
             inputs = torch.randn((2, 32, 64), generator=rng)
         elif self.kind == "RNN":
             inputs = torch.randint(0, 100, (2, 32, 128), generator=rng)
@@ -126,7 +126,7 @@ class TorchTestCase(ModelTestCase):
         self,
     ) -> TorchModel:
         """Suited toy binary-classification torch model."""
-        if self.kind == "MLP":
+        if self.kind.startswith("MLP"):
             stack = [
                 torch.nn.Linear(64, 32),
                 torch.nn.ReLU(),
@@ -135,6 +135,8 @@ class TorchTestCase(ModelTestCase):
                 torch.nn.Linear(16, 1),
                 torch.nn.Sigmoid(),
             ]
+            if self.kind == "MLP-tune":
+                stack[0].requires_grad_(False)
         elif self.kind == "RNN":
             stack = [
                 torch.nn.Embedding(100, 32),
@@ -172,7 +174,7 @@ class TorchTestCase(ModelTestCase):
 
 @pytest.fixture(name="test_case")
 def fixture_test_case(
-    kind: Literal["MLP", "RNN", "CNN"],
+    kind: Literal["MLP", "MLP-tune", "RNN", "CNN"],
     device: Literal["CPU", "GPU"],
 ) -> TorchTestCase:
     """Fixture to access a TorchTestCase."""
@@ -185,7 +187,7 @@ if torch.cuda.device_count():
 
 
 @pytest.mark.parametrize("device", DEVICES)
-@pytest.mark.parametrize("kind", ["MLP", "RNN", "CNN"])
+@pytest.mark.parametrize("kind", ["MLP", "MLP-tune", "RNN", "CNN"])
 class TestTorchModel(ModelTestSuite):
     """Unit tests for declearn.model.torch.TorchModel."""
 
@@ -240,6 +242,40 @@ class TestTorchModel(ModelTestSuite):
                 )
         else:
             super().test_compute_batch_gradients_clipped(test_case)
+
+    def test_get_frozen_weights(
+        self,
+        test_case: ModelTestCase,
+    ) -> None:
+        """Check that `get_weights` behaves properly with frozen weights."""
+        model = test_case.model
+        ptmod = getattr(model, "_model")  # type: torch.nn.Module
+        next(ptmod.parameters()).requires_grad = False  # freeze some weights
+        w_all = model.get_weights()
+        w_trn = model.get_weights(trainable=True)
+        assert set(w_trn.coefs).issubset(w_all.coefs)  # check on keys
+        n_params = sum(1 for _ in ptmod.parameters())
+        n_frozen = sum(not p.requires_grad for p in ptmod.parameters())
+        assert n_frozen >= 1  # at least the one frozen for this test
+        assert len(w_trn.coefs) == n_params - n_frozen
+        assert len(w_all.coefs) == n_params
+
+    def test_set_frozen_weights(
+        self,
+        test_case: ModelTestCase,
+    ) -> None:
+        """Check that `set_weights` behaves properly with frozen weights."""
+        # Setup a model with some frozen weights, and gather trainable ones.
+        model = test_case.model
+        ptmod = getattr(model, "_model")  # type: torch.nn.Module
+        next(ptmod.parameters()).requires_grad = False  # freeze some weights
+        w_trn = model.get_weights(trainable=True)
+        # Test that `set_weights` works if and only if properly parametrized.
+        with pytest.raises(KeyError):
+            model.set_weights(w_trn)
+        with pytest.raises(KeyError):
+            model.set_weights(model.get_weights(), trainable=True)
+        model.set_weights(w_trn, trainable=True)
 
     def test_proper_model_placement(
         self,

@@ -17,7 +17,6 @@
 
 """Model subclass to wrap TensorFlow models."""
 
-import warnings
 from copy import deepcopy
 from typing import Any, Dict, Iterable, List, Optional, Set, Tuple, Union
 
@@ -34,6 +33,7 @@ from declearn.model.tensorflow.utils import (
     select_device,
 )
 from declearn.model.tensorflow._vector import TensorflowVector
+from declearn.model._utils import raise_on_stringsets_mismatch
 from declearn.typing import Batch
 from declearn.utils import DevicePolicy, get_device_policy, register_type
 
@@ -144,18 +144,6 @@ class TensorflowModel(Model):
             data_info = aggregate_data_info([data_info], {"input_shape"})
             with tf.device(self._device):
                 self._model.build(data_info["input_shape"])
-        # Warn about frozen weights.
-        # similar to TorchModel warning; pylint: disable=duplicate-code
-        if len(self._model.trainable_weights) < len(self._model.weights):
-            warnings.warn(
-                "'TensorflowModel' wraps a model with frozen weights.\n"
-                "This is not fully compatible with declearn v2.0.x: the "
-                "use of weight decay and/or of a loss-regularization "
-                "plug-in in an Optimizer will fail to produce updates "
-                "for this model.\n"
-                "This issue will be fixed in declearn v2.1.0."
-            )
-        # pylint: enable=duplicate-code
 
     def get_config(
         self,
@@ -186,21 +174,23 @@ class TensorflowModel(Model):
 
     def get_weights(
         self,
+        trainable: bool = False,
     ) -> TensorflowVector:
-        # REVISE: only return trainable weights? add flag to select?
-        return TensorflowVector(
-            {var.name: var.value() for var in self._model.weights}
+        variables = (
+            self._model.trainable_weights if trainable else self._model.weights
         )
+        return TensorflowVector({var.name: var.value() for var in variables})
 
     def set_weights(  # type: ignore  # Vector subtype specification
         self,
         weights: TensorflowVector,
+        trainable: bool = False,
     ) -> None:
         if not isinstance(weights, TensorflowVector):
             raise TypeError(
                 "TensorflowModel requires TensorflowVector weights."
             )
-        self._verify_weights_compatibility(weights, trainable_only=False)
+        self._verify_weights_compatibility(weights, trainable=trainable)
         variables = {var.name: var for var in self._model.weights}
         with tf.device(self._device):
             for name, value in weights.coefs.items():
@@ -209,7 +199,7 @@ class TensorflowModel(Model):
     def _verify_weights_compatibility(
         self,
         vector: TensorflowVector,
-        trainable_only: bool = False,
+        trainable: bool = False,
     ) -> None:
         """Verify that a vector has the same names as the model's weights.
 
@@ -218,7 +208,7 @@ class TensorflowModel(Model):
         vector: TensorflowVector
             Vector wrapping weight-related coefficients (e.g. weight
             values or gradient-based updates).
-        trainable_only: bool, default=False
+        trainable: bool, default=False
             Whether to restrict the comparision to the model's trainable
             weights rather than to all of its weights.
 
@@ -228,21 +218,14 @@ class TensorflowModel(Model):
             In case some expected keys are missing, or additional keys
             are present. Be verbose about the identified mismatch(es).
         """
-        # Gather the variables to compare to the input vector.
-        if trainable_only:
-            weights = self._model.trainable_weights
-        else:
-            weights = self._model.weights
-        variables = {var.name: var for var in weights}
-        # Raise a verbose KeyError in case inputs do not match weights.
-        if set(vector.coefs).symmetric_difference(variables):
-            missing = set(variables).difference(vector.coefs)
-            unexpct = set(vector.coefs).difference(variables)
-            raise KeyError(
-                "Mismatch between input and model weights' names:\n"
-                + f"Missing key(s) in inputs: {missing}\n" * bool(missing)
-                + f"Unexpected key(s) in inputs: {unexpct}\n" * bool(unexpct)
-            )
+        variables = (
+            self._model.trainable_weights if trainable else self._model.weights
+        )
+        raise_on_stringsets_mismatch(
+            received=set(vector.coefs),
+            expected={var.name for var in variables},
+            context="model weights",
+        )
 
     def compute_batch_gradients(
         self,
@@ -337,7 +320,7 @@ class TensorflowModel(Model):
         self,
         updates: TensorflowVector,
     ) -> None:
-        self._verify_weights_compatibility(updates, trainable_only=True)
+        self._verify_weights_compatibility(updates, trainable=True)
         with tf.device(self._device):
             # Delegate updates' application to a tensorflow Optimizer.
             values = (-1 * updates).coefs.values()

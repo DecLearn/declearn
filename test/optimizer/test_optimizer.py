@@ -171,20 +171,30 @@ class TestOptimizer:
 
     def test_compute_updates_from_gradients(self) -> None:
         """Test, using mocks, that updates are computed with expected calls."""
+        # Set up an Optimizer with mock attributes and run the computation.
         optim = Optimizer(
-            lrate=0.001,
-            w_decay=0.005,
+            lrate=mock.MagicMock(),
+            w_decay=mock.MagicMock(),
             regularizers=[mock.create_autospec(Regularizer) for _ in range(2)],
             modules=[mock.create_autospec(OptiModule) for _ in range(2)],
         )
         model = mock.create_autospec(Model, instance=True)
         grads = mock.create_autospec(Vector, instance=True)
         optim.compute_updates_from_gradients(model, grads)
-        model.get_weights.assert_called()
+        # Check that model weights were fetched and get their mock value.
+        model.get_weights.assert_called_once_with(trainable=True)
+        weights = model.get_weights.return_value
+        # Check that the inputs went through the expected plug-ins pipeline.
+        output = grads  # initial inputs
         for reg in optim.regularizers:
-            reg.run.assert_called_once()
+            reg.run.assert_called_once_with(output, weights)
+            output = reg.run.return_value
         for mod in optim.modules:
-            mod.run.assert_called_once()
+            mod.run.assert_called_once_with(output)
+            output = mod.run.return_value
+        # Check that the learning rate and weight-decay were properly used.
+        optim.lrate.__mul__.assert_called_once_with(output)  # lrate * updates
+        optim.w_decay.__mul__.assert_called_once_with(weights)  # w_d * weights
 
     def test_collect_aux_var(self) -> None:
         """Test, using mocks, that `Optimizer.collect_aux_var` works."""
