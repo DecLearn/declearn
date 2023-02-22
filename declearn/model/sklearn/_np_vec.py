@@ -41,6 +41,19 @@ class NumpyVector(Vector):
     instances with similar coefficients specifications).
 
     Use `vector.coefs` to access the stored coefficients.
+
+    Notes
+    -----
+    - A `NumpyVector` can be operated with either a scalar value,
+      or another `NumpyVector` that has similar specifications
+      (same coefficient names, shapes and compatible dtypes).
+    - Some other `Vector` classes might be made compatible with
+      `NumpyVector`; in that case, operating with a `NumpyVector`
+      will always result in a vector of the other type. This is
+      notably the case with `TensorflowVector` and `TorchVector`.
+    - There is currently no support for GPU-acceleration with the
+      `NumpyVector` class, that only handles arrays and operations
+      placed on a CPU device.
     """
 
     @property

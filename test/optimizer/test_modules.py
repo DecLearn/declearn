@@ -44,7 +44,7 @@ from declearn.test_utils import (
     GradientsTestCase,
     assert_json_serializable_dict,
 )
-from declearn.utils import access_types_mapping
+from declearn.utils import access_types_mapping, set_device_policy
 
 # relative import; pylint: disable=wrong-import-order, wrong-import-position
 # fmt: off
@@ -55,6 +55,8 @@ sys.path.pop()
 
 
 OPTIMODULE_SUBCLASSES = access_types_mapping(group="OptiModule")
+
+set_device_policy(gpu=False)  # run all OptiModule tests on CPU
 
 
 @pytest.mark.parametrize(

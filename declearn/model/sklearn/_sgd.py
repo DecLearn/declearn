@@ -18,6 +18,7 @@
 """Model subclass to wrap scikit-learn SGD classifier and regressor models."""
 
 import typing
+import warnings
 from typing import Any, Callable, Dict, Literal, Optional, Set, Tuple, Union
 
 import numpy as np
@@ -29,7 +30,7 @@ from declearn.data_info import aggregate_data_info
 from declearn.model.api import Model
 from declearn.model.sklearn._np_vec import NumpyVector
 from declearn.typing import Batch
-from declearn.utils import register_type
+from declearn.utils import DevicePolicy, register_type
 
 
 __all__ = [
@@ -63,6 +64,13 @@ class SklearnSGDModel(Model):
     This `Model` subclass is designed to wrap a `SGDClassifier`
     or `SGDRegressor` instance (from `sklearn.linear_model`) to
     be learned federatively.
+
+    Notes regarding device management (CPU, GPU, etc.):
+    * This Model may only run on CPU, and is unaffected by device-
+      management policies.
+    * Calling the `update_device_policy` method has no effect, and
+      raises a UserWarning if a GPU-targetting policy is passed to
+      it directly.
     """
 
     def __init__(
@@ -103,6 +111,12 @@ class SklearnSGDModel(Model):
         self._loss_fn = (
             None
         )  # type: Optional[Callable[[np.ndarray, np.ndarray], np.ndarray]]
+
+    @property
+    def device_policy(
+        self,
+    ) -> DevicePolicy:
+        return DevicePolicy(gpu=False, idx=None)
 
     @property
     def required_data_info(
@@ -382,3 +396,10 @@ class SklearnSGDModel(Model):
         else:
             loss_fn = loss_1d
         return loss_fn
+
+    def update_device_policy(
+        self,
+        policy: Optional[DevicePolicy] = None,
+    ) -> None:
+        if policy is not None and policy.gpu:
+            warnings.warn("'SklearnSGDModel' only runs on a CPU backend.")

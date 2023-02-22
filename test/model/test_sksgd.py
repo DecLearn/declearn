@@ -106,6 +106,12 @@ class SklearnSGDTestCase(ModelTestCase):
         model.initialize(data_info)
         return model
 
+    def assert_correct_device(
+        self,
+        vector: NumpyVector,
+    ) -> None:
+        pass
+
 
 @pytest.fixture(name="test_case")
 def fixture_test_case(

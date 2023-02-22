@@ -315,10 +315,7 @@ class Vector(metaclass=ABCMeta):
             return type(self)(coefs)
         # Case when the two vectors have incompatible types.
         if isinstance(other, Vector):
-            raise TypeError(
-                f"Cannot {func.__name__} {type(self).__name__} object with "
-                f"a vector of incompatible type {type(other).__name__}."
-            )
+            return NotImplemented
         # Case when operating with another object (e.g. a scalar).
         try:
             return type(self)(

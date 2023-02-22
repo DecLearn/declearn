@@ -32,7 +32,10 @@ from declearn.test_utils import (
     GradientsTestCase,
     list_available_frameworks,
 )
-from declearn.utils import json_pack, json_unpack
+from declearn.utils import json_pack, json_unpack, set_device_policy
+
+
+set_device_policy(gpu=False)  # run Vector unit tests on CPU only
 
 
 @pytest.fixture(name="framework", params=list_available_frameworks())

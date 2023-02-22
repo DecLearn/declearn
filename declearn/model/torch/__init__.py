@@ -24,7 +24,11 @@ gradient descent.
 This module exposes:
 * TorchModel: Model subclass to wrap torch.nn.Module objects
 * TorchVector: Vector subclass to wrap torch.Tensor objects
+
+It also exposes the `utils` submodule, which mainly aims at
+providing tools used in the backend of the former objects.
 """
 
+from . import utils
 from ._vector import TorchVector
 from ._model import TorchModel

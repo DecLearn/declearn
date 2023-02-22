@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Backend utils for the declearn.model.tensorflow module."""
+"""Function to parse and/or wrap a keras loss for use with declearn."""
 
 import inspect
 

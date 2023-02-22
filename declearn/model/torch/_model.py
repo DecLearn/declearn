@@ -27,9 +27,15 @@ import torch
 from typing_extensions import Self  # future: import from typing (py >=3.11)
 
 from declearn.model.api import Model
+from declearn.model.torch.utils import AutoDeviceModule, select_device
 from declearn.model.torch._vector import TorchVector
 from declearn.typing import Batch
-from declearn.utils import register_type
+from declearn.utils import DevicePolicy, get_device_policy, register_type
+
+
+__all__ = [
+    "TorchModel",
+]
 
 
 # alias for unpacked Batch structures, converted to torch.Tensor objects
@@ -42,8 +48,23 @@ TensorBatch = Tuple[
 class TorchModel(Model):
     """Model wrapper for PyTorch Model instances.
 
-    This `Model` subclass is designed to wrap a `torch.nn.Module`
-    instance to be learned federatively.
+    This `Model` subclass is designed to wrap a `torch.nn.Module` instance
+    to be trained federatively.
+
+    Notes regarding device management (CPU, GPU, etc.):
+    * By default torch operates on CPU, and it does not automatically move
+      tensors between devices. This means users have to be careful where
+      tensors are placed to avoid operations between tensors on different
+      devices, leading to runtime errors.
+    * Our `TorchModel` instead consults the global device-placement policy
+      (via `declearn.utils.get_device_policy`), places the wrapped torch
+      modules' weights there, and automates the placement of input data on
+      the same device as the wrapped model.
+    * Note that if the global device-placement policy is updated, this will
+      only be propagated to existing instances by manually calling their
+      `update_device_policy` method.
+    * You may consult the device policy currently enforced by a TorchModel
+      instance by accessing its `device_policy` property.
     """
 
     def __init__(
@@ -62,17 +83,28 @@ class TorchModel(Model):
             is to be minimized through training. Note that it will be
             altered when wrapped.
         """
-        # Type-check the input Model and wrap it up.
+        # Type-check the input model.
         if not isinstance(model, torch.nn.Module):
             raise TypeError("'model' should be a torch.nn.Module instance.")
+        # Select the device where to place computations, and wrap the model.
+        policy = get_device_policy()
+        device = select_device(gpu=policy.gpu, idx=policy.idx)
+        model = AutoDeviceModule(model, device=device)
         super().__init__(model)
         # Assign loss module and set it not to reduce sample-wise values.
         if not isinstance(loss, torch.nn.Module):
             raise TypeError("'loss' should be a torch.nn.Module instance.")
-        self._loss_fn = loss
-        self._loss_fn.reduction = "none"  # type: ignore
+        loss.reduction = "none"  # type: ignore
+        self._loss_fn = AutoDeviceModule(loss, device=device)
         # Compute and assign a functional version of the model.
         self._func_model = functorch.make_functional(self._model)[0]
+
+    @property
+    def device_policy(
+        self,
+    ) -> DevicePolicy:
+        device = self._model.device
+        return DevicePolicy(gpu=(device.type == "cuda"), idx=device.index)
 
     @property
     def required_data_info(
@@ -102,15 +134,12 @@ class TorchModel(Model):
             "PyTorch JSON serialization relies on pickle, which may be unsafe."
         )
         with io.BytesIO() as buffer:
-            torch.save(self._model, buffer)
+            torch.save(self._model.module, buffer)
             model = buffer.getbuffer().hex()
         with io.BytesIO() as buffer:
-            torch.save(self._loss_fn, buffer)
+            torch.save(self._loss_fn.module, buffer)
             loss = buffer.getbuffer().hex()
-        return {
-            "model": model,
-            "loss": loss,
-        }
+        return {"model": model, "loss": loss}
 
     @classmethod
     def from_config(
@@ -139,6 +168,7 @@ class TorchModel(Model):
     ) -> None:
         if not isinstance(weights, TorchVector):
             raise TypeError("TorchModel requires TorchVector weights.")
+        # NOTE: this preserves the device placement of current states
         self._model.load_state_dict(weights.coefs)
 
     def compute_batch_gradients(
@@ -197,7 +227,7 @@ class TorchModel(Model):
         """Compute the average (opt. weighted) loss over given predictions."""
         loss = self._loss_fn(y_pred, y_true)
         if s_wght is not None:
-            loss.mul_(s_wght)
+            loss.mul_(s_wght.to(loss.device))
         return loss.mean()
 
     def _compute_samplewise_gradients(
@@ -236,7 +266,7 @@ class TorchModel(Model):
                 # false-positive; pylint: disable=no-member
                 grad.mul_(torch.clamp(max_norm / norm, max=1))
                 if s_wght is not None:
-                    grad.mul_(s_wght)
+                    grad.mul_(s_wght.to(grad.device))
             return grads
         # Vectorize the function to compute sample-wise clipped gradients.
         with torch.no_grad():
@@ -322,7 +352,7 @@ class TorchModel(Model):
             try:
                 for key, upd in updates.coefs.items():
                     tns = self._model.get_parameter(key)
-                    tns.add_(upd)
+                    tns.add_(upd.to(tns.device))
             except KeyError as exc:
                 raise KeyError(
                     "Invalid model parameter name(s) found in updates."
@@ -342,9 +372,9 @@ class TorchModel(Model):
             )
         self._model.eval()
         with torch.no_grad():
-            y_pred = self._model(*inputs).numpy()
-        y_true = y_true.numpy()
-        s_wght = s_wght.numpy() if s_wght is not None else s_wght
+            y_pred = self._model(*inputs).cpu().numpy()
+        y_true = y_true.cpu().numpy()
+        s_wght = None if s_wght is None else s_wght.cpu().numpy()
         return y_true, y_pred, s_wght  # type: ignore
 
     def loss_function(
@@ -355,4 +385,16 @@ class TorchModel(Model):
         tns_pred = torch.from_numpy(y_pred)  # pylint: disable=no-member
         tns_true = torch.from_numpy(y_true)  # pylint: disable=no-member
         s_loss = self._loss_fn(tns_pred, tns_true)
-        return s_loss.numpy().squeeze()
+        return s_loss.cpu().numpy().squeeze()
+
+    def update_device_policy(
+        self,
+        policy: Optional[DevicePolicy] = None,
+    ) -> None:
+        # Select the device to use based on the provided or global policy.
+        if policy is None:
+            policy = get_device_policy()
+        device = select_device(gpu=policy.gpu, idx=policy.idx)
+        # Place the wrapped model and loss function modules on that device.
+        self._model.set_device(device)
+        self._loss_fn.set_device(device)

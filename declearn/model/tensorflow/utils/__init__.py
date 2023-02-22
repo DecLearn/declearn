@@ -15,20 +15,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tensorflow models interfacing tools.
+"""Utils for tensorflow backend support code.
 
-This submodule provides with a generic interface to wrap up
-any TensorFlow `keras.Model` instance that is to be trained
-through gradient descent.
+GPU/CPU backing device management utils:
+* move_layer_to_device:
+    Create a copy of an input keras layer placed on a given device.
+* preserve_tensor_device:
+    Wrap a tensor-processing function to have it run on its inputs' device.
+* select_device:
+    Select a backing device to use based on inputs and availability.
 
-This module exposes:
-* TensorflowModel: Model subclass to wrap tensorflow.keras.Model objects
-* TensorflowVector: Vector subclass to wrap tensorflow.Tensor objects
-
-It also exposes the `utils` submodule, which mainly aims at
-providing tools used in the backend of the former objects.
+Loss function management utils:
+* build_keras_loss:
+    Type-check, deserialize and/or wrap a keras loss into a Loss object.
 """
 
-from . import utils
-from ._vector import TensorflowVector
-from ._model import TensorflowModel
+from ._gpu import (
+    move_layer_to_device,
+    preserve_tensor_device,
+    select_device,
+)
+from ._loss import build_keras_loss
