@@ -37,12 +37,10 @@ classifiers = [
 ]
 dependencies = [
     "cryptography >= 35.0",
-    "grpcio >= 1.45",
     "pandas >= 1.2",
     "scikit-learn >= 1.0",
     "tomli >= 2.0 ; python_version < '3.11'",
     "typing_extensions >= 4.0",
-    "websockets ~= 10.1",
 ]
 
 [project.optional-dependencies]
