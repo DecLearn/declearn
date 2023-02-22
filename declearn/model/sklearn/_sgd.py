@@ -266,6 +266,7 @@ class SklearnSGDModel(Model):
 
     def get_weights(
         self,
+        trainable: bool = False,
     ) -> NumpyVector:
         weights = {
             "intercept": self._model.intercept_.copy(),
@@ -276,12 +277,13 @@ class SklearnSGDModel(Model):
     def set_weights(  # type: ignore  # Vector subtype specification
         self,
         weights: NumpyVector,
+        trainable: bool = False,
     ) -> None:
         if not isinstance(weights, NumpyVector):
             raise TypeError("SklearnSGDModel requires NumpyVector weights.")
         for key in ("coef", "intercept"):
             if key not in weights.coefs:
-                raise TypeError(
+                raise KeyError(
                     f"Missing required '{key}' in the received vector."
                 )
         self._model.coef_ = weights.coefs["coef"].copy()

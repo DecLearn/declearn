@@ -29,6 +29,7 @@ from typing_extensions import Self  # future: import from typing (py >=3.11)
 from declearn.model.api import Model
 from declearn.model.torch.utils import AutoDeviceModule, select_device
 from declearn.model.torch._vector import TorchVector
+from declearn.model._utils import raise_on_stringsets_mismatch
 from declearn.typing import Batch
 from declearn.utils import DevicePolicy, get_device_policy, register_type
 
@@ -116,16 +117,7 @@ class TorchModel(Model):
         self,
         data_info: Dict[str, Any],
     ) -> None:
-        # Warn about frozen weights.
-        if not all(p.requires_grad for p in self._model.parameters()):
-            warnings.warn(
-                "'TorchModel' wraps a model with frozen weights.\n"
-                "This is not fully compatible with declearn v2.0.x: the "
-                "use of weight decay and/or of a loss-regularization "
-                "plug-in in an Optimizer will fail to produce updates "
-                "for this model.\n"
-                "This issue will be fixed in declearn v2.1.0."
-            )
+        return None
 
     def get_config(
         self,
@@ -155,21 +147,63 @@ class TorchModel(Model):
 
     def get_weights(
         self,
+        trainable: bool = False,
     ) -> TorchVector:
-        weights = {
-            key: tns.detach().clone()  # NOTE: otherwise, view on Tensor
-            for key, tns in self._model.state_dict().items()
-        }
-        return TorchVector(weights)
+        params = self._model.named_parameters()
+        if trainable:
+            weights = {k: p.data for k, p in params if p.requires_grad}
+        else:
+            weights = {k: p.data for k, p in params}
+        # Note: calling `tensor.clone()` to return a copy rather than a view.
+        return TorchVector({k: t.detach().clone() for k, t in weights.items()})
 
     def set_weights(  # type: ignore  # Vector subtype specification
         self,
         weights: TorchVector,
+        trainable: bool = False,
     ) -> None:
         if not isinstance(weights, TorchVector):
             raise TypeError("TorchModel requires TorchVector weights.")
+        self._verify_weights_compatibility(weights, trainable=trainable)
+        if trainable:
+            state_dict = self._model.state_dict()
+            state_dict.update(weights.coefs)
+        else:
+            state_dict = weights.coefs
         # NOTE: this preserves the device placement of current states
-        self._model.load_state_dict(weights.coefs)
+        self._model.load_state_dict(state_dict)
+
+    def _verify_weights_compatibility(
+        self,
+        vector: TorchVector,
+        trainable: bool = False,
+    ) -> None:
+        """Verify that a vector has the same names as the model's weights.
+
+        Parameters
+        ----------
+        vector: TorchVector
+            Vector wrapping weight-related coefficients (e.g. weight
+            values or gradient-based updates).
+        trainable: bool, default=False
+            Whether to restrict the comparision to the model's trainable
+            weights rather than to all of its weights.
+
+        Raises
+        ------
+        KeyError:
+            In case some expected keys are missing, or additional keys
+            are present. Be verbose about the identified mismatch(es).
+        """
+        received = set(vector.coefs)
+        expected = {
+            name
+            for name, param in self._model.named_parameters()
+            if (not trainable) or param.requires_grad
+        }
+        raise_on_stringsets_mismatch(
+            received, expected, context="model weights"
+        )
 
     def compute_batch_gradients(
         self,
@@ -348,15 +382,11 @@ class TorchModel(Model):
     ) -> None:
         if not isinstance(updates, TorchVector):
             raise TypeError("TorchModel requires TorchVector updates.")
+        self._verify_weights_compatibility(updates, trainable=True)
         with torch.no_grad():
-            try:
-                for key, upd in updates.coefs.items():
-                    tns = self._model.get_parameter(key)
-                    tns.add_(upd.to(tns.device))
-            except KeyError as exc:
-                raise KeyError(
-                    "Invalid model parameter name(s) found in updates."
-                ) from exc
+            for key, upd in updates.coefs.items():
+                tns = self._model.get_parameter(key)
+                tns.add_(upd.to(tns.device))
 
     def compute_batch_predictions(
         self,

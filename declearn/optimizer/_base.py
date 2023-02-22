@@ -276,9 +276,11 @@ class Optimizer:
             Model weights' updates, preserving input `gradients`'s specs,
             ready to be applied using the `model.apply_updates` method.
         """
-        # Run input gradients through plug-in regularizers.
+        # Optionally fetch the model's trainable weights.
+        if self.regularizers or self.w_decay:
+            weights = model.get_weights(trainable=True)
+        # Run input gradients and weights through plug-in regularizers.
         if self.regularizers:
-            weights = model.get_weights()
             for regularizer in self.regularizers:
                 gradients = regularizer.run(gradients, weights)
         # Run input gradients through plug-in modules.
@@ -288,7 +290,7 @@ class Optimizer:
         updates = self.lrate * gradients
         # Optionally add the decoupled weight decay term.
         if self.w_decay:
-            updates += self.w_decay * model.get_weights()
+            updates += self.w_decay * weights
         # Return ready-to-apply model updates.
         return -1.0 * updates
 

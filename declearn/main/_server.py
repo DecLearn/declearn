@@ -444,7 +444,7 @@ class FederatedServer:
         # Set up shared training parameters.
         params = {
             "round_i": round_i,
-            "weights": self.model.get_weights(),
+            "weights": self.model.get_weights(trainable=True),
             **train_cfg.message_params,
         }  # type: Dict[str, Any]
         messages = {}  # type: Dict[str, messaging.Message]
@@ -549,7 +549,7 @@ class FederatedServer:
         """
         message = messaging.EvaluationRequest(
             round_i=round_i,
-            weights=self.model.get_weights(),
+            weights=self.model.get_weights(trainable=True),
             **valid_cfg.message_params,
         )
         await self.netwk.broadcast_message(message, clients)

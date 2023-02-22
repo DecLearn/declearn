@@ -347,23 +347,25 @@ exposed here.
   - Server:
     - select clients that are to participate
     - send data-batching and effort constraints parameters
-    - send shared model weights and (opt. client-specific) auxiliary variables
+    - send shared model trainable weights and (opt. client-specific) optimizer
+      auxiliary variables
   - Client:
     - update model weights and optimizer auxiliary variables
     - perform training steps based on effort constraints
     - step: compute gradients over a batch; compute updates; apply them
-    - finally, send back local model weights and auxiliary variables
+    - finally, send back the local model weights' updates and optimizer
+      auxiliary variables
   - messaging: (TrainRequest <-> TrainReply)
   - Server:
-    - unpack and aggregate clients' model weights into global updates
-    - unpack and process clients' auxiliary variables
+    - unpack and aggregate clients' model weights updates into global updates
+    - unpack and process clients' optimizer auxiliary variables
     - run global updates through the server's optimizer to modify and finally
       apply them
 
 - **Evaluation round**:
   - Server:
     - select clients that are to participate
-    - send data-batching parameters and shared model weights
+    - send data-batching parameters and shared model trainable weights
     - (_send effort constraints, unused for now_)
   - Client:
     - update model weights
