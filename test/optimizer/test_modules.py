@@ -60,11 +60,8 @@ OPTIMODULE_SUBCLASSES = access_types_mapping(group="OptiModule")
 set_device_policy(gpu=False)  # run all OptiModule tests on CPU
 
 
-@pytest.mark.parametrize(
-    "cls", OPTIMODULE_SUBCLASSES.values(), ids=OPTIMODULE_SUBCLASSES.keys()
-)
-class TestOptiModule(PluginTestBase):
-    """Unit tests for declearn.optimizer.modules.OptiModule subclasses."""
+class OptiModuleTestSuite(PluginTestBase):
+    """Unit test suite for declearn.optimizer.modules.OptiModule classes."""
 
     def test_collect_aux_var(
         self, cls: Type[OptiModule], framework: FrameworkType
@@ -158,3 +155,10 @@ class TestOptiModule(PluginTestBase):
             )  # type: ignore  # partial wraps the __init__ method
         # Run the unit test.
         super().test_run_equivalence(cls)
+
+
+@pytest.mark.parametrize(
+    "cls", OPTIMODULE_SUBCLASSES.values(), ids=OPTIMODULE_SUBCLASSES.keys()
+)
+class TestOptiModule(OptiModuleTestSuite):
+    """Unit tests for declearn.optimizer.modules.OptiModule subclasses."""
