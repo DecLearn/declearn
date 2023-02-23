@@ -54,8 +54,9 @@ from optim_testing import PluginTestBase
 sys.path.pop()
 # fmt: on
 
-
+# Access the list of modules to test; remove some that have dedicated tests.
 OPTIMODULE_SUBCLASSES = access_types_mapping(group="OptiModule")
+OPTIMODULE_SUBCLASSES.pop("torch-optim", None)
 
 set_device_policy(gpu=False)  # run all OptiModule tests on CPU
 
