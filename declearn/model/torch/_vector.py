@@ -19,6 +19,7 @@
 
 from typing import Any, Callable, Dict, Optional, Set, Tuple, Type
 
+import numpy as np
 import torch
 from typing_extensions import Self  # future: import from typing (Py>=3.11)
 
@@ -26,6 +27,11 @@ from declearn.model.api import Vector, register_vector_type
 from declearn.model.sklearn import NumpyVector
 from declearn.model.torch.utils import select_device
 from declearn.utils import get_device_policy
+
+
+__all__ = [
+    "TorchVector",
+]
 
 
 @register_vector_type(torch.Tensor)
@@ -125,7 +131,9 @@ class TorchVector(Vector):
     def pack(
         self,
     ) -> Dict[str, Any]:
-        return {key: tns.cpu().numpy() for key, tns in self.coefs.items()}
+        return {
+            key: np.array(tns.cpu().numpy()) for key, tns in self.coefs.items()
+        }
 
     @classmethod
     def unpack(

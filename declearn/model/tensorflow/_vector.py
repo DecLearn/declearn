@@ -20,6 +20,7 @@
 from typing import Any, Callable, Dict, Optional, Set, Type, Union
 
 # fmt: off
+import numpy as np
 import tensorflow as tf  # type: ignore
 # false-positive; pylint: disable=no-name-in-module
 from tensorflow.python.framework.ops import EagerTensor  # type: ignore
@@ -34,6 +35,11 @@ from declearn.model.tensorflow.utils import (
     select_device,
 )
 from declearn.utils import get_device_policy
+
+
+__all__ = [
+    "TensorflowVector",
+]
 
 
 @register_vector_type(tf.Tensor, EagerTensor, tf.IndexedSlices)
@@ -155,7 +161,7 @@ class TensorflowVector(Vector):
             val = cls._pack_tensor(tensor.values)
             ind = cls._pack_tensor(tensor.indices)
             return ["slices", val, ind]
-        return tensor.numpy()
+        return np.array(tensor.numpy())
 
     @classmethod
     def _unpack_tensor(
@@ -227,3 +233,16 @@ class TensorflowVector(Vector):
         keepdims: bool = False,
     ) -> Self:
         return self.apply_func(tf.reduce_sum, axis=axis, keepdims=keepdims)
+
+    def __pow__(
+        self,
+        other: Any,
+    ) -> Self:
+        # For square and square root, use dedicated functions rather
+        # than tf.pow as results tend to differ for small values.
+        if isinstance(other, (int, float)):
+            if other == 2:
+                return self.apply_func(tf.square)
+            if other == 0.5:
+                return self.apply_func(tf.sqrt)
+        return super().__pow__(other)

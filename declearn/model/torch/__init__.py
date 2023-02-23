@@ -23,6 +23,7 @@ gradient descent.
 
 This module exposes:
 * TorchModel: Model subclass to wrap torch.nn.Module objects
+* TorchOptiModule: OptiModule subclass to wrap torch.nn.Optimizer objects
 * TorchVector: Vector subclass to wrap torch.Tensor objects
 
 It also exposes the `utils` submodule, which mainly aims at
@@ -31,4 +32,5 @@ providing tools used in the backend of the former objects.
 
 from . import utils
 from ._vector import TorchVector
+from ._optim import TorchOptiModule
 from ._model import TorchModel

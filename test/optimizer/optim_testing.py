@@ -122,7 +122,7 @@ class PluginTestBase:
                 warnings.warn(
                     f"Skipping framework '{fwk}' in equivalence test."
                 )
-            finally:
+            else:
                 coefs = {
                     key: f_case.to_numpy(val)
                     for key, val in output.coefs.items()

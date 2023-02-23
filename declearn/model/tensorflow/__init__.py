@@ -23,6 +23,7 @@ through gradient descent.
 
 This module exposes:
 * TensorflowModel: Model subclass to wrap tensorflow.keras.Model objects
+* TensorflowOptiModule: OptiModule subclass to wrap keras Optimizer objects
 * TensorflowVector: Vector subclass to wrap tensorflow.Tensor objects
 
 It also exposes the `utils` submodule, which mainly aims at
@@ -31,4 +32,5 @@ providing tools used in the backend of the former objects.
 
 from . import utils
 from ._vector import TensorflowVector
+from ._optim import TensorflowOptiModule
 from ._model import TensorflowModel

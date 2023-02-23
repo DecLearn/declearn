@@ -19,8 +19,25 @@
 
 This declearn submodule provides with:
 * Model and Vector abstractions, used as an API to design FL algorithms
-* Submodules implementing interfaces to curretnly supported frameworks 
-and models.
+* Submodules implementing interfaces to various frameworks and models.
+
+The automatically-imported submodules implemented here are:
+* api: Model and Vector abstractions' defining module.
+    - Model: abstract API to interface framework-specific models.
+    - Vector: abstract API for data tensors containers.
+* sklearn: scikit-learn based or oriented tools
+    - NumpyVector: Vector for numpy array data structures.
+    - SklearnSGDModel: Model for scikit-learn's SGDClassifier and SGDRegressor.
+
+The optional-dependency-based submodules that may be manually imported are:
+* tensorflow: tensorflow-interfacing tools
+    - TensorflowModel: Model to wrap any tensorflow-keras Layer model.
+    - TensorflowOptiModule: Hacky OptiModule to wrap a keras Optimizer.
+    - TensorflowVector: Vector for tensorflow Tensor and IndexedSlices.
+* torch: pytorch-interfacing tools
+    - TorchModel: Model to wrap any torch Module model.
+    - TorchOptiModule: Hacky OptiModule to wrap a torch Optimizer.
+    - TorchVector: Vector for torch Tensor objects.
 """
 
 from . import api
