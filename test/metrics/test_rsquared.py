@@ -72,21 +72,7 @@ def test_case_fixture(
 class TestRSquared(MeanMetricTestSuite):
     """Unit tests for `RSquared` Metric."""
 
-    @staticmethod
-    def dicts_equal(
-        dicts_a: Dict[str, Union[float, np.ndarray]],
-        dicts_b: Dict[str, Union[float, np.ndarray]],
-    ) -> bool:
-        # Override the base behaviour: allow for very small (10^-12)
-        # numerical imprecisions in values' equality assertions.
-        try:
-            assert dicts_a.keys() == dicts_b.keys()
-            for key, v_a in dicts_a.items():
-                v_b = dicts_b[key]
-                assert np.allclose(v_a, v_b, rtol=0, atol=1e-12)
-        except AssertionError:
-            return False
-        return True
+    tol = 1e-12  # allow declearn and sklearn scores to differ at 10^-12 prec.
 
     def test_zero_result(self, test_case: MetricTestCase) -> None:
         """Test that `get_results` works with zero-valued divisor."""

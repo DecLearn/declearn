@@ -42,6 +42,7 @@ from declearn.optimizer.modules import NoiseModule, OptiModule
 from declearn.test_utils import (
     FrameworkType,
     GradientsTestCase,
+    assert_dict_equal,
     assert_json_serializable_dict,
 )
 from declearn.utils import access_types_mapping, set_device_policy
@@ -104,7 +105,7 @@ class TestOptiModule(PluginTestBase):
             test_case = GradientsTestCase(framework)
             module.run(test_case.mock_gradient)
             module.set_state(initial)
-            assert module.get_state() == initial
+            assert_dict_equal(module.get_state(), initial)
 
     def test_set_state_updated(
         self, cls: Type[OptiModule], framework: FrameworkType
@@ -117,7 +118,7 @@ class TestOptiModule(PluginTestBase):
             states = module.get_state()
             module = cls()
             module.set_state(states)
-            assert module.get_state() == states
+            assert_dict_equal(module.get_state(), states)
 
     def test_set_state_results(
         self, cls: Type[OptiModule], framework: FrameworkType

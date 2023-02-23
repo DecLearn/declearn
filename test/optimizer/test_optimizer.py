@@ -139,11 +139,6 @@ class TestOptimizer:
             modules=[MockOptiModule(arg="optimodule")],
         )
         config = optimizer.get_config()
-        assert isinstance(config, dict)
-        # Hack around the config dict to account for JSON converting tuples.
-        config["regularizers"] = [list(e) for e in config["regularizers"]]
-        config["modules"] = [list(e) for e in config["modules"]]
-        # Run the JSON-serializability test.
         assert_json_serializable_dict(config)
 
     def test_from_config(self) -> None:
