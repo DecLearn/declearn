@@ -29,6 +29,11 @@ from declearn.model.torch.utils import select_device
 from declearn.utils import get_device_policy
 
 
+__all__ = [
+    "TorchVector",
+]
+
+
 @register_vector_type(torch.Tensor)
 class TorchVector(Vector):
     """Vector subclass to store PyTorch tensors.

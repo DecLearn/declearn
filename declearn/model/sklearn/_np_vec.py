@@ -25,6 +25,7 @@ from typing_extensions import Self  # future: import from typing (Py>=3.11)
 
 from declearn.model.api._vector import Vector, register_vector_type
 
+
 __all__ = [
     "NumpyVector",
 ]

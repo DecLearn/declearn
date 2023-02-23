@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Model Vector abstractions submodule."""
+"""Model and Vector abstractions submodule."""
 
 from ._vector import Vector, register_vector_type
 from ._model import Model

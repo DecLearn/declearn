@@ -37,6 +37,11 @@ from declearn.model.tensorflow.utils import (
 from declearn.utils import get_device_policy
 
 
+__all__ = [
+    "TensorflowVector",
+]
+
+
 @register_vector_type(tf.Tensor, EagerTensor, tf.IndexedSlices)
 class TensorflowVector(Vector):
     """Vector subclass to store tensorflow tensors.
