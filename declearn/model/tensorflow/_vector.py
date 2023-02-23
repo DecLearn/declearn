@@ -20,6 +20,7 @@
 from typing import Any, Callable, Dict, Optional, Set, Type, Union
 
 # fmt: off
+import numpy as np
 import tensorflow as tf  # type: ignore
 # false-positive; pylint: disable=no-name-in-module
 from tensorflow.python.framework.ops import EagerTensor  # type: ignore
@@ -155,7 +156,7 @@ class TensorflowVector(Vector):
             val = cls._pack_tensor(tensor.values)
             ind = cls._pack_tensor(tensor.indices)
             return ["slices", val, ind]
-        return tensor.numpy()
+        return np.array(tensor.numpy())
 
     @classmethod
     def _unpack_tensor(

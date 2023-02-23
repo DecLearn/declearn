@@ -19,6 +19,7 @@
 
 from typing import Any, Callable, Dict, Optional, Set, Tuple, Type
 
+import numpy as np
 import torch
 from typing_extensions import Self  # future: import from typing (Py>=3.11)
 
@@ -125,7 +126,9 @@ class TorchVector(Vector):
     def pack(
         self,
     ) -> Dict[str, Any]:
-        return {key: tns.cpu().numpy() for key, tns in self.coefs.items()}
+        return {
+            key: np.array(tns.cpu().numpy()) for key, tns in self.coefs.items()
+        }
 
     @classmethod
     def unpack(
