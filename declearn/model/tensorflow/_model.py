@@ -111,13 +111,11 @@ class TensorflowModel(Model):
         if not _from_config:
             self._model = move_layer_to_device(self._model, self._device)
         # Finalize initialization using the selected device.
+        # Compile the wrapped model and retain compilation arguments.
         with tf.device(self._device):
-            # Compile the wrapped model and retain compilation arguments.
             kwargs.update({"loss": loss, "metrics": metrics})
             self._model.compile(**kwargs)
             self._kwargs = kwargs
-            # Instantiate a SGD optimizer to apply updates as-provided.
-            self._sgd = tf.keras.optimizers.SGD(learning_rate=1.0)
 
     @property
     def device_policy(
@@ -322,13 +320,12 @@ class TensorflowModel(Model):
     ) -> None:
         self._verify_weights_compatibility(updates, trainable=True)
         with tf.device(self._device):
-            # Delegate updates' application to a tensorflow Optimizer.
-            values = (-1 * updates).coefs.values()
-            zipped = zip(values, self._model.trainable_weights)
-            upd_op = self._sgd.apply_gradients(zipped)
-            # Ensure ops have been performed before exiting.
-            with tf.control_dependencies([upd_op]):
-                return None
+            for var in self._model.trainable_weights:
+                updt = updates.coefs[var.name]
+                if isinstance(updt, tf.IndexedSlices):
+                    var.scatter_add(updt, read_value=False)
+                else:
+                    var.assign_add(updt, read_value=False)
 
     def evaluate(
         self,
