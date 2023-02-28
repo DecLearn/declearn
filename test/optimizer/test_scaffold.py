@@ -38,9 +38,10 @@ def test_scaffold_client(mock_gradients: Vector) -> None:
     """Conduct a series of co-dependent unit tests on ScaffoldClientModule."""
     module = ScaffoldClientModule()
     assert module.delta == 0.0
-    # Test that initial aux_var collection fails.
-    with pytest.raises(RuntimeError):
-        module.collect_aux_var()
+    # Test that initial aux_var collection raises a warning and returns 0.
+    with pytest.warns(RuntimeWarning):
+        aux_var = module.collect_aux_var()
+    assert aux_var == {"state": 0.0}
     # Test run correctness (no correction at state 0).
     output = module.run(mock_gradients)
     assert output == mock_gradients
