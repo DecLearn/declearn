@@ -13,6 +13,7 @@ import jax
 import jax.numpy as jnp
 import joblib
 import numpy as np
+from jax import grad, jit, vmap
 
 from declearn.data_info import aggregate_data_info
 from declearn.model.api import Model
@@ -30,6 +31,7 @@ JaxBatch = Tuple[
 
 #TODO compare performance with list comprehension in or out the vmap for clipped grads
 #TODO add type checking of loss and model at __init__
+#TODO Allow for proper use of random seed at apply 
 
 @register_type(name="HaikuModel", group="Model")
 class HaikuModel(Model):
@@ -135,13 +137,14 @@ class HaikuModel(Model):
         coefs_copy = deepcopy(weights.coefs)
         self._params_leaves = list(coefs_copy.values())
 
-    def _forward(self, 
+    def _forward(self,
                  params: Dict[str,jnp.ndarray],
+                 rng: Optional[hk.PRNGSequence],
                  inputs: jnp.ndarray,
                  y_true: Optional[jnp.ndarray],
                  s_wght: Optional[jnp.ndarray],
         ):
-        y_pred = self._transformed_model.apply(params,next(RAND_SEQ),inputs) #list-inputs : *inputs 
+        y_pred = self._transformed_model.apply(params,rng,inputs) #list-inputs : *inputs 
         loss = self._compute_loss(y_pred, y_true, s_wght)
         return loss.mean()
 
@@ -161,10 +164,11 @@ class HaikuModel(Model):
         """Compute and return batch-averaged gradients of trainable weights."""
         # Unflatten the parameters, run forward to compute gradients.
         params = jax.tree_util.tree_unflatten(self._params_treedef,self._params_leaves)
-        grads = jax.grad(self._forward)(params, *self._unpack_batch(batch))
-        # Flatten the gradients and 
+        grad_fn = jit(grad(self._forward))
+        inputs, y_true, s_wght = self._unpack_batch(batch)
+        grads = grad_fn(params, None, inputs, y_true, s_wght)
+        # Flatten the gradients and return them in a Vector container
         flat_grad = jax.tree_util.tree_flatten(grads)
-        # Return them in a Vector container.
         grads = dict(enumerate(flat_grad[0]))
         return JaxNumpyVector(grads)
 
@@ -184,7 +188,8 @@ class HaikuModel(Model):
             None if y_true is None else 0,
             None if s_wght is None else 0,
             None,]
-        clipped_grads = jax.vmap(self._clipped_grad, in_axes)(params, inputs, y_true, s_wght, max_norm)
+        grad_fn = jit(vmap(self._clipped_grad, in_axes))
+        clipped_grads = grad_fn(params, inputs, y_true, s_wght, max_norm)
         grads = [g.sum(0) for g in clipped_grads] 
         # Return them in a Vector container.
         return JaxNumpyVector(dict(enumerate(grads)))
@@ -197,8 +202,7 @@ class HaikuModel(Model):
                 max_norm: Optional[float] = None,
         ):
         """Evaluate gradient for a single-example batch and clip its grad norm."""
-        
-        grads = jax.grad(self._forward)(params, inputs, y_true, s_wght)
+        grads = grad(self._forward)(params, None, inputs, y_true, s_wght)
         nonempty_grads = jax.tree_util.tree_leaves(grads)
         grad_norm = [jnp.linalg.norm(g) for g in nonempty_grads] 
         divisor = [jnp.maximum(g / max_norm, 1.) for g in grad_norm]
