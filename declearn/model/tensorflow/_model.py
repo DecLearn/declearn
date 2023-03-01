@@ -323,7 +323,7 @@ class TensorflowModel(Model):
             for var in self._model.trainable_weights:
                 updt = updates.coefs[var.name]
                 if isinstance(updt, tf.IndexedSlices):
-                    var.scatter_add(updt, read_value=False)
+                    var.scatter_add(updt)
                 else:
                     var.assign_add(updt, read_value=False)
 
