@@ -701,26 +701,47 @@ To contribute directly to the code (beyond posting issues on gitlab), please
 create a dedicated branch, and submit a **Merge Request** once you want your
 work reviewed and further processed to end up integrated into the main branch.
 
+The **git branching strategy** is the following:
+
+- The 'develop' branch is the main one and should receive all finalized changes
+  to the source code. Release branches are then created and updated by cherry-
+  picking from that branch. It therefore acts as a nightly stable version.
+- The 'rX.Y' branches are release branches for each and every X.Y versions.
+  For past versions, these branches enable pushing patches towards a subminor
+  version release (hence being version `X.Y.(Z+1)-dev`). For future versions,
+  these branches enable cherry-picking commits from main to build up an alpha,
+  beta, release-candidate and eventually stable `X.Y.0` version to release.
+- Feature branches should be created at will to develop features, enhancements,
+  or even hotfixes that will later be merged into 'main' and eventually into
+  one or multiple release branches.
+- It is legit to write up poc branches, as well as to split the development of
+  a feature into multiple branches that will incrementally be merged into an
+  intermediate feature branch that will eventually be merged into 'main'.
+
 The **coding rules** are fairly simple:
 
-- abide by [PEP 8](https://peps.python.org/pep-0008/), in a way that is
-  coherent with the practices already at work in declearn
-- abide by [PEP 257](https://peps.python.org/pep-0257/), _i.e._ write
+- Abide by [PEP 8](https://peps.python.org/pep-0008/), in a way that is
+  coherent with the practices already at work in declearn.
+- Abide by [PEP 257](https://peps.python.org/pep-0257/), _i.e._ write
   docstrings **everywhere** (unless inheriting from a method, the behaviour
   and signature of which are unmodified), again using formatting that is
-  coherent with the declearn practices
-- type-hint the code, abiding by [PEP 484](https://peps.python.org/pep-0484/);
+  coherent with the declearn practices.
+- Type-hint the code, abiding by [PEP 484](https://peps.python.org/pep-0484/);
   note that the use of Any and of "type: ignore" comments is authorized, but
-  should be remain sparse
-- lint your code with [mypy](http://mypy-lang.org/) (for static type checking)
+  should be remain sparse.
+- Lint your code with [mypy](http://mypy-lang.org/) (for static type checking)
   and [pylint](https://pylint.pycqa.org/en/latest/) (for more general linting);
   do use "type: ..." and "pylint: disable=..." comments where you think it
-  relevant, preferably with some side explanations
+  relevant, preferably with some side explanations.
   (see dedicated sub-sections below: [pylint](#running-pylint-to-check-the-code)
   and [mypy](#running-mypy-to-type-check-the-code))
-- reformat your code using [black](https://github.com/psf/black); do use
+- Reformat your code using [black](https://github.com/psf/black); do use
   (sparingly) "fmt: off/on" comments when you think it relevant
-  (see dedicated sub-section [below](#running-black-to-format-the-code))
+  (see dedicated sub-section [below](#running-black-to-format-the-code)).
+- Abide by [semver](https://semver.org/) when implementing new features or
+  changing the existing APIs; try making changes non-breaking, document and
+  warn about deprecations or behavior changes, or make a point for API-breaking
+  changes, which we are happy to consider but might take time to be released.
 
 ### Unit tests and code analysis
 

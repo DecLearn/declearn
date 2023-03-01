@@ -7,15 +7,14 @@ before_script:
   - source venv/bin/activate
 
 # Run the test suite using tox.
-# This job is called when commits are pushed to the main branch,
-# save for merge-resulting commits (that are expected to come from MRs).
+# This job is called when commits are pushed to the main or a release branch.
 test:
   script:
     - pip install -U tox
     - tox -e py38
   rules:
-    - if: ($CI_COMMIT_BRANCH == "main") && ($CI_PIPELINE_SOURCE == "push")
-          && ($CI_COMMIT_TITLE !~ /^Merge branch '.*' into main/)
+    - if: ($CI_PIPELINE_SOURCE == "push") &&
+          (($CI_COMMIT_BRANCH == "develop") || ($CI_COMMIT_BRANCH =~ "/^r\d\.\d+/"))
   tags:
     - ci.inria.fr
     - small
@@ -28,12 +27,13 @@ test-full:
     - pip install -U tox
     - tox -e py38 -- --fulltest
   rules:
-    - if: ($CI_PIPELINE_SOURCE == "merge_request_event")
-          && ($CI_MERGE_REQUEST_TITLE !~ /^Draft:.*/)
-    - if: ($CI_PIPELINE_SOURCE == "merge_request_event")
-          && ($CI_MERGE_REQUEST_TITLE =~ /^Draft:.*/)
+    - if: ($CI_PIPELINE_SOURCE == "merge_request_event") &&
+          ($CI_MERGE_REQUEST_TITLE !~ /^Draft:.*/)
+    - if: ($CI_PIPELINE_SOURCE == "merge_request_event") &&
+          ($CI_MERGE_REQUEST_TITLE =~ /^Draft:.*/)
       when: manual
-    - if: ($CI_COMMIT_BRANCH == "main") && ($CI_PIPELINE_SOURCE == "push")
+    - if: ($CI_PIPELINE_SOURCE == "push") &&
+          (($CI_COMMIT_BRANCH == "develop") || ($CI_COMMIT_BRANCH =~ "/^r\d\.\d+/"))
       when: manual
   tags:
     - ci.inria.fr
