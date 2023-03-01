@@ -44,6 +44,7 @@ def test_case_fixture(
 ) -> MetricTestCase:
     """Return a test case for an R2 metric, with opt. sample weights."""
     # Generate random inputs and sample weights.
+    np.random.seed(20230301)
     y_true = np.random.normal(scale=1.0, size=32)
     y_pred = y_true + np.random.normal(scale=0.5, size=32)
     s_wght = np.abs(np.random.normal(size=32)) if weighted else np.ones((32,))
