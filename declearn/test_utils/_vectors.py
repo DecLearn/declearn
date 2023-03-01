@@ -98,6 +98,11 @@ class GradientsTestCase:
         """Convert an input framework-based structure to a numpy array."""
         if isinstance(array, np.ndarray):
             return array
+        if self.framework == "tensorflow":  # add support for IndexedSlices
+            tensorflow = importlib.import_module("tensorflow")
+            if isinstance(array, tensorflow.IndexedSlices):
+                with tensorflow.device(array.device):
+                    return tensorflow.convert_to_tensor(array).numpy()
         return array.numpy()  # type: ignore
 
     @property
@@ -111,9 +116,21 @@ class GradientsTestCase:
         rng = np.random.default_rng(self.seed)
         shapes = [(64, 32), (32,), (32, 16), (16,), (16, 1), (1,)]
         values = [rng.normal(size=shape) for shape in shapes]
-        return self.vector_cls(
+        vector = self.vector_cls(
             {str(idx): self.convert(value) for idx, value in enumerate(values)}
         )
+        # In Tensorflow, convert the first gradients to IndexedSlices.
+        # In this case they are equivalent to dense ones, but this enables
+        # testing the support for these structures while maintaining the
+        # possibility to compare outputs' values with other frameworks.
+        if self.framework == "tensorflow":
+            tensorflow = importlib.import_module("tensorflow")
+            vector.coefs["0"] = tensorflow.IndexedSlices(
+                values=vector.coefs["0"],
+                indices=tensorflow.range(64),
+                dense_shape=tensorflow.convert_to_tensor([64, 32]),
+            )
+        return vector
 
     @property
     def mock_ones(self) -> Vector:

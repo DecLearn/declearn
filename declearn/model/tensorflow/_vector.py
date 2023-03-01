@@ -17,7 +17,8 @@
 
 """TensorflowVector data arrays container."""
 
-from typing import Any, Callable, Dict, Optional, Set, Type, Union
+import warnings
+from typing import Any, Callable, Dict, Optional, Set, Type, TypeVar, Union
 
 # fmt: off
 import numpy as np
@@ -31,6 +32,7 @@ from typing_extensions import Self  # future: import from typing (Py>=3.11)
 from declearn.model.api import Vector, register_vector_type
 from declearn.model.sklearn import NumpyVector
 from declearn.model.tensorflow.utils import (
+    add_indexed_slices_support,
     preserve_tensor_device,
     select_device,
 )
@@ -40,6 +42,33 @@ from declearn.utils import get_device_policy
 __all__ = [
     "TensorflowVector",
 ]
+
+
+TensorT = TypeVar("TensorT", tf.Tensor, tf.IndexedSlices)
+
+
+def enhance_tf_op(
+    tf_op: Callable[[tf.Tensor, Any], tf.Tensor],
+    inplc: bool = False,
+) -> Callable[[TensorT, Any], TensorT]:
+    """Wrap up a tensorflow operation to preserve IndexedSlices and device."""
+    func = add_indexed_slices_support(preserve_tensor_device(tf_op), inplc)
+    setattr(func, "_pre_wrapped", True)
+    return func
+
+
+# Wrap up base tensorflow operations to add support for IndexedSlices
+# inputs and preserve tensor's device-placement
+tf_op_add = enhance_tf_op(tf.add)
+tf_op_sub = enhance_tf_op(tf.subtract)
+tf_op_mul = enhance_tf_op(tf.multiply)
+tf_op_div = enhance_tf_op(tf.truediv)
+tf_op_pow = enhance_tf_op(tf.pow)
+tf_op_min = enhance_tf_op(tf.minimum)
+tf_op_max = enhance_tf_op(tf.maximum)
+tf_op_sign = enhance_tf_op(tf.sign, inplc=True)
+tf_op_sqre = enhance_tf_op(tf.square, inplc=True)
+tf_op_sqrt = enhance_tf_op(tf.sqrt, inplc=True)
 
 
 @register_vector_type(tf.Tensor, EagerTensor, tf.IndexedSlices)
@@ -52,9 +81,14 @@ class TensorflowVector(Vector):
     two TensorflowVector with similar specifications).
 
     Note that support for IndexedSlices is implemented, as these are a
-    common type for auto-differentiated gradients.
+    common type for auto-differentiated gradients. When using built-in
+    operators and methods, these structures will be preserved, unless
+    densification is required (e.g. when summing with a dense tensor).
+    When using `TensorflowVector.apply_func` directly, support for the
+    IndexedSlices' preservation should be added manually, typically by
+    using `declearn.model.tensorflow.utils.add_indexed_slices_support`.
 
-    Note that this class does not (yet?) support special tensor types
+    Note that this class does not currently support special tensor types
     such as SparseTensor or RaggedTensor.
 
     Use `vector.coefs` to access the stored coefficients.
@@ -84,23 +118,23 @@ class TensorflowVector(Vector):
 
     @property
     def _op_add(self) -> Callable[[Any, Any], Any]:
-        return tf.add
+        return tf_op_add
 
     @property
     def _op_sub(self) -> Callable[[Any, Any], Any]:
-        return tf.subtract
+        return tf_op_sub
 
     @property
     def _op_mul(self) -> Callable[[Any, Any], Any]:
-        return tf.multiply
+        return tf_op_mul
 
     @property
     def _op_div(self) -> Callable[[Any, Any], Any]:
-        return tf.divide
+        return tf_op_div
 
     @property
     def _op_pow(self) -> Callable[[Any, Any], Any]:
-        return tf.pow
+        return tf_op_pow
 
     @property
     def compatible_vector_types(self) -> Set[Type[Vector]]:
@@ -118,7 +152,8 @@ class TensorflowVector(Vector):
         *args: Any,
         **kwargs: Any,
     ) -> Self:
-        func = preserve_tensor_device(func)
+        if not getattr(func, "_pre_wrapped", False):
+            func = preserve_tensor_device(func)
         return super().apply_func(func, *args, **kwargs)
 
     def _apply_operation(
@@ -126,7 +161,8 @@ class TensorflowVector(Vector):
         other: Any,
         func: Callable[[Any, Any], Any],
     ) -> Self:
-        func = preserve_tensor_device(func)
+        if not getattr(func, "_pre_wrapped", False):
+            func = preserve_tensor_device(func)
         return super()._apply_operation(other, func)
 
     def dtypes(
@@ -160,7 +196,8 @@ class TensorflowVector(Vector):
         if isinstance(tensor, tf.IndexedSlices):
             val = cls._pack_tensor(tensor.values)
             ind = cls._pack_tensor(tensor.indices)
-            return ["slices", val, ind]
+            shp = cls._pack_tensor(tensor.dense_shape)
+            return ["slices", val, ind, shp]
         return np.array(tensor.numpy())
 
     @classmethod
@@ -172,7 +209,8 @@ class TensorflowVector(Vector):
         if isinstance(data, list) and (data[0] == "slices"):
             val = cls._unpack_tensor(data[1])
             ind = cls._unpack_tensor(data[2])
-            return tf.IndexedSlices(val, ind)
+            shp = cls._unpack_tensor(data[3])
+            return tf.IndexedSlices(val, ind, shp)
         try:
             return tf.convert_to_tensor(data)
         except TypeError as exc:
@@ -209,29 +247,40 @@ class TensorflowVector(Vector):
             return tf.reduce_all(t_a == t_b).numpy()
 
     def sign(self) -> Self:
-        return self.apply_func(tf.sign)
+        return self.apply_func(tf_op_sign)
 
     def minimum(
         self,
         other: Any,
     ) -> Self:
         if isinstance(other, Vector):
-            return self._apply_operation(other, tf.minimum)
-        return self.apply_func(tf.minimum, other)
+            return self._apply_operation(other, tf_op_min)
+        return self.apply_func(tf_op_min, other)
 
     def maximum(
         self,
         other: Any,
     ) -> Self:
         if isinstance(other, Vector):
-            return self._apply_operation(other, tf.maximum)
-        return self.apply_func(tf.maximum, other)
+            return self._apply_operation(other, tf_op_max)
+        return self.apply_func(tf_op_max, other)
 
     def sum(
         self,
         axis: Optional[int] = None,
         keepdims: bool = False,
     ) -> Self:
+        if keepdims or (axis is not None):
+            if any(
+                isinstance(x, tf.IndexedSlices) for x in self.coefs.values()
+            ):
+                warnings.warn(
+                    "Calling `TensorflowVector.sum()` with non-default "
+                    "arguments and tf.IndexedSlices coefficients might "
+                    "result in unexpected outputs, due to the latter "
+                    "being converted to their dense counterpart.",
+                    category=RuntimeWarning,
+                )
         return self.apply_func(tf.reduce_sum, axis=axis, keepdims=keepdims)
 
     def __pow__(
@@ -242,7 +291,7 @@ class TensorflowVector(Vector):
         # than tf.pow as results tend to differ for small values.
         if isinstance(other, (int, float)):
             if other == 2:
-                return self.apply_func(tf.square)
+                return self.apply_func(tf_op_sqre)
             if other == 0.5:
-                return self.apply_func(tf.sqrt)
+                return self.apply_func(tf_op_sqrt)
         return super().__pow__(other)

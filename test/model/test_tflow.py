@@ -86,6 +86,8 @@ class TensorflowTestCase(ModelTestCase):
         tensor: Any,
     ) -> np.ndarray:
         """Convert an input tensor to a numpy array."""
+        if isinstance(tensor, tf.IndexedSlices):
+            tensor = tf.convert_to_tensor(tensor)
         assert isinstance(tensor, tf.Tensor)
         return tensor.numpy()
 

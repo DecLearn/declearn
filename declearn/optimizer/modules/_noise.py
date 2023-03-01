@@ -17,6 +17,7 @@
 
 """Noise-addition modules for DP using cryptographically-strong RNG."""
 
+import warnings
 from abc import ABCMeta, abstractmethod
 from random import SystemRandom
 from typing import Any, ClassVar, Dict, Optional, Tuple
@@ -94,7 +95,10 @@ class NoiseModule(OptiModule, metaclass=ABCMeta, register=False):
             for key in gradients.coefs
         }
         # Add the sampled noise to the gradients and return them.
-        return gradients + NumpyVector(noise)
+        # Silence warnings about sparse gradients getting sparsified.
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", ".*densifying.*", RuntimeWarning)
+            return gradients + NumpyVector(noise)
 
     @abstractmethod
     def _sample_noise(

@@ -28,6 +28,10 @@ GPU/CPU backing device management utils:
 Loss function management utils:
 * build_keras_loss:
     Type-check, deserialize and/or wrap a keras loss into a Loss object.
+
+Better support for sparse tensor structures:
+* add_indexed_slices_support:
+    Run a function on a pair of tensors, adding support for IndexedSlices.
 """
 
 from ._gpu import (
@@ -36,3 +40,4 @@ from ._gpu import (
     select_device,
 )
 from ._loss import build_keras_loss
+from ._slices import add_indexed_slices_support
