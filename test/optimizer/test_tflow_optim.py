@@ -19,7 +19,7 @@
 
 import sys
 import warnings
-from typing import Iterator, Type
+from typing import Iterator, Type, Union
 
 import numpy as np
 import pytest
@@ -115,6 +115,13 @@ def fix_adam_epsilon(
     return module
 
 
+def to_numpy(tensor: Union[tf.Tensor, tf.IndexedSlices]) -> np.ndarray:
+    """Convert a tensorflow Tensor or IndexedSlices to numpy."""
+    if isinstance(tensor, tf.IndexedSlices):
+        return tensor.values.numpy()
+    return tensor.numpy()
+
+
 @pytest.fixture(name="framework")
 def framework_fixture():
     """Fixture to ensure 'TensorflowOptiModule' only receives tf gradients."""
@@ -157,7 +164,7 @@ class TestTensorflowOptiModule(OptiModuleTestSuite):
             grads_dec = optim_dec.run(gradients).coefs
             # Assert that the output gradients are (nearly) identical.
             assert all(
-                np.allclose(grads_tfk[key].numpy(), grads_dec[key].numpy())
+                np.allclose(to_numpy(grads_tfk[key]), to_numpy(grads_dec[key]))
                 for key in gradients.coefs
             )
 
