@@ -151,7 +151,7 @@ class SklearnSGDModel(Model):
         cls,
         kind: Literal["classifier", "regressor"],
         loss: Optional[LossesLiteral] = None,
-        penalty: Literal["l1", "l2", "elasticnet"] = "l2",
+        penalty: Literal["none", "l1", "l2", "elasticnet"] = "l2",
         alpha: float = 1e-4,
         l1_ratio: float = 0.15,
         epsilon: float = 0.1,
@@ -173,7 +173,7 @@ class SklearnSGDModel(Model):
             See `sklearn.linear_model.SGDRegressor` and `SGDClassifier`
             documentation for details on possible values. If None, set
             to "hinge" for classifier or "squared_error" for regressor.
-        penalty: {"l1", "l2", "elasticnet"}, default="l2"
+        penalty: {"none", "l1", "l2", "elasticnet"}, default="l2"
             The penalty (i.e. regularization term) to be used.
         alpha: float, default=0.0001
             Regularization constant (the higher the stronger).
