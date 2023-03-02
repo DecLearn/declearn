@@ -18,8 +18,9 @@ from jax import grad, jit, vmap
 from declearn.data_info import aggregate_data_info
 from declearn.model.api import Model
 from declearn.model.haiku import JaxNumpyVector
+from declearn.model.haiku.utils import select_device
 from declearn.typing import Batch
-from declearn.utils import register_type
+from declearn.utils import DevicePolicy, get_device_policy, register_type
 
 RAND_SEQ = hk.PRNGSequence(jax.random.PRNGKey(42))
 
@@ -41,7 +42,7 @@ class HaikuModel(Model):
     This `Model` subclass is designed to wrap a `hk.Module`
     instance to be learned federatively.
     """
-    
+
     def __init__(
         self,
         model: Callable,
@@ -64,15 +65,27 @@ class HaikuModel(Model):
         # Get pure functions from haiku transform
         self._model_fn = model
         self._transformed_model = hk.transform(model)
-        # Store model state
+        # Select the device where to place computations and move the model.
+        policy = get_device_policy()
+        self._device = select_device(gpu=policy.gpu, idx=policy.idx)
+        # Create model state attributes
         self._params_leaves = None
         self._params_treedef = None
+        # initialized util 
+        self._initialized = False
+
+    @property
+    def device_policy(
+        self,
+    ) -> DevicePolicy:
+        device = self._device
+        return DevicePolicy(gpu=(device.platform == "gpu"), idx=device.id)
 
     @property
     def required_data_info(
         self,
     ) -> Set[str]:
-        return {"input_shape","data_type"}
+        return set() if self._initialized else {"data_type","input_shape"}
 
     def initialize(
         self,
@@ -83,11 +96,13 @@ class HaikuModel(Model):
         # initialize.
         params = self._transformed_model.init(
             next(RAND_SEQ),
-            jnp.zeros((1,*data_info["input_shape"][1:]),*[x.__name__ for x in data_info["data_type"]]) #CHECK
+            jnp.zeros((1,*data_info["input_shape"][1:]),data_info["data_type"]) #CHECK
         )
+        params = jax.device_put(params, self._device)
         flat_params = jax.tree_util.tree_flatten(params)
         self._params_treedef = flat_params[1]
         self._params_leaves = flat_params[0]
+        self._initialized = True
 
     def get_config(
         self,
@@ -126,7 +141,7 @@ class HaikuModel(Model):
     def get_named_weights(self) -> Any:
         """ Utility function to access the weights of the haiku model as a nested 
         dict, using the appropriate naming"""
-        return jax.tree_util.tree_unflatten(self._params_treedef,self._params_leaves)
+        return jax.tree_util.tree_unflatten(self._params_treedef, self._params_leaves)
 
     def set_weights(  # type: ignore  # Vector subtype specification
         self,
@@ -135,7 +150,7 @@ class HaikuModel(Model):
         if not isinstance(weights, JaxNumpyVector):
             raise TypeError("HaikuModel requires JaxNumpyVector weights.")
         coefs_copy = deepcopy(weights.coefs)
-        self._params_leaves = list(coefs_copy.values())
+        self._params_leaves = [jax.device_put(v,self._device) for v in coefs_copy.values()]
 
     def _forward(self,
                  params: Dict[str,jnp.ndarray],
@@ -278,3 +293,16 @@ class HaikuModel(Model):
     ) -> np.ndarray:
         s_loss = self._loss_fn(jnp.array(y_pred), jnp.array(y_true))
         return np.array(s_loss).squeeze()
+
+    def update_device_policy(
+        self,
+        policy: Optional[DevicePolicy] = None,
+    ) -> None:
+        # Select the device to use based on the provided or global policy.
+        if policy is None:
+            policy = get_device_policy()
+        device = select_device(gpu=policy.gpu, idx=policy.idx)
+        # When needed, re-create the model to force moving it to the device.
+        if self._device is not device:
+            self._device = device
+            self._params_leaves = jax.device_put(self._params_leaves, self._device)
