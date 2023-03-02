@@ -160,3 +160,45 @@ class NbSamplesField(DataInfoField):
     ) -> int:
         super().combine(*values)  # type-check inputs
         return sum(values)
+
+
+@register_data_info_field
+class DataTypeField(DataInfoField):
+    """Specifications for 'data_type' data_info field."""
+
+    field: ClassVar[str] = "data_type"
+    types: ClassVar[Tuple[Type, ...]] = (str,)
+    doc: ClassVar[str] = "Type of dataset(s)."
+
+    @classmethod
+    def is_valid(
+        cls,
+        value: Any,
+    ) -> bool:
+        out = isinstance(value, str)
+        if out:
+            # CHECK
+            try:
+                np.dtype(value)
+            except TypeError as exp:
+                raise TypeError(
+                    "The received string could not be parsed"
+                    "to a valid array dtype"
+                ) from exp
+        return out
+
+    @classmethod
+    def combine(
+        cls,
+        *values: Any,
+    ) -> int:
+        unique = list(set(values))
+        if len(unique) != 1:
+            raise ValueError(
+                f"Cannot combine '{cls.field}': non-unique inputs."
+            )
+        if not cls.is_valid(unique[0]):
+            raise ValueError(
+                f"Cannot combine '{cls.field}': invalid unique value."
+            )
+        return unique[0]

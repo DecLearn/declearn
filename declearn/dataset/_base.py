@@ -40,6 +40,7 @@ class DataSpecs:
     n_samples: int
     n_features: int
     classes: Optional[Set[Any]] = None
+    data_type: Optional[str] = None
 
 
 @create_types_registry
