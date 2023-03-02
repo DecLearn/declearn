@@ -21,11 +21,11 @@ python run.py
 ```
 heart-uci/
 │   client.py  - set up and launch a federated-learning client
-│   data.py    - download and preapte the dataset
+│   data.py    - download and prepare the dataset
 │   gen_ssl.py - generate self-signed ssl certificates
 │   run.py     - launch both the server and clients in a single session
 │   server.py  - set up and launch a federated-learning server
-|   setup.sh   - bash script to prepare client-wise and server isolated folders
+│   setup.sh   - bash script to prepare client-wise and server isolated folders
 └─── data      - saved datasets as csv files
 └─── results   - saved results from training procedure
 ```
@@ -54,10 +54,9 @@ tweaking some learning parameters.
 ### On separate terminals or machines
 
 **To run the examples from different terminals or machines**,
-We first ensure data is appropriately distributed between machines,
+we first ensure data is appropriately distributed between machines,
 and the machines can communicate over network using SSL-encrypted
 communications. We give the code to simulate this on a single machine.
-
 We then sequentially run the server then the clients on separate terminals.
 
 1. **Set up SSL certificates**:<br/>
