@@ -18,18 +18,20 @@
 """Demonstration script using the UCI Heart Disease Dataset."""
 
 import os
-import sys
 import tempfile
-
-# Perform local imports.
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-from client import run_client  # pylint: disable=wrong-import-position
-from server import run_server  # pylint: disable=wrong-import-position
 
 from declearn.test_utils import (
     generate_ssl_certificates,
+    make_importable,
     run_as_processes,
 )
+
+# Perform local imports.
+# pylint: disable=wrong-import-position, wrong-import-order
+with make_importable(os.path.dirname(__file__)):
+    from client import run_client
+    from server import run_server
+# pylint: enable=wrong-import-position, wrong-import-order
 
 
 NAMES = ["cleveland", "hungarian", "switzerland", "va"]

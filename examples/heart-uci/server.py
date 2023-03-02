@@ -17,21 +17,25 @@
 
 """Script to run a federated server on the heart-disease example."""
 
-import argparse
 import os
 
 from declearn.communication import NetworkServerConfig
 from declearn.main import FederatedServer
 from declearn.main.config import FLOptimConfig, FLRunConfig
 from declearn.model.sklearn import SklearnSGDModel
+from declearn.test_utils import setup_server_argparse
+
 
 FILEDIR = os.path.dirname(os.path.abspath(__file__))
 
 
 def run_server(
     nb_clients: int,
-    sv_cert: str,
-    sv_priv: str,
+    certificate: str,
+    private_key: str,
+    protocol: str = "websockets",
+    host: str = "localhost",
+    port: int = 8765,
 ) -> None:
     """Instantiate and run the orchestrating server.
 
@@ -39,10 +43,16 @@ def run_server(
     ---------
     nb_clients: int
         Exact number of clients used in this example.
-    sv_cert: str
+    certificate: str
         Path to the (self-signed) SSL certificate to use.
-    sv_priv: str
+    private_key: str
         Path to the associated private-key to use.
+    protocol: str, default="websockets"
+        Name of the communication protocol to use.
+    host: str, default="localhost"
+        Hostname or IP address on which to serve.
+    port: int, default=8765
+        Communication port on which to serve.
     """
 
     # (1) Define a model
@@ -88,11 +98,11 @@ def run_server(
 
     # Here, use websockets protocol on localhost:8765, with SSL encryption.
     network = NetworkServerConfig(
-        protocol="websockets",
-        host="localhost",
-        port=8765,
-        certificate=sv_cert,
-        private_key=sv_priv,
+        protocol=protocol,
+        host=host,
+        port=port,
+        certificate=certificate,
+        private_key=private_key,
     )
 
     # (4) Instantiate and run a FederatedServer.
@@ -123,27 +133,17 @@ def run_server(
 # Called when the script is called directly (using `python server.py`).
 if __name__ == "__main__":
     # Parse command-line arguments.
-    parser = argparse.ArgumentParser()
+    parser = setup_server_argparse(
+        usage="Start a server to train a logistic regression model.",
+        default_cert=os.path.join(FILEDIR, "server-cert.pem"),
+        default_pkey=os.path.join(FILEDIR, "server-pkey.pem"),
+    )
     parser.add_argument(
         "nb_clients",
         type=int,
         help="number of clients",
         choices=[1, 2, 3, 4],
     )
-    parser.add_argument(
-        "--cert_path",
-        dest="cert_path",
-        type=str,
-        help="path to the server-side ssl certification",
-        default=os.path.join(FILEDIR, "server-cert.pem"),
-    )
-    parser.add_argument(
-        "--key_path",
-        dest="key_path",
-        type=str,
-        help="path to the server-side ssl private key",
-        default=os.path.join(FILEDIR, "server-pkey.pem"),
-    )
     args = parser.parse_args()
     # Run the server routine.
-    run_server(args.nb_clients, args.cert_path, args.key_path)
+    run_server(**args.__dict__)

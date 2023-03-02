@@ -17,12 +17,14 @@
 
 """Collection of utils for running tests and examples around declearn."""
 
+from ._argparse import setup_client_argparse, setup_server_argparse
 from ._assertions import (
     assert_dict_equal,
     assert_list_equal,
     assert_json_serializable_dict,
 )
 from ._gen_ssl import generate_ssl_certificates
+from ._imports import make_importable
 from ._multiprocess import run_as_processes
 from ._vectors import (
     FrameworkType,

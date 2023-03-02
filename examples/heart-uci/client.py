@@ -17,25 +17,30 @@
 
 """Script to run a federated client on the heart-disease example."""
 
-import argparse
 import os
-import sys
 
 import numpy as np
 import pandas as pd  # type: ignore
 from declearn.communication import NetworkClientConfig
 from declearn.dataset import InMemoryDataset
 from declearn.main import FederatedClient
+from declearn.test_utils import make_importable, setup_client_argparse
 
-FILEDIR = os.path.dirname(os.path.abspath(__file__))
+
+FILEDIR = os.path.dirname(__file__)
+
 # Perform local imports.
-sys.path.append(FILEDIR)
-from data import get_data  # pylint: disable=wrong-import-order
+# pylint: disable=wrong-import-order, wrong-import-position
+with make_importable(FILEDIR):
+    from data import get_data
+# pylint: enable=wrong-import-order, wrong-import-position
 
 
 def run_client(
     name: str,
     ca_cert: str,
+    protocol: str = "websockets",
+    serv_uri: str = "wss://localhost:8765",
 ) -> None:
     """Instantiate and run a given client.
 
@@ -46,6 +51,10 @@ def run_client(
     ca_cert: str
         Path to the certificate authority file that was used to
         sign the server's SSL certificate.
+    protocol: str, default="websockets"
+        Name of the communication protocol to use.
+    serv_uri: str, default="wss://localhost:8765"
+        URI of the server to which to connect.
     """
 
     # (1-2) Interface training and optional validation data.
@@ -73,8 +82,8 @@ def run_client(
 
     # Here, use websockets protocol on localhost:8765, with SSL encryption.
     network = NetworkClientConfig(
-        protocol="websockets",
-        server_uri="wss://localhost:8765",
+        protocol=protocol,
+        server_uri=serv_uri,
         name=name,
         certificate=ca_cert,
     )
@@ -96,20 +105,16 @@ def run_client(
 # Called when the script is called directly (using `python client.py`).
 if __name__ == "__main__":
     # Parse command-line arguments.
-    parser = argparse.ArgumentParser()
+    parser = setup_client_argparse(
+        usage="Start a client providing a UCI Heart-Disease Dataset shard.",
+        default_cert=os.path.join(FILEDIR, "ca-cert.pem"),
+    )
     parser.add_argument(
         "name",
         type=str,
         help="name of your client",
         choices=["cleveland", "hungarian", "switzerland", "va"],
     )
-    parser.add_argument(
-        "--cert_path",
-        dest="cert_path",
-        type=str,
-        help="path to the client-side ssl certification",
-        default=os.path.join(FILEDIR, "ca-cert.pem"),
-    )
     args = parser.parse_args()
     # Run the client routine.
-    run_client(args.name, args.cert_path)
+    run_client(args.name, args.certificate, args.protocol, args.uri)
