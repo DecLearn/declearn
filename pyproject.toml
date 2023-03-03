@@ -103,11 +103,14 @@ concurrency = ["multiprocessing"]
 parallel = true
 sigterm = true
 # define rules to select the code files that need covering
-source = ["declearn"]
+source_pkgs = ["declearn"]
 omit = [
-    ".*_pb2.*.py$",  # auto-generated rotobuf code files
-    "declearn/test_utils/*.py",  # dev-only test-oriented utils
+    "**/grpc/protobufs/*.py",  # auto-generated rotobuf code files
+    "**/test_utils/*.py",  # dev-only test-oriented utils
 ]
+
+[tool.coverage.paths]
+source = ["declearn", ".tox/**/declearn"]
 
 [tool.mypy]
 exclude = [".*_pb2.*.py$"]
