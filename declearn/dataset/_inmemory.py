@@ -210,6 +210,7 @@ class InMemoryDataset(Dataset):
                     "Cannot work with mixed data types:"
                     "ensure the `data` attribute has unique dtype"
                 )
+            return dtypes[0] 
         if isinstance(self.data, (pd.Series, np.ndarray,spmatrix)):
             return str(self.data.dtype)
         raise TypeError(

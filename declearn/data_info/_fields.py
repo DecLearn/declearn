@@ -87,7 +87,8 @@ class InputShapeField(DataInfoField):
         unique = list({len(shp) for shp in values})
         if len(unique) != 1:
             raise ValueError(
-                f"Cannot combine '{cls.field}': inputs have various lengths."
+                f"Cannot combine '{cls.field}': inputs gdon't have the same"
+                 "number of dimensions."
             )
         # Fill-in the unified shape: except all-None or (None or unique) value.
         # Note: batching dimension is set to None by default (no check).

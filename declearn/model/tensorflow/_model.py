@@ -132,16 +132,16 @@ class TensorflowModel(Model):
     def required_data_info(
         self,
     ) -> Set[str]:
-        return set() if self._model.built else {"input_shape"}
+        return set() if self._model.built else {"n_samples","n_features"}
 
     def initialize(
         self,
         data_info: Dict[str, Any],
     ) -> None:
         if not self._model.built:
-            data_info = aggregate_data_info([data_info], {"input_shape"})
+            data_info = aggregate_data_info([data_info], self.required_data_info)
             with tf.device(self._device):
-                self._model.build(data_info["input_shape"])
+                self._model.build((data_info[i] for i in self.required_data_info))
 
     def get_config(
         self,
