@@ -214,7 +214,6 @@ class NetworkServer(metaclass=ABCMeta):
             If the number of registered clients does not abide by the
             provided boundaries at the end of the process.
 
-
         Returns
         -------
         client_info: dict[str, dict[str, any]]
