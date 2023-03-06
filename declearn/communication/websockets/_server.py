@@ -167,5 +167,6 @@ class WebsocketsServer(NetworkServer):
         """Stop the websockets server and purge information about clients."""
         if self._server is not None:
             self._server.close()
+            await self._server.wait_closed()
             self._server = None
         await self.handler.purge()
