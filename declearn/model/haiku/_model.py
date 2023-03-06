@@ -96,7 +96,7 @@ class HaikuModel(Model):
         # initialize.
         params = self._transformed_model.init(
             next(RAND_SEQ),
-            jnp.zeros((1,*data_info["input_shape"][1:]),data_info["data_type"]) #CHECK
+            jnp.zeros((1,*data_info["input_shape"][1:]),*data_info["data_type"]) #CHECK
         )
         params = jax.device_put(params, self._device)
         flat_params = jax.tree_util.tree_flatten(params)
