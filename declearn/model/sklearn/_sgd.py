@@ -32,7 +32,6 @@ from declearn.model.sklearn._np_vec import NumpyVector
 from declearn.typing import Batch
 from declearn.utils import DevicePolicy, register_type
 
-
 __all__ = [
     "SklearnSGDModel",
 ]
@@ -123,8 +122,8 @@ class SklearnSGDModel(Model):
         self,
     ) -> Set[str]:
         if isinstance(self._model, SGDRegressor):
-            return {"n_features"}
-        return {"n_features", "classes"}
+            return {"single_input_shape"}
+        return {"single_input_shape", "classes"}
 
     def initialize(
         self,
@@ -137,11 +136,13 @@ class SklearnSGDModel(Model):
             self._model.classes_ = np.array(list(data_info["classes"]))
             n_classes = len(self._model.classes_)
             dim = n_classes if (n_classes > 2) else 1
-            self._model.coef_ = np.zeros((dim, data_info["n_features"]))
+            self._model.coef_ = np.zeros(
+                (dim, *data_info["single_input_shape"])
+                )
             self._model.intercept_ = np.zeros((dim,))
         # SGDRegressor case.
         else:
-            self._model.coef_ = np.zeros((data_info["n_features"],))
+            self._model.coef_ = np.zeros((*data_info["single_input_shape"],))
             self._model.intercept_ = np.zeros((1,))
         # Mark the SklearnSGDModel as initialized.
         self._initialized = True
@@ -238,7 +239,7 @@ class SklearnSGDModel(Model):
         data_info = None  # type: Optional[Dict[str, Any]]
         if self._initialized:
             data_info = {
-                "n_features": self._model.coef_.shape[-1],
+                "single_input_shape": (self._model.coef_.shape[-1],),
                 "classes": self._model.classes_.tolist() if is_clf else None,
             }
         return {

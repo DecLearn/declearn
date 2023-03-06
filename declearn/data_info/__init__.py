@@ -41,12 +41,12 @@ DataInfoField API tools:
 Field specifications:
 * ClassesField:
     Specification for the 'classes' field.
-* InputShapeField:
-    Specification for the 'input_shape' field.
-* NbFeaturesField:
-    Specification for the 'n_features' field.
+* SingleInputShapeField:
+    Specification for the 'single_input_shape' field.
 * NbSamplesField:
     Specification for the 'n_samples' field.
+* DataTypeField:
+    Specification for the 'data_type' field.
 """
 
 from ._base import (
@@ -57,7 +57,7 @@ from ._base import (
 )
 from ._fields import (
     ClassesField,
-    InputShapeField,
-    NbFeaturesField,
+    SingleInputShapeField,
     NbSamplesField,
+    DataTypeField
 )

@@ -210,8 +210,8 @@ class InMemoryDataset(Dataset):
                     "Cannot work with mixed data types:"
                     "ensure the `data` attribute has unique dtype"
                 )
-            return dtypes[0] 
-        if isinstance(self.data, (pd.Series, np.ndarray,spmatrix)):
+            return dtypes[0]
+        if isinstance(self.data, (pd.Series, np.ndarray, spmatrix)):
             return str(self.data.dtype)
         raise TypeError(
             f"Invalid 'data' attribute type: '{type(self.target)}'."
@@ -440,7 +440,7 @@ class InMemoryDataset(Dataset):
         """Return a DataSpecs object describing this dataset."""
         return DataSpecs(
             n_samples=self.feats.shape[0],
-            n_features=self.feats.shape[1],
+            single_input_shape=self.feats.shape[1:], # type: ignore
             classes=self.classes,
             data_type=self.data_type,
         )
@@ -620,4 +620,3 @@ class InMemoryDataset(Dataset):
             for idx in range(0, len(order), batch_size):
                 end = idx + batch_size
                 yield data[order[idx:end]]
-

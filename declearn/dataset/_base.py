@@ -19,7 +19,7 @@
 
 from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass
-from typing import Any, ClassVar, Iterator, Optional, Set
+from typing import Any, ClassVar, Iterator, Optional, Set, Tuple, Union, List
 
 from typing_extensions import Self  # future: import from typing (py >=3.11)
 
@@ -38,7 +38,7 @@ class DataSpecs:
     """Dataclass to wrap a dataset's metadata."""
 
     n_samples: int
-    n_features: int
+    single_input_shape: Union[Tuple[int],List[int]]
     classes: Optional[Set[Any]] = None
     data_type: Optional[str] = None
 
