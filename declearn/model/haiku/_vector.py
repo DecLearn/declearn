@@ -15,7 +15,7 @@ __all__ = [
 ]
 
 
-@register_vector_type(jnp.ndarray)
+@register_vector_type(Array)
 class JaxNumpyVector(Vector):
     """Vector subclass to store jax.numpy.ndarray coefficients.
 
@@ -48,7 +48,7 @@ class JaxNumpyVector(Vector):
     def _op_pow(self) -> Callable[[Any, Any], Any]:
         return jnp.power
 
-    def __init__(self, coefs: Dict[str, jnp.ndarray]) -> None:
+    def __init__(self, coefs: Dict[str, Array]) -> None:
         super().__init__(coefs)
 
     def __eq__(self, other: Any) -> bool:

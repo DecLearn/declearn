@@ -15,6 +15,8 @@ import joblib
 import numpy as np
 from haiku._src.typing import PRNGKey
 from jax import grad, jit, vmap
+from jax._src.lib import pytree
+from jaxtyping import Array
 
 from declearn.data_info import aggregate_data_info
 from declearn.model.api import Model
@@ -28,12 +30,10 @@ SEED = int(SystemRandom().random()*10e6)
 # alias for unpacked Batch structures, converted to jax objects
 # input, optional label, optional weights
 JaxBatch = Tuple[
-    List[jnp.ndarray], Optional[jnp.ndarray], Optional[jnp.ndarray]
+    List[Array], Optional[Array], Optional[Array]
 ]
 
-#TODO compare performance with list comprehension in or out the vmap for clipped grads
 #TODO add type checking of loss and model at __init__
-#TODO Allow for proper use of random seed at apply 
 
 @register_type(name="HaikuModel", group="Model")
 class HaikuModel(Model):
@@ -75,8 +75,8 @@ class HaikuModel(Model):
         policy = get_device_policy()
         self._device = select_device(gpu=policy.gpu, idx=policy.idx)
         # Create model state attributes
-        self._params_leaves = None
-        self._params_treedef = None
+        self._params_leaves = None # type:Optional[List[Array]]
+        self._params_treedef = None # type:Optional[pytree.PyTreeDef]
         # Initilaize the PRNG
         self._rng_gen = hk.PRNGSequence(seed)
         # Initialized util
@@ -104,7 +104,7 @@ class HaikuModel(Model):
         # initialize.
         params = self._transformed_model.init(
             next(self._rng_gen),
-            jnp.zeros((1,*data_info["input_shape"][1:]),*data_info["data_type"]) #CHECK
+            jnp.zeros((1,*data_info["input_shape"][1:]),*data_info["data_type"]) 
         )
         params = jax.device_put(params, self._device)
         flat_params = jax.tree_util.tree_flatten(params)
@@ -161,10 +161,10 @@ class HaikuModel(Model):
         self._params_leaves = [jax.device_put(v,self._device) for v in coefs_copy.values()]
 
     def _forward(self,
-                 params: Dict[str,jnp.ndarray],
-                 inputs: jnp.ndarray,
-                 y_true: Optional[jnp.ndarray] = None,
-                 s_wght: Optional[jnp.ndarray] = None,
+                 params: Dict[str,Array],
+                 inputs: Array,
+                 y_true: Optional[Array] = None,
+                 s_wght: Optional[Array] = None,
                  rng: Optional[PRNGKey] = None,
         ):
         """ #TODO Document order of arguments """
@@ -220,11 +220,11 @@ class HaikuModel(Model):
         return JaxNumpyVector(dict(enumerate(grads)))
 
     def _clipped_grad(self, 
-                params: Dict[str,jnp.ndarray],
+                params: Dict[str,Array],
                 rng: PRNGKey,
-                inputs: jnp.ndarray,
-                y_true: Optional[jnp.ndarray],
-                s_wght: Optional[jnp.ndarray],
+                inputs: Array,
+                y_true: Optional[Array],
+                s_wght: Optional[Array],
                 max_norm: Optional[float] = None,
         ):
         """Evaluate gradient for a single-example batch and clip its grad norm."""
@@ -239,8 +239,8 @@ class HaikuModel(Model):
     def _unpack_batch(batch: Batch) -> JaxBatch:
         """Unpack and enforce jnp.array conversion to an input data batch."""
         # fmt: off
-        def convert(data: Any) -> jnp.ndarray:
-            if (data is None) or isinstance(data, jnp.ndarray):
+        def convert(data: Any) -> Array:
+            if (data is None) or isinstance(data, Array):
                 return data
             elif isinstance(data, np.ndarray):
                 return jnp.array(data)  # pylint: disable=no-member
@@ -292,7 +292,7 @@ class HaikuModel(Model):
                 "creating labels from the base inputs."
             )
         params = jax.tree_util.tree_unflatten(self._params_treedef,self._params_leaves)
-        y_pred = self._transformed_model.apply(params,*inputs)
+        y_pred = np.array(self._transformed_model.apply(params,*inputs))
         y_true = np.array(y_true)
         s_wght = np.array(s_wght) if s_wght is not None else s_wght
         return y_true, y_pred, s_wght  # type: ignore

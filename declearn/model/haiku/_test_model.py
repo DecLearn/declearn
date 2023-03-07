@@ -37,6 +37,7 @@ import numpy as np
 from sklearn.datasets import make_regression
 from sklearn.linear_model import SGDRegressor
 from sklearn.metrics import r2_score
+from jaxtyping import Array
 
 from declearn.communication import NetworkClientConfig, NetworkServerConfig
 from declearn.dataset import InMemoryDataset
@@ -54,17 +55,13 @@ RAND_SEQ = hk.PRNGSequence(SEED)
 
 # pylint: disable protected-access
 
-# chnages made :
-# removed the list apstec of inputs
-# removed the weighting for now
-# changed the net output and the loss function (now the latter squeezes)
 
-def net_fn(x: jnp.ndarray) -> jnp.ndarray:
+def net_fn(x: Array) -> jnp.ndarray:
     """Simple linear regression model"""
     sgd = hk.Sequential([hk.Linear(1)])
     return sgd(x)
 
-def loss_fn(y_pred: jnp.ndarray,y_true: jnp.ndarray)-> jnp.ndarray:
+def loss_fn(y_pred: Array,y_true: Array)-> Array:
     """Per-sample mean square error loss"""
     y_pred = jnp.squeeze(y_pred)
     errors = (y_pred - y_true) if (y_true is not None) else y_pred
