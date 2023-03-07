@@ -57,7 +57,9 @@ from ._base import (
 )
 from ._fields import (
     ClassesField,
-    SingleInputShapeField,
+    DataTypeField,
+    InputShapeField,
+    NbFeaturesField,
     NbSamplesField,
-    DataTypeField
+    SingleInputShapeField,
 )

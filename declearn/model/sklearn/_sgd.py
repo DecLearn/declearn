@@ -136,9 +136,13 @@ class SklearnSGDModel(Model):
             self._model.classes_ = np.array(list(data_info["classes"]))
             n_classes = len(self._model.classes_)
             dim = n_classes if (n_classes > 2) else 1
-            self._model.coef_ = np.zeros(
-                (dim, *data_info["single_input_shape"])
+            if len(data_info["single_input_shape"]) != 1:
+                raise ValueError(
+                    "SklearnSGDModel currently only supports"
+                    "flat, one dimensional features"
                 )
+            feat = data_info["single_input_shape"][0]
+            self._model.coef_ = np.zeros((dim, feat))
             self._model.intercept_ = np.zeros((dim,))
         # SGDRegressor case.
         else:
@@ -380,7 +384,7 @@ class SklearnSGDModel(Model):
     ) -> Callable[[np.ndarray, np.ndarray], np.ndarray]:
         """Return a function to compute point-wise loss for a given batch."""
         # fmt: off
-        # Gather or instantiate a loss function from the wrapped model's specs.
+        # Gather / instantiate a loss function from the wrapped model's specs.
         if hasattr(self._model, "loss_function_"):
             loss_smp = self._model.loss_function_.py_loss
         else:
@@ -399,6 +403,7 @@ class SklearnSGDModel(Model):
         else:
             loss_fn = loss_1d
         return loss_fn
+        # fmt: on
 
     def update_device_policy(
         self,
