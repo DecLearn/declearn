@@ -34,7 +34,6 @@ import haiku as hk
 import jax
 import jax.numpy as jnp
 import numpy as np
-import optax
 from sklearn.datasets import make_regression
 from sklearn.linear_model import SGDRegressor
 from sklearn.metrics import r2_score
@@ -51,7 +50,7 @@ from declearn.utils import deserialize_object, get_logger, serialize_object
 
 SEED = 1
 R2_THRESHOLD = 0.999
-RAND_SEQ = hk.PRNGSequence(jax.random.PRNGKey(SEED))
+RAND_SEQ = hk.PRNGSequence(SEED)
 
 # pylint: disable protected-access
 
@@ -269,7 +268,7 @@ def test_declearn_baseline(
     for _ in range(rounds):
         # Run the training round.
         for batch in d_train.generate_batches(batch_size=b_size):
-            grads = model.compute_batch_gradients(batch,max_norm=200.0)
+            grads = model.compute_batch_gradients(batch,max_norm=200)
             opt.apply_gradients(model, grads)
     etime = datetime.now()
 

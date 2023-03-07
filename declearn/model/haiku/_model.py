@@ -5,14 +5,15 @@
 import io
 import warnings
 from copy import deepcopy
-from typing import (Any, Callable, Dict, Iterable, List, NamedTuple, Optional,
-                    Set, Tuple)
+from random import SystemRandom
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 
 import haiku as hk
 import jax
 import jax.numpy as jnp
 import joblib
 import numpy as np
+from haiku._src.typing import PRNGKey
 from jax import grad, jit, vmap
 
 from declearn.data_info import aggregate_data_info
@@ -22,7 +23,7 @@ from declearn.model.haiku.utils import select_device
 from declearn.typing import Batch
 from declearn.utils import DevicePolicy, get_device_policy, register_type
 
-RAND_SEQ = hk.PRNGSequence(jax.random.PRNGKey(42))
+SEED = int(SystemRandom().random()*10e6)
 
 # alias for unpacked Batch structures, converted to jax objects
 # input, optional label, optional weights
@@ -47,6 +48,7 @@ class HaikuModel(Model):
         self,
         model: Callable,
         loss: Callable,
+        seed: int = SEED,
     ) -> None:
         """
         Instantiate a Model interface wrapping a torch.nn.Module.
@@ -58,6 +60,10 @@ class HaikuModel(Model):
             returns `hk.Module(x)
         loss: Callable
             A user-defined loss function
+        seed: Optional int
+            Random seed used to initialize the haiku-wrapped Pseudo-random
+            number generator. If none is provided, use an integer between
+            0 and 10e6 provided by SystemRandom.
         """
         super().__init__(model)
         # Assign loss module.
@@ -65,13 +71,15 @@ class HaikuModel(Model):
         # Get pure functions from haiku transform
         self._model_fn = model
         self._transformed_model = hk.transform(model)
-        # Select the device where to place computations and move the model.
+        # Select the device where to place computations.
         policy = get_device_policy()
         self._device = select_device(gpu=policy.gpu, idx=policy.idx)
         # Create model state attributes
         self._params_leaves = None
         self._params_treedef = None
-        # initialized util 
+        # Initilaize the PRNG
+        self._rng_gen = hk.PRNGSequence(seed)
+        # Initialized util
         self._initialized = False
 
     @property
@@ -95,7 +103,7 @@ class HaikuModel(Model):
         data_info = aggregate_data_info([data_info], self.required_data_info)
         # initialize.
         params = self._transformed_model.init(
-            next(RAND_SEQ),
+            next(self._rng_gen),
             jnp.zeros((1,*data_info["input_shape"][1:]),*data_info["data_type"]) #CHECK
         )
         params = jax.device_put(params, self._device)
@@ -154,11 +162,12 @@ class HaikuModel(Model):
 
     def _forward(self,
                  params: Dict[str,jnp.ndarray],
-                 rng: Optional[hk.PRNGSequence],
                  inputs: jnp.ndarray,
-                 y_true: Optional[jnp.ndarray],
-                 s_wght: Optional[jnp.ndarray],
+                 y_true: Optional[jnp.ndarray] = None,
+                 s_wght: Optional[jnp.ndarray] = None,
+                 rng: Optional[PRNGKey] = None,
         ):
+        """ #TODO Document order of arguments """
         y_pred = self._transformed_model.apply(params,rng,inputs) #list-inputs : *inputs 
         loss = self._compute_loss(y_pred, y_true, s_wght)
         return loss.mean()
@@ -181,7 +190,7 @@ class HaikuModel(Model):
         params = jax.tree_util.tree_unflatten(self._params_treedef,self._params_leaves)
         grad_fn = jit(grad(self._forward))
         inputs, y_true, s_wght = self._unpack_batch(batch)
-        grads = grad_fn(params, None, inputs, y_true, s_wght)
+        grads = grad_fn(params, inputs, y_true, s_wght, next(self._rng_gen))
         # Flatten the gradients and return them in a Vector container
         flat_grad = jax.tree_util.tree_flatten(grads)
         grads = dict(enumerate(flat_grad[0]))
@@ -199,25 +208,27 @@ class HaikuModel(Model):
         # Get  flatten, per-sample, clipped gradients and aggregate them
         in_axes = [
             None,
+            None,
             0,
             None if y_true is None else 0,
             None if s_wght is None else 0,
             None,]
         grad_fn = jit(vmap(self._clipped_grad, in_axes))
-        clipped_grads = grad_fn(params, inputs, y_true, s_wght, max_norm)
+        clipped_grads = grad_fn(params, next(self._rng_gen),inputs, y_true, s_wght, max_norm)
         grads = [g.sum(0) for g in clipped_grads] 
         # Return them in a Vector container.
         return JaxNumpyVector(dict(enumerate(grads)))
-        
+
     def _clipped_grad(self, 
                 params: Dict[str,jnp.ndarray],
+                rng: PRNGKey,
                 inputs: jnp.ndarray,
                 y_true: Optional[jnp.ndarray],
                 s_wght: Optional[jnp.ndarray],
                 max_norm: Optional[float] = None,
         ):
         """Evaluate gradient for a single-example batch and clip its grad norm."""
-        grads = grad(self._forward)(params, None, inputs, y_true, s_wght)
+        grads = grad(self._forward)(params, inputs, y_true, s_wght, rng)
         nonempty_grads = jax.tree_util.tree_leaves(grads)
         grad_norm = [jnp.linalg.norm(g) for g in nonempty_grads] 
         divisor = [jnp.maximum(g / max_norm, 1.) for g in grad_norm]
