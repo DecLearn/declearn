@@ -2,13 +2,17 @@
 
 """JaxNumpyVector data arrays container."""
 
-from typing import Any, Callable, Dict, Optional, Union
+from typing import Any, Callable, Dict, Optional
 
+import jax
 import jax.numpy as jnp
+import numpy as np
 from jaxtyping import Array
 from typing_extensions import Self  # future: import from typing (Py>=3.11)
 
 from declearn.model.api._vector import Vector, register_vector_type
+from declearn.model.haiku.utils import select_device
+from declearn.utils import get_device_policy
 
 __all__ = [
     "JaxNumpyVector",
@@ -65,7 +69,7 @@ class JaxNumpyVector(Vector):
 
     def minimum(
         self,
-        other: Union["Vector", float, Array],
+        other: Any,
     ) -> Self:  # type: ignore
         if isinstance(other, JaxNumpyVector):
             return self._apply_operation(other, jnp.minimum)
@@ -73,7 +77,7 @@ class JaxNumpyVector(Vector):
 
     def maximum(
         self,
-        other: Union["Vector", float, Array],
+        other: Any,
     ) -> Self:  # type: ignore
         if isinstance(other, Vector):
             return self._apply_operation(other, jnp.maximum)
@@ -89,3 +93,18 @@ class JaxNumpyVector(Vector):
             for key, val in self.coefs.items()
         }
         return self.__class__(coefs)
+
+    def pack(
+        self,
+    ) -> Dict[str, Any]:
+        return {key: np.asarray(arr) for key, arr in self.coefs.items()}
+
+    @classmethod
+    def unpack(
+        cls,
+        data: Dict[str, Any],
+    ) -> Self:
+        policy = get_device_policy()
+        device = select_device(gpu=policy.gpu, idx=policy.idx)
+        coefs = {k: jax.device_put(arr, device) for k, arr in data.items()}
+        return cls(coefs)

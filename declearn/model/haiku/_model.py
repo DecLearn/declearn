@@ -92,7 +92,7 @@ class HaikuModel(Model):
     def required_data_info(
         self,
     ) -> Set[str]:
-        return set() if self._initialized else {"data_type", "input_shape"}
+        return set() if self._initialized else {"data_type", "features_shape"}
 
     def initialize(
         self,
@@ -104,12 +104,12 @@ class HaikuModel(Model):
         params = self._transformed_model.init(
             next(self._rng_gen),
             jnp.zeros(
-                (1, *data_info["input_shape"][1:]), *data_info["data_type"]
+                (1, *data_info["features_shape"]), data_info["data_type"]
             ),
         )
         params = jax.device_put(params, self._device)
         flat_params = tree_flatten(params)
-        self._params_treedef = flat_params[1]
+        self._params_treedef = deepcopy(flat_params[1])
         self._params_leaves = flat_params[0]
         self._initialized = True
 
