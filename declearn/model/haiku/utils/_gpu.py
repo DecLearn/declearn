@@ -17,9 +17,8 @@
 
 """Utils for GPU support and device management in tensorflow."""
 
-import functools
 import warnings
-from typing import Any, Callable, Optional, Union
+from typing import Optional
 
 import jax
 import jaxlib.xla_extension as xe
@@ -30,7 +29,7 @@ __all__ = ["select_device"]
 def select_device(
     gpu: bool,
     idx: Optional[int] = None,
-) -> xe.Device:
+) -> xe.Device:  # pylint: disable=c-extension-no-member
     """Select a backing device to use based on inputs and availability.
 
     Parameters

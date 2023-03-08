@@ -11,12 +11,12 @@ from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 import haiku as hk
 import jax
 import jax.numpy as jnp
-import joblib
+import joblib  # type: ignore
 import numpy as np
-from haiku._src.typing import PRNGKey
 from jax import grad, jit, vmap
-from jax._src.lib import pytree
-from jaxtyping import Array
+from jax.tree_util import tree_flatten, tree_unflatten
+from jaxtyping import Array  # future: import ArrayLike from jax.typing
+from typing_extensions import Self
 
 from declearn.data_info import aggregate_data_info
 from declearn.model.api import Model
@@ -25,15 +25,12 @@ from declearn.model.haiku.utils import select_device
 from declearn.typing import Batch
 from declearn.utils import DevicePolicy, get_device_policy, register_type
 
-SEED = int(SystemRandom().random()*10e6)
+SEED = int(SystemRandom().random() * 10e6)
 
 # alias for unpacked Batch structures, converted to jax objects
 # input, optional label, optional weights
-JaxBatch = Tuple[
-    List[Array], Optional[Array], Optional[Array]
-]
+JaxBatch = Tuple[List[Array], Optional[Array], Optional[Array]]
 
-#TODO add type checking of loss and model at __init__
 
 @register_type(name="HaikuModel", group="Model")
 class HaikuModel(Model):
@@ -43,6 +40,8 @@ class HaikuModel(Model):
     This `Model` subclass is designed to wrap a `hk.Module`
     instance to be learned federatively.
     """
+
+    # pylint: disable=too-many-instance-attributes
 
     def __init__(
         self,
@@ -75,8 +74,8 @@ class HaikuModel(Model):
         policy = get_device_policy()
         self._device = select_device(gpu=policy.gpu, idx=policy.idx)
         # Create model state attributes
-        self._params_leaves = None # type:Optional[List[Array]]
-        self._params_treedef = None # type:Optional[pytree.PyTreeDef]
+        self._params_leaves = None  # type: Optional[List[Array]]
+        self._params_treedef = None  # type: Optional[Any]
         # Initilaize the PRNG
         self._rng_gen = hk.PRNGSequence(seed)
         # Initialized util
@@ -93,7 +92,7 @@ class HaikuModel(Model):
     def required_data_info(
         self,
     ) -> Set[str]:
-        return set() if self._initialized else {"data_type","input_shape"}
+        return set() if self._initialized else {"data_type", "input_shape"}
 
     def initialize(
         self,
@@ -104,10 +103,12 @@ class HaikuModel(Model):
         # initialize.
         params = self._transformed_model.init(
             next(self._rng_gen),
-            jnp.zeros((1,*data_info["input_shape"][1:]),*data_info["data_type"]) 
+            jnp.zeros(
+                (1, *data_info["input_shape"][1:]), *data_info["data_type"]
+            ),
         )
         params = jax.device_put(params, self._device)
-        flat_params = jax.tree_util.tree_flatten(params)
+        flat_params = tree_flatten(params)
         self._params_treedef = flat_params[1]
         self._params_leaves = flat_params[0]
         self._initialized = True
@@ -116,7 +117,8 @@ class HaikuModel(Model):
         self,
     ) -> Dict[str, Any]:
         warnings.warn(
-            "Our custom Haiku serialization relies on pickle, which may be unsafe."
+            "Our custom Haiku serialization relies on pickle,"
+            "which may be unsafe."
         )
         with io.BytesIO() as buffer:
             joblib.dump(self._model_fn, buffer)
@@ -133,7 +135,7 @@ class HaikuModel(Model):
     def from_config(
         cls,
         config: Dict[str, Any],
-    ) -> "HaikuModel": 
+    ) -> Self:
         with io.BytesIO(bytes.fromhex(config["model"])) as buffer:
             model = joblib.load(buffer)
         with io.BytesIO(bytes.fromhex(config["loss"])) as buffer:
@@ -142,35 +144,50 @@ class HaikuModel(Model):
 
     def get_weights(
         self,
+        trainable: bool = False,
     ) -> JaxNumpyVector:
-        params = dict(enumerate(self._params_leaves))
+        params = {
+            str(k): v
+            for k, v in enumerate(self._params_leaves)  # type: ignore
+        }
         return JaxNumpyVector(params)
 
     def get_named_weights(self) -> Any:
-        """ Utility function to access the weights of the haiku model as a nested 
-        dict, using the appropriate naming"""
-        return jax.tree_util.tree_unflatten(self._params_treedef, self._params_leaves)
+        """Utility function to access the weights of the haiku model as a
+        nested dict, using the appropriate naming. Return type is any to
+        follow the typing of the `jax.tree_util.tree_unflatten`.
+        """
+        return tree_unflatten(
+            self._params_treedef, self._params_leaves  # type: ignore
+        )
 
     def set_weights(  # type: ignore  # Vector subtype specification
         self,
         weights: JaxNumpyVector,
+        trainable: bool = False,
     ) -> None:
         if not isinstance(weights, JaxNumpyVector):
             raise TypeError("HaikuModel requires JaxNumpyVector weights.")
         coefs_copy = deepcopy(weights.coefs)
-        self._params_leaves = [jax.device_put(v,self._device) for v in coefs_copy.values()]
+        self._params_leaves = [
+            jax.device_put(v, self._device) for v in coefs_copy.values()
+        ]
 
-    def _forward(self,
-                 params: Dict[str,Array],
-                 inputs: Array,
-                 y_true: Optional[Array] = None,
-                 s_wght: Optional[Array] = None,
-                 rng: Optional[PRNGKey] = None,
-        ):
-        """ #TODO Document order of arguments """
-        y_pred = self._transformed_model.apply(params,rng,inputs) #list-inputs : *inputs 
+    def _forward(
+        self,
+        params: Dict[str, Array],
+        inputs: Array,
+        y_true: Optional[Array] = None,
+        s_wght: Optional[Array] = None,
+        rng: Optional[Array] = None,
+    ) -> Array:
+        """#TODO Document order of arguments"""
+        # pylint: disable=too-many-arguments
+        y_pred = self._transformed_model.apply(
+            params, rng, inputs
+        )  # list-inputs : *inputs
         loss = self._compute_loss(y_pred, y_true, s_wght)
-        return loss.mean()
+        return jnp.mean(loss)
 
     def compute_batch_gradients(
         self,
@@ -187,13 +204,15 @@ class HaikuModel(Model):
     ) -> JaxNumpyVector:
         """Compute and return batch-averaged gradients of trainable weights."""
         # Unflatten the parameters, run forward to compute gradients.
-        params = jax.tree_util.tree_unflatten(self._params_treedef,self._params_leaves)
+        params = tree_unflatten(
+            self._params_treedef, self._params_leaves  # type: ignore
+        )
         grad_fn = jit(grad(self._forward))
         inputs, y_true, s_wght = self._unpack_batch(batch)
         grads = grad_fn(params, inputs, y_true, s_wght, next(self._rng_gen))
         # Flatten the gradients and return them in a Vector container
-        flat_grad = jax.tree_util.tree_flatten(grads)
-        grads = dict(enumerate(flat_grad[0]))
+        flat_grad = tree_flatten(grads)
+        grads = {str(k): v for k, v in enumerate(flat_grad[0])}
         return JaxNumpyVector(grads)
 
     def _compute_clipped_gradients(
@@ -201,9 +220,12 @@ class HaikuModel(Model):
         batch: Batch,
         max_norm: Optional[float] = None,
     ) -> JaxNumpyVector:
-        """Compute and return smpla-wise clipped, batch-averaged gradients of trainable weights."""
-        # Unflatten the parameters, run forward to compute per sample gradients.
-        params = jax.tree_util.tree_unflatten(self._params_treedef,self._params_leaves)
+        """Compute and return smpla-wise clipped, batch-averaged gradients
+        of trainable weights."""
+        # Unflatten parameters, run forward to compute per sample gradients.
+        params = tree_unflatten(
+            self._params_treedef, self._params_leaves  # type: ignore
+        )
         inputs, y_true, s_wght = self._unpack_batch(batch)
         # Get  flatten, per-sample, clipped gradients and aggregate them
         in_axes = [
@@ -212,40 +234,47 @@ class HaikuModel(Model):
             0,
             None if y_true is None else 0,
             None if s_wght is None else 0,
-            None,]
+            None,
+        ]
         grad_fn = jit(vmap(self._clipped_grad, in_axes))
-        clipped_grads = grad_fn(params, next(self._rng_gen),inputs, y_true, s_wght, max_norm)
-        grads = [g.sum(0) for g in clipped_grads] 
+        clipped_grads = grad_fn(
+            params, next(self._rng_gen), inputs, y_true, s_wght, max_norm
+        )
+        grads = [g.sum(0) for g in clipped_grads]
         # Return them in a Vector container.
-        return JaxNumpyVector(dict(enumerate(grads)))
+        return JaxNumpyVector({str(k): v for k, v in enumerate(grads)})
 
-    def _clipped_grad(self, 
-                params: Dict[str,Array],
-                rng: PRNGKey,
-                inputs: Array,
-                y_true: Optional[Array],
-                s_wght: Optional[Array],
-                max_norm: Optional[float] = None,
-        ):
-        """Evaluate gradient for a single-example batch and clip its grad norm."""
+    def _clipped_grad(
+        self,
+        params: Dict[str, Array],
+        rng: Array,
+        inputs: Array,
+        y_true: Optional[Array],
+        s_wght: Optional[Array],
+        max_norm: Optional[float] = None,
+    ) -> List[Array]:
+        """Evaluate gradient for a single-example batch and clip its
+        grad norm."""
+        # pylint: disable=too-many-arguments
         grads = grad(self._forward)(params, inputs, y_true, s_wght, rng)
         nonempty_grads = jax.tree_util.tree_leaves(grads)
-        grad_norm = [jnp.linalg.norm(g) for g in nonempty_grads] 
-        divisor = [jnp.maximum(g / max_norm, 1.) for g in grad_norm]
-        clipped_grads = [nonempty_grads[i] / divisor[i] for i in range(len(grad_norm))]
+        grad_norm = [jnp.linalg.norm(g) for g in nonempty_grads]
+        divisor = [jnp.maximum(g / max_norm, 1.0) for g in grad_norm]
+        clipped_grads = [
+            nonempty_grads[i] / divisor[i] for i in range(len(grad_norm))
+        ]
         return clipped_grads
-    
+
     @staticmethod
     def _unpack_batch(batch: Batch) -> JaxBatch:
         """Unpack and enforce jnp.array conversion to an input data batch."""
-        # fmt: off
-        def convert(data: Any) -> Array:
+
+        def convert(data: Any) -> Optional[Array]:
             if (data is None) or isinstance(data, Array):
                 return data
-            elif isinstance(data, np.ndarray):
+            if isinstance(data, np.ndarray):
                 return jnp.array(data)  # pylint: disable=no-member
-            else :
-                raise TypeError("HaikuModel requires numpy or jax.numpy data.")
+            raise TypeError("HaikuModel requires numpy or jax.numpy data.")
 
         # Ensure inputs is a list.
         inputs, y_true, s_wght = batch
@@ -255,10 +284,10 @@ class HaikuModel(Model):
 
     def _compute_loss(
         self,
-        y_pred: jnp.array,
-        y_true: Optional[jnp.array],
-        s_wght: Optional[jnp.array] = None,
-    ) -> jnp.array:
+        y_pred: Array,
+        y_true: Optional[Array],
+        s_wght: Optional[Array] = None,
+    ) -> Array:
         """Compute the average (opt. weighted) loss over given predictions."""
         loss = self._loss_fn(y_pred, y_true)
         if s_wght is not None:
@@ -273,7 +302,7 @@ class HaikuModel(Model):
             raise TypeError("HaikuModel requires JaxNumpyVector updates.")
         try:
             for key, upd in updates.coefs.items():
-                self._params_leaves[key] += upd
+                self._params_leaves[int(key)] += upd  # type: ignore
         except KeyError as exc:
             raise KeyError(
                 "Invalid model parameter name(s) found in updates."
@@ -291,10 +320,13 @@ class HaikuModel(Model):
                 "correct the inputs, or override this method to support "
                 "creating labels from the base inputs."
             )
-        params = jax.tree_util.tree_unflatten(self._params_treedef,self._params_leaves)
-        y_pred = np.array(self._transformed_model.apply(params,*inputs))
-        y_true = np.array(y_true)
-        s_wght = np.array(s_wght) if s_wght is not None else s_wght
+        params = tree_unflatten(
+            self._params_treedef, self._params_leaves  # type: ignore
+        )
+        y_pred = np.asarray(self._transformed_model.apply(params, *inputs))
+        y_true = np.asarray(y_true)  # type: ignore
+        if isinstance(s_wght, Array):
+            s_wght = np.asarray(s_wght)  # type: ignore
         return y_true, y_pred, s_wght  # type: ignore
 
     def loss_function(
@@ -316,4 +348,6 @@ class HaikuModel(Model):
         # When needed, re-create the model to force moving it to the device.
         if self._device is not device:
             self._device = device
-            self._params_leaves = jax.device_put(self._params_leaves, self._device)
+            self._params_leaves = jax.device_put(
+                self._params_leaves, self._device
+            )

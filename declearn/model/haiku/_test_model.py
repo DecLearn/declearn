@@ -61,11 +61,13 @@ def net_fn(x: Array) -> jnp.ndarray:
     sgd = hk.Sequential([hk.Linear(1)])
     return sgd(x)
 
-def loss_fn(y_pred: Array,y_true: Array)-> Array:
+
+def loss_fn(y_pred: Array, y_true: Array) -> Array:
     """Per-sample mean square error loss"""
     y_pred = jnp.squeeze(y_pred)
     errors = (y_pred - y_true) if (y_true is not None) else y_pred
-    return 0.5 * (errors)**2
+    return 0.5 * (errors) ** 2
+
 
 class ToyModel:
     """A simple toy regression model"""
@@ -199,9 +201,7 @@ def _server_routine(
         },
         server_opt=1.0,
     )
-    server = FederatedServer(
-        model, netwk, optim, metrics=["r2"]
-    ) 
+    server = FederatedServer(model, netwk, optim, metrics=["r2"])
     # Set up hyper-parameters and run training.
     config = FLRunConfig.from_params(
         rounds=rounds,
@@ -224,7 +224,6 @@ def _client_routine(
     )
     client = FederatedClient(netwk, train, valid)
     client.run()
-
 
 
 def test_declearn_baseline(
@@ -265,18 +264,18 @@ def test_declearn_baseline(
     for _ in range(rounds):
         # Run the training round.
         for batch in d_train.generate_batches(batch_size=b_size):
-            grads = model.compute_batch_gradients(batch,max_norm=200)
+            grads = model.compute_batch_gradients(batch, max_norm=200)
             opt.apply_gradients(model, grads)
     etime = datetime.now()
 
     # Check the final R2 value
-    
+
     params = jax.tree_util.tree_unflatten(
         model._params_treedef, model._params_leaves
     )
     y_pred = model._transformed_model.apply(params, next(RAND_SEQ), valid[0])
-    print(f'Final R2 score is {r2_score(valid[1], y_pred)}')
-    print(f'Training took {(etime-stime).total_seconds()} seconds')
+    print(f"Final R2 score is {r2_score(valid[1], y_pred)}")
+    print(f"Training took {(etime-stime).total_seconds()} seconds")
 
 
 if __name__ == "__main__":
