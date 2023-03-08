@@ -32,7 +32,6 @@ from declearn.model.sklearn._np_vec import NumpyVector
 from declearn.typing import Batch
 from declearn.utils import DevicePolicy, register_type
 
-
 __all__ = [
     "SklearnSGDModel",
 ]
@@ -123,8 +122,8 @@ class SklearnSGDModel(Model):
         self,
     ) -> Set[str]:
         if isinstance(self._model, SGDRegressor):
-            return {"n_features"}
-        return {"n_features", "classes"}
+            return {"features_shape"}
+        return {"features_shape", "classes"}
 
     def initialize(
         self,
@@ -132,16 +131,24 @@ class SklearnSGDModel(Model):
     ) -> None:
         # Check that required fields are available and of valid type.
         data_info = aggregate_data_info([data_info], self.required_data_info)
+        if not (
+            len(data_info["features_shape"]) == 1
+            and isinstance(data_info["features_shape"][0], int)
+        ):
+            raise ValueError(
+                "SklearnSGDModel requires fixed-size 1-d input features."
+            )
+        feat = data_info["features_shape"][0]
         # SGDClassifier case.
         if isinstance(self._model, SGDClassifier):
             self._model.classes_ = np.array(list(data_info["classes"]))
             n_classes = len(self._model.classes_)
             dim = n_classes if (n_classes > 2) else 1
-            self._model.coef_ = np.zeros((dim, data_info["n_features"]))
+            self._model.coef_ = np.zeros((dim, feat))
             self._model.intercept_ = np.zeros((dim,))
         # SGDRegressor case.
         else:
-            self._model.coef_ = np.zeros((data_info["n_features"],))
+            self._model.coef_ = np.zeros((feat,))
             self._model.intercept_ = np.zeros((1,))
         # Mark the SklearnSGDModel as initialized.
         self._initialized = True
@@ -238,7 +245,7 @@ class SklearnSGDModel(Model):
         data_info = None  # type: Optional[Dict[str, Any]]
         if self._initialized:
             data_info = {
-                "n_features": self._model.coef_.shape[-1],
+                "features_shape": (self._model.coef_.shape[-1],),
                 "classes": self._model.classes_.tolist() if is_clf else None,
             }
         return {
@@ -379,7 +386,7 @@ class SklearnSGDModel(Model):
     ) -> Callable[[np.ndarray, np.ndarray], np.ndarray]:
         """Return a function to compute point-wise loss for a given batch."""
         # fmt: off
-        # Gather or instantiate a loss function from the wrapped model's specs.
+        # Gather / instantiate a loss function from the wrapped model's specs.
         if hasattr(self._model, "loss_function_"):
             loss_smp = self._model.loss_function_.py_loss
         else:
@@ -398,6 +405,7 @@ class SklearnSGDModel(Model):
         else:
             loss_fn = loss_1d
         return loss_fn
+        # fmt: on
 
     def update_device_policy(
         self,

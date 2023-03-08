@@ -80,6 +80,7 @@ class InMemoryDataset(Dataset):
         s_wght: Optional[Union[DataArray, str]] = None,
         f_cols: Optional[Union[List[int], List[str]]] = None,
         expose_classes: bool = False,
+        expose_data_type: bool = False,
         seed: Optional[int] = None,
     ) -> None:
         """Instantiate the dataset interface.
@@ -116,6 +117,10 @@ class InMemoryDataset(Dataset):
             Whether the dataset should be used for classification, in
             which case the unique values of `target` are exposed under
             `self.classes` and exported by `self.get_data_specs()`).
+        expose_data_type: bool, default=False
+            Whether the dataset should expose the data type , in
+            which case check if the type is unique and exposed it
+            under `self.data_type` and exported by `self.get_data_specs()`).
         seed: int or None, default=None
             Optional seed for the random number generator based on which
             the dataset is (optionally) shuffled when generating batches.
@@ -158,6 +163,7 @@ class InMemoryDataset(Dataset):
         self.weights = s_wght
         # Assign the 'expose_classes' attribute.
         self.expose_classes = expose_classes
+        self.expose_data_type = expose_data_type
         # Assign a random number generator.
         self.seed = seed
         self._rng = np.random.default_rng(seed)
@@ -190,6 +196,25 @@ class InMemoryDataset(Dataset):
             return set(np.unique(self.target.tocsr().data).tolist())
         raise TypeError(
             f"Invalid 'target' attribute type: '{type(self.target)}'."
+        )
+
+    @property
+    def data_type(self) -> Optional[str]:
+        """Unique data type."""
+        if not self.expose_data_type:
+            return None
+        if isinstance(self.data, pd.DataFrame):
+            dtypes = [str(t) for t in list(self.data.dtypes)]
+            if len(dtypes) > 1:
+                raise ValueError(
+                    "Cannot work with mixed data types:"
+                    "ensure the `data` attribute has unique dtype"
+                )
+            return dtypes[0]
+        if isinstance(self.data, (pd.Series, np.ndarray, spmatrix)):
+            return str(self.data.dtype)
+        raise TypeError(
+            f"Invalid 'data' attribute type: '{type(self.target)}'."
         )
 
     @staticmethod
@@ -415,8 +440,9 @@ class InMemoryDataset(Dataset):
         """Return a DataSpecs object describing this dataset."""
         return DataSpecs(
             n_samples=self.feats.shape[0],
-            n_features=self.feats.shape[1],
+            features_shape=self.feats.shape[1:],
             classes=self.classes,
+            data_type=self.data_type,
         )
 
     def generate_batches(

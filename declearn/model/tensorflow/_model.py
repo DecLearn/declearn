@@ -26,17 +26,16 @@ from numpy.typing import ArrayLike
 from typing_extensions import Self  # future: import from typing (py >=3.11)
 
 from declearn.data_info import aggregate_data_info
+from declearn.model._utils import raise_on_stringsets_mismatch
 from declearn.model.api import Model
+from declearn.model.tensorflow._vector import TensorflowVector
 from declearn.model.tensorflow.utils import (
     build_keras_loss,
     move_layer_to_device,
     select_device,
 )
-from declearn.model.tensorflow._vector import TensorflowVector
-from declearn.model._utils import raise_on_stringsets_mismatch
 from declearn.typing import Batch
 from declearn.utils import DevicePolicy, get_device_policy, register_type
-
 
 __all__ = [
     "TensorflowModel",
@@ -63,7 +62,7 @@ class TensorflowModel(Model):
     * Note that if the global device-placement policy is updated, this will
       only be propagated to existing instances by manually calling their
       `update_device_policy` method.
-    * You may consult the device policy currently enforced by a TensorflowModel
+    * You may consult the device policy enforced by a TensorflowModel
       instance by accessing its `device_policy` property.
     """
 
@@ -132,16 +131,20 @@ class TensorflowModel(Model):
     def required_data_info(
         self,
     ) -> Set[str]:
-        return set() if self._model.built else {"input_shape"}
+        return set() if self._model.built else {"features_shape"}
 
     def initialize(
         self,
         data_info: Dict[str, Any],
     ) -> None:
         if not self._model.built:
-            data_info = aggregate_data_info([data_info], {"input_shape"})
+            # Type- and value-check the provided information.
+            data_info = aggregate_data_info(
+                [data_info], self.required_data_info
+            )
+            # Build the model using the specified input shape.
             with tf.device(self._device):
-                self._model.build(data_info["input_shape"])
+                self._model.build((None, *data_info["features_shape"]))
 
     def get_config(
         self,
@@ -255,6 +258,7 @@ class TensorflowModel(Model):
             return tf.convert_to_tensor(data)
         # Apply it to the the batched elements.
         return tf.nest.map_structure(convert, batch)
+        # fmt: on
 
     @tf.function  # optimize tensorflow runtime
     def _compute_batch_gradients(

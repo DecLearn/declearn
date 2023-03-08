@@ -17,9 +17,10 @@
 
 """Dataset abstraction API."""
 
+import warnings
 from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass
-from typing import Any, ClassVar, Iterator, Optional, Set
+from typing import Any, ClassVar, Iterator, List, Optional, Set, Tuple, Union
 
 from typing_extensions import Self  # future: import from typing (py >=3.11)
 
@@ -35,11 +36,46 @@ __all__ = [
 
 @dataclass
 class DataSpecs:
-    """Dataclass to wrap a dataset's metadata."""
+    """Dataclass to wrap a dataset's metadata.
+
+    Note
+    ----
+    The `n_features` attribute has been deprecated as of declearn 2.2
+    and will be removed in v2.4 and/or v3.0. It should therefore not
+    be used, whether at instantiation or afterwards. Please use the
+    `features_shape` attribute instead.
+    """
 
     n_samples: int
-    n_features: int
+    features_shape: Union[Tuple[Optional[int], ...], List[Optional[int]]]
     classes: Optional[Set[Any]] = None
+    data_type: Optional[str] = None
+    n_features: Optional[int] = None  # DEPRECATED as of declearn v2.2
+
+    def __post_init__(self):  # pragma: no cover
+        # future: remove this (declearn >=2.4)
+        if isinstance(self.features_shape, int):
+            self.features_shape = (self.features_shape,)
+            warnings.warn(
+                "'features_shape' has replaced now-deprecated 'n_features'"
+                " and should therefore be passed as a tuple or list.",
+                RuntimeWarning,
+                stacklevel=3,
+            )
+        if self.n_features is not None:
+            warnings.warn(
+                "'DataSepc.n_features' has been deprecated as of declearn v2.2"
+                " and should therefore no longer be used. It will be removed"
+                " in v2.4 and/or v3.0.",
+                RuntimeWarning,
+                stacklevel=3,
+            )
+            if self.features_shape[-1] != self.n_features:
+                raise ValueError(
+                    "Both 'features_shape' and deprecated 'n_features' were "
+                    "passed to 'DataSpecs.__init__', with incoherent values."
+                )
+        self.n_features = self.features_shape[-1]
 
 
 @create_types_registry

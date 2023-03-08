@@ -100,7 +100,7 @@ class SklearnSGDTestCase(ModelTestCase):
         """Suited toy binary-classification model."""
         skmod = (SGDClassifier if self.n_classes else SGDRegressor)()
         model = SklearnSGDModel(skmod)
-        data_info = {"n_features": 8}  # type: Dict[str, Any]
+        data_info = {"features_shape": (8,)}  # type: Dict[str, Any]
         if self.n_classes:
             data_info["classes"] = np.arange(self.n_classes)
         model.initialize(data_info)
