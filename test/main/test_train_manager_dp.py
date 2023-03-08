@@ -49,7 +49,7 @@ def build_dp_manager(n_batch: int) -> Any:  # DPTrainingManager with Mock attrs
     # Enable accessing the (emulated) number of samples in the mock dataset.
     base.train_data.get_data_specs.return_value = DataSpecs(
         n_samples=n_batch * BATCHES["batch_size"],
-        single_input_shape=(8,),  # unused
+        features_shape=(8,),  # unused
     )
     # Enable accessing the `modules` attribute of the mock Optimizer.
     base.optim.modules = []

@@ -17,8 +17,8 @@
 
 """DataInfoField subclasses specifying common 'data_info' metadata fields."""
 
-from typing import Any, ClassVar, List, Optional, Set, Tuple, Type
-from warnings import warn
+import warnings
+from typing import Any, List, Optional, Set, Tuple
 
 import numpy as np
 
@@ -26,10 +26,11 @@ from declearn.data_info._base import DataInfoField, register_data_info_field
 
 __all__ = [
     "ClassesField",
-    "SingleInputShapeField",
+    "DataTypeField",
+    "FeaturesShapeField",
     "NbSamplesField",
-    "NbFeaturesField",
-    "InputShapeField",
+    "InputShapeField",  # deprecated as of v2.2
+    "NbFeaturesField",  # deprecated as of v2.2
 ]
 
 
@@ -37,9 +38,9 @@ __all__ = [
 class ClassesField(DataInfoField):
     """Specifications for 'classes' data_info field."""
 
-    field: ClassVar[str] = "classes"
-    types: ClassVar[Tuple[Type, ...]] = (list, set, tuple, np.ndarray)
-    doc: ClassVar[str] = "Set of classification targets, combined by union."
+    field = "classes"
+    types = (list, set, tuple, np.ndarray)
+    doc = "Set of classification targets, combined by union."
 
     @classmethod
     def is_valid(
@@ -60,21 +61,55 @@ class ClassesField(DataInfoField):
 
 
 @register_data_info_field
-class SingleInputShapeField(DataInfoField):
-    """Specifications for 'single_input_shape' data_info field."""
+class DataTypeField(DataInfoField):
+    """Specifications for 'data_type' data_info field."""
 
-    field: ClassVar[str] = "single_input_shape"
-    types: ClassVar[Tuple[Type, ...]] = (tuple, list)
-    doc: ClassVar[
-        str
-    ] = "Input features'shape, excluding batch size, checked to be equal."
+    field = "data_type"
+    types = (str,)
+    doc = "Type of dataset(s)."
 
     @classmethod
     def is_valid(
         cls,
         value: Any,
     ) -> bool:
-        print("pause")
+        if isinstance(value, str):
+            try:
+                np.dtype(value)
+            except TypeError:
+                return False
+        return True
+
+    @classmethod
+    def combine(
+        cls,
+        *values: Any,
+    ) -> int:
+        unique = list(set(values))
+        if len(unique) != 1:
+            raise ValueError(
+                f"Cannot combine '{cls.field}': non-unique inputs."
+            )
+        if not cls.is_valid(unique[0]):
+            raise ValueError(
+                f"Cannot combine '{cls.field}': invalid unique value."
+            )
+        return unique[0]
+
+
+@register_data_info_field
+class FeaturesShapeField(DataInfoField):
+    """Specifications for 'features_shape' data_info field."""
+
+    field = "features_shape"
+    types = (tuple, list)
+    doc = "Input features' shape, excluding batch size, checked to be equal."
+
+    @classmethod
+    def is_valid(
+        cls,
+        value: Any,
+    ) -> bool:
         return isinstance(value, cls.types) and all(
             (isinstance(val, int) and val > 0) or (val is None)
             for val in value
@@ -84,26 +119,25 @@ class SingleInputShapeField(DataInfoField):
     def combine(
         cls,
         *values: Any,
-    ) -> Tuple[Optional[int]]:
+    ) -> Tuple[Optional[int], ...]:
         # Type check each and every input shape.
         super().combine(*values)
         # Check that all shapes are the same.
         unique_shapes = list({tuple(shp) for shp in values})
         if len(unique_shapes) != 1:
             raise ValueError(
-                f"Cannot combine '{cls.field}': inputs don't have the same"
-                "shape"
+                f"Cannot combine '{cls.field}': non-unique shapes."
             )
-        return unique_shapes[0]  # type: ignore
+        return unique_shapes[0]
 
 
 @register_data_info_field
 class NbSamplesField(DataInfoField):
     """Specifications for 'n_samples' data_info field."""
 
-    field: ClassVar[str] = "n_samples"
-    types: ClassVar[Tuple[Type, ...]] = (int,)
-    doc: ClassVar[str] = "Number of data samples, combined by summation."
+    field = "n_samples"
+    types = (int,)
+    doc = "Number of data samples, combined by summation."
 
     @classmethod
     def is_valid(
@@ -121,59 +155,16 @@ class NbSamplesField(DataInfoField):
         return sum(values)
 
 
-@register_data_info_field
-class DataTypeField(DataInfoField):
-    """Specifications for 'data_type' data_info field."""
-
-    field: ClassVar[str] = "data_type"
-    types: ClassVar[Tuple[Type, ...]] = (str,)
-    doc: ClassVar[str] = "Type of dataset(s)."
-
-    @classmethod
-    def is_valid(
-        cls,
-        value: Any,
-    ) -> bool:
-        out = isinstance(value, str)
-        if out:
-            try:
-                np.dtype(value)
-            except TypeError:
-                out = False
-        return out
-
-    @classmethod
-    def combine(
-        cls,
-        *values: Any,
-    ) -> int:
-        super().combine(*values)
-        unique = list(set(values))
-        if len(unique) != 1:
-            raise ValueError(
-                f"Cannot combine '{cls.field}': non-unique inputs."
-            )
-        if not cls.is_valid(unique[0]):
-            raise ValueError(
-                f"Cannot combine '{cls.field}': invalid unique value."
-            )
-        return unique[0]
+# Deprecated fields
 
 
 @register_data_info_field
 class InputShapeField(DataInfoField):
-    """Deprecated specifications for 'input_shape' data_info field."""
+    """Specifications for 'input_shape' data_info field."""
 
-    field: ClassVar[str] = "input_shape"
-    types: ClassVar[Tuple[Type, ...]] = (tuple, list)
-    doc: ClassVar[str] = "Input features' batched shape, checked to be equal."
-
-    def __init__(self) -> None:
-        warn(
-            f"{self.__class__.__name__} will be deprecated.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
+    field = "input_shape"
+    types = (tuple, list)
+    doc = "Input features' batched shape, checked to be equal."
 
     @classmethod
     def is_valid(
@@ -191,6 +182,14 @@ class InputShapeField(DataInfoField):
         cls,
         *values: Any,
     ) -> List[Optional[int]]:
+        # Warn about this class being deprecated.
+        warnings.warn(
+            "'NbFeaturesField has been deprecated as of declearn v2.2,"
+            " and will be removed in v2.4 and/or v3.0."
+            " Please use 'SingleInputShapeField' instead.",
+            DeprecationWarning,
+            stacklevel=3,
+        )
         # Type check each and every input shape.
         super().combine(*values)
         # Check that all shapes are of same length.
@@ -220,16 +219,9 @@ class InputShapeField(DataInfoField):
 class NbFeaturesField(DataInfoField):
     """Deprecated specifications for 'n_features' data_info field."""
 
-    field: ClassVar[str] = "n_features"
-    types: ClassVar[Tuple[Type, ...]] = (int,)
-    doc: ClassVar[str] = "Number of input features, checked to be equal."
-
-    def __init__(self) -> None:
-        warn(
-            f"{self.__class__.__name__} will be deprecated.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
+    field = "n_features"
+    types = (int,)
+    doc = "Number of input features, checked to be equal."
 
     @classmethod
     def is_valid(
@@ -243,6 +235,15 @@ class NbFeaturesField(DataInfoField):
         cls,
         *values: Any,
     ) -> int:
+        # Warn about this class being deprecated.
+        warnings.warn(
+            "'NbFeaturesField has been deprecated as of declearn v2.2,"
+            " and will be removed in v2.4 and/or v3.0."
+            " Please use 'SingleInputShapeField' instead.",
+            DeprecationWarning,
+            stacklevel=3,
+        )
+        # Perform the values' combination.
         unique = list(set(values))
         if len(unique) != 1:
             raise ValueError(

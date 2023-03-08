@@ -38,7 +38,7 @@ class DataSpecs:
     """Dataclass to wrap a dataset's metadata."""
 
     n_samples: int
-    single_input_shape: Union[Tuple[int], List[int]]
+    features_shape: Union[Tuple[Optional[int], ...], List[Optional[int]]]
     classes: Optional[Set[Any]] = None
     data_type: Optional[str] = None
 

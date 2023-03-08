@@ -122,8 +122,8 @@ class SklearnSGDModel(Model):
         self,
     ) -> Set[str]:
         if isinstance(self._model, SGDRegressor):
-            return {"single_input_shape"}
-        return {"single_input_shape", "classes"}
+            return {"features_shape"}
+        return {"features_shape", "classes"}
 
     def initialize(
         self,
@@ -131,22 +131,24 @@ class SklearnSGDModel(Model):
     ) -> None:
         # Check that required fields are available and of valid type.
         data_info = aggregate_data_info([data_info], self.required_data_info)
+        if not (
+            len(data_info["features_shape"]) == 1
+            and isinstance(data_info["features_shape"][0], int)
+        ):
+            raise ValueError(
+                "SklearnSGDModel requires fixed-size 1-d input features."
+            )
+        feat = data_info["features_shape"][0]
         # SGDClassifier case.
         if isinstance(self._model, SGDClassifier):
             self._model.classes_ = np.array(list(data_info["classes"]))
             n_classes = len(self._model.classes_)
             dim = n_classes if (n_classes > 2) else 1
-            if len(data_info["single_input_shape"]) != 1:
-                raise ValueError(
-                    "SklearnSGDModel currently only supports"
-                    "flat, one dimensional features"
-                )
-            feat = data_info["single_input_shape"][0]
             self._model.coef_ = np.zeros((dim, feat))
             self._model.intercept_ = np.zeros((dim,))
         # SGDRegressor case.
         else:
-            self._model.coef_ = np.zeros((*data_info["single_input_shape"],))
+            self._model.coef_ = np.zeros((feat,))
             self._model.intercept_ = np.zeros((1,))
         # Mark the SklearnSGDModel as initialized.
         self._initialized = True
@@ -243,7 +245,7 @@ class SklearnSGDModel(Model):
         data_info = None  # type: Optional[Dict[str, Any]]
         if self._initialized:
             data_info = {
-                "single_input_shape": (self._model.coef_.shape[-1],),
+                "features_shape": (self._model.coef_.shape[-1],),
                 "classes": self._model.classes_.tolist() if is_clf else None,
             }
         return {

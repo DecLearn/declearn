@@ -48,7 +48,7 @@ def fixture_checkpointer(tmp_path) -> Iterator[Checkpointer]:
 def fixture_model() -> SklearnSGDModel:
     """Crete a toy binary-classification model."""
     model = SklearnSGDModel(SGDClassifier())
-    model.initialize({"single_input_shape": (8,), "classes": np.arange(2)})
+    model.initialize({"features_shape": (8,), "classes": np.arange(2)})
     return model
 
 

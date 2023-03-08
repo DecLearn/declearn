@@ -440,7 +440,7 @@ class InMemoryDataset(Dataset):
         """Return a DataSpecs object describing this dataset."""
         return DataSpecs(
             n_samples=self.feats.shape[0],
-            single_input_shape=self.feats.shape[1:],  # type: ignore
+            features_shape=self.feats.shape[1:],
             classes=self.classes,
             data_type=self.data_type,
         )

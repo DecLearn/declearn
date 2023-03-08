@@ -285,7 +285,7 @@ def test_declearn_baseline(
     d_train = InMemoryDataset(train[0], train[1])
     # Set up a declearn model and a vanilla SGD optimizer.
     model = get_model("numpy")
-    model.initialize({"single_input_shape": (d_train.data.shape[1],)})
+    model.initialize({"features_shape": (d_train.data.shape[1],)})
     opt = Optimizer(lrate=lrate, regularizers=[("lasso", {"alpha": 0.1})])
     # Iteratively train the model, evaluating it after each epoch.
     for _ in range(rounds):
