@@ -35,7 +35,7 @@ __all__ = [
 ]
 
 
-FrameworkType = Literal["numpy", "tensorflow", "torch"]
+FrameworkType = Literal["numpy", "tensorflow", "torch", "jax"]
 
 
 def list_available_frameworks() -> List[FrameworkType]:
@@ -81,6 +81,9 @@ class GradientsTestCase:
         if self.framework == "torch":
             module = importlib.import_module("declearn.model.torch")
             return module.TorchVector
+        if self.framework == "jax":
+            module = importlib.import_module("declearn.model.haiku")
+            return module.JaxNumpyVector
         raise ValueError(f"Invalid framework '{self.framework}'")
 
     def convert(self, array: np.ndarray) -> ArrayLike:
@@ -94,12 +97,17 @@ class GradientsTestCase:
         if self.framework == "torch":
             torch = importlib.import_module("torch")
             return torch.from_numpy(array)
+        if self.framework == "jax":
+            jnp = importlib.import_module("jax.numpy")
+            return jnp.asarray(array)
         raise ValueError(f"Invalid framework '{self.framework}'")
 
     def to_numpy(self, array: ArrayLike) -> np.ndarray:
         """Convert an input framework-based structure to a numpy array."""
         if isinstance(array, np.ndarray):
             return array
+        if self.framework == "jax":
+            return np.asarray(array)
         if self.framework == "tensorflow":  # add support for IndexedSlices
             tensorflow = importlib.import_module("tensorflow")
             if isinstance(array, tensorflow.IndexedSlices):

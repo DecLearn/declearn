@@ -14,6 +14,7 @@ import jax.numpy as jnp
 import joblib  # type: ignore
 import numpy as np
 from jax import grad, jit, vmap
+from jax.config import config as jaxconfig
 from jax.tree_util import tree_flatten, tree_unflatten
 from jaxtyping import Array  # future: import ArrayLike from jax.typing
 from typing_extensions import Self
@@ -26,6 +27,9 @@ from declearn.typing import Batch
 from declearn.utils import DevicePolicy, get_device_policy, register_type
 
 SEED = int(SystemRandom().random() * 10e6)
+
+# Overriding float32 default in jax
+jaxconfig.update("jax_enable_x64", True)
 
 # alias for unpacked Batch structures, converted to jax objects
 # input, optional label, optional weights
@@ -80,7 +84,7 @@ class HaikuModel(Model):
         self._rng_gen = hk.PRNGSequence(seed)
         # Initialized and data_info utils
         self._initialized = False
-        self.data_info = {}
+        self.data_info = {}  # type: Dict[str,Any]
 
     @property
     def device_policy(
@@ -329,7 +333,9 @@ class HaikuModel(Model):
         params = tree_unflatten(
             self._params_treedef, self._params_leaves  # type: ignore
         )
-        y_pred = np.asarray(self._transformed_model.apply(params, next(self._rng_gen),inputs))
+        y_pred = np.asarray(
+            self._transformed_model.apply(params, next(self._rng_gen), inputs)
+        )
         y_true = np.asarray(y_true)  # type: ignore
         if isinstance(s_wght, Array):
             s_wght = np.asarray(s_wght)  # type: ignore

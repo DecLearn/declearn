@@ -7,6 +7,7 @@ from typing import Any, Callable, Dict, Optional
 import jax
 import jax.numpy as jnp
 import numpy as np
+from jax.config import config as jaxconfig
 from jaxtyping import Array
 from typing_extensions import Self  # future: import from typing (Py>=3.11)
 
@@ -17,6 +18,9 @@ from declearn.utils import get_device_policy
 __all__ = [
     "JaxNumpyVector",
 ]
+
+# Overriding float32 default in jax
+jaxconfig.update("jax_enable_x64", True)
 
 
 @register_vector_type(Array)
