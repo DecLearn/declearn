@@ -76,10 +76,11 @@ class HaikuModel(Model):
         # Create model state attributes
         self._params_leaves = None  # type: Optional[List[Array]]
         self._params_treedef = None  # type: Optional[Any]
-        # Initilaize the PRNG
+        # Initialize the PRNG
         self._rng_gen = hk.PRNGSequence(seed)
-        # Initialized util
+        # Initialized and data_info utils
         self._initialized = False
+        self.data_info = {}
 
     @property
     def device_policy(
@@ -100,6 +101,7 @@ class HaikuModel(Model):
     ) -> None:
         # Check that required fields are available and of valid type.
         data_info = aggregate_data_info([data_info], self.required_data_info)
+        self.data_info = deepcopy(data_info)
         # initialize.
         params = self._transformed_model.init(
             next(self._rng_gen),
@@ -129,6 +131,7 @@ class HaikuModel(Model):
         return {
             "model": model,
             "loss": loss,
+            "data_info": self.data_info,
         }
 
     @classmethod
@@ -140,7 +143,10 @@ class HaikuModel(Model):
             model = joblib.load(buffer)
         with io.BytesIO(bytes.fromhex(config["loss"])) as buffer:
             loss = joblib.load(buffer)
-        return cls(model=model, loss=loss)
+        model = cls(model=model, loss=loss)
+        if config.get("data_info"):
+            model.initialize(config["data_info"])
+        return model
 
     def get_weights(
         self,
@@ -323,7 +329,7 @@ class HaikuModel(Model):
         params = tree_unflatten(
             self._params_treedef, self._params_leaves  # type: ignore
         )
-        y_pred = np.asarray(self._transformed_model.apply(params, *inputs))
+        y_pred = np.asarray(self._transformed_model.apply(params, next(self._rng_gen),inputs))
         y_true = np.asarray(y_true)  # type: ignore
         if isinstance(s_wght, Array):
             s_wght = np.asarray(s_wght)  # type: ignore
