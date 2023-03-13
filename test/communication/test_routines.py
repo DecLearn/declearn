@@ -127,9 +127,11 @@ def run_test_routines(
     routines = [_build_server_func(*args)]
     routines.extend(_build_client_funcs(*args))
     # Run the former using isolated processes.
-    exitcodes = run_as_processes(*routines)
+    success, outputs = run_as_processes(*routines)
     # Assert that all processes terminated properly.
-    assert all(code == 0 for code in exitcodes)
+    assert success, "Routines failed:\n" + "\n".join(
+        [str(exc) for exc in outputs if isinstance(exc, RuntimeError)]
+    )
 
 
 def _build_server_func(

@@ -51,9 +51,12 @@ def run_demo(
             (run_client, (name, ca_cert)) for name in NAMES[:nb_clients]
         ]
         # Run routines in isolated processes. Raise if any failed.
-        exitcodes = run_as_processes(server, *clients)
-        if any(code != 0 for code in exitcodes):
-            raise RuntimeError("Something went wrong during the demo.")
+        success, outp = run_as_processes(server, *clients)
+        if not success:
+            raise RuntimeError(
+                "Something went wrong during the demo. Exceptions caught:\n"
+                "\n".join(str(e) for e in outp if isinstance(e, RuntimeError))
+            )
 
 
 if __name__ == "__main__":
