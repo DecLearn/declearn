@@ -46,7 +46,12 @@ import json
 import tempfile
 from typing import List, Tuple
 
+import haiku as hk
+import jax.numpy as jnp
 import numpy as np
+import tensorflow as tf  # type: ignore
+import torch
+from jaxtyping import Array
 from sklearn.datasets import make_regression  # type: ignore
 from sklearn.linear_model import SGDRegressor  # type: ignore
 
@@ -56,6 +61,7 @@ from declearn.main import FederatedClient, FederatedServer
 from declearn.main.config import FLOptimConfig, FLRunConfig
 from declearn.metrics import RSquared
 from declearn.model.api import Model
+from declearn.model.haiku import HaikuModel
 from declearn.model.sklearn import SklearnSGDModel
 from declearn.optimizer import Optimizer
 from declearn.test_utils import FrameworkType
@@ -81,6 +87,19 @@ R2_THRESHOLD = 0.999
 # pylint: disable=too-many-function-args
 
 
+def haiku_model_fn(batch: Array) -> jnp.ndarray:
+    """Functional verson of simple model."""
+    sgd = hk.Sequential([hk.Linear(1)])
+    return sgd(batch)
+
+
+def haiku_loss_fn(y_pred: Array, y_true: Array) -> Array:
+    """Per-sample mean square error loss"""
+    y_pred = jnp.squeeze(y_pred)
+    errors = (y_pred - y_true) if (y_true is not None) else y_pred
+    return 0.5 * (errors) ** 2
+
+
 def get_model(framework: FrameworkType) -> Model:
     """Set up a simple toy regression model."""
     set_device_policy(gpu=False)  # disable GPU use to avoid concurrence
@@ -101,6 +120,8 @@ def get_model(framework: FrameworkType) -> Model:
             torch.nn.Flatten(0),
         )
         model = TorchModel(torchmod, loss=torch.nn.MSELoss())
+    elif framework == "jax":
+        model = HaikuModel(haiku_model_fn, loss=haiku_loss_fn)
     else:
         raise ValueError("unrecognised framework")
     return model
