@@ -2,7 +2,7 @@
 
 """JaxNumpyVector data arrays container."""
 
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict, Optional, Set, Type
 
 import jax
 import jax.numpy as jnp
@@ -13,6 +13,7 @@ from typing_extensions import Self  # future: import from typing (Py>=3.11)
 
 from declearn.model.api._vector import Vector, register_vector_type
 from declearn.model.haiku.utils import select_device
+from declearn.model.sklearn import NumpyVector
 from declearn.utils import get_device_policy
 
 __all__ = [
@@ -34,6 +35,28 @@ class JaxNumpyVector(Vector):
     instances with similar coefficients specifications).
 
     Use `vector.coefs` to access the stored coefficients.
+
+    Notes
+    -----
+    - A `JaxnumpyVector` can be operated with either a:
+      - scalar value
+      - `NumpyVector` that has similar specifications
+      - `JaxNumpyVector` that has similar specifications
+      => resulting in a `JaxNumpyVector` in each of these cases.
+    - The wrapped arrays may be placed on any device (CPU, GPU...)
+      and may not be all on the same device.
+    - The device-placement of the initial `JaxNumpyVector`'s data
+      is preserved by operations, including with `NumpyVector`.
+    - When combining two `JaxNumpyVector`, the device-placement
+      of the left-most one is used; in that case, one ends up with
+      `gpu + cpu = gpu` while `cpu + gpu = cpu`. In both cases, a
+      warning will be emitted to prevent silent un-optimized copies.
+    - When deserializing a `JaxNumpyVector` (either by directly using
+      `JaxNumpyVector.unpack` or loading one from a JSON dump), loaded
+      arrays are placed based on the global device-placement policy
+      (accessed via `declearn.utils.get_device_policy`). Thus it may
+      have a different device-placement schema than at dump time but
+      should be coherent with that of `HaikuModel` computations.
     """
 
     @property
@@ -56,8 +79,27 @@ class JaxNumpyVector(Vector):
     def _op_pow(self) -> Callable[[Any, Any], Any]:
         return jnp.power
 
+    @property
+    def compatible_vector_types(self) -> Set[Type[Vector]]:
+        types = super().compatible_vector_types
+        return types.union({NumpyVector, JaxNumpyVector})
+
     def __init__(self, coefs: Dict[str, Array]) -> None:
         super().__init__(coefs)
+
+    def _apply_operation(
+        self,
+        other: Any,
+        func: Callable[[Any, Any], Any],
+    ) -> Self:
+        # Ensure 'other' JaxNumpyVector shares this vector's device placement.
+        if isinstance(other, JaxNumpyVector):
+            coefs = {
+                key: jax.device_put(val, self.coefs[key].device())
+                for key, val in other.coefs.items()
+            }
+            other = JaxNumpyVector(coefs)
+        return super()._apply_operation(other, func)
 
     def __eq__(self, other: Any) -> bool:
         valid = isinstance(other, JaxNumpyVector)
