@@ -194,15 +194,16 @@ def test_declearn_experiment(
             client = (_client_routine, (data[0], data[1], f"client_{i}"))
             p_client.append(client)
         # Run each and every process in parallel.
-        exitcodes = run_as_processes(p_server, *p_client)
-        if not all(code == 0 for code in exitcodes):
-            raise RuntimeError("The FL experiment failed.")
+        success, outputs = run_as_processes(p_server, *p_client)
+        assert success, "The FL process failed:\n" + "\n".join(
+            str(exc) for exc in outputs if isinstance(exc, RuntimeError)
+        )
         # Assert convergence
         with open(f"{folder}/metrics.json", encoding="utf-8") as file:
             r2_dict = json.load(file)
             last_r2_dict = r2_dict.get(max(r2_dict.keys()))
             final_r2 = float(last_r2_dict.get("r2"))
-            assert final_r2 > R2_THRESHOLD
+            assert final_r2 > R2_THRESHOLD, "The FL training did not converge"
 
 
 def _server_routine(

@@ -18,7 +18,9 @@
 """Utils to run concurrent routines parallelly using multiprocessing."""
 
 import multiprocessing as mp
-from typing import Any, Callable, List, Optional, Tuple
+import sys
+import traceback
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 
 __all__ = [
@@ -27,8 +29,9 @@ __all__ = [
 
 
 def run_as_processes(
-    *routines: Tuple[Callable[..., Any], Tuple[Any, ...]]
-) -> List[Optional[int]]:
+    *routines: Tuple[Callable[..., Any], Tuple[Any, ...]],
+    auto_stop: bool = True,
+) -> Tuple[bool, List[Union[Any, RuntimeError]]]:
     """Run coroutines concurrently within individual processes.
 
     Parameters
@@ -37,27 +40,88 @@ def run_as_processes(
         Sequence of routines that need running concurrently,
         each formatted as a 2-elements tuple containing the
         function to run, and a tuple storing its arguments.
+    auto_stop: bool, default=True
+        Whether to automatically interrupt all running routines
+        as soon as one failed and raised an exception. This can
+        avoid infinite runtime (e.g. if one awaits for a failed
+        routine to send information), but may also prevent some
+        exceptions from being caught due to the early stopping
+        of routines that would have failed later. Hence it may
+        be disabled in contexts where it is interesting to wait
+        for all routines to fail rather than assume that they
+        are co-dependent.
 
     Returns
     -------
-    exitcodes: list[int]
-        List of exitcodes of the processes wrapping the routines.
-        If all codes are zero, then all functions ran properly.
+    success: bool
+        Whether all routines were run without raising an exception.
+    outputs: list[RuntimeError or Any]
+        List of routine-wise output value or RuntimeError exception
+        that either wraps an actual exception and its traceback, or
+        indicates that the process was interrupted while running.
     """
-    # Wrap routines as individual processes and run them concurrently.
-    processes = [mp.Process(target=func, args=args) for func, args in routines]
+    # Wrap routines into named processes and set up exceptions catching.
+    queue = mp.Queue()  # type: ignore  # mp.Queue[Union[Any, RuntimeError]]
+    names = []  # type: List[str]
+    count = {}  # type: Dict[str, int]
+    processes = []  # type: List[mp.Process]
+    for func, args in routines:
+        name = func.__name__
+        nidx = count[name] = count.get(name, 0) + 1
+        name = f"{name}-{nidx}"
+        func = add_exception_catching(func, queue, name)
+        names.append(name)
+        processes.append(mp.Process(target=func, args=args, name=name))
+    # Run the processes concurrently.
     try:
         # Start all processes.
         for process in processes:
             process.start()
         # Regularly check for any failed process and exit if so.
         while any(process.is_alive() for process in processes):
-            if any(process.exitcode for process in processes):
+            if auto_stop and any(process.exitcode for process in processes):
                 break
-            processes[0].join(timeout=1)
+            # Wait for at most 1 second on the first alive process.
+            for process in processes:
+                if process.is_alive():
+                    process.join(timeout=1)
+                    break
     # Ensure not to leave processes running in the background.
     finally:
         for process in processes:
             process.terminate()
-    # Return processes' exitcodes.
-    return [process.exitcode for process in processes]
+    # Return success flag and re-ordered outputs and exceptions.
+    success = all(process.exitcode == 0 for process in processes)
+    dequeue = dict([queue.get_nowait() for _ in range(queue.qsize())])
+    int_err = RuntimeError("Process was interrupted while running.")
+    outputs = [dequeue.get(name, int_err) for name in names]
+    return success, outputs
+
+
+def add_exception_catching(
+    func: Callable[..., Any],
+    queue: mp.Queue,
+    name: Optional[str] = None,
+) -> Callable[..., Any]:
+    """Wrap a function to catch exceptions and put them in a Queue."""
+    if not name:
+        name = func.__name__
+
+    def wrapped(*args: Any, **kwargs: Any) -> Any:
+        """Call the wrapped function and catch exceptions or results."""
+        nonlocal name, queue
+
+        try:
+            result = func(*args, **kwargs)
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            err = RuntimeError(
+                f"Exception of type {type(exc)} occurred:\n"
+                "".join(traceback.format_exception(type(exc), exc, tb=None))
+            )  # future: `traceback.format_exception(exc)` (py >=3.10)
+            queue.put((name, err))
+            sys.exit(1)
+        else:
+            queue.put((name, result))
+            sys.exit(0)
+
+    return wrapped

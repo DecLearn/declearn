@@ -264,10 +264,11 @@ def run_test_case(
         (test_case.run_federated_client, (f"cli_{i}",))
         for i in range(nb_clients)
     ]
-    # Run them concurrently using multiprocessing.
-    exitcodes = run_as_processes(server, *clients)
-    # Verify that all processes ended without error nor interruption.
-    assert all(code == 0 for code in exitcodes)
+    # Run them concurrently using multiprocessing. Assert none failed.
+    success, outputs = run_as_processes(server, *clients)
+    assert success, "Test case failed:\n" + "\n".join(
+        str(exc) for exc in outputs if isinstance(exc, RuntimeError)
+    )
 
 
 @pytest.mark.parametrize("strategy", ["FedAvg", "FedAvgM", "Scaffold"])
