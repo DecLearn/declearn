@@ -27,8 +27,7 @@ Main class:
 This module also implements the following submodules, used by the former:
 * modules: gradients-alteration algorithms, implemented as plug-in modules.
 * regularizers: loss-regularization algorithms, implemented as plug-in modules.
-
- """
+"""
 
 
 from . import modules, regularizers

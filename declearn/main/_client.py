@@ -350,8 +350,6 @@ class FederatedClient:
 
         Parameters
         ----------
-        manager: TrainingManager
-            Instance wrapping the model, optimizer and data to use.
         message: TrainRequest
             Instructions from the server regarding the training round.
         """
@@ -376,8 +374,6 @@ class FederatedClient:
 
         Parameters
         ----------
-        manager: TrainingManager
-            Instance wrapping the model and data to use.
         message: EvaluationRequest
             Instructions from the server regarding the evaluation round.
         """

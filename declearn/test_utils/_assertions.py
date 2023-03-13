@@ -117,9 +117,9 @@ def assert_list_equal(
 
     Parameters
     ----------
-    dict_a: list
+    list_a: list
         First list to compare.
-    dict_b: list
+    list_b: list
         Second list to compare.
     strict_tuple: bool, default=False
         Whether to cast tuples to list prior to comparing them

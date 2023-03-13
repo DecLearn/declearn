@@ -134,7 +134,7 @@ class AutoDeviceModule(torch.nn.Module):
         Parameters
         ----------
         device: torch.device
-           Torch device where to place the wrapped module and computations.
+            Torch device where to place the wrapped module and computations.
         """
         self.device = device
         self.module.to(device)

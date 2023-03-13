@@ -337,7 +337,7 @@ class NetworkServer(metaclass=ABCMeta):
         clients: set[str] or None, default=None
             Optional subset of registered clients, messages from
             whom to wait for. If None, set to `self.client_names`.
-        hearbeat: int, default=1
+        heartbeat: int, default=1
             Delay (in seconds) between verifications that a client
             has sent their message.
         timeout: int or None, default=None

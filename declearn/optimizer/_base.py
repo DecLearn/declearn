@@ -440,7 +440,7 @@ class Optimizer:
 
         Parameters
         ----------
-        state: dict[str, any]
+        states: dict[str, any]
             Dict storing values to assign to this optimizer's inner
             state variables (i.e. those from its modules).
 

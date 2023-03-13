@@ -96,7 +96,7 @@ class Checkpointer:
 
         Parameters
         ----------
-        specs: Checkpointer or dict[str, any] or str
+        inputs: Checkpointer or dict[str, any] or str
             Checkpointer instance to type-check, or instantiation kwargs
             to parse into one. If a single string is passed, treat it as
             the `folder` argument, and use default other parameters.
