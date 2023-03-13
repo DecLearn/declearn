@@ -18,14 +18,12 @@
 """Unit tests for TensorflowModel."""
 
 import sys
-from functools import partial
 from typing import Any, List, Literal
 
 import numpy as np
 import pytest
 
 try:
-    import chex
     import haiku as hk
     import jax
     import jax.numpy as jnp
@@ -46,9 +44,6 @@ from model_testing import ModelTestCase, ModelTestSuite
 # Overriding float32 default in jax
 jaxconfig.update("jax_enable_x64", True)
 
-# TODO : Implement LSTM with unroll_net, check https://github.com/deepmind/dm-haiku/blob/main/examples/haiku_lstms.ipynb
-# TODO add chex variants
-
 
 def cnn_fn(x: Array) -> jnp.ndarray:
     """Simple CNN in a purely functional form"""
@@ -56,11 +51,11 @@ def cnn_fn(x: Array) -> jnp.ndarray:
         [
             hk.Conv2D(output_channels=32, kernel_shape=(7, 7), padding="SAME"),
             jax.nn.relu,
-            hk.MaxPool(window_shape=(8, 8), strides=(1, 1), padding="SAME"),
+            hk.MaxPool(window_shape=8, strides=8, padding="SAME"),
             hk.Conv2D(output_channels=16, kernel_shape=(5, 5), padding="SAME"),
             jax.nn.relu,
-            hk.AvgPool(window_shape=(8, 8), strides=(1, 1), padding="SAME"),
-            hk.Flatten(),
+            hk.AvgPool(window_shape=8, strides=8, padding="SAME"),
+            hk.Reshape((16,)),
             hk.Linear(1),
         ]
     )
@@ -133,10 +128,10 @@ class HaikuTestCase(ModelTestCase):
         elif self.kind == "CNN":
             inputs = rng.normal(size=(2, 32, 64, 64, 3))
         labels = rng.choice([0, 1], size=(2, 32)).astype(float)
-        inputs = jnp.asarray(inputs)
-        labels = jnp.asarray(labels)
+        inputs = jnp.asarray(inputs)  # type: ignore
+        labels = jnp.asarray(labels)  # type: ignore
         batches = list(zip(inputs, labels, [None, None]))
-        return batches
+        return batches  # type: ignore
 
     @property
     def model(self) -> HaikuModel:
@@ -179,7 +174,7 @@ if "gpu" in [d.platform for d in jax.devices()]:
 
 @pytest.mark.parametrize("device", DEVICES)
 @pytest.mark.parametrize("kind", ["MLP", "CNN"])
-class TestTensorflowModel(ModelTestSuite):
+class TestHaikuModel(ModelTestSuite):
     """Unit tests for declearn.model.tensorflow.TensorflowModel."""
 
     def test_proper_model_placement(
