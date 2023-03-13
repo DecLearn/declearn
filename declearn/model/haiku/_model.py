@@ -43,6 +43,22 @@ class HaikuModel(Model):
 
     This `Model` subclass is designed to wrap a `hk.Module`
     instance to be learned federatively.
+
+    Notes regarding device management (CPU, GPU, etc.):
+    * By default, jax places data and operations on GPU whenever one
+      is available.
+    * Our `HaikuModel` instead consults the device-placement policy (via
+      `declearn.utils.get_device_policy`), places the wrapped haiku model's
+      weights there, and runs computations defined under public methods on
+      that device.
+    * Note that there is no guarantee that calling a private method directly
+      will result in abiding by that policy. Hence, be careful when writing
+      custom code, and use your own context managers to get guarantees.
+    * Note that if the global device-placement policy is updated, this will
+      only be propagated to existing instances by manually calling their
+      `update_device_policy` method.
+    * You may consult the device policy enforced by a HaikuModel
+      instance by accessing its `device_policy` property.
     """
 
     # pylint: disable=too-many-instance-attributes
@@ -62,7 +78,7 @@ class HaikuModel(Model):
             A function encapsulating a hk.Module such that `model(x)`
             returns `hk.Module(x)
         loss: Callable
-            A user-defined loss function
+            A user-defined, per-sample loss function
         seed: Optional int
             Random seed used to initialize the haiku-wrapped Pseudo-random
             number generator. If none is provided, use an integer between
@@ -186,12 +202,34 @@ class HaikuModel(Model):
     def _forward(
         self,
         params: Dict[str, Array],
+        rng: Optional[Array],
         inputs: Array,
         y_true: Optional[Array] = None,
         s_wght: Optional[Array] = None,
-        rng: Optional[Array] = None,
     ) -> Array:
-        """#TODO Document order of arguments"""
+        """The forward pass chaining the model to the loss as a pure function.
+
+        Parameters
+        -------
+        params : dict[str, Array]
+            The model parameters, after flattening using built-in jax.tree_util
+        rng : Array or None
+            A jax seudo-random number generator (PRNG) key
+        inputs : Array
+            Input data
+        y_true: Array or None
+            Ground-truth labels, to which predictions are aligned
+            and should be compared for loss (and other evaluation
+            metrics) computation.
+        s_wght: Array or None
+            Optional sample weights to be used to weight metrics.
+
+        Returns
+        -------
+        loss: Array
+            The mean loss over the input data provided
+
+        """
         # pylint: disable=too-many-arguments
         y_pred = self._transformed_model.apply(
             params, rng, inputs
@@ -219,7 +257,7 @@ class HaikuModel(Model):
         )
         grad_fn = jit(grad(self._forward))
         inputs, y_true, s_wght = self._unpack_batch(batch)
-        grads = grad_fn(params, inputs, y_true, s_wght, next(self._rng_gen))
+        grads = grad_fn(params, next(self._rng_gen), inputs, y_true, s_wght)
         # Flatten the gradients and return them in a Vector container
         flat_grad = tree_flatten(grads)
         grads = {str(k): v for k, v in enumerate(flat_grad[0])}
@@ -264,7 +302,32 @@ class HaikuModel(Model):
         max_norm: Optional[float] = None,
     ) -> List[Array]:
         """Evaluate gradient for a single-example batch and clip its
-        grad norm."""
+        grad norm.
+
+        Parameters
+        -------
+        params : dict[str, Array]
+            The model parameters, after flattening using built-in jax.tree_util
+        rng : Array or None
+            A jax seudo-random number generator (PRNG) key
+        inputs : Array
+            Input data
+        y_true: Array or None
+            Ground-truth labels, to which predictions are aligned
+            and should be compared for loss (and other evaluation
+            metrics) computation.
+        s_wght: Array or None
+            Optional sample weights to be used to weight metrics.
+        max_norm: float or None, default=None
+            Maximum L2-norm of sample-wise gradients, beyond which to
+            clip them before computing the batch-average gradients.
+
+        Returns
+        -------
+        clipped_grads: list(Array)
+            The gradients clipped at max_norm
+
+        """
         # pylint: disable=too-many-arguments
         grads = grad(self._forward)(params, inputs, y_true, s_wght, rng)
         nonempty_grads = jax.tree_util.tree_leaves(grads)
