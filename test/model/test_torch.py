@@ -176,8 +176,11 @@ class TorchTestCase(ModelTestCase):
 def fixture_test_case(
     kind: Literal["MLP", "MLP-tune", "RNN", "CNN"],
     device: Literal["CPU", "GPU"],
+    cpu_only: bool,
 ) -> TorchTestCase:
     """Fixture to access a TorchTestCase."""
+    if cpu_only and device == "GPU":
+        pytest.skip(reason="--cpu-only mode")
     return TorchTestCase(kind, device)
 
 
