@@ -55,6 +55,8 @@ all = [
     "tensorflow ~= 2.5",
     "torch ~= 1.10",
     "websockets ~= 10.1",
+    "jax==0.4.4",
+    "dm-haiku==0.0.9",
 ]
 # thematically grouped dependencies (part of "all")
 dp = [
@@ -70,6 +72,10 @@ tensorflow = [
 torch = [
     "functorch",  # note: functorch is internalized by torch 2.0
     "torch ~= 1.10",
+]
+haiku = [
+    "jax==0.4.4",
+    "dm-haiku==0.0.9",
 ]
 websockets = [
     "websockets ~= 10.1",
@@ -89,6 +95,8 @@ tests = [
     "pytest >= 6.1",
     "pytest-asyncio",
     "pytest-cov >= 4.0",
+    "jax==0.4.4",
+    "dm-haiku==0.0.9",
 ]
 
 [project.urls]

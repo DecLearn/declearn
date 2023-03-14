@@ -13,10 +13,10 @@ import jax
 import jax.numpy as jnp
 import joblib  # type: ignore
 import numpy as np
-from jax import grad, jit, vmap
+from jax import grad, jit, vmap, Array
 from jax.config import config as jaxconfig
 from jax.tree_util import tree_flatten, tree_unflatten
-from jaxtyping import Array  # future: import ArrayLike from jax.typing
+from jax.typing import ArrayLike
 from typing_extensions import Self
 
 from declearn.data_info import aggregate_data_info
@@ -33,7 +33,7 @@ jaxconfig.update("jax_enable_x64", True)
 
 # alias for unpacked Batch structures, converted to jax objects
 # input, optional label, optional weights
-JaxBatch = Tuple[List[Array], Optional[Array], Optional[Array]]
+JaxBatch = Tuple[List[ArrayLike], Optional[ArrayLike], Optional[ArrayLike]]
 
 
 @register_type(name="HaikuModel", group="Model")
@@ -94,7 +94,7 @@ class HaikuModel(Model):
         policy = get_device_policy()
         self._device = select_device(gpu=policy.gpu, idx=policy.idx)
         # Create model state attributes
-        self._params_leaves = None  # type: Optional[List[Array]]
+        self._params_leaves = None  # type: Optional[List[ArrayLike]]
         self._params_treedef = None  # type: Optional[Any]
         # Initialize the PRNG
         self._rng_gen = hk.PRNGSequence(seed)
@@ -201,32 +201,32 @@ class HaikuModel(Model):
 
     def _forward(
         self,
-        params: Dict[str, Array],
-        rng: Optional[Array],
-        inputs: Array,
-        y_true: Optional[Array] = None,
-        s_wght: Optional[Array] = None,
-    ) -> Array:
+        params: Dict[str, ArrayLike],
+        rng: Optional[ArrayLike],
+        inputs: ArrayLike,
+        y_true: Optional[ArrayLike] = None,
+        s_wght: Optional[ArrayLike] = None,
+    ) -> ArrayLike:
         """The forward pass chaining the model to the loss as a pure function.
 
         Parameters
         -------
-        params : dict[str, Array]
+        params : dict[str, ArrayLike]
             The model parameters, after flattening using built-in jax.tree_util
-        rng : Array or None
+        rng : ArrayLike or None
             A jax seudo-random number generator (PRNG) key
-        inputs : Array
+        inputs : ArrayLike
             Input data
-        y_true: Array or None
+        y_true: ArrayLike or None
             Ground-truth labels, to which predictions are aligned
             and should be compared for loss (and other evaluation
             metrics) computation.
-        s_wght: Array or None
+        s_wght: ArrayLike or None
             Optional sample weights to be used to weight metrics.
 
         Returns
         -------
-        loss: Array
+        loss: ArrayLike
             The mean loss over the input data provided
 
         """
@@ -294,29 +294,29 @@ class HaikuModel(Model):
 
     def _clipped_grad(
         self,
-        params: Dict[str, Array],
-        rng: Array,
-        inputs: Array,
-        y_true: Optional[Array],
-        s_wght: Optional[Array],
+        params: Dict[str, ArrayLike],
+        rng: ArrayLike,
+        inputs: ArrayLike,
+        y_true: Optional[ArrayLike],
+        s_wght: Optional[ArrayLike],
         max_norm: Optional[float] = None,
-    ) -> List[Array]:
+    ) -> List[ArrayLike]:
         """Evaluate gradient for a single-example batch and clip its
         grad norm.
 
         Parameters
         -------
-        params : dict[str, Array]
+        params : dict[str, ArrayLike]
             The model parameters, after flattening using built-in jax.tree_util
-        rng : Array or None
+        rng : ArrayLike or None
             A jax seudo-random number generator (PRNG) key
-        inputs : Array
+        inputs : ArrayLike
             Input data
-        y_true: Array or None
+        y_true: ArrayLike or None
             Ground-truth labels, to which predictions are aligned
             and should be compared for loss (and other evaluation
             metrics) computation.
-        s_wght: Array or None
+        s_wght: ArrayLike or None
             Optional sample weights to be used to weight metrics.
         max_norm: float or None, default=None
             Maximum L2-norm of sample-wise gradients, beyond which to
@@ -324,12 +324,12 @@ class HaikuModel(Model):
 
         Returns
         -------
-        clipped_grads: list(Array)
+        clipped_grads: list(ArrayLike)
             The gradients clipped at max_norm
 
         """
         # pylint: disable=too-many-arguments
-        grads = grad(self._forward)(params, inputs, y_true, s_wght, rng)
+        grads = grad(self._forward)(params, rng, inputs, y_true, s_wght)
         nonempty_grads = jax.tree_util.tree_leaves(grads)
         grad_norm = [jnp.linalg.norm(g) for g in nonempty_grads]
         divisor = [jnp.maximum(g / max_norm, 1.0) for g in grad_norm]
@@ -342,7 +342,7 @@ class HaikuModel(Model):
     def _unpack_batch(batch: Batch) -> JaxBatch:
         """Unpack and enforce jnp.array conversion to an input data batch."""
 
-        def convert(data: Any) -> Optional[Array]:
+        def convert(data: Any) -> Optional[ArrayLike]:
             if (data is None) or isinstance(data, Array):
                 return data
             if isinstance(data, np.ndarray):
@@ -357,10 +357,10 @@ class HaikuModel(Model):
 
     def _compute_loss(
         self,
-        y_pred: Array,
-        y_true: Optional[Array],
-        s_wght: Optional[Array] = None,
-    ) -> Array:
+        y_pred: ArrayLike,
+        y_true: Optional[ArrayLike],
+        s_wght: Optional[ArrayLike] = None,
+    ) -> ArrayLike:
         """Compute the average (opt. weighted) loss over given predictions."""
         loss = self._loss_fn(y_pred, y_true)
         if s_wght is not None:

@@ -27,8 +27,9 @@ try:
     import haiku as hk
     import jax
     import jax.numpy as jnp
+    from jax import Array
     from jax.config import config as jaxconfig
-    from jaxtyping import Array
+    from jax.typing import ArrayLike
 except ModuleNotFoundError:
     pytest.skip("jax and/or haiku are unavailable", allow_module_level=True)
 
@@ -45,7 +46,7 @@ from model_testing import ModelTestCase, ModelTestSuite
 jaxconfig.update("jax_enable_x64", True)
 
 
-def cnn_fn(x: Array) -> jnp.ndarray:
+def cnn_fn(x: ArrayLike) -> Array:
     """Simple CNN in a purely functional form"""
     model = hk.Sequential(
         [
@@ -62,13 +63,13 @@ def cnn_fn(x: Array) -> jnp.ndarray:
     return model(x)
 
 
-def mlp_fn(x: Array) -> jnp.ndarray:
+def mlp_fn(x: Array) -> Array:
     """Simple MLP in a purely functional form"""
     model = hk.nets.MLP([32, 16, 1])
     return model(x)
 
 
-def loss_fn(y_pred: Array, y_true: Array) -> Array:
+def loss_fn(y_pred: ArrayLike, y_true: ArrayLike) -> Array:
     """Per-sample binary cross entropy"""
     y_pred = jax.nn.sigmoid(y_pred)
     y_pred = jnp.squeeze(y_pred)

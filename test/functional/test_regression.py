@@ -51,7 +51,7 @@ import jax.numpy as jnp
 import numpy as np
 import tensorflow as tf  # type: ignore
 import torch
-from jaxtyping import Array
+from jax.typing import ArrayLike
 from sklearn.datasets import make_regression  # type: ignore
 from sklearn.linear_model import SGDRegressor  # type: ignore
 
@@ -87,13 +87,13 @@ R2_THRESHOLD = 0.999
 # pylint: disable=too-many-function-args
 
 
-def haiku_model_fn(batch: Array) -> jnp.ndarray:
+def haiku_model_fn(batch: ArrayLike) -> jnp.ndarray:
     """Functional verson of simple model."""
     sgd = hk.Sequential([hk.Linear(1)])
     return sgd(batch)
 
 
-def haiku_loss_fn(y_pred: Array, y_true: Array) -> Array:
+def haiku_loss_fn(y_pred: ArrayLike, y_true: ArrayLike) -> ArrayLike:
     """Per-sample mean square error loss"""
     y_pred = jnp.squeeze(y_pred)
     errors = (y_pred - y_true) if (y_true is not None) else y_pred

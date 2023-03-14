@@ -7,8 +7,9 @@ from typing import Any, Callable, Dict, Optional, Set, Type
 import jax
 import jax.numpy as jnp
 import numpy as np
+from jax import Array
 from jax.config import config as jaxconfig
-from jaxtyping import Array
+from jax.typing import ArrayLike
 from typing_extensions import Self  # future: import from typing (Py>=3.11)
 
 from declearn.model.api._vector import Vector, register_vector_type
@@ -84,7 +85,7 @@ class JaxNumpyVector(Vector):
         types = super().compatible_vector_types
         return types.union({NumpyVector, JaxNumpyVector})
 
-    def __init__(self, coefs: Dict[str, Array]) -> None:
+    def __init__(self, coefs: Dict[str, ArrayLike]) -> None:
         super().__init__(coefs)
 
     def _apply_operation(
