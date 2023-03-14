@@ -46,12 +46,7 @@ import json
 import tempfile
 from typing import List, Tuple
 
-import haiku as hk
-import jax.numpy as jnp
 import numpy as np
-import tensorflow as tf  # type: ignore
-import torch
-from jax.typing import ArrayLike
 from sklearn.datasets import make_regression  # type: ignore
 from sklearn.linear_model import SGDRegressor  # type: ignore
 
@@ -61,7 +56,6 @@ from declearn.main import FederatedClient, FederatedServer
 from declearn.main.config import FLOptimConfig, FLRunConfig
 from declearn.metrics import RSquared
 from declearn.model.api import Model
-from declearn.model.haiku import HaikuModel
 from declearn.model.sklearn import SklearnSGDModel
 from declearn.optimizer import Optimizer
 from declearn.test_utils import FrameworkType
@@ -81,23 +75,48 @@ except ModuleNotFoundError:
     pass
 
 
+# HACK Select the subset of tests to run, based on framework availability.
+# pylint: disable=ungrouped-imports
+# tensorflow imports
+try:
+    import tensorflow as tf  # type: ignore
+except ModuleNotFoundError:
+    pass
+else:
+    from declearn.model.tensorflow import TensorflowModel
+# torch imports
+try:
+    import torch
+except ModuleNotFoundError:
+    pass
+else:
+    from declearn.model.torch import TorchModel
+# haiku imports
+try:
+    import haiku as hk
+    import jax.numpy as jnp
+    from jax.typing import ArrayLike
+except ModuleNotFoundError:
+    pass
+else:
+    from declearn.model.haiku import HaikuModel
+
+    def haiku_model_fn(batch: ArrayLike) -> jnp.ndarray:
+        """Functional verson of simple model."""
+        sgd = hk.Sequential([hk.Linear(1)])
+        return sgd(batch)
+
+    def haiku_loss_fn(y_pred: ArrayLike, y_true: ArrayLike) -> ArrayLike:
+        """Per-sample mean square error loss"""
+        y_pred = jnp.squeeze(y_pred)
+        errors = (y_pred - y_true) if (y_true is not None) else y_pred
+        return 0.5 * (errors) ** 2
+
+
 SEED = 0
 R2_THRESHOLD = 0.999
 
 # pylint: disable=too-many-function-args
-
-
-def haiku_model_fn(batch: ArrayLike) -> jnp.ndarray:
-    """Functional verson of simple model."""
-    sgd = hk.Sequential([hk.Linear(1)])
-    return sgd(batch)
-
-
-def haiku_loss_fn(y_pred: ArrayLike, y_true: ArrayLike) -> ArrayLike:
-    """Per-sample mean square error loss"""
-    y_pred = jnp.squeeze(y_pred)
-    errors = (y_pred - y_true) if (y_true is not None) else y_pred
-    return 0.5 * (errors) ** 2
 
 
 def get_model(framework: FrameworkType) -> Model:
