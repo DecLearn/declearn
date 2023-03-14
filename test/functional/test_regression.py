@@ -59,10 +59,21 @@ from declearn.main.config import FLOptimConfig, FLRunConfig
 from declearn.metrics import RSquared
 from declearn.model.api import Model
 from declearn.model.sklearn import SklearnSGDModel
-from declearn.model.tensorflow import TensorflowModel
-from declearn.model.torch import TorchModel
 from declearn.optimizer import Optimizer
 from declearn.test_utils import FrameworkType, run_as_processes
+
+# pylint: disable=ungrouped-imports; optional frameworks' dependencies
+try:
+    import tensorflow as tf  # type: ignore
+    from declearn.model.tensorflow import TensorflowModel
+except ModuleNotFoundError:
+    pass
+try:
+    import torch
+    from declearn.model.torch import TorchModel
+except ModuleNotFoundError:
+    pass
+
 
 SEED = 0
 R2_THRESHOLD = 0.999
