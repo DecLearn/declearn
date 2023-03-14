@@ -35,6 +35,7 @@ from declearn.model.api import Model
 from declearn.model.sklearn import SklearnSGDModel
 from declearn.main import FederatedClient, FederatedServer
 from declearn.test_utils import run_as_processes
+from declearn.utils import set_device_policy
 
 # Select the subset of tests to run, based on framework availability.
 # Note: TensorFlow and Torch (-related) imports are delayed due to this.
@@ -214,6 +215,7 @@ class DeclearnTestCase:
         self,
     ) -> None:
         """Set up and run a FederatedServer."""
+        set_device_policy(gpu=False)  # disable GPU use to avoid concurrence
         model = self.build_model()
         netwk = self.build_netwk_server()
         optim = self.build_optim_config()
@@ -231,6 +233,7 @@ class DeclearnTestCase:
         name: str = "client",
     ) -> None:
         """Set up and run a FederatedClient."""
+        set_device_policy(gpu=False)  # disable GPU use to avoid concurrence
         netwk = self.build_netwk_client(name)
         train = self.build_dataset(size=1000)
         valid = self.build_dataset(size=250)
@@ -287,7 +290,7 @@ def test_declearn(
     Note: Use unsecured websockets communication, which are less
           costful to establish than gRPC and/or SSL-secured ones
           (the latter due to the certificates-generation costs).
-    Note: if websockets is unavailable, use gRPC (warn) or fail.
+    Note: If websockets is unavailable, use gRPC (warn) or fail.
     """
     if not fulltest:
         if (kind != "Reg") or (strategy == "FedAvgM"):
