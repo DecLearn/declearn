@@ -53,9 +53,9 @@ class TestNetworkServerInit:
     def test_init_minimal(self, protocol: str) -> None:
         """Test that instantiation with minimal parameters work."""
         cls = SERVER_CLASSES[protocol]
-        server = cls(host="localhost", port=8765)
+        server = cls(host="127.0.0.1", port=8765)
         assert isinstance(server, cls)
-        assert server.host == "localhost"
+        assert server.host == "127.0.0.1"
         assert server.port == 8765
         assert server.handler.__class__.__name__ == "MessagesHandler"
 
@@ -63,7 +63,7 @@ class TestNetworkServerInit:
         """Test that instantiation with optional SSL parameters works."""
         cls = SERVER_CLASSES[protocol]
         server = cls(
-            host="localhost",
+            host="127.0.0.1",
             port=8765,
             certificate=ssl_cert["server_cert"],
             private_key=ssl_cert["server_pkey"],
@@ -75,14 +75,14 @@ class TestNetworkServerInit:
         cls = SERVER_CLASSES[protocol]
         with pytest.raises(ValueError):
             cls(
-                host="localhost",
+                host="127.0.0.1",
                 port=8765,
                 certificate="certificate",
                 private_key=None,
             )
         with pytest.raises(ValueError):
             cls(
-                host="localhost",
+                host="127.0.0.1",
                 port=8765,
                 certificate=None,
                 private_key="private-key",
@@ -92,19 +92,19 @@ class TestNetworkServerInit:
         """Test that the 'logger' argument is properly parsed."""
         cls = SERVER_CLASSES[protocol]
         logger = get_logger(f"{cls.__name__}Test")
-        srv = cls("localhost", 8765, logger=logger)
+        srv = cls("127.0.0.1", 8765, logger=logger)
         assert srv.logger is logger
 
     def test_uri(self, protocol: str) -> None:
         """Test that the `uri` property can properly be accessed."""
         cls = SERVER_CLASSES[protocol]
-        srv = cls("localhost", 8765)
+        srv = cls("127.0.0.1", 8765)
         assert isinstance(srv.uri, str)
 
     def test_client_names(self, protocol: str) -> None:
         """Test that the `client_names` propety can properly be accessed."""
         cls = SERVER_CLASSES[protocol]
-        srv = cls("localhost", 8765)
+        srv = cls("127.0.0.1", 8765)
         assert srv.client_names == set()
         srv.handler.registered_clients[mock.MagicMock()] = "mock"
         assert srv.client_names == {"mock"}
@@ -117,7 +117,7 @@ async def server_fixture(
     """Fixture to provide with an instantiated and started NetworkServer."""
     server = build_server(
         protocol=protocol,
-        host="localhost",
+        host="127.0.0.1",
         port=8765,
     )
     async with server:

@@ -63,7 +63,7 @@ async def server_fixture(
     """Fixture to provide with an instantiated and started NetworkServer."""
     server = build_server(
         protocol=protocol,
-        host="localhost",
+        host="127.0.0.1",  # truly "localhost", but fails on the CI otherwise
         port=8765,
         certificate=ssl_cert["server_cert"] if ssl else None,
         private_key=ssl_cert["server_pkey"] if ssl else None,
@@ -81,7 +81,7 @@ def client_from_server(
     """Instantiate a NetworkClient based on a NetworkServer."""
     return build_client(
         protocol=server.protocol,
-        server_uri=server.uri,
+        server_uri=server.uri.replace("127.0.0.1", "localhost"),
         name=c_name,
         certificate=ca_ssl,
     )
