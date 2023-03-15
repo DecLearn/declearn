@@ -46,6 +46,7 @@ class InMemoryDataset(Dataset):
     """Dataset subclass serving numpy(-like) memory-loaded data arrays.
 
     This subclass implements:
+
     * yielding (X, [y], [w]) batches matching the scikit-learn API,
       with data wrapped as numpy arrays, scipy sparse matrices,
       or pandas dataframes (or series for y and w)
@@ -54,8 +55,7 @@ class InMemoryDataset(Dataset):
       formats
 
     Note: future code refactoring may divide these functionalities
-          into two distinct base classes to articulate back into
-          this one.
+    into two distinct base classes to articulate back into this one.
 
     Attributes
     ----------
@@ -199,16 +199,17 @@ class InMemoryDataset(Dataset):
     ) -> DataArray:
         """Load a data array from a dump file.
 
-        Supported file extensions are:
-        .csv:
+        Supported file extensions
+        -------------------------
+        - `.csv`:
             csv file, comma-delimited by default.
             Any keyword arguments to `pandas.read_csv` may be passed.
-        .npy:
+        - `.npy`:
             Non-pickle numpy array dump, created with `numpy.save`.
-        .sparse:
+        - `.sparse`:
             Scipy sparse matrix dump, created with the custom
             `declearn.data.sparse.sparse_to_file` function.
-        .svmlight:
+        - `.svmlight`:
             SVMlight sparse matrix and labels array dump.
             Parse using `sklearn.load_svmlight_file`, and
             return either features or labels based on the
@@ -232,10 +233,11 @@ class InMemoryDataset(Dataset):
 
         Raises
         ------
-        TypeError:
+        TypeError
             If `path` is of unsupported extension.
-        Any exception raised by data-loading functions may also be
-        raised (e.g. if the file cannot be proprely parsed).
+
+        Any exception raised by data-loading functions may also be raised
+        (e.g. if the file cannot be proprely parsed).
         """
         ext = os.path.splitext(path)[1]
         if ext == ".csv":
@@ -256,13 +258,14 @@ class InMemoryDataset(Dataset):
     ) -> str:
         """Save a data array to a dump file.
 
-        Supported types of data arrays are:
-        pandas.DataFrame or pandas.Series:
-            Dump to a comma-separated ".csv" file.
-        numpy.ndarray:
-            Dump to a non-pickle ".npy" file.
-        scipy.sparse.spmatrix:
-            Dump to a ".sparse" file, using a custom format
+        Supported types of data arrays
+        ------------------------------
+        - `pandas.DataFrame` or `pandas.Series`:
+            Dump to a comma-separated `.csv` file.
+        - `numpy.ndarray`:
+            Dump to a non-pickle `.npy` file.
+        - `scipy.sparse.spmatrix`:
+            Dump to a `.sparse` file, using a custom format
             and `declearn.data.sparse.sparse_to_file`.
 
         Parameters
@@ -284,7 +287,7 @@ class InMemoryDataset(Dataset):
 
         Raises
         ------
-        TypeError:
+        TypeError
             If `array` is of unsupported type.
         """
         # Select a file extension and set up the array-dumping function.
@@ -458,9 +461,11 @@ class InMemoryDataset(Dataset):
         weights: data array or None
             Optional sample weights; scikit-learn's `sample_weight`.
 
-        Note: in this context, a 'data array' is either a numpy array,
-              scipy sparse matrix, pandas dataframe or pandas series.
-        Note: batched arrays are aligned along their first axis.
+        Notes
+        -----
+        - In this context, a 'data array' is either a numpy array,
+          scipy sparse matrix, pandas dataframe or pandas series.
+        - Batched arrays are aligned along their first axis.
         """
         if poisson:
             order = self._poisson_sampling(batch_size, drop_remainder)
@@ -582,7 +587,10 @@ class InMemoryDataset(Dataset):
             Array containing a pre-computed samples' ordering.
             Yield batches of samples drawn in that order from `data`.
 
-        Yield slices of `data`, or None values if `data` is None.
+        Yields
+        ------
+        batch: optional data array
+            Slice of `data`, or None if `data` is None.
         """
         if data is None:
             yield from (None for _ in range(0, len(order), batch_size))

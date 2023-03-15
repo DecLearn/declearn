@@ -66,9 +66,10 @@ class SklearnSGDModel(Model):
     be learned federatively.
 
     Notes regarding device management (CPU, GPU, etc.):
-    * This Model may only run on CPU, and is unaffected by device-
+
+    - This Model may only run on CPU, and is unaffected by device-
       management policies.
-    * Calling the `update_device_policy` method has no effect, and
+    - Calling the `update_device_policy` method has no effect, and
       raises a UserWarning if a GPU-targetting policy is passed to
       it directly.
     """
@@ -193,11 +194,11 @@ class SklearnSGDModel(Model):
 
         Notes
         -----
-        Save for `kind`, all parameters are strictly equivalent to those
-        of `sklearn.linear_modelSGDClassifier` and `SGDRegressor`. Refer
-        to the latter' documentation for additional details.
-        Note that unexposed parameters from those classes are simply not
-        used and/or overwritten when wrapped by `SklearnSGDModel`.
+        - Save for `kind`, all parameters are strictly equivalent to those
+          of `sklearn.linear_modelSGDClassifier` and `SGDRegressor`. Refer
+          to the latter' documentation for additional details.
+        - Note that unexposed parameters from those classes are simply not
+          used and/or overwritten when wrapped by `SklearnSGDModel`.
 
         Returns
         -------

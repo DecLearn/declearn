@@ -19,7 +19,12 @@
 
 This module provides `NetworkClient` and `NetworkServer`, two abstract
 base classes that are to be used as network communication endpoints for
-federated learning processes.
+federated learning processes:
+
+* [NetworkClient][declearn.communication.api.NetworkClient]:
+    Abstract class defining an API for client-side communication endpoints.
+* [NetworkServer][declearn.communication.api.NetworkServer]:
+    Abstract class defining an API for server-side communication endpoints.
 """
 
 from ._client import NetworkClient

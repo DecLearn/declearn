@@ -42,6 +42,7 @@ class DPTrainingManager(TrainingManager):
     """TrainingManager subclass adding Differential Privacy mechanisms.
 
     This class extends the base TrainingManager class in three key ways:
+
     * Perform per-sample gradients clipping (through the Model API),
       parametrized by the added, optional `sclip_norm` attribute.
     * Add noise to batch-averaged gradients at each step of training,
@@ -55,6 +56,12 @@ class DPTrainingManager(TrainingManager):
     stochastic gradient descent algorithm (DP-SGD) [1] algorithm, in a
     modular fashion that enables using any kind of optimizer plug-in
     supported by its (non-DP) parent.
+
+    References
+    ----------
+    [1] Abadi et al, 2016.
+        Deep Learning with Differential Privacy.
+        https://arxiv.org/abs/1607.00133
     """
 
     def __init__(
@@ -78,7 +85,14 @@ class DPTrainingManager(TrainingManager):
         self,
         message: messaging.PrivacyRequest,
     ) -> None:
-        """Set up the use of DP-SGD based on a received PrivacyRequest."""
+        """Set up the use of DP-SGD based on a received PrivacyRequest.
+
+        Parameters
+        ----------
+        message: PrivacyRequest
+            PrivacyRequest message specifying the privacy budget, type
+            of accountant and expected use of the training data.
+        """
         # REVISE: add support for fixed requested noise multiplier
         # Compute the noise multiplier to use based on the budget
         # and the planned training duration and parameters.
@@ -149,14 +163,30 @@ class DPTrainingManager(TrainingManager):
         )
 
     def get_noise_multiplier(self) -> Optional[float]:
-        """Return the noise multiplier used for DP-SGD, if any."""
+        """Return the noise multiplier used for DP-SGD, if any.
+
+        Returns
+        -------
+        noise_multiplier: float or None
+            Standard deviation of the gaussian noise-addition module
+            placed at the start of the wrapped optimizer's pipeline,
+            if one is indeed present.
+        """
         if self.optim.modules:
             if isinstance(self.optim.modules[0], GaussianNoiseModule):
                 return self.optim.modules[0].std / (self.sclip_norm or 1.0)
         return None
 
     def get_privacy_spent(self) -> Tuple[float, float]:
-        """Return the (epsilon, delta) privacy budget used."""
+        """Return the (epsilon, delta) privacy budget spent so far.
+
+        Returns
+        -------
+        epsilon: float
+            epsilon component of the privacy budget spent.
+        delta: float
+            delta component of the privacy budget spent.
+        """
         if self.accountant is None:
             raise RuntimeError("Cannot return spent privacy: DP is not used.")
         delta = self._dp_budget[1]

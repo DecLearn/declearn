@@ -231,7 +231,7 @@ class FederatedServer:
 
         Raises
         ------
-        RuntimeError:
+        RuntimeError
             In case any of the clients returned an Error message rather
             than an Empty ping-back message. Send CancelTraining to all
             clients before raising.
@@ -281,7 +281,7 @@ class FederatedServer:
 
         Raises
         ------
-        AggregationError:
+        AggregationError
             In case (some of) the clients' data info is invalid, or
             incompatible. Send CancelTraining to all clients before
             raising.
@@ -322,7 +322,7 @@ class FederatedServer:
 
         Raises
         ------
-        RuntimeError:
+        RuntimeError
             If any client sent an incorrect message or reported
             failure to conduct the evaluation step properly.
             Send CancelTraining to all clients before raising.

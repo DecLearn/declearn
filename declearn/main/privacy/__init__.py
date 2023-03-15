@@ -15,6 +15,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Submodule implementing Differential-Privacy-oriented tools."""
+"""Submodule implementing Differential-Privacy-oriented tools.
+
+* [DPTrainingManager][declearn.main.privacy.DPTrainingManager]:
+    TrainingManager subclass implementing Differential Privacy mechanisms.
+"""
 
 from ._dp_trainer import DPTrainingManager

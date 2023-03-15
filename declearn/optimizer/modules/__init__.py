@@ -17,58 +17,74 @@
 
 """Optimizer gradients-alteration algorithms, implemented as plug-in modules.
 
-Base class implemented here:
-* OptiModule: base API for optimizer plug-in algorithms
+API base class
+--------------
+* [OptiModule][declearn.optimizer.modules.OptiModule]:
+    Abstact base class for optimizer plug-in algorithms.
 
-Adaptive learning-rate algorithms:
-* AdaGradModule : AdaGrad algorithm
-* AdamModule    : Adam and AMSGrad algorithms
-* RMSPropModule : RMSProp algorithm
-* YogiModule    : Yogi algorithm, with Adam or AMSGrad base
+Adaptive learning-rate algorithms
+---------------------------------
+* [AdaGradModule][declearn.optimizer.modules.AdaGradModule]:
+    AdaGrad algorithm.
+* [AdamModule][declearn.optimizer.modules.AdamModule]:
+    Adam and AMSGrad algorithms.
+* [RMSPropModule][declearn.optimizer.modules.RMSPropModule]:
+    RMSProp algorithm.
+* [YogiModule][declearn.optimizer.modules.YogiModule]:
+    Yogi algorithm, with Adam or AMSGrad base.
 
-Gradient clipping algorithms:
-* L2Clipping : Fixed-threshold L2-norm gradient clipping module
+Gradient clipping algorithms
+----------------------------
+* [L2Clipping][declearn.optimizer.modules.L2Clipping]:
+    Fixed-threshold L2-norm gradient clipping module.
 
-Momentum algorithms:
-* EWMAModule         : Exponentially-Weighted Moving Average module
-* MomentumModule     : Momentum (and Nesterov) acceleration module
-* YogiMomentumModule : Yogi-specific EWMA-like module
+Momentum algorithms
+-------------------
+* [EWMAModule][declearn.optimizer.modules.EWMAModule]:
+    Exponentially-Weighted Moving Average module.
+* [MomentumModule][declearn.optimizer.modules.MomentumModule]:
+    Momentum (and Nesterov) acceleration module.
+* [YogiMomentumModule][declearn.optimizer.modules.YogiMomentumModule]:
+    Yogi-specific EWMA-like module.
 
-Noise-addition mechanisms:
-* NoiseModule         : abstract base class for noise-addition modules
-* GaussianNoiseModule : Gaussian noise-addition module
+Noise-addition mechanisms
+-------------------------
+* [NoiseModule][declearn.optimizer.modules.NoiseModule]:
+    Abstract base class for noise-addition modules.
+* [GaussianNoiseModule][declearn.optimizer.modules.GaussianNoiseModule]:
+    Gaussian noise-addition module.
 
-SCAFFOLD algorithm, as a pair of complementary modules:
-* ScaffoldClientModule : client-side module
-* ScaffoldServerModule : server-side module
+SCAFFOLD algorithm
+------------------
+Scaffold is implemented as a pair of complementary modules:
+
+* [ScaffoldClientModule][declearn.optimizer.modules.ScaffoldClientModule]:
+    Client-side Scaffold module.
+* [ScaffoldServerModule][declearn.optimizer.modules.ScaffoldServerModule]:
+    Server-side Scaffold module.
 """
 
 from ._api import (
     OptiModule,
 )
-
 from ._adaptive import (
     AdaGradModule,
     AdamModule,
     RMSPropModule,
     YogiModule,
 )
-
 from ._clipping import (
     L2Clipping,
 )
-
 from ._momentum import (
     EWMAModule,
     MomentumModule,
     YogiMomentumModule,
 )
-
 from ._noise import (
     GaussianNoiseModule,
     NoiseModule,
 )
-
 from ._scaffold import (
     ScaffoldClientModule,
     ScaffoldServerModule,

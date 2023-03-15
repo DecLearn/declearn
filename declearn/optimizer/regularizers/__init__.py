@@ -17,15 +17,21 @@
 
 """Optimizer loss-regularization algorithms, implemented as plug-in modules.
 
-Base class implemented here:
+API base class
+--------------
 * Regularizer: base API for loss-regularization plug-ins
 
-Common regularization terms:
-* LassoRegularizer : L1 regularization, aka Lasso penalization
-* RidgeRegularizer : L2 regularization, aka Ridge penalization
+Common regularization terms
+---------------------------
+* [LassoRegularizer][declearn.optimizer.regularizers.LassoRegularizer]:
+    L1 regularization, aka Lasso penalization.
+* [RidgeRegularizer][declearn.optimizer.regularizers.RidgeRegularizer]:
+    L2 regularization, aka Ridge penalization.
 
-Federated-Learning-specific regularizers:
-* FedProxRegularizer : FedProx algorithm, as a proximal term regularizer
+Federated-Learning-specific regularizers
+----------------------------------------
+* [FedProxRegularizer][declearn.optimizer.regularizers.FedProxRegularizer]:
+    FedProx algorithm, as a proximal term regularizer.
 """
 
 from ._api import Regularizer

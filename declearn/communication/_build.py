@@ -86,6 +86,11 @@ def build_client(
     **kwargs:
         Any valid additional keyword parameter may be passed as well.
         Refer to the target `NetworkClient` subclass for details.
+
+    Returns
+    -------
+    client: NetworkClient
+        NetworkClient communication endpoint instance.
     """
     protocol = protocol.strip().lower()
     try:
@@ -138,6 +143,11 @@ def build_server(
     **kwargs:
         Any valid additional keyword parameter may be passed as well.
         Refer to the target `NetworkServer` subclass for details.
+
+    Returns
+    -------
+    server: NetworkServer
+        NetworkServer communication endpoint instance.
     """
     # inherited signature; pylint: disable=too-many-arguments
     protocol = protocol.strip().lower()
@@ -162,18 +172,44 @@ BuildServerConfig = dataclass_from_func(build_server)
 
 
 class NetworkClientConfig(BuildClientConfig, TomlConfig):  # type: ignore
-    """TOML-parsable dataclass for network clients' instantiation."""
+    """TOML-parsable dataclass for network clients' instantiation.
+
+    This class enables parsing and bundling arguments to the
+    [build_client][declearn.communication.build_client] function
+    from a TOML config file (using the `from_toml` classmethod)
+    or from keyword arguments (using the `from_kwargs` one), and
+    calling that function using the `build_client` method.
+    """
 
     def build_client(self) -> NetworkClient:
-        """Build a NetworkClient from the wrapped parameters."""
+        """Build a NetworkClient from the wrapped parameters.
+
+        Returns
+        -------
+        client: NetworkClient
+            NetworkClient communication endpoint instance.
+        """
         return self.call()
 
 
 class NetworkServerConfig(BuildServerConfig, TomlConfig):  # type: ignore
-    """TOML-parsable dataclass for network servers' instantiation."""
+    """TOML-parsable dataclass for network servers' instantiation.
+
+    This class enables parsing and bundling arguments to the
+    [build_server][declearn.communication.build_server] function
+    from a TOML config file (using the `from_toml` classmethod)
+    or from keyword arguments (using the `from_kwargs` one), and
+    calling that function using the `build_server` method.
+    """
 
     def build_server(self) -> NetworkServer:
-        """Build a NetworkServer from the wrapped parameters."""
+        """Build a NetworkServer from the wrapped parameters.
+
+        Returns
+        -------
+        server: NetworkServer
+            NetworkServer communication endpoint instance.
+        """
         return self.call()
 
 

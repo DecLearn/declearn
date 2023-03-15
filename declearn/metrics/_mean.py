@@ -42,11 +42,11 @@ class MeanMetric(Metric, register=False, metaclass=ABCMeta):
     --------
     To implement such an actual Metric, inherit `MeanMetric` and define:
 
-    name: str class attribute:
+    - name: str class attribute:
         Name identifier of the Metric (should be unique across existing
         Metric classes). Used for automated type-registration and name-
         based retrieval. Also used to label output results.
-    metric_func(y_true: np.ndarray, y_pred: np.ndarray) -> np.ndarray:
+    - metric_func(y_true: np.ndarray, y_pred: np.ndarray) -> np.ndarray:
         Method that computes a score from the predictions and labels
         associated with a given batch, that is to be aggregated into
         an average metric across all input batches.
@@ -114,7 +114,8 @@ class MeanAbsoluteError(MeanMetric):
     with multiple channels, the sum of absolute channel-wise errors
     is computed for each sample, and averaged across samples.
 
-    Computed metrics is the following:
+    Computed metric is the following:
+
     * mae: float
         Mean absolute error, averaged across samples (possibly
         summed over channels for (>=2)-dimensional inputs).
@@ -142,7 +143,8 @@ class MeanSquaredError(MeanMetric):
     with multiple channels, the sum of squared channel-wise errors
     is computed for each sample, and averaged across samples.
 
-    Computed metrics is the following:
+    Computed metric is the following:
+
     * mse: float
         Mean squared error, averaged across samples (possibly
         summed over channels for (>=2)-dimensional inputs).

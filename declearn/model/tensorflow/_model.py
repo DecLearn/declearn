@@ -51,19 +51,20 @@ class TensorflowModel(Model):
     to be trained federatively.
 
     Notes regarding device management (CPU, GPU, etc.):
-    * By default, tensorflow places data and operations on GPU whenever one
+
+    - By default, tensorflow places data and operations on GPU whenever one
       is available.
-    * Our `TensorflowModel` instead consults the device-placement policy (via
+    - Our `TensorflowModel` instead consults the device-placement policy (via
       `declearn.utils.get_device_policy`), places the wrapped keras model's
       weights there, and runs computations defined under public methods in
       a `tensorflow.device` context, to enforce that policy.
-    * Note that there is no guarantee that calling a private method directly
+    - Note that there is no guarantee that calling a private method directly
       will result in abiding by that policy. Hence, be careful when writing
       custom code, and use your own context managers to get guarantees.
-    * Note that if the global device-placement policy is updated, this will
+    - Note that if the global device-placement policy is updated, this will
       only be propagated to existing instances by manually calling their
       `update_device_policy` method.
-    * You may consult the device policy currently enforced by a TensorflowModel
+    - You may consult the device policy currently enforced by a TensorflowModel
       instance by accessing its `device_policy` property.
     """
 
@@ -212,7 +213,7 @@ class TensorflowModel(Model):
 
         Raises
         ------
-        KeyError:
+        KeyError
             In case some expected keys are missing, or additional keys
             are present. Be verbose about the identified mismatch(es).
         """

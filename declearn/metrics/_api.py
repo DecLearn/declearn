@@ -45,13 +45,18 @@ class Metric(metaclass=ABCMeta):
     results through iterative update steps that may additionally
     be run in a federative way.
 
+    Usage
+    -----
     Single-party usage:
+    ```
     >>> metric = MetricSubclass()
     >>> metric.update(y_true, y_pred)  # take one update state
     >>> metric.get_result()    # after one or multiple updates
     >>> metric.reset()  # reset before a next evaluation round
+    ```
 
     Multiple-parties usage:
+    ```
     >>> # Instantiate 2+ metrics and run local update steps.
     >>> metric_0 = MetricSubclass()
     >>> metric_1 = MetricSubclass()
@@ -62,23 +67,24 @@ class Metric(metaclass=ABCMeta):
     >>> metric_1.agg_states(states_0)     # metrics_1 is updated
     >>> # Compute results that aggregate info from both clients.
     >>> metric_1.get_result()
+    ```
 
     Abstract
     --------
     To define a concrete Metric, one must subclass it and define:
 
-    name: str class attribute
+    - name: str class attribute
         Name identifier of the class (should be unique across existing
         Metric classes). Also used for automatic types-registration of
         the class (see `Inheritance` section below).
-    _build_states() -> dict[str, (float | np.ndarray)]:
+    - _build_states() -> dict[str, (float | np.ndarray)]:
         Build and return an ensemble of state variables.
         This method is called to initialize the `_states` attribute,
         that should be used and updated by other abstract methods.
-    update(y_true: np.ndarray, y_pred: np.ndarray, s_wght: (np.ndarray|None)):
+    - update(y_true: np.ndarray, y_pred: np.ndarray, s_wght: np.ndarray|None):
         Update the metric's internal state based on a data batch.
         This method should update `self._states` in-place.
-    get_result() -> dict[str, (float | np.ndarray)]:
+    - get_result() -> dict[str, (float | np.ndarray)]:
         Compute the metric(s), based on the current state variables.
         This method should make use of `self._states` and prevent
         side effects on its contents.
@@ -88,7 +94,7 @@ class Metric(metaclass=ABCMeta):
     Some methods may be overridden based on the concrete Metric's needs.
     The most imporant one is the states-aggregation method:
 
-    agg_states(states: dict[str, (float | np.ndarray)]:
+    - agg_states(states: dict[str, (float | np.ndarray)]:
         Aggregate provided state variables into self ones.
         By default, it expects input and internal states to have
         similar specifications, and aggregates them by summation,
@@ -97,18 +103,18 @@ class Metric(metaclass=ABCMeta):
     A pair of methods may be extended to cover non-`self._states`-contained
     variables:
 
-    reset():
+    - reset():
         Reset the metric to its initial state.
-    get_states() -> dict[str, (float | np.ndarray)]:
+    - get_states() -> dict[str, (float | np.ndarray)]:
         Return a copy of the current state variables.
 
 
     Finally, depending on the hyper-parameters defined by the subclass's
     `__init__`, one should adjust JSON-configuration-interfacing methods:
 
-    get_config() -> dict[str, any]:
+    - get_config() -> dict[str, any]:
         Return a JSON-serializable configuration dict for this Metric.
-    from_config(config: dict[str, any]) -> Self:
+    - from_config(config: dict[str, any]) -> Self:
         Instantiate a Metric from its configuration dict.
 
     Inheritance
@@ -122,6 +128,7 @@ class Metric(metaclass=ABCMeta):
     """
 
     name: ClassVar[str] = NotImplemented
+    """Name identifier of the class, unique across Metric classes."""
 
     def __init__(
         self,
@@ -223,11 +230,11 @@ class Metric(metaclass=ABCMeta):
 
         Raises
         ------
-        KeyError:
+        KeyError
             If any state variable is missing from `states`.
-        TypeError:
+        TypeError
             If any state variable is of unproper type.
-        ValueError:
+        ValueError
             If any array state variable is of unproper shape.
         """
         final = {}  # type: Dict[str, Union[float, np.ndarray]]
@@ -288,7 +295,7 @@ class Metric(metaclass=ABCMeta):
 
         Raises
         ------
-        KeyError:
+        KeyError
             If the provided `name` fails to be mapped to a registered
             Metric subclass.
         """
@@ -326,7 +333,7 @@ class Metric(metaclass=ABCMeta):
 
         Raises
         ------
-        ValueError:
+        ValueError
             If the input array has improper shape or negative values.
         """
         if s_wght is None:

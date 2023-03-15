@@ -23,22 +23,20 @@ are required to specify a Federated Learning process from the server's
 side.
 
 The main classes implemented here are:
-* FLRunConfig   : federated learning orchestration hyper-parameters
-* FLOptimConfig : federated optimization strategy
+
+* [FLRunConfig][declearn.main.config.FLRunConfig]:
+    Federated learning orchestration hyper-parameters.
+* [FLOptimConfig][declearn.main.config.FLOptimConfig]:
+    Federated optimization strategy.
 
 The following dataclasses are articulated by `FLRunConfig`:
-* EvaluateConfig : hyper-parameters for an evaluation round
-* RegisterConfig : hyper-parameters for clients registration
-* TrainingConfig : hyper-parameters for a training round
 
-
-This submodule exposes dataclasses that group and document server-side
-hyper-parameters that specify a Federated Learning process, as well as
-a main class designed to act as a container and a parser for all these,
-that may be instantiated from python objects or from a TOML file.
-
-In other words, `FLRunConfig` in the key class implemented here, while
-the other exposed dataclasses are already articulated and used by it.
+* [EvaluateConfig][declearn.main.config.EvaluateConfig]:
+    Hyper-parameters for an evaluation round.
+* [RegisterConfig][declearn.main.config.RegisterConfig]:
+    Hyper-parameters for clients registration.
+* [TrainingConfig][declearn.main.config.TrainingConfig]:
+    Hyper-parameters for a training round.
 """
 
 from ._dataclasses import (

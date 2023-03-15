@@ -55,13 +55,13 @@ class TorchOptiModule(OptiModule):
     any rate cause some memory overhead. Thus it should be used sparingly,
     taking into account the following constraints and limitations:
 
-    * The wrapped optimizer class should have a "lr" (learning-rate)
+    - The wrapped optimizer class should have a "lr" (learning-rate)
       parameter, that will be forced to 1.0, so that updates' scaling
       remains the responsibility of the wrapping declearn Optimizer.
-    * The wrapped optimizer class should not make use of the watched
+    - The wrapped optimizer class should not make use of the watched
       parameters' values, only of their gradients, because it will in
       fact monitor artificial, zero-valued parameters at each step.
-    * If the module is to be used by the clients, the wrapped optimizer
+    - If the module is to be used by the clients, the wrapped optimizer
       class must have been imported from a third-party package that is
       also available to the clients (e.g. torch).
 
@@ -130,10 +130,10 @@ class TorchOptiModule(OptiModule):
 
         Raises
         ------
-        RuntimeError:
+        RuntimeError
             If `optim_cls` is a string and the target class cannot be loaded.
             If `optim_cls` is a string and the user denies the import command.
-        TypeError:
+        TypeError
             If `optim_cls` (or the object loaded in case it is a string)
             is not a `torch.nn.Optimizer` subclass.
 
@@ -181,10 +181,10 @@ class TorchOptiModule(OptiModule):
 
         Raises
         ------
-        TypeError:
+        TypeError
             If `gradients` are not a TorchVector (this module is
             a framework-specific hack).
-        KeyError:
+        KeyError
             If `gradients` have an inconsistent spec with the first
             ones ever processed by this module. Use `reset` if you
             wish to start back from the beginning.

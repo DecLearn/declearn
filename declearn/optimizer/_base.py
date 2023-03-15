@@ -39,17 +39,19 @@ class Optimizer:
     It is also fully-workable and is designed to be customizable
     through the use of "plug-in modules" rather than subclassing
     (which might be used for advanced algorithm modifications):
-    see `declearn.optimizer.modules.OptiModule` for API details.
+    see the base classes [declearn.optimizer.modules.OptiModule][]
+    and [declearn.optimizer.regularizers.Regularizer][] for details.
 
     The process implemented here is the following:
-    * Compute or receive the (pseudo-)gradients of a model.
-    * Compute loss-regularization terms and add them to the
+
+    - Compute or receive the (pseudo-)gradients of a model.
+    - Compute loss-regularization terms and add them to the
       gradients, based on a list of plug-in regularizers.
-    * Refine gradients by running them through plug-in modules,
+    - Refine gradients by running them through plug-in modules,
       which are thus composed by sequential application.
-    * Optionally compute a decoupled weight decay term (see [1])
+    - Optionally compute a decoupled weight decay term (see [1])
       and add it to the updates (i.e. refined gradients).
-    * Apply the learning rate and perform the weights' udpate.
+    - Apply the learning rate and perform the weights' udpate.
 
     Most plug-in modules are self-contained, in the sense that they
     do not require any information flow between the server and its
@@ -70,7 +72,6 @@ class Optimizer:
 
     Attributes
     ----------
-
     lrate: float
         Base learning rate applied to computed updates.
     w_decay: float
@@ -82,7 +83,7 @@ class Optimizer:
         List of plug-in loss regularization modules composed into
         the optimizer's gradients-to-updates computation algorithm.
 
-    API methods:
+    API methods
     -----------
     apply_gradients(Model, Vector) -> None:
         Update a Model based on a pre-computed Vector of gradients.
@@ -246,7 +247,7 @@ class Optimizer:
 
         Raises
         ------
-        KeyError:
+        KeyError
             If the provided `config` lacks some required parameters
             and/or contains some unused ones.
         """
@@ -440,19 +441,19 @@ class Optimizer:
 
         Parameters
         ----------
-        state: dict[str, any]
+        states: dict[str, any]
             Dict storing values to assign to this optimizer's inner
             state variables (i.e. those from its modules).
 
         Raises
         ------
-        KeyError:
+        KeyError
             If the received states do not match the expected config,
             whether because a module is missing or one of its states
             is missing.
             In both cases, the Optimizer's states will be reverted
             to their values prior to the failed call to this method.
-        RuntimeError:
+        RuntimeError
             If a KeyError was raised both when trying to apply the
             input `state` and when trying to revert the states to
             their initial values after that first error was raised.

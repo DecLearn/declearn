@@ -17,20 +17,28 @@
 
 """Utils for tensorflow backend support code.
 
-GPU/CPU backing device management utils:
-* move_layer_to_device:
+GPU/CPU backing device management utils
+---------------------------------------
+* [move_layer_to_device]\
+[declearn.model.tensorflow.utils.move_layer_to_device]:
     Create a copy of an input keras layer placed on a given device.
-* preserve_tensor_device:
+* [preserve_tensor_device]\
+[declearn.model.tensorflow.utils.preserve_tensor_device]:
     Wrap a tensor-processing function to have it run on its inputs' device.
-* select_device:
+* [select_device]\
+[declearn.model.tensorflow.utils.select_device]:
     Select a backing device to use based on inputs and availability.
 
-Loss function management utils:
-* build_keras_loss:
+Loss function management utils
+------------------------------
+* [build_keras_loss]\
+[declearn.model.tensorflow.utils.build_keras_loss]:
     Type-check, deserialize and/or wrap a keras loss into a Loss object.
 
-Better support for sparse tensor structures:
-* add_indexed_slices_support:
+Better support for sparse tensor structures
+-------------------------------------------
+* [add_indexed_slices_support]\
+[declearn.model.tensorflow.utils.add_indexed_slices_support]:
     Run a function on a pair of tensors, adding support for IndexedSlices.
 """
 

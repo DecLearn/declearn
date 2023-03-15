@@ -81,8 +81,9 @@ def sparse_to_file(
 
     Raises
     ------
-    TypeError if 'matrix' is of unsupported type, i.e. not
-    a BSR, CSC, CSR, COO, DIA, DOK or LIL sparse matrix.
+    TypeError
+        If 'matrix' is of unsupported type, i.e. not a BSR,
+        CSC, CSR, COO, DIA, DOK or LIL sparse matrix.
 
     Note: the format used is mostly similar to the SVMlight one
     (see for example `sklearn.datasets.dump_svmlight_file`), but
@@ -130,10 +131,10 @@ def sparse_from_file(path: str) -> spmatrix:
 
     Raises
     ------
-    KeyError:
+    KeyError
         If the file's header cannot be JSON-parsed or does not
         conform to the expected standard.
-    TypeError:
+    TypeError
         If the documented sparse matrix type is not supported,
         i.e. "bsr", "csv", "csc", "coo", "dia", "dok" or "lil".
 

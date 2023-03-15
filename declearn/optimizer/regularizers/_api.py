@@ -40,9 +40,10 @@ class Regularizer(metaclass=ABCMeta):
 
     The `Regularizer` API is close to the `OptiModule` one, with the
     following differences:
-    * Regularizers are meant to be applied prior to Modules, as a way
+
+    - Regularizers are meant to be applied prior to Modules, as a way
       to complete the computation of "raw" gradients.
-    * Regularizers do not provide an API to share stateful variables
+    - Regularizers do not provide an API to share stateful variables
       between a server and its clients.
 
     The aim of this abstraction (which itself operates on the Vector
@@ -59,18 +60,18 @@ class Regularizer(metaclass=ABCMeta):
 
     Abstract
     --------
-    name: str class attribute
+    - name: str class attribute
         Name identifier of the class (should be unique across existing
         Regularizer classes). Also used for automatic types-registration
         of the class (see `Inheritance` section below).
-    run(gradients: Vector, weights: Vector) -> Vector:
+    - run(gradients: Vector, weights: Vector) -> Vector:
         Compute the regularization term's derivative from weights,
         and add it to the input gradients. This is the main method
         for any `Regularizer`.
 
     Overridable
     -----------
-    on_round_start() -> None:
+    - on_round_start() -> None:
         Perform any required operation (e.g. resetting a state variable)
         at the start of a training round. By default, this method has no
         effect and mey thus be safely ignored when no behavior is needed.
@@ -85,6 +86,7 @@ class Regularizer(metaclass=ABCMeta):
     """
 
     name: ClassVar[str] = NotImplemented
+    """Name identifier of the class, unique across Regularizer classes."""
 
     def __init_subclass__(
         cls,

@@ -33,6 +33,7 @@ class MomentumModule(OptiModule):
     """Momentum gradient-acceleration module.
 
     This module impements the following algorithm:
+
         Init(beta):
             velocity = 0
         Step(grads):
@@ -45,16 +46,18 @@ class MomentumModule(OptiModule):
     Note that this contrasts with the canonical implementation of momentum
     by Sutskever et. al. [1]. The learning rate is applied to the whole output
     of the algorithm above, in the Optmizer class, rather than only to the
-    gradient part of it, following the [pytorch implementation]\
-    (https://pytorch.org/docs/stable/generated/torch.optim.SGD.html).
+    gradient part of it, following the [pytorch implementation](\
+    https://pytorch.org/docs/stable/generated/torch.optim.SGD.html).
     The nesterov variant's implementation is equivalently adapted.
 
-    This formaluation is equivalent to the canonical one for constant learning
+    This formulation is equivalent to the canonical one for constant learning
     rare (eta), with both approaches outputting:
-    $$ w_{t+1} = w_t - \\eta \\sum_{k=1}^t \\beta^{t-k} \nabla_k $$
+        $$ w_{t+1} = w_t - \\eta \\sum_{k=1}^t \\beta^{t-k} \\nabla_k $$
+
     It may however yield differences when $\\eta$ changes through training:
-    (can.) $$ w_{t+1} = w_t - \\sum_{k=1}^t \\eta_k \\beta^{t-k} \\nabla_k $$
-    (ours) $$ w_{t+1} = w_t - \\eta_t \\sum_{k=1}^t \\beta^{t-k} \\nabla_k $$
+
+    - (can.) $$ w_{t+1} = w_t - \\sum_{k=1}^t \\eta_k \\beta^{t-k} \\nabla_k $$
+    - (ours) $$ w_{t+1} = w_t - \\eta_t \\sum_{k=1}^t \\beta^{t-k} \\nabla_k $$
 
     References
     ----------
@@ -119,6 +122,7 @@ class EWMAModule(OptiModule):
     """Exponentially Weighted Moving Average module.
 
     This module impements the following algorithm:
+
         Init(beta):
             state = 0
         Step(grads):
@@ -180,6 +184,7 @@ class YogiMomentumModule(EWMAModule):
     """Yogi-specific momentum gradient-acceleration module.
 
     This module impements the following algorithm:
+
         Init(beta):
             state = 0
         Step(grads):
@@ -194,7 +199,8 @@ class YogiMomentumModule(EWMAModule):
     Note that this module is actually meant to be used to compute
     a learning-rate adaptation term based on squared gradients.
 
-    References:
+    References
+    ----------
     [1] Zaheer and Reddi et al., 2018.
         Adaptive Methods for Nonconvex Optimization.
     """

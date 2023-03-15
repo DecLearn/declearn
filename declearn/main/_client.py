@@ -225,7 +225,7 @@ class FederatedClient:
 
         Raises
         ------
-        RuntimeError:
+        RuntimeError
             If initialization failed, either because the message was not
             received or was of incorrect type, or because instantiation
             of the objects it specifies failed.
@@ -350,8 +350,6 @@ class FederatedClient:
 
         Parameters
         ----------
-        manager: TrainingManager
-            Instance wrapping the model, optimizer and data to use.
         message: TrainRequest
             Instructions from the server regarding the training round.
         """
@@ -376,8 +374,6 @@ class FederatedClient:
 
         Parameters
         ----------
-        manager: TrainingManager
-            Instance wrapping the model and data to use.
         message: EvaluationRequest
             Instructions from the server regarding the evaluation round.
         """

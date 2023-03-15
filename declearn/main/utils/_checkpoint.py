@@ -96,7 +96,7 @@ class Checkpointer:
 
         Parameters
         ----------
-        specs: Checkpointer or dict[str, any] or str
+        inputs: Checkpointer or dict[str, any] or str
             Checkpointer instance to type-check, or instantiation kwargs
             to parse into one. If a single string is passed, treat it as
             the `folder` argument, and use default other parameters.
@@ -108,8 +108,9 @@ class Checkpointer:
 
         Raises
         ------
-        TypeError:
+        TypeError
             If `inputs` is of unproper type.
+
         Other exceptions may be raised when calling this class's `__init__`.
         """
         if isinstance(inputs, str):
