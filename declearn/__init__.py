@@ -29,25 +29,26 @@ interfaces that cover some of the most popular frameworks, such as
 Scikit-Learn, TensorFlow and PyTorch.
 
 The package is organized into the following submodules:
-* aggregator:
+
+* [aggregator][declearn.aggregator]:
     Model updates aggregating API and implementations.
-* communication:
+* [communication][declearn.communication]:
     Client-Server network communications API and implementations.
-* data_info:
+* [data_info][declearn.data_info]:
     Tools to write and extend shareable metadata fields specifications.
-* dataset:
+* [dataset][declearn.dataset]:
     Data interfacing API and implementations.
-* main:
+* [main][declearn.main]:
     Main classes implementing a Federated Learning process.
-* metrics:
+* [metrics][declearn.metrics]:
     Iterative and federative evaluation metrics computation tools.
-* model:
+* [model][declearn.model]:
     Model interfacing API and implementations.
-* optimizer:
+* [optimizer][declearn.optimizer]:
     Framework-agnostic optimizer and algorithmic plug-ins API and tools.
-* typing:
+* [typing][declearn.typing]:
     Type hinting utils, defined and exposed for code readability purposes.
-* utils:
+* [utils][declearn.utils]:
     Shared utils used (extensively) across all of declearn.
 """
 

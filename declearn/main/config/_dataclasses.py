@@ -150,11 +150,12 @@ class PrivacyConfig:
     threshold, and RNG-related parameters for the noise-addition module.
 
     Accountants supported by Opacus 1.2.0 include:
+
     * rdp : Renyi-DP accountant, see [1]
     * gdp : Gaussian-DP, see [2]
     * prv : Privacy loss Random Variables privacy accountant, see [3]
 
-    Note : for more details, refer to the Opacus source code and the
+    Note: for more details, refer to the Opacus source code and the
     doctrings of each accountant. See
     https://github.com/pytorch/opacus/tree/main/opacus/accountants
 
@@ -178,13 +179,16 @@ class PrivacyConfig:
 
     References
     ----------
-    [1] Abadi et al, 2016.
+    - [1]
+        Abadi et al, 2016.
         Deep Learning with Differential Privacy.
         https://arxiv.org/abs/1607.00133
-    [2] Dong et al, 2019.
+    - [2]
+        Dong et al, 2019.
         Gaussian Differential Privacy.
         https://arxiv.org/abs/1905.02383
-    [3] Gopi et al, 2021.
+    - [3]
+        Gopi et al, 2021.
         Numerical Composition of Differential Privacy.
         https://arxiv.org/abs/2106.02848
     """

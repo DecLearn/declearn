@@ -18,9 +18,43 @@
 """Model interfacing submodule, defining an API an derived applications.
 
 This declearn submodule provides with:
-* Model and Vector abstractions, used as an API to design FL algorithms
-* Submodules implementing interfaces to curretnly supported frameworks 
-and models.
+
+- Model and Vector abstractions, used as an API to design FL algorithms.
+- Submodules implementing interfaces to various frameworks and models.
+
+Default Submodules
+------------------
+The automatically-imported submodules implemented here are:
+
+* [api][declearn.model.api]:
+    Model and Vector abstractions' defining module.
+    - [Model][declearn.model.api.Model]:
+        abstract API to interface framework-specific models.
+    - [Vector][declearn.model.api.Vector]:
+        abstract API for data tensors containers.
+* [sklearn][declearn.model.sklearn]:
+    Scikit-Learn based or oriented tools
+    - [NumpyVector][declearn.model.sklearn.NumpyVector]
+        Vector for numpy array data structures.
+    - [SklearnSGDModel][declearn.model.sklearn.SklearnSGDModel]
+        Model for scikit-learn's SGDClassifier and SGDRegressor.
+
+Optional Submodules
+-------------------
+The optional-dependency-based submodules that may be manually imported are:
+
+* [tensorflow][declearn.model.tensorflow]:
+    TensorFlow-interfacing tools
+    - [TensorflowModel][declearn.model.tensorflow.TensorflowModel]:
+        Model to wrap any tensorflow-keras Layer model.
+    - [TensorflowVector][declearn.model.tensorflow.TensorflowVector]:
+        Vector for tensorflow Tensor and IndexedSlices.
+* [torch][declearn.model.torch]:
+    PyTorch-interfacing tools
+    - [TorchModel][declearn.model.torch.TorchModel]:
+        Model to wrap any torch Module model.
+    - [TorchVector][declearn.model.torch.TorchVector]:
+        Vector for torch Tensor objects.
 """
 
 from . import api

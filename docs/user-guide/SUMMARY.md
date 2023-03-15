@@ -1,0 +1,5 @@
+- [Introduction](./index.md)
+- [Overview of the Federated Learning process](./fl_process.md)
+- [Overview of the declearn API](./package.md)
+- [Hands-on usage](./usage.md)
+- [Local Differential Privacy capabilities](./local_dp.md)

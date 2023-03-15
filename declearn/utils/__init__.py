@@ -17,17 +17,18 @@
 
 """Shared utils used across declearn.
 
-The key functionalities implemented here are:
+The functions and classes exposed by this submodule are listed below,
+grouped thematically.
 
 Config serialization
 --------------------
 Tools to create JSON config dumps of objects and instantiate from them.
 
-* ObjectConfig:
+* [ObjectConfig][declearn.utils.ObjectConfig]:
     Dataclass to wrap objects' config and interface JSON dumps.
-* deserialize_object:
+* [deserialize_object][declearn.utils.deserialize_object]:
     Instantiate an object from an ObjectConfig or a JSON file.
-* serialize_object:
+* [serialize_object][declearn.utils.serialize_object]:
     Return an ObjectConfig wrapping a given (supported) object.
 
 
@@ -35,15 +36,15 @@ Types-registration
 ------------------
 Tools to map class constructors to (name, group) string tuples.
 
-* access_registered:
+* [access_registered][declearn.utils.access_registered]:
     Retrieve a registered type from its name and (opt.) group name.
-* access_registration_info:
+* [access_registration_info][declearn.utils.access_registration_info]:
     Retrieve the name (and opt. group) under which a type is registered.
-* access_types_mapping:
+* [access_types_mapping][declearn.utils.access_types_mapping]:
     Return a copy of the `{name: type}` mapping of a given group.
-* create_types_registry:
+* [create_types_registry][declearn.utils.create_types_registry]:
     Create a types group from a base class (as a function or class-decorator).
-* register_type:
+* [register_type][declearn.utils.register_type]:
     Register a type class (as a function or class-decorator).
 
 
@@ -51,32 +52,33 @@ JSON-serialization
 ------------------
 Tools to add support for 3rd-party or custom types in JSON files.
 
-* add_json_support:
+* [add_json_support][declearn.utils.add_json_support]:
     Register a (pack, unpack) pair of functions to use on a given type.
-* json_dump:
+* [json_dump][declearn.utils.json_dump]:
     Function to dump data to a JSON file, automatically using `json_pack`.
-* json_load:
+* [json_load][declearn.utils.json_load]:
     Function to load data from a JSON file, automatically using `json_unpack`.
-* json_pack:
+* [json_pack][declearn.utils.json_pack]:
     Function to use as `default` parameter in `json.dump` to extend it.
-* json_unpack:
+* [json_unpack][declearn.utils.json_unpack]:
     Function to use as `object_hook` parameter in `json.load` to extend it.
 
 And examples of pre-registered (de)serialization functions:
 
-* (deserialize_numpy, serialize_numpy):
+* [deserialize_numpy][declearn.utils.deserialize_numpy]
+  and [serialize_numpy][declearn.utils.serialize_numpy]:
     Pair of functions to (un)pack a numpy ndarray as JSON-serializable data.
 
 Miscellaneous
 -------------
 
-* TomlConfig:
+* [TomlConfig][declearn.utils.TomlConfig]:
     Abstract base class to define TOML-parsable configuration containers.
-* dataclass_from_func:
+* [dataclass_from_func][declearn.utils.dataclass_from_func]:
     Automatically build a dataclass matching a function's signature.
-* dataclass_from_init:
+* [dataclass_from_init][declearn.utils.dataclass_from_init]:
     Automatically build a dataclass matching a class's init signature.
-* get_logger:
+* [get_logger][declearn.utils.get_logger]:
     Access or create a logger, automating basic handlers' configuration.
 """
 

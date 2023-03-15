@@ -1,0 +1,144 @@
+# Hands-on usage
+
+Here are details on how to set up server-side and client-side programs
+that will run together to perform a federated learning process. Generic
+remarks from the [Quickstart](#quickstart) section hold here as well, the
+former section being an overly simple exemplification of the present one.
+
+You can follow along on a concrete example that uses the UCI heart disease
+dataset, that is stored in the `examples/uci-heart` folder. You may refer
+to the `server.py` and `client.py` example scripts, that comprise comments
+indicating how the code relates to the steps described below. For further
+details on this example and on how to run it, please refer to its own
+`readme.md` file.
+
+## Server setup instructions
+
+**1. Define a Model**
+
+  - Set up a machine learning model in a given framework
+    (_e.g._ a `torch.nn.Module`).
+  - Select the appropriate `declearn.model.api.Model` subclass to wrap it up.
+  - Either instantiate the `Model` or provide a JSON-serialized configuration.
+
+**2. Define a FLOptimConfig**
+
+  - Select a `declearn.aggregator.Aggregator` (subclass) instance to define
+    how clients' updates are to be aggregated into global-model updates on
+    the server side.
+  - Parameterize a `declearn.optimizer.Optimizer` (possibly using a selected
+    pipeline of `declearn.optimizer.modules.OptiModule` plug-ins and/or a
+    pipeline of `declearn.optimizer.regularizers.Regularizer` ones) to be
+    used by clients to derive local step-wise updates from model gradients.
+  - Similarly, parameterize an `Optimizer` to be used by the server to
+    (optionally) refine the aggregated model updates before applying them.
+  - Wrap these three objects into a `declearn.main.config.FLOptimConfig`,
+    possibly using its `from_config` method to specify the former three
+    components via configuration dicts rather than actual instances.
+  - Alternatively, write up a TOML configuration file that specifies these
+    components (note that 'aggregator' and 'server_opt' have default values
+    and may therefore be left unspecified).
+
+**3. Define a communication server endpoint**
+
+  - Select a communication protocol (_e.g._ "grpc" or "websockets").
+  - Select the host address and port to use.
+  - Preferably provide paths to PEM files storing SSL-required information.
+  - Wrap this into a config dict or use `declearn.communication.build_server`
+    to instantiate a `declearn.communication.api.NetworkServer` to be used.
+
+**4. Instantiate and run a FederatedServer**
+
+  - Instantiate a `declearn.main.FederatedServer`:
+    - Provide the Model, FLOptimConfig and Server objects or configurations.
+    - Optionally provide a MetricSet object or its specs (i.e. a list of
+      Metric instances, identifier names of (name, config) tuples), that
+      defines metrics to be computed by clients on their validation data.
+    - Optionally provide the path to a folder where to write output files
+      (model checkpoints and global loss history).
+  - Instantiate a `declearn.main.config.FLRunConfig` to specify the process:
+    - Maximum number of training and evaluation rounds to run.
+    - Registration parameters: exact or min/max number of clients to have
+      and optional timeout delay spent waiting for said clients to join.
+    - Training parameters: data-batching parameters and effort constraints
+      (number of local epochs and/or steps to take, and optional timeout).
+    - Evaluation parameters: data-batching parameters and effort constraints
+      (optional maximum number of steps (<=1 epoch) and optional timeout).
+    - Early-stopping parameters (optionally): patience, tolerance, etc. as
+      to the global model loss's evolution throughout rounds.
+    - Local Differential-Privacy parameters (optionally): (epsilon, delta)
+      budget, type of accountant, clipping norm threshold, RNG parameters.
+  - Alternatively, write up a TOML configuration file that specifies all of
+    the former hyper-parameters.
+  - Call the server's `run` method, passing it the former config object,
+    the path to the TOML configuration file, or dictionaries of keyword
+    arguments to be parsed into a `FLRunConfig` instance.
+
+## Clients setup instructions
+
+**1. Interface training data**
+
+  - Select and parameterize a `declearn.dataset.Dataset` subclass that
+    will interface the local training dataset.
+  - Ensure its `get_data_specs` method exposes the metadata that is to
+    be shared with the server (and nothing else, to prevent data leak).
+
+**2. Interface validation data (optional)**
+
+   - Optionally set up a second Dataset interfacing a validation dataset,
+     used in evaluation rounds. Otherwise, those rounds will be run using
+     the training dataset - which can be slow and/or lead to overfitting.
+
+**3. Define a communication client endpoint**
+
+  - Select the communication protocol used (_e.g._ "grpc" or "websockets").
+  - Provide the server URI to connect to.
+  - Preferable provide the path to a PEM file storing SSL-required information
+    (matching those used on the Server side).
+  - Wrap this into a config dict or use `declearn.communication.build_client`
+    to instantiate a `declearn.communication.api.NetworkClient` to be used.
+
+**4. Run any necessary import statement**
+
+  - If optional or third-party dependencies are known to be required, import
+    them (_e.g._ `import declearn.model.torch`).
+  - Read more about this point [below](#dependency-sharing).
+
+**5. Instantiate a FederatedClient and run it**
+
+  - Instantiate a `declearn.main.FederatedClient`:
+    - Provide the NetworkClient and Dataset objects or configurations.
+    - Optionally specify `share_metrics=False` to prevent sharing evaluation
+      metrics (apart from the aggregated loss) with the server out of privacy
+      concerns.
+    - Optionally provide the path to a folder where to write output files
+      (model checkpoints and local loss history).
+  - Call the client's `run` method and let the magic happen.
+
+## Logging
+
+Note that this section and the quickstart example both left apart the option
+to configure logging associated with the federated client and server, and/or
+the network communication handlers they make use of. One may simply set up
+custom `logging.Logger` instances and pass them as arguments to the class
+constructors to replace the default, console-only, loggers.
+
+The `declearn.utils.get_logger` function may be used to facilitate the setup
+of such logger instances, defining their name, verbosity level, and whether
+messages should be logged to the console and/or to an output file.
+
+## Dependency sharing
+
+One important issue that is not currently handled by declearn itself is that
+of ensuring that clients have loaded all dependencies that may be required
+to unpack the Model and Optimizer instances transmitted at initialization.
+At the moment, it is therefore left to users to agree on the dependencies
+that need to be imported as part of the client-side launching script.
+
+For example, if the trained model is an artificial neural network that uses
+PyTorch as implementation backend, clients will need to add the
+`import declearn.model.torch` statement in their code (and, obviously, to
+have `torch` installed). Similarly, if a custom declearn `OptiModule` was
+written to modify the way updates are computed locally by clients, it will
+need to be shared with clients - either as a package to be imported (like
+torch previously), or as a bit of source code to add on top of the script.

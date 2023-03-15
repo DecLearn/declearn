@@ -67,7 +67,7 @@ def _isinstance_generic(inputs: Any, typevar: Type) -> bool:
 
     Raises
     ------
-    TypeError:
+    TypeError
         If an unsupported `typevar` is provided.
     """
     origin = typing.get_origin(typevar)
@@ -174,9 +174,10 @@ class TomlConfig:
 
         The input keyword arguments should match this class's fields' names.
         For each and every dataclass field of this class:
-            - If unprovided, set the argument to None.
-            - If a `parse_{field.name}` method exists, use that method.
-            - Else, use the `default_parser` method.
+
+        - If unprovided, set the argument to None.
+        - If a `parse_{field.name}` method exists, use that method.
+        - Else, use the `default_parser` method.
 
         Notes
         -----
@@ -193,13 +194,13 @@ class TomlConfig:
 
         Raises
         ------
-        RuntimeError:
+        RuntimeError
             In case a field failed to be instantiated using the input key-
             word argument (or None value resulting from the lack thereof).
 
         Warns
         -----
-        UserWarning:
+        UserWarning
             In case some keyword arguments are unused due to the lack of a
             corresponding dataclass field.
         """
@@ -244,13 +245,14 @@ class TomlConfig:
         -----
         If `inputs` is str and treated as the path to a TOML file,
         it will be parsed in one of the following ways:
+
         - Call `field.type.from_toml` if `field.type` is a TomlConfig.
         - Use the file's `field.name` section as kwargs, if it exists.
         - Use the entire file's contents as kwargs otherwise.
 
         Raises
         ------
-        TypeError:
+        TypeError
             If instantiation failed, for any reason.
 
         Returns
@@ -316,14 +318,14 @@ class TomlConfig:
 
         Raises
         ------
-        RuntimeError:
+        RuntimeError
             If parsing fails, whether due to misformatting of the TOML
             file, presence of undue parameters, or absence of required
             ones.
 
         Warns
         -----
-        UserWarning:
+        UserWarning
             In case some sections of the TOML file are unused due to the
             lack of a corresponding dataclass field.
         """

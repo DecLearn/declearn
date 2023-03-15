@@ -248,7 +248,7 @@ def access_registered(
 
     Raises
     ------
-    KeyError:
+    KeyError
         If no registered type matching the input parameters is found.
     """
     # If group is unspecified, look the name up in each and every registry.
@@ -289,7 +289,7 @@ def access_registration_info(
 
     Raises
     ------
-    KeyError:
+    KeyError
         If the provided information does not match a registered type.
     """
     # If group is unspecified, look the type up in each and every registry.
@@ -326,7 +326,7 @@ def access_types_mapping(
 
     Raises
     ------
-    KeyError:
+    KeyError
         If the `group` types registry does not exist.
     """
     if group not in REGISTRIES:

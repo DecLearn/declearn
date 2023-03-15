@@ -22,12 +22,13 @@ data  samples and key metadata while remaining agnostic of the way the data is
 actually being loaded (from a source file, a database, another API...).
 
 This declearn submodule provides with:
-* Dataset : abstract class defining an API to access training or testing data
-* InMemoryDataset : Dataset subclass serving numpy(-like) memory-loaded data
+
+* [Dataset][declearn.dataset.Dataset]:
+    abstract class defining an API to access training or testing data
+* [InMemoryDataset][declearn.dataset.InMemoryDataset]:
+    Dataset subclass serving numpy(-like) memory-loaded data
 arrays
 """
 
 from ._base import Dataset, DataSpecs, load_dataset_from_json
-
-# from ._sparse import sparse_from_file, sparse_to_file
 from ._inmemory import InMemoryDataset

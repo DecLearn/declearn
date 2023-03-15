@@ -28,24 +28,29 @@ writing specifications for expected 'data_info' fields, and automating
 their use to validate and combine individual 'data_info' dicts into an
 aggregated one.
 
-DataInfoField API tools:
-* DataInfoField:
+DataInfoField API tools
+-----------------------
+
+* [DataInfoField][declearn.data_info.DataInfoField]:
     Abstract class defining an API to write field-wise specifications.
-* register_data_info_field:
+* [register_data_info_field][declearn.data_info.register_data_info_field]:
     Decorator for DataInfoField subclasses, enabling their effective use.
-* aggregate_data_info:
+* [aggregate_data_info][declearn.data_info.aggregate_data_info]:
     Turn a list of individual 'data_info' dicts into an aggregated one.
-* get_data_info_fields_documentation:
+* [get_data_info_fields_documentation]\
+[declearn.data_info.get_data_info_fields_documentation]:
     Gather documentation for all fields that have registered specs.
 
-Field specifications:
-* ClassesField:
+Field specifications
+--------------------
+
+* [ClassesField][declearn.data_info.ClassesField]:
     Specification for the 'classes' field.
-* InputShapeField:
+* [InputShapeField][declearn.data_info.InputShapeField]:
     Specification for the 'input_shape' field.
-* NbFeaturesField:
+* [NbFeaturesField][declearn.data_info.NbFeaturesField]:
     Specification for the 'n_features' field.
-* NbSamplesField:
+* [NbSamplesField][declearn.data_info.NbSamplesField]:
     Specification for the 'n_samples' field.
 """
 

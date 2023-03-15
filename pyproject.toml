@@ -44,7 +44,8 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-all = [  # all non-tests extra dependencies
+# all non-docs, non-tests extra dependencies
+all = [
     "functorch",
     "grpcio >= 1.45",
     "opacus ~= 1.1",
@@ -53,6 +54,7 @@ all = [  # all non-tests extra dependencies
     "torch ~= 1.10",
     "websockets ~= 10.1",
 ]
+# thematically grouped dependencies (part of "all")
 dp = [
     "opacus ~= 1.1",
 ]
@@ -64,31 +66,30 @@ tensorflow = [
     "tensorflow ~= 2.5",
 ]
 torch = [
-    "functorch",  # note: functorch is included with torch>=1.13
+    "functorch",  # note: functorch is internalized by torch 2.0
     "torch ~= 1.10",
 ]
 websockets = [
     "websockets ~= 10.1",
 ]
+# docs-building dependencies
+docs = [
+    "mkdocstrings[python] >= 0.8",
+    "mkdocs-autorefs",
+    "mkdocs-literate-nav",
+    "mkdocs-material >= 9.1",
+]
+# test-specific dependencies
 tests = [
-    # test-specific dependencies
     "black ~= 23.0",
     "mypy ~= 1.0",
     "pylint >= 2.14",
     "pytest >= 6.1",
     "pytest-asyncio",
-    # other extra dependencies (copy of "all")
-    "functorch",
-    "grpcio >= 1.45",
-    "opacus ~= 1.1",
-    "protobuf >= 3.19",
-    "tensorflow ~= 2.5",
-    "torch ~= 1.10",
-    "websockets ~= 10.1",
 ]
 
 [project.urls]
-homepage = "https://gitlab.inria.fr/magnet/declearn/declearn2"
+homepage = "https://magnet.gitlabpages.inria/declearn/docs"
 repository = "https://gitlab.inria.fr/magnet/declearn/declearn2.git"
 
 [tool.black]

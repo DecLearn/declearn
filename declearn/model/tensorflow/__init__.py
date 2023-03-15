@@ -17,13 +17,15 @@
 
 """Tensorflow models interfacing tools.
 
-This submodule provides with a generic interface to wrap up
-any TensorFlow `keras.Model` instance that is to be trained
-through gradient descent.
+This submodule provides with a generic interface to wrap up any TensorFlow
+`tensorflow.keras.Model` instance that is to be trained with gradient descent.
 
-This module exposes:
-* TensorflowModel: Model subclass to wrap tensorflow.keras.Model objects
-* TensorflowVector: Vector subclass to wrap tensorflow.Tensor objects
+It exposes the following classes:
+
+* [TensorflowModel][declearn.model.tensorflow.TensorflowModel]:
+    Model subclass to wrap tensorflow.keras.Model objects.
+* [TensorflowVector][declearn.model.tensorflow.TensorflowVector]:
+    Vector subclass to wrap tensorflow.Tensor objects.
 """
 
 from ._vector import TensorflowVector

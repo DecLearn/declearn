@@ -179,11 +179,11 @@ class SklearnSGDModel(Model):
 
         Notes
         -----
-        Save for `kind`, all parameters are strictly equivalent to those
-        of `sklearn.linear_modelSGDClassifier` and `SGDRegressor`. Refer
-        to the latter' documentation for additional details.
-        Note that unexposed parameters from those classes are simply not
-        used and/or overwritten when wrapped by `SklearnSGDModel`.
+        - Save for `kind`, all parameters are strictly equivalent to those
+          of `sklearn.linear_modelSGDClassifier` and `SGDRegressor`. Refer
+          to the latter' documentation for additional details.
+        - Note that unexposed parameters from those classes are simply not
+          used and/or overwritten when wrapped by `SklearnSGDModel`.
 
         Returns
         -------

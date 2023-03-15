@@ -24,9 +24,13 @@ be used as "gradients" by the server's Optimizer to update the global
 model.
 
 This declearn submodule provides with:
-* Aggregator : abstract class defining an API for Vector aggregation
-* AveragingAggregator : average-based-aggregation Aggregator subclass
-* GradientMaskedAveraging : gradient Masked Averaging Aggregator subclass
+
+* [Aggregator][declearn.aggregator.Aggregator]:
+    abstract class defining an API for Vector aggregation
+* [AveragingAggregator][declearn.aggregator.AveragingAggregator]:
+    average-based-aggregation Aggregator subclass
+* [GradientMaskedAveraging][declearn.aggregator.GradientMaskedAveraging]:
+    gradient Masked Averaging Aggregator subclass
 """
 
 from ._api import Aggregator

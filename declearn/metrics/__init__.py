@@ -21,35 +21,43 @@ This module provides with Metric, an abstract base class that defines
 an API to iteratively and/or federatively compute evaluation metrics,
 as well as a number of concrete standard machine learning metrics.
 
-Abstractions:
-* Metric:
+Abstractions
+------------
+* [Metric][declearn.metrics.Metric]:
     Abstract base class defining an API for metrics' computation.
-* MeanMetric:
+* [MeanMetric][declearn.metrics.MeanMetric]:
     Abstract class that defines a template for simple scores' averaging.
 
-Utils:
-* MetricSet:
+Utils
+-----
+* [MetricSet][declearn.metrics.MetricSet]:
     Wrapper to bind together an ensemble of Metric instances.
 * MetricInputType:
     Type alias for valid inputs to specify a metric for `MetricSet`.
     Equivalent to `Union[Metric, str, Tuple[str, Dict[str, Any]]]`.
 
-Classification metrics:
-* BinaryAccuracyPrecisionRecall
+Classification metrics
+----------------------
+* [BinaryAccuracyPrecisionRecall]\
+[declearn.metrics.BinaryAccuracyPrecisionRecall]:
     Accuracy, precision, recall and confusion matrix for binary classif.
     Identifier name: "binary-classif".
-* MulticlassAccuracyPrecisionRecall
+* [MulticlassAccuracyPrecisionRecall]\
+[declearn.metrics.MulticlassAccuracyPrecisionRecall]:
     Accuracy, precision, recall and confusion matrix for multiclass classif.
     Identifier name: "multi-classif".
-* BinaryRocAuc:
+* [BinaryRocAUC][declearn.metrics.BinaryRocAUC]:
     Receiver Operator Curve and its Area Under the Curve for binary classif.
-    Identified name: "binary-roc"
+    Identifier name: "binary-roc".
 
-Regression metrics:
-* MeanAbsoluteError:
+Regression metrics
+------------------
+* [MeanAbsoluteError][declearn.metrics.MeanAbsoluteError]:
     Mean absolute error, averaged across all samples (and channels).
-* MeanSquaredError:
+    Identifier name: "mae".
+* [MeanSquaredError][declearn.metrics.MeanSquaredError]:
     Mean squared error, averaged across all samples (and channels).
+    Identifier name: "mse".
 """
 
 from ._api import Metric

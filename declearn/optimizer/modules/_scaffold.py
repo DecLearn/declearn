@@ -25,7 +25,8 @@ They only implement Option-II of the paper regarding client-specific
 state variables' update, and implementing Option-I would require the
 use of a specific Optimizer sub-class.
 
-References:
+References
+----------
 [1] Karimireddy et al., 2019.
     SCAFFOLD: Stochastic Controlled Averaging for Federated Learning.
     https://arxiv.org/abs/1910.06378
@@ -47,9 +48,11 @@ class ScaffoldClientModule(OptiModule):
 
     This module is to be added to the optimizer used by a federated-
     learning client, and expects that the server's optimizer use its
-    counterpart module: `ScaffoldServerModule`.
+    counterpart module:
+    [`ScaffoldServerModule`][declearn.optimizer.modules.ScaffoldServerModule].
 
     This module implements the following algorithm:
+
         Init:
             delta = 0
             _past = 0
@@ -87,7 +90,8 @@ class ScaffoldClientModule(OptiModule):
     in `declearn`, but requires implementing an alternative training
     procedure rather than an optimizer plug-in.
 
-    References:
+    References
+    ----------
     [1] Karimireddy et al., 2019.
         SCAFFOLD: Stochastic Controlled Averaging for Federated Learning.
         https://arxiv.org/abs/1910.06378
@@ -116,12 +120,26 @@ class ScaffoldClientModule(OptiModule):
 
     def collect_aux_var(
         self,
-    ) -> Optional[Dict[str, Any]]:
+    ) -> Dict[str, Any]:
         """Return auxiliary variables that need to be shared between nodes.
 
         Compute and package (without applying it) the updated value
         of the local state variable, so that the server may compute
         the updated shared state variable.
+
+        Returns
+        -------
+        aux_var: dict[str, any]
+            JSON-serializable dict of auxiliary variables that
+            are to be shared with a ScaffoldServerModule held
+            by the orchestrating server.
+
+        Raises
+        ------
+        RuntimeError
+            If called on an instance that has not processed any gradients
+            (via a call to `run`) since the last call to `process_aux_var`
+            (or its instantiation).
         """
         state = self._compute_updated_state()
         return {"state": state}
@@ -165,6 +183,22 @@ class ScaffoldClientModule(OptiModule):
 
         Collect the (local_state - shared_state) variable sent by server.
         Reset hidden variables used to compute the local state's updates.
+
+        Parameters
+        ----------
+        aux_var: dict[str, any]
+            JSON-serializable dict of auxiliary variables that are to be
+            processed by this module at the start of a training round (on
+            the client side).
+            Expected keys for this class: {"delta"}.
+
+        Raises
+        ------
+        KeyError
+            If an expected auxiliary variable is missing.
+        TypeError
+            If a variable is of unproper type, or if aux_var
+            is not formatted as it should be.
         """
         # Expect a state variable and apply it.
         delta = aux_var.get("delta", None)
@@ -190,9 +224,11 @@ class ScaffoldServerModule(OptiModule):
 
     This module is to be added to the optimizer used by a federated-
     learning server, and expects that the clients' optimizer use its
-    counterpart module: `ScaffoldClientModule`.
+    counterpart module:
+    [`ScaffoldClientModule`][declearn.optimizer.modules.ScaffoldClientModule].
 
     This module implements the following algorithm:
+
         Init(clients):
             state = 0
             s_loc = {client: 0 for client in clients}
@@ -221,7 +257,8 @@ class ScaffoldServerModule(OptiModule):
     The client-side correction of gradients and the computation of
     updated local states are deferred to `ScaffoldClientModule`.
 
-    References:
+    References
+    ----------
     [1] Karimireddy et al., 2019.
         SCAFFOLD: Stochastic Controlled Averaging for Federated Learning.
         https://arxiv.org/abs/1910.06378
@@ -241,14 +278,16 @@ class ScaffoldServerModule(OptiModule):
         clients: list[str] or None, default=None
             Optional list of known clients' id strings.
 
-        If this module is used under a training strategy that has
-        participating clients vary across epochs, leaving `clients`
-        to None will affect the update rule for the shared state,
-        as it uses a (n_participating / n_total_clients) term, the
-        divisor of which will be incorrect (at least on the first
-        step, potentially on following ones as well).
-        Similarly, listing clients that in fact do not participate
-        in training will have side effects on computations.
+        Notes
+        -----
+        - If this module is used under a training strategy that has
+          participating clients vary across epochs, leaving `clients`
+          to None will affect the update rule for the shared state,
+          as it uses a (n_participating / n_total_clients) term, the
+          divisor of which will be incorrect (at least on the first
+          step, potentially on following ones as well).
+        - Similarly, listing clients that in fact do not participate
+          in training will have side effects on computations.
         """
         self.state = 0.0  # type: Union[Vector, float]
         self.s_loc = {}  # type: Dict[str, Union[Vector, float]]
@@ -269,10 +308,17 @@ class ScaffoldServerModule(OptiModule):
 
     def collect_aux_var(
         self,
-    ) -> Optional[Dict[str, Any]]:
+    ) -> Dict[str, Dict[str, Any]]:
         """Return auxiliary variables that need to be shared between nodes.
 
-        Package client-wise (local_state - shared_state) variables.
+        Package client-wise `delta = (local_state - shared_state)` variables.
+
+        Returns
+        -------
+        aux_var:
+            JSON-serializable dict of auxiliary variables that are to
+            be shared with the client-wise ScaffoldClientModule. This
+            dict has a `{client-name: {"delta": value}}` structure.
         """
         # Compute clients' delta variable, package them and return.
         aux_var = {}  # type: Dict[str, Dict[str, Any]]
@@ -283,12 +329,28 @@ class ScaffoldServerModule(OptiModule):
 
     def process_aux_var(
         self,
-        aux_var: Dict[str, Any],
+        aux_var: Dict[str, Dict[str, Any]],
     ) -> None:
         """Update this module based on received shared auxiliary variables.
 
         Collect updated local state variables sent by clients.
         Update the global state variable based on the latter.
+
+        Parameters
+        ----------
+        aux_var: dict[str, dict[str, any]]
+            JSON-serializable dict of auxiliary variables that are to be
+            processed by this module before processing global updates.
+            This dict should have a `{client-name: {"state": value}}`
+            structure.
+
+        Raises
+        ------
+        KeyError:
+            If an expected auxiliary variable is missing.
+        TypeError:
+            If a variable is of unproper type, or if aux_var
+            is not formatted as it should be.
         """
         # Collect updated local states received from Scaffold client modules.
         s_new = {}  # type: Dict[str, Union[Vector, float]]

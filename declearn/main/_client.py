@@ -225,7 +225,7 @@ class FederatedClient:
 
         Raises
         ------
-        RuntimeError:
+        RuntimeError
             If initialization failed, either because the message was not
             received or was of incorrect type, or because instantiation
             of the objects it specifies failed.

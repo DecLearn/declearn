@@ -38,17 +38,20 @@ class FedProxRegularizer(Regularizer):
     See paper [1].
 
     This regularizer implements the following term:
+
         loss += alpha / 2 * (weights - ref_wgt)^2
         w/ ref_wgt := weights at the 1st step of the round
 
     To do so, it applies the following correction to gradients:
+
         grads += alpha * (weights - ref_wgt)
 
     In other words, this regularizer penalizes weights' departure
     (as a result from local optimization steps) from their initial
     (shared) values.
 
-    References:
+    References
+    ----------
     [1] Li et al., 2020.
         Federated Optimization in Heterogeneous Networks.
         https://arxiv.org/abs/1812.06127
@@ -84,9 +87,11 @@ class LassoRegularizer(Regularizer):
     """L1 (Lasso) loss-regularization plug-in.
 
     This regularizer implements the following term:
+
         loss += alpha * l1_norm(weights)
 
     To do so, it applies the following correction to gradients:
+
         grads += alpha * sign(weights)
     """
 
@@ -105,9 +110,11 @@ class RidgeRegularizer(Regularizer):
     """L2 (Ridge) loss-regularization plug-in.
 
     This regularizer implements the following term:
+
         loss += alpha * l2_norm(weights)
 
     To do so, it applies the following correction to gradients:
+
         grads += alpha * 2 * weights
     """
 

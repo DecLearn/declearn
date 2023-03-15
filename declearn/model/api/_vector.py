@@ -51,6 +51,7 @@ class Vector(metaclass=ABCMeta):
     Use `vector.coefs` to access the stored coefficients.
 
     Any concrete Vector subclass should:
+
     - add type checks to `__init__` to control wrapped coefficients' type
     - opt. override `_op_...` properties to define compatible operators
     - implement the abstract operators (`sign`, `maximum`, `minimum`...)
@@ -89,11 +90,13 @@ class Vector(metaclass=ABCMeta):
     def compatible_vector_types(self) -> Set[Type["Vector"]]:
         """Compatible Vector types, that may be combined into this.
 
-        Note that VectorTypeA may be compatible with VectorTypeB
-        while the opposite is False. It means that, for example,
-            (VectorTypeB + VectorTypeA) -> VectorTypeB
-        while
-            (VectorTypeA + VectorTypeB) -> TypeError
+        If VectorTypeA is listed as compatible with VectorTypeB,
+        then `(VectorTypeB + VectorTypeA) -> VectorTypeB` (both
+        for addition and any basic operator).
+
+        However, compatibility may not go both ways, so that for
+        the same types, `(VectorTypeA + VectorTypeB)` will raise
+        a TypeError.
 
         This is for example the case is VectorTypeB stores numpy
         arrays while VectorTypeA stores tensorflow tensors since
@@ -268,7 +271,8 @@ class Vector(metaclass=ABCMeta):
             Function to be applied to each and every coefficient (data
             array) wrapped by this Vector, that must return a similar
             array (same type, shape and dtype).
-        *args and **kwargs to `func` may also be passed.
+
+        Any `*args` and `**kwargs` to `func` may also be passed.
 
         Returns
         -------
@@ -429,9 +433,10 @@ def register_vector_type(
     *types: Type[Any],
     name: Optional[str] = None,
 ) -> Callable[[Type[Vector]], Type[Vector]]:
-    """Decorate a Vector subclass to make it buildable with `Vector(...)`.
+    """Decorate a Vector subclass to make it buildable with `Vector.build`.
 
     Decorating a Vector subclass with this has three effects:
+
     * Add the class to registered type (in the "Vector" group).
       See `declearn.utils.register_type` for details.
     * Make instances of that class JSON-serializable, embarking
