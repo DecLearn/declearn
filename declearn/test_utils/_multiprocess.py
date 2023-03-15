@@ -22,7 +22,6 @@ import sys
 import traceback
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
-
 __all__ = [
     "run_as_processes",
 ]
@@ -89,7 +88,8 @@ def run_as_processes(
     # Ensure not to leave processes running in the background.
     finally:
         for process in processes:
-            process.terminate()
+            if process.is_alive():
+                process.terminate()
     # Return success flag and re-ordered outputs and exceptions.
     success = all(process.exitcode == 0 for process in processes)
     dequeue = dict([queue.get_nowait() for _ in range(queue.qsize())])
