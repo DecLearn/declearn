@@ -124,4 +124,4 @@ new custom concrete implementations inheriting the abstraction.
 ## Full API Reference
 
 The full API reference, which is generated automatically from the code's
-internal documentation, can be found [here](../api/index.md).
+internal documentation, can be found [here](../api-reference/index.md).

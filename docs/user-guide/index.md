@@ -6,7 +6,11 @@ more details regarding both the declearn API and Federated Learning in general.
 
 This guide is structured this way:
 
-- [Overview of the Federated Learning process](./fl_process.md)
-- [Overview of the declearn API](./package.md)
-- [Hands-on usage](./usage.md)
-- [Local Differential Privacy capabilities](./local_dp.md)
+- [Overview of the Federated Learning process](./fl_process.md):<br/>
+    Description of the Federated Learning process implemented by declearn.
+- [Overview of the declearn API](./package.md):<br/>
+    Description of the declearn code's structure and of the main APIs.
+- [Hands-on usage](./usage.md):<br/>
+    Guide on how to set up your own federated learning task using declearn.
+- [Local Differential Privacy capabilities](./local_dp.md):<br/>
+    Description of the local-DP features of declearn.

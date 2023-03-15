@@ -38,11 +38,17 @@ the use of a central agent.
 
 The documentation is structured this way:
 
-- [Installation guide](./setup.md)
-- [Quickstart example](./quickstart.md)
-- [User guide](./user-guide/index.md)
-- [API Reference](./api/index.md)
-- [Developer guide](./devs.md)
+- [Installation guide](./setup.md):<br/>
+  Learn how to set up for and install declearn.
+- [Quickstart example](./quickstart.md):<br/>
+  See in a glance what end-user declearn code looks like.
+- [User guide](./user-guide/index.md):<br/>
+  Learn about declearn's take on Federated Learning, its current capabilities,
+  how to implement your own use case, and the API's structure and key points.
+- [API Reference](./api-reference/index.md):<br/>
+  Full API documentation, auto-generated from the source code.
+- [Developer guide](./devs.md):<br/>
+  Information on how to contribute, codings rules and how to run tests.
 
 ## Copyright
 

@@ -1,0 +1,25 @@
+site_name: Declearn
+site_url: https://declearn.gitlabpages.inria.fr/
+
+site_description: >-
+  Declearn: a modular and extensible framework for Federated Learning
+
+theme:
+  name: material  #readthedocs
+
+plugins:
+- autorefs
+- search:
+    lang: en
+- literate-nav:
+      nav_file: SUMMARY.md
+- mkdocstrings:
+    default_handler: python
+    handlers:
+      python:
+        options:
+          disable_private: true
+          docstring_style: numpy
+          docstring_section_style: "table"
+          show_if_no_docstring: false  # show methods that inherit parent docs
+          show_signature_annotations: false  # useful for no-doc but ugly
