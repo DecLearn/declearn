@@ -27,9 +27,7 @@ try:
     import haiku as hk
     import jax
     import jax.numpy as jnp
-    from jax import Array
     from jax.config import config as jaxconfig
-    from jax.typing import ArrayLike
 except ModuleNotFoundError:
     pytest.skip("jax and/or haiku are unavailable", allow_module_level=True)
 
@@ -46,7 +44,7 @@ from model_testing import ModelTestCase, ModelTestSuite
 jaxconfig.update("jax_enable_x64", True)
 
 
-def cnn_fn(x: ArrayLike) -> Array:
+def cnn_fn(inputs: jax.Array) -> jax.Array:
     """Simple CNN in a purely functional form"""
     model = hk.Sequential(
         [
@@ -60,16 +58,16 @@ def cnn_fn(x: ArrayLike) -> Array:
             hk.Linear(1),
         ]
     )
-    return model(x)
+    return model(inputs)
 
 
-def mlp_fn(x: Array) -> Array:
+def mlp_fn(inputs: jax.Array) -> jax.Array:
     """Simple MLP in a purely functional form"""
     model = hk.nets.MLP([32, 16, 1])
-    return model(x)
+    return model(inputs)
 
 
-def loss_fn(y_pred: ArrayLike, y_true: ArrayLike) -> Array:
+def loss_fn(y_pred: jax.Array, y_true: jax.Array) -> jax.Array:
     """Per-sample binary cross entropy"""
     y_pred = jax.nn.sigmoid(y_pred)
     y_pred = jnp.squeeze(y_pred)
@@ -94,7 +92,7 @@ class HaikuTestCase(ModelTestCase):
     """
 
     vector_cls = JaxNumpyVector
-    tensor_cls = Array
+    tensor_cls = jax.Array
 
     def __init__(
         self,
@@ -114,8 +112,8 @@ class HaikuTestCase(ModelTestCase):
     def to_numpy(
         tensor: Any,
     ) -> np.ndarray:
-        """Convert an input jax array to a numpy array."""
-        assert isinstance(tensor, Array)
+        """Convert an input jax jax.Array to a numpy jax.Array."""
+        assert isinstance(tensor, jax.Array)
         return np.asarray(tensor)
 
     @property
@@ -169,7 +167,7 @@ def fixture_test_case(
 
 
 DEVICES = ["cpu"]
-if "gpu" in [d.platform for d in jax.devices()]:
+if any(d.platform == "gpu" for d in jax.devices()):
     DEVICES.append("gpu")
 
 

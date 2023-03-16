@@ -62,8 +62,8 @@ def select_device(
             "Cannot use a GPU device: either CUDA is unavailable "
             "or no GPU is visible to jax."
         )
-        devices = jax.devices(device_type)
         device_type, idx = "cpu", 0
+        devices = jax.devices(device_type)
     # similar code to tensorflow util; pylint: disable=duplicate-code
     # Case when the desired device index is invalid: select another one.
     if idx >= len(devices):
