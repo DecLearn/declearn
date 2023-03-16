@@ -49,8 +49,8 @@ def select_device(
 
     Returns
     -------
-    device: tf.config.LogicalDevice
-        Selected device, usable as `tf.device` argument.
+    device: jaxlib.xla_extension.Device
+        Selected device.
     """
     idx = 0 if idx is None else idx
     # List available CPU or GPU devices.
@@ -62,8 +62,9 @@ def select_device(
             "Cannot use a GPU device: either CUDA is unavailable "
             "or no GPU is visible to jax."
         )
-        idx = 0
-        devices = jax.devices()
+        devices = jax.devices(device_type)
+        device_type, idx = "cpu", 0
+    # similar code to tensorflow util; pylint: disable=duplicate-code
     # Case when the desired device index is invalid: select another one.
     if idx >= len(devices):
         warnings.warn(

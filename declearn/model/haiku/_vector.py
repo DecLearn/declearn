@@ -12,7 +12,7 @@ from jax.config import config as jaxconfig
 from jax.typing import ArrayLike
 from typing_extensions import Self  # future: import from typing (Py>=3.11)
 
-from declearn.model.api._vector import Vector, register_vector_type
+from declearn.model.api import Vector, register_vector_type
 from declearn.model.haiku.utils import select_device
 from declearn.model.sklearn import NumpyVector
 from declearn.utils import get_device_policy

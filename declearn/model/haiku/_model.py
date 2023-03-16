@@ -21,10 +21,14 @@ from typing_extensions import Self
 
 from declearn.data_info import aggregate_data_info
 from declearn.model.api import Model
-from declearn.model.haiku import JaxNumpyVector
+from declearn.model.haiku._vector import JaxNumpyVector
 from declearn.model.haiku.utils import select_device
 from declearn.typing import Batch
 from declearn.utils import DevicePolicy, get_device_policy, register_type
+
+__all__ = [
+    "HaikuModel",
+]
 
 SEED = int(SystemRandom().random() * 10e6)
 
@@ -416,6 +420,7 @@ class HaikuModel(Model):
         self,
         policy: Optional[DevicePolicy] = None,
     ) -> None:
+        # similar code to tensorflow Model; pylint: disable=duplicate-code
         # Select the device to use based on the provided or global policy.
         if policy is None:
             policy = get_device_policy()
