@@ -46,18 +46,17 @@ jaxconfig.update("jax_enable_x64", True)
 
 def cnn_fn(inputs: jax.Array) -> jax.Array:
     """Simple CNN in a purely functional form"""
-    model = hk.Sequential(
-        [
-            hk.Conv2D(output_channels=32, kernel_shape=(7, 7), padding="SAME"),
-            jax.nn.relu,
-            hk.MaxPool(window_shape=8, strides=8, padding="SAME"),
-            hk.Conv2D(output_channels=16, kernel_shape=(5, 5), padding="SAME"),
-            jax.nn.relu,
-            hk.AvgPool(window_shape=8, strides=8, padding="SAME"),
-            hk.Reshape((16,)),
-            hk.Linear(1),
-        ]
-    )
+    stack = [
+        hk.Conv2D(output_channels=32, kernel_shape=(7, 7), padding="SAME"),
+        jax.nn.relu,
+        hk.MaxPool(window_shape=(8, 8, 1), strides=(8, 8, 1), padding="VALID"),
+        hk.Conv2D(output_channels=16, kernel_shape=(5, 5), padding="SAME"),
+        jax.nn.relu,
+        hk.AvgPool(window_shape=(8, 8, 1), strides=(8, 8, 1), padding="VALID"),
+        hk.Reshape((16,)),
+        hk.Linear(1),
+    ]
+    model = hk.Sequential(stack)  # type: ignore
     return model(inputs)
 
 
