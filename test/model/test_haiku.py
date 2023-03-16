@@ -122,10 +122,10 @@ class HaikuTestCase(ModelTestCase):
         """Suited toy binary-classification dataset."""
         rng = np.random.default_rng(seed=0)
         if self.kind.startswith("MLP"):
-            inputs = rng.normal(size=(2, 32, 64))
+            inputs = rng.normal(size=(2, 32, 64)).astype("float32")
         elif self.kind == "CNN":
-            inputs = rng.normal(size=(2, 32, 64, 64, 3))
-        labels = rng.choice([0, 1], size=(2, 32)).astype(float)
+            inputs = rng.normal(size=(2, 32, 64, 64, 3)).astype("float32")
+        labels = rng.choice(2, size=(2, 32))
         inputs = jnp.asarray(inputs)  # type: ignore
         labels = jnp.asarray(labels)  # type: ignore
         batches = list(zip(inputs, labels, [None, None]))
@@ -141,7 +141,7 @@ class HaikuTestCase(ModelTestCase):
             shape = [64]
             model_fn = mlp_fn
         model = HaikuModel(model_fn, loss_fn)
-        model.initialize({"features_shape": shape, "data_type": "float64"})
+        model.initialize({"features_shape": shape, "data_type": "float32"})
         return model
 
     def assert_correct_device(
@@ -175,6 +175,13 @@ if any(d.platform == "gpu" for d in jax.devices()):
 class TestHaikuModel(ModelTestSuite):
     """Unit tests for declearn.model.tensorflow.TensorflowModel."""
 
+    @pytest.mark.filterwarnings("ignore: Our custom Haiku serialization")
+    def test_serialization(
+        self,
+        test_case: ModelTestCase,
+    ) -> None:
+        super().test_serialization(test_case)
+
     def test_proper_model_placement(
         self,
         test_case: HaikuTestCase,
@@ -184,7 +191,7 @@ class TestHaikuModel(ModelTestSuite):
         policy = model.device_policy
         assert policy.gpu == (test_case.device == "gpu")
         assert policy.idx == 0
-        params = getattr(model, "_params_leaves")
+        params = getattr(model, "_params")
         device = f"{test_case.device}:0"
         for arr in params:
             assert f"{arr.device().platform}:{arr.device().id}" == device
