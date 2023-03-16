@@ -19,8 +19,8 @@ __all__ = [
     "JaxNumpyVector",
 ]
 
-# Overriding float32 default in jax
-jaxconfig.update("jax_enable_x64", True)
+
+jaxconfig.update("jax_enable_x64", True)  # enable float64 support
 
 
 @register_vector_type(jax.Array)

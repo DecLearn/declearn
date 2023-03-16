@@ -14,7 +14,6 @@ import jax
 import jax.numpy as jnp
 import joblib  # type: ignore
 import numpy as np
-from jax.config import config as jaxconfig
 from typing_extensions import Self
 
 from declearn.data_info import aggregate_data_info
@@ -28,11 +27,7 @@ __all__ = [
     "HaikuModel",
 ]
 
-# Overriding float32 default in jax
-jaxconfig.update("jax_enable_x64", True)
-
-# alias for unpacked Batch structures, converted to jax objects
-# input, optional label, optional weights
+# alias for unpacked Batch structures, converted to jax arrays
 # FUTURE: add support for lists of inputs
 JaxBatch = Tuple[jax.Array, Optional[jax.Array], Optional[jax.Array]]
 
