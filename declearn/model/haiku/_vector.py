@@ -7,9 +7,7 @@ from typing import Any, Callable, Dict, Optional, Set, Type
 import jax
 import jax.numpy as jnp
 import numpy as np
-from jax import Array
 from jax.config import config as jaxconfig
-from jax.typing import ArrayLike
 from typing_extensions import Self  # future: import from typing (Py>=3.11)
 
 from declearn.model.api import Vector, register_vector_type
@@ -25,7 +23,7 @@ __all__ = [
 jaxconfig.update("jax_enable_x64", True)
 
 
-@register_vector_type(Array)
+@register_vector_type(jax.Array)
 class JaxNumpyVector(Vector):
     """Vector subclass to store jax.numpy.ndarray coefficients.
 
@@ -85,7 +83,7 @@ class JaxNumpyVector(Vector):
         types = super().compatible_vector_types
         return types.union({NumpyVector, JaxNumpyVector})
 
-    def __init__(self, coefs: Dict[str, ArrayLike]) -> None:
+    def __init__(self, coefs: Dict[str, jax.Array]) -> None:
         super().__init__(coefs)
 
     def _apply_operation(
@@ -111,13 +109,13 @@ class JaxNumpyVector(Vector):
 
     def sign(
         self,
-    ) -> Self:  # type: ignore
+    ) -> Self:
         return self.apply_func(jnp.sign)
 
     def minimum(
         self,
         other: Any,
-    ) -> Self:  # type: ignore
+    ) -> Self:
         if isinstance(other, JaxNumpyVector):
             return self._apply_operation(other, jnp.minimum)
         return self.apply_func(jnp.minimum, other)
@@ -125,7 +123,7 @@ class JaxNumpyVector(Vector):
     def maximum(
         self,
         other: Any,
-    ) -> Self:  # type: ignore
+    ) -> Self:
         if isinstance(other, Vector):
             return self._apply_operation(other, jnp.maximum)
         return self.apply_func(jnp.maximum, other)
