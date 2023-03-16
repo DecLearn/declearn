@@ -287,11 +287,16 @@ class HaikuModel(Model):
             params: hk.Params, rng: jax.Array, batch: JaxBatch, max_norm: float
         ) -> List[jax.Array]:
             """Compute and clip gradients wrt parameters for a sample."""
-            grads = jax.grad(self._forward)(params, rng, batch)
-            nonempty_grads = jax.tree_util.tree_leaves(grads)
-            grad_norm = [jnp.linalg.norm(g) for g in nonempty_grads]
-            divisor = [jnp.maximum(g / max_norm, 1.0) for g in grad_norm]
-            return [g / d for g, d in zip(nonempty_grads, divisor)]
+            inputs, y_pred, s_wght = batch
+            data = (inputs, y_pred, None)
+            grads = jax.grad(self._forward)(params, rng, data)
+            grads_flat = [
+                grad / jnp.maximum(jnp.linalg.norm(grad) / max_norm, 1.0)
+                for grad in jax.tree_util.tree_leaves(grads)
+            ]
+            if s_wght is not None:
+                grads_flat = [g * s_wght for g in grads_flat]
+            return grads_flat
 
         in_axes = [None, None, 0, None]  # map on inputs' first dimension
         return jax.jit(jax.vmap(clipped_grad_fn, in_axes))
