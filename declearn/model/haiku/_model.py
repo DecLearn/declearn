@@ -3,6 +3,7 @@
 """Model subclass to wrap Haiku models."""
 
 import io
+import functools
 import warnings
 from copy import deepcopy
 from random import SystemRandom
@@ -197,41 +198,34 @@ class HaikuModel(Model):
 
     def _forward(
         self,
-        params: Dict[str, ArrayLike],
-        rng: Optional[ArrayLike],
-        inputs: ArrayLike,
-        y_true: Optional[ArrayLike] = None,
-        s_wght: Optional[ArrayLike] = None,
-    ) -> ArrayLike:
+        params: hk.Params,
+        rng: jax.Array,
+        batch: JaxBatch
+    ) -> jax.Array:
         """The forward pass chaining the model to the loss as a pure function.
 
         Parameters
         -------
-        params : dict[str, ArrayLike]
-            The model parameters, after flattening using built-in jax.tree_util
-        rng : ArrayLike or None
-            A jax seudo-random number generator (PRNG) key
-        inputs : ArrayLike
-            Input data
-        y_true: ArrayLike or None
-            Ground-truth labels, to which predictions are aligned
-            and should be compared for loss (and other evaluation
-            metrics) computation.
-        s_wght: ArrayLike or None
-            Optional sample weights to be used to weight metrics.
+        params: haiku.Params
+            The model parameters, as a nested dict of jax arrays.
+        rng: jax.Array
+            A jax pseudo-random number generator (PRNG) key.
+        batch: (jax.Array, jax.Array, optional[jax.Array])
+            Batch of jax-converted inputs, comprising (in that order)
+            input data, ground-truth labels and optional sample weights.
 
         Returns
         -------
-        loss: ArrayLike
-            The mean loss over the input data provided
-
+        loss: jax.Array
+            The mean loss over the input data provided.
         """
-        # pylint: disable=too-many-arguments
-        y_pred = self._transformed_model.apply(
-            params, rng, inputs
-        )  # list-inputs : *inputs
-        loss = self._compute_loss(y_pred, y_true, s_wght)
-        return jnp.mean(loss)
+        # FUTURE: add support for lists of inputs
+        inputs, y_true, s_wght = batch
+        y_pred = self._transformed_model.apply(params, rng, inputs)
+        s_loss = self._loss_fn(y_pred, y_true)
+        if s_wght is not None:
+            s_loss = s_loss * s_wght
+        return jnp.mean(s_loss)
 
     def compute_batch_gradients(
         self,
@@ -247,90 +241,60 @@ class HaikuModel(Model):
         batch: Batch,
     ) -> JaxNumpyVector:
         """Compute and return batch-averaged gradients of trainable weights."""
-        # Unflatten the parameters, run forward to compute gradients.
+        # Unpack input batch and unflatten model parameters.
         assert self._treedef is not None, "uninitialized JaxModel"
+        inputs = self._unpack_batch(batch)
         params = jax.tree_util.tree_unflatten(self._treedef, self._params)
-        grad_fn = jax.jit(jax.grad(self._forward))
-        inputs, y_true, s_wght = self._unpack_batch(batch)
-        grads = grad_fn(params, next(self._rng_gen), inputs, y_true, s_wght)
+        # Run the forward and backward passes to compute gradients.
+        grads = self._grad_fn(params, next(self._rng_gen), inputs)
         # Flatten the gradients and return them in a Vector container
         flat_grad = jax.tree_util.tree_flatten(grads)
         grads = {str(k): v for k, v in enumerate(flat_grad[0])}
         return JaxNumpyVector(grads)
 
+    @functools.cached_property
+    def _grad_fn(self) -> (
+        Callable[[hk.Params, jax.Array, JaxBatch], hk.Params]
+    ):
+        """Lazy-built jax function to compute batch-averaged gradients."""
+        return jax.jit(jax.grad(self._forward))
+
     def _compute_clipped_gradients(
         self,
         batch: Batch,
-        max_norm: Optional[float] = None,
+        max_norm: float,
     ) -> JaxNumpyVector:
-        """Compute and return smpla-wise clipped, batch-averaged gradients
-        of trainable weights."""
-        # Unflatten parameters, run forward to compute per sample gradients.
+        """Compute and return sample-wise clipped, batch-averaged gradients."""
+        # Unpack input batch and unflatten model parameters.
         assert self._treedef is not None, "uninitialized JaxModel"
+        inputs = self._unpack_batch(batch)
         params = jax.tree_util.tree_unflatten(self._treedef, self._params)
-        inputs, y_true, s_wght = self._unpack_batch(batch)
-        # Get  flatten, per-sample, clipped gradients and aggregate them
-        in_axes = [
-            None,
-            None,
-            0,
-            None if y_true is None else 0,
-            None if s_wght is None else 0,
-            None,
-        ]
-        grad_fn = jax.jit(jax.vmap(self._clipped_grad, in_axes))
-        clipped_grads = grad_fn(
-            params, next(self._rng_gen), inputs, y_true, s_wght, max_norm
+        # Get flattened, per-sample, clipped gradients and aggregate them.
+        clipped_grads = self._clipped_grad_fn(
+            params, next(self._rng_gen), inputs, max_norm
         )
         grads = [g.sum(0) for g in clipped_grads]
         # Return them in a Vector container.
         return JaxNumpyVector({str(k): v for k, v in enumerate(grads)})
 
-    def _clipped_grad(
-        self,
-        params: Dict[str, ArrayLike],
-        rng: ArrayLike,
-        inputs: ArrayLike,
-        y_true: Optional[ArrayLike],
-        s_wght: Optional[ArrayLike],
-        max_norm: Optional[float] = None,
-    ) -> List[ArrayLike]:
-        """Evaluate gradient for a single-example batch and clip its
-        grad norm.
+    @functools.cached_property
+    def _clipped_grad_fn(self) -> (
+        Callable[[hk.Params, jax.Array, JaxBatch, float], jax.Array]
+    ):
+        """Lazy-built jax function to compute clipped sample-wise gradients."""
 
-        Parameters
-        -------
-        params : dict[str, ArrayLike]
-            The model parameters, after flattening using built-in jax.tree_util
-        rng : ArrayLike or None
-            A jax seudo-random number generator (PRNG) key
-        inputs : ArrayLike
-            Input data
-        y_true: ArrayLike or None
-            Ground-truth labels, to which predictions are aligned
-            and should be compared for loss (and other evaluation
-            metrics) computation.
-        s_wght: ArrayLike or None
-            Optional sample weights to be used to weight metrics.
-        max_norm: float or None, default=None
-            Maximum L2-norm of sample-wise gradients, beyond which to
-            clip them before computing the batch-average gradients.
+        def clipped_grad_fn(
+            params: hk.Params, rng: jax.Array, batch: JaxBatch, max_norm: float
+        ) -> List[jax.Array]:
+            """Compute and clip gradients wrt parameters for a sample."""
+            grads = jax.grad(self._forward)(params, rng, batch)
+            nonempty_grads = jax.tree_util.tree_leaves(grads)
+            grad_norm = [jnp.linalg.norm(g) for g in nonempty_grads]
+            divisor = [jnp.maximum(g / max_norm, 1.0) for g in grad_norm]
+            return [g / d for g, d in zip(nonempty_grads, divisor)]
 
-        Returns
-        -------
-        clipped_grads: list(ArrayLike)
-            The gradients clipped at max_norm
-
-        """
-        # pylint: disable=too-many-arguments
-        grads = jax.grad(self._forward)(params, rng, inputs, y_true, s_wght)
-        nonempty_grads = jax.tree_util.tree_leaves(grads)
-        grad_norm = [jnp.linalg.norm(g) for g in nonempty_grads]
-        divisor = [jnp.maximum(g / max_norm, 1.0) for g in grad_norm]
-        clipped_grads = [
-            nonempty_grads[i] / divisor[i] for i in range(len(grad_norm))
-        ]
-        return clipped_grads
+        in_axes = [None, None, 0, None]  # map on inputs' first dimension
+        return jax.jit(jax.vmap(clipped_grad_fn, in_axes))
 
     @staticmethod
     def _unpack_batch(batch: Batch) -> JaxBatch:
@@ -354,18 +318,6 @@ class HaikuModel(Model):
         inputs, y_true, s_wght = batch
         output = [convert(inputs), convert(y_true), convert(s_wght)]
         return output  # type: ignore
-
-    def _compute_loss(
-        self,
-        y_pred: ArrayLike,
-        y_true: Optional[ArrayLike],
-        s_wght: Optional[ArrayLike] = None,
-    ) -> ArrayLike:
-        """Compute the average (opt. weighted) loss over given predictions."""
-        loss = self._loss_fn(y_pred, y_true)
-        if s_wght is not None:
-            loss = loss * s_wght
-        return loss
 
     def apply_updates(  # type: ignore  # Vector subtype specification
         self,
