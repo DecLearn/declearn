@@ -60,23 +60,25 @@ class HaikuModel(Model):
 
     def __init__(
         self,
-        model: Callable,
-        loss: Callable,
+        model: Callable[[jax.Array], jax.Array],
+        loss: Callable[[jax.Array, jax.Array], jax.Array],
         seed: Optional[int] = None,
     ) -> None:
         """Instantiate a Model interface wrapping a jax-haiku model.
 
         Parameters
         ----------
-        model: Callable
-            A function encapsulating a hk.Module such that `model(x)`
-            returns `hk.Module(x)
-        loss: Callable
-            A user-defined, per-sample loss function
+        model: callable(jax.Array) -> jax.Array
+            Function encapsulating a `haiku.Module` such that `model(x)`
+            returns `haiku_module(x)`, constituting a model's forward.
+        loss: callable(jax.Array, jax.Array) -> jax.Array
+            Jax-compatible function that defines the model's loss.
+            It must expect `y_pred` and `y_true` as input arguments (in
+            that order) and return sample-wise loss values.
         seed: int or None, default=None
             Random seed used to initialize the haiku-wrapped Pseudo-random
-            number generator. If none is provided, use an integer between
-            0 and 10e6 provided by SystemRandom.
+            number generator. If none is provided, draw an integer between
+            0 and 10^6 using `random.SystemRandom`.
         """
         super().__init__(model)
         # Assign loss module.

@@ -46,17 +46,16 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# all non-docs, non-tests extra dependencies
-all = [
+all = [  # all non-tests extra dependencies
+    "dm-haiku == 0.0.9",
     "functorch",
     "grpcio >= 1.45",
+    "jax[cpu] == 0.4.4",
     "opacus ~= 1.1",
     "protobuf >= 3.19",
     "tensorflow ~= 2.5",
     "torch ~= 1.10",
     "websockets ~= 10.1",
-    "jax[cpu]==0.4.4",
-    "dm-haiku==0.0.9",
 ]
 # thematically grouped dependencies (part of "all")
 dp = [
@@ -66,16 +65,16 @@ grpc = [
     "grpcio >= 1.45",
     "protobuf >= 3.19",
 ]
+haiku = [
+    "jax[cpu] == 0.4.4",
+    "dm-haiku == 0.0.9",
+]
 tensorflow = [
     "tensorflow ~= 2.5",
 ]
 torch = [
     "functorch",  # note: functorch is internalized by torch 2.0
     "torch ~= 1.10",
-]
-haiku = [
-    "jax[cpu]==0.4.4",
-    "dm-haiku==0.0.9",
 ]
 websockets = [
     "websockets ~= 10.1",
@@ -97,6 +96,16 @@ tests = [
     "pytest-cov >= 4.0",
     "jax==0.4.4",
     "dm-haiku==0.0.9",
+    # other extra dependencies (copy of "all")
+    "dm-haiku == 0.0.9",
+    "functorch",
+    "grpcio >= 1.45",
+    "jax[cpu] == 0.4.4",
+    "opacus ~= 1.1",
+    "protobuf >= 3.19",
+    "tensorflow ~= 2.5",
+    "torch ~= 1.10",
+    "websockets ~= 10.1",
 ]
 
 [project.urls]

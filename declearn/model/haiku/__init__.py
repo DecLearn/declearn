@@ -11,5 +11,6 @@ This module exposes:
 * JaxNumpyVector: Vector subclass to wrap jax.numpy.ndarray objects
 """
 
+from . import utils
 from ._vector import JaxNumpyVector
 from ._model import HaikuModel

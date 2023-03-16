@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Utils for GPU support and device management in tensorflow."""
+"""Utils for GPU support and device management in jax."""
 
 import warnings
 from typing import Optional
