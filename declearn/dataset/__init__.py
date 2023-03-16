@@ -32,3 +32,5 @@ arrays
 
 from ._base import Dataset, DataSpecs, load_dataset_from_json
 from ._inmemory import InMemoryDataset
+
+from ._utils import load_data_array, save_data_array

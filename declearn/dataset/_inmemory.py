@@ -17,7 +17,6 @@
 
 """Dataset implementation to serve scikit-learn compatible in-memory data."""
 
-import functools
 import os
 from typing import Any, ClassVar, Dict, Iterator, List, Optional, Set, Union
 
@@ -29,7 +28,7 @@ from sklearn.datasets import load_svmlight_file  # type: ignore
 from typing_extensions import Self  # future: import from typing (py >=3.11)
 
 from declearn.dataset._base import Dataset, DataSpecs
-from declearn.dataset._sparse import sparse_from_file, sparse_to_file
+from declearn.dataset._utils import load_data_array, save_data_array
 from declearn.typing import Batch
 from declearn.utils import json_dump, json_load, register_type
 
@@ -89,7 +88,7 @@ class InMemoryDataset(Dataset):
         an instance that is either a numpy ndarray, a pandas
         DataFrame or a scipy spmatrix.
 
-        See the `load_data_array` method for details
+        See the `load_data_array` function in dataset._utils for details
         on supported file formats.
 
         Parameters
@@ -131,7 +130,7 @@ class InMemoryDataset(Dataset):
         # Assign the main data array.
         if isinstance(data, str):
             self._data_path = data
-            data = self.load_data_array(data)
+            data = load_data_array(data)
         self.data = data
         # Assign the optional input features list.
         self.f_cols = f_cols
@@ -147,7 +146,7 @@ class InMemoryDataset(Dataset):
                     self.f_cols.remove(target)  # type: ignore
                 target = self.data[target]
             else:
-                target = self.load_data_array(target)
+                target = load_data_array(target)
         self.target = target
         # Assign the (optional) sample weights data array.
         if isinstance(s_wght, str):
@@ -159,7 +158,7 @@ class InMemoryDataset(Dataset):
                         self.f_cols.remove(s_wght)  # type: ignore
                     s_wght = self.data[s_wght]
             else:
-                s_wght = self.load_data_array(s_wght)
+                s_wght = load_data_array(s_wght)
         self.weights = s_wght
         # Assign the 'expose_classes' attribute.
         self.expose_classes = expose_classes
@@ -388,15 +387,15 @@ class InMemoryDataset(Dataset):
         # fmt: off
         info["data"] = (
             self._data_path or
-            self.save_data_array(os.path.join(folder, "data"), self.data)
+            save_data_array(os.path.join(folder, "data"), self.data)
         )
         info["target"] = None if self.target is None else (
             self._trgt_path or
-            self.save_data_array(os.path.join(folder, "trgt"), self.target)
+            save_data_array(os.path.join(folder, "trgt"), self.target)
         )
         info["s_wght"] = None if self.weights is None else (
             self._wght_path or
-            self.save_data_array(os.path.join(folder, "wght"), self.weights)
+            save_data_array(os.path.join(folder, "wght"), self.weights)
         )
         # fmt: on
         info["f_cols"] = self.f_cols

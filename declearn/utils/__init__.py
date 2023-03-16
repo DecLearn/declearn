@@ -128,4 +128,5 @@ from ._serialize import (
     deserialize_object,
     serialize_object,
 )
+from ._multiprocess import run_as_processes
 from ._toml_config import TomlConfig

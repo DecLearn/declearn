@@ -20,11 +20,8 @@
 import os
 import tempfile
 
-from declearn.test_utils import (
-    generate_ssl_certificates,
-    make_importable,
-    run_as_processes,
-)
+from declearn.test_utils import generate_ssl_certificates, make_importable
+from declearn.utils import run_as_processes
 
 # Perform local imports.
 # pylint: disable=wrong-import-position, wrong-import-order

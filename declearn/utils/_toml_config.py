@@ -293,10 +293,7 @@ class TomlConfig:
         raise TypeError(f"Failed to parse inputs for field {field.name}.")
 
     @classmethod
-    def from_toml(
-        cls,
-        path: str,
-    ) -> Self:
+    def from_toml(cls, path: str, warn: bool = True) -> Self:
         """Parse a structured configuration from a TOML file.
 
         The parsed TOML configuration file should be organized into sections
@@ -315,6 +312,10 @@ class TomlConfig:
         path: str
             Path to a TOML configuration file, that provides with the
             hyper-parameters making up for the FL "run" configuration.
+        warn: bool, default=True
+            Boolean indicating whether to raise a warning when some
+            fields are unused. Useful for cases where unused fields are
+            expected, e.g. quickrun.
 
         Raises
         ------
