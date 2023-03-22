@@ -15,7 +15,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""WebSockets implementation of network communication endpoints."""
+"""WebSockets implementation of network communication endpoints.
+
+The classes implemented here are:
+
+* [WebsocketsClient][declearn.communication.websockets.WebsocketsClient]:
+    Client-side network communication endpoint implementation using WebSockets.
+* [WebsocketsServer][declearn.communication.websockets.WebsocketsServer]:
+    Server-side network communication endpoint implementation using WebSockets.
+"""
 
 from ._client import WebsocketsClient
 from ._server import WebsocketsServer

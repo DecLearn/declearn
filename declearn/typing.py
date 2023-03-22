@@ -29,14 +29,18 @@ __all__ = [
     "SupportsConfig",
 ]
 
-# Data batches specification: (inputs, labels, weights), where:
-# - inputs and labels may be an array or a list of arrays:
-# - labels and/or weights may ne None
+
 Batch = Tuple[
     Union[ArrayLike, List[ArrayLike]],
     Optional[Union[ArrayLike, List[ArrayLike]]],
     Optional[ArrayLike],
 ]
+"""Data batches specification type-annotation.
+
+This type-hint designates (inputs, labels, weights) inputs, where:
+- inputs and labels may be an array or a list of arrays;
+- labels and/or weights may be None;
+"""  # this is rendered as a docstring for `Batch` in the docs
 
 
 class SupportsConfig(Protocol, metaclass=ABCMeta):

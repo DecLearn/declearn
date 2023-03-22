@@ -18,12 +18,14 @@
 """Load the gRPC backend code auto-generated from "message.proto".
 
 Instructions to re-generate the code:
+
 * From the commandline, with 'protobufs' as working directory, run:
-  python -m grpc_tools.protoc -I . --python_out=. \
-         --grpc_python_out=. ./message.proto
-  sed -i -E 's/^import.*_pb2/from . \0/' ./*_pb2*.py
+    - `python -m grpc_tools.protoc -I . --python_out=. \
+              --grpc_python_out=. ./message.proto`
+    - `sed -i -E 's/^import.*_pb2/from . \0/' ./*_pb2*.py`
+
 * On MAC OS, replace the second command with:
-  sed -i '' -E 's/^(import.*_pb2)/from . \1/' ./*_pb2*.py
+    - `sed -i '' -E 's/^(import.*_pb2)/from . \1/' ./*_pb2*.py`
 """
 
 try:

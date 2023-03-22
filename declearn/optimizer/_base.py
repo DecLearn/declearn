@@ -39,9 +39,11 @@ class Optimizer:
     It is also fully-workable and is designed to be customizable
     through the use of "plug-in modules" rather than subclassing
     (which might be used for advanced algorithm modifications):
-    see `declearn.optimizer.modules.OptiModule` for API details.
+    see the base classes [declearn.optimizer.modules.OptiModule][]
+    and [declearn.optimizer.regularizers.Regularizer][] for details.
 
     The process implemented here is the following:
+
     * Compute or receive the (pseudo-)gradients of a model.
     * Compute loss-regularization terms and add them to the
       gradients, based on a list of plug-in regularizers.
@@ -70,7 +72,6 @@ class Optimizer:
 
     Attributes
     ----------
-
     lrate: float
         Base learning rate applied to computed updates.
     w_decay: float
@@ -82,7 +83,7 @@ class Optimizer:
         List of plug-in loss regularization modules composed into
         the optimizer's gradients-to-updates computation algorithm.
 
-    API methods:
+    API methods
     -----------
     apply_gradients(Model, Vector) -> None:
         Update a Model based on a pre-computed Vector of gradients.

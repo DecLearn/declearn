@@ -22,27 +22,35 @@ endpoints for federated learning processes, as well as suitable messages to
 be transmitted, and the available communication protocols.
 
 This module contains the following core submodules:
-* api:
+
+* [api][declearn.communication.api]:
     Base API to define client- and server-side communication endpoints.
-* messaging:
+* [messaging][declearn.communication.messaging]:
     Message dataclasses defining information containers to be exchanged
     between communication endpoints.
 
-It also exposes the following core utility functions:
-* build_client:
+It also exposes the following core utility functions and dataclasses:
+
+* [build_client][declearn.communication.build_client]:
     Instantiate a NetworkClient, selecting its subclass based on protocol name.
-* build_server:
+* [build_server][declearn.communication.build_server]:
     Instantiate a NetworkServer, selecting its subclass based on protocol name.
-* list_available_protocols:
+* [list_available_protocols][declearn.communication.list_available_protocols]:
     List the protocol names for which both a NetworkClient and NetworkServer
     classes are registered (hence available to `build_client`/`build_server`).
+* [NetworkClientConfig][declearn.communication.NetworkClientConfig]:
+    TOML-parsable dataclass for network clients' instantiation.
+* [NetworkServerConfig][declearn.communication.NetworkServerConfig]:
+    TOML-parsable dataclass for network servers' instantiation.
+
 
 Finally, it defines the following protocol-specific submodules, provided
 the associated third-party dependencies are available:
-* grpc:
+
+* [grpc][declearn.communication.grpc]:
     gRPC-based network communication endpoints.
     Requires the `grpcio` and `protobuf` third-party packages.
-* websockets:
+* [websockets][declearn.communication.websockets]:
     WebSockets-based network communication endpoints.
     Requires the `websockets` third-party package.
 """

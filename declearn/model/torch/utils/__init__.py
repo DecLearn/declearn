@@ -17,10 +17,11 @@
 
 """Utils for torch backend support code.
 
-GPU/CPU backing device management utils:
-* AutoDeviceModule:
+GPU/CPU backing device management utils
+---------------------------------------
+* [AutoDeviceModule][declearn.model.torch.utils.AutoDeviceModule]:
     Wrapper for a `torch.nn.Module`, automating device-management.
-* select_device:
+* [select_device][declearn.model.torch.utils.select_device]:
     Select a backing device to use based on inputs and availability.
 """
 

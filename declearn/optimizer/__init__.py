@@ -22,11 +22,16 @@ of plug-in modules, used to implement various optimization and regularization
 techniques.
 
 Main class:
-* Optimizer: Base class to define gradient-descent-based optimizers.
 
-This module also implements the following submodules, used by the former:
-* modules: gradients-alteration algorithms, implemented as plug-in modules.
-* regularizers: loss-regularization algorithms, implemented as plug-in modules.
+* [Optimizer][declearn.optimizer.Optimizer]:
+    Base class to define gradient-descent-based optimizers.
+
+Submodules providing with plug-in algorithms:
+
+* [modules][declearn.optimizer.modules]:
+    Gradients-alteration algorithms, implemented as plug-in modules.
+* [regularizers][declearn.optimizer.regularizers]:
+    Loss-regularization algorithms, implemented as plug-in modules.
 """
 
 

@@ -113,3 +113,9 @@ class EarlyStopping:
 
 
 EarlyStopConfig = dataclass_from_init(EarlyStopping, name="EarlyStopConfig")
+"""Auto-generated dataclass matching `EarlyStopping.__init__` signature.
+
+See [`declearn.main.utils.EarlyStopping.__init__`][] for details.
+You may also refer to the dynamically-generated docs, accessible using
+`help(EarlyStopConfig)` in a python terminal.
+"""  # for docs rendering

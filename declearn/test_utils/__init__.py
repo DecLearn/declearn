@@ -15,7 +15,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Collection of utils for running tests and examples around declearn."""
+"""Collection of utils for running tests and examples around declearn.
+
+This submodule is not imported with declearn by default - it requires
+being explicitly imported, and should not be so by end-users, unless
+they accept the risk of using unstable features.
+
+This submodule is *not* considered part of the stable declearn API,
+meaning that its contents may change without warnings. Its features
+are not designed to be used outside of the scope of declearn-shipped
+tests and examples. It may also serve to introduce experimental new
+features that may be ported to the stable API in the future.
+"""
 
 from ._argparse import setup_client_argparse, setup_server_argparse
 from ._assertions import (
