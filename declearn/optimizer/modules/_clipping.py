@@ -29,6 +29,7 @@ class L2Clipping(OptiModule):
     """Fixed-threshold L2-norm gradient clipping module.
 
     This module implements the following algorithm:
+
         Init(max_norm):
         Step(max_norm):
             norm = euclidean_norm(grads)

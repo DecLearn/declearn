@@ -38,6 +38,7 @@ Batch = Tuple[
 """Data batches specification type-annotation.
 
 This type-hint designates (inputs, labels, weights) inputs, where:
+
 - inputs and labels may be an array or a list of arrays;
 - labels and/or weights may be None;
 """  # this is rendered as a docstring for `Batch` in the docs

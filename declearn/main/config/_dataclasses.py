@@ -150,11 +150,12 @@ class PrivacyConfig:
     threshold, and RNG-related parameters for the noise-addition module.
 
     Accountants supported by Opacus 1.2.0 include:
+
     * rdp : Renyi-DP accountant, see [1]
     * gdp : Gaussian-DP, see [2]
     * prv : Privacy loss Random Variables privacy accountant, see [3]
 
-    Note : for more details, refer to the Opacus source code and the
+    Note: for more details, refer to the Opacus source code and the
     doctrings of each accountant. See
     https://github.com/pytorch/opacus/tree/main/opacus/accountants
 

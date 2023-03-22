@@ -47,6 +47,7 @@ class NetworkServer(metaclass=ABCMeta):
     to connect to the server via a `NetworkServer` object, its `start`
     method must first be awaited, and conversely, its `stop` method
     should be awaited to close the connection:
+    ```
     >>> server = ServerSubclass(
     ...     "example.domain.com", 8765, "cert_path", "pkey_path"
     ... )
@@ -56,12 +57,15 @@ class NetworkServer(metaclass=ABCMeta):
     >>>     ...
     >>> finally:
     >>>     await server.stop()
+    ```
 
     An alternative syntax to achieve the former is using the server
     object as an asynchronous context manager:
+    ```
     >>> async with ServerSubclass(...) as server:
     >>>     data_info = server.wait_for_clients(...)
     >>>     ...
+    ```
 
     Note that a `NetworkServer` manages an allow-list of clients,
     which is defined based on `NetworkClient.register(...)`-emitted
@@ -70,6 +74,7 @@ class NetworkServer(metaclass=ABCMeta):
     """
 
     protocol: ClassVar[str] = NotImplemented
+    """Protocol name identifier, unique across NetworkServer classes."""
 
     def __init_subclass__(
         cls,

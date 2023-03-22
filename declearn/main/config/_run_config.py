@@ -56,39 +56,39 @@ class FLRunConfig(TomlConfig):
 
     Fields
     ------
-    rounds: int
+    - rounds: int
         Maximum number of training and validation rounds to perform.
-    register: RegisterConfig
+    - register: RegisterConfig
         Parameters for clients' registration (min and/or max number
         of clients to expect, optional max duration of the process).
-    training: TrainingConfig
+    - training: TrainingConfig
         Parameters for training rounds, including effort constraints
         and data-batching instructions.
-    evaluate: EvaluateConfig
+    - evaluate: EvaluateConfig
         Parameters for validation rounds, similar to training ones.
-    privacy: PrivacyConfig or None
+    - privacy: PrivacyConfig or None
         Optional parameters to set up local differential privacy,
         by having clients use the DP-SGD algorithm for training.
-    early_stop: EarlyStopConfig or None
+    - early_stop: EarlyStopConfig or None
         Optional parameters to set up an EarlyStopping criterion, to
         be leveraged so as to interrupt the federated learning process
         based on the tracking of a minimized quantity (e.g. model loss).
 
     Instantiation classmethods
     --------------------------
-    from_toml:
+    - from_toml:
         Instantiate by parsing a TOML configuration file.
-    from_params:
+    - from_params:
         Instantiate by parsing inputs dicts (or objects).
 
     Notes
     -----
-    * `register` may be defined as a single integer (in `from_params` or in
+    - `register` may be defined as a single integer (in `from_params` or in
       a TOML file), that will be used as the exact number of clients.
-    * If `evaluate` is not provided to `from_params` or in the parsed TOML
+    - If `evaluate` is not provided to `from_params` or in the parsed TOML
       file, default parameters will automatically be used and the training
       batch size will be used for evaluation as well.
-    * If `privacy` is provided and the 'poisson' parameter is unspecified
+    - If `privacy` is provided and the 'poisson' parameter is unspecified
       for `training`, it will be set to True by default rather than False.
     """
 

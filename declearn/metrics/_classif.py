@@ -40,6 +40,7 @@ class BinaryAccuracyPrecisionRecall(Metric):
     time, from which basic evaluation metrics may be derived.
 
     Computed metrics are the following:
+
     * accuracy: float
         Accuracy of the classifier, i.e. P(pred==true).
         Formula: (TP + TN) / (TP + TN + FP + FN)
@@ -132,6 +133,7 @@ class MulticlassAccuracyPrecisionRecall(Metric):
     one-hot encodings) may be passed as predictions.
 
     Computed metrics are the following:
+
     * accuracy: float
         Overall accuracy of the classifier, i.e. P(pred==true).
     * precision: 1-d numpy.ndarray

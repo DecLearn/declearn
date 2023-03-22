@@ -54,8 +54,8 @@ class TrainingManager:
     ) -> None:
         """Instantiate the client-side training and evaluation process.
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         model: Model
             Model instance that needs training and/or evaluating.
         optim: Optimizer

@@ -53,13 +53,13 @@ class TensorflowOptiModule(OptiModule):
     any rate cause some memory overhead. Thus it should be used sparingly,
     taking into account the following constraints and limitations:
 
-    * The wrapped optimizer's learning rate will be forced to 1.0, so that
+    - The wrapped optimizer's learning rate will be forced to 1.0, so that
       updates' scaling remains the responsibility of the wrapping declearn
       Optimizer.
-    * The wrapped optimizer should not make use of the updated variables'
+    - The wrapped optimizer should not make use of the updated variables'
       values, only of their gradients, because it will in fact operate on
       artificial, zero-valued variables at each step.
-    * If the module is to be used by the clients, the wrapped optimizer
+    - If the module is to be used by the clients, the wrapped optimizer
       class must have been imported from a third-party package that is
       also available to the clients (e.g. tensorflow).
 

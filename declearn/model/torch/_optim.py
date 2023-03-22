@@ -55,13 +55,13 @@ class TorchOptiModule(OptiModule):
     any rate cause some memory overhead. Thus it should be used sparingly,
     taking into account the following constraints and limitations:
 
-    * The wrapped optimizer class should have a "lr" (learning-rate)
+    - The wrapped optimizer class should have a "lr" (learning-rate)
       parameter, that will be forced to 1.0, so that updates' scaling
       remains the responsibility of the wrapping declearn Optimizer.
-    * The wrapped optimizer class should not make use of the watched
+    - The wrapped optimizer class should not make use of the watched
       parameters' values, only of their gradients, because it will in
       fact monitor artificial, zero-valued parameters at each step.
-    * If the module is to be used by the clients, the wrapped optimizer
+    - If the module is to be used by the clients, the wrapped optimizer
       class must have been imported from a third-party package that is
       also available to the clients (e.g. torch).
 

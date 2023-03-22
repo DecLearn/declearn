@@ -119,6 +119,7 @@ class MetricSet:
         ------
         TypeError:
             If `metrics` is of unproper type.
+
         Other exceptions may be raised when calling this class's `__init__`.
         """
         if metrics is None:

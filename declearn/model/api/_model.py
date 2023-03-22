@@ -73,8 +73,8 @@ class Model(metaclass=ABCMeta):
     ) -> Set[str]:
         """List of 'data_info' fields required to initialize this model.
 
-        Note: these fields should match a registered specification
-              (see `declearn.data_info` submodule)
+        Note: These fields should match a registered specification
+        (see the [`declearn.data_info`][] submodule).
         """
 
     @abstractmethod

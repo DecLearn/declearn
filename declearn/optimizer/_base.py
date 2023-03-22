@@ -44,14 +44,14 @@ class Optimizer:
 
     The process implemented here is the following:
 
-    * Compute or receive the (pseudo-)gradients of a model.
-    * Compute loss-regularization terms and add them to the
+    - Compute or receive the (pseudo-)gradients of a model.
+    - Compute loss-regularization terms and add them to the
       gradients, based on a list of plug-in regularizers.
-    * Refine gradients by running them through plug-in modules,
+    - Refine gradients by running them through plug-in modules,
       which are thus composed by sequential application.
-    * Optionally compute a decoupled weight decay term (see [1])
+    - Optionally compute a decoupled weight decay term (see [1])
       and add it to the updates (i.e. refined gradients).
-    * Apply the learning rate and perform the weights' udpate.
+    - Apply the learning rate and perform the weights' udpate.
 
     Most plug-in modules are self-contained, in the sense that they
     do not require any information flow between the server and its

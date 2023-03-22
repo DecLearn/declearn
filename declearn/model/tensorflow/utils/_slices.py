@@ -124,7 +124,7 @@ def add_indexed_slices_support(
 
     Returns
     -------
-    func: function(<T>, any) -> <T>, with <T>:(tf.Tensor|tf.IndexedSlices)
+    func:
         Tensor-processing operation that wraps `tf_op` but supports and
         preserves tf.IndexedSlices inputs as first (and opt. second)
         argument.

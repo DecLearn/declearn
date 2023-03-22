@@ -40,6 +40,7 @@ class BinaryRocAUC(Metric):
     AUC metrics are eventually derived.
 
     Computed metrics are the following:
+
     * fpr: 1-d numpy.ndarray
         True-positive rate values for a variety of thresholds.
         Formula: TP / (TP + FN), i.e. P(pred=1|true=1)
@@ -83,14 +84,14 @@ class BinaryRocAUC(Metric):
 
         Notes
         -----
-        Using the default `bound=None` enables the thresholds at which
-        the ROC curve points are compute to vary dynamically based on
-        inputs, but also based on input states to the `agg_states`
-        method, that may come from a metric with different parameters.
-        Setting up explicit boundaries prevents thresholds from being
-        adjusted at update time, and a ValueError will be raise by the
-        `agg_states` method if inputs are adjusted to a distinct set
-        of thresholds.
+        - Using the default `bound=None` enables the thresholds at which
+          the ROC curve points are compute to vary dynamically based on
+          inputs, but also based on input states to the `agg_states`
+          method, that may come from a metric with different parameters.
+        - Setting up explicit boundaries prevents thresholds from being
+          adjusted at update time, and a ValueError will be raise by the
+          `agg_states` method if inputs are adjusted to a distinct set
+          of thresholds.
         """
         self.scale = scale
         self.label = label

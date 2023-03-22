@@ -158,8 +158,10 @@ def json_dump(
     """Dump a given object to a JSON file, using extended types support.
 
     This function is merely a shortcut to run the following code:
+    ```
     >>> with open(path, "w", encoding=encoding) as file:
     >>>     json.dump(obj, file, default=declearn.utils.json_pack)
+    ```
 
     See `declearn.utils.add_json_support` to extend the behaviour
     of JSON (de)serialization to non-standard types, that will be
@@ -178,8 +180,10 @@ def json_load(
     """Load data from a JSON file, using extended types support.
 
     This function is merely a shortcut to run the following code:
+    ```
     >>> with open(path, "r", encoding=encoding) as file:
     >>>     return json.load(file, object_hook=declearn.utils.json_unpack)
+    ```
 
     See `declearn.utils.add_json_support` to extend the behaviour
     of JSON (de)serialization to non-standard types, that will be

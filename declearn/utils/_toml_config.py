@@ -174,9 +174,10 @@ class TomlConfig:
 
         The input keyword arguments should match this class's fields' names.
         For each and every dataclass field of this class:
-            - If unprovided, set the argument to None.
-            - If a `parse_{field.name}` method exists, use that method.
-            - Else, use the `default_parser` method.
+
+        - If unprovided, set the argument to None.
+        - If a `parse_{field.name}` method exists, use that method.
+        - Else, use the `default_parser` method.
 
         Notes
         -----
@@ -244,6 +245,7 @@ class TomlConfig:
         -----
         If `inputs` is str and treated as the path to a TOML file,
         it will be parsed in one of the following ways:
+
         - Call `field.type.from_toml` if `field.type` is a TomlConfig.
         - Use the file's `field.name` section as kwargs, if it exists.
         - Use the entire file's contents as kwargs otherwise.

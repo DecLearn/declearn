@@ -35,6 +35,7 @@ class RSquared(Metric):
     weighted) R^2 score, also known as coefficient of determination.
 
     Computed metric is the following:
+
     * r2: float
         R^2 score, or coefficient of determination, averaged across samples.
         It is defined as the proportion of total sample variance explained
@@ -43,33 +44,35 @@ class RSquared(Metric):
         * SSt = Sum((true - mean(true))^2)  # Total sum of squares
         * R^2 = 1 - (SSr / SSt)
 
-    Notes:
+    Notes
+    -----
     - This metric expects 1d-arrays, or arrays than can be reduced to 1-d
     - If the true variance is zero, we by convention return a perfect score
       if the expected variance is also zero, else return a score of 0.0.
     - The R^2 score is not well-defined with less than two samples.
 
-    Implementation details:
+    Implementation details
+    ----------------------
     - Since this metric is to be computed iteratively and with a single pass
       over a batched dataset, we use the König-Huygens formula to decompose
       the total sum of squares into a sum of terms that can be updated with
       summation for each batch received (as opposed to using an estimate of
       the mean of true values that would vary with each batch). This gives:
-        wSST = Sum(weight * (true - mean(true))^2)  # initial definition
-        wSST = Sum(weight * true^2) - (Sum(weight * true))^2 / Sum(weight)
+        - wSST = Sum(weight * (true - mean(true))^2)  # initial definition
+        - wSST = Sum(weight * true^2) - (Sum(weight * true))^2 / Sum(weight)
 
-    LaTeX formulas (with weights):
-    - Canonical formula:
-        $$R^2(y, \\hat{y})= 1 - \\frac{
-            \\sum_{i=1}^n w_i \\left(y_i-\\hat{y}_i\\right)^2
-        }{
-            \\sum_{i=1}^n w_i \\left(y_i-\\bar{y}\\right)^2
-        }$$
-    - Decomposed weighted total sum of squares:
-        $$\\sum_{i=1}^n w_i \\left(y_i-\\bar{y}\\right)^2 =
-            \\sum_i w_i y_i^2
-            - \\frac{\\left(\\sum_i w_i y_i\\right)^2}{\\sum_i w_i}
-        $$
+    - LaTeX formulas (with weights):
+        - Canonical formula:
+            $$R^2(y, \\hat{y})= 1 - \\dfrac{
+                \\sum_{i=1}^n w_i \\left(y_i-\\hat{y}_i\\right)^2
+            }{
+                \\sum_{i=1}^n w_i \\left(y_i-\\bar{y}\\right)^2
+            }$$
+        - Decomposed weighted total sum of squares:
+            $$\\sum_{i=1}^n w_i \\left(y_i-\\bar{y}\\right)^2 =
+                \\sum_i w_i y_i^2
+                - \\frac{\\left(\\sum_i w_i y_i\\right)^2}{\\sum_i w_i}
+            $$
     """
 
     name: ClassVar[str] = "r2"
