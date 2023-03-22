@@ -293,7 +293,12 @@ class TomlConfig:
         raise TypeError(f"Failed to parse inputs for field {field.name}.")
 
     @classmethod
-    def from_toml(cls, path: str, warn: bool = True) -> Self:
+    def from_toml(
+        cls,
+        path: str,
+        warn_user: bool = True,
+        use_section: Optional[str] = None,
+    ) -> Self:
         """Parse a structured configuration from a TOML file.
 
         The parsed TOML configuration file should be organized into sections
@@ -312,10 +317,14 @@ class TomlConfig:
         path: str
             Path to a TOML configuration file, that provides with the
             hyper-parameters making up for the FL "run" configuration.
-        warn: bool, default=True
+        warn_user: bool, default=True
             Boolean indicating whether to raise a warning when some
             fields are unused. Useful for cases where unused fields are
             expected, e.g. quickrun.
+        use_section: optional(str), default=None
+            If not None, points to a specific section of the TOML that
+            should be used, rather than the whole file. Useful to parse
+            orchestrating TOML files, e.g. quickrun.
 
         Raises
         ------
@@ -339,6 +348,11 @@ class TomlConfig:
                 "Failed to parse the TOML configuration file."
             ) from exc
         # Look for expected config sections in the parsed TOML file.
+        if isinstance(use_section, str):
+            try:
+                config = config[use_section]
+            except KeyError as exc:
+                raise KeyError("Specified section not found") from exc
         params = {}  # type: Dict[str, Any]
         for field in dataclasses.fields(cls):
             # Case when the section is provided: set it up for parsing.
@@ -354,10 +368,11 @@ class TomlConfig:
                     f"file: '{field.name}'."
                 )
         # Warn about remaining (unused) config sections.
-        for name in config:
-            warnings.warn(
-                f"Unsupported section encountered in {path} TOML file: "
-                f"'{name}'. This section will be ignored."
-            )
+        if warn_user:
+            for name in config:
+                warnings.warn(
+                    f"Unsupported section encountered in {path} TOML file: "
+                    f"'{name}'. This section will be ignored."
+                )
         # Finally, instantiate the FLConfig container.
         return cls.from_params(**params)
