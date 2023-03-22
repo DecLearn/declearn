@@ -7,6 +7,15 @@ site_description: >-
 theme:
   name: material  #readthedocs
 
+markdown_extensions:
+  - pymdownx.arithmatex:  # mathjax
+      generic: true
+
+extra_javascript:
+  # mathjax
+  - https://polyfill.io/v3/polyfill.min.js?features=es6
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+
 plugins:
 - autorefs
 - search:
