@@ -22,4 +22,5 @@ plugins:
           docstring_style: numpy
           docstring_section_style: "table"
           show_if_no_docstring: false  # show methods that inherit parent docs
+          show_root_toc_entry: true
           show_signature_annotations: false  # useful for no-doc but ugly

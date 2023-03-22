@@ -103,35 +103,24 @@ def parse_module(
     if not root:  # skip for the main folder
         docdir = os.path.join(docdir, module.name)
         os.makedirs(docdir)
-    # Create files or folders for public and private submodules.
+    # Recursively create folders and files for public submodules.
     pub_mod = {}
-    prv_mod = []
     for key, mod in module.modules.items():
-        # Create a dedicated file for private submodules.
-        # TODO: function or class-wise page with grouped index?
-        if key.startswith("_"):
-            name = key.strip("_")
-            path = os.path.join(docdir, f"{name}.md")
-            with open(path, "w", encoding="utf-8") as file:
-                file.write(f"::: {mod.path}")
-            prv_mod.append(name)
-        # Create a dedicated folder for public submodules.
-        else:
+        if not key.startswith("_"):
             pub_mod[key] = parse_module(mod, docdir)
-    # Write up an overview file based on the '__init__.py' docs,
-    # that also links to the public and private submodules.
+    # Create files for classes and functions exported from private submodules.
+    for key, obj in module.members.items():
+        if obj.is_module or obj.module.name in pub_mod or key.startswith("_"):
+            continue
+        if not (obj.docstring or obj.is_class or obj.is_function):
+            continue
+        path = os.path.join(docdir, f"{obj.name}.md")
+        with open(path, "w", encoding="utf-8") as file:
+            file.write(f"#`{obj.path}`\n::: {obj.path}")
+    # Write up an overview file based on the '__init__.py' docs.
     path = os.path.join(docdir, "index.md")
-    code = f"::: {module.path}"
-    if prv_mod:
-        code += "\n\n## Exported contents\n" + "\n".join(
-            f"- [{name}](./{name}.md)" for name in prv_mod
-        )
-    if pub_mod:
-        code += "\n\n## Public submodules\n" + "\n".join(
-            f"- [{name}](./{path})" for name, path in pub_mod.items()
-        )
     with open(path, "w", encoding="utf-8") as file:
-        file.write(code)
+        file.write(f"::: {module.path}")
     return f"{module.name}/index.md"
 
 
