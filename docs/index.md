@@ -47,7 +47,7 @@ The documentation is structured this way:
   how to implement your own use case, and the API's structure and key points.
 - [API Reference](./api-reference/index.md):<br/>
   Full API documentation, auto-generated from the source code.
-- [Developer guide](./devs.md):<br/>
+- [Developer guide](./devs-guide/index.md):<br/>
   Information on how to contribute, codings rules and how to run tests.
 
 ## Copyright

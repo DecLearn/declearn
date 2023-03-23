@@ -1,0 +1,5 @@
+- [Introduction](./index.md)
+- [Contributions guide](./contribute.md)
+- [Unit tests and code analysis](./tests.md)
+- [Building the documentation](./docs-build.md)
+- [Docstrings style guide](./docs-style.md)
