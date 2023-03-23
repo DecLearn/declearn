@@ -179,13 +179,16 @@ class PrivacyConfig:
 
     References
     ----------
-    [1] Abadi et al, 2016.
+    - [1]
+        Abadi et al, 2016.
         Deep Learning with Differential Privacy.
         https://arxiv.org/abs/1607.00133
-    [2] Dong et al, 2019.
+    - [2]
+        Dong et al, 2019.
         Gaussian Differential Privacy.
         https://arxiv.org/abs/1905.02383
-    [3] Gopi et al, 2021.
+    - [3]
+        Gopi et al, 2021.
         Numerical Composition of Differential Privacy.
         https://arxiv.org/abs/2106.02848
     """
