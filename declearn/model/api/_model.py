@@ -92,7 +92,7 @@ class Model(metaclass=ABCMeta):
 
         Raises
         ------
-        KeyError:
+        KeyError
             If some fields in `required_data_info` are missing.
 
         Notes
@@ -164,10 +164,10 @@ class Model(metaclass=ABCMeta):
 
         Raises
         ------
-        KeyError:
+        KeyError
             If the input weights do not match the expected number and
             names of weight tensors.
-        TypeError:
+        TypeError
             If the input weights are of unproper concrete Vector type.
         """
 

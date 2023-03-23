@@ -216,7 +216,7 @@ class TensorflowModel(Model):
 
         Raises
         ------
-        KeyError:
+        KeyError
             In case some expected keys are missing, or additional keys
             are present. Be verbose about the identified mismatch(es).
         """

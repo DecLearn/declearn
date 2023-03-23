@@ -247,7 +247,7 @@ class Optimizer:
 
         Raises
         ------
-        KeyError:
+        KeyError
             If the provided `config` lacks some required parameters
             and/or contains some unused ones.
         """
@@ -447,13 +447,13 @@ class Optimizer:
 
         Raises
         ------
-        KeyError:
+        KeyError
             If the received states do not match the expected config,
             whether because a module is missing or one of its states
             is missing.
             In both cases, the Optimizer's states will be reverted
             to their values prior to the failed call to this method.
-        RuntimeError:
+        RuntimeError
             If a KeyError was raised both when trying to apply the
             input `state` and when trying to revert the states to
             their initial values after that first error was raised.

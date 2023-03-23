@@ -185,7 +185,7 @@ class NetworkClient(metaclass=ABCMeta):
 
         Raises
         -------
-        TypeError:
+        TypeError
             If the server does not return a JoinReply message.
         """
         reply = await self._send_message(JoinRequest(self.name, data_info))
@@ -234,10 +234,10 @@ class NetworkClient(metaclass=ABCMeta):
 
         Raises
         ------
-        RuntimeError:
+        RuntimeError
             If the server emits an Error message in response to the
             message sent.
-        TypeError:
+        TypeError
             If the server returns a non-Empty message.
 
         Note

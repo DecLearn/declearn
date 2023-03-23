@@ -64,11 +64,11 @@ class MetricSet:
 
         Raises
         ------
-        TypeError:
+        TypeError
             If one of the input `metrics` elements is of improper type.
-        KeyError:
+        KeyError
             If a metric name identifier fails to be mapped to a Metric class.
-        RuntimeError:
+        RuntimeError
             If multiple metrics are of the same final type.
         """
         # REVISE: store metrics into a Dict and adjust labels when needed
@@ -117,7 +117,7 @@ class MetricSet:
 
         Raises
         ------
-        TypeError:
+        TypeError
             If `metrics` is of unproper type.
 
         Other exceptions may be raised when calling this class's `__init__`.
@@ -211,11 +211,11 @@ class MetricSet:
 
         Raises
         ------
-        KeyError:
+        KeyError
             If any state variable is missing from `states`.
-        TypeError:
+        TypeError
             If any state variable is of unproper type.
-        ValueError:
+        ValueError
             If any array state variable is of unproper shape.
         """
         for metric in self.metrics:

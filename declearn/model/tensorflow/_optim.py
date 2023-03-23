@@ -130,10 +130,10 @@ class TensorflowOptiModule(OptiModule):
 
         Raises
         ------
-        TypeError:
+        TypeError
             If `gradients` are not a TensorflowVector (this module is
             a framework-specific hack).
-        KeyError:
+        KeyError
             If `gradients` have an inconsistent spec with the first
             ones ever processed by this module. Use `reset` if you
             wish to start back from the beginning.

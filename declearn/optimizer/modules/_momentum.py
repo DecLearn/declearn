@@ -50,7 +50,7 @@ class MomentumModule(OptiModule):
     https://pytorch.org/docs/stable/generated/torch.optim.SGD.html).
     The nesterov variant's implementation is equivalently adapted.
 
-    This formaluation is equivalent to the canonical one for constant learning
+    This formulation is equivalent to the canonical one for constant learning
     rare (eta), with both approaches outputting:
         $$ w_{t+1} = w_t - \\eta \\sum_{k=1}^t \\beta^{t-k} \\nabla_k $$
 

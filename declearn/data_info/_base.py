@@ -163,16 +163,16 @@ def aggregate_data_info(
 
     Raises
     ------
-    KeyError:
+    KeyError
         If a field in `required_fields` is missing from at least one
         dict included in `clients_data_info`.
-    ValueError:
+    ValueError
         If any value of a shared field is invalid, or if values from
         a field are incompatible for combination.
 
     Warns
     -----
-    UserWarning:
+    UserWarning
         If one of the return fields has no corresponding registered
         `DataInfoField` specification class.
         In that case, return the list of individual values in lieu

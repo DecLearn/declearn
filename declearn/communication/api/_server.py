@@ -215,7 +215,7 @@ class NetworkServer(metaclass=ABCMeta):
 
         Raises
         ------
-        RuntimeError:
+        RuntimeError
             If the number of registered clients does not abide by the
             provided boundaries at the end of the process.
 
@@ -255,7 +255,7 @@ class NetworkServer(metaclass=ABCMeta):
 
         Raises
         ------
-        asyncio.TimeoutError:
+        asyncio.TimeoutError
             If `timeout` is set and is reached while the message is
             yet to be collected by at least one of the clients.
         """
@@ -286,7 +286,7 @@ class NetworkServer(metaclass=ABCMeta):
 
         Raises
         ------
-        asyncio.TimeoutError:
+        asyncio.TimeoutError
             If `timeout` is set and is reached while the message is
             yet to be collected by at least one of the clients.
         """
@@ -323,7 +323,7 @@ class NetworkServer(metaclass=ABCMeta):
 
         Raises
         ------
-        asyncio.TimeoutError:
+        asyncio.TimeoutError
             If `timeout` is set and is reached while the message is
             yet to be collected by the client.
         """
@@ -351,7 +351,7 @@ class NetworkServer(metaclass=ABCMeta):
 
         Raises
         ------
-        asyncio.TimeoutError:
+        asyncio.TimeoutError
             If any of the clients has failed to deliver a message
             before `timeout` was reached.
 

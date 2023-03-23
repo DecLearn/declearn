@@ -67,7 +67,7 @@ def _isinstance_generic(inputs: Any, typevar: Type) -> bool:
 
     Raises
     ------
-    TypeError:
+    TypeError
         If an unsupported `typevar` is provided.
     """
     origin = typing.get_origin(typevar)
@@ -194,13 +194,13 @@ class TomlConfig:
 
         Raises
         ------
-        RuntimeError:
+        RuntimeError
             In case a field failed to be instantiated using the input key-
             word argument (or None value resulting from the lack thereof).
 
         Warns
         -----
-        UserWarning:
+        UserWarning
             In case some keyword arguments are unused due to the lack of a
             corresponding dataclass field.
         """
@@ -252,7 +252,7 @@ class TomlConfig:
 
         Raises
         ------
-        TypeError:
+        TypeError
             If instantiation failed, for any reason.
 
         Returns
@@ -318,14 +318,14 @@ class TomlConfig:
 
         Raises
         ------
-        RuntimeError:
+        RuntimeError
             If parsing fails, whether due to misformatting of the TOML
             file, presence of undue parameters, or absence of required
             ones.
 
         Warns
         -----
-        UserWarning:
+        UserWarning
             In case some sections of the TOML file are unused due to the
             lack of a corresponding dataclass field.
         """

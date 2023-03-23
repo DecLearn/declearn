@@ -137,7 +137,7 @@ class ScaffoldClientModule(OptiModule):
 
         Warns
         -----
-        RuntimeWarning:
+        RuntimeWarning
             If called on an instance that has not processed any gradients
             (via a call to `run`) since the last call to `process_aux_var`
             (or its instantiation).
@@ -199,9 +199,9 @@ class ScaffoldClientModule(OptiModule):
 
         Raises
         ------
-        KeyError:
+        KeyError
             If an expected auxiliary variable is missing.
-        TypeError:
+        TypeError
             If a variable is of unproper type, or if aux_var
             is not formatted as it should be.
         """

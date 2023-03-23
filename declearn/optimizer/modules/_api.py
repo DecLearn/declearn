@@ -206,9 +206,9 @@ class OptiModule(metaclass=ABCMeta):
 
         Raises
         ------
-        KeyError:
+        KeyError
             If an expected auxiliary variable is missing.
-        TypeError:
+        TypeError
             If a variable is of unproper type, or if aux_var
             is not formatted as it should be.
         """
@@ -248,7 +248,7 @@ class OptiModule(metaclass=ABCMeta):
 
         Raises
         ------
-        KeyError:
+        KeyError
             If the provided `config` lacks some required parameters
             and/or contains some unused ones.
         """
@@ -305,7 +305,7 @@ class OptiModule(metaclass=ABCMeta):
 
         Raises
         ------
-        KeyError:
+        KeyError
             If an expected state variable is missing from `state`.
         """
         # API-defining method; pylint: disable=unused-argument

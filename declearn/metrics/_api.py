@@ -230,11 +230,11 @@ class Metric(metaclass=ABCMeta):
 
         Raises
         ------
-        KeyError:
+        KeyError
             If any state variable is missing from `states`.
-        TypeError:
+        TypeError
             If any state variable is of unproper type.
-        ValueError:
+        ValueError
             If any array state variable is of unproper shape.
         """
         final = {}  # type: Dict[str, Union[float, np.ndarray]]
@@ -295,7 +295,7 @@ class Metric(metaclass=ABCMeta):
 
         Raises
         ------
-        KeyError:
+        KeyError
             If the provided `name` fails to be mapped to a registered
             Metric subclass.
         """
@@ -333,7 +333,7 @@ class Metric(metaclass=ABCMeta):
 
         Raises
         ------
-        ValueError:
+        ValueError
             If the input array has improper shape or negative values.
         """
         if s_wght is None:

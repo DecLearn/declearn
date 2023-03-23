@@ -130,10 +130,10 @@ class TorchOptiModule(OptiModule):
 
         Raises
         ------
-        RuntimeError:
+        RuntimeError
             If `optim_cls` is a string and the target class cannot be loaded.
             If `optim_cls` is a string and the user denies the import command.
-        TypeError:
+        TypeError
             If `optim_cls` (or the object loaded in case it is a string)
             is not a `torch.nn.Optimizer` subclass.
 
@@ -181,10 +181,10 @@ class TorchOptiModule(OptiModule):
 
         Raises
         ------
-        TypeError:
+        TypeError
             If `gradients` are not a TorchVector (this module is
             a framework-specific hack).
-        KeyError:
+        KeyError
             If `gradients` have an inconsistent spec with the first
             ones ever processed by this module. Use `reset` if you
             wish to start back from the beginning.

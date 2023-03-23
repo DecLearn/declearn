@@ -108,6 +108,7 @@ class FLRunConfig(TomlConfig):
         """Field-specific parser to instantiate a RegisterConfig.
 
         This method supports specifying `register`:
+
         * as a single int, translated into {"min_clients": inputs}
         * as None (or missing kwarg), using default RegisterConfig()
 

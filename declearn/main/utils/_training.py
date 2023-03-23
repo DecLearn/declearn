@@ -255,7 +255,7 @@ class TrainingManager:
 
         Raises
         ------
-        StopIteration:
+        StopIteration
             If this step is being cancelled and the training routine
             in the context of which it is being called should stop.
         """

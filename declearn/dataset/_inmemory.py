@@ -258,7 +258,7 @@ class InMemoryDataset(Dataset):
 
         Raises
         ------
-        TypeError:
+        TypeError
             If `path` is of unsupported extension.
 
         Any exception raised by data-loading functions may also be raised
@@ -312,7 +312,7 @@ class InMemoryDataset(Dataset):
 
         Raises
         ------
-        TypeError:
+        TypeError
             If `array` is of unsupported type.
         """
         # Select a file extension and set up the array-dumping function.
