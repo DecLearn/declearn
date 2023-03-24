@@ -43,7 +43,7 @@ pip install \
   mkdocs-material
 
 # Auto-generate the API reference and home index markdown files.
-python gen_docs.py
+python scripts/gen_docs.py
 
 # Build the docs and serve them on your localhost.
 mkdocs build

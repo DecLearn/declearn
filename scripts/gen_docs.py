@@ -10,7 +10,7 @@ from typing import Dict, Tuple
 import griffe
 
 
-ROOT_FOLDER = os.path.dirname(__file__)
+ROOT_FOLDER = os.path.split(os.path.dirname(os.path.abspath(__file__)))[0]
 DOCS_INDEX = """{title}
 
 ## Introduction
@@ -30,7 +30,7 @@ The documentation is structured this way:
   how to implement your own use case, and the API's structure and key points.
 - [API Reference](./api-reference/index.md):<br/>
   Full API documentation, auto-generated from the source code.
-- [Developer guide](./devs.md):<br/>
+- [Developer guide](./devs-guide/index.md):<br/>
   Information on how to contribute, codings rules and how to run tests.
 
 ## Copyright
@@ -44,7 +44,7 @@ def generate_index():
     """Fill-in the main index file based on the README one."""
     # Parse contents from the README file and write up the index.md one.
     title, readme = _parse_readme()
-    # TODO: parse the existing index.md and fill rather then overwrite?
+    # FUTURE: parse the existing index.md and fill it rather then overwrite?
     docidx = DOCS_INDEX.format(
         title=title,
         intro=readme["Introduction"],
