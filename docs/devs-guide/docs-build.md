@@ -52,6 +52,11 @@ mkdocs build
 mkdocs serve  # by default, serve on localhost:8000
 ```
 
+In practice, the actual documentation website is built using
+[mike](https://github.com/jimporter/mike), so as to preserve access to the
+documentation of past releases. This is however out of scope for building
+and testing the documentation at a given code point locally.
+
 ## Contributing to the documentation
 
 You may contribute changes to the out-of-code documentation by modifying
