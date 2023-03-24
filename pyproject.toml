@@ -128,3 +128,6 @@ packages = ["declearn"]
 
 [tool.setuptools.package-data]
 declearn = ["py.typed"]
+
+[project.scripts]
+declearn-quickrun = "declearn.quickrun.run:main"
