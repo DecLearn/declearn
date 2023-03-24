@@ -89,7 +89,7 @@ tests = [
 ]
 
 [project.urls]
-homepage = "https://gitlab.inria.fr/magnet/declearn/declearn2"
+homepage = "https://magnet.gitlabpages.inria.fr/docs"
 repository = "https://gitlab.inria.fr/magnet/declearn/declearn2.git"
 
 [tool.black]

@@ -10,7 +10,8 @@
 
 ## Introduction
 
-`declearn` is a python package providing with a framework to perform federated
+[declearn](https://magnet.gitlabpages.inria.fr/declearn/docs/latest/)
+is a python package providing with a framework to perform federated
 learning, i.e. to train machine learning models by distributing computations
 across a set of data owners that, consequently, only have to share aggregated
 information (rather than individual data samples) with an orchestrating server
@@ -54,27 +55,30 @@ TL;DR:
   of the [pyproject.toml](./pyproject.toml) file.
 
 If you want to read more about how to setup for and finally install declearn,
-you may read the [installation guide](./docs/setup.md)
+you may read the
+[installation guide](https://magnet.gitlabpages.inria.fr/declearn/docs/latest/setup)
 
 ## Quickstart
 
-Our [quickstart](./docs/quickstart.md) example is the right place to start
-with if you want too see in a glance what end-user declearn code looks like.
+Our [quickstart](https://magnet.gitlabpages.inria.fr/declearn/docs/latest/quickstart)
+example is the right place to start with if you want too see in a glance
+what end-user declearn code looks like.
 
 ## Usage of the Python API
 
-The [user guide](./docs/user-guide/index.md) is the natural entrypoint to
-learn more about declearn's take on Federated Learning, the current package
-capabilities, how to implement your own use case, and the structure and key
-points of the package's API.
+The [user guide](https://magnet.gitlabpages.inria.fr/declearn/docs/latest/user-guide)
+is the natural entrypoint to learn more about declearn's take on Federated
+Learning, the current package capabilities, how to implement your own use
+case, and the structure and key points of the package's API.
 
 To dive directly into the code's documentation, you may also jump to the
-[API reference](./docs/api/index.md).
+[API reference](https://magnet.gitlabpages.inria.fr/declearn/docs/latest/api).
 
 ## Developers
 
 Information for developers, such as how to contribute, coding rules, and how
-to run the tests, can be found in the [developer guide](./docs/devs.md).
+to run the tests, can be found in the
+[developer guide](https://magnet.gitlabpages.inria.fr/declearn/docs/latest/devs-guide/).
 
 ## Copyright
 
