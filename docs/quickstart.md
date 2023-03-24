@@ -87,10 +87,11 @@ client.run()
 To simulate the previous experiment on a single computer, you may set up
 network communications to go through the localhost, and resort to one of
 two possibilities:
-- 1. Run the server and client-wise scripts parallelly, e.g. in distinct
-     terminals.
-- 2. Use declearn-provided tools to run the server and clients' routines
-     concurrently using multiprocessing.
+
+1. Run the server and client-wise scripts parallelly, e.g. in distinct
+   terminals.
+2. Use declearn-provided tools to run the server and clients' routines
+   concurrently using multiprocessing.
 
 While technically similar (both solutions resolve on isolating the agents'
 routines in separate python processes that communicate over the localhost),
@@ -98,4 +99,5 @@ the second solution offers more practicality in terms of offering a single
 entrypoint for your experiment, and optionally automatically stopping any
 running agent in case one of the other has failed.
 To find out more about this solution, please have a look at the Heart UCI
-example [implemented here](https://gitlab.inria.fr/magnet/declearn/declearn2/examples/heart-uci/readme.md).
+example [implemented here](https://gitlab.inria.fr/magnet/declearn/declearn2\
+-/tree/develop/examples/heart-uci).
