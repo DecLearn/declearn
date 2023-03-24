@@ -108,8 +108,9 @@ class Checkpointer:
 
         Raises
         ------
-        TypeError:
+        TypeError
             If `inputs` is of unproper type.
+
         Other exceptions may be raised when calling this class's `__init__`.
         """
         if isinstance(inputs, str):

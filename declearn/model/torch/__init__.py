@@ -17,17 +17,20 @@
 
 """Tensorflow models interfacing tools.
 
-This submodule provides with a generic interface to wrap up
-any PyTorch `nn.Module` instance that is to be trained with
-gradient descent.
+This submodule provides with a generic interface to wrap up any PyTorch
+`torch.nn.Module` instance that is to be trained with gradient descent.
 
-This module exposes:
-* TorchModel: Model subclass to wrap torch.nn.Module objects
-* TorchOptiModule: OptiModule subclass to wrap torch.nn.Optimizer objects
-* TorchVector: Vector subclass to wrap torch.Tensor objects
+This module exposes the following classes:
 
-It also exposes the `utils` submodule, which mainly aims at
-providing tools used in the backend of the former objects.
+* [TorchModel][declearn.model.torch.TorchModel]:
+    Model subclass to wrap torch.nn.Module objects.
+* [TorchOptiModule][declearn.model.torch.TorchOptiModule]:
+    OptiModule subclass to wrap torch.nn.Optimizer objects.
+* [TorchVector][declearn.model.torch.TorchVector]:
+    Vector subclass to wrap torch.Tensor objects.
+
+It also exposes the [utils][declearn.model.torch.utils] submodule, which
+mainly aims at providing tools used in the backend of the former objects.
 """
 
 from . import utils

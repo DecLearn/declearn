@@ -50,19 +50,19 @@ class Aggregator(metaclass=ABCMeta):
     The following attribute and method require to be overridden
     by any non-abstract child class of `Aggregator`:
 
-    name: str class attribute
+    - name: str class attribute
         Name identifier of the class (should be unique across existing
         Aggregator classes). Also used for automatic types-registration
         of the class (see `Inheritance` section below).
-    aggregate(updates: Dict[str, Vector], n_steps: Dict[str, int]) -> Vector:
+    - aggregate(updates: Dict[str, Vector], n_steps: Dict[str, int]) -> Vector:
         Aggregate input vectors into a single one.
         This is the main method for any `Aggregator`.
 
     Overridable
     -----------
-    get_config() -> Dict[str, Any]:
+    - get_config() -> Dict[str, Any]:
         Return a JSON-serializable configuration dict of an instance.
-    from_config(Dict[str, Any]) -> Aggregator:
+    - from_config(Dict[str, Any]) -> Aggregator:
         Classmethod to instantiate an Aggregator from a config dict.
 
     Inheritance
@@ -75,6 +75,7 @@ class Aggregator(metaclass=ABCMeta):
     """
 
     name: ClassVar[str] = NotImplemented
+    """Name identifier of the class, unique across Aggregator classes."""
 
     def __init_subclass__(
         cls,

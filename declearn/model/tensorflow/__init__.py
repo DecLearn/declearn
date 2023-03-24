@@ -17,17 +17,20 @@
 
 """Tensorflow models interfacing tools.
 
-This submodule provides with a generic interface to wrap up
-any TensorFlow `keras.Model` instance that is to be trained
-through gradient descent.
+This submodule provides with a generic interface to wrap up any TensorFlow
+`tensorflow.keras.Model` instance that is to be trained with gradient descent.
 
-This module exposes:
-* TensorflowModel: Model subclass to wrap tensorflow.keras.Model objects
-* TensorflowOptiModule: OptiModule subclass to wrap keras Optimizer objects
-* TensorflowVector: Vector subclass to wrap tensorflow.Tensor objects
+It exposes the following classes:
 
-It also exposes the `utils` submodule, which mainly aims at
-providing tools used in the backend of the former objects.
+* [TensorflowModel][declearn.model.tensorflow.TensorflowModel]:
+    Model subclass to wrap tensorflow.keras.Model objects.
+* [TensorflowOptiModule][declearn.model.tensorflow.TensorflowOptiModule]:
+    OptiModule subclass to wrap keras Optimizer objects.
+* [TensorflowVector][declearn.model.tensorflow.TensorflowVector]:
+    Vector subclass to wrap tensorflow.Tensor objects.
+
+It also exposes the [utils][declearn.model.tensorflow.utils] submodule, which
+mainly aims at providing tools used in the backend of the former objects.
 """
 
 from . import utils

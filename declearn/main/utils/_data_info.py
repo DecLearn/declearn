@@ -87,7 +87,7 @@ def aggregate_clients_data_info(
 
     Raises
     ------
-    AggregationError:
+    AggregationError
         In case any error is raised when calling `aggregate_data_info`
         on the input arguments.
 

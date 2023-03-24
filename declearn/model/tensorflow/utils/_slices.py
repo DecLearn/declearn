@@ -63,7 +63,7 @@ def apply_func_to_tensor_or_slices(
 
     Raises
     ------
-    TypeError:
+    TypeError
         If `first` and `other` are two tf.IndexedSlices with different
         shapes or non-zero indices.
         If `first` is a tf.IndexedSlices and `func` failed on its values.
@@ -124,7 +124,7 @@ def add_indexed_slices_support(
 
     Returns
     -------
-    func: function(<T>, any) -> <T>, with <T>:(tf.Tensor|tf.IndexedSlices)
+    func:
         Tensor-processing operation that wraps `tf_op` but supports and
         preserves tf.IndexedSlices inputs as first (and opt. second)
         argument.

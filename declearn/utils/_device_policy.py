@@ -18,9 +18,10 @@
 """Utils to define a computation device policy.
 
 This private submodule defines:
-* A dataclass defining a standard to hold a device-selection policy.
-* A private global variable holding the current package-wise device policy.
-* A public pair of functions acting as a getter and a setter for that variable.
+
+- A dataclass defining a standard to hold a device-selection policy.
+- A private global variable holding the current package-wise device policy.
+- A public pair of functions acting as a getter and a setter for that variable.
 """
 
 import dataclasses
@@ -83,6 +84,7 @@ def get_device_policy() -> DevicePolicy:
     """Return a copy of the current global device policy.
 
     This method is meant to be used:
+
     - By end-users that wish to check the current device policy.
     - By the backend code of framework-specific objects so as to
       take the required steps towards implementing that policy.

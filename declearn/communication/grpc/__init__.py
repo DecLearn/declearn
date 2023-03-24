@@ -15,7 +15,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""gRPC implementation of network communication endpoints."""
+"""gRPC implementation of network communication endpoints.
+
+The classes implemented here are:
+
+* [GrpcClient][declearn.communication.grpc.GrpcClient]:
+    Client-side network communication endpoint implementation using gRPC.
+* [GrpcServer][declearn.communication.grpc.GrpcServer]:
+    Server-side network communication endpoint implementation using gRPC.
+
+The [protobufs][declearn.communication.grpc.protobufs] submodule is also
+exposed, that provides with backend code auto-generated from a protobuf
+file, and is not considered part of the declearn stable API.
+"""
 
 from . import protobufs
 from ._client import GrpcClient

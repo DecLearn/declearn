@@ -50,6 +50,7 @@ class NetworkClient(metaclass=ABCMeta):
     `NetworkClient` object, its `start` method must first be awaited
     and conversely, its `stop` method should be awaited to close the
     connection:
+    ```
     >>> client = ClientSubclass("example.domain.com:8765", "name", "cert_path")
     >>> await client.start()
     >>> try:
@@ -57,12 +58,15 @@ class NetworkClient(metaclass=ABCMeta):
     >>>     ...
     >>> finally:
     >>>     await client.stop()
+    ```
 
     An alternative syntax to achieve the former is using the client
     object as an asynchronous context manager:
+    ```
     >>> async with ClientSubclass(...) as client:
     >>>     client.register(data_info)
     >>>     ...
+    ```
 
     Note that a declearn `NetworkServer` manages an allow-list of
     clients, which is defined during a registration phase of limited
@@ -72,6 +76,7 @@ class NetworkClient(metaclass=ABCMeta):
     """
 
     protocol: ClassVar[str] = NotImplemented
+    """Protocol name identifier, unique across NetworkClient classes."""
 
     def __init_subclass__(
         cls,
@@ -180,7 +185,7 @@ class NetworkClient(metaclass=ABCMeta):
 
         Raises
         -------
-        TypeError:
+        TypeError
             If the server does not return a JoinReply message.
         """
         reply = await self._send_message(JoinRequest(self.name, data_info))
@@ -229,10 +234,10 @@ class NetworkClient(metaclass=ABCMeta):
 
         Raises
         ------
-        RuntimeError:
+        RuntimeError
             If the server emits an Error message in response to the
             message sent.
-        TypeError:
+        TypeError
             If the server returns a non-Empty message.
 
         Note
@@ -254,12 +259,17 @@ class NetworkClient(metaclass=ABCMeta):
     async def check_message(self, timeout: Optional[int] = None) -> Message:
         """Retrieve the next message sent by the server.
 
+        Parameters
+        ----------
+        timeout: int or None, default=None
+            Optional timeout delay, after which the server will send an
+            Error message with `messaging.flags.CHECK_MESSAGE_TIMEOUT`
+            if no other message awaits collection by this client.
+
         Returns
         -------
-        action: str
-            Instruction for the client.
-        params: dict
-            Associated parameters, as a JSON-serializable dict.
+        message: Message
+            Message received from the server.
 
         Note
         ----

@@ -56,11 +56,11 @@ class OptiModule(metaclass=ABCMeta):
     The following attribute and method require to be overridden
     by any non-abstract child class of `OptiModule`:
 
-    name: str class attribute
+    - name: str class attribute
         Name identifier of the class (should be unique across existing
         OptiModule classes). Also used for automatic types-registration
         of the class (see `Inheritance` section below).
-    run(gradients: Vector) -> Vector:
+    - run(gradients: Vector) -> Vector:
         Apply an adaptation algorithm to input gradients and return
         them. This is the main method for any `OptiModule`.
 
@@ -71,15 +71,15 @@ class OptiModule(metaclass=ABCMeta):
     As defined at `OptiModule` level, they have no effect and may thus
     be safely ignored when implementing self-contained algorithms.
 
-    collect_aux_var() -> Optional[Dict[str, Any]]:
+    - collect_aux_var() -> Optional[Dict[str, Any]]:
         Emit a JSON-serializable dict of auxiliary variables,
         to be received by a counterpart of this module on the
         other side of the client/server relationship.
-    process_aux_var(Dict[str, Any]) -> None:
+    - process_aux_var(Dict[str, Any]) -> None:
         Process a dict of auxiliary variables, received from
         a counterpart to this module on the other side of the
         client/server relationship.
-    aux_name: optional[str] class attribute, default=None
+    - aux_name: optional[str] class attribute, default=None
         Name to use when sending or receiving auxiliary variables
         between synchronous client/server modules, that therefore
         need to share the *same* `aux_name`.
@@ -94,7 +94,15 @@ class OptiModule(metaclass=ABCMeta):
     """
 
     name: ClassVar[str] = NotImplemented
+    """Name identifier of the class, unique across OptiModule classes."""
+
     aux_name: ClassVar[Optional[str]] = None
+    """Optional aux-var-sharing identifier of the class.
+
+    This name may be shared by a pair of OptiModule classes, designed
+    to operate on the client and server side respectively. It should
+    be unique to that pair of classes across all OptiModule classes.
+    """
 
     def __init_subclass__(
         cls,
@@ -137,7 +145,7 @@ class OptiModule(metaclass=ABCMeta):
 
         Returns
         -------
-        aux_var: dict[str, any] or None
+        aux_var: Optional[Dict[str, Any]]
             Optional JSON-serializable dict of auxiliary variables that
             are to be shared with a similarly-named OptiModule on the
             other side of the client-server relationship.
@@ -146,20 +154,21 @@ class OptiModule(metaclass=ABCMeta):
         -----
         Specfications for the output and calling context depend on whether
         the module is part of a client's optimizer or of the server's one:
-        * Client:
-          - aux_var is dict[str, any] or None.
-          - `collect_aux_var` is expected to happen after taking a series
-            of local optimization steps, before sending the local updates
-            to the server for aggregation and further processing.
-        * Server:
-          - aux_var may be None ; dict[str, any] (to send the same values
-            to each and every client) ; or dict[str, dict[str, any]] with
-            clients' names as keys and client-wise new aux_var as values
-            so as to send distinct values to the clients.
-          - `collect_aux_var` is expected to happen when the global model
-            weights are ready to be shared with clients, i.e. at the very
-            end of a training round or at the beginning of the training
-            process.
+
+        - Client:
+            - `aux_var` is dict[str, any] or None.
+            - `collect_aux_var` is expected to happen after taking a series
+              of local optimization steps, before sending the local updates
+              to the server for aggregation and further processing.
+        - Server:
+            - `aux_var` may be None ; dict[str, any] (to send the same values
+              to each and every client) ; or dict[str, dict[str, any]] with
+              clients' names as keys and client-wise new aux_var as values
+              so as to send distinct values to the clients.
+            - `collect_aux_var` is expected to happen when the global model
+              weights are ready to be shared with clients, i.e. at the very
+              end of a training round or at the beginning of the training
+              process.
         """
         return None
 
@@ -181,24 +190,25 @@ class OptiModule(metaclass=ABCMeta):
         -----
         Specfications for the inputs and calling context depend on whether
         the module is part of a client's optimizer or of the server's one:
-        * Client:
-          - aux_var is dict[str, any] and may be client-specific.
-          - `process_aux_var` is expected to happen at the beginning of
-            a training round to define gradients' processing during the
-            local optimization steps taken through that round.
-        * Server:
-          - aux_var is dict[str, dict[str, any]] with clients' names as
-            primary keys and client-wise collected aux_var as values.
-          - `process_aux_var` is expected to happen upon receiving local
-            updates (and, thus, aux_var), before the aggregated updates
-            are computed and passed through the server optimizer (which
-            comprises this module).
+
+        - Client:
+            - `aux_var` is dict[str, any] and may be client-specific.
+            - `process_aux_var` is expected to happen at the beginning of
+              a training round to define gradients' processing during the
+              local optimization steps taken through that round.
+        - Server:
+            - `aux_var` is dict[str, dict[str, any]] with clients' names as
+              primary keys and client-wise collected aux_var as values.
+            - `process_aux_var` is expected to happen upon receiving local
+              updates (and, thus, aux_var), before the aggregated updates
+              are computed and passed through the server optimizer (which
+              comprises this module).
 
         Raises
         ------
-        KeyError:
+        KeyError
             If an expected auxiliary variable is missing.
-        TypeError:
+        TypeError
             If a variable is of unproper type, or if aux_var
             is not formatted as it should be.
         """
@@ -214,7 +224,7 @@ class OptiModule(metaclass=ABCMeta):
 
         Returns
         -------
-        config: dict[str, any]
+        config: Dict[str, Any]
             JSON-serializable dict storing this module's instantiation
             configuration.
         """
@@ -238,7 +248,7 @@ class OptiModule(metaclass=ABCMeta):
 
         Raises
         ------
-        KeyError:
+        KeyError
             If the provided `config` lacks some required parameters
             and/or contains some unused ones.
         """
@@ -273,7 +283,7 @@ class OptiModule(metaclass=ABCMeta):
 
         Returns
         -------
-        state: dict[str, any]
+        state: Dict[str, Any]
             JSON-serializable dict storing this module's inner state
             variables.
         """
@@ -295,7 +305,7 @@ class OptiModule(metaclass=ABCMeta):
 
         Raises
         ------
-        KeyError:
+        KeyError
             If an expected state variable is missing from `state`.
         """
         # API-defining method; pylint: disable=unused-argument

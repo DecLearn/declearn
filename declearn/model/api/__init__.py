@@ -15,13 +15,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Model and Vector abstractions submodule."""
+"""Model and Vector abstractions submodule.
+
+This submodules exports the building blocks of the Model and Vector APIs:
+
+* [Model][declearn.model.api.Model]:
+    Abstract class defining an API to interface a ML model.
+* [Vector][declearn.model.api.Vector]:
+    Abstract class defining an API to manipulate (sets of) data arrays.
+* [register_vector_type][declearn.model.api.register_vector_type]:
+    Decorate a Vector subclass to make it buildable with `Vector.build`.
+"""
 
 from ._vector import Vector, register_vector_type
 from ._model import Model
-
-__all__ = [
-    "Model",
-    "Vector",
-    "register_vector_type",
-]

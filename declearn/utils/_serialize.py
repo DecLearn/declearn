@@ -92,8 +92,8 @@ def serialize_object(
     ----------
     obj: object
         Object that needs serialization. To be valid, the object must:
-        * implement the `get_config` and `from_config` (class)methods
-        * belong to a registered type, unless `allow_unregistered=True`
+        - implement the `get_config` and `from_config` (class)methods
+        - belong to a registered type, unless `allow_unregistered=True`
           (i.e. a type that has been passed to or decorated with the
           `declearn.utils.register_type` function)
     group: str or None, default=None

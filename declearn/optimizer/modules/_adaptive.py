@@ -35,6 +35,7 @@ class AdaGradModule(OptiModule):
     """Adaptative Gradient Algorithm (AdaGrad) module.
 
     This module implements the following algorithm:
+
         Init(eps):
             state = 0
         Step(grads):
@@ -45,7 +46,8 @@ class AdaGradModule(OptiModule):
     are scaled down by the square-root of the sum of the past
     squared gradients. See reference [1].
 
-    References:
+    References
+    ----------
     [1] Duchi et al., 2012.
         Adaptive Subgradient Methods for Online Learning
         and Stochastic Optimization.
@@ -100,6 +102,7 @@ class RMSPropModule(OptiModule):
     """Root Mean Square Propagation (RMSProp) module.
 
     This module implements the following algorithm:
+
         Init(beta, eps):
             state = 0
         Step(grads, step):
@@ -110,7 +113,8 @@ class RMSPropModule(OptiModule):
     are scaled down by the square-root of the momentum-corrected
     sum of the past squared gradients. See reference [1].
 
-    References:
+    References
+    ----------
     [1] Tieleman and Hinton, 2012.
         Lecture 6.5-rmsprop: Divide the Gradient by a Running
         Average of its Recent Magnitude.
@@ -166,6 +170,7 @@ class AdamModule(OptiModule):
     """Adaptive Moment Estimation (Adam) module.
 
     This module implements the following algorithm:
+
         Init(beta_1, beta_2, eps):
             state_m = 0
             state_v = 0
@@ -189,11 +194,14 @@ class AdamModule(OptiModule):
     at least from the point of view of this module (a warm-up
     schedule might for example counteract this).
 
-    References:
-    [1] Kingma and Ba, 2014.
+    References
+    ----------
+    - [1]
+        Kingma and Ba, 2014.
         Adam: A Method for Stochastic Optimization.
         https://arxiv.org/abs/1412.6980
-    [2] Reddi et al., 2018.
+    - [2]
+        Reddi et al., 2018.
         On the Convergence of Adam and Beyond.
         https://arxiv.org/abs/1904.09237
     """
@@ -289,6 +297,7 @@ class YogiModule(AdamModule):
     """Yogi additive adaptive moment estimation module.
 
     This module implements the following algorithm:
+
         Init(beta_1, beta_2, eps):
             state_m = 0
             state_v = 0
@@ -307,13 +316,17 @@ class YogiModule(AdamModule):
     Note that this implementation allows combining the Yogi
     modification of Adam with the AMSGrad [3] one.
 
-    References:
-    [1] Zaheer and Reddi et al., 2018.
+    References
+    ----------
+    - [1]
+        Zaheer and Reddi et al., 2018.
         Adaptive Methods for Nonconvex Optimization.
-    [2] Kingma and Ba, 2014.
+    - [2]
+        Kingma and Ba, 2014.
         Adam: A Method for Stochastic Optimization.
         https://arxiv.org/abs/1412.6980
-    [3] Reddi et al., 2018.
+    - [3]
+        Reddi et al., 2018.
         On the Convergence of Adam and Beyond.
         https://arxiv.org/abs/1904.09237
     """

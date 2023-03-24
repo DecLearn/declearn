@@ -48,7 +48,7 @@ def select_device(
 
     Warns
     -----
-    UserWarning:
+    UserWarning
         If `gpu=True` but no GPU is available.
         If `idx` exceeds the number of available GPU devices.
 

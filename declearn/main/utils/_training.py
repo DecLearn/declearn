@@ -54,8 +54,8 @@ class TrainingManager:
     ) -> None:
         """Instantiate the client-side training and evaluation process.
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         model: Model
             Model instance that needs training and/or evaluating.
         optim: Optimizer
@@ -255,7 +255,7 @@ class TrainingManager:
 
         Raises
         ------
-        StopIteration:
+        StopIteration
             If this step is being cancelled and the training routine
             in the context of which it is being called should stop.
         """

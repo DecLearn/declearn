@@ -44,7 +44,7 @@ def raise_on_stringsets_mismatch(
 
     Raises
     ------
-    KeyError:
+    KeyError
         In case `received != expected`.
         Verbose about the missing and/or unexpected `received` keys.
     """

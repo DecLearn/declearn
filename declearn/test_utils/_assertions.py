@@ -49,11 +49,11 @@ def assert_json_serializable_dict(sdict: Dict[str, Any]) -> None:
 
     Raises
     ------
-    AssertionError:
+    AssertionError
         If `sdict` or the JSON-reloaded object is not a dict, or
         if the latter has different keys and/or values compared
         to the former.
-    Exception:
+    Exception
         Other exceptions may be raised if the JSON encoding (or
         decoding) operation goes wrong.
     """
@@ -93,7 +93,7 @@ def assert_dict_equal(
 
     Raises
     ------
-    AssertionError:
+    AssertionError
         If the two dicts are not equal.
     """
     assert dict_a.keys() == dict_b.keys()
@@ -131,7 +131,7 @@ def assert_list_equal(
 
     Raises
     ------
-    AssertionError:
+    AssertionError
         If the two lists are not equal.
     """
     assert len(list_a) == len(list_b)
@@ -169,7 +169,7 @@ def assert_values_equal(
 
     Raises
     ------
-    AssertionError:
+    AssertionError
         If the two lists are not equal.
     """
     if isinstance(val_a, dict):

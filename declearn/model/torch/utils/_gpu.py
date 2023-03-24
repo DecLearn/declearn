@@ -46,7 +46,7 @@ def select_device(
 
     Warns
     -----
-    UserWarning:
+    UserWarning
         If `gpu=True` but no GPU is available.
         If `idx` exceeds the number of available GPU devices.
 
@@ -83,11 +83,12 @@ class AutoDeviceModule(torch.nn.Module):
 
     This `torch.nn.Module` subclass enables wrapping another one, and
     provides:
-    * a `device` attribute (and instantiation parameter) indicating
+
+    - a `device` attribute (and instantiation parameter) indicating
       where the wrapped module is placed
-    * automatic placement of input tensors on that device as part of
+    - automatic placement of input tensors on that device as part of
       `forward` calls to the module
-    * a `set_device` method to change the device and move the wrapped
+    - a `set_device` method to change the device and move the wrapped
       module to it
 
     This aims at internalizing device-management boilerplate code.

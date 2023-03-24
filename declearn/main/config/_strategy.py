@@ -49,43 +49,45 @@ class FLOptimConfig(TomlConfig):
 
     Fields
     ------
-    client_opt: Optimizer
+    - client_opt: Optimizer
         Optimizer to be used by clients (that each hold a copy)
         so as to conduct the step-wise local model updates.
-    server_opt: Optimizer, default=Optimizer(lrate=1.0)
+    - server_opt: Optimizer, default=Optimizer(lrate=1.0)
         Optimizer to be used by the server so as to conduct a
         round-wise global model update based on the aggregated
         client updates.
-    aggregator: Aggregator, default=AverageAggregator()
+    - aggregator: Aggregator, default=AverageAggregator()
         Client weights aggregator to be used by the server so as
         to conduct the round-wise aggregation of client udpates.
 
     Notes
     -----
     The `aggregator` field may be specified in a variety of ways:
+
     - a single string may specify the registered name of the class
-      constructor to use.
-      In TOML, use `aggregator = "<name>"` outside of any section.
+    constructor to use.
+    In TOML, use `aggregator = "<name>"` outside of any section.
     - a serialization dict, that specifies the registration `name`,
-      and optionally a registration `group` and/or arguments to be
-      passed to the class constructor.
-      In TOML, use an `[aggregator]` section with a `name = "<name>"`
-      field and any other fields you wish to pass. Kwargs may either
-      be grouped into a dedicated `[aggregator.config]` sub-section
-      or provided as fields of the main aggregator section.
+    and optionally a registration `group` and/or arguments to be
+    passed to the class constructor.
+    In TOML, use an `[aggregator]` section with a `name = "<name>"`
+    field and any other fields you wish to pass. Kwargs may either
+    be grouped into a dedicated `[aggregator.config]` sub-section
+    or provided as fields of the main aggregator section.
 
     The `client_opt` and `server_opt` fields may be specified as:
+
     - a single float, specifying the learning rate for vanilla SGD.
-      In TOML, use `client_opt = 0.001` for `Optimizer(lrate=0.001)`.
+    In TOML, use `client_opt = 0.001` for `Optimizer(lrate=0.001)`.
     - a dict of keyword arguments for `declearn.optimizer.Optimizer`.
-      In TOML, use a `[client_opt]` section with fields specifying
-      the input parameters you wish to pass to the constructor.
+    In TOML, use a `[client_opt]` section with fields specifying
+    the input parameters you wish to pass to the constructor.
 
     Instantiation classmethods
     --------------------------
-    from_toml:
+    - from_toml:
         Instantiate by parsing a TOML configuration file.
-    from_params:
+    - from_params:
         Instantiate by parsing inputs dicts (or objects).
     """
 
@@ -101,7 +103,7 @@ class FLOptimConfig(TomlConfig):
         field: dataclasses.Field,  # future: dataclasses.Field[Optimizer]
         inputs: Union[float, Dict[str, Any], Optimizer],
     ) -> Optimizer:
-        """ "Field-specific parser to instanciate the client-side Optimizer."""
+        """Field-specific parser to instantiate the client-side Optimizer."""
         return cls._parse_optimizer(field, inputs)
 
     @classmethod
@@ -110,7 +112,7 @@ class FLOptimConfig(TomlConfig):
         field: dataclasses.Field,  # future: dataclasses.Field[Optimizer]
         inputs: Union[float, Dict[str, Any], Optimizer, None],
     ) -> Optimizer:
-        """ "Field-specific parser to instanciate the server-side Optimizer."""
+        """Field-specific parser to instantiate the server-side Optimizer."""
         return cls._parse_optimizer(field, inputs)
 
     @classmethod
@@ -138,13 +140,14 @@ class FLOptimConfig(TomlConfig):
         """Field-specific parser to instantiate an Aggregator.
 
         This method supports specifying `aggregator`:
-        * as a str, used to retrieve a registered Aggregator class
-        * as a dict, parsed a serialized Aggregator configuration:
+
+        - as a str, used to retrieve a registered Aggregator class
+        - as a dict, parsed a serialized Aggregator configuration:
             - name: str used to retrieve a registered Aggregator class
             - (opt.) group: str used to retrieve the registered class
             - (opt.) config: dict specifying kwargs for the constructor
             - any other field will be added to the `config` kwargs dict
-        * as None (or missing kwarg), using default AverageAggregator()
+        - as None (or missing kwarg), using default AverageAggregator()
         """
         # Case when using the default value: delegate to the default parser.
         if inputs is None:

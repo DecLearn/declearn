@@ -266,7 +266,7 @@ class MessagesHandler:
 
         Raises
         ------
-        asyncio.TimeoutError:
+        asyncio.TimeoutError
             If `timeout` is set and is reached while the message is
             yet to be collected by the client.
 
@@ -336,7 +336,7 @@ class MessagesHandler:
 
         Raises
         ------
-        asyncio.TimeoutError:
+        asyncio.TimeoutError
             If `timeout` is set and is reached while no message has
             been received from the client.
 
@@ -385,7 +385,7 @@ class MessagesHandler:
 
         Raises
         ------
-        RuntimeError:
+        RuntimeError
             If the number of registered clients does not abide by the
             provided boundaries at the end of the process.
 
