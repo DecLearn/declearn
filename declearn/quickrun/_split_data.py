@@ -1,5 +1,20 @@
 # coding: utf-8
 
+# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# et Automatique)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Script to split data into heterogeneous shards and save them.
 
 Available splitting scheme:
@@ -20,7 +35,6 @@ instance sparse data
 
 import argparse
 import io
-import json
 import os
 import re
 import textwrap
@@ -33,8 +47,6 @@ import requests  # type: ignore
 from declearn.dataset import load_data_array
 
 SOURCE_URL = "https://pjreddie.com/media/files"
-DEFAULT_FOLDER = "./examples/quickrun/data"
-# TODO remove duplicate with _run.py
 
 
 def load_mnist(
@@ -174,7 +186,7 @@ def _split_biased(
 
 
 def split_data(
-    folder: str = DEFAULT_FOLDER,
+    folder: str,
     n_shards: int = 5,
     data: Optional[str] = None,
     target: Optional[Union[str, int]] = None,
@@ -182,17 +194,32 @@ def split_data(
     perc_train: float = 0.8,
     seed: Optional[int] = None,
 ) -> None:
-    """Download and randomly split the MNIST dataset into shards.
-    #TODO
+    """Download and randomly split a dataset into shards.
+
+    The resulting folder structure is :
+        folder/
+        └─── data*/
+            └─── client*/
+            │      train_data.* - training data
+            │      train_target.* - training labels
+            │      valid_data.* - validation data
+            │      valid_target.* - validation labels
+            └─── client*/
+            │    ...
+
     Parameters
     ----------
     folder: str
         Path to the folder where to export shard-wise files.
     n_shards: int
-        Number of shards between which to split the MNIST training data.
+        Number of shards between which to split the data.
     data: str or None, default=None
-        Optional path to a folder where to find or download the raw MNIST
-        data. If None, use a temporary folder.
+        Optional path to a folder where to find the data.
+        If None, default to the MNIST example.
+    target: str or int or None, default=None
+        If str, path to the labels file to import. If int, column of
+        the data file to be used as labels. Required if data is not None,
+        ignored if data is None.
     scheme: {"iid", "labels", "biased"}, default="iid"
         Splitting scheme to use. In all cases, shards contain mutually-
         exclusive samples and cover the full raw training data.
@@ -201,13 +228,11 @@ def split_data(
         with mutually-exclusive target classes.
         - If "biased", split the dataset through random sampling according
         to a shard-specific random labels distribution.
+    perc_train:  float, default= 0.8
+        Train/validation split in each client dataset, must be in the
+        ]0,1] range.
     seed: int or None, default=None
         Optional seed to the RNG used for all sampling operations.
-    use_csv: bool, default=False
-        Whether to export shard-wise csv files rather than pairs of .npy
-        files. This uses twice as much disk space and requires using the
-        `load_mnist_from_csv` function to reload instead of `numpy.load`
-        but is mandatory to have compatibility with the Fed-BioMed API.
     """
     # Select the splitting function to be used.
     if scheme == "iid":
@@ -221,20 +246,22 @@ def split_data(
     # Set up the RNG, download the raw dataset and split it.
     rng = np.random.default_rng(seed)
     inputs, labels = load_data(data, target)
-    os.makedirs(folder, exist_ok=True)
     print(f"Splitting data into {n_shards} shards using the {scheme} scheme")
     split = func(inputs, labels, n_shards, rng)
     # Export the resulting shard-wise data to files.
+    folder = os.path.join(folder, f"data_{scheme}")
 
     def np_save(data, i, name):
-        np.save(os.path.join(folder, f"client_{i}/{name}.npy"), data)
+        data_dir = os.path.join(folder, f"client_{i}")
+        os.makedirs(data_dir, exist_ok=True)
+        np.save(os.path.join(data_dir, f"{name}.npy"), data)
 
     for i, (inp, tgt) in enumerate(split):
         if not perc_train:
             np_save(inp, i, "train_data")
             np_save(tgt, i, "train_target")
         else:
-            if ~(perc_train <= 1.0) or ~(perc_train > 0.0):
+            if perc_train > 1.0 or perc_train < 0.0:
                 raise ValueError("perc_train should be a float in ]0,1]")
             n_train = round(len(inp) * perc_train)
             t_inp, t_tgt = inp[:n_train], tgt[:n_train]
@@ -248,12 +275,7 @@ def split_data(
 def parse_args(args: Optional[List[str]] = None) -> argparse.Namespace:
     """Set up and run a command-line arguments parser."""
     usage = """
-        Download and split MNIST data into heterogeneous shards.
-
-        This script automates the random splitting of the MNIST digits-
-        recognition images dataset's 60k training samples into shards,
-        based on various schemes. Shards contain mutually-exclusive
-        samples and cover the full raw dataset.
+        Download and split data into heterogeneous shards.
 
         The implemented schemes are the following:
         * "iid":
