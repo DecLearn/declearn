@@ -17,15 +17,17 @@ into two categories:<br/>
 (a) dependencies of optional, applied declearn components (such as the PyTorch
 and Tensorflow tensor libraries, or the gRPC and websockets network
 communication backends) that are not imported with declearn by default<br/>
-(b) dependencies for running tests on the package (mainly pytest and some of
-its plug-ins)
+(b) dependencies for developers, e.g. to run tests on the package (mainly
+pytest and some of its plug-ins), or building its documentation (with mkdocs)
 
 The second category is more developer-oriented, while the first may or may not
 be relevant depending on the use case to which you wish to apply `declearn`.
 
-In the `pyproject.toml` file, the `[project.optional-dependencies]` tables
-`all` and `test` respectively list the first and (first + second) categories,
-while additional tables redundantly list dependencies unit by unit.
+In the `pyproject.toml` file, the `[project.optional-dependencies]` table
+`all` lists all dependencies from the first category, with additional tables
+redundantly listing them thematically, enabling end-users to cherry-pick the
+optional components they want to install. For developers, the "tests" and
+"docs" tables specify tooling dependencies.
 
 ## Using a virtual environment (optional)
 
@@ -90,7 +92,7 @@ pip install declearn[tensorflow,torch]  # install both tensorflow and torch
 
 # Instructions to install bundles of optional components.
 pip install declearn[all]    # install all extra dependencies, save for testing
-pip install declearn[tests]  # install all extra dependencies plus testing ones
+pip install declearn[all,tests]  # install all extra and testing dependencies
 ```
 
 ### Notes

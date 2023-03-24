@@ -36,6 +36,8 @@ git clone https://gitlab.inria.fr/magnet/declearn/declearn2.git declearn
 cd declearn
 
 # Install the required dependencies (preferably in a dedicated venv).
+# You may find the up-to-date list of dependencies in the `pyproject.toml`
+# file, under [project.optional-dependencies], as the "docs" table.
 pip install \
   mkdocstrings[python] \
   mkdocs-autorefs \
