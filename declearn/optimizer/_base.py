@@ -85,17 +85,17 @@ class Optimizer:
 
     API methods
     -----------
-    apply_gradients(Model, Vector) -> None:
+    - apply_gradients(Model, Vector) -> None:
         Update a Model based on a pre-computed Vector of gradients.
-    collect_aux_var() -> Dict[str, Dict[str, Any]]:
+    - collect_aux_var() -> Dict[str, Dict[str, Any]]:
         Collect and package plug-in modules' auxiliary variables.
-    compute_updates_from_gradients(Model, Vector) -> Vector:
+    - compute_updates_from_gradients(Model, Vector) -> Vector:
         Compute and return model updates based on pre-computed gradients.
-    process_aux_var(Dict[str, Dict[str, Any]]) -> None:
+    - process_aux_var(Dict[str, Dict[str, Any]]) -> None:
         Pass auxiliary variables to plug-in modules for processing.
-    run_train_step(Model, batch) -> None:
+    - run_train_step(Model, batch) -> None:
         Compute gradients of a Model over a Batch and apply updates.
-    start_round() -> None:
+    - start_round() -> None:
         Signal that a new training round is starting to wrapped regularizers.
 
     References
