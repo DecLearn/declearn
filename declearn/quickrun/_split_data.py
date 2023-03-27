@@ -63,9 +63,15 @@ def load_mnist(
     # Load the desired subset of MNIST
     tag = "train" if train else "test"
     url = f"{SOURCE_URL}/mnist_{tag}.csv"
-    data = requests.get(url, verify=False, timeout=20).content
-    df = pd.read_csv(io.StringIO(data.decode("utf-8")), header=None, sep=",")
-    return df.iloc[:, 1:].to_numpy(), df[0].to_numpy()[:, None]
+    og_data = requests.get(url, verify=False, timeout=20).content
+    df = pd.read_csv(
+        io.StringIO(og_data.decode("utf-8")), header=None, sep=","
+    )
+    data = df.iloc[:, 1:].to_numpy()
+    data = (data.reshape(data.shape[0], 28, 28, 1) / 255).astype(np.single)
+    # Channel last : B,H,W,C
+    labels = df[0].to_numpy()
+    return data, labels
 
 
 def load_data(
@@ -101,7 +107,7 @@ def load_data(
         raise ValueError("The data path provided is not a valid file")
 
     if isinstance(target, int):
-        labels = inputs[target][:, None]
+        labels = inputs[:, target]
         inputs = np.delete(inputs, target, axis=1)
     if isinstance(target, str):
         if os.path.isfile(target):
@@ -265,7 +271,7 @@ def split_data(
                 raise ValueError("perc_train should be a float in ]0,1]")
             n_train = round(len(inp) * perc_train)
             t_inp, t_tgt = inp[:n_train], tgt[:n_train]
-            v_inp, v_tgt = inp[n_train:], inp[n_train:]
+            v_inp, v_tgt = inp[n_train:], tgt[n_train:]
             np_save(t_inp, i, "train_data")
             np_save(t_tgt, i, "train_target")
             np_save(v_inp, i, "valid_data")

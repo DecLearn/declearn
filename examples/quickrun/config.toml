@@ -9,27 +9,27 @@ server_uri = "ws://localhost:8765"
 name = "replaceme"
 
 [optim]
-aggregator = "averaging"
-server_opt = 1.0
+aggregator = "averaging" # The chosen aggregation strategy
+server_opt = 1.0 # The server learning rate
 
     [optim.client_opt]
-    lrate = 0.001
-    regularizers = [["lasso", {alpha = 0.1}]]
+    lrate = 0.01 # The client learning rate
+    regularizers = [["lasso", {alpha = 0.1}]] # The list of regularizer modules, each a list
 
 [run]
-rounds = 10
+rounds = 2 # Number of training rounds
 
     [run.register]
-    min_clients = 3
+    min_clients = 1
+    max_clients = 6
+    timeout = 5
 
     [run.training]
-    n_epoch = 1
-    batch_size = 48
-    drop_remainder = false
+    n_epoch = 1 # Number of local epochs
+    batch_size = 48 # Training batch size
+    drop_remainder = false # Whether to drop the last trainig examples
 
     [run.evaluate]
-    batch_size = 128
-
-
+    batch_size = 128 # Evaluation batch size
 
 

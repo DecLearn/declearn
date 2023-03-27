@@ -25,10 +25,10 @@ The script requires to be provided with the path to a folder containing:
 * A data folder, structured in a specific way
 
 If not provided with this, the script defaults to the MNIST example provided
-by declearn in `declearn.example.quickrun`. 
+by declearn in `declearn.example.quickrun`.
 
-The script then locally runs the FL experiment as layed out in the TOML file, 
-using privided model and data, and stores its result in the same folder.  
+The script then locally runs the FL experiment as layed out in the TOML file,
+using privided model and data, and stores its result in the same folder.
 """
 
 import argparse
@@ -58,12 +58,18 @@ with make_importable(os.path.dirname(__file__)):
 
 
 def _run_server(
-    model: str,
+    folder: str,
     network: NetworkServerConfig,
     optim: FLOptimConfig,
     config: FLRunConfig,
 ) -> None:
     """Routine to run a FL server, called by `run_declearn_experiment`."""
+    # get Model
+    name = "MyModel"
+    with make_importable(folder):
+        mod = importlib.import_module("model")
+        model_cls = getattr(mod, name)
+        model = model_cls
     server = FederatedServer(model, network, optim)
     server.run(config)
 
@@ -135,16 +141,19 @@ def parse_data_folder(folder: str) -> Dict:
 
 
 def _run_client(
-    network: str,
+    network: NetworkClientConfig,
     name: str,
     paths: dict,
+    folder: str,
 ) -> None:
     """Routine to run a FL client, called by `run_declearn_experiment`."""
-    # Run the declearn FL client routine.
-    netwk = NetworkClientConfig.from_toml(network)
     # Overwrite client name based on folder name
-    netwk.name = name
+    network.name = name
     # Wrap train and validation data as Dataset objects.
+    name = "MyModel"
+    with make_importable(folder):
+        mod = importlib.import_module("model")
+        model_cls = getattr(mod, name)  # pylint: disable=unused-variable
     train = InMemoryDataset(
         paths.get("train_data"),
         target=paths.get("train_target"),
@@ -154,7 +163,7 @@ def _run_client(
         paths.get("valid_data"),
         target=paths.get("valid_target"),
     )
-    client = FederatedClient(netwk, train, valid)
+    client = FederatedClient(network, train, valid)
     client.run()
 
 
@@ -167,7 +176,7 @@ def quickrun(
     The kwargs are the arguments expected by split_data,
     see [the documentation][declearn.quickrun._split_data]
     """
-    # default to the mnist example
+    # default to the mnist exampl
     if not folder:
         folder = DEFAULT_FOLDER
     folder = os.path.abspath(folder)
@@ -183,18 +192,12 @@ def quickrun(
     optim = FLOptimConfig.from_toml(toml, False, "optim")
     run = FLRunConfig.from_toml(toml, False, "run")
     ntk_client = NetworkClientConfig.from_toml(toml, False, "network_client")
-    # get Model
-    name = "MyModel"
-    with make_importable(folder):
-        mod = importlib.import_module("model")
-        model_cls = getattr(mod, name)
-        model = model_cls
     # Set up a (func, args) tuple specifying the server process.
-    p_server = (_run_server, (model, ntk_server, optim, run))
+    p_server = (_run_server, (folder, ntk_server, optim, run))
     # Set up the (func, args) tuples specifying client-wise processes.
     p_client = []
     for name, data_dict in client_dict.items():
-        client = (_run_client, (ntk_client, name, data_dict))
+        client = (_run_client, (ntk_client, name, data_dict, folder))
         p_client.append(client)
     # Run each and every process in parallel.
     success, outputs = run_as_processes(p_server, *p_client)
