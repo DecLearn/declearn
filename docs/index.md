@@ -2,7 +2,8 @@
 
 ## Introduction
 
-`declearn` is a python package providing with a framework to perform federated
+[declearn](https://magnet.gitlabpages.inria.fr/declearn/docs/latest/)
+is a python package providing with a framework to perform federated
 learning, i.e. to train machine learning models by distributing computations
 across a set of data owners that, consequently, only have to share aggregated
 information (rather than individual data samples) with an orchestrating server
