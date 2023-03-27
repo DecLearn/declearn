@@ -124,6 +124,7 @@ def parse_module(
         if not key.startswith("_"):
             pub_mod[key] = parse_module(mod, docdir)
     # Create files for classes and functions exported from private submodules.
+    pub_obj = {}
     for key, obj in module.members.items():
         if obj.is_module or obj.module.name in pub_mod or key.startswith("_"):
             continue
@@ -132,11 +133,19 @@ def parse_module(
         path = os.path.join(docdir, f"{obj.name}.md")
         with open(path, "w", encoding="utf-8") as file:
             file.write(f"#`{obj.path}`\n::: {obj.path}")
+        pub_obj[key] = f"{obj.name}.md"
     # Write up an overview file based on the '__init__.py' docs.
     path = os.path.join(docdir, "index.md")
     with open(path, "w", encoding="utf-8") as file:
         file.write(f"::: {module.path}")
-    return f"{module.name}/index.md"
+    # Write up a literate-nav summary file based on the created files.
+    index = rf"- [\[{module.name}\]](./index.md)"
+    index += "".join(f"\n- [{k}](./{pub_obj[k]})" for k in sorted(pub_obj))
+    index += "".join(f"\n- [{k}](./{pub_mod[k]})" for k in sorted(pub_mod))
+    path = os.path.join(docdir, "SUMMARY.md")
+    with open(path, "w", encoding="utf-8") as file:
+        file.write(index)
+    return f"{module.name}/"
 
 
 if __name__ == "__main__":
