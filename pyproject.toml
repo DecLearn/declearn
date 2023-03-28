@@ -86,6 +86,7 @@ tests = [
     "pylint >= 2.14",
     "pytest >= 6.1",
     "pytest-asyncio",
+    "pytest-cov >= 4.0",
 ]
 
 [project.urls]
@@ -95,6 +96,21 @@ repository = "https://gitlab.inria.fr/magnet/declearn/declearn2.git"
 [tool.black]
 line-length = 79
 extend-exclude = "(.*_pb2.*py$)"  # exclude auto-generated protobuf code files
+
+[tool.coverage.run]
+# enable coverage collection within multiprocessing
+concurrency = ["multiprocessing"]
+parallel = true
+sigterm = true
+# define rules to select the code files that need covering
+source_pkgs = ["declearn"]
+omit = [
+    "**/grpc/protobufs/*.py",  # auto-generated rotobuf code files
+    "**/test_utils/*.py",  # dev-only test-oriented utils
+]
+
+[tool.coverage.paths]
+source = ["declearn", ".tox/**/declearn"]
 
 [tool.mypy]
 exclude = [".*_pb2.*.py$"]
