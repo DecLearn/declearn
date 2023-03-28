@@ -159,8 +159,11 @@ class TensorflowTestCase(ModelTestCase):
 def fixture_test_case(
     kind: Literal["MLP", "MLP-tune", "RNN", "CNN"],
     device: Literal["CPU", "GPU"],
+    cpu_only: bool,
 ) -> TensorflowTestCase:
     """Fixture to access a TensorflowTestCase."""
+    if cpu_only and (device == "GPU"):
+        pytest.skip(reason="--cpu-only mode")
     return TensorflowTestCase(kind, device)
 
 

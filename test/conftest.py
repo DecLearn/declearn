@@ -20,17 +20,29 @@
 import pytest
 
 
-def pytest_addoption(parser) -> None:  # type: ignore
-    """Add a '--fulltest' option to the pytest commandline."""
+def pytest_addoption(parser) -> None:
+    """Add some custom options to the pytest commandline."""
     parser.addoption(
         "--fulltest",
         action="store_true",
         default=False,
         help="--fulltest: run all test scenarios in 'test_main.py'",
     )
+    parser.addoption(
+        "--cpu-only",
+        action="store_true",
+        default=False,
+        help="--cpu-only: disable the use of GPU devices in tests",
+    )
 
 
 @pytest.fixture(name="fulltest")
-def fulltest_fixture(request) -> bool:  # type: ignore
+def fulltest_fixture(request) -> bool:
     """Gather the '--fulltest' option's value."""
     return bool(request.config.getoption("--fulltest"))
+
+
+@pytest.fixture(name="cpu_only")
+def cpu_only_fixture(request) -> bool:
+    """Gather the '--cpu-only' option's value."""
+    return bool(request.config.getoption("--cpu-only"))

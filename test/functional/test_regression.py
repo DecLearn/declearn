@@ -47,8 +47,6 @@ import tempfile
 from typing import List, Tuple
 
 import numpy as np
-import tensorflow as tf  # type: ignore
-import torch
 from sklearn.datasets import make_regression  # type: ignore
 from sklearn.linear_model import SGDRegressor  # type: ignore
 
@@ -59,10 +57,22 @@ from declearn.main.config import FLOptimConfig, FLRunConfig
 from declearn.metrics import RSquared
 from declearn.model.api import Model
 from declearn.model.sklearn import SklearnSGDModel
-from declearn.model.tensorflow import TensorflowModel
-from declearn.model.torch import TorchModel
 from declearn.optimizer import Optimizer
 from declearn.test_utils import FrameworkType, run_as_processes
+from declearn.utils import set_device_policy
+
+# pylint: disable=ungrouped-imports; optional frameworks' dependencies
+try:
+    import tensorflow as tf  # type: ignore
+    from declearn.model.tensorflow import TensorflowModel
+except ModuleNotFoundError:
+    pass
+try:
+    import torch
+    from declearn.model.torch import TorchModel
+except ModuleNotFoundError:
+    pass
+
 
 SEED = 0
 R2_THRESHOLD = 0.999
@@ -72,6 +82,7 @@ R2_THRESHOLD = 0.999
 
 def get_model(framework: FrameworkType) -> Model:
     """Set up a simple toy regression model."""
+    set_device_policy(gpu=False)  # disable GPU use to avoid concurrence
     if framework == "numpy":
         np.random.seed(SEED)  # set seed
         model = SklearnSGDModel.from_parameters(
