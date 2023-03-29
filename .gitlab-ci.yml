@@ -45,6 +45,7 @@ test-full:
     - if: ($CI_PIPELINE_SOURCE == "push") &&
           (($CI_COMMIT_BRANCH == "develop") || ($CI_COMMIT_BRANCH =~ "/^r\d\.\d+/"))
       when: manual
+      allow_failure: true  # do not block the base "test" pipeline
   tags:
     - ci.inria.fr
     - small
