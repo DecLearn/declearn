@@ -72,13 +72,13 @@ Learning, the current package capabilities, how to implement your own use
 case, and the structure and key points of the package's API.
 
 To dive directly into the code's documentation, you may also jump to the
-[API reference](https://magnet.gitlabpages.inria.fr/declearn/docs/latest/api).
+[API reference](https://magnet.gitlabpages.inria.fr/declearn/docs/latest/api-reference).
 
 ## Developers
 
 Information for developers, such as how to contribute, coding rules, and how
 to run the tests, can be found in the
-[developer guide](https://magnet.gitlabpages.inria.fr/declearn/docs/latest/devs-guide/).
+[developer guide](https://magnet.gitlabpages.inria.fr/declearn/docs/latest/devs-guide).
 
 ## Copyright
 
