@@ -15,6 +15,7 @@ server_opt = 1.0 # The server learning rate
     [optim.client_opt]
     lrate = 0.01 # The client learning rate
     regularizers = [["lasso", {alpha = 0.1}]] # The list of regularizer modules, each a list
+    modules = [["momentum", {"beta" = 0.9}]]
 
 [run]
 rounds = 2 # Number of training rounds
@@ -33,3 +34,12 @@ rounds = 2 # Number of training rounds
     batch_size = 128 # Evaluation batch size
 
 
+[experiment]
+# all args for parse_data_folder
+# target_folder = !!!
+
+[model]
+# information on where to find the model file
+
+[data]
+# all args from split_data argparser

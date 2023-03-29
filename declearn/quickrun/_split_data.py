@@ -45,6 +45,13 @@ import pandas as pd
 import requests  # type: ignore
 
 from declearn.dataset import load_data_array
+from declearn.test_utils import make_importable
+
+# Perform local imports.
+# pylint: disable=wrong-import-order, wrong-import-position
+with make_importable(os.path.dirname(__file__)):
+    from _config import DataSplitConfig
+# pylint: enable=wrong-import-order, wrong-import-position
 
 SOURCE_URL = "https://pjreddie.com/media/files"
 
@@ -191,15 +198,7 @@ def _split_biased(
     return split
 
 
-def split_data(
-    folder: str,
-    n_shards: int = 5,
-    data: Optional[str] = None,
-    target: Optional[Union[str, int]] = None,
-    scheme: Literal["iid", "labels", "biased"] = "iid",
-    perc_train: float = 0.8,
-    seed: Optional[int] = None,
-) -> None:
+def split_data(data_config: DataSplitConfig) -> None:
     """Download and randomly split a dataset into shards.
 
     The resulting folder structure is :
@@ -215,32 +214,17 @@ def split_data(
 
     Parameters
     ----------
-    folder: str
-        Path to the folder where to export shard-wise files.
-    n_shards: int
-        Number of shards between which to split the data.
-    data: str or None, default=None
-        Optional path to a folder where to find the data.
-        If None, default to the MNIST example.
-    target: str or int or None, default=None
-        If str, path to the labels file to import. If int, column of
-        the data file to be used as labels. Required if data is not None,
-        ignored if data is None.
-    scheme: {"iid", "labels", "biased"}, default="iid"
-        Splitting scheme to use. In all cases, shards contain mutually-
-        exclusive samples and cover the full raw training data.
-        - If "iid", split the dataset through iid random sampling.
-        - If "labels", split into shards that hold all samples associated
-        with mutually-exclusive target classes.
-        - If "biased", split the dataset through random sampling according
-        to a shard-specific random labels distribution.
-    perc_train:  float, default= 0.8
-        Train/validation split in each client dataset, must be in the
-        ]0,1] range.
-    seed: int or None, default=None
-        Optional seed to the RNG used for all sampling operations.
+    data_config: DataSplitConfig
+        A DataSplitConfig instance, see class documentation for details
     """
+
+    def np_save(folder, data, i, name):
+        data_dir = os.path.join(folder, f"client_{i}")
+        os.makedirs(data_dir, exist_ok=True)
+        np.save(os.path.join(data_dir, f"{name}.npy"), data)
+
     # Select the splitting function to be used.
+    scheme = data_config.scheme
     if scheme == "iid":
         func = _split_iid
     elif scheme == "labels":
@@ -250,115 +234,27 @@ def split_data(
     else:
         raise ValueError(f"Invalid 'scheme' value: '{scheme}'.")
     # Set up the RNG, download the raw dataset and split it.
-    rng = np.random.default_rng(seed)
-    inputs, labels = load_data(data, target)
-    print(f"Splitting data into {n_shards} shards using the {scheme} scheme")
-    split = func(inputs, labels, n_shards, rng)
+    rng = np.random.default_rng(data_config.seed)
+    inputs, labels = load_data(data_config.data_file, data_config.label_file)
+    print(
+        f"Splitting data into {data_config.n_shards}"
+        f"shards using the {scheme} scheme"
+    )
+    split = func(inputs, labels, data_config.n_shards, rng)
     # Export the resulting shard-wise data to files.
-    folder = os.path.join(folder, f"data_{scheme}")
-
-    def np_save(data, i, name):
-        data_dir = os.path.join(folder, f"client_{i}")
-        os.makedirs(data_dir, exist_ok=True)
-        np.save(os.path.join(data_dir, f"{name}.npy"), data)
-
+    folder = os.path.join(data_config.export_folder, f"data_{scheme}")
     for i, (inp, tgt) in enumerate(split):
+        perc_train = data_config.perc_train
         if not perc_train:
-            np_save(inp, i, "train_data")
-            np_save(tgt, i, "train_target")
+            np_save(folder, inp, i, "train_data")
+            np_save(folder, tgt, i, "train_target")
         else:
             if perc_train > 1.0 or perc_train < 0.0:
                 raise ValueError("perc_train should be a float in ]0,1]")
             n_train = round(len(inp) * perc_train)
             t_inp, t_tgt = inp[:n_train], tgt[:n_train]
             v_inp, v_tgt = inp[n_train:], tgt[n_train:]
-            np_save(t_inp, i, "train_data")
-            np_save(t_tgt, i, "train_target")
-            np_save(v_inp, i, "valid_data")
-            np_save(v_tgt, i, "valid_target")
-
-
-def parse_args(args: Optional[List[str]] = None) -> argparse.Namespace:
-    """Set up and run a command-line arguments parser."""
-    usage = """
-        Download and split data into heterogeneous shards.
-
-        The implemented schemes are the following:
-        * "iid":
-            Split the dataset through iid random sampling.
-        * "labels":
-            Split the dataset into shards that hold all samples
-            that have mutually-exclusive target classes.
-        * "biased":
-            Split the dataset through random sampling according
-            to a shard-specific random labels distribution.
-    """
-    usage = re.sub("\n *(?=[a-z])", " ", textwrap.dedent(usage))
-    parser = argparse.ArgumentParser(
-        formatter_class=argparse.RawTextHelpFormatter,
-        usage=re.sub("- ", "-", usage),
-    )
-    parser.add_argument(
-        "--n_shards",
-        type=int,
-        default=5,
-        help="Number of shards between which to split the MNIST training data.",
-    )
-    parser.add_argument(
-        "--root",
-        default=".",
-        dest="folder",
-        help="Path to the root folder where to export raw and split data.",
-    )
-    parser.add_argument(
-        "--data_path",
-        default=None,  # CHECK
-        dest="data",
-        help="Path to the data to be split",
-    )
-    parser.add_argument(
-        "--target_path",
-        default=None,  # CHECK
-        dest="target",
-        help="Path to the labels to be split",
-    )
-    schemes_help = """
-        Splitting scheme(s) to use, among {"iid", "labels", "biased"}.
-        If this argument is not specified, all three values are used.
-        See details above on the schemes' definition.
-    """
-    parser.add_argument(
-        "--scheme",
-        action="append",
-        choices=["iid", "labels", "biased"],
-        default=["iid"],
-        dest="schemes",
-        nargs="+",
-        help=textwrap.dedent(schemes_help),
-    )
-    parser.add_argument(
-        "--seed",
-        default=20221109,
-        dest="seed",
-        type=int,
-        help="RNG seed to use (default: 20221109).",
-    )
-    return parser.parse_args(args)
-
-
-def main(args: Optional[List[str]] = None) -> None:
-    """Run splitting schemes based on commandline-input arguments."""
-    cmdargs = parse_args(args)
-    for scheme in cmdargs.schemes:
-        split_data(
-            folder=os.path.join(cmdargs.folder, f"data_{scheme}"),
-            n_shards=cmdargs.n_shards,
-            data=cmdargs.data,
-            target=cmdargs.target,
-            scheme=scheme,
-            seed=cmdargs.seed,
-        )
-
-
-if __name__ == "__main__":
-    main()
+            np_save(folder, t_inp, i, "train_data")
+            np_save(folder, t_tgt, i, "train_target")
+            np_save(folder, v_inp, i, "valid_data")
+            np_save(folder, v_tgt, i, "valid_target")
