@@ -17,11 +17,10 @@
 
 """Utils to run concurrent routines parallelly using multiprocessing."""
 
-import functools
 import multiprocessing as mp
 import sys
 import traceback
-from multiprocessing.queues import Queue
+from queue import Queue
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 __all__ = [
@@ -62,7 +61,9 @@ def run_as_processes(
         indicates that the process was interrupted while running.
     """
     # Wrap routines into named processes and set up exceptions catching.
-    queue = mp.Manager().Queue()  # type: ignore
+    queue = (
+        mp.Manager().Queue()
+    )  # type: Queue[Tuple[str, Union[Any, RuntimeError]]]
     names = []  # type: List[str]
     count = {}  # type: Dict[str, int]
     processes = []  # type: List[mp.Process]
@@ -70,7 +71,7 @@ def run_as_processes(
         name = func.__name__
         nidx = count[name] = count.get(name, 0) + 1
         name = f"{name}-{nidx}"
-        func = add_exception_catching(func, queue, name)  # type: ignore
+        func = add_exception_catching(func, queue, name)
         names.append(name)
         processes.append(mp.Process(target=func, args=args, name=name))
     # Run the processes concurrently.
@@ -108,25 +109,22 @@ def add_exception_catching(
     """Wrap a function to catch exceptions and put them in a Queue."""
     if not name:
         name = func.__name__
-    return functools.partial(wrapped, func=func, queue=queue, name=name)
 
+    def wrapped(*args: Any, **kwargs: Any) -> Any:
+        """Call the wrapped function and catch exceptions or results."""
+        nonlocal name, queue
 
-def wrapped(
-    *args: Any,
-    func: Callable[..., Any],
-    queue: Queue,
-    name: str,
-) -> Any:
-    """Call the wrapped function and catch exceptions or results."""
-    try:
-        result = func(*args)
-    except Exception as exc:  # pylint: disable=broad-exception-caught
-        err = RuntimeError(
-            f"Exception of type {type(exc)} occurred:\n"
-            "".join(traceback.format_exception(type(exc), exc, tb=None))
-        )  # future: `traceback.format_exception(exc)` (py >=3.10)
-        queue.put((name, err))
-        sys.exit(1)
-    else:
-        queue.put((name, result))
-        sys.exit(0)
+        try:
+            result = func(*args, **kwargs)
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            err = RuntimeError(
+                f"Exception of type {type(exc)} occurred:\n"
+                "".join(traceback.format_exception(type(exc), exc, tb=None))
+            )  # future: `traceback.format_exception(exc)` (py >=3.10)
+            queue.put((name, err))
+            sys.exit(1)
+        else:
+            queue.put((name, result))
+            sys.exit(0)
+
+    return wrapped
