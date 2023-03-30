@@ -91,6 +91,8 @@ Miscellaneous
     Automatically build a dataclass matching a class's init signature.
 * [get_logger][declearn.utils.get_logger]:
     Access or create a logger, automating basic handlers' configuration.
+* [run_as_processes][declearn.utils.run_as_processes]:
+    Run coroutines concurrently within individual processes.
 """
 
 from ._dataclass import (
@@ -112,6 +114,7 @@ from ._json import (
 from ._logging import (
     get_logger,
 )
+from ._multiprocess import run_as_processes
 from ._numpy import (
     deserialize_numpy,
     serialize_numpy,
@@ -128,5 +131,4 @@ from ._serialize import (
     deserialize_object,
     serialize_object,
 )
-from ._multiprocess import run_as_processes
 from ._toml_config import TomlConfig
