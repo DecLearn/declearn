@@ -18,7 +18,7 @@
 """TOML-parsable container for quickrun configurations."""
 
 import dataclasses
-from typing import Dict, List, Literal, Optional, Union
+from typing import Dict, List, Optional, Union
 
 from declearn.utils import TomlConfig
 
@@ -40,11 +40,13 @@ class ModelConfig(TomlConfig):
 
 @dataclasses.dataclass
 class DataSplitConfig(TomlConfig):
-    """Dataclass associated with the function
-    declearn.quickrun._split_data:split_data
+    """Dataclass associated with the functions
+    declearn.quickrun._split_data:split_data and
+    declearn.quickrun._parser:parse_data_folder
 
-    export_folder: str
-        Path to the folder where to export shard-wise files.
+    data_folder: str
+        Absolute path to the folder where to export shard-wise files,
+        and/or to the main folder hosting the data.
     n_shards: int
         Number of shards between which to split the data.
     data_file: str or None, default=None
@@ -67,28 +69,6 @@ class DataSplitConfig(TomlConfig):
         ]0,1] range.
     seed: int or None, default=None
         Optional seed to the RNG used for all sampling operations.
-    """
-
-    export_folder: str = "."
-    n_shards: int = 5
-    data_file: Optional[str] = None
-    label_file: Optional[Union[str, int]] = None
-    scheme: Literal["iid", "labels", "biased"] = "iid"
-    perc_train: float = 0.8
-    seed: Optional[int] = None
-
-
-@dataclasses.dataclass
-class ExperimentConfig(TomlConfig):
-    """
-
-    Dataclass associated with the function
-    declearn.quickrun._parser:parse_data_folder
-
-    data_folder : str or none
-        Absolute path to the main folder hosting the data, overwriting
-        the folder argument if provided. If None, default to expected
-        prefix search in folder.
     client_names: list or None
         List of custom client names to look for in the data_folder.
         If None, default to expected prefix search.
@@ -98,6 +78,35 @@ class ExperimentConfig(TomlConfig):
         If None, , default to expected prefix search.
     """
 
+    # Common args
     data_folder: Optional[str] = None
+    # split_data args
+    n_shards: int = 5
+    data_file: Optional[str] = None
+    label_file: Optional[Union[str, int]] = None
+    scheme: str = "iid"
+    perc_train: float = 0.8
+    seed: Optional[int] = None
+    # parse_data_folder args
     client_names: Optional[List[str]] = None
     dataset_names: Optional[Dict[str, str]] = None
+
+
+@dataclasses.dataclass
+class ExperimentConfig(TomlConfig):
+    """
+
+    Dataclass providing kwargs to
+    declearn.main._server.FederatedServer
+    and declearn.main._client.FederatedClient
+
+    metrics: list[str] or None
+        List of Metric childclass names, defining evaluation metrics
+        to compute in addition to the model's loss.
+    checkpoint: str or None
+        The checkpoint folder path and use default values for other parameters
+        to be used so as to save round-wise model
+    """
+
+    metrics: Optional[List[str]] = None
+    checkpoint: Optional[str] = None

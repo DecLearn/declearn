@@ -167,7 +167,8 @@ def _split_labels(
         srt = idx * s_len
         end = (srt + s_len) if idx < (n_shards - 1) else len(order)
         shard = np.isin(target, order[srt:end])
-        split.append((inputs[shard], target[shard]))
+        shuffle = rng.permutation(shard.sum())
+        split.append((inputs[shard][shuffle], target[shard][shuffle]))
     return split
 
 
@@ -198,7 +199,7 @@ def _split_biased(
     return split
 
 
-def split_data(data_config: DataSplitConfig) -> None:
+def split_data(data_config: DataSplitConfig, folder: str) -> None:
     """Download and randomly split a dataset into shards.
 
     The resulting folder structure is :
@@ -223,6 +224,9 @@ def split_data(data_config: DataSplitConfig) -> None:
         os.makedirs(data_dir, exist_ok=True)
         np.save(os.path.join(data_dir, f"{name}.npy"), data)
 
+    # Overwrite default folder if provided
+    if data_config.data_folder:
+        folder = data_config.data_folder
     # Select the splitting function to be used.
     scheme = data_config.scheme
     if scheme == "iid":
@@ -242,7 +246,7 @@ def split_data(data_config: DataSplitConfig) -> None:
     )
     split = func(inputs, labels, data_config.n_shards, rng)
     # Export the resulting shard-wise data to files.
-    folder = os.path.join(data_config.export_folder, f"data_{scheme}")
+    folder = os.path.join(folder, f"data_{scheme}")
     for i, (inp, tgt) in enumerate(split):
         perc_train = data_config.perc_train
         if not perc_train:

@@ -1,24 +1,18 @@
-[network_server]
+[network]
 protocol = "websockets"
 host = "127.0.0.1"
 port = 8765
-
-[network_client]
-protocol = "websockets"
-server_uri = "ws://localhost:8765"
-name = "replaceme"
 
 [optim]
 aggregator = "averaging" # The chosen aggregation strategy
 server_opt = 1.0 # The server learning rate
 
     [optim.client_opt]
-    lrate = 0.01 # The client learning rate
-    regularizers = [["lasso", {alpha = 0.1}]] # The list of regularizer modules, each a list
-    modules = [["momentum", {"beta" = 0.9}]]
+    lrate = 0.001 # The client learning rate
+    modules = ["adam"] # The optimzer modules 
 
 [run]
-rounds = 2 # Number of training rounds
+rounds = 10 # Number of training rounds
 
     [run.register]
     min_clients = 1
@@ -36,10 +30,11 @@ rounds = 2 # Number of training rounds
 
 [experiment]
 # all args for parse_data_folder
-# target_folder = !!!
+
 
 [model]
 # information on where to find the model file
 
 [data]
 # all args from split_data argparser
+scheme = "labels"

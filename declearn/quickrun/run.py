@@ -36,7 +36,6 @@ import importlib
 import os
 import re
 import textwrap
-from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from declearn.communication import NetworkClientConfig, NetworkServerConfig
@@ -77,10 +76,18 @@ def _run_server(
     model_config: ModelConfig,
     optim: FLOptimConfig,
     config: FLRunConfig,
+    expe_config: ExperimentConfig,
 ) -> None:
     """Routine to run a FL server, called by `run_declearn_experiment`."""
     model = _get_model(folder, model_config)
-    server = FederatedServer(model, network, optim)
+    if expe_config.checkpoint:
+        checkpoint = expe_config.checkpoint
+    else:
+        checkpoint = os.path.join(folder, "result")
+    checkpoint = os.path.join(checkpoint, "server")
+    server = FederatedServer(
+        model, network, optim, expe_config.metrics, checkpoint
+    )
     server.run(config)
 
 
@@ -88,6 +95,7 @@ def _run_client(
     folder: str,
     network: NetworkClientConfig,
     model_config: ModelConfig,
+    expe_config: ExperimentConfig,
     name: str,
     paths: dict,
 ) -> None:
@@ -96,6 +104,12 @@ def _run_client(
     network.name = name
     # Make the model importable
     _ = _get_model(folder, model_config)
+    # Add checkpointer
+    if expe_config.checkpoint:
+        checkpoint = expe_config.checkpoint
+    else:
+        checkpoint = os.path.join(folder, "result")
+    checkpoint = os.path.join(checkpoint, name)
     # Wrap train and validation data as Dataset objects.
     train = InMemoryDataset(
         paths.get("train_data"),
@@ -106,7 +120,7 @@ def _run_client(
         paths.get("valid_data"),
         target=paths.get("valid_target"),
     )
-    client = FederatedClient(network, train, valid)
+    client = FederatedClient(network, train, valid, checkpoint)
     client.run()
 
 
@@ -132,22 +146,29 @@ def get_toml_folder(config: Optional[str] = None) -> Tuple[str, str]:
 
 def locate_or_create_split_data(toml: str, folder: str) -> Dict:
     """Attempts to find split data according to the config toml or
-    or the defualt behavior. If failed, attempts to find full data
+    or the default behavior. If failed, attempts to find full data
     according to the config toml and split it"""
-    expe_config = ExperimentConfig.from_toml(toml, False, "experiment")
+    data_config = DataSplitConfig.from_toml(toml, False, "data")
     try:
-        client_dict = parse_data_folder(expe_config, folder)
+        client_dict = parse_data_folder(data_config, folder)
     except ValueError:
-        data_config = DataSplitConfig.from_toml(toml, False, "data")
-        split_data(folder, data_config)
-        client_dict = parse_data_folder(expe_config,folder)
+        split_data(data_config, folder)
+        client_dict = parse_data_folder(data_config, folder)
     return client_dict
 
 
-def quickrun(
-    config: Optional[str] = None,
-    **kwargs: Any,
-) -> None:
+def server_to_client_network(
+    network_cfg: NetworkServerConfig,
+) -> NetworkClientConfig:
+    "Converts server network config to client network config"
+    return NetworkClientConfig.from_params(
+        protocol=network_cfg.protocol,
+        server_uri=f"ws://localhost:{network_cfg.port}",
+        name="replaceme",
+    )
+
+
+def quickrun(config: Optional[str] = None) -> None:
     """Run a server and its clients using multiprocessing.
 
     The kwargs are the arguments expected by split_data,
@@ -156,20 +177,24 @@ def quickrun(
     toml, folder = get_toml_folder(config)
     # locate split data or split it if needed
     client_dict = locate_or_create_split_data(toml, folder)
-    # Parse toml file to ServerConfig and ClientConfig
-    ntk_server = NetworkServerConfig.from_toml(toml, False, "network_server")
-    optim = FLOptimConfig.from_toml(toml, False, "optim")
-    run = FLRunConfig.from_toml(toml, False, "run")
-    ntk_client = NetworkClientConfig.from_toml(toml, False, "network_client")
-    model_config = ModelConfig.from_toml(toml, False, "model")
+    # Parse toml files
+    ntk_server_cfg = NetworkServerConfig.from_toml(toml, False, "network")
+    ntk_client_cfg = server_to_client_network(ntk_server_cfg)
+    optim_cgf = FLOptimConfig.from_toml(toml, False, "optim")
+    run_cfg = FLRunConfig.from_toml(toml, False, "run")
+    model_cfg = ModelConfig.from_toml(toml, False, "model")
+    expe_cfg = ExperimentConfig.from_toml(toml, False, "experiment")
     # Set up a (func, args) tuple specifying the server process.
-    p_server = (_run_server, (folder, ntk_server, model_config, optim, run))
+    p_server = (
+        _run_server,
+        (folder, ntk_server_cfg, model_cfg, optim_cgf, run_cfg, expe_cfg),
+    )
     # Set up the (func, args) tuples specifying client-wise processes.
     p_client = []
     for name, data_dict in client_dict.items():
         client = (
             _run_client,
-            (folder, ntk_client, model_config, name, data_dict),
+            (folder, ntk_client_cfg, model_cfg, expe_cfg, name, data_dict),
         )
         p_client.append(client)
     # Run each and every process in parallel.
@@ -211,7 +236,7 @@ def parse_args(args: Optional[List[str]] = None) -> argparse.Namespace:
 def main(args: Optional[List[str]] = None) -> None:
     """Quikcrun based on commandline-input arguments."""
     cmdargs = parse_args(args)
-    quickrun(folder=cmdargs.config)
+    quickrun(config=cmdargs.config)
 
 
 if __name__ == "__main__":
