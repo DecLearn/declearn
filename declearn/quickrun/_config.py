@@ -82,7 +82,7 @@ class DataSplitConfig(TomlConfig):
     # Common args
     data_folder: Optional[str] = None
     # split_data args
-    n_shards: int = 5
+    n_shards: int = 3
     data_file: Optional[str] = None
     label_file: Optional[Union[str, int]] = None
     scheme: str = "iid"

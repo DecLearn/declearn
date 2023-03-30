@@ -59,7 +59,8 @@ with make_importable(os.path.dirname(__file__)):
 # pylint: enable=wrong-import-order, wrong-import-position
 
 
-def _get_model(folder, model_config) -> Model:
+def get_model(folder, model_config) -> Model:
+    "Return a model instance from a model config instance"
     file = "model"
     if m_file := model_config.model_file:
         folder = os.path.dirname(m_file)
@@ -70,7 +71,7 @@ def _get_model(folder, model_config) -> Model:
     return model_cls
 
 
-def _run_server(
+def run_server(
     folder: str,
     network: NetworkServerConfig,
     model_config: ModelConfig,
@@ -79,7 +80,7 @@ def _run_server(
     expe_config: ExperimentConfig,
 ) -> None:
     """Routine to run a FL server, called by `run_declearn_experiment`."""
-    model = _get_model(folder, model_config)
+    model = get_model(folder, model_config)
     if expe_config.checkpoint:
         checkpoint = expe_config.checkpoint
     else:
@@ -91,7 +92,7 @@ def _run_server(
     server.run(config)
 
 
-def _run_client(
+def run_client(
     folder: str,
     network: NetworkClientConfig,
     model_config: ModelConfig,
@@ -103,7 +104,7 @@ def _run_client(
     # Overwrite client name based on folder name
     network.name = name
     # Make the model importable
-    _ = _get_model(folder, model_config)
+    _ = get_model(folder, model_config)
     # Add checkpointer
     if expe_config.checkpoint:
         checkpoint = expe_config.checkpoint
@@ -186,14 +187,14 @@ def quickrun(config: Optional[str] = None) -> None:
     expe_cfg = ExperimentConfig.from_toml(toml, False, "experiment")
     # Set up a (func, args) tuple specifying the server process.
     p_server = (
-        _run_server,
+        run_server,
         (folder, ntk_server_cfg, model_cfg, optim_cgf, run_cfg, expe_cfg),
     )
     # Set up the (func, args) tuples specifying client-wise processes.
     p_client = []
     for name, data_dict in client_dict.items():
         client = (
-            _run_client,
+            run_client,
             (folder, ntk_client_cfg, model_cfg, expe_cfg, name, data_dict),
         )
         p_client.append(client)
@@ -241,3 +242,4 @@ def main(args: Optional[List[str]] = None) -> None:
 
 if __name__ == "__main__":
     main()
+    # quickrun(config="examples/quickrun/config_custom.toml") # TODO

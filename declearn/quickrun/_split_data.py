@@ -111,6 +111,7 @@ def load_data(
         inputs = load_data_array(data)
         inputs = np.asarray(inputs)
     else:
+        print("\n\n", data, "\n\n")
         raise ValueError("The data path provided is not a valid file")
 
     if isinstance(target, int):
@@ -225,10 +226,16 @@ def split_data(data_config: DataSplitConfig, folder: str) -> None:
         np.save(os.path.join(data_dir, f"{name}.npy"), data)
 
     # Overwrite default folder if provided
-    if data_config.data_folder:
-        folder = data_config.data_folder
-    # Select the splitting function to be used.
     scheme = data_config.scheme
+    name = f"data_{scheme}"
+    data_file = data_config.data_file
+    label_file = data_config.label_file
+    if data_config.data_folder:
+        folder = os.path.dirname(data_config.data_folder)
+        name = os.path.split(data_config.data_folder)[-1]
+        data_file = os.path.abspath(data_config.data_file)
+        label_file = os.path.abspath(data_config.label_file)
+    # Select the splitting function to be used.
     if scheme == "iid":
         func = _split_iid
     elif scheme == "labels":
@@ -239,14 +246,15 @@ def split_data(data_config: DataSplitConfig, folder: str) -> None:
         raise ValueError(f"Invalid 'scheme' value: '{scheme}'.")
     # Set up the RNG, download the raw dataset and split it.
     rng = np.random.default_rng(data_config.seed)
-    inputs, labels = load_data(data_config.data_file, data_config.label_file)
+
+    inputs, labels = load_data(data_file, label_file)
     print(
         f"Splitting data into {data_config.n_shards}"
         f"shards using the {scheme} scheme"
     )
     split = func(inputs, labels, data_config.n_shards, rng)
     # Export the resulting shard-wise data to files.
-    folder = os.path.join(folder, f"data_{scheme}")
+    folder = os.path.join(folder, name)
     for i, (inp, tgt) in enumerate(split):
         perc_train = data_config.perc_train
         if not perc_train:

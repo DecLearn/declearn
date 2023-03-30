@@ -17,6 +17,7 @@
 
 """Utils to run concurrent routines parallelly using multiprocessing."""
 
+import functools
 import multiprocessing as mp
 import sys
 import traceback
@@ -110,21 +111,25 @@ def add_exception_catching(
     if not name:
         name = func.__name__
 
-    def wrapped(*args: Any, **kwargs: Any) -> Any:
-        """Call the wrapped function and catch exceptions or results."""
-        nonlocal name, queue
+    return functools.partial(wrapped, func=func, queue=queue, name=name)
 
-        try:
-            result = func(*args, **kwargs)
-        except Exception as exc:  # pylint: disable=broad-exception-caught
-            err = RuntimeError(
-                f"Exception of type {type(exc)} occurred:\n"
-                "".join(traceback.format_exception(type(exc), exc, tb=None))
-            )  # future: `traceback.format_exception(exc)` (py >=3.10)
-            queue.put((name, err))
-            sys.exit(1)
-        else:
-            queue.put((name, result))
-            sys.exit(0)
 
-    return wrapped
+def wrapped(
+    *args: Any,
+    func: Callable[..., Any],
+    queue: Queue,
+    name: str,
+) -> Any:
+    """Call the wrapped function and catch exceptions or results."""
+    try:
+        result = func(*args)
+    except Exception as exc:  # pylint: disable=broad-exception-caught
+        err = RuntimeError(
+            f"Exception of type {type(exc)} occurred:\n"
+            "".join(traceback.format_exception(type(exc), exc, tb=None))
+        )  # future: `traceback.format_exception(exc)` (py >=3.10)
+        queue.put((name, err))
+        sys.exit(1)
+    else:
+        queue.put((name, result))
+        sys.exit(0)

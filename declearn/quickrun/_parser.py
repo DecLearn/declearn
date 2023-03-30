@@ -63,6 +63,7 @@ def parse_data_folder(
     data_folder = expe_config.data_folder
     client_names = expe_config.client_names
     dataset_names = expe_config.dataset_names
+    scheme = expe_config.scheme
 
     if not folder and not data_folder:
         raise ValueError(
@@ -70,7 +71,8 @@ def parse_data_folder(
         )
     # Data_folder
     if not data_folder:
-        gen_folders = Path(folder).glob("data*")  # type: ignore
+        search_str = f"_{scheme}" if scheme else "*"
+        gen_folders = Path(folder).glob(f"data{search_str}")  # type: ignore
         data_folder = next(gen_folders, False)  # type: ignore
         if not data_folder:
             raise ValueError(
@@ -83,6 +85,8 @@ def parse_data_folder(
                 f"in {folder}. Please store your data under a single"
                 "parent folder"
             )
+    else:
+        data_folder = Path(data_folder)
     # Get clients dir
     if client_names:
         if isinstance(client_names, list):
