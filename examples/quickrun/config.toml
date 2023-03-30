@@ -1,40 +1,39 @@
-[network]
-protocol = "websockets"
-host = "127.0.0.1"
-port = 8765
+# This is a minimal TOML file for the MNIST example
+# It contains the bare minimum to make the experiment run
+# It can be used as a template for other experiments.
+# See `examples/quickrun/readme.md` for more details.
 
-[optim]
-aggregator = "averaging" # The chosen aggregation strategy
-server_opt = 1.0 # The server learning rate
 
-    [optim.client_opt]
-    lrate = 0.001 # The client learning rate
-    modules = ["adam"] # The optimzer modules 
+[network] # Network configuration used by both client and server
+protocol = "websockets" # Protocol used, to keep things simple use websocket
+host = "127.0.0.1" # Address used, works as is on most set ups
+port = 8765 # Port used, works as is on most set ups
 
-[run]
-rounds = 10 # Number of training rounds
+[model] # Information on where to find the model file
 
-    [run.register]
-    min_clients = 1
-    max_clients = 6
-    timeout = 5
+[data] # How to split your data
+scheme = "iid" # SPlit your data iid between simulated clients
 
-    [run.training]
-    n_epoch = 1 # Number of local epochs
+[optim] # Optimizers options for both client and server
+aggregator = "averaging" # Server aggregation strategy
+
+    [optim.client_opt] # Client optimization strategy
+    lrate = 0.001 # Client learning rate
+    modules = ["adam"] # List of optimizer modules used
+
+[run] # Training process option for both client and server
+rounds = 10 # Number of overall training rounds
+
+    [run.register] # Client registration options
+    timeout = 5 # How long to wait for clients, in seconds
+
+    [run.training] # Client training procedure
     batch_size = 48 # Training batch size
-    drop_remainder = false # Whether to drop the last trainig examples
 
     [run.evaluate]
-    batch_size = 128 # Evaluation batch size
+    # batch_size = 128 # Evaluation batch size
 
 
-[experiment]
-# all args for parse_data_folder
+[experiment] # What to report during the experiment and where to report it
+metrics=[["multi-classif",{labels = [0,1,2,3,4,5,6,7,8,9]}]]
 
-
-[model]
-# information on where to find the model file
-
-[data]
-# all args from split_data argparser
-scheme = "labels"
