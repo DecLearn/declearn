@@ -23,14 +23,28 @@ actually being loaded (from a source file, a database, another API...).
 
 This declearn submodule provides with:
 
+API tools
+---------
 * [Dataset][declearn.dataset.Dataset]:
-    abstract class defining an API to access training or testing data
+    Abstract base class defining an API to access training or testing data.
+* [DataSpec][declearn.dataset.DataSpecs]:
+    Dataclass to wrap a dataset's metadata.
+* [load_dataset_from_json][declearn.dataset.load_dataset_from_json"]
+
+Dataset subclasses
+------------------
 * [InMemoryDataset][declearn.dataset.InMemoryDataset]:
-    Dataset subclass serving numpy(-like) memory-loaded data
-arrays
+    Dataset subclass serving numpy(-like) memory-loaded data arrays.
+
+Utility submodules
+------------------
+* [examples]
+    Utils to fetch and prepare some open-source datasets.
+* [utils]
+    Utils to manipulate datasets (load, save, split...).
 """
 
+from . import utils
+from . import examples
 from ._base import Dataset, DataSpecs, load_dataset_from_json
 from ._inmemory import InMemoryDataset
-
-from ._utils import load_data_array, save_data_array

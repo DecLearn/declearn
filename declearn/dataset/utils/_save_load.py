@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Dataset implementation to serve scikit-learn compatible in-memory data."""
+"""Utils to save and load array-like data to and from various file formats."""
 
 import functools
 import os
@@ -26,9 +26,13 @@ import pandas as pd  # type: ignore
 from scipy.sparse import spmatrix  # type: ignore
 from sklearn.datasets import load_svmlight_file  # type: ignore
 
-from declearn.dataset._sparse import sparse_from_file, sparse_to_file
+from declearn.dataset.utils._sparse import sparse_from_file, sparse_to_file
 
-__all__ = ["load_data_array", "save_data_array"]
+__all__ = [
+    "load_data_array",
+    "save_data_array",
+]
+
 
 DataArray = Union[np.ndarray, pd.DataFrame, spmatrix]
 
@@ -39,16 +43,17 @@ def load_data_array(
 ) -> DataArray:
     """Load a data array from a dump file.
 
-    Supported file extensions are:
-    .csv:
+    Supported file extensions
+    -------------------------
+    - `.csv`:
         csv file, comma-delimited by default.
         Any keyword arguments to `pandas.read_csv` may be passed.
-    .npy:
+    - `.npy`:
         Non-pickle numpy array dump, created with `numpy.save`.
-    .sparse:
+    - `.sparse`:
         Scipy sparse matrix dump, created with the custom
         `declearn.data.sparse.sparse_to_file` function.
-    .svmlight:
+    - `.svmlight`:
         SVMlight sparse matrix and labels array dump.
         Parse using `sklearn.load_svmlight_file`, and
         return either features or labels based on the
@@ -72,10 +77,11 @@ def load_data_array(
 
     Raises
     ------
-    TypeError:
+    TypeError
         If `path` is of unsupported extension.
-    Any exception raised by data-loading functions may also be
-    raised (e.g. if the file cannot be proprely parsed).
+
+    Any exception raised by data-loading functions may also be raised
+    (e.g. if the file cannot be proprely parsed).
     """
     ext = os.path.splitext(path)[1]
     if ext == ".csv":
@@ -96,13 +102,14 @@ def save_data_array(
 ) -> str:
     """Save a data array to a dump file.
 
-    Supported types of data arrays are:
-    pandas.DataFrame or pandas.Series:
-        Dump to a comma-separated ".csv" file.
-    numpy.ndarray:
-        Dump to a non-pickle ".npy" file.
-    scipy.sparse.spmatrix:
-        Dump to a ".sparse" file, using a custom format
+    Supported types of data arrays
+    ------------------------------
+    - `pandas.DataFrame` or `pandas.Series`:
+        Dump to a comma-separated `.csv` file.
+    - `numpy.ndarray`:
+        Dump to a non-pickle `.npy` file.
+    - `scipy.sparse.spmatrix`:
+        Dump to a `.sparse` file, using a custom format
         and `declearn.data.sparse.sparse_to_file`.
 
     Parameters
@@ -124,7 +131,7 @@ def save_data_array(
 
     Raises
     ------
-    TypeError:
+    TypeError
         If `array` is of unsupported type.
     """
     # Select a file extension and set up the array-dumping function.

@@ -36,27 +36,26 @@ import importlib
 import os
 import re
 import textwrap
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from declearn.communication import NetworkClientConfig, NetworkServerConfig
 from declearn.dataset import InMemoryDataset
 from declearn.main import FederatedClient, FederatedServer
 from declearn.main.config import FLOptimConfig, FLRunConfig
 from declearn.model.api import Model
+from declearn.quickrun._config import (
+    DataSplitConfig,
+    ExperimentConfig,
+    ModelConfig,
+)
+from declearn.quickrun._parser import parse_data_folder
+from declearn.quickrun._split_data import split_data
 from declearn.test_utils import make_importable
 from declearn.utils import run_as_processes
 
 __all__ = ["quickrun"]
 
 DEFAULT_FOLDER = "./examples/quickrun"
-
-# Perform local imports.
-# pylint: disable=wrong-import-order, wrong-import-position
-with make_importable(os.path.dirname(__file__)):
-    from _config import DataSplitConfig, ExperimentConfig, ModelConfig
-    from _parser import parse_data_folder
-    from _split_data import split_data
-# pylint: enable=wrong-import-order, wrong-import-position
 
 
 def get_model(folder, model_config) -> Model:
@@ -212,7 +211,7 @@ def parse_args(args: Optional[List[str]] = None) -> argparse.Namespace:
         The script requires to be provided with the path a TOML file
         with all the elements required to configurate an FL experiment,
         or the path to a folder containing :
-        * a TOML file with all the elements required to configurate an 
+        * a TOML file with all the elements required to configurate an
         FL experiment
         * A declearn model
         * A data folder, structured in a specific way

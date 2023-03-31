@@ -25,60 +25,21 @@ with mutually-exclusive target classes.
 * "biased", split the dataset through random sampling according
 to a shard-specific random labels distribution.
 
-Utilities provided here are limited to :
+Utilities provided here are limited to:
 
 * 2D Dataset that be directly loaded into numpy arrays, excluding for
 instance sparse data
 * Single-class classification problems
-
 """
 
-import argparse
-import io
 import os
-import re
-import textwrap
-from typing import List, Literal, Optional, Tuple, Union
+from typing import List, Optional, Tuple, Union
 
 import numpy as np
-import pandas as pd
-import requests  # type: ignore
 
-from declearn.dataset import load_data_array
-from declearn.test_utils import make_importable
-
-# Perform local imports.
-# pylint: disable=wrong-import-order, wrong-import-position
-with make_importable(os.path.dirname(__file__)):
-    from _config import DataSplitConfig
-# pylint: enable=wrong-import-order, wrong-import-position
-
-SOURCE_URL = "https://pjreddie.com/media/files"
-
-
-def load_mnist(
-    train: bool = True,
-) -> Tuple[np.ndarray, np.ndarray]:
-    """Load the raw MNIST dataset.
-
-    Arguments
-    ---------
-    train: bool, default=True
-        Whether to return the 60k training subset, or the 10k testing one.
-        Note that the test set should not be used as a validation set.
-    """
-    # Load the desired subset of MNIST
-    tag = "train" if train else "test"
-    url = f"{SOURCE_URL}/mnist_{tag}.csv"
-    og_data = requests.get(url, verify=False, timeout=20).content
-    df = pd.read_csv(
-        io.StringIO(og_data.decode("utf-8")), header=None, sep=","
-    )
-    data = df.iloc[:, 1:].to_numpy()
-    data = (data.reshape(data.shape[0], 28, 28, 1) / 255).astype(np.single)
-    # Channel last : B,H,W,C
-    labels = df[0].to_numpy()
-    return data, labels
+from declearn.dataset.examples import load_mnist
+from declearn.dataset.utils import load_data_array
+from declearn.quickrun._config import DataSplitConfig
 
 
 def load_data(
@@ -91,8 +52,8 @@ def load_data(
     Arguments
     ---------
     data: str or None, default=None
-        Path to the data file to import. If None, default to importing
-        the MNIST train dataset.
+        Path to the data file to import.
+        If None, default to importing the MNIST train dataset.
     target: str or int or None, default=None
         If str, path to the labels file to import. If int, column of
         the data file to be used as labels. Required if data is not None,
@@ -100,12 +61,12 @@ def load_data(
 
     Note
     -----
-    Sparse inputs will not be properly parsed by numpy. Currently, this function
-    only works with .csv and .npy files
+    Sparse inputs will not be properly parsed by numpy.
+    Currently, this function only works with .csv and .npy files
 
     """
     if not data:
-        return load_mnist()
+        return load_mnist(train=True)
 
     if os.path.isfile(data):
         inputs = load_data_array(data)
