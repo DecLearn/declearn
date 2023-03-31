@@ -33,6 +33,7 @@ using privided model and data, and stores its result in the same folder.
 
 import argparse
 import importlib
+import logging
 import os
 import re
 import textwrap
@@ -51,7 +52,7 @@ from declearn.quickrun._config import (
 from declearn.quickrun._parser import parse_data_folder
 from declearn.quickrun._split_data import split_data
 from declearn.test_utils import make_importable
-from declearn.utils import run_as_processes
+from declearn.utils import LOGGING_LEVEL_MAJOR, get_logger, run_as_processes
 
 __all__ = ["quickrun"]
 
@@ -85,8 +86,9 @@ def run_server(
     else:
         checkpoint = os.path.join(folder, "result")
     checkpoint = os.path.join(checkpoint, "server")
+    logger = get_logger("Server", fpath=os.path.join(checkpoint, "logger.txt"))
     server = FederatedServer(
-        model, network, optim, expe_config.metrics, checkpoint
+        model, network, optim, expe_config.metrics, checkpoint, logger
     )
     server.run(config)
 
@@ -110,6 +112,11 @@ def run_client(
     else:
         checkpoint = os.path.join(folder, "result")
     checkpoint = os.path.join(checkpoint, name)
+    # Set up a logger: write everything to file, but filter console outputs.
+    logger = get_logger(name, fpath=os.path.join(checkpoint, "logs.txt"))
+    for handler in logger.handlers:
+        if isinstance(handler, logging.StreamHandler):
+            handler.setLevel(LOGGING_LEVEL_MAJOR)
     # Wrap train and validation data as Dataset objects.
     train = InMemoryDataset(
         paths.get("train_data"),

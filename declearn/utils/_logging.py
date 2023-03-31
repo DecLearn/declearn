@@ -22,6 +22,18 @@ import os
 from typing import Optional
 
 
+__all__ = [
+    "get_logger",
+    "LOGGING_LEVEL_MAJOR",
+]
+
+
+# Add a logging level between INFO and WARNING.
+LOGGING_LEVEL_MAJOR = (logging.WARNING + logging.INFO) // 2
+"""Custom "MAJOR" severity level, between stdlib "INFO" and "WARNING"."""
+logging.addLevelName(level=LOGGING_LEVEL_MAJOR, levelName="MAJOR")
+
+
 DEFAULT_FORMAT = "%(asctime)s:%(name)s:%(levelname)s: %(message)s"
 
 
