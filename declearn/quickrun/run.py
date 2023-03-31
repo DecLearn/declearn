@@ -37,6 +37,7 @@ import logging
 import os
 import re
 import textwrap
+from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 
 from declearn.communication import NetworkClientConfig, NetworkServerConfig
@@ -71,6 +72,15 @@ def get_model(folder, model_config) -> Model:
     return model_cls
 
 
+def get_checkpoint(folder: str, expe_config: ExperimentConfig) -> str:
+    if expe_config.checkpoint:
+        checkpoint = expe_config.checkpoint
+    else:
+        timestamp = datetime.now().strftime("%y-%m-%d_%H-%M")
+        checkpoint = os.path.join(folder, f"result_{timestamp}")
+    return checkpoint
+
+
 def run_server(
     folder: str,
     network: NetworkServerConfig,
@@ -81,10 +91,7 @@ def run_server(
 ) -> None:
     """Routine to run a FL server, called by `run_declearn_experiment`."""
     model = get_model(folder, model_config)
-    if expe_config.checkpoint:
-        checkpoint = expe_config.checkpoint
-    else:
-        checkpoint = os.path.join(folder, "result")
+    checkpoint = get_checkpoint(folder, expe_config)
     checkpoint = os.path.join(checkpoint, "server")
     logger = get_logger("Server", fpath=os.path.join(checkpoint, "logger.txt"))
     server = FederatedServer(
@@ -107,10 +114,7 @@ def run_client(
     # Make the model importable
     _ = get_model(folder, model_config)
     # Add checkpointer
-    if expe_config.checkpoint:
-        checkpoint = expe_config.checkpoint
-    else:
-        checkpoint = os.path.join(folder, "result")
+    checkpoint = get_checkpoint(folder, expe_config)
     checkpoint = os.path.join(checkpoint, name)
     # Set up a logger: write everything to file, but filter console outputs.
     logger = get_logger(name, fpath=os.path.join(checkpoint, "logs.txt"))
@@ -248,4 +252,3 @@ def main(args: Optional[List[str]] = None) -> None:
 
 if __name__ == "__main__":
     main()
-    # quickrun(config="examples/quickrun/config_custom.toml") # TODO
