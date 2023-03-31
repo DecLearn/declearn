@@ -30,6 +30,13 @@ to and from various file formats:
     Backend to load a sparse matrix from a dump file.
 * [sparse_to_file][declearn.dataset.utils.sparse_to_file]:
     Backend to save a sparse matrix to a dump file
+
+Data splitting
+--------------
+* [split_multi_classif_dataset]
+[declearn.dataset.utils.split_multi_classif_dataset]:
+    Split a classification dataset into (opt. heterogeneous) shards.
 """
 from ._sparse import sparse_from_file, sparse_to_file
 from ._save_load import load_data_array, save_data_array
+from ._split_classif import split_multi_classif_dataset

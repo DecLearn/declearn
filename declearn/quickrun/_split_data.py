@@ -33,12 +33,12 @@ instance sparse data
 """
 
 import os
-from typing import List, Optional, Tuple, Union
+from typing import Optional, Tuple, Union
 
 import numpy as np
 
 from declearn.dataset.examples import load_mnist
-from declearn.dataset.utils import load_data_array
+from declearn.dataset.utils import load_data_array, split_multi_classif_dataset
 from declearn.quickrun._config import DataSplitConfig
 
 
@@ -91,76 +91,6 @@ def load_data(
     return inputs, labels
 
 
-def _split_iid(
-    inputs: np.ndarray,
-    target: np.ndarray,
-    n_shards: int,
-    rng: np.random.Generator,
-) -> List[Tuple[np.ndarray, np.ndarray]]:
-    """Split a dataset into shards using iid sampling."""
-    order = rng.permutation(len(inputs))
-    s_len = len(inputs) // n_shards
-    split = []  # type: List[Tuple[np.ndarray, np.ndarray]]
-    for idx in range(n_shards):
-        srt = idx * s_len
-        end = (srt + s_len) if idx < (n_shards - 1) else len(order)
-        shard = order[srt:end]
-        split.append((inputs[shard], target[shard]))
-    return split
-
-
-def _split_labels(
-    inputs: np.ndarray,
-    target: np.ndarray,
-    n_shards: int,
-    rng: np.random.Generator,
-) -> List[Tuple[np.ndarray, np.ndarray]]:
-    """Split a dataset into shards with mutually-exclusive label classes."""
-    classes = np.unique(target)
-    if n_shards > len(classes):
-        raise ValueError(
-            f"Cannot share {len(classes)} classes between {n_shards}"
-            "shards with mutually-exclusive labels."
-        )
-    s_len = len(classes) // n_shards
-    order = rng.permutation(classes)
-    split = []  # type: List[Tuple[np.ndarray, np.ndarray]]
-    for idx in range(n_shards):
-        srt = idx * s_len
-        end = (srt + s_len) if idx < (n_shards - 1) else len(order)
-        shard = np.isin(target, order[srt:end])
-        shuffle = rng.permutation(shard.sum())
-        split.append((inputs[shard][shuffle], target[shard][shuffle]))
-    return split
-
-
-def _split_biased(
-    inputs: np.ndarray,
-    target: np.ndarray,
-    n_shards: int,
-    rng: np.random.Generator,
-) -> List[Tuple[np.ndarray, np.ndarray]]:
-    """Split a dataset into shards with heterogeneous label distributions."""
-    classes = np.unique(target)
-    index = np.arange(len(target))
-    s_len = len(target) // n_shards
-    split = []  # type: List[Tuple[np.ndarray, np.ndarray]]
-    for idx in range(n_shards):
-        if idx < (n_shards - 1):
-            # Draw a random distribution of labels for this node.
-            logits = np.exp(rng.normal(size=len(classes)))
-            lprobs = logits[target[index]]
-            lprobs = lprobs / lprobs.sum()
-            # Draw samples based on this distribution, without replacement.
-            shard = rng.choice(index, size=s_len, replace=False, p=lprobs)
-            index = index[~np.isin(index, shard)]
-        else:
-            # For the last node: use the remaining samples.
-            shard = index
-        split.append((inputs[shard], target[shard]))
-    return split
-
-
 def split_data(data_config: DataSplitConfig, folder: str) -> None:
     """Download and randomly split a dataset into shards.
 
@@ -180,54 +110,33 @@ def split_data(data_config: DataSplitConfig, folder: str) -> None:
     data_config: DataSplitConfig
         A DataSplitConfig instance, see class documentation for details
     """
-
-    def np_save(folder, data, i, name):
-        data_dir = os.path.join(folder, f"client_{i}")
-        os.makedirs(data_dir, exist_ok=True)
-        np.save(os.path.join(data_dir, f"{name}.npy"), data)
-
-    # Overwrite default folder if provided
-    scheme = data_config.scheme
-    name = f"data_{scheme}"
-    data_file = data_config.data_file
-    label_file = data_config.label_file
+    # Select output folder.
     if data_config.data_folder:
         folder = os.path.dirname(data_config.data_folder)
-        name = os.path.split(data_config.data_folder)[-1]
-        data_file = os.path.abspath(data_config.data_file)
-        label_file = os.path.abspath(data_config.label_file)
-    # Select the splitting function to be used.
-    if scheme == "iid":
-        func = _split_iid
-    elif scheme == "labels":
-        func = _split_labels
-    elif scheme == "biased":
-        func = _split_biased
     else:
-        raise ValueError(f"Invalid 'scheme' value: '{scheme}'.")
-    # Set up the RNG, download the raw dataset and split it.
-    rng = np.random.default_rng(data_config.seed)
-
-    inputs, labels = load_data(data_file, label_file)
+        folder = f"data_{data_config.scheme}"
+    # Value-check the 'perc_train' parameter.
+    if not 0.0 < data_config.perc_train <= 1.0:
+        raise ValueError("'perc_train' should be a float in ]0,1]")
+    # Load the dataset and split it.
+    inputs, labels = load_data(data_config.data_file, data_config.label_file)
     print(
-        f"Splitting data into {data_config.n_shards}"
-        f"shards using the {scheme} scheme"
+        f"Splitting data into {data_config.n_shards} shards "
+        f"using the '{data_config.scheme}' scheme."
     )
-    split = func(inputs, labels, data_config.n_shards, rng)
+    split = split_multi_classif_dataset(
+        dataset=(inputs, labels),
+        n_shards=data_config.n_shards,
+        scheme=data_config.scheme,  # type: ignore
+        p_valid=(1 - data_config.perc_train),
+        seed=data_config.seed,
+    )
     # Export the resulting shard-wise data to files.
-    folder = os.path.join(folder, name)
-    for i, (inp, tgt) in enumerate(split):
-        perc_train = data_config.perc_train
-        if not perc_train:
-            np_save(folder, inp, i, "train_data")
-            np_save(folder, tgt, i, "train_target")
-        else:
-            if perc_train > 1.0 or perc_train < 0.0:
-                raise ValueError("perc_train should be a float in ]0,1]")
-            n_train = round(len(inp) * perc_train)
-            t_inp, t_tgt = inp[:n_train], tgt[:n_train]
-            v_inp, v_tgt = inp[n_train:], tgt[n_train:]
-            np_save(folder, t_inp, i, "train_data")
-            np_save(folder, t_tgt, i, "train_target")
-            np_save(folder, v_inp, i, "valid_data")
-            np_save(folder, v_tgt, i, "valid_target")
+    for idx, ((x_train, y_train), (x_valid, y_valid)) in enumerate(split):
+        subdir = os.path.join(folder, f"client_{idx}")
+        os.makedirs(subdir, exist_ok=True)
+        np.save(os.path.join(subdir, "train_data.npy"), x_train)
+        np.save(os.path.join(subdir, "train_target.npy"), y_train)
+        if len(x_valid):
+            np.save(os.path.join(subdir, "valid_data.npy"), x_valid)
+            np.save(os.path.join(subdir, "valid_target.npy"), y_valid)
