@@ -69,11 +69,14 @@ in `./custom/config_custom.toml`
 ## The data
 
 Your data, in a standard tabular format. This data can either require
-splitting or be already split by client
+splitting or be already split by client. If your data requires splitting,
+we provide with an experimental data splitter with currently a limited
+scope.
 
 Requires splitting:
 
 * You have a single dataset and want to use provided utils to split it
+between simulated clients
 * In which case you need to mention your data source in the TOML file,
 as well as details on how to split your data. See
 `./custom/config_custom.toml` for details.
@@ -93,7 +96,7 @@ add details in the TOML file on where to find this data. See
 The quickrun mode expects a `config` path as an argument. This can be the path to :
 
 * A folder, expected to be structured a certain way
-* A TOML file, where the location of every other object is mentionned
+* A TOML file, where the location of other object is mentionned
 
 In both cases, the default is to check the folder provided, or the TOML
 parent folder, is structured as follows:
@@ -102,14 +105,17 @@ parent folder, is structured as follows:
     folder/
     │    config.toml - the config file
     │    model.py - the model
-    └─── data*/
-        └─── client*/
+    └─── data*/ - a folder starting with 'data' containing split data
+        └─── client*/ - one folder per client, each containing 4 files
         │      train_data.* - training data
         │      train_target.* - training labels
         │      valid_data.* - validation data
         │      valid_target.* - validation labels
         └─── client*/
         │    ...
+    └─── result/
+        └─── client*/
+        ...
 ```
 
 Any changes to this structure should be referenced in the TOML file, as

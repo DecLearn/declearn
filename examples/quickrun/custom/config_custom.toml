@@ -1,0 +1,81 @@
+# This is a TOML file for demonstrating the extend of customization 
+# available for experiments through TOMl. It contains commented mock
+# fields and can be used as a template for other experiments. It will
+# not run as is as if references some not existing files for demonstration 
+# purposes.
+
+
+[network] # Network configuration used by both client and server
+protocol = "websockets" # Protocol used, to keep things simple use websocket
+host = "127.0.0.1" # Address used, works as is on most set ups
+port = 8765 # Port used, works as is on most set ups
+
+[model] # Information on where to find the model file
+# The location to a model file, if not following expected structure
+model_file = "examples/quickrun/custom/model_custom.py"
+# The name of your model file, if different from "MyModel"
+model_name = "MyCustomModel" 
+
+[data] # How to split your data
+
+# If you want to split your data 
+# Where to save your split data, if not in the expected "result" folder
+data_folder = "examples/quickrun/custom/data_custom"
+n_shards = 3 # Number of simulated clients
+# Where to find the original data
+data_file = "examples/quickrun/data_unsplit/train_data.npy"
+# Where to find the original data labels
+label_file = "examples/quickrun/data_unsplit/train_target.npy"
+scheme = "iid" # How to split your data between simulated clients
+perc_train = 0.8 # For each client, how much data 
+seed = 22
+
+# If you have already split data, not using expected names 
+# The custom names of your clients
+client_names = ["client_0","client_1","client_2"]
+    [dataset_names] # The names train and test datasets
+    train_data = "train_data" 
+    train_target = "train_target"
+    valid_data = "valid_data"
+    valid_target = "valid_target"
+
+[optim] # Optimizers options for both client and server
+aggregator = "averaging" # Server aggregation strategy
+server_opt = 1.0 # The server learning rate
+
+    [optim.client_opt] # Client optimization strategy
+    lrate = 0.001 # Client learning rate
+    # List of optimizer modules used
+    modules = [["momentum", {"beta" = 0.9}]]
+    # List of regularizer modules
+    regularizers = [["lasso", {alpha = 0.1}]]
+
+[run] # Training process option for both client and server
+rounds = 10 # Number of overall training rounds
+
+    [run.register] # Client registration options
+    min_clients = 1 # Minimum of clients that need to connect
+    max_clients = 6 # The maximum number of clients that can connect
+    timeout = 5 # How long to wait for clients, in seconds
+
+    [run.training] # Client training procedure
+    n_epoch = 1 # Number of local epochs
+    batch_size = 48 # Training batch size
+    drop_remainder = false # Whether to drop the last trainig examples
+
+    [run.evaluate]
+    batch_size = 128 # Evaluation batch size
+
+
+[experiment] # What to report during the experiment and where to report it
+metrics=[["multi-classif",{labels = [0,1,2,3,4,5,6,7,8,9]}]] # Accuracy metric
+checkpoint = "examples/quickrun/result_custom" # Custom location to results
+
+
+
+
+
+
+
+
+
