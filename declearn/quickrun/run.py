@@ -40,18 +40,19 @@ import textwrap
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 
+import fire
+
 from declearn.communication import NetworkClientConfig, NetworkServerConfig
 from declearn.dataset import InMemoryDataset
 from declearn.main import FederatedClient, FederatedServer
 from declearn.main.config import FLOptimConfig, FLRunConfig
 from declearn.model.api import Model
 from declearn.quickrun._config import (
-    DataSplitConfig,
+    DataSourceConfig,
     ExperimentConfig,
     ModelConfig,
 )
 from declearn.quickrun._parser import parse_data_folder
-from declearn.quickrun._split_data import split_data
 from declearn.test_utils import make_importable
 from declearn.utils import (
     LOGGING_LEVEL_MAJOR,
@@ -61,12 +62,6 @@ from declearn.utils import (
 )
 
 __all__ = ["quickrun"]
-
-
-DEFAULT_FOLDER = os.path.join(
-    os.path.dirname(__file__),
-    "../../examples/quickrun",
-)
 
 
 def get_model(folder, model_config) -> Model:
@@ -82,6 +77,7 @@ def get_model(folder, model_config) -> Model:
 
 
 def get_checkpoint(folder: str, expe_config: ExperimentConfig) -> str:
+    """Return the checkpoint folder, either default or as given in config"""
     if expe_config.checkpoint:
         checkpoint = expe_config.checkpoint
     else:
@@ -146,15 +142,13 @@ def run_client(
     client.run()
 
 
-def get_toml_folder(config: Optional[str] = None) -> Tuple[str, str]:
-    """Deternmine if provided config is a file or a directory, and
+def get_toml_folder(config: str) -> Tuple[str, str]:
+    """Determine if provided config is a file or a directory, and
     return :
     * The path to the TOML config file
     * The path to the main folder of the experiment
     """
     # default to the mnist example
-    if not config:
-        config = DEFAULT_FOLDER
     config = os.path.abspath(config)
     # check if config is TOML or dir
     if os.path.isfile(config):
@@ -170,16 +164,11 @@ def get_toml_folder(config: Optional[str] = None) -> Tuple[str, str]:
     return toml, folder
 
 
-def locate_or_create_split_data(toml: str, folder: str) -> Dict:
+def locate_split_data(toml: str, folder: str) -> Dict:
     """Attempts to find split data according to the config toml or
-    or the default behavior. If failed, attempts to find full data
-    according to the config toml and split it"""
-    data_config = DataSplitConfig.from_toml(toml, False, "data")
-    try:
-        client_dict = parse_data_folder(data_config, folder)
-    except ValueError:
-        split_data(data_config, folder)
-        client_dict = parse_data_folder(data_config, folder)
+    or the default behavior"""
+    data_config = DataSourceConfig.from_toml(toml, False, "data")
+    client_dict = parse_data_folder(data_config, folder)
     return client_dict
 
 
@@ -194,22 +183,36 @@ def server_to_client_network(
     )
 
 
-def quickrun(config: Optional[str] = None) -> None:
-    """Run a server and its clients using multiprocessing.
+def quickrun(config: str) -> None:
+    """
+    Run a server and its clients using multiprocessing.
 
-    The kwargs are the arguments expected by split_data,
-    see [the documentation][declearn.quickrun._split_data]
+    The script requires to be provided with the path a TOML file
+    with all the elements required to configurate an FL experiment,
+    or the path to a folder containing :
+
+    * a TOML file with all the elements required to configurate an
+    FL experiment
+    * A declearn model
+    * A data folder, structured in a specific way
+
+    Parameters:
+    ----
+    config: str
+        Path to either a toml file or a properly formatted folder
+        containing the elements required to launch an FL experiment
+
     """
     toml, folder = get_toml_folder(config)
     # locate split data or split it if needed
-    client_dict = locate_or_create_split_data(toml, folder)
+    client_dict = locate_split_data(toml, folder)
     # Parse toml files
     ntk_server_cfg = NetworkServerConfig.from_toml(toml, False, "network")
     ntk_client_cfg = server_to_client_network(ntk_server_cfg)
     optim_cgf = FLOptimConfig.from_toml(toml, False, "optim")
     run_cfg = FLRunConfig.from_toml(toml, False, "run")
-    model_cfg = ModelConfig.from_toml(toml, False, "model")
-    expe_cfg = ExperimentConfig.from_toml(toml, False, "experiment")
+    model_cfg = ModelConfig.from_toml(toml, False, "model", True)
+    expe_cfg = ExperimentConfig.from_toml(toml, False, "experiment", True)
     # Set up a (func, args) tuple specifying the server process.
     p_server = (
         run_server,
@@ -230,39 +233,9 @@ def quickrun(config: Optional[str] = None) -> None:
     )
 
 
-def parse_args(args: Optional[List[str]] = None) -> argparse.Namespace:
-    """Set up and run a command-line arguments parser."""
-    usage = """
-        Quickly run an example locally using declearn.
-        The script requires to be provided with the path a TOML file
-        with all the elements required to configurate an FL experiment,
-        or the path to a folder containing :
-        * a TOML file with all the elements required to configurate an
-        FL experiment
-        * A declearn model
-        * A data folder, structured in a specific way
-
-        If not provided with this, the script defaults to the MNIST example
-        provided by declearn in `declearn.example.quickrun`.
-    """
-    usage = re.sub("\n *(?=[a-z])", " ", textwrap.dedent(usage))
-    parser = argparse.ArgumentParser(
-        formatter_class=argparse.RawTextHelpFormatter,
-        usage=re.sub("- ", "-", usage),
-    )
-    parser.add_argument(
-        "--config",
-        default=None,
-        dest="config",
-        help="Path to the root folder where to export data.",
-    )
-    return parser.parse_args(args)
-
-
-def main(args: Optional[List[str]] = None) -> None:
-    """Quikcrun based on commandline-input arguments."""
-    cmdargs = parse_args(args)
-    quickrun(config=cmdargs.config)
+def main() -> None:
+    """Fire-wrapped quickrun"""
+    fire.Fire(quickrun)
 
 
 if __name__ == "__main__":

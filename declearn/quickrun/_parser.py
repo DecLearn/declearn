@@ -16,24 +16,19 @@
 # limitations under the License.
 
 """
-#TODO
+Utils parsing a data folder following a standard format into a nested
+dictionnary
 """
 
 import os
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
-from declearn.test_utils import make_importable
-
-# Perform local imports.
-# pylint: disable=wrong-import-order, wrong-import-position
-with make_importable(os.path.dirname(__file__)):
-    from _config import ExperimentConfig
-# pylint: enable=wrong-import-order, wrong-import-position
+from declearn.quickrun._config import DataSourceConfig
 
 
 def parse_data_folder(
-    expe_config: ExperimentConfig,
+    data_config: DataSourceConfig,
     folder: Optional[str] = None,
 ) -> Dict:
     """Utils parsing a data folder following a standard format into a nested
@@ -53,17 +48,16 @@ def parse_data_folder(
 
     Parameters:
     -----------
-    expe_config : ExperimentConfig
-        ExperimentConfig instance, see class documentation for details.
+    data_config : DataSourceConfig
+        DataSourceConfig instance, see class documentation for details.
     folder : str or None
         The main experiment folder in which to look for a `data*` folder.
         Overwritten by data_folder.
     """
 
-    data_folder = expe_config.data_folder
-    client_names = expe_config.client_names
-    dataset_names = expe_config.dataset_names
-    scheme = expe_config.scheme
+    data_folder = data_config.data_folder
+    client_names = data_config.client_names
+    dataset_names = data_config.dataset_names
 
     if not folder and not data_folder:
         raise ValueError(
@@ -71,13 +65,13 @@ def parse_data_folder(
         )
     # Data_folder
     if not data_folder:
-        search_str = f"_{scheme}" if scheme else "*"
-        gen_folders = Path(folder).glob(f"data{search_str}")  # type: ignore
+        gen_folders = Path(folder).glob("data*")  # type: ignore
         data_folder = next(gen_folders, False)  # type: ignore
         if not data_folder:
             raise ValueError(
                 f"No folder starting with 'data' found in {folder}. "
-                "Please store your data under a 'data_*' folder"
+                "Please store your split data under a 'data_*' folder. "
+                "To use an example dataset run `declearn-split` first."
             )
         if next(gen_folders, False):
             raise ValueError(
@@ -86,7 +80,13 @@ def parse_data_folder(
                 "parent folder"
             )
     else:
-        data_folder = Path(data_folder)
+        if os.path.isdir(data_folder):
+            data_folder = Path(data_folder)
+        else:
+            raise ValueError(
+                f"{data_folder} is not a valid path. To use an example "
+                "dataset run `declearn-split` first."
+            )
     # Get clients dir
     if client_names:
         if isinstance(client_names, list):

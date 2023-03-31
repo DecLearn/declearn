@@ -35,11 +35,11 @@ instance sparse data
 import os
 from typing import Optional, Tuple, Union
 
+import fire
 import numpy as np
 
 from declearn.dataset.examples import load_mnist
 from declearn.dataset.utils import load_data_array, split_multi_classif_dataset
-from declearn.quickrun._config import DataSplitConfig
 
 
 def load_data(
@@ -91,8 +91,17 @@ def load_data(
     return inputs, labels
 
 
-def split_data(data_config: DataSplitConfig, folder: str) -> None:
-    """Download and randomly split a dataset into shards.
+def split_data(
+    folder: str = ".",
+    data_file: Optional[str] = None,
+    label_file: Optional[Union[str, int]] = None,
+    n_shards: int = 3,
+    scheme: str = "iid",
+    perc_train: float = 0.8,
+    seed: Optional[int] = None,
+) -> None:
+
+    """Randomly split a dataset into shards.
 
     The resulting folder structure is :
         folder/
@@ -107,29 +116,49 @@ def split_data(data_config: DataSplitConfig, folder: str) -> None:
 
     Parameters
     ----------
-    data_config: DataSplitConfig
-        A DataSplitConfig instance, see class documentation for details
+    folder: str, default = "."
+        Path to the folder where to add a data folder
+        holding output shard-wise files
+    data_file: str or None, default=None
+        Optional path to a folder where to find the data.
+        If None, default to the MNIST example.
+    target_file: str or int or None, default=None
+        If str, path to the labels file to import. If int, column of
+        the data file to be used as labels. Required if data is not None,
+        ignored if data is None.
+    n_shards: int
+        Number of shards between which to split the data.
+    scheme: {"iid", "labels", "biased"}, default="iid"
+        Splitting scheme(s) to use. In all cases, shards contain mutually-
+        exclusive samples and cover the full raw training data.
+        - If "iid", split the dataset through iid random sampling.
+        - If "labels", split into shards that hold all samples associated
+        with mutually-exclusive target classes.
+        - If "biased", split the dataset through random sampling according
+        to a shard-specific random labels distribution.
+    perc_train:  float, default= 0.8
+        Train/validation split in each client dataset, must be in the
+        ]0,1] range.
+    seed: int or None, default=None
+        Optional seed to the RNG used for all sampling operations.
     """
     # Select output folder.
-    if data_config.data_folder:
-        folder = os.path.dirname(data_config.data_folder)
-    else:
-        folder = f"data_{data_config.scheme}"
+    folder = os.path.join(folder, f"data_{scheme}")
     # Value-check the 'perc_train' parameter.
-    if not 0.0 < data_config.perc_train <= 1.0:
+    if not 0.0 < perc_train <= 1.0:
         raise ValueError("'perc_train' should be a float in ]0,1]")
     # Load the dataset and split it.
-    inputs, labels = load_data(data_config.data_file, data_config.label_file)
+    inputs, labels = load_data(data_file, label_file)
     print(
-        f"Splitting data into {data_config.n_shards} shards "
-        f"using the '{data_config.scheme}' scheme."
+        f"Splitting data into {n_shards} shards "
+        f"using the '{scheme}' scheme."
     )
     split = split_multi_classif_dataset(
         dataset=(inputs, labels),
-        n_shards=data_config.n_shards,
-        scheme=data_config.scheme,  # type: ignore
-        p_valid=(1 - data_config.perc_train),
-        seed=data_config.seed,
+        n_shards=n_shards,
+        scheme=scheme,  # type: ignore
+        p_valid=(1 - perc_train),
+        seed=seed,
     )
     # Export the resulting shard-wise data to files.
     for idx, ((x_train, y_train), (x_valid, y_valid)) in enumerate(split):
@@ -140,3 +169,12 @@ def split_data(data_config: DataSplitConfig, folder: str) -> None:
         if len(x_valid):
             np.save(os.path.join(subdir, "valid_data.npy"), x_valid)
             np.save(os.path.join(subdir, "valid_target.npy"), y_valid)
+
+
+def main():
+    "fire-wrapped split data"
+    fire.Fire(split_data)
+
+
+if __name__ == "__main__":
+    main()

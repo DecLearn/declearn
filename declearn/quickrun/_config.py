@@ -25,7 +25,7 @@ from declearn.utils import TomlConfig
 
 __all__ = [
     "ModelConfig",
-    "DataSplitConfig",
+    "DataSourceConfig",
     "ExperimentConfig",
 ]
 
@@ -40,36 +40,12 @@ class ModelConfig(TomlConfig):
 
 
 @dataclasses.dataclass
-class DataSplitConfig(TomlConfig):
+class DataSourceConfig(TomlConfig):
     """Dataclass associated with the functions
-    declearn.quickrun._split_data:split_data and
     declearn.quickrun._parser:parse_data_folder
 
     data_folder: str
-        Absolute path to the folder where to export shard-wise files,
-        and/or to the main folder hosting the data.
-    n_shards: int
-        Number of shards between which to split the data.
-    data_file: str or None, default=None
-        Optional path to a folder where to find the data.
-        If None, default to the MNIST example.
-    target_file: str or int or None, default=None
-        If str, path to the labels file to import. If int, column of
-        the data file to be used as labels. Required if data is not None,
-        ignored if data is None.
-    scheme: {"iid", "labels", "biased"}, default="iid"
-        Splitting scheme(s) to use. In all cases, shards contain mutually-
-        exclusive samples and cover the full raw training data.
-        - If "iid", split the dataset through iid random sampling.
-        - If "labels", split into shards that hold all samples associated
-        with mutually-exclusive target classes.
-        - If "biased", split the dataset through random sampling according
-        to a shard-specific random labels distribution.
-    perc_train:  float, default= 0.8
-        Train/validation split in each client dataset, must be in the
-        ]0,1] range.
-    seed: int or None, default=None
-        Optional seed to the RNG used for all sampling operations.
+        Absolute path to the to the main folder hosting the data.
     client_names: list or None
         List of custom client names to look for in the data_folder.
         If None, default to expected prefix search.
@@ -79,16 +55,7 @@ class DataSplitConfig(TomlConfig):
         If None, , default to expected prefix search.
     """
 
-    # Common args
     data_folder: Optional[str] = None
-    # split_data args
-    n_shards: int = 3
-    data_file: Optional[str] = None
-    label_file: Optional[Union[str, int]] = None
-    scheme: str = "iid"
-    perc_train: float = 0.8
-    seed: Optional[int] = None
-    # parse_data_folder args
     client_names: Optional[List[str]] = None
     dataset_names: Optional[Dict[str, str]] = None
 

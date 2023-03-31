@@ -42,6 +42,7 @@ dependencies = [
     "scikit-learn >= 1.0",
     "tomli >= 2.0 ; python_version < '3.11'",
     "typing_extensions >= 4.0",
+    "fire >= 0.4",
 ]
 
 [project.optional-dependencies]
@@ -132,3 +133,4 @@ declearn = ["py.typed"]
 
 [project.scripts]
 declearn-quickrun = "declearn.quickrun.run:main"
+declearn-split = "declearn.dataset.split_data:main"

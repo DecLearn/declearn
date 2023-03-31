@@ -298,6 +298,7 @@ class TomlConfig:
         path: str,
         warn_user: bool = True,
         use_section: Optional[str] = None,
+        section_fail_ok: bool = False,
     ) -> Self:
         """Parse a structured configuration from a TOML file.
 
@@ -325,6 +326,9 @@ class TomlConfig:
             If not None, points to a specific section of the TOML that
             should be used, rather than the whole file. Useful to parse
             orchestrating TOML files, e.g. quickrun.
+        section_fail_ok: bool, default=False
+            If True, allow the section specified in use_section to be
+            missing from the TOML file without raising an Error.
 
         Raises
         ------
@@ -352,7 +356,8 @@ class TomlConfig:
             try:
                 config = config[use_section]
             except KeyError as exc:
-                raise KeyError("Specified section not found") from exc
+                if not section_fail_ok:
+                    raise KeyError("Specified section not found") from exc
         params = {}  # type: Dict[str, Any]
         for field in dataclasses.fields(cls):
             # Case when the section is provided: set it up for parsing.
