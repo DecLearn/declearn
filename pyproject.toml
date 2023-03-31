@@ -38,6 +38,7 @@ classifiers = [
 dependencies = [
     "cryptography >= 35.0",
     "pandas >= 1.2",
+    "requests ~= 2.18",
     "scikit-learn >= 1.0",
     "tomli >= 2.0 ; python_version < '3.11'",
     "typing_extensions >= 4.0",
