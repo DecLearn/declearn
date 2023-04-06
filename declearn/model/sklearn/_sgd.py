@@ -96,7 +96,7 @@ class SklearnSGDModel(Model):
                 " or SGDRegressor instance."
             )
         model = model.set_params(
-            eta0=0.1,
+            eta0=1.0,
             learning_rate="constant",
             warm_start=False,
             average=False,
@@ -354,7 +354,7 @@ class SklearnSGDModel(Model):
         # Restore the model's weights.
         self.set_weights(w_srt)
         # Compute gradients based on weights' update.
-        return (w_srt - w_end) / self._model.eta0
+        return w_srt - w_end
 
     def apply_updates(  # type: ignore  # Vector subtype specification
         self,
