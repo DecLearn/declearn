@@ -164,7 +164,10 @@ def sparse_from_file(path: str) -> spmatrix:
         cnv = int if lil.dtype.kind == "i" else float
         # Iteratively parse and fill-in row data.
         for rix, row in enumerate(file):
-            for field in row.strip(" \n").split(" "):
+            row = row.strip(" \n")
+            if not row:  # all-zeros row
+                continue
+            for field in row.split(" "):
                 ind, val = field.split(":")
                 lil[rix, int(ind)] = cnv(val)
     # Convert the matrix to its initial format and return.
