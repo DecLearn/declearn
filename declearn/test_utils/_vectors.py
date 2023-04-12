@@ -22,7 +22,7 @@ import typing
 from typing import List, Literal, Optional, Type
 
 import numpy as np
-import pkg_resources
+import pkg_resources  # type: ignore
 from numpy.typing import ArrayLike
 
 from declearn.model.api import Vector
@@ -60,7 +60,9 @@ class GradientsTestCase:
     """
 
     def __init__(
-        self, framework: FrameworkType, seed: Optional[int] = 0
+        self,
+        framework: FrameworkType,
+        seed: Optional[int] = 0,
     ) -> None:
         """Instantiate the parametrized test-case."""
         if framework not in list_available_frameworks():

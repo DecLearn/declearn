@@ -22,9 +22,11 @@ dictionnary
 
 import os
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 from declearn.quickrun._config import DataSourceConfig
+
+# pylint: disable=too-many-arguments,too-many-branches,too-many-locals
 
 
 def parse_data_folder(
@@ -81,7 +83,7 @@ def parse_data_folder(
             )
     else:
         if os.path.isdir(data_folder):
-            data_folder = Path(data_folder)
+            data_folder = Path(data_folder)  # type: ignore
         else:
             raise ValueError(
                 f"{data_folder} is not a valid path. To use an example "
@@ -96,9 +98,12 @@ def parse_data_folder(
             ]
             if sum(valid_names) != len(client_names):
                 raise ValueError(
-                    f"Not all provided client names could be found in {data_folder}"
+                    "Not all provided client names could be found in"
+                    f"{data_folder}"
                 )
-            clients = {n: {} for n in client_names}
+            clients = {
+                n: {} for n in client_names
+            }  # type: Dict[str,Dict[Any,Any]]
         else:
             raise ValueError(
                 "Please provide a valid list of client names for "
@@ -109,8 +114,8 @@ def parse_data_folder(
         first_client = next(gen_folders, False)
         if not first_client:
             raise ValueError(
-                f"No folder starting with 'client' found in {data_folder}. "
-                "Please store your individual under client data under"
+                f"No folder starting with 'client' found in {data_folder}."
+                " Please store your individual under client data under"
                 "a 'client*' folder"
             )
         clients = {str(first_client).rsplit("/", 1)[-1]: {}}
@@ -131,17 +136,18 @@ def parse_data_folder(
             )
     else:
         dataset_names = {i: i for i in data_items}
-    for client, files in clients.items():
-        for k, v in dataset_names.items():
-            gen_file = Path(data_folder / client).glob(f"{v}*")  # type: ignore
+    for client, files in clients.items():  # type: ignore
+        for key, val in dataset_names.items():
+            filepath = Path(data_folder / client)  # type: ignore
+            gen_file = filepath.glob(f"{val}*")
             file = next(gen_file, False)
             if not file:
                 raise ValueError(
-                    f"Could not find a file named '{v}.*' in {client}"
+                    f"Could not find a file named '{val}.*' in {client}"
                 )
             if next(gen_file, False):
                 raise ValueError(
-                    f"Found more than one file named '{v}.*' in {client}"
+                    f"Found more than one file named '{val}.*' in {client}"
                 )
-            files[k] = str(file)
+            files[key] = str(file)
     return clients

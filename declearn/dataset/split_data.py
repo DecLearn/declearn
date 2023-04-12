@@ -35,7 +35,7 @@ instance sparse data
 import os
 from typing import Optional, Tuple, Union
 
-import fire
+import fire  # type: ignore
 import numpy as np
 
 from declearn.dataset.examples import load_mnist
@@ -91,6 +91,7 @@ def load_data(
     return inputs, labels
 
 
+# pylint: disable=too-many-arguments,too-many-locals
 def split_data(
     folder: str = ".",
     data_file: Optional[str] = None,
@@ -100,7 +101,6 @@ def split_data(
     perc_train: float = 0.8,
     seed: Optional[int] = None,
 ) -> None:
-
     """Randomly split a dataset into shards.
 
     The resulting folder structure is :

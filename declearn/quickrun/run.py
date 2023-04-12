@@ -31,16 +31,13 @@ The script then locally runs the FL experiment as layed out in the TOML file,
 using privided model and data, and stores its result in the same folder.
 """
 
-import argparse
 import importlib
 import logging
 import os
-import re
-import textwrap
 from datetime import datetime
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, Tuple
 
-import fire
+import fire  # type: ignore
 
 from declearn.communication import NetworkClientConfig, NetworkServerConfig
 from declearn.dataset import InMemoryDataset
@@ -64,7 +61,7 @@ from declearn.utils import (
 __all__ = ["quickrun"]
 
 
-def get_model(folder, model_config) -> Model:
+def get_model(folder: str, model_config: ModelConfig) -> Model:
     "Return a model instance from a model config instance"
     path = model_config.model_file or os.path.join(folder, "model.py")
     path = os.path.abspath(path)
@@ -95,6 +92,7 @@ def run_server(
     expe_config: ExperimentConfig,
 ) -> None:
     """Routine to run a FL server, called by `run_declearn_experiment`."""
+    # arguments serve modularity; pylint: disable=too-many-arguments
     set_device_policy(gpu=False)
     model = get_model(folder, model_config)
     checkpoint = get_checkpoint(folder, expe_config)
@@ -112,9 +110,10 @@ def run_client(
     model_config: ModelConfig,
     expe_config: ExperimentConfig,
     name: str,
-    paths: dict,
+    paths: Dict[str, str],
 ) -> None:
     """Routine to run a FL client, called by `run_declearn_experiment`."""
+    # arguments serve modularity; pylint: disable=too-many-arguments
     # Overwrite client name based on folder name.
     network.name = name
     # Make the model importable and disable GPU use.
@@ -143,8 +142,10 @@ def run_client(
 
 
 def get_toml_folder(config: str) -> Tuple[str, str]:
-    """Determine if provided config is a file or a directory, and
-    return :
+    """Return the path to an experiment's folder and TOML config file.
+
+    Determine if provided config is a file or a directory, and return:
+
     * The path to the TOML config file
     * The path to the main folder of the experiment
     """
@@ -165,8 +166,7 @@ def get_toml_folder(config: str) -> Tuple[str, str]:
 
 
 def locate_split_data(toml: str, folder: str) -> Dict:
-    """Attempts to find split data according to the config toml or
-    or the default behavior"""
+    """Attempt to find split data according to the config toml or default."""
     data_config = DataSourceConfig.from_toml(toml, False, "data")
     client_dict = parse_data_folder(data_config, folder)
     return client_dict
@@ -175,7 +175,7 @@ def locate_split_data(toml: str, folder: str) -> Dict:
 def server_to_client_network(
     network_cfg: NetworkServerConfig,
 ) -> NetworkClientConfig:
-    "Converts server network config to client network config"
+    "Convert server network config to client network config."
     return NetworkClientConfig.from_params(
         protocol=network_cfg.protocol,
         server_uri=f"ws://localhost:{network_cfg.port}",
@@ -203,6 +203,7 @@ def quickrun(config: str) -> None:
         containing the elements required to launch an FL experiment
 
     """
+    # main script; pylint: disable=too-many-locals
     toml, folder = get_toml_folder(config)
     # locate split data or split it if needed
     client_dict = locate_split_data(toml, folder)
