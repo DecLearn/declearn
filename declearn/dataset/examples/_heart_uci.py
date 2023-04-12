@@ -87,6 +87,7 @@ def download_heart_uci_shard(
     # Drop unused columns and rows with missing values.
     data.drop(columns=["ca", "chol", "fbs", "slope", "thal"], inplace=True)
     data.dropna(inplace=True)
+    data.reset_index(inplace=True, drop=True)
     # Normalize quantitative variables.
     for col in ("age", "trestbps", "thalach", "oldpeak"):
         data[col] = (data[col] - data[col].mean()) / data[col].std()
