@@ -17,17 +17,32 @@
 
 """Unit tests for 'declearn.dataset.utils' functions."""
 
+import json
 import os
+from typing import Type
 
 import numpy as np
 import pandas as pd  # type: ignore
-from scipy.sparse import coo_matrix, csr_matrix  # type: ignore
+import pytest
+import scipy.sparse  # type: ignore
 from sklearn.datasets import dump_svmlight_file  # type: ignore
 
 from declearn.dataset.utils import (
     load_data_array,
     save_data_array,
+    sparse_from_file,
+    sparse_to_file,
 )
+
+
+def build_sparse_data() -> scipy.sparse.coo_matrix:
+    """Build a random-valued COO sparse matrix."""
+    rng = np.random.default_rng(seed=0)
+    val = rng.normal(size=20)
+    idx = rng.choice(128, size=20)
+    jdx = rng.choice(32, size=20)
+    data = scipy.sparse.coo_matrix((val, (idx, jdx)))
+    return data
 
 
 class TestSaveLoadDataArray:
@@ -65,11 +80,7 @@ class TestSaveLoadDataArray:
 
     def test_save_load_sparse(self, tmpdir: str) -> None:
         """Test '(save|load)_data_array' with sparse data."""
-        rng = np.random.default_rng(seed=0)
-        val = rng.normal(size=20)
-        idx = rng.choice(128, size=20)
-        jdx = rng.choice(32, size=20)
-        data = coo_matrix((val, (idx, jdx)))
+        data = build_sparse_data()
         base = os.path.join(tmpdir, "data")
         # Test that the data can properly be saved.
         path = save_data_array(base, data)
@@ -78,7 +89,7 @@ class TestSaveLoadDataArray:
         assert os.path.isfile(path)
         # Test that the data can properly be reloaded.
         dbis = load_data_array(path)
-        assert isinstance(dbis, coo_matrix)
+        assert isinstance(dbis, scipy.sparse.coo_matrix)
         assert data.shape == dbis.shape
         assert data.nnz == dbis.nnz
         assert np.all(data.toarray() == dbis.toarray())
@@ -93,7 +104,65 @@ class TestSaveLoadDataArray:
         # Test that the data can properly be reloaded with declearn.
         x_bis = load_data_array(path)
         y_bis = load_data_array(path, which=1)
-        assert isinstance(x_bis, csr_matrix)
+        assert isinstance(x_bis, scipy.sparse.csr_matrix)
         assert np.allclose(x_bis.toarray(), x_dat)
         assert isinstance(y_bis, np.ndarray)
         assert np.allclose(y_bis, y_dat)
+
+
+SPARSE_TYPES = [
+    scipy.sparse.bsr_matrix,
+    scipy.sparse.csc_matrix,
+    scipy.sparse.csr_matrix,
+    scipy.sparse.coo_matrix,
+    scipy.sparse.dia_matrix,
+    scipy.sparse.dok_matrix,
+    scipy.sparse.lil_matrix,
+]
+
+
+class TestSaveLoadSparse:
+    """Unit tests for custom sparse data dump and load utils."""
+
+    @pytest.mark.parametrize("sparse_cls", SPARSE_TYPES)
+    def test_sparse_to_from_file(
+        self,
+        sparse_cls: Type[scipy.sparse.spmatrix],
+        tmpdir: str,
+    ) -> None:
+        """Test that 'sparse_(to|from)_file' works properly."""
+        data = build_sparse_data()
+        data = sparse_cls(data)
+        path = os.path.join(tmpdir, "data.sparse")
+        # Test that the data can properly be saved.
+        sparse_to_file(path, data)
+        assert os.path.isfile(path)
+        # Test that the data can properly be reloaded.
+        dbis = sparse_from_file(path)
+        assert isinstance(dbis, sparse_cls)
+        assert data.shape == dbis.shape
+        assert data.nnz == dbis.nnz
+        assert np.all(data.toarray() == dbis.toarray())
+
+    def test_sparse_to_file_fails(self, tmpdir: str) -> None:
+        """Test that a TypeError is raised with a bad input type."""
+        data = np.random.normal(size=(128, 32))
+        with pytest.raises(TypeError):
+            sparse_to_file(os.path.join(tmpdir, "data.sparse"), data)
+
+    def test_sparse_from_file_keyerror(self, tmpdir: str) -> None:
+        """Test that a KeyError is raised with a wrongful header."""
+        path = os.path.join(tmpdir, "data.sparse")
+        with open(path, "w", encoding="utf-8") as file:
+            file.write("Wrongful header\n")
+        with pytest.raises(KeyError):
+            sparse_from_file(path)
+
+    def test_sparse_from_file_typeerror(self, tmpdir: str) -> None:
+        """Test that a TypeError is raised with an unknown spmatrix type."""
+        path = os.path.join(tmpdir, "data.sparse")
+        header = {"stype": "bad", "dtype": "int32", "shape": [128, 32]}
+        with open(path, "w", encoding="utf-8") as file:
+            file.write(json.dumps(header) + "\n")
+        with pytest.raises(TypeError):
+            sparse_from_file(path)
