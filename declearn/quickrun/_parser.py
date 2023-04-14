@@ -110,17 +110,7 @@ def parse_data_folder(
                 "argument 'client_names'"
             )
     else:
-        gen_folders = Path(data_folder).glob("client*")  # type: ignore
-        first_client = next(gen_folders, False)
-        if not first_client:
-            raise ValueError(
-                f"No folder starting with 'client' found in {data_folder}."
-                " Please store your individual under client data under"
-                "a 'client*' folder"
-            )
-        clients = {str(first_client).rsplit("/", 1)[-1]: {}}
-        while client := next(gen_folders, False):
-            clients[str(client).rsplit("/", 1)[-1]] = {}
+        clients = {c: {} for c in next(os.walk(data_folder))[1]}
     # Get train and valid files
     data_items = [
         "train_data",
@@ -132,7 +122,7 @@ def parse_data_folder(
         if set(data_items) != set(dataset_names.keys()):
             raise ValueError(
                 f"Please provide a properly formatted dictionnary as input"
-                f"using the follwoing keys : {str(data_items)}"
+                f"using the following keys : {str(data_items)}"
             )
     else:
         dataset_names = {i: i for i in data_items}
