@@ -22,7 +22,6 @@ from typing import Literal, Optional, Tuple
 
 import pandas as pd  # type: ignore
 
-
 __all__ = [
     "load_heart_uci",
 ]
@@ -79,19 +78,22 @@ def download_heart_uci_shard(
     )
     # Download the dataaset.
     data = pd.read_csv(url, header=None, na_values="?")
-    data.columns = [
+    columns = [
         # fmt: off
         "age", "sex", "cp", "trestbps", "chol", "fbs", "restecg",
         "thalach", "exang", "oldpeak", "slope", "ca", "thal", "num",
     ]
+    data = data.set_axis(columns, axis=1, copy=False)
     # Drop unused columns and rows with missing values.
     data.drop(columns=["ca", "chol", "fbs", "slope", "thal"], inplace=True)
     data.dropna(inplace=True)
     data.reset_index(inplace=True, drop=True)
     # Normalize quantitative variables.
     for col in ("age", "trestbps", "thalach", "oldpeak"):
-        data[col] = (data[col] - data[col].mean()) / data[col].std()
+        data[col] = (  # type: ignore
+            data[col] - data[col].mean() / data[col].std()  # type: ignore
+        )
     # Binarize the target variable.
     data["num"] = (data["num"] > 0).astype(int)
-    # Return the prepared dataaframe.
+    # Return the prepared dataframe.
     return data

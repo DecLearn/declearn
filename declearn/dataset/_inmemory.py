@@ -22,7 +22,7 @@ import warnings
 from typing import Any, ClassVar, Dict, Iterator, List, Optional, Set, Union
 
 import numpy as np
-import pandas as pd  # type: ignore
+import pandas as pd
 from numpy.typing import ArrayLike
 from scipy.sparse import spmatrix  # type: ignore
 from sklearn.datasets import load_svmlight_file  # type: ignore
@@ -187,7 +187,8 @@ class InMemoryDataset(Dataset):
         if (not self.expose_classes) or (self.target is None):
             return None
         if isinstance(self.target, pd.DataFrame):
-            return set(self.target.unstack().unique().tolist())  # type: ignore
+            c_list = self.target.unstack().unique().tolist()  # type: ignore
+            return set(c_list)
         if isinstance(self.target, pd.Series):
             return set(self.target.unique().tolist())
         if isinstance(self.target, np.ndarray):
