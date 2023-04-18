@@ -17,12 +17,22 @@
 
 """Model subclass to wrap Haiku models."""
 
-import io
 import functools
+import io
 import warnings
 from copy import deepcopy
 from random import SystemRandom
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Generator,
+    List,
+    Optional,
+    Set,
+    Tuple,
+    Union,
+)
 
 import haiku as hk
 import jax
@@ -107,6 +117,7 @@ class HaikuModel(Model):
         # Create model state attributes
         self._pleaves = []  # type: List[jax.Array]
         self._treedef = None  # type: Optional[jax.tree_util.PyTreeDef]
+        self._trainable = []  # type: List[int]
         # Initialize the PRNG
         if seed is None:
             seed = int(SystemRandom().random() * 10e6)
@@ -189,6 +200,8 @@ class HaikuModel(Model):
         trainable: bool = False,
     ) -> JaxNumpyVector:
         params = {str(k): v for k, v in enumerate(self._pleaves)}
+        if trainable:
+            params = {str(idx): params[str(idx)] for idx in self._trainable}
         return JaxNumpyVector(params)
 
     def get_named_weights(self) -> Any:
@@ -207,9 +220,90 @@ class HaikuModel(Model):
         if not isinstance(weights, JaxNumpyVector):
             raise TypeError("HaikuModel requires JaxNumpyVector weights.")
         coefs_copy = deepcopy(weights.coefs)
-        self._pleaves = [
-            jax.device_put(v, self._device) for v in coefs_copy.values()
-        ]
+        if trainable:
+            for idx in self._trainable:
+                self._pleaves[idx] = jax.device_put(
+                    list(coefs_copy.values())[idx], self._device
+                )
+        else:
+            self._pleaves = [
+                jax.device_put(v, self._device) for v in coefs_copy.values()
+            ]
+
+    def traverse_params(self) -> Generator:
+        """Traverse the pytree of model named weight left-to-right,
+        depth-first"""
+        params = self.get_named_weights()
+        for layer in params:
+            bundle = params[layer]
+            for name in bundle:
+                value = bundle[name]
+                yield layer, name, value
+
+    @staticmethod
+    def build_include_fn(node_names: Dict[str, Dict[str, Any]]) -> Callable:
+        """Build an equality checking function, conforming to what is
+        expected at traversal"""
+
+        def include_fn(l, n, v):
+            cond_1 = l in list(node_names.keys())
+            cond_2 = n in list(node_names[l].keys())
+            return cond_1 and cond_2
+
+        return include_fn
+
+    def set_trainable_weights(
+        self,
+        criterion: Union[
+            Callable[[str, str, jax.Array], bool],
+            Dict[str, Dict[str, Any]],
+            List[int],
+        ],
+    ) -> None:
+        """Sets the index of trainable weights.
+
+        The split can be done by providing a functions applying conditions on the named
+        weights, as haiku users are used to do, but can also accept an explicit dict
+        of names or even the index of the parameter leaves stored by our HaikuModel.
+
+        Example use :
+        >>> self.get_named_weights() = {'linear': {'w': None, 'b': None}}
+        Using a function as input
+        >>> criterion = lambda layer, name, value: name == 'w'
+        >>> self.set_trainable_weights(criterion)
+        >>> self._trainable
+        [0]
+        Using a dictionnary or pytree
+        >>> criterion = {'linear': {'b': None}}
+        >>> self.set_trainable_weights(criterion)
+        >>> self._trainable
+        [1]
+
+        Arguments
+        --------
+        criterion : Callable or dict(str,dict(str,any)) or list(int)
+            Criterion to be used to identify trainable params. If Callable,
+            must be a function taking in the name of the module (e.g.
+            layer name), the element name (e.g. parameter name) and the
+            corresponding data and returning a boolean. See
+            [the haiku doc](https://dm-haiku.readthedocs.io/en/latest/api.html#haiku.data_structures.partition) # noqa
+            for details. If a list of integers, should represent the index of
+            trainable  parameters in the parameter tree leaves. If a dict, should
+            be formatted as a pytree.
+
+        """
+        if isinstance(criterion, list) and isinstance(criterion[0], int):
+            self._trainable = criterion  # type: ignore
+        else:
+            self._trainable = []  # reset if needed
+            if isinstance(criterion, Callable):
+                include_fn = criterion
+            else:
+                include_fn = self.build_include_fn(criterion)
+            for idx, (layer, name, value) in enumerate(self.traverse_params()):
+                if include_fn(layer, name, value):
+                    self._trainable.append(idx)
+
 
     def _forward(
         self, params: hk.Params, rng: jax.Array, batch: JaxBatch
@@ -254,9 +348,8 @@ class HaikuModel(Model):
     ) -> JaxNumpyVector:
         """Compute and return batch-averaged gradients of trainable weights."""
         # Unpack input batch and unflatten model parameters.
-        assert self._treedef is not None, "uninitialized JaxModel"
         inputs = self._unpack_batch(batch)
-        params = jax.tree_util.tree_unflatten(self._treedef, self._pleaves)
+        params = self.get_named_weights()
         # Run the forward and backward passes to compute gradients.
         grads = self._grad_fn(params, next(self._rng_gen), inputs)
         # Flatten the gradients and return them in a Vector container
@@ -277,9 +370,8 @@ class HaikuModel(Model):
     ) -> JaxNumpyVector:
         """Compute and return sample-wise clipped, batch-averaged gradients."""
         # Unpack input batch and unflatten model parameters.
-        assert self._treedef is not None, "uninitialized JaxModel"
         inputs = self._unpack_batch(batch)
-        params = jax.tree_util.tree_unflatten(self._treedef, self._pleaves)
+        params = self.get_named_weights()
         # Get flattened, per-sample, clipped gradients and aggregate them.
         clipped_grads = self._clipped_grad_fn(
             params, next(self._rng_gen), inputs, max_norm
@@ -358,8 +450,7 @@ class HaikuModel(Model):
                 "correct the inputs, or override this method to support "
                 "creating labels from the base inputs."
             )
-        assert self._treedef is not None, "uninitialized JaxModel"
-        params = jax.tree_util.tree_unflatten(self._treedef, self._pleaves)
+        params = self.get_named_weights()
         y_pred = np.asarray(
             self._transformed_model.apply(params, next(self._rng_gen), inputs)
         )
