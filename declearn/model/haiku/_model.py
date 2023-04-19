@@ -222,9 +222,30 @@ class HaikuModel(Model):
         assert self._treedef is not None, "uninitialized JaxModel"
         params = jax.tree_util.tree_unflatten(self._treedef, self._pleaves)
         if trainable:
-            prune_idx = set(range(len(self._pleaves))) - set(self._trainable)
-            for idx in prune_idx:
-                params.pop(list(params.keys())[idx])
+            pop_idx = set(range(len(self._pleaves))) - set(self._trainable)
+            for i, (layer, name, _) in enumerate(self._traverse_params()):
+                if i in pop_idx:
+                    params[layer].pop(name)
+                if len(params[layer]) == 0:
+                    params.pop(layer)
+        return params
+
+    def _get_fixed_named_weights(self) -> Any:
+        """Access the fixed weights of the haiku model as a nested dict,
+        if any.
+
+        Return type is any due to `jax.tree_util.tree_unflatten`.
+        """
+        assert self._treedef is not None, "uninitialized JaxModel"
+        if len(self._trainable) == len(self._pleaves):
+            return {}
+        params = jax.tree_util.tree_unflatten(self._treedef, self._pleaves)
+        pop_idx = set(self._trainable)
+        for i, (layer, name, _) in enumerate(self._traverse_params()):
+            if i in pop_idx:
+                params[layer].pop(name)
+            if len(params[layer]) == 0:
+                params.pop(layer)
         return params
 
     def set_weights(  # type: ignore  # Vector subtype specification
@@ -363,7 +384,11 @@ class HaikuModel(Model):
         return include_fn
 
     def _forward(
-        self, params: hk.Params, rng: jax.Array, batch: JaxBatch
+        self,
+        train_params: hk.Params,
+        fixed_params: hk.Params,
+        rng: jax.Array,
+        batch: JaxBatch,
     ) -> jax.Array:
         """The forward pass chaining the model to the loss as a pure function.
 
@@ -384,6 +409,7 @@ class HaikuModel(Model):
         """
         # FUTURE: add support for lists of inputs
         inputs, y_true, s_wght = batch
+        params = hk.data_structures.merge(train_params, fixed_params)
         y_pred = self._transformed_model.apply(params, rng, inputs)
         s_loss = self._loss_fn(y_pred, y_true)  # type: ignore
         if s_wght is not None:
@@ -406,9 +432,15 @@ class HaikuModel(Model):
         """Compute and return batch-averaged gradients of trainable weights."""
         # Unpack input batch and unflatten model parameters.
         inputs = self._unpack_batch(batch)
-        params = self.get_named_weights()
+        train_params = self.get_named_weights(trainable=True)
+        fixed_params = self._get_fixed_named_weights()
         # Run the forward and backward passes to compute gradients.
-        grads = self._grad_fn(params, next(self._rng_gen), inputs)
+        grads = self._grad_fn(
+            train_params,
+            fixed_params,
+            next(self._rng_gen),
+            inputs,
+        )
         # Flatten the gradients and return them in a Vector container
         flat_grad, _ = jax.tree_util.tree_flatten(grads)
         return JaxNumpyVector({str(k): v for k, v in enumerate(flat_grad)})
@@ -416,7 +448,7 @@ class HaikuModel(Model):
     @functools.cached_property
     def _grad_fn(
         self,
-    ) -> Callable[[hk.Params, jax.Array, JaxBatch], hk.Params]:
+    ) -> Callable[[hk.Params, hk.Params, jax.Array, JaxBatch], hk.Params]:
         """Lazy-built jax function to compute batch-averaged gradients."""
         return jax.jit(jax.grad(self._forward))
 
@@ -428,10 +460,15 @@ class HaikuModel(Model):
         """Compute and return sample-wise clipped, batch-averaged gradients."""
         # Unpack input batch and unflatten model parameters.
         inputs = self._unpack_batch(batch)
-        params = self.get_named_weights()
+        train_params = self.get_named_weights(trainable=True)
+        fixed_params = self._get_fixed_named_weights()
         # Get flattened, per-sample, clipped gradients and aggregate them.
         clipped_grads = self._clipped_grad_fn(
-            params, next(self._rng_gen), inputs, max_norm
+            train_params,
+            fixed_params,
+            next(self._rng_gen),
+            inputs,
+            max_norm,
         )
         grads = [g.sum(0) for g in clipped_grads]
         # Return them in a Vector container.
@@ -440,16 +477,27 @@ class HaikuModel(Model):
     @functools.cached_property
     def _clipped_grad_fn(
         self,
-    ) -> Callable[[hk.Params, jax.Array, JaxBatch, float], jax.Array]:
+    ) -> Callable[
+        [hk.Params, hk.Params, jax.Array, JaxBatch, float], jax.Array
+    ]:
         """Lazy-built jax function to compute clipped sample-wise gradients."""
 
         def clipped_grad_fn(
-            params: hk.Params, rng: jax.Array, batch: JaxBatch, max_norm: float
+            train_params: hk.Params,
+            fixed_params: hk.Params,
+            rng: jax.Array,
+            batch: JaxBatch,
+            max_norm: float,
         ) -> List[jax.Array]:
             """Compute and clip gradients wrt parameters for a sample."""
             inputs, y_pred, s_wght = batch
             data = (inputs, y_pred, None)
-            grads = jax.grad(self._forward)(params, rng, data)
+            grads = jax.grad(self._forward)(
+                train_params,
+                fixed_params,
+                rng,
+                data,
+            )
             grads_flat = [
                 grad / jnp.maximum(jnp.linalg.norm(grad) / max_norm, 1.0)
                 for grad in jax.tree_util.tree_leaves(grads)
@@ -458,7 +506,7 @@ class HaikuModel(Model):
                 grads_flat = [g * s_wght for g in grads_flat]
             return grads_flat
 
-        in_axes = [None, None, 0, None]  # map on inputs' first dimension
+        in_axes = [None, None, None, 0, None]  # map on inputs' first dimension
         return jax.jit(jax.vmap(clipped_grad_fn, in_axes))
 
     @staticmethod
