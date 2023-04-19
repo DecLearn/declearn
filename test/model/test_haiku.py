@@ -95,11 +95,11 @@ class HaikuTestCase(ModelTestCase):
 
     def __init__(
         self,
-        kind: Literal["MLP", "CNN"],
+        kind: Literal["MLP", "CNN", "MLP-tune"],
         device: Literal["cpu", "gpu"],
     ) -> None:
         """Specify the desired model architecture."""
-        if kind not in ("MLP", "CNN"):
+        if kind not in ("MLP", "CNN", "MLP-tune"):
             raise ValueError(f"Invalid test architecture: '{kind}'.")
         if device not in ("cpu", "gpu"):
             raise ValueError(f"Invalid device choice for test: '{device}'.")
@@ -137,11 +137,13 @@ class HaikuTestCase(ModelTestCase):
         if self.kind == "CNN":
             shape = [64, 64, 3]
             model_fn = cnn_fn
-        elif self.kind == "MLP":
+        elif self.kind.startswith("MLP"):
             shape = [64]
             model_fn = mlp_fn
         model = HaikuModel(model_fn, loss_fn)
         model.initialize({"features_shape": shape, "data_type": "float32"})
+        if self.kind == "MLP-tune":
+            model.set_trainable_weights([0, 1, 2])
         return model
 
     def assert_correct_device(
@@ -155,10 +157,22 @@ class HaikuTestCase(ModelTestCase):
             for arr in vector.coefs.values()
         )
 
+    def get_trainable_criterion(self, c_type: str):
+        "Build different weight freezing criteria"
+        if c_type == "indexes":
+            crit = [2, 3]
+        if c_type == "pytree":
+            params = self.model.get_named_weights()
+            params.pop(list(params.keys())[1])
+            crit = params
+        if c_type == "predicate":
+            crit = lambda m, n, p: n != "b"  # pylint: disable=C3001
+        return crit
+
 
 @pytest.fixture(name="test_case")
 def fixture_test_case(
-    kind: Literal["MLP", "CNN"],
+    kind: Literal["MLP", "CNN", "MLP-tune"],
     device: Literal["cpu", "gpu"],
 ) -> HaikuTestCase:
     """Fixture to access a TensorflowTestCase."""
@@ -171,7 +185,7 @@ if any(d.platform == "gpu" for d in jax.devices()):
 
 
 @pytest.mark.parametrize("device", DEVICES)
-@pytest.mark.parametrize("kind", ["MLP", "CNN"])
+@pytest.mark.parametrize("kind", ["MLP", "CNN", "MLP-tune"])
 class TestHaikuModel(ModelTestSuite):
     """Unit tests for declearn.model.tensorflow.TensorflowModel."""
 
@@ -182,6 +196,48 @@ class TestHaikuModel(ModelTestSuite):
     ) -> None:
         super().test_serialization(test_case)
 
+    @pytest.mark.parametrize(
+        "criterion_type", ["indexes", "pytree", "predicate"]
+    )
+    def test_get_frozen_weights(
+        self,
+        test_case: HaikuTestCase,
+        criterion_type: str,
+    ) -> None:
+        """Check that `get_weights` behaves properly with frozen weights."""
+        model = test_case.model  # type: HaikuModel
+        criterion = test_case.get_trainable_criterion(criterion_type)
+        model.set_trainable_weights(criterion)  # freeze some weights
+        w_all = model.get_weights()
+        w_trn = model.get_weights(trainable=True)
+        assert set(w_trn.coefs).issubset(w_all.coefs)  # check on keys
+        n_params = len(model._pleaves)  # pylint: disable=protected-access
+        n_trainable = len(model._trainable)  # pylint: disable=protected-access
+        assert n_trainable < n_params
+        assert len(w_trn.coefs) == n_trainable
+        assert len(w_all.coefs) == n_params
+
+    @pytest.mark.parametrize(
+        "criterion_type", ["indexes", "pytree", "predicate"]
+    )
+    def test_set_frozen_weights(
+        self,
+        test_case: HaikuTestCase,
+        criterion_type: str,
+    ) -> None:
+        """Check that `set_weights` behaves properly with frozen weights."""
+        # Setup a model with some frozen weights, and gather trainable ones.
+        model = test_case.model
+        criterion = test_case.get_trainable_criterion(criterion_type)
+        model.set_trainable_weights(criterion)  # freeze some weights
+        w_trn = model.get_weights(trainable=True)
+        # Test that `set_weights` works if and only if properly parametrized.
+        with pytest.raises(KeyError):
+            model.set_weights(w_trn)
+        with pytest.raises(KeyError):
+            model.set_weights(model.get_weights(), trainable=True)
+        model.set_weights(w_trn, trainable=True)
+
     def test_proper_model_placement(
         self,
         test_case: HaikuTestCase,
@@ -191,7 +247,7 @@ class TestHaikuModel(ModelTestSuite):
         policy = model.device_policy
         assert policy.gpu == (test_case.device == "gpu")
         assert policy.idx == 0
-        params = getattr(model, "_params")
+        params = getattr(model, "_pleaves")
         device = f"{test_case.device}:0"
         for arr in params:
             assert f"{arr.device().platform}:{arr.device().id}" == device
