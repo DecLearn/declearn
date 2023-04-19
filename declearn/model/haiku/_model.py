@@ -42,6 +42,7 @@ import numpy as np
 from typing_extensions import Self
 
 from declearn.data_info import aggregate_data_info
+from declearn.model._utils import raise_on_stringsets_mismatch
 from declearn.model.api import Model
 from declearn.model.haiku._vector import JaxNumpyVector
 from declearn.model.haiku.utils import select_device
@@ -160,6 +161,7 @@ class HaikuModel(Model):
         pleaves, treedef = jax.tree_util.tree_flatten(params)
         self._treedef = treedef
         self._pleaves = pleaves
+        self._trainable = list(range(len(pleaves)))
         self._initialized = True
 
     def get_config(
@@ -204,13 +206,26 @@ class HaikuModel(Model):
             params = {str(idx): params[str(idx)] for idx in self._trainable}
         return JaxNumpyVector(params)
 
-    def get_named_weights(self) -> Any:
+    def get_named_weights(
+        self,
+        trainable: bool = False,
+    ) -> Any:
         """Access the weights of the haiku model as a nested dict.
 
         Return type is any due to `jax.tree_util.tree_unflatten`.
+
+        trainable: bool, default=False
+            If True, restrict the returned weights to the trainable ones,
+            else return all weights.
+
         """
         assert self._treedef is not None, "uninitialized JaxModel"
-        return jax.tree_util.tree_unflatten(self._treedef, self._pleaves)
+        params = jax.tree_util.tree_unflatten(self._treedef, self._pleaves)
+        if trainable:
+            prune_idx = set(range(len(self._pleaves))) - set(self._trainable)
+            for idx in prune_idx:
+                params.pop(list(params.keys())[idx])
+        return params
 
     def set_weights(  # type: ignore  # Vector subtype specification
         self,
@@ -219,38 +234,48 @@ class HaikuModel(Model):
     ) -> None:
         if not isinstance(weights, JaxNumpyVector):
             raise TypeError("HaikuModel requires JaxNumpyVector weights.")
+        self._verify_weights_compatibility(weights, trainable=trainable)
         coefs_copy = deepcopy(weights.coefs)
         if trainable:
             for idx in self._trainable:
                 self._pleaves[idx] = jax.device_put(
-                    list(coefs_copy.values())[idx], self._device
+                    coefs_copy[str(idx)], self._device
                 )
         else:
             self._pleaves = [
                 jax.device_put(v, self._device) for v in coefs_copy.values()
             ]
 
-    def traverse_params(self) -> Generator:
-        """Traverse the pytree of model named weight left-to-right,
-        depth-first"""
-        params = self.get_named_weights()
-        for layer in params:
-            bundle = params[layer]
-            for name in bundle:
-                value = bundle[name]
-                yield layer, name, value
+    def _verify_weights_compatibility(
+        self,
+        vector: JaxNumpyVector,
+        trainable: bool = False,
+    ) -> None:
+        """Verify that a vector has the same names as the model's weights.
 
-    @staticmethod
-    def build_include_fn(node_names: Dict[str, Dict[str, Any]]) -> Callable:
-        """Build an equality checking function, conforming to what is
-        expected at traversal"""
+        Parameters
+        ----------
+        vector: JaxNumpyVector
+            Vector wrapping weight-related coefficients (e.g. weight
+            values or gradient-based updates).
+        trainable: bool, default=False
+            Whether to restrict the comparision to the model's trainable
+            weights rather than to all of its weights.
 
-        def include_fn(l, n, v):
-            cond_1 = l in list(node_names.keys())
-            cond_2 = n in list(node_names[l].keys())
-            return cond_1 and cond_2
-
-        return include_fn
+        Raises
+        ------
+        KeyError:
+            In case some expected keys are missing, or additional keys
+            are present. Be verbose about the identified mismatch(es).
+        """
+        received = set(vector.coefs)
+        if trainable:
+            expected = {str(i) for i in self._trainable}
+        else:
+            expected = {str(i) for i in range(len(self._pleaves))}
+        raise_on_stringsets_mismatch(
+            received, expected, context="model weights"
+        )
 
     def set_trainable_weights(
         self,
@@ -267,17 +292,19 @@ class HaikuModel(Model):
         of names or even the index of the parameter leaves stored by our HaikuModel.
 
         Example use :
-        >>> self.get_named_weights() = {'linear': {'w': None, 'b': None}}
+            >>> self.get_named_weights() = {'linear': {'w': None, 'b': None}}
         Using a function as input
-        >>> criterion = lambda layer, name, value: name == 'w'
-        >>> self.set_trainable_weights(criterion)
-        >>> self._trainable
-        [0]
+            >>> criterion = lambda layer, name, value: name == 'w'
+            >>> self.set_trainable_weights(criterion)
+            >>> self._trainable
+            [0]
         Using a dictionnary or pytree
-        >>> criterion = {'linear': {'b': None}}
-        >>> self.set_trainable_weights(criterion)
-        >>> self._trainable
-        [1]
+            >>> criterion = {'linear': {'b': None}}
+            >>> self.set_trainable_weights(criterion)
+            >>> self._trainable
+            [1]
+
+        Note : model needs to be initialized
 
         Arguments
         --------
@@ -292,18 +319,48 @@ class HaikuModel(Model):
             be formatted as a pytree.
 
         """
+        if not self._initialized:
+            raise ValueError("Model needs to be initialized first")
         if isinstance(criterion, list) and isinstance(criterion[0], int):
             self._trainable = criterion  # type: ignore
         else:
             self._trainable = []  # reset if needed
-            if isinstance(criterion, Callable):
+            if isinstance(criterion, Callable):  # type: ignore
                 include_fn = criterion
+            elif isinstance(criterion, dict):
+                include_fn = self._build_include_fn(criterion)
             else:
-                include_fn = self.build_include_fn(criterion)
-            for idx, (layer, name, value) in enumerate(self.traverse_params()):
-                if include_fn(layer, name, value):
+                raise TypeError(
+                    "The provided criterion does not conform"
+                    "to the expected format and or type"
+                )
+            for idx, (layer, name, value) in enumerate(
+                self._traverse_params()
+            ):
+                if include_fn(layer, name, value):  # type: ignore
                     self._trainable.append(idx)
 
+    def _traverse_params(self) -> Generator:
+        """Traverse the pytree of model named weight left-to-right,
+        depth-first, returning a generator"""
+        params = self.get_named_weights()
+        for layer in params:
+            bundle = params[layer]
+            for name in bundle:
+                value = bundle[name]
+                yield layer, name, value
+
+    @staticmethod
+    def _build_include_fn(node_names: Dict[str, Dict[str, Any]]) -> Callable:
+        """Build an equality checking function, conforming to what is
+        expected at traversal"""
+
+        def include_fn(layer, name, value):  # pylint: disable=W0613
+            if layer in list(node_names.keys()):
+                return name in list(node_names[layer].keys())
+            return False
+
+        return include_fn
 
     def _forward(
         self, params: hk.Params, rng: jax.Array, batch: JaxBatch
@@ -433,8 +490,7 @@ class HaikuModel(Model):
     ) -> None:
         if not isinstance(updates, JaxNumpyVector):
             raise TypeError("HaikuModel requires JaxNumpyVector updates.")
-        if updates.coefs.keys() != {str(i) for i in range(len(self._pleaves))}:
-            raise KeyError("Input updates do not match wrapped parameters.")
+        self._verify_weights_compatibility(updates, trainable=True)
         for key, upd in updates.coefs.items():
             self._pleaves[int(key)] += upd
 
