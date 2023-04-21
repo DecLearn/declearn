@@ -78,11 +78,7 @@ Here, the code uses:
 
 * **Aggregation**: the standard `FedAvg` strategy
 * **Optimizer**: standard SGD for both client and server
-* **Training**:
-  * $10$ rounds of training, with $5$ local epochs performed at each round and
-  $128$-samples batch size
-  * At least $1$ and at most $3$ clients, awaited for $180$ seconds by the
-  server
+* **Training**:  10 rounds of training, with 5 local epochs performed at each round and 128-samples batch size. At least 1 and at most 3 clients, awaited for 180 seconds by the server
 * **Network**: communications using `websockets`
 
 The server-side script:
@@ -164,7 +160,7 @@ declearn-quickrun --config <path_to_toml_file>
 The TOML file has six sections, some optional. Note the order does not matter,
 and that we give illustrative, not necessarily functionnal examples.
 
-`[network]`: Network configuration used by both client and server,
+**`[network]`: Network configuration** used by both client and server,
 most notably the port, host, and ssl certificates. An example:
 
 ``` python
@@ -180,7 +176,7 @@ to see all available fields. Note it is also used to initialize
 a [`NetworkClient`][declearn.communication.api.NetworkClient], mirroring the
 server.
 
-`[data]`: Where to find your data. This is particularly useful if you have split your data yourself, using custom names for files and folders. An example:
+**`[data]`: Where to find your data**. This is particularly useful if you have split your data yourself, using custom names for files and folders. An example:
 
 ```python
 [data]
@@ -198,7 +194,7 @@ This section is parsed as the fields of a `DataSourceConfig` dataclass. Check it
 available fields. This `DataSourceConfig` is then parsed by the
 [`parse_data_folder`][`declearn.quickrun.parse_data_folder`] function.
 
-`[optim]`: Optimization options for both client and server, with three distinct sub-sections : the server-side aggregator (i) and optimizer (ii), and the client optimizer (iii). An example:
+**`[optim]`: Optimization options** for both client and server, with three distinct sub-sections : the server-side aggregator (i) and optimizer (ii), and the client optimizer (iii). An example:
 
 ```python
 [optim]
@@ -218,7 +214,7 @@ This section is parsed as the fields of a `FLOptimConfig` dataclass. Check its
 sub-sections. For more details on available fields within those subsections, you
 can naviguate inside the documentation of the [`Aggregator`][declearn.aggregator.Aggregator] and [`Optimizer`][declearn.optimizer.Optimizer] classes.
 
-`[run]`: Training process option for both client and server. Most notably, includes the number of rounds as well as the registration, training, and evaluation parameters. An example:
+**`[run]`: Training process option** for both client and server. Most notably, includes the number of rounds as well as the registration, training, and evaluation parameters. An example:
 
 ```python
 [run]
@@ -244,7 +240,7 @@ sub-sections. For more details on available fields within those subsections, you
 can naviguate inside the documentation of `FLRunConfig` to the relevant
 dataclass, for instance [`TrainingConfig`][declearn.main.TrainingConfig]
 
-`[model]`: Optional section, where to find the model. An example:
+**`[model]`: Optional section**, where to find the model. An example:
 
 ```python
 [model] 
@@ -258,7 +254,7 @@ This section is parsed as the fields of a `ModelConfig` dataclass. Check its
 [documentation][declearn.quickrun.ModelConfig] to see all
 available fields.
 
-`[experiment]`: Optional section, what to report during the experiment and where to report it. An example:
+**`[experiment]`: Optional section**, what to report during the experiment and where to report it. An example:
 
 ```python
 [experiment] 
