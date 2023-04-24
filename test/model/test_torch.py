@@ -40,14 +40,24 @@ from model_testing import ModelTestSuite, ModelTestCase
 
 
 class ExtractLSTMFinalOutput(torch.nn.Module):
-    """Custom torch Module to gather only the desired output from a LSTM."""
+    """Custom torch Module to gather only the desired output from a LSTM.
+
+    A `torch.nn.LSTM` layer outputs:
+
+    - `output`: output tensor of shape (batch, l_seq, d_rnn)
+    - `(h_n), (c_n)`: tuple of (d_rnn, ...) final cell state tensors
+
+    This layer expects to receive these outputs as inputs, and returns
+    only the last-time-step outputs, i.e. `output[:, -1]`, with shape
+    (batch, d_rnn).
+    """
 
     def forward(
         self,
         inputs: Tuple[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]],
     ) -> torch.Tensor:
         """Extract the desired Tensor from a LSTM's outputs."""
-        return inputs[1][0][0]
+        return inputs[0][:, -1]
 
 
 class FlattenCNNOutput(torch.nn.Module):
