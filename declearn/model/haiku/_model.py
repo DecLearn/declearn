@@ -308,9 +308,10 @@ class HaikuModel(Model):
     ) -> None:
         """Sets the index of trainable weights.
 
-        The split can be done by providing a functions applying conditions on the named
-        weights, as haiku users are used to do, but can also accept an explicit dict
-        of names or even the index of the parameter leaves stored by our HaikuModel.
+        The split can be done by providing a functions applying conditions on
+        the named weights, as haiku users are used to do, but can also accept
+        an explicit dict of names or even the index of the parameter leaves
+        stored by our HaikuModel.
 
         Example use :
             >>> self.get_named_weights() = {'linear': {'w': None, 'b': None}}
@@ -334,10 +335,10 @@ class HaikuModel(Model):
             must be a function taking in the name of the module (e.g.
             layer name), the element name (e.g. parameter name) and the
             corresponding data and returning a boolean. See
-            [the haiku doc](https://dm-haiku.readthedocs.io/en/latest/api.html#haiku.data_structures.partition)
+            [the haiku doc](https://tinyurl.com/3v28upaz)
             for details. If a list of integers, should represent the index of
-            trainable  parameters in the parameter tree leaves. If a dict, should
-            be formatted as a pytree.
+            trainable  parameters in the parameter tree leaves. If a dict,
+            should be formatted as a pytree.
 
         """
         if not self._initialized:
