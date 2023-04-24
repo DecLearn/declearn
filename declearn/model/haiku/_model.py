@@ -490,13 +490,13 @@ class HaikuModel(Model):
             max_norm: float,
         ) -> List[jax.Array]:
             """Compute and clip gradients wrt parameters for a sample."""
-            inputs, y_pred, s_wght = batch
-            data = (inputs, y_pred, None)
+            inputs, y_true, s_wght = batch
+            batch = (inputs, y_true, None)
             grads = jax.grad(self._forward)(
                 train_params,
                 fixed_params,
                 rng,
-                data,
+                batch,
             )
             grads_flat = [
                 grad / jnp.maximum(jnp.linalg.norm(grad) / max_norm, 1.0)

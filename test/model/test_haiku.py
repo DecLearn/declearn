@@ -68,6 +68,7 @@ def mlp_fn(inputs: jax.Array) -> jax.Array:
 
 def rnn_fn(inputs: jax.Array) -> jax.Array:
     """Simple RNN in a purely functional form"""
+    inputs = inputs[None, :] if len(inputs.shape) == 1 else inputs
     core = hk.DeepRNN(
         [
             hk.Embed(100, 32),
@@ -80,7 +81,8 @@ def rnn_fn(inputs: jax.Array) -> jax.Array:
     logits, _ = hk.dynamic_unroll(
         core, inputs, initial_state, time_major=False
     )
-    return hk.Linear(1)(logits)[:,0,:] # CHECK
+    return hk.Linear(1)(logits)[:, 0, :]  # CHECK
+
 
 def loss_fn(y_pred: jax.Array, y_true: jax.Array) -> jax.Array:
     """Per-sample binary cross entropy"""
