@@ -18,7 +18,7 @@
 """Unit tests for HaikuModel."""
 
 import sys
-from typing import Any, List, Literal
+from typing import Any, List, Literal, Tuple
 
 import numpy as np
 import pytest
@@ -66,6 +66,22 @@ def mlp_fn(inputs: jax.Array) -> jax.Array:
     return model(inputs)
 
 
+def rnn_fn(inputs: jax.Array) -> jax.Array:
+    """Simple RNN in a purely functional form"""
+    core = hk.DeepRNN(
+        [
+            hk.Embed(100, 32),
+            hk.LSTM(32),
+            jax.nn.tanh,
+        ]
+    )
+    batch_size = inputs.shape[0]
+    initial_state = core.initial_state(batch_size)
+    logits, _ = hk.dynamic_unroll(
+        core, inputs, initial_state, time_major=False
+    )
+    return hk.Linear(1)(logits)[:,0,:] # CHECK
+
 def loss_fn(y_pred: jax.Array, y_true: jax.Array) -> jax.Array:
     """Per-sample binary cross entropy"""
     y_pred = jax.nn.sigmoid(y_pred)
@@ -83,6 +99,11 @@ class HaikuTestCase(ModelTestCase):
         - stack: 32-neurons fully-connected layer with ReLU
                  16-neurons fully-connected layer with ReLU
                  1 output neuron with sigmoid activation
+    * "RNN":
+        - input: 128-tokens-sequence in a 100-tokens-vocabulary
+        - stack: 32-dimensional embedding matrix
+                 16-neurons LSTM layer with tanh activation
+                 1 output neuron with sigmoid activation
     * "CNN":
         - input: 64x64 image with 3 channels (normalized values)
         - stack: 32 7x7 conv. filters, then 8x8 max pooling
@@ -95,11 +116,11 @@ class HaikuTestCase(ModelTestCase):
 
     def __init__(
         self,
-        kind: Literal["MLP", "CNN", "MLP-tune"],
+        kind: Literal["MLP", "MLP-tune", "RNN", "CNN"],
         device: Literal["cpu", "gpu"],
     ) -> None:
         """Specify the desired model architecture."""
-        if kind not in ("MLP", "CNN", "MLP-tune"):
+        if kind not in ("MLP", "MLP-tune", "RNN", "CNN"):
             raise ValueError(f"Invalid test architecture: '{kind}'.")
         if device not in ("cpu", "gpu"):
             raise ValueError(f"Invalid device choice for test: '{device}'.")
@@ -123,6 +144,8 @@ class HaikuTestCase(ModelTestCase):
         rng = np.random.default_rng(seed=0)
         if self.kind.startswith("MLP"):
             inputs = rng.normal(size=(2, 32, 64)).astype("float32")
+        elif self.kind == "RNN":
+            inputs = rng.choice(100, size=(2, 32, 128))
         elif self.kind == "CNN":
             inputs = rng.normal(size=(2, 32, 64, 64, 3)).astype("float32")
         labels = rng.choice(2, size=(2, 32))
@@ -140,8 +163,16 @@ class HaikuTestCase(ModelTestCase):
         elif self.kind.startswith("MLP"):
             shape = [64]
             model_fn = mlp_fn
+        elif self.kind == "RNN":
+            shape = [128]
+            model_fn = rnn_fn
         model = HaikuModel(model_fn, loss_fn)
-        model.initialize({"features_shape": shape, "data_type": "float32"})
+        model.initialize(
+            {
+                "features_shape": shape,
+                "data_type": "int" if self.kind == "RNN" else "float32",
+            }
+        )
         if self.kind == "MLP-tune":
             model.set_trainable_weights([0, 1, 2])
         return model
@@ -172,7 +203,7 @@ class HaikuTestCase(ModelTestCase):
 
 @pytest.fixture(name="test_case")
 def fixture_test_case(
-    kind: Literal["MLP", "CNN", "MLP-tune"],
+    kind: Literal["MLP", "MLP-tune", "RNN", "CNN"],
     device: Literal["cpu", "gpu"],
 ) -> HaikuTestCase:
     """Fixture to access a TensorflowTestCase."""
@@ -185,7 +216,7 @@ if any(d.platform == "gpu" for d in jax.devices()):
 
 
 @pytest.mark.parametrize("device", DEVICES)
-@pytest.mark.parametrize("kind", ["MLP", "CNN", "MLP-tune"])
+@pytest.mark.parametrize("kind", ["MLP", "MLP-tune", "RNN", "CNN"])
 class TestHaikuModel(ModelTestSuite):
     """Unit tests for declearn.model.tensorflow.TensorflowModel."""
 
