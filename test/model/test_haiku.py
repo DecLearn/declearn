@@ -81,7 +81,7 @@ def rnn_fn(inputs: jax.Array) -> jax.Array:
     logits, _ = hk.dynamic_unroll(
         core, inputs, initial_state, time_major=False
     )
-    return hk.Linear(1)(logits)[:, 0, :]  # CHECK
+    return hk.Linear(1)(logits)[:, -1, :]
 
 
 def loss_fn(y_pred: jax.Array, y_true: jax.Array) -> jax.Array:
