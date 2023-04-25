@@ -17,9 +17,10 @@
 
 """Utils to split a multi-category classification dataset into shards."""
 
-from typing import List, Literal, Optional, Tuple
+from typing import List, Literal, Optional, Tuple, Type, Union
 
 import numpy as np
+from scipy.sparse import csr_matrix, spmatrix  # type: ignore
 
 
 __all__ = [
@@ -28,7 +29,7 @@ __all__ = [
 
 
 def split_multi_classif_dataset(
-    dataset: Tuple[np.ndarray, np.ndarray],
+    dataset: Tuple[Union[np.ndarray, spmatrix], np.ndarray],
     n_shards: int,
     scheme: Literal["iid", "labels", "biased"],
     p_valid: float = 0.2,
@@ -46,9 +47,10 @@ def split_multi_classif_dataset(
 
     Parameters
     ----------
-    dataset: tuple(np.ndarray, np.ndarray)
+    dataset: tuple(np.ndarray|spmatrix, np.ndarray)
         Raw dataset, as a pair of numpy arrays that respectively contain
-        the input features and (aligned) labels.
+        the input features and (aligned) labels. Input features may also
+        be a scipy sparse matrix, that will temporarily be cast to CSR.
     n_shards: int
         Number of shards between which to split the dataset.
     scheme: {"iid", "labels", "biased"}
@@ -61,12 +63,15 @@ def split_multi_classif_dataset(
 
     Returns
     -------
-    shards: list[((np.ndarray, np.ndarray), (np.ndarray, np.ndarray))]
+    shards:
         List of dataset shards, where each element is formatted as a
         tuple of tuples: `((x_train, y_train), (x_valid, y_valid))`.
+        Input features will be of same type as `inputs`.
 
     Raises
     ------
+    TypeError
+        If `inputs` is not a numpy array or scipy sparse matrix.
     ValueError
         If `scheme` has an invalid value.
     """
@@ -79,23 +84,40 @@ def split_multi_classif_dataset(
         func = split_biased
     else:
         raise ValueError(f"Invalid 'scheme' value: '{scheme}'.")
-    # Set up the RNG and split the dataset into shards.
+    # Set up the RNG and unpack the dataset.
     rng = np.random.default_rng(seed)
     inputs, target = dataset
+    # Optionally handle sparse matrix inputs.
+    sp_type = None  # type: Optional[Type[spmatrix]]
+    if isinstance(inputs, spmatrix):
+        sp_type = type(inputs)
+        inputs = csr_matrix(inputs)
+    elif not isinstance(inputs, np.ndarray):
+        raise TypeError(
+            "'inputs' should be a numpy array or scipy sparse matrix."
+        )
+    # Split the dataset into shards.
     split = func(inputs, target, n_shards, rng)
-    # Further split shards into training and validation subsets, and return.
-    return [train_valid_split(inp, tgt, p_valid, rng) for inp, tgt in split]
+    # Further split shards into training and validation subsets.
+    shards = [train_valid_split(inp, tgt, p_valid, rng) for inp, tgt in split]
+    # Optionally convert back sparse inputs, then return.
+    if sp_type is not None:
+        shards = [
+            ((sp_type(xt), yt), (sp_type(xv), yv))
+            for (xt, yt), (xv, yv) in shards
+        ]
+    return shards
 
 
 def split_iid(
-    inputs: np.ndarray,
+    inputs: Union[np.ndarray, csr_matrix],
     target: np.ndarray,
     n_shards: int,
     rng: np.random.Generator,
 ) -> List[Tuple[np.ndarray, np.ndarray]]:
     """Split a dataset into shards using iid sampling."""
-    order = rng.permutation(len(inputs))
-    s_len = len(inputs) // n_shards
+    order = rng.permutation(inputs.shape[0])
+    s_len = inputs.shape[0] // n_shards
     split = []  # type: List[Tuple[np.ndarray, np.ndarray]]
     for idx in range(n_shards):
         srt = idx * s_len
@@ -106,7 +128,7 @@ def split_iid(
 
 
 def split_labels(
-    inputs: np.ndarray,
+    inputs: Union[np.ndarray, csr_matrix],
     target: np.ndarray,
     n_shards: int,
     rng: np.random.Generator,
@@ -130,7 +152,7 @@ def split_labels(
 
 
 def split_biased(
-    inputs: np.ndarray,
+    inputs: Union[np.ndarray, csr_matrix],
     target: np.ndarray,
     n_shards: int,
     rng: np.random.Generator,
@@ -163,8 +185,8 @@ def train_valid_split(
     rng: np.random.Generator,
 ) -> Tuple[Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray]]:
     """Split a dataset between train and validation using iid sampling."""
-    order = rng.permutation(len(inputs))
-    v_len = np.ceil(len(inputs) * p_valid).astype(int)
+    order = rng.permutation(inputs.shape[0])
+    v_len = np.ceil(inputs.shape[0] * p_valid).astype(int)
     train = inputs[order[v_len:]], target[order[v_len:]]
     valid = inputs[order[:v_len]], target[order[:v_len]]
     return train, valid
