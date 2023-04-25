@@ -5,16 +5,16 @@
 **We are going to train a common model between three simulated clients on the
 classic [MNIST dataset](http://yann.lecun.com/exdb/mnist/)**. The input of the
 model is a set of images of handwritten digits, and the model needs to
-determine which number between $0$ and $9$ each image corresponds to.
+determine to which digit between $0$ and $9$ each image corresponds.
 
 ## Setup
 
 To be able to experiment with this tutorial:
 
-* Clone the declearn repo, on the experimental branch:
+* Clone the declearn repo (you may specify a given release branch or tag):
 
 ```bash
-git clone -b experimental git@gitlab.inria.fr:magnet/declearn/declearn2.git declearn
+git clone git@gitlab.inria.fr:magnet/declearn/declearn2.git declearn
 ```
 
 * Create a dedicated virtual environment.
@@ -25,11 +25,13 @@ cd declearn && pip install .[websockets,tensorflow] && cd ..
 ```
 
 In an FL experiment, we consider your data as a given. So before running
-the experiment below, split the MNIST data using :
+the experiment below, download and split the MNIST data using:
 
 ```bash
-declearn-split --folder "examples/mnist" --n_shards 3 
+declearn-split --folder "examples/mnist" --n_shards 3
 ```
+
+You may add `--seed <some_number>` if you want to ensure reproducibility.
 
 ## Contents
 
@@ -60,14 +62,8 @@ details on what running the federated learning processes imply, see the last
 section.
 
 ```bash
-cd
-python run.py
-```
-
-Use :
-
-```bash
-python run.py  # note: python examples/heart-uci/run.py works as well
+cd declearn/examples/mnist/
+python run.py  # note: python declearn/examples/mnist/run.py works as well
 ```
 
 The `run.py` scripts collects the server and client routines defined under

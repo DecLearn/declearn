@@ -21,9 +21,11 @@ import datetime
 import logging
 import os
 
+import fire  # type: ignore
+
 import declearn
 import declearn.model.tensorflow
-import fire
+
 
 FILEDIR = os.path.dirname(__file__)
 
@@ -36,7 +38,6 @@ def run_client(
     serv_uri: str = "wss://localhost:8765",
     verbose: bool = True,
 ) -> None:
-
     """Instantiate and run a given client.
 
     Parameters
@@ -63,13 +64,7 @@ def run_client(
     declearn.utils.set_device_policy(gpu=False)
 
     # Set up logger and checkpointer
-    stamp = datetime.datetime.now()
-    stamp = stamp - datetime.timedelta(
-        minutes=stamp.minute % 5,
-        seconds=stamp.second,
-        microseconds=stamp.microsecond,
-    )
-    stamp = stamp.strftime("%y-%m-%d_%H-%M")
+    stamp = datetime.datetime.now().strftime("%y-%m-%d_%H-%M")
     checkpoint = os.path.join(FILEDIR, f"result_{stamp}", client_name)
     logger = declearn.utils.get_logger(
         name=client_name,
@@ -124,11 +119,11 @@ def run_client(
 
 
 # This part should not be altered: it provides with an argument parser
-# for `python client.py`).
+# for `python client.py`.
 
 
 def main():
-    "fire-wrapped split data"
+    "Fire-wrapped `run_client`."
     fire.Fire(run_client)
 
 

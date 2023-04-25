@@ -20,10 +20,11 @@
 import datetime
 import os
 
-import fire
+import fire  # type: ignore
 import tensorflow as tf  # type: ignore
 
 import declearn
+
 
 FILEDIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_CERT = os.path.join(FILEDIR, "server-cert.pem")
@@ -71,13 +72,7 @@ def run_server(
     )
 
     # Set up checkpointing and logging.
-    stamp = datetime.datetime.now()
-    stamp = stamp - datetime.timedelta(
-        minutes=stamp.minute % 5,
-        seconds=stamp.second,
-        microseconds=stamp.microsecond,
-    )
-    stamp = stamp.strftime("%y-%m-%d_%H-%M")
+    stamp = datetime.datetime.now().strftime("%y-%m-%d_%H-%M")
     checkpoint = os.path.join(FILEDIR, f"result_{stamp}", "server")
     # Set up a logger, records from which will go to a file.
     logger = declearn.utils.get_logger(
@@ -155,8 +150,12 @@ def run_server(
     )
 
     # Set up the experiment's hyper-parameters.
-    # Registration rules: wait for 10 seconds at registration.
-    register = declearn.main.config.RegisterConfig(timeout=10)
+    # Registration rules: wait for exactly `nb_clients`, at most 5 minutes.
+    register = declearn.main.config.RegisterConfig(
+        min_clients=nb_clients,
+        max_clients=nb_clients,
+        timeout=300,
+    )
     # Training rounds hyper-parameters. By default, 1 epoch / round.
     training = declearn.main.config.TrainingConfig(
         batch_size=32,
@@ -183,7 +182,7 @@ def run_server(
 
 
 def main():
-    "fire-wrapped split data"
+    "Fire-wrapped `run_server`."
     fire.Fire(run_server)
 
 

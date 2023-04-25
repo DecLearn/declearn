@@ -21,7 +21,7 @@ import glob
 import os
 import tempfile
 
-import fire
+import fire  # type: ignore
 
 from declearn.test_utils import generate_ssl_certificates, make_importable
 from declearn.utils import run_as_processes
