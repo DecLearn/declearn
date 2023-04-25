@@ -37,12 +37,12 @@ classifiers = [
 ]
 dependencies = [
     "cryptography >= 35.0",
+    "fire >= 0.4",
     "pandas >= 1.2",
     "requests ~= 2.18",
     "scikit-learn >= 1.0",
     "tomli >= 2.0 ; python_version < '3.11'",
     "typing_extensions >= 4.0",
-    "fire >= 0.4",
 ]
 
 [project.optional-dependencies]
@@ -133,4 +133,4 @@ declearn = ["py.typed"]
 
 [project.scripts]
 declearn-quickrun = "declearn.quickrun.run:main"
-declearn-split = "declearn.dataset.split_data:main"
+declearn-split = "declearn.dataset._split_data:main"

@@ -30,9 +30,7 @@ API tools
 * [DataSpec][declearn.dataset.DataSpecs]:
     Dataclass to wrap a dataset's metadata.
 * [load_dataset_from_json][declearn.dataset.load_dataset_from_json"]
-    Utility function to parse a JSON into a dataset object
-* [split_data][declearn.dataset.split_data]
-    Utility to split a single dataset into shards
+    Utility function to parse a JSON into a dataset object.
 
 Dataset subclasses
 ------------------
@@ -45,10 +43,17 @@ Utility submodules
     Utils to fetch and prepare some open-source datasets.
 * [utils]
     Utils to manipulate datasets (load, save, split...).
+
+Utility entry-point
+-------------------
+* [split_data][declearn.dataset.split_data]
+    Utility to split a single dataset into shards. This function builds
+    on more unitary utils, and is installed as a command-line entry-point
+    together with declearn.
 """
 
 from . import utils
 from . import examples
 from ._base import Dataset, DataSpecs, load_dataset_from_json
 from ._inmemory import InMemoryDataset
-from .split_data import split_data
+from ._split_data import split_data
