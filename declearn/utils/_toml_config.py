@@ -321,11 +321,11 @@ class TomlConfig:
         warn_user: bool, default=True
             Boolean indicating whether to raise a warning when some
             fields are unused. Useful for cases where unused fields are
-            expected, e.g. quickrun.
+            expected, e.g. in declearn-quickrun mode.
         use_section: optional(str), default=None
             If not None, points to a specific section of the TOML that
             should be used, rather than the whole file. Useful to parse
-            orchestrating TOML files, e.g. quickrun.
+            orchestrating TOML files, e.g. in declearn-quickrun mode.
         section_fail_ok: bool, default=False
             If True, allow the section specified in use_section to be
             missing from the TOML file without raising an Error.

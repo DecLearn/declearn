@@ -15,6 +15,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Script to quickly run example locally using declearn"""
+"""Script to quickly run a simulated FL example locally using declearn."""
 
 from .run import quickrun

@@ -15,14 +15,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-Script to quickly run example locally using declearn.
+"""Script to quickly run a simulated FL example locally using declearn.
 
 The script requires to be provided with the path to a folder containing:
 
-* A declearn model
-* A TOML file with all the elements required to configurate an FL experiment
-* A data folder, structured in a specific way
+* A python file in which a declearn model is instantiated (in main scope).
+* A TOML file with all the elements required to configure an FL experiment.
+* A data folder, structured in a specific way.
 
 If not provided with this, the script defaults to the MNIST example provided
 by declearn in `declearn.example.quickrun`.
@@ -149,9 +148,7 @@ def get_toml_folder(config: str) -> Tuple[str, str]:
     * The path to the TOML config file
     * The path to the main folder of the experiment
     """
-    # default to the mnist example
     config = os.path.abspath(config)
-    # check if config is TOML or dir
     if os.path.isfile(config):
         toml = config
         folder = os.path.dirname(config)
@@ -184,24 +181,42 @@ def server_to_client_network(
 
 
 def quickrun(config: str) -> None:
-    """
-    Run a server and its clients using multiprocessing.
+    """Run a server and its clients using multiprocessing.
 
-    The script requires to be provided with the path a TOML file
+    The script requires to be provided with the path to a TOML file
     with all the elements required to configurate an FL experiment,
     or the path to a folder containing :
 
-    * a TOML file with all the elements required to configurate an
-    FL experiment
-    * A declearn model
-    * A data folder, structured in a specific way
+    * A TOML file with all the elements required to configure an FL experiment.
+    * A python file in which a declearn model is instantiated (in main scope).
+    * A data folder, structured in a specific way:
+        folder/
+            [client_a]/
+                train_data.(csv|npy|sparse|svmlight)
+                train_target.(csv|npy|sparse|svmlight)
+                valid_data.(csv|npy|sparse|svmlight)
+                valid_target.(csv|npy|sparse|svmlight)
+            [client_b]/
+                ...
+            ...
 
-    Parameters:
-    ----
+    Parameters
+    ----------
     config: str
         Path to either a toml file or a properly formatted folder
-        containing the elements required to launch an FL experiment
+        containing the elements required to launch the experiment.
 
+    Notes
+    -----
+    - The data folder structure may be obtained by using the `declearn-split`
+      commandline entry-point, or the `declearn.dataset.split_data` util.
+    - The quickrun mode works by simulating a federated learning process, where
+      all clients operate under parallel python processes, and communicate over
+      the localhost using un-encrypted websockets communications.
+    - When run without any argument, this script/function operates on a basic
+      MNIST example, for demonstration purposes.
+    - You may refer to a more detailed MNIST example on our GitLab repository.
+      See the `examples/mnist_quickrun` folder.
     """
     # main script; pylint: disable=too-many-locals
     toml, folder = get_toml_folder(config)
@@ -235,7 +250,7 @@ def quickrun(config: str) -> None:
 
 
 def main() -> None:
-    """Fire-wrapped quickrun"""
+    """Fire-wrapped `quickrun`."""
     fire.Fire(quickrun)
 
 

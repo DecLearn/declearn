@@ -24,16 +24,15 @@ from declearn.metrics import MetricInputType, MetricSet
 from declearn.utils import TomlConfig
 
 __all__ = [
-    "ModelConfig",
     "DataSourceConfig",
     "ExperimentConfig",
+    "ModelConfig",
 ]
 
 
 @dataclasses.dataclass
 class ModelConfig(TomlConfig):
-    """Dataclass used to provide custom model location and
-    class name"""
+    """Dataclass used to provide custom model location and class name."""
 
     model_file: Optional[str] = None
     model_name: str = "MyModel"
@@ -41,8 +40,7 @@ class ModelConfig(TomlConfig):
 
 @dataclasses.dataclass
 class DataSourceConfig(TomlConfig):
-    """Dataclass associated with the functions
-    declearn.quickrun._parser:parse_data_folder
+    """Dataclass associated with the quickrun's `parse_data_folder` function.
 
     data_folder: str
         Absolute path to the to the main folder hosting the data.
@@ -52,7 +50,7 @@ class DataSourceConfig(TomlConfig):
     dataset_names: dict or None
         Dict of custom dataset names, to look for in each client folder.
         Expect 'train_data, train_target, valid_data, valid_target' as keys.
-        If None, , default to expected prefix search.
+        If None, default to expected prefix search.
     """
 
     data_folder: Optional[str] = None
@@ -62,11 +60,7 @@ class DataSourceConfig(TomlConfig):
 
 @dataclasses.dataclass
 class ExperimentConfig(TomlConfig):
-    """
-
-    Dataclass providing kwargs to
-    declearn.main._server.FederatedServer
-    and declearn.main._client.FederatedClient
+    """Dataclass providing kwargs to `FederatedServer` and `FederatedClient`.
 
     metrics: list[str] or None
         List of Metric childclass names, defining evaluation metrics
