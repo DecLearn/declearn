@@ -35,7 +35,7 @@ class ModelConfig(TomlConfig):
     """Dataclass used to provide custom model location and class name."""
 
     model_file: Optional[str] = None
-    model_name: str = "MyModel"
+    model_name: str = "model"
 
 
 @dataclasses.dataclass

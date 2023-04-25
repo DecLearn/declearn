@@ -1,4 +1,4 @@
-"""Wrapping a simple CNN for the MNIST example"""
+"""Simple TensorFlow-backed CNN model for the MNIST quickrun example."""
 
 import tensorflow as tf
 
@@ -14,6 +14,8 @@ stack = [
     tf.keras.layers.Dropout(0.5),
     tf.keras.layers.Dense(10, activation="softmax"),
 ]
-model = tf.keras.models.Sequential(stack)
+network = tf.keras.models.Sequential(stack)
 
-MyModel = TensorflowModel(model, loss="sparse_categorical_crossentropy")
+# This needs to be called "model"; otherwise, a different name must be
+# specified via the experiment's TOML configuration file.
+model = TensorflowModel(network, loss="sparse_categorical_crossentropy")
