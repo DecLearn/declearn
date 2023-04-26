@@ -1,35 +1,46 @@
 # Quickstart
 
-**Here's where to start if you want to quickly understand what `declearn` does**. This tutorial exepects a basic understanding of [federated learning](https://en.wikipedia.org/wiki/Federated_learning).
+**Here's where to start if you want to quickly understand what `declearn`
+does**. This tutorial exepects a basic understanding of
+[federated learning](https://en.wikipedia.org/wiki/Federated_learning).
 
 We show different ways to use `declearn` on a well-known example, the
-[MNIST dataset](http://yann.lecun.com/exdb/mnist/) (see [section 1](#1-federated-learning-on-the-mnist-dataset)). We then look at how to
-use declearn on your own problem (see [section 2](#2-federated-learning-on-your-own-dataset)).
+[MNIST dataset](http://yann.lecun.com/exdb/mnist/)
+(see [section 1](#1-federated-learning-on-the-mnist-dataset)).
+We then look at how to use declearn on your own problem
+(see [section 2](#2-federated-learning-on-your-own-dataset)).
 
 ## 1. Federated learning on the MNIST dataset
 
 **We are going to train a common model between three simulated clients on the
 classic [MNIST dataset](http://yann.lecun.com/exdb/mnist/)**. The input of the
 model is a set of images of handwritten digits, and the model needs to
-determine which number between $0$ and $9$ each image corresponds to.
+determine to which number between $0$ and $9$ each image corresponds.
 We show two ways to use `declearn` on this problem.
 
 ### 1.1. Quickrun mode
 
 **The quickrun mode is the simplest way to simulate a federated learning
 process on a single machine with `declearn`**. It does not require to
-understand the details of `declearn` implementation. It requires a basic
+understand the details of the `declearn` implementation. It requires a basic
 understanding of federated learning.
 
 ---
-**To test this on the MNIST example**, you can follow along
-[this colab notebook](https://colab.research.google.com/drive/13sBDOQeorI6dfziSoyRpU4q4iGuESIPo?usp=sharing).
+**To test this on the MNIST example**, you can follow along the jupyter
+notebook provided
+[here](https://gitlab.inria.fr/magnet/declearn/declearn2/-/blob/develop/examples/mnist_quickrun/mnist.ipynb),
+which we recommend running on [Google Colab](https://colab.research.google.com)
+to skip on setting up git, python, a virtual environment, etc.
+
+You may find a (possibly not entirely up-to-date) pre-hosted version of that
+notebook
+[here](https://colab.research.google.com/drive/13sBDOQeorI6dfziSoyRpU4q4iGuESIPo?usp=sharing).
 
 ---
 
 **If you want to run this locally**, the detailed notebook can be boiled down
-to five `bash` commands. Set up a dedicated `conda` of `venv` environment,
-and run :
+to five shell commands. Set up a dedicated `conda` or `venv` environment, and
+run:
 
 ```bash
 git clone https://gitlab.inria.fr/magnet/declearn/declearn2 &&
@@ -39,10 +50,10 @@ declearn-split --folder "examples/mnist_quickrun" &&
 declearn-quickrun --config "examples/mnist_quickrun/config.toml"
 ```
 
-**To better understand the details** of how what happens under the hood you
-can look at what the key element of the declearn process are in
+**To better understand the details** of what happens under the hood you can
+look at what the key element of the declearn process are in
 [section 1.2.](#12-python-script). To understand how to use the quickrun mode
-in practice see [section 2.1.](#21-quickrun-on-your-problem).
+in practice, see [section 2.1.](#21-quickrun-on-your-problem).
 
 ### 1.2. Python script
 
@@ -54,8 +65,12 @@ run on the same machine. In real life deployment, a `declearn` experiment is
 built in python.
 
 ---
-**To see what this looks like in practice**, you can head to
-`examples/mnist/readme.md` in the `declearn` repository.
+**To see what this looks like in practice**, you can head to the all-python
+MNIST example `examples/mnist/` in the `declearn` repository, which you can
+access [here](https://gitlab.inria.fr/magnet/declearn/declearn2/-/tree/develop/examples/mnist/).
+
+This version of the example may either be used to run a simulated process on
+a single computer, or to deploy the example over a real-life network.
 
 ---
 
@@ -63,11 +78,12 @@ built in python.
 
 At a very high-level, declearn is structured around two key objects. The
 `Clients` hold the data and perform calculations locally. The `Server` owns
-the model and the global training process. They communicate through a `network`, hosted by the `Server`.
+the model and the global training process. They communicate over a `network`,
+the central endpoint of which is hosted by the `Server`.
 
-We provide below a stylized view of the main elements of
-the `Server` and `Client` script. For more details, you can look at the
-hands on usage [section](user-guide/usage.md) of the documentation.
+We provide below a stylized view of the main elements of the `Server` and
+`Client` scripts. For more details, you can look at the hands-on usage
+[section](user-guide/usage.md) of the documentation.
 
 We show what a `Client` and `Server` script can look like on a hypothetical
 LASSO logistic regression model, using a scikit-learn backend and
@@ -76,10 +92,12 @@ where each client has two files: one for training, the other for validation.
 
 Here, the code uses:
 
-* **Aggregation**: the standard `FedAvg` strategy
-* **Optimizer**: standard SGD for both client and server
-* **Training**:  10 rounds of training, with 5 local epochs performed at each round and 128-samples batch size. At least 1 and at most 3 clients, awaited for 180 seconds by the server
-* **Network**: communications using `websockets`
+* **Aggregation**: the standard `FedAvg` strategy.
+* **Optimizer**: standard SGD for both client and server.
+* **Training**:  10 rounds of training, with 5 local epochs performed at each
+  round and 128-samples batch size. At least 1 and at most 3 clients, awaited
+  for at most 180 seconds by the server.
+* **Network**: communications using `websockets`.
 
 The server-side script:
 
@@ -135,13 +153,16 @@ client.run()
 
 ### 2.1. Quickrun on your problem
 
-Using the mode `declearn-quickrun` requires a configuration file, some data, and a model:
+Using the mode `declearn-quickrun` requires a configuration file, some data,
+and a model file:
 
-* A TOML file, to store your experiment configurations. In the MNIST example:
-`examples/mnist_quickrun/config.toml`.
-* A folder with your data, split by client. In the MNIST example, `examples/mnist_quickrun/data_iid` (after running `declearn-split --folder "examples/mnist_quickrun"`).
-* A model file, to store your model wrapped in a `declearn` object. In the
-MNIST example, `examples/mnist_quickrun/model.py`.
+* A TOML file, to store your experiment configurations.
+  In the MNIST example: `examples/mnist_quickrun/config.toml`.
+* A folder with your data, split by client.
+  In the MNIST example: `examples/mnist_quickrun/data_iid`
+  (after running `declearn-split --folder "examples/mnist_quickrun"`).
+* A pyhon model file, to declare your model wrapped in a `declearn` object.
+  In the MNIST example: `examples/mnist_quickrun/model.py`.
 
 #### The TOML file
 
@@ -157,8 +178,9 @@ The absolute path to this file should be given as an argument in:
 declearn-quickrun --config <path_to_toml_file>
 ```
 
-The TOML file has six sections, some optional. Note the order does not matter,
-and that we give illustrative, not necessarily functionnal examples.
+The TOML file has six sections, some of which are optional. Note that the order
+does not matter, and that we give illustrative, not necessarily functionnal
+examples.
 
 **`[network]`: Network configuration** used by both client and server,
 most notably the port, host, and ssl certificates. An example:
@@ -172,29 +194,33 @@ most notably the port, host, and ssl certificates. An example:
 
 This section is parsed as the initialization arguments to the `NetworkServer`
 class. Check its [documentation][declearn.communication.api.NetworkServer]
-to see all available fields. Note it is also used to initialize
-a [`NetworkClient`][declearn.communication.api.NetworkClient], mirroring the
+to see all available fields. Note it is also used to initialize a
+[`NetworkClient`][declearn.communication.api.NetworkClient], mirroring the
 server.
 
-**`[data]`: Where to find your data**. This is particularly useful if you have split your data yourself, using custom names for files and folders. An example:
+**`[data]`: Where to find your data**. This is particularly useful if you have
+split your data yourself, using custom names for files and folders. An example:
 
 ```python
 [data]
     data_folder = "./custom/data_custom" # Your main data folder
-    client_names = ["client_a","client_b","client_c"] # The names of your client folders
-    [dataset_names] # The names of train and test datasets
+    client_names = ["client_a", "client_b", "client_c"] # The names of your client folders
+
+    [data.dataset_names] # The names of train and test datasets
     train_data = "cifar_train"
     train_target = "label_train"
     valid_data = "cifar_valid"
     valid_target = "label_valid"
 ```
 
-This section is parsed as the fields of a `DataSourceConfig` dataclass. Check its
-[documentation][declearn.quickrun.DataSourceConfig] to see all
-available fields. This `DataSourceConfig` is then parsed by the
-[`parse_data_folder`][`declearn.quickrun.parse_data_folder`] function.
+This section is parsed as the fields of a `DataSourceConfig` dataclass.
+Check its [documentation][declearn.quickrun/DataSourceConfig] to see
+all available fields. This `DataSourceConfig` is then parsed by the
+[`parse_data_folder`][declearn.quickrun.parse_data_folder] function.
 
-**`[optim]`: Optimization options** for both client and server, with three distinct sub-sections : the server-side aggregator (i) and optimizer (ii), and the client optimizer (iii). An example:
+**`[optim]`: Optimization options** for both client and server, with
+three distinct sub-sections: the server-side aggregator (i) and optimizer (ii),
+and the client optimizer (iii). An example:
 
 ```python
 [optim]
@@ -210,11 +236,15 @@ available fields. This `DataSourceConfig` is then parsed by the
 ```
 
 This section is parsed as the fields of a `FLOptimConfig` dataclass. Check its
-[documentation][declearn.main.FLOptimConfig] to see more details on the three
-sub-sections. For more details on available fields within those subsections, you
-can naviguate inside the documentation of the [`Aggregator`][declearn.aggregator.Aggregator] and [`Optimizer`][declearn.optimizer.Optimizer] classes.
+[documentation][declearn.main.config.FLOptimConfig] to see more details on
+these three sub-sections. For more details on available fields within those
+subsections, you can naviguate inside the documentation of the
+[`Aggregator`][declearn.aggregator.Aggregator] and
+[`Optimizer`][declearn.optimizer.Optimizer] classes.
 
-**`[run]`: Training process option** for both client and server. Most notably, includes the number of rounds as well as the registration, training, and evaluation parameters. An example:
+**`[run]`: Training process option** for both client and server. Most notably,
+includes the number of rounds as well as the registration, training, and
+evaluation parameters. An example:
 
 ```python
 [run]
@@ -235,35 +265,35 @@ can naviguate inside the documentation of the [`Aggregator`][declearn.aggregator
 ```
 
 This section is parsed as the fields of a `FLRunConfig` dataclass. Check its
-[documentation][declearn.main.FLOptimConfig] to see more details on the
-sub-sections. For more details on available fields within those subsections, you
-can naviguate inside the documentation of `FLRunConfig` to the relevant
-dataclass, for instance [`TrainingConfig`][declearn.main.TrainingConfig]
+[documentation][declearn.main.config.FLOptimConfig] to see more details on the
+sub-sections. For more details on available fields within those subsections,
+you can naviguate inside the documentation of `FLRunConfig` to the relevant
+dataclass, for instance [`TrainingConfig`][declearn.main.config.TrainingConfig].
 
 **`[model]`: Optional section**, where to find the model. An example:
 
 ```python
-[model] 
+[model]
 # The location to a model file
 model_file = "./custom/model_custom.py"
 # The name of your model file, if different from "MyModel"
-model_name = "MyCustomModel" 
+model_name = "MyCustomModel"
 ```
 
 This section is parsed as the fields of a `ModelConfig` dataclass. Check its
-[documentation][declearn.quickrun.ModelConfig] to see all
-available fields.
+[documentation][declearn.quickrun.ModelConfig] to see all available fields.
 
-**`[experiment]`: Optional section**, what to report during the experiment and where to report it. An example:
+**`[experiment]`: Optional section**, what to report during the experiment and
+where to report it. An example:
 
 ```python
-[experiment] 
+[experiment]
 metrics=[["multi-classif",{labels = [0,1,2,3,4,5,6,7,8,9]}]] # Accuracy metric
 checkpoint = "./result_custom" # Custom location for results
 ```
 
-This section is parsed as the fields of a `ExperimentConfig` dataclass. Check its
-[documentation][declearn.quickrun.ExperimentConfig] to see all
+This section is parsed as the fields of a `ExperimentConfig` dataclass.
+Check its [documentation][declearn.quickrun.ExperimentConfig] to see all
 available fields.
 
 #### The data
@@ -284,12 +314,11 @@ The model file should just contain the model you built for
 your data, e.g. a `torch` model, wrapped in a declearn object.
 See `examples/mnist_quickrun/model.py` for an example.
 
-The wrapped model should be named "MyModel" by default. If you use
-any other name, you'll need to mention it in the TOML file, as done
-in `./custom/config_custom.toml`
+The wrapped model should be named "model" by default. If you use any other
+name, you have to specify it in the TOML file, as demonstrated in
+`./custom/config_custom.toml`.
 
 ### 2.2. Using declearn full capabilities
 
-To upgrade your experimental setting beyond the `quickrun` mode,
-head to the hands on usage [section](user-guide/usage.md) of the
-documentation.
+To upgrade your experimental setting beyond the `quickrun` mode, you may move
+on to the hands-on usage [section](user-guide/usage.md) of the documentation.
