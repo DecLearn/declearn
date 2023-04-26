@@ -95,7 +95,7 @@ class NoiseModule(OptiModule, metaclass=ABCMeta, register=False):
             for key in gradients.coefs
         }
         # Add the sampled noise to the gradients and return them.
-        # Silence warnings about sparse gradients getting sparsified.
+        # Silence warnings about sparse gradients getting densified.
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", ".*densifying.*", RuntimeWarning)
             return gradients + NumpyVector(noise)
