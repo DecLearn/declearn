@@ -109,6 +109,13 @@ class Optimizer:
     [1] Loshchilov & Hutter, 2019.
         Decoupled Weight Decay Regularization.
         https://arxiv.org/abs/1711.05101
+
+    See also
+    --------
+    - [declearn.optimizer.list_optim_modules][]:
+        Return a mapping of registered OptiModule subclasses.
+    - [declearn.optimizer.list_optim_regularizers][]:
+        Return a mapping of registered Regularizer subclasses.
     """
 
     def __init__(
