@@ -108,4 +108,5 @@ pip install declearn[all,tests]  # install all extra and testing dependencies
   `pyproject.toml` file, using `conda install` rather than `pip install`
   whenever it is possible.
 - On some systems, the square brackets used our pip install are not properly
-parsed. Try replacing `[` by `\[` and `]` by `\]`.
+  parsed. Try replacing `[` by `\[` and `]` by `\]`, or putting the instruction
+  between quotes (`pip install "declearn[...]"`).
