@@ -33,7 +33,7 @@ from declearn.metrics import MeanMetric, Metric, MetricInputType, MetricSet
 from declearn.model.api import Model
 from declearn.optimizer import Optimizer
 from declearn.typing import Batch
-from declearn.utils import get_logger
+from declearn.utils import LOGGING_LEVEL_MAJOR, get_logger
 
 __all__ = [
     "TrainingManager",
@@ -344,7 +344,8 @@ class TrainingManager:
         effort = constraints.get_values()
         result = self.metrics.get_result()
         states = self.metrics.get_states()
-        self.logger.info(
+        self.logger.log(
+            LOGGING_LEVEL_MAJOR,
             "Local scalar evaluation metrics: %s",
             {k: v for k, v in result.items() if isinstance(v, float)},
         )

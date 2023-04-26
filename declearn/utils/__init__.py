@@ -80,6 +80,15 @@ Utils to access or update parameters defining a global device-selection policy.
 * [set_device_policy][declearn.utils.set_device_policy]:
     Update the current global device policy.
 
+Logging utils
+-------------
+Utils to set up and configure loggers:
+
+* [get_logger][declearn.utils.get_logger]:
+    Access or create a logger, automating basic handlers' configuration.
+* [LOGGING_LEVEL_MAJOR][declearn.utils.LOGGING_LEVEL_MAJOR]:
+    Custom "MAJOR" severity level, between stdlib "INFO" and "WARNING".
+
 Miscellaneous
 -------------
 
@@ -89,8 +98,8 @@ Miscellaneous
     Automatically build a dataclass matching a function's signature.
 * [dataclass_from_init][declearn.utils.dataclass_from_init]:
     Automatically build a dataclass matching a class's init signature.
-* [get_logger][declearn.utils.get_logger]:
-    Access or create a logger, automating basic handlers' configuration.
+* [run_as_processes][declearn.utils.run_as_processes]:
+    Run coroutines concurrently within individual processes.
 """
 
 from ._dataclass import (
@@ -110,8 +119,10 @@ from ._json import (
     json_unpack,
 )
 from ._logging import (
+    LOGGING_LEVEL_MAJOR,
     get_logger,
 )
+from ._multiprocess import run_as_processes
 from ._numpy import (
     deserialize_numpy,
     serialize_numpy,

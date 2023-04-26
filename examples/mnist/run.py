@@ -17,8 +17,11 @@
 
 """Demonstration script using the UCI Heart Disease Dataset."""
 
+import glob
 import os
 import tempfile
+
+import fire  # type: ignore
 
 from declearn.test_utils import generate_ssl_certificates, make_importable
 from declearn.utils import run_as_processes
@@ -30,14 +33,22 @@ with make_importable(os.path.dirname(__file__)):
     from server import run_server
 # pylint: enable=wrong-import-position, wrong-import-order
 
+FILEDIR = os.path.join(os.path.dirname(__file__))
+DATADIR = glob.glob(f"{FILEDIR}/data*")[0]
 
-NAMES = ["cleveland", "hungarian", "switzerland", "va"]
 
+def run_demo(nb_clients: int = 3, data_folder: str = DATADIR) -> None:
+    """Run a server and its clients using multiprocessing.
 
-def run_demo(
-    nb_clients: int = 4,
-) -> None:
-    """Run a server and its clients using multiprocessing."""
+    Parameters
+    ------
+
+    n_clients: int
+        number of clients to run.
+    data_folder: str
+        Relative path to the folder holding client's data
+
+    """
     # Use a temporary directory for single-use self-signed SSL files.
     with tempfile.TemporaryDirectory() as folder:
         # Generate self-signed SSL certificates and gather their paths.
@@ -45,7 +56,8 @@ def run_demo(
         # Specify the server and client routines that need executing.
         server = (run_server, (nb_clients, sv_cert, sv_pkey))
         clients = [
-            (run_client, (name, ca_cert)) for name in NAMES[:nb_clients]
+            (run_client, (f"client_{idx}", ca_cert, data_folder))
+            for idx in range(nb_clients)
         ]
         # Run routines in isolated processes. Raise if any failed.
         success, outp = run_as_processes(server, *clients)
@@ -57,4 +69,4 @@ def run_demo(
 
 
 if __name__ == "__main__":
-    run_demo()
+    fire.Fire(run_demo)

@@ -58,7 +58,8 @@ from declearn.metrics import RSquared
 from declearn.model.api import Model
 from declearn.model.sklearn import SklearnSGDModel
 from declearn.optimizer import Optimizer
-from declearn.test_utils import FrameworkType, run_as_processes
+from declearn.test_utils import FrameworkType
+from declearn.utils import run_as_processes
 from declearn.utils import set_device_policy
 
 # pylint: disable=ungrouped-imports; optional frameworks' dependencies

@@ -34,7 +34,7 @@ from declearn.dataset import InMemoryDataset
 from declearn.model.api import Model
 from declearn.model.sklearn import SklearnSGDModel
 from declearn.main import FederatedClient, FederatedServer
-from declearn.test_utils import run_as_processes
+from declearn.utils import run_as_processes
 from declearn.utils import set_device_policy
 
 # Select the subset of tests to run, based on framework availability.

@@ -17,18 +17,16 @@
 
 """Sparse matrix file dumping and loading utils, inspired by svmlight.
 
-The format used is mostly similar to the SVMlight one
-(see for example `sklearn.datasets.dump_svmlight_file`),
-but enables storing a single matrix rather than a (X, y)
-pair of arrays. It also records the input matrix's dtype
-and type of sparse format, which are thus restored when
-reloading - while the scikit-learn implementation always
-returns a CSR matrix and requires inputing the dtype.
+The format used is mostly similar to the SVMlight one (see for example
+`sklearn.datasets.dump_svmlight_file`), but enables storing a single
+matrix rather than a (X, y) pair of arrays. It also records the input
+matrix's dtype and type of sparse format, which are thus restored when
+reloading - while the scikit-learn implementation always returns a CSR
+matrix and requires inputing the dtype.
 
-This implementation does not use any tricks (e.g. cython
-or interfacing an external c++ tool) to optimize dump or
-load runtimes, it may therefore be slower than using the
-scikit-learn functions or any third-party alternative.
+This implementation does not use any tricks (e.g. cython or interfacing an
+external c++ tool) to optimize dump or load runtimes. It may therefore be
+slower than using the scikit-learn functions or any third-party alternative.
 """
 
 import json
@@ -68,7 +66,8 @@ def sparse_to_file(
 ) -> None:
     """Dump a scipy sparse matrix as a text file.
 
-    See function `sparse_from_file` to reload from the dump file.
+    See the [`sparse_from_file`][declearn.dataset.utils.sparse_from_file]
+    counterpart function to reload the dumped data from the created file.
 
     Parameters
     ----------
@@ -85,11 +84,13 @@ def sparse_to_file(
         If 'matrix' is of unsupported type, i.e. not a BSR,
         CSC, CSR, COO, DIA, DOK or LIL sparse matrix.
 
-    Note: the format used is mostly similar to the SVMlight one
-    (see for example `sklearn.datasets.dump_svmlight_file`), but
-    enables storing a single matrix rather than a (X, y) pair of
-    arrays. It also records the input matrix's dtype and type of
-    sparse format, which are restored upon reloading.
+    Note
+    ----
+    The format used is mostly similar to the SVMlight one (see for example
+    `sklearn.datasets.dump_svmlight_file`), but enables storing a single
+    matrix rather than a (X, y) pair of arrays. It also records the input
+    matrix's dtype and type of sparse format, which are restored when the
+    counterpart `sparse_from_file` function is used to reload it.
     """
     if os.path.splitext(path)[1] != ".sparse":
         path += ".sparse"
@@ -116,7 +117,8 @@ def sparse_to_file(
 def sparse_from_file(path: str) -> spmatrix:
     """Return a scipy sparse matrix loaded from a text file.
 
-    See function `sparse_to_file` to create reloadable dump files.
+    See the [`sparse_to_file`][declearn.dataset.utils.sparse_to_file]
+    counterpart function to create reloadable sparse data dump files.
 
     Parameters
     ----------
@@ -139,12 +141,13 @@ def sparse_from_file(path: str) -> spmatrix:
         i.e. "bsr", "csv", "csc", "coo", "dia", "dok" or "lil".
 
 
-    Note: the format used is mostly similar to the SVMlight one
-    (see for example `sklearn.datasets.load_svmlight_file`), but
-    the file must store a single matrix rather than a (X, y) pair
-    of arrays. It must also record some metadata in its header,
-    which are notably used to restore the initial matrix's dtype
-    and type of sparse format.
+    Note
+    ----
+    The format used is mostly similar to the SVMlight one (see for example
+    `sklearn.datasets.load_svmlight_file`), but the file must store a single
+    matrix rather than a (X, y) pair of arrays. It must also record some
+    metadata in its header, which are notably used to restore the initial
+    matrix's dtype and type of sparse format.
     """
     with open(path, "r", encoding="utf-8") as file:
         # Read and parse the file's header.
@@ -161,7 +164,10 @@ def sparse_from_file(path: str) -> spmatrix:
         cnv = int if lil.dtype.kind == "i" else float
         # Iteratively parse and fill-in row data.
         for rix, row in enumerate(file):
-            for field in row.strip(" \n").split(" "):
+            row = row.strip(" \n")
+            if not row:  # all-zeros row
+                continue
+            for field in row.split(" "):
                 ind, val = field.split(":")
                 lil[rix, int(ind)] = cnv(val)
     # Convert the matrix to its initial format and return.

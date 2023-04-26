@@ -17,19 +17,19 @@
 
 """Dataset implementation to serve scikit-learn compatible in-memory data."""
 
-import functools
 import os
+import warnings
 from typing import Any, ClassVar, Dict, Iterator, List, Optional, Set, Union
 
 import numpy as np
-import pandas as pd  # type: ignore
+import pandas as pd
 from numpy.typing import ArrayLike
 from scipy.sparse import spmatrix  # type: ignore
 from sklearn.datasets import load_svmlight_file  # type: ignore
 from typing_extensions import Self  # future: import from typing (py >=3.11)
 
 from declearn.dataset._base import Dataset, DataSpecs
-from declearn.dataset._sparse import sparse_from_file, sparse_to_file
+from declearn.dataset.utils import load_data_array, save_data_array
 from declearn.typing import Batch
 from declearn.utils import json_dump, json_load, register_type
 
@@ -89,7 +89,7 @@ class InMemoryDataset(Dataset):
         an instance that is either a numpy ndarray, a pandas
         DataFrame or a scipy spmatrix.
 
-        See the `load_data_array` method for details
+        See the `load_data_array` function in dataset._utils for details
         on supported file formats.
 
         Parameters
@@ -131,7 +131,7 @@ class InMemoryDataset(Dataset):
         # Assign the main data array.
         if isinstance(data, str):
             self._data_path = data
-            data = self.load_data_array(data)
+            data = load_data_array(data)
         self.data = data
         # Assign the optional input features list.
         self.f_cols = f_cols
@@ -147,7 +147,7 @@ class InMemoryDataset(Dataset):
                     self.f_cols.remove(target)  # type: ignore
                 target = self.data[target]
             else:
-                target = self.load_data_array(target)
+                target = load_data_array(target)
         self.target = target
         # Assign the (optional) sample weights data array.
         if isinstance(s_wght, str):
@@ -159,7 +159,7 @@ class InMemoryDataset(Dataset):
                         self.f_cols.remove(s_wght)  # type: ignore
                     s_wght = self.data[s_wght]
             else:
-                s_wght = self.load_data_array(s_wght)
+                s_wght = load_data_array(s_wght)
         self.weights = s_wght
         # Assign the 'expose_classes' attribute.
         self.expose_classes = expose_classes
@@ -187,7 +187,8 @@ class InMemoryDataset(Dataset):
         if (not self.expose_classes) or (self.target is None):
             return None
         if isinstance(self.target, pd.DataFrame):
-            return set(self.target.unstack().unique().tolist())  # type: ignore
+            c_list = self.target.unstack().unique().tolist()  # type: ignore
+            return set(c_list)
         if isinstance(self.target, pd.Series):
             return set(self.target.unique().tolist())
         if isinstance(self.target, np.ndarray):
@@ -224,57 +225,19 @@ class InMemoryDataset(Dataset):
     ) -> DataArray:
         """Load a data array from a dump file.
 
-        Supported file extensions
-        -------------------------
-        - `.csv`:
-            csv file, comma-delimited by default.
-            Any keyword arguments to `pandas.read_csv` may be passed.
-        - `.npy`:
-            Non-pickle numpy array dump, created with `numpy.save`.
-        - `.sparse`:
-            Scipy sparse matrix dump, created with the custom
-            `declearn.data.sparse.sparse_to_file` function.
-        - `.svmlight`:
-            SVMlight sparse matrix and labels array dump.
-            Parse using `sklearn.load_svmlight_file`, and
-            return either features or labels based on the
-            `which` int keyword argument (default: 0, for
-            features).
+        As of declearn v2.2, this staticmethod is DEPRECATED in favor of
+        `declearn.dataset.utils.load_data_array`, which is now calls. It
+        will be removed in v2.4 and/or v3.0.
 
-        Parameters
-        ----------
-        path: str
-            Path to the data array dump file.
-            Extension must be adequate to enable proper parsing;
-            see list of supported extensions above.
-        **kwargs:
-            Extension-type-based keyword parameters may be passed.
-            See above for details.
-
-        Returns
-        -------
-        data: numpy.ndarray or pandas.DataFrame or scipy.spmatrix
-            Reloaded data array.
-
-        Raises
-        ------
-        TypeError
-            If `path` is of unsupported extension.
-
-        Any exception raised by data-loading functions may also be raised
-        (e.g. if the file cannot be proprely parsed).
+        See [declearn.dataset.utils.load_data_array][] for more details.
         """
-        ext = os.path.splitext(path)[1]
-        if ext == ".csv":
-            return pd.read_csv(path, **kwargs)
-        if ext == ".npy":
-            return np.load(path, allow_pickle=False)
-        if ext == ".sparse":
-            return sparse_from_file(path)
-        if ext == ".svmlight":
-            which = kwargs.get("which", 0)
-            return load_svmlight_file(path)[which]
-        raise TypeError(f"Unsupported data array file extension: '{ext}'.")
+        warnings.warn(
+            "'InMemoryDataset.load_data_array' has been deprecated in favor"
+            " of `declearn.dataset.utils.load_data_array`. It will be removed"
+            " in version 2.4 and/or 3.0.",
+            category=DeprecationWarning,
+        )
+        return load_data_array(path, **kwargs)
 
     @staticmethod
     def save_data_array(
@@ -283,58 +246,19 @@ class InMemoryDataset(Dataset):
     ) -> str:
         """Save a data array to a dump file.
 
-        Supported types of data arrays
-        ------------------------------
-        - `pandas.DataFrame` or `pandas.Series`:
-            Dump to a comma-separated `.csv` file.
-        - `numpy.ndarray`:
-            Dump to a non-pickle `.npy` file.
-        - `scipy.sparse.spmatrix`:
-            Dump to a `.sparse` file, using a custom format
-            and `declearn.data.sparse.sparse_to_file`.
+        As of declearn v2.2, this staticmethod is DEPRECATED in favor of
+        `declearn.dataset.utils.save_data_array`, which is now calls. It
+        will be removed in v2.4 and/or v3.0.
 
-        Parameters
-        ----------
-        path: str
-            Path to the file where to dump the array.
-            Appropriate file extension will be added when
-            not present (i.e. `path` may be a basename).
-        array: data array structure (see above)
-            Data array that needs dumping to file.
-            See above for supported types and associated
-            behaviours.
-
-        Returns
-        -------
-        path: str
-            Path to the created file dump, based on the input
-            `path` and the chosen file extension (see above).
-
-        Raises
-        ------
-        TypeError
-            If `array` is of unsupported type.
+        See [declearn.dataset.utils.save_data_array][] for more details.
         """
-        # Select a file extension and set up the array-dumping function.
-        if isinstance(array, (pd.DataFrame, pd.Series)):
-            ext = ".csv"
-            save = functools.partial(
-                array.to_csv, sep=",", encoding="utf-8", index=False
-            )
-        elif isinstance(array, np.ndarray):
-            ext = ".npy"
-            save = functools.partial(np.save, arr=array)
-        elif isinstance(array, spmatrix):
-            ext = ".sparse"
-            save = functools.partial(sparse_to_file, matrix=array)
-        else:
-            raise TypeError(f"Unsupported data array type: '{type(array)}'.")
-        # Ensure proper naming. Save the array. Return the path.
-        if not path.endswith(ext):
-            path += ext
-        os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
-        save(path)
-        return path
+        warnings.warn(
+            "'InMemoryDataset.save_data_array' has been deprecated in favor"
+            " of `declearn.dataset.utils.save_data_array`. It will be removed"
+            " in version 2.4 and/or 3.0.",
+            category=DeprecationWarning,
+        )
+        return save_data_array(path, array)
 
     @classmethod
     def from_svmlight(
@@ -388,15 +312,15 @@ class InMemoryDataset(Dataset):
         # fmt: off
         info["data"] = (
             self._data_path or
-            self.save_data_array(os.path.join(folder, "data"), self.data)
+            save_data_array(os.path.join(folder, "data"), self.data)
         )
         info["target"] = None if self.target is None else (
             self._trgt_path or
-            self.save_data_array(os.path.join(folder, "trgt"), self.target)
+            save_data_array(os.path.join(folder, "trgt"), self.target)
         )
         info["s_wght"] = None if self.weights is None else (
             self._wght_path or
-            self.save_data_array(os.path.join(folder, "wght"), self.weights)
+            save_data_array(os.path.join(folder, "wght"), self.weights)
         )
         # fmt: on
         info["f_cols"] = self.f_cols

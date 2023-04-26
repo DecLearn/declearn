@@ -18,26 +18,22 @@
 """Script to run a federated client on the heart-disease example."""
 
 import os
+from typing import Literal
 
 import numpy as np
-import pandas as pd  # type: ignore
+
 from declearn.communication import NetworkClientConfig
 from declearn.dataset import InMemoryDataset
+from declearn.dataset.examples import load_heart_uci
 from declearn.main import FederatedClient
 from declearn.test_utils import make_importable, setup_client_argparse
 
 
 FILEDIR = os.path.dirname(__file__)
 
-# Perform local imports.
-# pylint: disable=wrong-import-order, wrong-import-position
-with make_importable(FILEDIR):
-    from data import get_data
-# pylint: enable=wrong-import-order, wrong-import-position
-
 
 def run_client(
-    name: str,
+    name: Literal["cleveland", "hungarian", "switzerland", "va"],
     ca_cert: str,
     protocol: str = "websockets",
     serv_uri: str = "wss://localhost:8765",
@@ -59,23 +55,20 @@ def run_client(
 
     # (1-2) Interface training and optional validation data.
 
-    # Load and randomly split the dataset.
-    path = os.path.join(FILEDIR, f"data/{name}.csv")
-    if not os.path.isfile(path):
-        get_data(os.path.join(FILEDIR, "data"), [name])
-    data = pd.read_csv(path)
+    # Load and randomly split the dataset. Note: target is a str (column name).
+    data, target = load_heart_uci(name, folder=os.path.join(FILEDIR, "data"))
     data = data.loc[np.random.permutation(data.index)]
     n_tr = round(len(data) * 0.8)  # 80% train, 20% valid
 
     # Wrap train and validation data as Dataset objects.
     train = InMemoryDataset(
         data=data.iloc[:n_tr],
-        target="num",
+        target=target,
         expose_classes=True,  # share unique target labels with server
     )
     valid = InMemoryDataset(
         data=data.iloc[n_tr:],
-        target="num",
+        target=target,
     )
 
     # (3) Define network communication parameters.

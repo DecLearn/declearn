@@ -36,7 +36,6 @@ from ._assertions import (
 )
 from ._gen_ssl import generate_ssl_certificates
 from ._imports import make_importable
-from ._multiprocess import run_as_processes
 from ._vectors import (
     FrameworkType,
     GradientsTestCase,
