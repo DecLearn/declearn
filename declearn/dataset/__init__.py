@@ -29,7 +29,7 @@ API tools
     Abstract base class defining an API to access training or testing data.
 * [DataSpec][declearn.dataset.DataSpecs]:
     Dataclass to wrap a dataset's metadata.
-* [load_dataset_from_json][declearn.dataset.load_dataset_from_json"]
+* [load_dataset_from_json][declearn.dataset.load_dataset_from_json]
     Utility function to parse a JSON into a dataset object.
 
 Dataset subclasses

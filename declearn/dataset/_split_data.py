@@ -163,7 +163,7 @@ def split_data(
     data_file: str or None, default=None
         Optional path to a folder where to find the data.
         If None, default to the MNIST example.
-    target_file: str or int or None, default=None
+    label_file: str or int or None, default=None
         If str, path to the labels file to import, or name of a `data`
         column to use as labels (only if `data` points to a csv file).
         If int, index of a `data` column of to use as labels).
