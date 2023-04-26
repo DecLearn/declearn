@@ -63,6 +63,21 @@ class Model(Generic[VectorT], metaclass=ABCMeta):
         """Instantiate a Model interface wrapping a 'model' object."""
         self._model = model
 
+    def get_wrapped_model(self) -> Any:
+        """Getter to access the wrapped framework-specific model object.
+
+        This getter should be used sparingly, so as to avoid undesirable
+        side effects. In particular, it should not be used in declearn
+        backend code (but may be in examples or tests), as it is merely
+        a way for end-users to access the wrapped model after training.
+
+        Returns
+        -------
+        model:
+            Wrapped model, of (framework/Model-subclass)-specific type.
+        """
+        return self._model
+
     @property
     @abstractmethod
     def device_policy(

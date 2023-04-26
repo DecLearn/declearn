@@ -236,8 +236,8 @@ class TestTorchModel(ModelTestSuite):
         # Verify that both models have the same device policy.
         assert model.device_policy == other.device_policy
         # Verify that both models have a similar structure of modules.
-        mod_a = list(getattr(model, "_model").modules())
-        mod_b = list(getattr(other, "_model").modules())
+        mod_a = list(model.get_wrapped_model().modules())
+        mod_b = list(other.get_wrapped_model().modules())
         assert len(mod_a) == len(mod_b)
         assert all(isinstance(a, type(b)) for a, b in zip(mod_a, mod_b))
         assert all(repr(a) == repr(b) for a, b in zip(mod_a, mod_b))
@@ -262,7 +262,7 @@ class TestTorchModel(ModelTestSuite):
     ) -> None:
         """Check that `get_weights` behaves properly with frozen weights."""
         model = test_case.model
-        ptmod = getattr(model, "_model")  # type: torch.nn.Module
+        ptmod = model.get_wrapped_model()
         next(ptmod.parameters()).requires_grad = False  # freeze some weights
         w_all = model.get_weights()
         w_trn = model.get_weights(trainable=True)
@@ -280,7 +280,7 @@ class TestTorchModel(ModelTestSuite):
         """Check that `set_weights` behaves properly with frozen weights."""
         # Setup a model with some frozen weights, and gather trainable ones.
         model = test_case.model
-        ptmod = getattr(model, "_model")  # type: torch.nn.Module
+        ptmod = model.get_wrapped_model()
         next(ptmod.parameters()).requires_grad = False  # freeze some weights
         w_trn = model.get_weights(trainable=True)
         # Test that `set_weights` works if and only if properly parametrized.
@@ -299,7 +299,7 @@ class TestTorchModel(ModelTestSuite):
         policy = model.device_policy
         assert policy.gpu == (test_case.device == "GPU")
         assert (policy.idx == 0) if policy.gpu else (policy.idx is None)
-        ptmod = getattr(model, "_model").module
+        ptmod = model.get_wrapped_model().module
         device_type = "cpu" if test_case.device == "CPU" else "cuda"
         for param in ptmod.parameters():
             assert param.device.type == device_type
