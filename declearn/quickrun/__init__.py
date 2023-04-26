@@ -17,4 +17,6 @@
 
 """Script to quickly run a simulated FL example locally using declearn."""
 
-from .run import quickrun
+from ._config import DataSourceConfig, ExperimentConfig, ModelConfig
+from ._parser import parse_data_folder
+from ._run import quickrun
