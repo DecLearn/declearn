@@ -32,7 +32,17 @@ __all__ = [
 
 @dataclasses.dataclass
 class ModelConfig(TomlConfig):
-    """Dataclass used to provide custom model location and class name."""
+    """Dataclass used to provide custom model location and name.
+
+    Attributes
+    ----------
+    model_file: str or None
+        Path to the python file under which the model is declared.
+        If None, look for "model.py" parallel to the "config.toml" one.
+    model_name: str, default="model"
+        Name of the variable storing the declearn Model to train,
+        declared in the main scope of the model file.
+    """
 
     model_file: Optional[str] = None
     model_name: str = "model"
@@ -42,15 +52,17 @@ class ModelConfig(TomlConfig):
 class DataSourceConfig(TomlConfig):
     """Dataclass associated with the quickrun's `parse_data_folder` function.
 
+    Attributes
+    ----------
     data_folder: str
         Absolute path to the to the main folder hosting the data.
     client_names: list or None
-        List of custom client names to look for in the data_folder.
-        If None, default to expected prefix search.
+        List of custom client names to look for in the data folder.
+        If None, default to all subdirectories of the data folder.
     dataset_names: dict or None
         Dict of custom dataset names, to look for in each client folder.
         Expect 'train_data, train_target, valid_data, valid_target' as keys.
-        If None, default to expected prefix search.
+        If None, files will be expected to be prefixed using the former keys.
     """
 
     data_folder: Optional[str] = None
@@ -62,12 +74,16 @@ class DataSourceConfig(TomlConfig):
 class ExperimentConfig(TomlConfig):
     """Dataclass providing kwargs to `FederatedServer` and `FederatedClient`.
 
-    metrics: list[str] or None
-        List of Metric childclass names, defining evaluation metrics
-        to compute in addition to the model's loss.
+    Attributes
+    ----------
+    metrics: MetricSet or None
+        Optional MetricSet instance, defining evaluation metrics to compute
+        in addition to the model's loss. It may be parsed from a list of
+        Metric names or (name, config) tuples), or from a MetricSet config
+        dict.
     checkpoint: str or None
-        The checkpoint folder path and use default values for other parameters
-        to be used so as to save round-wise model
+        The checkpoint folder path where to save the server's and client-wise
+        outputs (round-wise model weights, evaluation metrics, logs, etc.).
     """
 
     metrics: Optional[MetricSet] = None

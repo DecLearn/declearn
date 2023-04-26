@@ -15,7 +15,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Script to quickly run a simulated FL example locally using declearn."""
+"""Script to quickly run a simulated FL example locally using declearn.
+
+This submodule, which is not imported by default, mainly aims at providing
+with the `declearn-quickrun` command-line entry-point so as to easily set
+up and run simulated federated learning experiments on a single computer.
+
+It exposes the following, merely as a way to make the documentation of that
+util available to end-users:
+
+- [quickrun][declearn.quickrun.quickrun]:
+    Backend function of the `declearn-quickrun` command-line entry-point.
+- [parse_data_folder][declearn.quickrun.parse_data_folder]:
+    Util to parse through a data folder used in a quickrun experiment.
+- [DataSourceConfig][declearn.quickrun.DataSourceConfig]:
+    Dataclass and TOML parser for data-parsing hyper-parameters.
+- [ExperimentConfig][declearn.quickrun.ExperimentConfig]:
+    Dataclass and TOML parser for experiment-defining hyper-parameters.
+- [ModelConfig][declearn.quickrun.ModelConfig]:
+    Dataclass and TOML parser for model-defining hyper-parameters.
+"""
 
 from ._config import DataSourceConfig, ExperimentConfig, ModelConfig
 from ._parser import parse_data_folder

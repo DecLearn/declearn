@@ -132,5 +132,5 @@ packages = ["declearn"]
 declearn = ["py.typed"]
 
 [project.scripts]
-declearn-quickrun = "declearn.quickrun.run:main"
+declearn-quickrun = "declearn.quickrun._run:main"
 declearn-split = "declearn.dataset._split_data:main"
