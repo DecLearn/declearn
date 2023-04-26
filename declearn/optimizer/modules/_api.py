@@ -18,7 +18,7 @@
 """Base API for plug-in gradients-alteration algorithms."""
 
 from abc import ABCMeta, abstractmethod
-from typing import Any, ClassVar, Dict, Optional
+from typing import Any, ClassVar, Dict, Optional, TypeVar
 
 from typing_extensions import Self  # future: import from typing (py >=3.11)
 
@@ -32,6 +32,9 @@ from declearn.utils import (
 __all__ = [
     "OptiModule",
 ]
+
+
+T = TypeVar("T")
 
 
 @create_types_registry
@@ -117,8 +120,8 @@ class OptiModule(metaclass=ABCMeta):
     @abstractmethod
     def run(
         self,
-        gradients: Vector,
-    ) -> Vector:
+        gradients: Vector[T],
+    ) -> Vector[T]:
         """Apply the module's algorithm to input gradients.
 
         Please refer to the module's main docstring for details

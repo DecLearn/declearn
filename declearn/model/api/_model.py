@@ -18,7 +18,7 @@
 """Model abstraction API."""
 
 from abc import ABCMeta, abstractmethod
-from typing import Any, Dict, Optional, Set, Tuple
+from typing import Any, Dict, Generic, Optional, Set, Tuple, TypeVar
 
 import numpy as np
 from typing_extensions import Self  # future: import from typing (py >=3.11)
@@ -33,8 +33,12 @@ __all__ = [
 ]
 
 
+VectorT = TypeVar("VectorT", bound=Vector)
+"""Type-annotation for the Vector subclass proper to a given Model."""
+
+
 @create_types_registry
-class Model(metaclass=ABCMeta):
+class Model(Generic[VectorT], metaclass=ABCMeta):
     """Abstract class defining an API to manipulate a ML model.
 
     A 'Model' is an abstraction that defines a generic interface
@@ -119,7 +123,7 @@ class Model(metaclass=ABCMeta):
     def get_weights(
         self,
         trainable: bool = False,
-    ) -> Vector:
+    ) -> VectorT:
         """Return the model's weights, optionally excluding frozen ones.
 
         Parameters
@@ -140,7 +144,7 @@ class Model(metaclass=ABCMeta):
     @abstractmethod
     def set_weights(
         self,
-        weights: Vector,
+        weights: VectorT,
         trainable: bool = False,
     ) -> None:
         """Assign values to the model's weights.
@@ -176,7 +180,7 @@ class Model(metaclass=ABCMeta):
         self,
         batch: Batch,
         max_norm: Optional[float] = None,
-    ) -> Vector:
+    ) -> VectorT:
         """Compute and return gradients computed over a given data batch.
 
         Compute the average gradients of the model's loss with respect
@@ -204,7 +208,7 @@ class Model(metaclass=ABCMeta):
     @abstractmethod
     def apply_updates(
         self,
-        updates: Vector,
+        updates: VectorT,
     ) -> None:
         """Apply updates to the model's weights."""
 

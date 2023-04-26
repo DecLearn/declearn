@@ -19,7 +19,10 @@
 
 import operator
 from abc import ABCMeta, abstractmethod
-from typing import Any, Callable, Dict, Optional, Set, Tuple, Type, Union
+from typing import (
+    # fmt: off
+    Any, Callable, Dict, Generic, Optional, Set, Tuple, Type, TypeVar, Union
+)
 
 from numpy.typing import ArrayLike
 from typing_extensions import Self  # future: import from typing (Py>=3.11)
@@ -37,10 +40,15 @@ __all__ = [
 
 
 VECTOR_TYPES = {}  # type: Dict[Type[Any], Type[Vector]]
+"""Private constant holding registered Vector types."""
+
+
+T = TypeVar("T")
+"""Type-annotation for the data structures proper to a given Vector class."""
 
 
 @create_types_registry
-class Vector(metaclass=ABCMeta):
+class Vector(Generic[T], metaclass=ABCMeta):
     """Abstract class defining an API to manipulate (sets of) data arrays.
 
     A Vector is an abstraction used to wrap a collection of data
@@ -62,27 +70,27 @@ class Vector(metaclass=ABCMeta):
     """
 
     @property
-    def _op_add(self) -> Callable[[Any, Any], Any]:
+    def _op_add(self) -> Callable[[Any, Any], T]:
         """Framework-compatible addition operator."""
         return operator.add
 
     @property
-    def _op_sub(self) -> Callable[[Any, Any], Any]:
+    def _op_sub(self) -> Callable[[Any, Any], T]:
         """Framework-compatible substraction operator."""
         return operator.sub
 
     @property
-    def _op_mul(self) -> Callable[[Any, Any], Any]:
+    def _op_mul(self) -> Callable[[Any, Any], T]:
         """Framework-compatible multiplication operator."""
         return operator.mul
 
     @property
-    def _op_div(self) -> Callable[[Any, Any], Any]:
+    def _op_div(self) -> Callable[[Any, Any], T]:
         """Framework-compatible true division operator."""
         return operator.truediv
 
     @property
-    def _op_pow(self) -> Callable[[Any, Any], Any]:
+    def _op_pow(self) -> Callable[[Any, Any], T]:
         """Framework-compatible power operator."""
         return operator.pow
 
@@ -108,13 +116,13 @@ class Vector(metaclass=ABCMeta):
 
     def __init__(
         self,
-        coefs: Dict[str, Any],
+        coefs: Dict[str, T],
     ) -> None:
         """Instantiate the Vector to wrap a collection of data arrays.
 
         Parameters
         ----------
-        coefs: dict[str, any]
+        coefs: dict[str, <T>]
             Dict grouping a named collection of data arrays.
             The supported types of that dict's values depends
             on the concrete `Vector` subclass being used.
@@ -123,7 +131,7 @@ class Vector(metaclass=ABCMeta):
 
     @staticmethod
     def build(
-        coefs: Dict[str, Any],
+        coefs: Dict[str, T],
     ) -> "Vector":
         """Instantiate a Vector, inferring its exact subtype from coefs'.
 
@@ -136,7 +144,7 @@ class Vector(metaclass=ABCMeta):
 
         Parameters
         ----------
-        coefs: dict[str, any]
+        coefs: dict[str, <T>]
             Dict grouping a named collection of data arrays, that
             all belong to the same framework.
 
@@ -189,7 +197,10 @@ class Vector(metaclass=ABCMeta):
             indexed by the coefficient's name.
         """
         try:
-            return {key: coef.shape for key, coef in self.coefs.items()}
+            return {
+                key: coef.shape  # type: ignore  # exception caught
+                for key, coef in self.coefs.items()
+            }
         except AttributeError as exc:
             raise NotImplementedError(
                 "Wrapped coefficients appear not to implement `.shape`.\n"
@@ -210,7 +221,10 @@ class Vector(metaclass=ABCMeta):
             concrete framework of the Vector.
         """
         try:
-            return {key: str(coef.dtype) for key, coef in self.coefs.items()}
+            return {
+                key: str(coef.dtype)  # type: ignore  # exception caught
+                for key, coef in self.coefs.items()
+            }
         except AttributeError as exc:
             raise NotImplementedError(
                 "Wrapped coefficients appear not to implement `.dtype`.\n"
@@ -261,7 +275,7 @@ class Vector(metaclass=ABCMeta):
 
     def apply_func(
         self,
-        func: Callable[..., Any],
+        func: Callable[..., T],
         *args: Any,
         **kwargs: Any,
     ) -> Self:
@@ -290,14 +304,15 @@ class Vector(metaclass=ABCMeta):
     def _apply_operation(
         self,
         other: Any,
-        func: Callable[[Any, Any], Any],
+        func: Callable[[Any, Any], T],
     ) -> Self:
         """Apply an operation to combine this vector with another.
 
         Parameters
         ----------
-        other: Vector
-            Vector with the same names, shapes and dtypes as this one.
+        other:
+            Vector with the same names, shapes and dtypes as this one;
+            or scalar object on which to operate (e.g. a float value).
         func: function(<T>, <T>) -> <T>
             Function to be applied to combine the data arrays stored
             in this vector and the `other` one.

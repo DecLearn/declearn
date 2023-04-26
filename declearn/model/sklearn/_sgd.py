@@ -282,7 +282,7 @@ class SklearnSGDModel(Model):
         }
         return NumpyVector(weights)
 
-    def set_weights(  # type: ignore  # Vector subtype specification
+    def set_weights(
         self,
         weights: NumpyVector,
         trainable: bool = False,
@@ -356,7 +356,7 @@ class SklearnSGDModel(Model):
         # Compute gradients based on weights' update.
         return w_srt - w_end
 
-    def apply_updates(  # type: ignore  # Vector subtype specification
+    def apply_updates(
         self,
         updates: NumpyVector,
     ) -> None:
