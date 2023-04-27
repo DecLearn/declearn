@@ -18,6 +18,7 @@
 """Base class to define TOML-parsable configuration containers."""
 
 import dataclasses
+import os
 import typing
 import warnings
 
@@ -99,7 +100,7 @@ def _isinstance_generic(inputs: Any, typevar: Type) -> bool:
             and all(_isinstance_generic(e, t) for e, t in zip(inputs, args))
         )
     # Unsupported cases.
-    raise TypeError(
+    raise TypeError(  # pragma: no cover
         "Unsupported subscripted generic for instance check: "
         f"'{typevar}' with origin '{origin}'."
     )
@@ -112,26 +113,38 @@ def _parse_float(src: str) -> Optional[float]:
 
 def _instantiate_field(
     field: dataclasses.Field,  # future: dataclasses.Field[T] (Py >=3.9)
-    *args: Any,
     **kwargs: Any,
 ) -> Any:  # future: T
     """Instantiate a dataclass field from input args and kwargs.
 
-    This functions is meant to enable automatically building dataclass
-    fields that are annotated to be a union of types, notably optional
-    fields (i.e. Union[T, None]).
+    This function is meant to enable building dataclass object fields,
+    that requring instantiating from a received value or dict of kwargs.
+
+    It supports doing so even when for fields that are annotated to be a
+    union of types (notably optional ones: Union[T, None]), and/or are a
+    `TomlConfig` subclass that should be instantiated via `from_params`
+    rather than `cls(*args, **kwargs)`.
 
     It will raise a TypeError if instantiation fails or if `field.type`
     has and unsupported typing origin. It may also raise any exception
     coming from the target type's `__init__` method.
     """
+
+    def _instantiate(cls: Type[Any]) -> Any:
+        """Try instantiating a given class from the kwargs."""
+        if issubclass(cls, TomlConfig):
+            return cls.from_params(**kwargs)
+        return cls(**kwargs)
+
     origin = typing.get_origin(field.type)
-    if origin is None:  # raw type
-        return field.type(*args, **kwargs)
-    if origin is Union:  # union of types, including optional
+    # Case of a raw type.
+    if origin is None:
+        return _instantiate(field.type)
+    # Case of a union of types (including optional).
+    if origin is Union:
         for cls in typing.get_args(field.type):
             try:
-                return cls(*args, **kwargs)
+                return _instantiate(cls)
             except TypeError:
                 pass
         raise TypeError(
@@ -219,12 +232,14 @@ class TomlConfig:
         for key in kwargs:
             warnings.warn(
                 f"Unsupported keyword argument in {cls.__name__}.from_params: "
-                f"'{key}'. This argument was ignored."
+                f"'{key}'. This argument was ignored.",
+                category=RuntimeWarning,
             )
         return cls(**fields)
 
-    @staticmethod
+    @classmethod
     def default_parser(
+        cls,
         field: dataclasses.Field,  # future: dataclasses.Field[T] (Py >=3.9)
         inputs: Union[str, Dict[str, Any], T, None],
     ) -> Any:
@@ -272,20 +287,19 @@ class TomlConfig:
             raise TypeError(
                 f"Field '{field.name}' does not provide a default value."
             )
-        # Case of str inputs: treat as the path to a TOML file to parse.
-        if isinstance(inputs, str):
-            # If the field implements TOML parsing, call it.
-            if issubclass(field.type, TomlConfig):
-                return field.type.from_toml(inputs)
-            # Otherwise, conduct minimal parsing.
-            with open(inputs, "rb") as file:
-                config = tomllib.load(file, parse_float=_parse_float)
-            section = config.get(field.name, config)  # subsection or full file
-            return (
-                _instantiate_field(field, **section)
-                if isinstance(section, dict)
-                else _instantiate_field(field, section)
-            )
+        # Case of str inputs poiting to a file: try parsing it.
+        if isinstance(inputs, str) and os.path.isfile(inputs):
+            try:
+                with open(inputs, "rb") as file:
+                    config = tomllib.load(file, parse_float=_parse_float)
+            except tomllib.TOMLDecodeError as exc:
+                raise TypeError(
+                    f"Field {field.name}: could not parse secondary TOML file."
+                ) from exc
+            # Look for a subsection, otherwise keep the entire file.
+            section = config.get(field.name, config)
+            # Recursively call this parser.
+            return cls.default_parser(field, section)
         # Case of dict inputs: try instantiating the target type.
         if isinstance(inputs, dict):
             return _instantiate_field(field, **inputs)
@@ -377,7 +391,8 @@ class TomlConfig:
             for name in config:
                 warnings.warn(
                     f"Unsupported section encountered in {path} TOML file: "
-                    f"'{name}'. This section will be ignored."
+                    f"'{name}'. This section will be ignored.",
+                    category=RuntimeWarning,
                 )
         # Finally, instantiate the FLConfig container.
         return cls.from_params(**params)
