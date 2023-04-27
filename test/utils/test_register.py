@@ -33,9 +33,13 @@ from declearn.utils import (
 def test_create_types_registry() -> None:
     """Unit tests for 'create_types_registry'."""
     group = f"test_{time.time_ns()}"
-    assert create_types_registry(object, group) is object
+
+    class AnyClass:  # pylint: disable=all
+        pass
+
+    assert create_types_registry(AnyClass, group) is AnyClass
     with pytest.raises(KeyError):
-        create_types_registry(object, group)
+        create_types_registry(AnyClass, group)
 
 
 def test_register_type() -> None:
@@ -75,6 +79,9 @@ def test_register_type_fails() -> None:
     group = f"test_{time.time_ns()}"
     with pytest.raises(KeyError):
         register_type(BaseClass, name="base", group=group)
+    # Try registering in any group, with no valid parent group.
+    with pytest.raises(TypeError):
+        register_type(BaseClass, name="base", group=None)
     # Try registering in a group with wrong class constraints.
     create_types_registry(BaseClass, group)
     with pytest.raises(TypeError):
@@ -104,7 +111,28 @@ def test_access_registered() -> None:
     with pytest.raises(KeyError):
         access_registered(name_2, group=name)  # invalid name under group
     with pytest.raises(KeyError):
+        access_registered(name_2, group=None)  # invalid name under any group
+    with pytest.raises(KeyError):
         access_registered(name, group=name_2)  # non-existing group
+
+
+def test_register_unspecified_group() -> None:
+    """Unit tests for type-registration with implicit group membership."""
+    group = f"test_{time.time_ns()}"
+
+    # Define a parent class and an associted type registry.
+    @create_types_registry(name=group)
+    class Parent:  # pylint: disable=all
+        pass
+
+    # Define a child class, and register it without specifying the group.
+    @register_type(name="new-child")
+    class Child(Parent):  # pylint: disable=all
+        pass
+
+    # Verify that the class was put into the proper group.
+    assert access_registered("new-child") is Child
+    assert access_registration_info(Child) == ("new-child", group)
 
 
 def test_access_registeration_info() -> None:
@@ -157,3 +185,7 @@ def test_access_types_mapping() -> None:
     assert mapping != access_types_mapping(group=group)
     with pytest.raises(KeyError):
         access_registered("renamed", group=group)
+
+    # Test that the expected exception is raised for non-existing groups.
+    with pytest.raises(KeyError):
+        access_types_mapping(group=f"test_{time.time_ns()}")
