@@ -22,7 +22,7 @@ import functools
 from typing import Any, Dict, Union
 
 
-from declearn.aggregator import Aggregator
+from declearn.aggregator import Aggregator, AveragingAggregator
 from declearn.optimizer import Optimizer
 from declearn.utils import TomlConfig, access_registered, deserialize_object
 
@@ -95,7 +95,9 @@ class FLOptimConfig(TomlConfig):
     server_opt: Optimizer = dataclasses.field(
         default_factory=functools.partial(Optimizer, lrate=1.0)
     )
-    aggregator: Aggregator = dataclasses.field(default_factory=Aggregator)
+    aggregator: Aggregator = dataclasses.field(
+        default_factory=AveragingAggregator
+    )
 
     @classmethod
     def parse_client_opt(
@@ -147,7 +149,7 @@ class FLOptimConfig(TomlConfig):
             - (opt.) group: str used to retrieve the registered class
             - (opt.) config: dict specifying kwargs for the constructor
             - any other field will be added to the `config` kwargs dict
-        - as None (or missing kwarg), using default AverageAggregator()
+        - as None (or missing kwarg), using default AveragingAggregator()
         """
         # Case when using the default value: delegate to the default parser.
         if inputs is None:
