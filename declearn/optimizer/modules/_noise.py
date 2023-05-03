@@ -81,7 +81,7 @@ class NoiseModule(OptiModule, metaclass=ABCMeta, register=False):
         gradients: Vector,
     ) -> Vector:
         if not NumpyVector in gradients.compatible_vector_types:
-            raise TypeError(
+            raise TypeError(  # pragma: no cover
                 f"{self.__class__.__name__} requires input gradients to "
                 "be compatible with NumpyVector, which is not the case "
                 f"of {type(gradients).__name__}."
@@ -166,4 +166,6 @@ class GaussianNoiseModule(NoiseModule):
             # false-positive; pylint: disable=no-member
             return self._rng.normal(scale=self.std, size=shape).astype(dtype)
         # Theoretically-unreachable case.
-        raise RuntimeError("Unexpected `GaussianeNoiseModule._rng` type.")
+        raise RuntimeError(  # pragma: no cover
+            "Unexpected `GaussianeNoiseModule._rng` type."
+        )
