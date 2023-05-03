@@ -22,7 +22,7 @@ import multiprocessing as mp
 import sys
 import traceback
 from queue import Queue
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Tuple, Union
 
 __all__ = [
     "run_as_processes",
@@ -105,12 +105,9 @@ def run_as_processes(
 def add_exception_catching(
     func: Callable[..., Any],
     queue: Queue,
-    name: Optional[str] = None,
+    name: str,
 ) -> Callable[..., Any]:
     """Wrap a function to catch exceptions and put them in a Queue."""
-    if not name:
-        name = func.__name__
-
     return functools.partial(wrapped, func=func, queue=queue, name=name)
 
 
