@@ -22,7 +22,7 @@ from typing import Dict, Type
 
 import pytest
 
-from declearn.aggregator import Aggregator
+from declearn.aggregator import Aggregator, list_aggregators
 from declearn.model.api import Vector
 from declearn.test_utils import (
     FrameworkType,
@@ -30,10 +30,9 @@ from declearn.test_utils import (
     assert_dict_equal,
     assert_json_serializable_dict,
 )
-from declearn.utils import access_types_mapping
 
 
-AGGREGATOR_CLASSES = access_types_mapping("Aggregator")
+AGGREGATOR_CLASSES = list_aggregators()
 VECTOR_FRAMEWORKS = typing.get_args(FrameworkType)
 
 
