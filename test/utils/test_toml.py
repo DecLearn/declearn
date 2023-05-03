@@ -74,20 +74,25 @@ class DemoTomlConfig(TomlConfig):
             inputs = tuple(inputs)
         return cls.default_parser(field, inputs)
 
+    @classmethod
+    def get_field(cls, name: str) -> dataclasses.Field:
+        """Access the definition of a given dataclass field."""
+        return {field.name: field for field in dataclasses.fields(cls)}[name]
+
 
 class TestTomlConfigDefaultParser:
     """Unit tests for `TomlConfig.default_parser`, using a demo subclass."""
 
     def test_int(self) -> None:
         """Test that the parser works for an int field."""
-        field = DemoTomlConfig.__dataclass_fields__["req_int"]
+        field = DemoTomlConfig.get_field("req_int")
         assert TomlConfig.default_parser(field, 42) == 42
         with pytest.raises(TypeError):
             TomlConfig.default_parser(field, 42.0)
 
     def test_lst(self) -> None:
         """Test that the parser works for a list of str field."""
-        field = DemoTomlConfig.__dataclass_fields__["req_lst"]
+        field = DemoTomlConfig.get_field("req_lst")
         # Test with a list of str.
         value = ["this", "is", "a", "test"]
         assert TomlConfig.default_parser(field, value) is value
@@ -103,7 +108,7 @@ class TestTomlConfigDefaultParser:
 
     def test_opt_str(self) -> None:
         """Test that the parser works for an optional str field."""
-        field = DemoTomlConfig.__dataclass_fields__["opt_str"]
+        field = DemoTomlConfig.get_field("opt_str")
         # Test without a value.
         assert TomlConfig.default_parser(field, None) is field.default
         # Test with a valid value.
@@ -114,7 +119,7 @@ class TestTomlConfigDefaultParser:
 
     def test_opt_tup(self) -> None:
         """Test that the parser works for an optional tuple of int field."""
-        field = DemoTomlConfig.__dataclass_fields__["opt_tup"]
+        field = DemoTomlConfig.get_field("opt_tup")
         # Test without a value.
         assert TomlConfig.default_parser(field, None) is field.default
         # Test with a valid value.
@@ -130,7 +135,7 @@ class TestTomlConfigDefaultParser:
 
     def test_opt_dct(self) -> None:
         """Test that the parser works for an optional dict field."""
-        field = DemoTomlConfig.__dataclass_fields__["opt_dct"]
+        field = DemoTomlConfig.get_field("opt_dct")
         # Test without a value.
         assert TomlConfig.default_parser(field, None) == {}
         # Test with a valid value.
@@ -146,7 +151,7 @@ class TestTomlConfigDefaultParser:
 
     def test_opt_obj(self) -> None:
         """Test that the parser works for an optional custom object field."""
-        field = DemoTomlConfig.__dataclass_fields__["opt_obj"]
+        field = DemoTomlConfig.get_field("opt_obj")
         # Test without a value.
         assert TomlConfig.default_parser(field, None) == Custom()
         # Test with a valid value.
@@ -162,7 +167,7 @@ class TestTomlConfigDefaultParser:
 
     def test_opt_unc(self) -> None:
         """Test that the parser works for a union with custom types."""
-        field = DemoTomlConfig.__dataclass_fields__["opt_unc"]
+        field = DemoTomlConfig.get_field("opt_unc")
         # Test without a value.
         assert TomlConfig.default_parser(field, None) is None
         # Test with a valid str value.
@@ -370,6 +375,9 @@ class TestTomlConfigNested:
         # Verify the the parsing error is properly caught and wrapped.
         with pytest.raises(RuntimeError):
             ComplexTomlConfig.from_toml(path)
+        field = {
+            field.name: field
+            for field in dataclasses.fields(ComplexTomlConfig)
+        }["demo_a"]
         with pytest.raises(TypeError):
-            field = ComplexTomlConfig.__dataclass_fields__["demo_a"]
             ComplexTomlConfig.default_parser(field, path_bad)
