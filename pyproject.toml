@@ -48,6 +48,7 @@ dependencies = [
 [project.optional-dependencies]
 all = [  # all non-tests extra dependencies
     "dm-haiku == 0.0.9",
+    "jax == 0.4.4",
     "functorch",
     "grpcio >= 1.45",
     "jax[cpu] == 0.4.4",
@@ -66,7 +67,7 @@ grpc = [
     "protobuf >= 3.19",
 ]
 haiku = [
-    "jax[cpu] == 0.4.4",
+    "jax == 0.4.4",
     "dm-haiku == 0.0.9",
 ]
 tensorflow = [
@@ -94,18 +95,6 @@ tests = [
     "pytest >= 6.1",
     "pytest-asyncio",
     "pytest-cov >= 4.0",
-    "jax==0.4.4",
-    "dm-haiku==0.0.9",
-    # other extra dependencies (copy of "all")
-    "dm-haiku == 0.0.9",
-    "functorch",
-    "grpcio >= 1.45",
-    "jax[cpu] == 0.4.4",
-    "opacus ~= 1.1",
-    "protobuf >= 3.19",
-    "tensorflow ~= 2.5",
-    "torch ~= 1.10",
-    "websockets ~= 10.1",
 ]
 
 [project.urls]

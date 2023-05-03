@@ -62,20 +62,6 @@ from declearn.test_utils import FrameworkType
 from declearn.utils import run_as_processes
 from declearn.utils import set_device_policy
 
-# pylint: disable=ungrouped-imports; optional frameworks' dependencies
-try:
-    import tensorflow as tf  # type: ignore
-    from declearn.model.tensorflow import TensorflowModel
-except ModuleNotFoundError:
-    pass
-try:
-    import torch
-    from declearn.model.torch import TorchModel
-except ModuleNotFoundError:
-    pass
-
-
-
 # optional frameworks' dependencies pylint: disable=ungrouped-imports
 # pylint: disable=duplicate-code
 # tensorflow imports
