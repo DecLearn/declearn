@@ -18,7 +18,7 @@
 """Model updates aggregation API."""
 
 from abc import ABCMeta, abstractmethod
-from typing import Any, ClassVar, Dict
+from typing import Any, ClassVar, Dict, TypeVar
 
 from typing_extensions import Self  # future: import from typing (py >=3.11)
 
@@ -28,6 +28,9 @@ from declearn.utils import create_types_registry, register_type
 __all__ = [
     "Aggregator",
 ]
+
+
+T = TypeVar("T")
 
 
 @create_types_registry
@@ -90,9 +93,9 @@ class Aggregator(metaclass=ABCMeta):
     @abstractmethod
     def aggregate(
         self,
-        updates: Dict[str, Vector],
+        updates: Dict[str, Vector[T]],
         n_steps: Dict[str, int],  # revise: abstract~generalize kwargs use
-    ) -> Vector:
+    ) -> Vector[T]:
         """Aggregate input vectors into a single one.
 
         Parameters
@@ -109,6 +112,11 @@ class Aggregator(metaclass=ABCMeta):
         gradients: Vector
             Aggregated updates, as a Vector - treated as gradients by
             the server-side optimizer.
+
+        Raises
+        ------
+        TypeError
+            If the input `updates` are an empty dict.
         """
 
     def get_config(
