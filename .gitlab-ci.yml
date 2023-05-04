@@ -2,6 +2,9 @@
 .config:
   # Official Python language image, in version 3.8(.latest)
   image: python:3.8
+  # Ensure pip cache is preserved.
+  variables:
+    PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
   # Set up a virtual environment, with latest pip and tox installed.
   before_script:
     - python -m venv venv
@@ -15,10 +18,13 @@
         coverage_format: cobertura
         path: coverage.xml
   coverage: /(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/
-  # Run on a shared Gitlab CI Runner.
   tags:
     - ci.inria.fr
-    - medium
+    - small
+
+cache:
+  paths:
+    - .cache/pip
 
 # Basic test suite: skip GPU use and a few extra integration tests scenarios.
 # This job is called when commits are pushed to a non-draft MR branch.
@@ -52,4 +58,7 @@ test-maximal:
           )
     - if: ($CI_PIPELINE_SOURCE == "merge_request_event")
       when: manual
-      allow_failure: true
+      allow_failure: true  # do not block the base "test" pipeline
+  tags:
+    - gpu
+    - magnet
