@@ -259,6 +259,7 @@ class TestHaikuModel(ModelTestSuite):
         criterion_type: str,
     ) -> None:
         """Check that `set_weights` behaves properly with frozen weights."""
+        # similar code to TorchModel tests; pylint: disable=duplicate-code
         # Setup a model with some frozen weights, and gather trainable ones.
         model = test_case.model
         criterion = test_case.get_trainable_criterion(criterion_type)
