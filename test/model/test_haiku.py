@@ -18,7 +18,7 @@
 """Unit tests for HaikuModel."""
 
 import sys
-from typing import Any, List, Literal, Tuple
+from typing import Any, Callable, Dict, List, Literal, Union
 
 import numpy as np
 import pytest
@@ -176,7 +176,8 @@ class HaikuTestCase(ModelTestCase):
             }
         )
         if self.kind == "MLP-tune":
-            model.set_trainable_weights([0, 1, 2])
+            names = model.get_weight_names()
+            model.set_trainable_weights([names[i] for i in range(3)])
         return model
 
     def assert_correct_device(
@@ -190,17 +191,24 @@ class HaikuTestCase(ModelTestCase):
             for arr in vector.coefs.values()
         )
 
-    def get_trainable_criterion(self, c_type: str):
+    def get_trainable_criterion(
+        self,
+        c_type: str,
+    ) -> Union[
+        List[str],
+        Dict[str, Dict[str, Any]],
+        Callable[[str, str, jax.Array], bool],
+    ]:
         "Build different weight freezing criteria"
-        if c_type == "indexes":
-            crit = [2, 3]
+        if c_type == "names":
+            names = self.model.get_weight_names()
+            return [names[2], names[3]]
         if c_type == "pytree":
-            params = self.model.get_named_weights()
-            params.pop(list(params.keys())[1])
-            crit = params
+            params = getattr(self.model, "_params")
+            return {k: v for i, (k, v) in enumerate(params.items()) if i != 1}
         if c_type == "predicate":
-            crit = lambda m, n, p: n != "b"  # pylint: disable=C3001
-        return crit
+            return lambda m, n, p: n != "b"
+        raise KeyError(f"Invalid 'c_type' parameter: {c_type}.")
 
 
 @pytest.fixture(name="test_case")
@@ -230,7 +238,7 @@ class TestHaikuModel(ModelTestSuite):
         super().test_serialization(test_case)
 
     @pytest.mark.parametrize(
-        "criterion_type", ["indexes", "pytree", "predicate"]
+        "criterion_type", ["names", "pytree", "predicate"]
     )
     def test_get_frozen_weights(
         self,
@@ -244,14 +252,14 @@ class TestHaikuModel(ModelTestSuite):
         w_all = model.get_weights()
         w_trn = model.get_weights(trainable=True)
         assert set(w_trn.coefs).issubset(w_all.coefs)  # check on keys
-        n_params = len(model._pleaves)  # pylint: disable=protected-access
-        n_trainable = len(model._trainable)  # pylint: disable=protected-access
+        n_params = len(model.get_weight_names())
+        n_trainable = len(model.get_weight_names(trainable=True))
         assert n_trainable < n_params
         assert len(w_trn.coefs) == n_trainable
         assert len(w_all.coefs) == n_params
 
     @pytest.mark.parametrize(
-        "criterion_type", ["indexes", "pytree", "predicate"]
+        "criterion_type", ["names", "pytree", "predicate"]
     )
     def test_set_frozen_weights(
         self,
@@ -281,7 +289,7 @@ class TestHaikuModel(ModelTestSuite):
         policy = model.device_policy
         assert policy.gpu == (test_case.device == "gpu")
         assert policy.idx == 0
-        params = getattr(model, "_pleaves")
+        params = jax.tree_util.tree_leaves(getattr(model, "_params"))
         device = f"{test_case.device}:0"
         for arr in params:
             assert f"{arr.device().platform}:{arr.device().id}" == device
