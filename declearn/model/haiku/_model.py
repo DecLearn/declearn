@@ -22,10 +22,7 @@ import inspect
 import io
 import warnings
 from random import SystemRandom
-from typing import (
-    # fmt: off
-    Any, Callable, Dict, Iterator, List, Optional, Set, Tuple, Union
-)
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
 
 import haiku as hk
 import jax
@@ -309,21 +306,10 @@ class HaikuModel(Model):
                     "The provided criterion does not conform "
                     "to the expected format and or type."
                 )
-            for layer, name, value in self._traverse_params():
+            gen = hk.data_structures.traverse(self._params)
+            for layer, name, value in gen:
                 if include_fn(layer, name, value):
                     self._trainable.append(f"{layer}:{name}")
-
-    def _traverse_params(self) -> Iterator[Tuple[str, str, jax.Array]]:
-        """Traverse the pytree of a model's named weights.
-
-        Yield (layer_name, weight_name, weight_value) tuples from
-        traversing the pytree left-to-right, depth-first.
-        """
-        yield from (
-            (layer, weight, value)
-            for layer, weights in self._params.items()
-            for weight, value in weights.items()
-        )
 
     @staticmethod
     def _build_include_fn(
