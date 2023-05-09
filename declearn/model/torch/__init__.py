@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tensorflow models interfacing tools.
+"""Pytorch models interfacing tools.
 
 This submodule provides with a generic interface to wrap up any PyTorch
 `torch.nn.Module` instance that is to be trained with gradient descent.

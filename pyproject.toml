@@ -46,10 +46,12 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# all non-docs, non-tests extra dependencies
-all = [
+all = [  # all non-tests extra dependencies
+    "dm-haiku == 0.0.9",
+    "jax == 0.4.4",
     "functorch",
     "grpcio >= 1.45",
+    "jax[cpu] == 0.4.4",
     "opacus ~= 1.1",
     "protobuf >= 3.19",
     "tensorflow ~= 2.5",
@@ -63,6 +65,10 @@ dp = [
 grpc = [
     "grpcio >= 1.45",
     "protobuf >= 3.19",
+]
+haiku = [
+    "jax == 0.4.4",
+    "dm-haiku == 0.0.9",
 ]
 tensorflow = [
     "tensorflow ~= 2.5",

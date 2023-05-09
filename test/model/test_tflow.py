@@ -17,8 +17,8 @@
 
 """Unit tests for TensorflowModel."""
 
-import warnings
 import sys
+import warnings
 from typing import Any, List, Literal
 
 import numpy as np
@@ -38,7 +38,7 @@ from declearn.utils import set_device_policy
 # dirty trick to import from `model_testing.py`;
 # pylint: disable=wrong-import-order, wrong-import-position
 sys.path.append(".")
-from model_testing import ModelTestSuite, ModelTestCase
+from model_testing import ModelTestCase, ModelTestSuite
 
 
 class TensorflowTestCase(ModelTestCase):
@@ -51,7 +51,7 @@ class TensorflowTestCase(ModelTestCase):
                  16-neurons fully-connected layer with ReLU
                  1 output neuron with sigmoid activation
     * "MLP-tune":
-        - same as NLP, but freeze the first layer of the stack
+        - same as MLP, but freeze the first layer of the stack
     * "RNN":
         - input: 128-tokens-sequence in a 100-tokens-vocabulary
         - stack: 32-dimensional embedding matrix

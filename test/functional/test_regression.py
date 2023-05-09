@@ -62,23 +62,43 @@ from declearn.test_utils import FrameworkType
 from declearn.utils import run_as_processes
 from declearn.utils import set_device_policy
 
-# pylint: disable=ungrouped-imports; optional frameworks' dependencies
+# optional frameworks' dependencies pylint: disable=ungrouped-imports
+# pylint: disable=duplicate-code
+# tensorflow imports
 try:
     import tensorflow as tf  # type: ignore
-    from declearn.model.tensorflow import TensorflowModel
 except ModuleNotFoundError:
     pass
+else:
+    from declearn.model.tensorflow import TensorflowModel
+# torch imports
 try:
     import torch
-    from declearn.model.torch import TorchModel
 except ModuleNotFoundError:
     pass
+else:
+    from declearn.model.torch import TorchModel
+# pylint: enable=duplicate-code
+# haiku and jax imports
+try:
+    import haiku as hk
+    import jax
+except ModuleNotFoundError:
+    pass
+else:
+    from declearn.model.haiku import HaikuModel
+
+    def haiku_model_fn(inputs: jax.Array) -> jax.Array:
+        """Simple linear model implemented with Haiku."""
+        return hk.Linear(1)(inputs)
+
+    def haiku_loss_fn(y_pred: jax.Array, y_true: jax.Array) -> jax.Array:
+        """Sample-wise squared error loss function."""
+        return (y_pred - y_true) ** 2
 
 
 SEED = 0
 R2_THRESHOLD = 0.999
-
-# pylint: disable=too-many-function-args
 
 
 def get_model(framework: FrameworkType) -> Model:
@@ -101,6 +121,8 @@ def get_model(framework: FrameworkType) -> Model:
             torch.nn.Flatten(0),
         )
         model = TorchModel(torchmod, loss=torch.nn.MSELoss())
+    elif framework == "jax":
+        model = HaikuModel(haiku_model_fn, loss=haiku_loss_fn)
     else:
         raise ValueError("unrecognised framework")
     return model
@@ -245,7 +267,9 @@ def _server_routine(
     # pylint: disable=too-many-arguments
     # Set up the FederatedServer.
     model = get_model(framework)
-    netwk = NetworkServerConfig("websockets", "127.0.0.1", 8765)
+    netwk = NetworkServerConfig.from_params(
+        protocol="websockets", host="127.0.0.1", port=8765
+    )
     optim = FLOptimConfig.from_params(
         aggregator="averaging",
         client_opt={
@@ -254,7 +278,6 @@ def _server_routine(
         },
         server_opt=1.0,
     )
-
     server = FederatedServer(
         model,
         netwk,
@@ -281,8 +304,9 @@ def _client_routine(
     name: str = "client",
 ) -> None:
     """Routine to run a FL client, called by `run_declearn_experiment`."""
-    # Run the declearn FL client routine.
-    netwk = NetworkClientConfig("websockets", "ws://localhost:8765", name)
+    netwk = NetworkClientConfig.from_params(
+        protocol="websockets", server_uri="ws://localhost:8765", name=name
+    )
     client = FederatedClient(netwk, train, valid)
     client.run()
 
