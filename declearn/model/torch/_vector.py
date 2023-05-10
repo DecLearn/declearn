@@ -48,10 +48,10 @@ class TorchVector(Vector):
     Notes
     -----
     - A `TorchVector` can be operated with either a:
-      - scalar value
-      - `NumpyVector` that has similar specifications
-      - `TorchVector` that has similar specifications
-      => resulting in a `TorchVector` in each of these cases.
+        - scalar value
+        - `NumpyVector` that has similar specifications
+        - `TorchVector` that has similar specifications
+        - => resulting in a `TorchVector` in each of these cases.
     - The wrapped tensors may be placed on any device (CPU, GPU...)
       and may not be all on the same device.
     - The device-placement of the initial `TorchVector`'s data

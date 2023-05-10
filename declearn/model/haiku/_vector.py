@@ -53,10 +53,10 @@ class JaxNumpyVector(Vector):
     Notes
     -----
     - A `JaxnumpyVector` can be operated with either a:
-      - scalar value
-      - `NumpyVector` that has similar specifications
-      - `JaxNumpyVector` that has similar specifications
-      => resulting in a `JaxNumpyVector` in each of these cases.
+        - scalar value
+        - `NumpyVector` that has similar specifications
+        - `JaxNumpyVector` that has similar specifications
+        - => resulting in a `JaxNumpyVector` in each of these cases.
     - The wrapped arrays may be placed on any device (CPU, GPU...)
       and may not be all on the same device.
     - The device-placement of the initial `JaxNumpyVector`'s data

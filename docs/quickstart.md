@@ -52,8 +52,8 @@ declearn-quickrun --config "examples/mnist_quickrun/config.toml"
 
 **To better understand the details** of what happens under the hood you can
 look at what the key element of the declearn process are in
-[section 1.2.](#12-python-script). To understand how to use the quickrun mode
-in practice, see [section 2.1.](#21-quickrun-on-your-problem).
+[section 1.2](#12-python-script). To understand how to use the quickrun mode
+in practice, see [section 2.1](#21-quickrun-on-your-problem).
 
 ### 1.2. Python script
 

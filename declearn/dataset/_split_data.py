@@ -144,7 +144,8 @@ def split_data(
 ) -> None:
     """Randomly split a dataset into shards.
 
-    The resulting folder structure is :
+    The resulting folder structure is:
+
         folder/
         └─── data*/
             └─── client*/

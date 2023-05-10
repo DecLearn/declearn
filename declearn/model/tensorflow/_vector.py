@@ -96,10 +96,10 @@ class TensorflowVector(Vector):
     Notes
     -----
     - A `TensorflowVector` can be operated with either a:
-      - scalar value
-      - `NumpyVector` that has similar specifications
-      - `TensorflowVector` that has similar specifications
-      => resulting in a `TensorflowVector` in each of these cases.
+        - scalar value
+        - `NumpyVector` that has similar specifications
+        - `TensorflowVector` that has similar specifications
+        - => resulting in a `TensorflowVector` in each of these cases.
     - The wrapped tensors may be placed on any device (CPU, GPU...)
       and may not be all on the same device.
     - The device-placement of the initial `TensorflowVector`'s data
