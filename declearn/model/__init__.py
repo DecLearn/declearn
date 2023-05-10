@@ -42,10 +42,13 @@ The automatically-imported submodules implemented here are:
 Optional Submodules
 -------------------
 The optional-dependency-based submodules that may be manually imported are:
-* haiku: jax- and haiku-interfacing tools
-    - HaikuModel: Model to wrap a haiku-transformable model function.
-    - JaxNumpyVector: Vector for jax array data structures.
 
+* [haiku][declearn.model.haiku]:
+    Jax- and Haiku-interfacing tools.
+    - [HaikuModel][declearn.model.haiku.HaikuModel]:
+        Model to wrap a haiku-transformable model function.
+    - [JaxNumpyVector][declearn.model.haiku.JaxNumpyVector]:
+        Vector for jax array data structures.
 * [tensorflow][declearn.model.tensorflow]:
     TensorFlow-interfacing tools
     - [TensorflowModel][declearn.model.tensorflow.TensorflowModel]:
@@ -68,7 +71,7 @@ from . import api
 from . import sklearn
 
 OPTIONAL_MODULES = [
-    "jax",
+    "haiku",
     "tensorflow",
     "torch",
 ]
