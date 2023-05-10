@@ -183,7 +183,7 @@ class TestTensorflowModel(ModelTestSuite):
     ) -> None:
         """Check that `get_weights` behaves properly with frozen weights."""
         model = test_case.model
-        tfmod = getattr(model, "_model")  # type: tf.keras.Sequential
+        tfmod = model.get_wrapped_model()
         tfmod.layers[0].trainable = False  # freeze the first layer's weights
         w_all = model.get_weights()
         w_trn = model.get_weights(trainable=True)
@@ -198,7 +198,7 @@ class TestTensorflowModel(ModelTestSuite):
         """Check that `set_weights` behaves properly with frozen weights."""
         # Setup a model with some frozen weights, and gather trainable ones.
         model = test_case.model
-        tfmod = getattr(model, "_model")  # type: tf.keras.Sequential
+        tfmod = model.get_wrapped_model()
         tfmod.layers[0].trainable = False  # freeze the first layer's weights
         w_trn = model.get_weights(trainable=True)
         # Test that `set_weights` works if and only if properly parametrized.
@@ -217,7 +217,7 @@ class TestTensorflowModel(ModelTestSuite):
         policy = model.device_policy
         assert policy.gpu == (test_case.device == "GPU")
         assert policy.idx == 0
-        tfmod = getattr(model, "_model")
+        tfmod = model.get_wrapped_model()
         device = f"{test_case.device}:0"
         for var in tfmod.weights:
             assert var.device.endswith(device)

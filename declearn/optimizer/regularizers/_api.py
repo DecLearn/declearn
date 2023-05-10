@@ -18,7 +18,7 @@
 """Base API for loss regularization optimizer plug-ins."""
 
 from abc import ABCMeta, abstractmethod
-from typing import Any, ClassVar, Dict
+from typing import Any, ClassVar, Dict, TypeVar
 
 from typing_extensions import Self  # future: import from typing (py >=3.11)
 
@@ -32,6 +32,9 @@ from declearn.utils import (
 __all__ = [
     "Regularizer",
 ]
+
+
+T = TypeVar("T")
 
 
 @create_types_registry
@@ -115,9 +118,9 @@ class Regularizer(metaclass=ABCMeta):
     @abstractmethod
     def run(
         self,
-        gradients: Vector,
-        weights: Vector,
-    ) -> Vector:
+        gradients: Vector[T],
+        weights: Vector[T],
+    ) -> Vector[T]:
         """Compute and add the regularization term's derivative to gradients.
 
         Parameters

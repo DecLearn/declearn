@@ -168,7 +168,7 @@ class TorchModel(Model):
         # Note: calling `tensor.clone()` to return a copy rather than a view.
         return TorchVector({k: t.detach().clone() for k, t in weights.items()})
 
-    def set_weights(  # type: ignore  # Vector subtype specification
+    def set_weights(
         self,
         weights: TorchVector,
         trainable: bool = False,
@@ -378,7 +378,7 @@ class TorchModel(Model):
             return grads_fn
         return functorch.compile.aot_function(grads_fn, functorch.compile.nop)
 
-    def apply_updates(  # type: ignore  # Vector subtype specification
+    def apply_updates(
         self,
         updates: TorchVector,
     ) -> None:

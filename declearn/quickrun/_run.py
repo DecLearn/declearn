@@ -175,7 +175,7 @@ def server_to_client_network(
     "Convert server network config to client network config."
     return NetworkClientConfig.from_params(
         protocol=network_cfg.protocol,
-        server_uri=f"ws://localhost:{network_cfg.port}",
+        server_uri=network_cfg.build_server().uri,
         name="replaceme",
     )
 

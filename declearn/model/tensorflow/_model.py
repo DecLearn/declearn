@@ -183,7 +183,7 @@ class TensorflowModel(Model):
         )
         return TensorflowVector({var.name: var.value() for var in variables})
 
-    def set_weights(  # type: ignore  # Vector subtype specification
+    def set_weights(
         self,
         weights: TensorflowVector,
         trainable: bool = False,
@@ -319,7 +319,7 @@ class TensorflowModel(Model):
             outp.append(tf.reduce_mean(grad * s_wght, axis=0))
         return outp
 
-    def apply_updates(  # type: ignore  # Vector subtype specification
+    def apply_updates(
         self,
         updates: TensorflowVector,
     ) -> None:

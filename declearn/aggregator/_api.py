@@ -18,16 +18,23 @@
 """Model updates aggregation API."""
 
 from abc import ABCMeta, abstractmethod
-from typing import Any, ClassVar, Dict
+from typing import Any, ClassVar, Dict, Type, TypeVar
 
 from typing_extensions import Self  # future: import from typing (py >=3.11)
 
 from declearn.model.api import Vector
-from declearn.utils import create_types_registry, register_type
+from declearn.utils import (
+    access_types_mapping,
+    create_types_registry,
+    register_type,
+)
 
 __all__ = [
     "Aggregator",
 ]
+
+
+T = TypeVar("T")
 
 
 @create_types_registry
@@ -90,9 +97,9 @@ class Aggregator(metaclass=ABCMeta):
     @abstractmethod
     def aggregate(
         self,
-        updates: Dict[str, Vector],
+        updates: Dict[str, Vector[T]],
         n_steps: Dict[str, int],  # revise: abstract~generalize kwargs use
-    ) -> Vector:
+    ) -> Vector[T]:
         """Aggregate input vectors into a single one.
 
         Parameters
@@ -109,6 +116,11 @@ class Aggregator(metaclass=ABCMeta):
         gradients: Vector
             Aggregated updates, as a Vector - treated as gradients by
             the server-side optimizer.
+
+        Raises
+        ------
+        TypeError
+            If the input `updates` are an empty dict.
         """
 
     def get_config(
@@ -124,3 +136,29 @@ class Aggregator(metaclass=ABCMeta):
     ) -> Self:
         """Instantiate an Aggregator from its configuration dict."""
         return cls(**config)
+
+
+def list_aggregators() -> Dict[str, Type[Aggregator]]:
+    """Return a mapping of registered Aggregator subclasses.
+
+    This function aims at making it easy for end-users to list and access
+    all available Aggregator classes at any given time. The returned dict
+    uses unique identifier keys, which may be used to specify the desired
+    algorithm as part of a federated learning process without going through
+    the fuss of importing and instantiating it manually.
+
+    Note that the mapping will include all declearn-provided plug-ins,
+    but also registered plug-ins provided by user or third-party code.
+
+    See also
+    --------
+    * [declearn.aggregator.Aggregator][]:
+        API-defining abstract base class for the aggregation algorithms.
+
+    Returns
+    -------
+    mapping:
+        Dictionary mapping unique str identifiers to `Aggregator` class
+        constructors.
+    """
+    return access_types_mapping("Aggregator")

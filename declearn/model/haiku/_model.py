@@ -22,10 +22,7 @@ import inspect
 import io
 import warnings
 from random import SystemRandom
-from typing import (
-    # fmt: off
-    Any, Callable, Dict, List, Optional, Set, Tuple, Union
-)
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
 
 import haiku as hk
 import jax
@@ -205,7 +202,7 @@ class HaikuModel(Model):
             params = {k: v for k, v in params.items() if k in self._trainable}
         return JaxNumpyVector(params)
 
-    def set_weights(  # type: ignore  # Vector subtype specification
+    def set_weights(
         self,
         weights: JaxNumpyVector,
         trainable: bool = False,
@@ -466,7 +463,7 @@ class HaikuModel(Model):
         output = [list(map(convert, inputs)), convert(y_true), convert(s_wght)]
         return output  # type: ignore
 
-    def apply_updates(  # type: ignore  # Vector subtype specification
+    def apply_updates(
         self,
         updates: JaxNumpyVector,
     ) -> None:

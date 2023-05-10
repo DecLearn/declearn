@@ -17,7 +17,10 @@
 
 """Base class to define gradient-descent-based optimizers."""
 
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Type, Union
+from typing import (
+    # fmt: off
+    Any, Dict, List, Optional, Sequence, Tuple, Type, TypeVar, Union
+)
 
 from typing_extensions import Self  # future: import from typing (py >=3.11)
 
@@ -29,6 +32,9 @@ from declearn.typing import Batch
 __all__ = [
     "Optimizer",
 ]
+
+
+T = TypeVar("T")
 
 
 class Optimizer:
@@ -103,6 +109,13 @@ class Optimizer:
     [1] Loshchilov & Hutter, 2019.
         Decoupled Weight Decay Regularization.
         https://arxiv.org/abs/1711.05101
+
+    See also
+    --------
+    - [declearn.optimizer.list_optim_modules][]:
+        Return a mapping of registered OptiModule subclasses.
+    - [declearn.optimizer.list_optim_regularizers][]:
+        Return a mapping of registered Regularizer subclasses.
     """
 
     def __init__(
@@ -255,9 +268,9 @@ class Optimizer:
 
     def compute_updates_from_gradients(
         self,
-        model: Model,
-        gradients: Vector,
-    ) -> Vector:
+        model: Model[Vector[T]],
+        gradients: Vector[T],
+    ) -> Vector[T]:
         """Compute and return model updates based on pre-computed gradients.
 
         Parameters
@@ -393,8 +406,8 @@ class Optimizer:
 
     def apply_gradients(
         self,
-        model: Model,
-        gradients: Vector,
+        model: Model[Vector[T]],
+        gradients: Vector[T],
     ) -> None:
         """Compute and apply model updates based on pre-computed gradients.
 

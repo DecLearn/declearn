@@ -58,29 +58,35 @@ class NumpyVector(Vector):
     """
 
     @property
-    def _op_add(self) -> Callable[[Any, Any], Any]:
+    def _op_add(self) -> Callable[[Any, Any], np.ndarray]:
         return np.add
 
     @property
-    def _op_sub(self) -> Callable[[Any, Any], Any]:
+    def _op_sub(self) -> Callable[[Any, Any], np.ndarray]:
         return np.subtract
 
     @property
-    def _op_mul(self) -> Callable[[Any, Any], Any]:
+    def _op_mul(self) -> Callable[[Any, Any], np.ndarray]:
         return np.multiply
 
     @property
-    def _op_div(self) -> Callable[[Any, Any], Any]:
+    def _op_div(self) -> Callable[[Any, Any], np.ndarray]:
         return np.divide
 
     @property
-    def _op_pow(self) -> Callable[[Any, Any], Any]:
+    def _op_pow(self) -> Callable[[Any, Any], np.ndarray]:
         return np.power
 
-    def __init__(self, coefs: Dict[str, np.ndarray]) -> None:
+    def __init__(
+        self,
+        coefs: Dict[str, np.ndarray],
+    ) -> None:
         super().__init__(coefs)
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(
+        self,
+        other: Any,
+    ) -> bool:
         valid = isinstance(other, NumpyVector)
         if valid:
             valid = self.coefs.keys() == other.coefs.keys()

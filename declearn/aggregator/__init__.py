@@ -17,22 +17,32 @@
 
 """Model updates aggregating API and implementations.
 
-An Aggregator is typically meant to be used on a round-wise basis by
+An `Aggregator` is typically meant to be used on a round-wise basis by
 the orchestrating server of a centralized federated learning process,
-to aggregate the client-wise model updated into a Vector that may then
-be used as "gradients" by the server's Optimizer to update the global
+to aggregate the client-wise model updated into a `Vector` that may then
+be used as "gradients" by the server's `Optimizer` to update the global
 model.
 
 This declearn submodule provides with:
 
+API tools
+---------
+
 * [Aggregator][declearn.aggregator.Aggregator]:
-    abstract class defining an API for Vector aggregation
+    Abstract base class defining an API for Vector aggregation.
+* [list_aggregators][declearn.aggregator.list_aggregators]:
+    Return a mapping of registered Aggregator subclasses.
+
+
+Concrete classes
+----------------
+
 * [AveragingAggregator][declearn.aggregator.AveragingAggregator]:
-    average-based-aggregation Aggregator subclass
+    Average-based-aggregation Aggregator subclass.
 * [GradientMaskedAveraging][declearn.aggregator.GradientMaskedAveraging]:
-    gradient Masked Averaging Aggregator subclass
+    Gradient Masked Averaging Aggregator subclass.
 """
 
-from ._api import Aggregator
+from ._api import Aggregator, list_aggregators
 from ._base import AveragingAggregator
 from ._gma import GradientMaskedAveraging
