@@ -74,23 +74,23 @@ class JaxNumpyVector(Vector):
     """
 
     @property
-    def _op_add(self) -> Callable[[Any, Any], Any]:
+    def _op_add(self) -> Callable[[Any, Any], jax.Array]:
         return jnp.add
 
     @property
-    def _op_sub(self) -> Callable[[Any, Any], Any]:
+    def _op_sub(self) -> Callable[[Any, Any], jax.Array]:
         return jnp.subtract
 
     @property
-    def _op_mul(self) -> Callable[[Any, Any], Any]:
+    def _op_mul(self) -> Callable[[Any, Any], jax.Array]:
         return jnp.multiply
 
     @property
-    def _op_div(self) -> Callable[[Any, Any], Any]:
+    def _op_div(self) -> Callable[[Any, Any], jax.Array]:
         return jnp.divide
 
     @property
-    def _op_pow(self) -> Callable[[Any, Any], Any]:
+    def _op_pow(self) -> Callable[[Any, Any], jax.Array]:
         return jnp.power
 
     @property
@@ -104,7 +104,7 @@ class JaxNumpyVector(Vector):
     def _apply_operation(
         self,
         other: Any,
-        func: Callable[[Any, Any], Any],
+        func: Callable[[jax.Array, Any], jax.Array],
     ) -> Self:
         # Ensure 'other' JaxNumpyVector shares this vector's device placement.
         if isinstance(other, JaxNumpyVector):
