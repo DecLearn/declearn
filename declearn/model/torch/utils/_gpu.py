@@ -46,7 +46,7 @@ def select_device(
 
     Warns
     -----
-    UserWarning
+    RuntimeWarning
         If `gpu=True` but no GPU is available.
         If `idx` exceeds the number of available GPU devices.
 
@@ -69,7 +69,8 @@ def select_device(
     if (idx or 0) >= torch.cuda.device_count():
         warnings.warn(
             f"Cannot use GPU device n°{idx}: index is out-of-range.\n"
-            f"Using GPU device n°{torch.cuda.current_device()} instead."
+            f"Using GPU device n°{torch.cuda.current_device()} instead.",
+            RuntimeWarning,
         )
         idx = None
     # Return the selected or auto-selected GPU device index.

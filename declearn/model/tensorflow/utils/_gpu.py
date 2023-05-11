@@ -48,7 +48,7 @@ def select_device(
 
     Warns
     -----
-    UserWarning
+    RuntimeWarning
         If `gpu=True` but no GPU is available.
         If `idx` exceeds the number of available GPU devices.
 
@@ -73,7 +73,8 @@ def select_device(
     if idx >= len(devices):
         warnings.warn(
             f"Cannot use {device_type} device n°{idx}: index is out-of-range."
-            f"\nUsing {device_type} device n°0 instead."
+            f"\nUsing {device_type} device n°0 instead.",
+            RuntimeWarning,
         )
         idx = 0
     # Return the selected device.

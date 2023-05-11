@@ -42,7 +42,7 @@ def select_device(
 
     Warns
     -----
-    UserWarning:
+    RuntimeWarning:
         If `gpu=True` but no GPU is available.
         If `idx` exceeds the number of available GPU devices.
 
@@ -62,6 +62,7 @@ def select_device(
             warnings.warn(
                 "Cannot use a GPU device: either CUDA is unavailable "
                 f"or no GPU is visible to jax: raised {repr(exc)}.",
+                RuntimeWarning,
             )
             return select_device(gpu=False, idx=0)
         # Case when no CPU is found: this should never be reached.
@@ -74,6 +75,7 @@ def select_device(
         warnings.warn(
             f"Cannot use {device_type} device n°{idx}: index is out-of-range."
             f"\nUsing {device_type} device n°0 instead.",
+            RuntimeWarning,
         )
         idx = 0
     # Return the selected device.
