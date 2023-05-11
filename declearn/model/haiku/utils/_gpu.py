@@ -21,7 +21,6 @@ import warnings
 from typing import Optional
 
 import jax
-import jaxlib.xla_extension as xe
 
 __all__ = ["select_device"]
 
@@ -29,7 +28,7 @@ __all__ = ["select_device"]
 def select_device(
     gpu: bool,
     idx: Optional[int] = None,
-) -> xe.Device:  # pylint: disable=c-extension-no-member
+) -> jax.Device:
     """Select a backing device to use based on inputs and availability.
 
     Parameters
@@ -53,23 +52,28 @@ def select_device(
         Selected device.
     """
     idx = 0 if idx is None else idx
-    # List available CPU or GPU devices.
     device_type = "gpu" if gpu else "cpu"
-    devices = [d for d in jax.devices() if d.platform == device_type]
-    # Case when no GPU is available: warn and use a CPU instead.
-    if gpu and not devices:
-        warnings.warn(
-            "Cannot use a GPU device: either CUDA is unavailable "
-            "or no GPU is visible to jax."
-        )
-        device_type, idx = "cpu", 0
+    # List devices, handling errors related to the lack of GPU (or CPU error).
+    try:
         devices = jax.devices(device_type)
+    except RuntimeError as exc:
+        # Warn about the lack of GPU (support?), and fall back to CPU.
+        if gpu:
+            warnings.warn(
+                "Cannot use a GPU device: either CUDA is unavailable "
+                f"or no GPU is visible to jax: raised {repr(exc)}.",
+            )
+            return select_device(gpu=False, idx=0)
+        # Case when no CPU is found: this should never be reached.
+        raise RuntimeError(  # pragma: no cover
+            "Failed to have jax select a CPU device."
+        ) from exc
     # similar code to tensorflow util; pylint: disable=duplicate-code
     # Case when the desired device index is invalid: select another one.
     if idx >= len(devices):
         warnings.warn(
             f"Cannot use {device_type} device n°{idx}: index is out-of-range."
-            f"\nUsing {device_type} device n°0 instead."
+            f"\nUsing {device_type} device n°0 instead.",
         )
         idx = 0
     # Return the selected device.

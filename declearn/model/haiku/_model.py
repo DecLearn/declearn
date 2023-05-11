@@ -97,12 +97,11 @@ class HaikuModel(Model):
             number generator. If none is provided, draw an integer between
             0 and 10^6 using `random.SystemRandom`.
         """
-        super().__init__(model)
-        # Assign loss module.
-        self._loss_fn = loss
-        # Get pure functions from haiku transform.
+        # Transform the input function using Haiku, and wrap the result.
+        super().__init__(hk.transform(model))
+        # Assign the loss function, and initial model one.
         self._model_fn = model
-        self._transformed_model = hk.transform(model)
+        self._loss_fn = loss
         # Select the device where to place computations.
         policy = get_device_policy()
         self._device = select_device(gpu=policy.gpu, idx=policy.idx)
@@ -113,7 +112,9 @@ class HaikuModel(Model):
         # Initialize the PRNG.
         if seed is None:
             seed = int(SystemRandom().random() * 10e6)
-        self._rng_gen = hk.PRNGSequence(seed)
+        self._rng_gen = hk.PRNGSequence(
+            jax.device_put(np.array([0, seed], dtype="uint32"), self._device)
+        )
         # Initialized and data_info utils
         self._initialized = False
         self.data_info = {}  # type: Dict[str, Any]
@@ -141,13 +142,15 @@ class HaikuModel(Model):
         self.data_info = aggregate_data_info(
             [data_info], self.required_data_info
         )
-        # Initialize the model parameters.
-        params = self._transformed_model.init(
-            next(self._rng_gen),
-            jnp.zeros(
-                (1, *data_info["features_shape"]), data_info["data_type"]
-            ),
-        )
+        # Initialize the model parameters, using zero-valued inputs.
+        inputs = jax.device_put(
+            np.zeros((1, *data_info["features_shape"])), self._device
+        ).astype(data_info["data_type"])
+        with warnings.catch_warnings():  # jax.jit(device=...) is deprecated
+            warnings.simplefilter("ignore", DeprecationWarning)
+            params = jax.jit(self._model.init, device=self._device)(
+                next(self._rng_gen), inputs
+            )  # NOTE: jit is used to force haiku's device selection
         self._params = jax.device_put(params, self._device)
         self._pnames = [
             f"{layer}:{weight}"
@@ -426,7 +429,7 @@ class HaikuModel(Model):
         """
         inputs, y_true, s_wght = batch
         params = hk.data_structures.merge(train_params, fixed_params)
-        y_pred = self._transformed_model.apply(params, rng, *inputs)
+        y_pred = self._model.apply(params, rng, *inputs)
         s_loss = self._loss_fn(y_pred, y_true)  # type: ignore
         if s_wght is not None:
             s_loss = s_loss * s_wght
@@ -440,7 +443,7 @@ class HaikuModel(Model):
     ]:
         """Lazy-built jax function to compute clipped sample-wise gradients.
 
-        Note : The vmap in_axis parameters work thank to the jax feature of
+        Note: The vmap in_axis parameters work thank to the jax feature of
         applying optional parameters to pytrees.
         """
 
@@ -468,15 +471,17 @@ class HaikuModel(Model):
         in_axes = [None, None, None, 0, None]  # map on inputs' first dimension
         return jax.jit(jax.vmap(clipped_grad_fn, in_axes))
 
-    @staticmethod
-    def _unpack_batch(batch: Batch) -> JaxBatch:
+    def _unpack_batch(
+        self,
+        batch: Batch,
+    ) -> JaxBatch:
         """Unpack and enforce jnp.array conversion to an input data batch."""
 
         def convert(data: Any) -> Optional[jax.Array]:
-            if (data is None) or isinstance(data, jax.Array):
+            if data is None:
                 return data
-            if isinstance(data, np.ndarray):
-                return jnp.array(data)  # pylint: disable=no-member
+            if isinstance(data, (jax.Array, np.ndarray)):
+                return jax.device_put(data, self._device)
             raise TypeError("HaikuModel requires numpy or jax.numpy data.")
 
         # similar code to TorchModel; pylint: disable=duplicate-code
@@ -510,21 +515,31 @@ class HaikuModel(Model):
                 "correct the inputs, or override this method to support "
                 "creating labels from the base inputs."
             )
-        y_pred = self._transformed_model.apply(
-            self._params, next(self._rng_gen), *inputs
-        )
+        y_pred = self._predict_fn(self._params, next(self._rng_gen), *inputs)
         return (
             np.asarray(y_true),
             np.asarray(y_pred),
             None if s_wght is None else np.asarray(s_wght),
         )
 
+    @functools.cached_property
+    def _predict_fn(
+        self,
+    ) -> Callable[[hk.Params, jax.Array, jax.Array], jax.Array]:
+        """Lazy-built jax function to run in inference on a given device."""
+        with warnings.catch_warnings():  # jax.jit(device=...) is deprecated
+            warnings.simplefilter("ignore", DeprecationWarning)
+            return jax.jit(self._model.apply, device=self._device)
+
     def loss_function(
         self,
         y_true: np.ndarray,
         y_pred: np.ndarray,
     ) -> np.ndarray:
-        s_loss = self._loss_fn(jnp.array(y_pred), jnp.array(y_true))
+        s_loss = self._loss_fn(
+            jax.device_put(y_pred, self._device),
+            jax.device_put(y_true, self._device),
+        )
         return np.array(s_loss).squeeze()
 
     def update_device_policy(
@@ -540,3 +555,5 @@ class HaikuModel(Model):
         if self._device is not device:
             self._device = device
             self._params = jax.device_put(self._params, self._device)
+            # Delete a cached, device-committed JIT function.
+            del self._predict_fn

@@ -18,6 +18,7 @@
 """Unit tests for HaikuModel."""
 
 import sys
+import warnings
 from typing import Any, Callable, Dict, List, Literal, Union
 
 import numpy as np
@@ -143,6 +144,7 @@ class HaikuTestCase(ModelTestCase):
         self,
     ) -> List[Batch]:
         """Suited toy binary-classification dataset."""
+        # Generate data using numpy.
         rng = np.random.default_rng(seed=0)
         if self.kind.startswith("MLP"):
             inputs = rng.normal(size=(2, 32, 64)).astype("float32")
@@ -151,9 +153,11 @@ class HaikuTestCase(ModelTestCase):
         elif self.kind == "CNN":
             inputs = rng.normal(size=(2, 32, 64, 64, 3)).astype("float32")
         labels = rng.choice(2, size=(2, 32))
-        inputs = jnp.asarray(inputs)  # type: ignore
-        labels = jnp.asarray(labels)  # type: ignore
-        batches = list(zip(inputs, labels, [None, None]))
+        # Convert that data to jax-numpy and return it.
+        with warnings.catch_warnings():  # jax.jit(device=...) is deprecated
+            warnings.simplefilter("ignore", DeprecationWarning)
+            convert = jax.jit(jnp.asarray, backend=self.device)
+            batches = list(zip(convert(inputs), convert(labels), [None, None]))
         return batches  # type: ignore
 
     @property
@@ -215,13 +219,20 @@ class HaikuTestCase(ModelTestCase):
 def fixture_test_case(
     kind: Literal["MLP", "MLP-tune", "RNN", "CNN"],
     device: Literal["cpu", "gpu"],
+    cpu_only: bool,
 ) -> HaikuTestCase:
     """Fixture to access a TensorflowTestCase."""
+    if cpu_only and (device == "gpu"):
+        pytest.skip(reason="--cpu-only mode")
     return HaikuTestCase(kind, device)
 
 
 DEVICES = ["cpu"]
-if any(d.platform == "gpu" for d in jax.devices()):
+try:
+    jax.devices("gpu")
+except RuntimeError:
+    pass
+else:
     DEVICES.append("gpu")
 
 
