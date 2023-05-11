@@ -159,6 +159,20 @@ declearn.utils.set_device_policy(gpu=True)  # use any available GPU
 declearn.utils.set_device_policy(gpu=True, idx=2)  # specifically use GPU n°2
 ```
 
+**Known issues**:
+
+- For Haiku / Jax, GPU support must be installed manually by end-users, as it
+  is dependent on your local CUDA version, and as such cannot be easily shipped
+  as part of declearn's dependencies specification. You most probably will need
+  to run `pip install jax[cudaXX_pip]==0.4`, where `XX` is either `11`, `12`,
+  or your more recent CUDA version. For more details, please refer to Jax's
+  [installation instructions](https://github.com/google/jax#installation).
+- For Torch, if you have an unsupported CUDA and/or cuDNN version installed,
+  the package may not work at all (even on CPU). This is an issue with Torch,
+  and we advise you to report to their documentation or issue tracker if you
+  need help fixing it - see for example their installation instructions for
+  [version 1.13](https://pytorch.org/get-started/previous-versions/#v1131).
+
 ## Dependency sharing
 
 One important issue that is not currently handled by declearn itself is that
