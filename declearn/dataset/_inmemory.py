@@ -29,15 +29,12 @@ from typing_extensions import Self  # future: import from typing (py >=3.11)
 
 from declearn.dataset._base import Dataset, DataSpecs
 from declearn.dataset.utils import load_data_array, save_data_array
-from declearn.typing import Batch
+from declearn.typing import Batch, DataArray
 from declearn.utils import json_dump, json_load, register_type
 
 __all__ = [
     "InMemoryDataset",
 ]
-
-
-DataArray = Union[np.ndarray, pd.DataFrame, spmatrix]
 
 
 @register_type(group="Dataset")
@@ -140,8 +137,9 @@ class InMemoryDataset(Dataset):
                 isinstance(self.data, pd.DataFrame)
                 and target in self.data.columns
             ):
-                if f_cols is None:
-                    self.f_cols = self.f_cols or list(self.data.columns)
+                if self.f_cols is None:
+                    self.f_cols = list(self.data.columns)
+                if target in self.f_cols:
                     self.f_cols.remove(target)  # type: ignore
                 target = self.data[target]
             else:

@@ -20,12 +20,16 @@
 from abc import ABCMeta, abstractmethod
 from typing import Any, Dict, List, Optional, Protocol, Tuple, Union
 
+import numpy as np
+import pandas as pd
 from numpy.typing import ArrayLike
+from scipy.sparse import spmatrix  # type: ignore
 from typing_extensions import Self  # future: import from typing (Py>=3.11)
 
 
 __all__ = [
     "Batch",
+    "DataArray",
     "SupportsConfig",
 ]
 
@@ -42,6 +46,15 @@ This type-hint designates (inputs, labels, weights) inputs, where:
 - inputs and labels may be an array or a list of arrays;
 - labels and/or weights may be None;
 """  # this is rendered as a docstring for `Batch` in the docs
+
+
+DataArray = Union[np.ndarray, pd.DataFrame, pd.Series, spmatrix]
+"""Type-annotation alias for a union of data type structures.
+
+This alias covers types supported by [declearn.dataset.utils.save_data_array][]
+and its counterpart [declearn.dataset.utils.load_data_array][], and is hence
+used to annotate some dataset-interfacing tools under [declearn.dataset][].
+"""
 
 
 class SupportsConfig(Protocol, metaclass=ABCMeta):
