@@ -59,7 +59,7 @@ def select_device(
 
     Returns
     -------
-    device: tf.config.LogicalDevice
+    device:
         Selected device, usable as `tf.device` argument.
     """
     idx = 0 if idx is None else idx
@@ -106,14 +106,15 @@ def move_layer_to_device(
 
     Returns
     -------
-    layer: tf_keras.layers.Layer
+    layer:
         Copy of the input layer, with its weights backed on `device`.
     """
     config = tf_keras.layers.serialize(layer)
-    weights = layer.get_weights()
+    weights = layer.get_weights() if layer.built else None
     with tf.device(device):
         layer = tf_keras.layers.deserialize(config)
-        layer.set_weights(weights)
+        if weights:
+            layer.set_weights(weights)
     return layer
 
 
