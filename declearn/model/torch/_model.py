@@ -17,25 +17,21 @@
 
 """Model subclass to wrap PyTorch models."""
 
-import functools
 import io
+import functools
 import warnings
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
-import functorch  # type: ignore
-
-try:
-    import functorch.compile  # type: ignore
-except ModuleNotFoundError:
-    COMPILE_AVAILABLE = False
-else:
-    COMPILE_AVAILABLE = True
 import numpy as np
 import torch
 from typing_extensions import Self  # future: import from typing (py >=3.11)
 
 from declearn.model.api import Model
 from declearn.model.torch.utils import AutoDeviceModule, select_device
+from declearn.model.torch._samplewise import (
+    GetGradientsFunction,
+    build_samplewise_grads_fn,
+)
 from declearn.model.torch._vector import TorchVector
 from declearn.model._utils import raise_on_stringsets_mismatch
 from declearn.typing import Batch
@@ -108,8 +104,6 @@ class TorchModel(Model):
             raise TypeError("'loss' should be a torch.nn.Module instance.")
         loss.reduction = "none"  # type: ignore
         self._loss_fn = AutoDeviceModule(loss, device=device)
-        # Compute and assign a functional version of the model.
-        self._func_model, _ = functorch.make_functional(self._model)
 
     @property
     def device_policy(
@@ -281,8 +275,8 @@ class TorchModel(Model):
         max_norm: float,
     ) -> TorchVector:
         """Compute and return batch-averaged sample-wise-clipped gradients."""
-        # Compute sample-wise clipped gradients, using functorch.
-        grads = self._compute_samplewise_gradients(batch, max_norm)
+        # Compute sample-wise clipped gradients, using functional torch.
+        grads = self._compute_samplewise_gradients(batch, clip=max_norm)
         # Batch-average the resulting sample-wise gradients.
         return TorchVector(
             {name: tensor.mean(dim=0) for name, tensor in grads.coefs.items()}
@@ -291,92 +285,48 @@ class TorchModel(Model):
     def _compute_samplewise_gradients(
         self,
         batch: Batch,
-        max_norm: Optional[float],
+        clip: Optional[float],
     ) -> TorchVector:
         """Compute and return stacked sample-wise gradients over a batch."""
-        # Unpack the inputs, gather parameters and list gradients to compute.
         inputs, y_true, s_wght = self._unpack_batch(batch)
-        params = []  # type: List[torch.nn.Parameter]
-        idxgrd = []  # type: List[int]
-        pnames = []  # type: List[str]
-        for index, (name, param) in enumerate(self._model.named_parameters()):
-            params.append(param)
-            if param.requires_grad:
-                idxgrd.append(index + 3)
-                pnames.append(name)
-        # Gather or build the sample-wise clipped gradients computing function.
         grads_fn = self._build_samplewise_grads_fn(
-            idxgrd=tuple(idxgrd),
             inputs=len(inputs),
             y_true=(y_true is not None),
             s_wght=(s_wght is not None),
         )
-        # Call it on the current inputs, with optional clipping.
         with torch.no_grad():
-            grads = grads_fn(inputs, y_true, s_wght, *params, clip=max_norm)
-        # Wrap the results into a TorchVector and return it.
-        return TorchVector(dict(zip(pnames, grads)))
+            grads = grads_fn(inputs, y_true, s_wght, clip=clip)  # type: ignore
+        return TorchVector(grads)
 
     @functools.lru_cache
     def _build_samplewise_grads_fn(
         self,
-        idxgrd: Tuple[int, ...],
         inputs: int,
         y_true: bool,
         s_wght: bool,
-    ) -> Callable[..., List[torch.Tensor]]:
-        """Build a functorch-based sample-wise gradients-computation function.
+    ) -> GetGradientsFunction:
+        """Build an optimizer sample-wise gradients-computation function.
 
         This function is cached, i.e. repeated calls with the same parameters
         will return the same object - enabling to reduce runtime costs due to
         building and (when available) compiling the output function.
 
-        Parameters
-        ----------
-        idxgrd: tuple of int
-            Pre-incremented indices of the parameters that require gradients.
-        inputs: int
-            Number of input tensors.
-        y_true: bool
-            Whether a true labels tensor is provided.
-        s_wght: bool
-            Whether a sample weights tensor is provided.
-
         Returns
         -------
-        grads_fn: callable[inputs, y_true, s_wght, *params, /, clip]
-            Functorch-optimized function to efficiently compute sample-
-            wise gradients based on batched inputs, and optionally clip
-            them based on a maximum l2-norm value `clip`.
+        grads_fn: callable[[inputs, y_true, s_wght, clip], grads]
+            Function to efficiently compute and return sample-wise gradients
+            wrt trainable model parameters based on a batch of inputs, with
+            opt. clipping based on a maximum l2-norm value `clip`.
+
+        Note
+        ----
+        The underlying backend code depends on your Torch version, so as to
+        enable optimizing operations using either `functorch` for torch 1.1X
+        or `torch.func` for torch 2.X.
         """
-
-        def forward(inputs, y_true, s_wght, *params):
-            """Conduct the forward pass in a functional way."""
-            y_pred = self._func_model(params, *inputs)
-            return self._compute_loss(y_pred, y_true, s_wght)
-
-        def grads_fn(inputs, y_true, s_wght, *params, clip=None):
-            """Compute gradients and optionally clip them."""
-            gfunc = functorch.grad(forward, argnums=idxgrd)
-            grads = gfunc(inputs, y_true, None, *params)
-            if clip:
-                for grad in grads:
-                    # future: use torch.linalg.norm when supported by functorch
-                    norm = torch.norm(grad, p=2, keepdim=True)
-                    # false-positive; pylint: disable=no-member
-                    grad.mul_(torch.clamp(clip / norm, max=1))
-                    if s_wght is not None:
-                        grad.mul_(s_wght.to(grad.device))
-            return grads
-
-        # Wrap the former function to compute and clip sample-wise gradients.
-        in_axes = [[0] * inputs, 0 if y_true else None, 0 if s_wght else None]
-        in_axes.extend([None] * sum(1 for _ in self._model.parameters()))
-        grads_fn = functorch.vmap(grads_fn, tuple(in_axes))
-        # Compile the resulting function to decrease runtime costs.
-        if not COMPILE_AVAILABLE:
-            return grads_fn
-        return functorch.compile.aot_function(grads_fn, functorch.compile.nop)
+        return build_samplewise_grads_fn(
+            self._model, self._loss_fn, inputs, y_true, s_wght
+        )
 
     def apply_updates(
         self,
