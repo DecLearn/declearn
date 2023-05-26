@@ -54,7 +54,6 @@ The documentation is structured this way:
 """
 
 
-
 def generate_index():
     """Fill-in the main index file based on the README one."""
     # Parse contents from the README file and write up the index.md one.
@@ -98,32 +97,70 @@ def generate_api_docs():
         submodules=True,
         try_relative_path=True,
     )
-    parse_module(module, docdir, root=True)
+    generate_module_docs(module, docdir, root=True)
 
 
-def parse_module(
+def generate_module_docs(
     module: griffe.dataclasses.Module,
     docdir: str,
     root: bool = False,
 ) -> str:
-    """Recursively auto-generate markdown files for a module."""
+    """Recursively generate markdown files for a module's documentation."""
     # Case of file-based public module (`module.py`).
     if not module.is_init_module:
-        path = os.path.join(docdir, f"{module.name}.md")
-        with open(path, "w", encoding="utf-8") as file:
-            file.write(f"::: {module.path}")
-        return f"{module.name}.md"
+        return _generate_public_module_file_docs(module, docdir)
     # Case of folder-based public module (`module/`)
+    return _generate_public_module_folder_docs(module, docdir, root)
+
+
+def _generate_public_module_file_docs(
+    module: griffe.dataclasses.Module,
+    docdir: str,
+) -> str:
+    """Create a markdown file for a public single-file module."""
+    path = os.path.join(docdir, f"{module.name}.md")
+    with open(path, "w", encoding="utf-8") as file:
+        file.write(f"::: {module.path}")
+    return f"{module.name}.md"
+
+
+def _generate_public_module_folder_docs(
+    module: griffe.dataclasses.Module,
+    docdir: str,
+    root: bool = False,
+) -> str:
+    """Create markdown files for a public folder-based module."""
     # Create a dedicated folder.
     if not root:  # skip for the main folder
         docdir = os.path.join(docdir, module.name)
         os.makedirs(docdir)
-    # Recursively create folders and files for public submodules.
+    # Parse through public and private submodules to generate doc files.
+    pub_mod = _generate_public_submodules_doc(module, docdir)
+    pub_obj = _generate_private_submodules_content_doc(module, docdir, pub_mod)
+    # Generate summary files.
+    _generate_overview_file(module, docdir)
+    _generate_literate_nav_summary(module, docdir, pub_obj, pub_mod)
+    return f"{module.name}/"
+
+
+def _generate_public_submodules_doc(
+    module: griffe.dataclasses.Module,
+    docdir: str,
+) -> Dict[str, str]:
+    """Create files for public submodules of a base module."""
     pub_mod = {}
     for key, mod in module.modules.items():
         if not key.startswith("_"):
-            pub_mod[key] = parse_module(mod, docdir)
-    # Create files for classes and functions exported from private submodules.
+            pub_mod[key] = generate_module_docs(mod, docdir)
+    return pub_mod
+
+
+def _generate_private_submodules_content_doc(
+    module: griffe.dataclasses.Module,
+    docdir: str,
+    pub_mod: Dict[str, str],
+) -> Dict[str, str]:
+    """Create files for public contents from a module's private submodules."""
     pub_obj = {}
     for key, obj in module.members.items():
         if obj.is_module or obj.module.name in pub_mod or key.startswith("_"):
@@ -134,18 +171,32 @@ def parse_module(
         with open(path, "w", encoding="utf-8") as file:
             file.write(f"#`{obj.path}`\n::: {obj.path}")
         pub_obj[key] = f"{obj.name}.md"
-    # Write up an overview file based on the '__init__.py' docs.
+    return pub_obj
+
+
+def _generate_overview_file(
+    module: griffe.dataclasses.Module,
+    docdir: str,
+) -> None:
+    """Write up an overview file based on a module's '__init__.py'."""
     path = os.path.join(docdir, "index.md")
     with open(path, "w", encoding="utf-8") as file:
         file.write(f"::: {module.path}")
-    # Write up a literate-nav summary file based on the created files.
+
+
+def _generate_literate_nav_summary(
+    module: griffe.dataclasses.Module,
+    docdir: str,
+    pub_obj: Dict[str, str],
+    pub_mod: Dict[str, str],
+) -> None:
+    """Write up a literate-nav summary file based on created doc files."""
     index = rf"- [\[{module.name}\]](./index.md)"
     index += "".join(f"\n- [{k}](./{pub_obj[k]})" for k in sorted(pub_obj))
     index += "".join(f"\n- [{k}](./{pub_mod[k]})" for k in sorted(pub_mod))
     path = os.path.join(docdir, "SUMMARY.md")
     with open(path, "w", encoding="utf-8") as file:
         file.write(index)
-    return f"{module.name}/"
 
 
 if __name__ == "__main__":
