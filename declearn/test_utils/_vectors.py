@@ -18,11 +18,11 @@
 """Shared objects for testing purposes."""
 
 import importlib
+import importlib.metadata
 import typing
 from typing import List, Literal, Optional, Type
 
 import numpy as np
-import pkg_resources  # type: ignore
 from numpy.typing import ArrayLike
 
 from declearn.model.api import Vector
@@ -43,8 +43,8 @@ def list_available_frameworks() -> List[FrameworkType]:
     available = []
     for framework in typing.get_args(FrameworkType):
         try:
-            pkg_resources.require(framework)
-        except pkg_resources.DistributionNotFound:
+            importlib.metadata.distribution(framework)
+        except importlib.metadata.PackageNotFoundError:
             pass
         else:
             available.append(framework)
