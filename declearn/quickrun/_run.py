@@ -143,19 +143,32 @@ def run_client(
 def get_toml_folder(config: str) -> Tuple[str, str]:
     """Return the path to an experiment's folder and TOML config file.
 
-    Determine if provided config is a file or a directory, and return:
+    Parameters
+    ----------
+    config: str
+        Path to either a TOML config file (within an experiment folder),
+        or to the experiment folder containing a "config.toml" file.
 
-    * The path to the TOML config file
-    * The path to the main folder of the experiment
+    Returns
+    -------
+    toml:
+        The path to the TOML config file.
+    folder:
+        The path to the main folder of the experiment.
+
+    Raises
+    ------
+    FileNotFoundError:
+        If the TOML config file cannot be found based on inputs.
     """
     config = os.path.abspath(config)
-    if os.path.isfile(config):
-        toml = config
-        folder = os.path.dirname(config)
-    elif os.path.isdir(config):
+    if os.path.isdir(config):
         folder = config
-        toml = f"{folder}/config.toml"
+        toml = os.path.join(folder, "config.toml")
     else:
+        toml = config
+        folder = os.path.dirname(toml)
+    if not os.path.isfile(toml):
         raise FileNotFoundError(
             f"Failed to find quickrun config file at '{config}'."
         )

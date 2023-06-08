@@ -103,8 +103,8 @@ def parse_data_folder(
 
 
 def get_data_folder_path(
-    data_folder: Optional[str],
-    root_folder: Optional[str],
+    data_folder: Optional[str] = None,
+    root_folder: Optional[str] = None,
 ) -> Path:
     """Return the path to a data folder.
 
@@ -158,7 +158,7 @@ def get_data_folder_path(
 
 def list_client_names(
     data_folder: Path,
-    client_names: Optional[List[str]],
+    client_names: Optional[List[str]] = None,
 ) -> List[str]:
     """List client-wise subdirectories under a data folder.
 
