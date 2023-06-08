@@ -36,7 +36,7 @@ def test_load_heart_uci(tmpdir: str) -> None:
     assert tcol in data.columns
     # Test that re-loading the dataset works.
     with mock.patch(
-        "declearn.dataset.examples._heart_uci.download_heart_uci_shard"
+        "declearn.dataset.examples._heart_uci.download_heart_uci"
     ) as patch_download:
         data_bis, tcol_bis = load_heart_uci("va", folder=tmpdir)
         patch_download.assert_not_called()
