@@ -22,15 +22,13 @@ from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass
 from typing import Any, ClassVar, Iterator, List, Optional, Set, Tuple, Union
 
-from typing_extensions import Self  # future: import from typing (py >=3.11)
 
 from declearn.typing import Batch
-from declearn.utils import access_registered, create_types_registry, json_load
+from declearn.utils import create_types_registry, json_load, access_registered
 
 __all__ = [
     "DataSpecs",
     "Dataset",
-    "load_dataset_from_json",
 ]
 
 
@@ -96,28 +94,6 @@ class Dataset(metaclass=ABCMeta):
     _type_key: ClassVar[str] = NotImplemented
 
     @abstractmethod
-    def save_to_json(
-        self,
-        path: str,
-    ) -> None:
-        """Write a JSON file enabling dataset re-creation.
-
-        Parameters
-        ----------
-        path: str
-            Path to the main JSON file where to dump the dataset.
-            Additional files may be created in the same folder.
-        """
-
-    @classmethod
-    @abstractmethod
-    def load_from_json(
-        cls,
-        path: str,
-    ) -> Self:
-        """Instantiate a dataset based on local files."""
-
-    @abstractmethod
     def get_data_specs(
         self,
     ) -> DataSpecs:
@@ -129,6 +105,7 @@ class Dataset(metaclass=ABCMeta):
         batch_size: int,
         shuffle: bool = False,
         drop_remainder: bool = True,
+        replacement: bool = False,
         poisson: bool = False,
     ) -> Iterator[Batch]:
         """Yield batches of data samples.
@@ -146,6 +123,9 @@ class Dataset(metaclass=ABCMeta):
             samples than `batch_size`, or yield it anyway.
             If `poisson=True`, this is used to determine the number
             of returned batches (notwithstanding their actual size).
+        replacement: bool, default=False
+            Whether to do randopm sampling with or without replacement.
+            Ignored if shuffle = False or poisson = True.
         poisson: bool, default=False
             Whether to use Poisson sampling, i.e. make up batches by
             drawing samples with replacement, resulting in variable-
