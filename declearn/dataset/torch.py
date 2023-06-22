@@ -1,19 +1,7 @@
 import dataclasses
-import functools
 import importlib
-import os
-import warnings
-from typing import (
-    Any,
-    ClassVar,
-    Dict,
-    Iterator,
-    List,
-    Optional,
-    Set,
-    Tuple,
-    Union,
-)
+from functools import partial
+from typing import Any, ClassVar, Iterator, List, Optional, Tuple, Union
 
 import torch
 from torch.utils.data import BatchSampler, DataLoader
@@ -55,8 +43,8 @@ class TorchDataset(Dataset):
             An torch Dataset instance built by the user, to be wrapped in
             declearn. The dataset's `__getitem__` method is expected to
             return either a single torch.Tensor (the model inputs) or a
-            tuple of (model input, optional label, optional sample weights)
-            as torch.Tensors or list of torch.Tensors".
+            tuple of (model inputs, optional label, optional sample weights)
+            as torch.Tensors or list of torch.Tensors.
         target: data array or str or None, default=None
             Optional data array containing target labels (for supervised
             learning)
@@ -67,7 +55,7 @@ class TorchDataset(Dataset):
             the dataset is (optionally) shuffled when generating batches.
         """
         super().__init__()
-        self.dataset = self.validate_dataset(dataset)
+        self.dataset = dataset  # TODO self.validate_dataset(dataset)
         # Assign a random number generator.
         self.seed = seed
         self.gen = None
@@ -185,29 +173,34 @@ class TorchDataset(Dataset):
         [Batch][declearn.typing.Batch].
         """
 
-        def transform(data_item: Any) -> TorchBatch:
-            if isinstance(data_item, torch.Tensor):
-                out = (data_item, None, None)
-            elif isinstance(data_item, tuple):
-                if len(data_item) == 1:
-                    out = (data_item, None, None)
-                elif len(data_item) == 2:
-                    out = (data_item[0], data_item[1], None)
-                elif len(data_item) == 3:
-                    out = data_item
-            else:
-                raise ValueError(
-                    "Your orignal Torch Dataset should return either a single"
-                    "torch.Tensor (the model inputs) or a tuple of (model"
-                    "input, optional label, optional sample weights) as torch"
-                    ".Tensors"
-                )
-            return out
-
-        def new_getitem(*args):
-            out = getitem(*args)
-            return transform(out)
-
         getitem = getattr(dataset, "__getitem__")
-        setattr(dataset, "__getitem__", new_getitem)
+        setattr(dataset, "__getitem__", partial(new_getitem, getitem=getitem))
         return dataset
+
+
+# Utility functions
+
+
+def transform(data_item: Any) -> TorchBatch:
+    if isinstance(data_item, torch.Tensor):
+        out = (data_item, None, None)
+    elif isinstance(data_item, tuple):
+        if len(data_item) == 1:
+            out = (data_item, None, None)
+        elif len(data_item) == 2:
+            out = (data_item[0], data_item[1], None)
+        elif len(data_item) == 3:
+            out = data_item
+    else:
+        raise ValueError(
+            "Your orignal Torch Dataset should return either a single"
+            "torch.Tensor (the model inputs) or a tuple of (model"
+            "inputs, optional label, optional sample weights) as torch"
+            ".Tensors"
+        )
+    return out
+
+
+def new_getitem(*args, getitem):
+    out = getitem(*args)
+    return transform(out)

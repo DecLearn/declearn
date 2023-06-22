@@ -22,9 +22,8 @@ from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass
 from typing import Any, ClassVar, Iterator, List, Optional, Set, Tuple, Union
 
-
 from declearn.typing import Batch
-from declearn.utils import create_types_registry, json_load, access_registered
+from declearn.utils import access_registered, create_types_registry, json_load
 
 __all__ = [
     "DataSpecs",
@@ -45,7 +44,9 @@ class DataSpecs:
     """
 
     n_samples: int
-    features_shape: Union[Tuple[Optional[int], ...], List[Optional[int]]]
+    features_shape: Optional[
+        Union[Tuple[Optional[int], ...], List[Optional[int]]]
+    ] = None
     classes: Optional[Set[Any]] = None
     data_type: Optional[str] = None
     n_features: Optional[int] = None  # DEPRECATED as of declearn v2.2
@@ -73,7 +74,8 @@ class DataSpecs:
                     "Both 'features_shape' and deprecated 'n_features' were "
                     "passed to 'DataSpecs.__init__', with incoherent values."
                 )
-        self.n_features = self.features_shape[-1]
+        if self.features_shape:
+            self.n_features = self.features_shape[-1]
 
 
 @create_types_registry
