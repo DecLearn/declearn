@@ -59,8 +59,7 @@ from declearn.model.api import Model
 from declearn.model.sklearn import SklearnSGDModel
 from declearn.optimizer import Optimizer
 from declearn.test_utils import FrameworkType
-from declearn.utils import run_as_processes
-from declearn.utils import set_device_policy
+from declearn.utils import run_as_processes, set_device_policy
 
 # optional frameworks' dependencies pylint: disable=ungrouped-imports
 # pylint: disable=duplicate-code
@@ -77,7 +76,23 @@ try:
 except ModuleNotFoundError:
     pass
 else:
+    from declearn.dataset._torch import TorchDataset
     from declearn.model.torch import TorchModel
+
+    class CustomDataset(torch.utils.data.Dataset):
+        def __init__(self, inputs, labels) -> None:
+            self.inputs = inputs
+            self.labels = labels
+
+        def __len__(self):
+            return len(self.labels)
+
+        def __getitem__(
+            self, idx: int
+        ) -> Tuple[torch.Tensor, torch.Tensor, None]:
+            return self.inputs[idx, :], self.labels[idx]
+
+
 # pylint: enable=duplicate-code
 # haiku and jax imports
 try:
@@ -128,7 +143,14 @@ def get_model(framework: FrameworkType) -> Model:
     return model
 
 
+def get_dataset(framework: FrameworkType, inputs, labels):
+    if framework == "torch":
+        return TorchDataset(CustomDataset(inputs, labels))
+    return InMemoryDataset(inputs, labels)
+
+
 def prep_client_datasets(
+    framework: FrameworkType,
     clients: int = 3,
     n_train: int = 100,
     n_valid: int = 50,
@@ -149,6 +171,7 @@ def prep_client_datasets(
     datasets: list[(InMemoryDataset, InMemoryDataset)]
         List of client-wise (train, valid) pair of datasets.
     """
+
     n_samples = clients * (n_train + n_valid)
     # false-positive; pylint: disable=unbalanced-tuple-unpacking
     inputs, target = make_regression(
@@ -161,8 +184,8 @@ def prep_client_datasets(
         start = (n_train + n_valid) * idx
         mid = start + n_train
         end = mid + n_valid
-        train = InMemoryDataset(inputs[start:mid], target[start:mid])
-        valid = InMemoryDataset(inputs[mid:end], target[mid:end])
+        train = get_dataset(framework, inputs[start:mid], target[start:mid])
+        valid = get_dataset(framework, inputs[mid:end], target[mid:end])
         out.append((train, valid))
     return out
 
@@ -237,7 +260,7 @@ def test_declearn_experiment(
             (folder, framework, lrate, rounds, b_size, clients),
         )
         # Set up the (func, args) tuples specifying client-wise processes.
-        datasets = prep_client_datasets(clients)
+        datasets = prep_client_datasets(framework, clients)
         p_client = []
         for i, data in enumerate(datasets):
             client = (_client_routine, (data[0], data[1], f"client_{i}"))

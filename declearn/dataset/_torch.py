@@ -1,7 +1,17 @@
 import dataclasses
 import importlib
-from functools import partial
-from typing import Any, ClassVar, Iterator, List, Optional, Tuple, Union
+from functools import cache, partial
+from typing import (
+    Any,
+    Callable,
+    ClassVar,
+    Dict,
+    Iterator,
+    List,
+    Optional,
+    Tuple,
+    Union,
+)
 
 import torch
 from torch.utils.data import BatchSampler, DataLoader
@@ -55,7 +65,7 @@ class TorchDataset(Dataset):
             the dataset is (optionally) shuffled when generating batches.
         """
         super().__init__()
-        self.dataset = dataset  # TODO self.validate_dataset(dataset)
+        self.dataset = dataset
         # Assign a random number generator.
         self.seed = seed
         self.gen = None
@@ -67,11 +77,12 @@ class TorchDataset(Dataset):
         self,
     ) -> DataSpecs:
         """Return a DataSpecs object describing this dataset."""
-        specs = {"n_samples": len(self.dataset)}
+        specs = {"n_samples": len(self.dataset)}  # type: ignore
         run_cond = hasattr(self.dataset, "get_specs")
-        if run_cond and isinstance(self.dataset.get_specs(), dict):
-            self.check_dataset_specs(specs)
-            specs.update(self.dataset.specs)
+        if run_cond and isinstance(self.dataset.get_specs(), dict):  # type: ignore
+            user_specs = self.dataset.get_specs()  # type: ignore
+            self.check_dataset_specs(user_specs)
+            specs.update(user_specs)
         return DataSpecs(**specs)
 
     def generate_batches(
@@ -143,8 +154,12 @@ class TorchDataset(Dataset):
                 batch_size=batch_size,
                 drop_last=drop_remainder,
             )
+        data_item_info = get_data_item_info(self.dataset[0])
+        my_collate = self.get_custom_collate(data_item_info)  # type: ignore
         yield from DataLoader(
-            dataset=self.dataset, batch_sampler=batch_sampler
+            dataset=self.dataset,
+            batch_sampler=batch_sampler,
+            collate_fn=my_collate,
         )
 
     @staticmethod
@@ -162,45 +177,44 @@ class TorchDataset(Dataset):
                 )
 
     @staticmethod
-    def validate_dataset(
-        dataset: OriginalTorchDataset,
-    ) -> OriginalTorchDataset:
-        """Check that the user-defined dataset `__getitem__` method returns a
-        valid input for declearn-based optimization, and if not overides that
-        method. Some corner cases not covered.
+    def get_custom_collate(data_item_info: Dict[str, Any]) -> Callable:
+        """Given the type and lenght of the items returned by
+        `self.dataset.__getitem__()`, returns the appropriate utility function
+        to cast the data items to the expected output format. This function
+        is meant to be used  as an argument to the torch Dataloader.
 
-        Note : the dataset needs to return a something easily castable to a
-        [Batch][declearn.typing.Batch].
         """
-
-        getitem = getattr(dataset, "__getitem__")
-        setattr(dataset, "__getitem__", partial(new_getitem, getitem=getitem))
-        return dataset
+        return partial(transform_batch, data_item_info=data_item_info)
 
 
 # Utility functions
 
 
-def transform(data_item: Any) -> TorchBatch:
+def get_data_item_info(data_item) -> Optional[Dict[str, Any]]:
+    """Check that the user-defined dataset `__getitem__` method returns a
+    data_item that is easily castable to the format expected for
+    declearn-based optimization. If not, raises an error."""
     if isinstance(data_item, torch.Tensor):
-        out = (data_item, None, None)
-    elif isinstance(data_item, tuple):
-        if len(data_item) == 1:
-            out = (data_item, None, None)
-        elif len(data_item) == 2:
-            out = (data_item[0], data_item[1], None)
-        elif len(data_item) == 3:
-            out = data_item
+        return {"type": torch.Tensor, "len": None}
+    if isinstance(data_item, tuple) and 0 < len(data_item) < 4:
+        return {"type": tuple, "len": len(data_item)}
+    raise ValueError(
+        "Your orignal Torch Dataset should return either a single"
+        "torch.Tensor (the model inputs) or a tuple of (model"
+        "inputs, optional label, optional sample weights) as torch"
+        ".Tensors"
+    )
+
+
+def transform_batch(batch, data_item_info) -> TorchBatch:
+    """
+    Based on the type and shape of data items, returns a tuple of lenght
+    three containing the batched data and patched with Nones.
+    """
+    original_batch = torch.utils.data.default_collate(batch)
+    if isinstance(data_item_info["type"], torch.Tensor):
+        out = (original_batch, None, None)
     else:
-        raise ValueError(
-            "Your orignal Torch Dataset should return either a single"
-            "torch.Tensor (the model inputs) or a tuple of (model"
-            "inputs, optional label, optional sample weights) as torch"
-            ".Tensors"
-        )
+        patch = [None for _ in range(3 - data_item_info["len"])]
+        out = (*original_batch, *patch)  # type: ignore
     return out
-
-
-def new_getitem(*args, getitem):
-    out = getitem(*args)
-    return transform(out)
