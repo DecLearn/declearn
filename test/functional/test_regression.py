@@ -81,8 +81,8 @@ else:
 
     class CustomDataset(torch.utils.data.Dataset):
         def __init__(self, inputs, labels) -> None:
-            self.inputs = inputs
-            self.labels = labels
+            self.inputs = torch.from_numpy(inputs)
+            self.labels = torch.from_numpy(labels)
 
         def __len__(self):
             return len(self.labels)

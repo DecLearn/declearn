@@ -78,9 +78,9 @@ class TorchDataset(Dataset):
     ) -> DataSpecs:
         """Return a DataSpecs object describing this dataset."""
         specs = {"n_samples": len(self.dataset)}  # type: ignore
-        run_cond = hasattr(self.dataset, "get_specs")
-        if run_cond and isinstance(self.dataset.get_specs(), dict):  # type: ignore
-            user_specs = self.dataset.get_specs()  # type: ignore
+        run_cond = hasattr(self.dataset, "get_data_specs")
+        if run_cond and isinstance(self.dataset.get_data_specs(), dict):  # type: ignore
+            user_specs = self.dataset.get_data_specs()  # type: ignore
             self.check_dataset_specs(user_specs)
             specs.update(user_specs)
         return DataSpecs(**specs)
@@ -168,7 +168,7 @@ class TorchDataset(Dataset):
         method returns valid [DataSpecs][declearn.dataset.Dataspecs]
         fields."""
         acceptable = {f.name for f in dataclasses.fields(DataSpecs)}
-        for key, _ in specs:
+        for key in specs.keys():
             if key not in acceptable:
                 raise ValueError(
                     "All keys of the dictionnary returned by your original Torch"
@@ -193,7 +193,12 @@ class TorchDataset(Dataset):
 def get_data_item_info(data_item) -> Optional[Dict[str, Any]]:
     """Check that the user-defined dataset `__getitem__` method returns a
     data_item that is easily castable to the format expected for
-    declearn-based optimization. If not, raises an error."""
+    declearn-based optimization. If not, raises an error.
+
+    Note : we assume that if the dataset returns a tuple of tensors of
+    the form (input,label,weights). The edge case with no labels provided
+    but the sample weights is not currently covered."""
+
     if isinstance(data_item, torch.Tensor):
         return {"type": torch.Tensor, "len": None}
     if isinstance(data_item, tuple) and 0 < len(data_item) < 4:
@@ -212,7 +217,7 @@ def transform_batch(batch, data_item_info) -> TorchBatch:
     three containing the batched data and patched with Nones.
     """
     original_batch = torch.utils.data.default_collate(batch)
-    if isinstance(data_item_info["type"], torch.Tensor):
+    if data_item_info["type"] == torch.Tensor:
         out = (original_batch, None, None)
     else:
         patch = [None for _ in range(3 - data_item_info["len"])]

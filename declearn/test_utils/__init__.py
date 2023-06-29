@@ -33,6 +33,8 @@ from ._assertions import (
     assert_dict_equal,
     assert_list_equal,
     assert_json_serializable_dict,
+    assert_batch_equal,
+    to_numpy
 )
 from ._gen_ssl import generate_ssl_certificates
 from ._imports import make_importable

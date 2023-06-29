@@ -17,18 +17,23 @@
 
 """Custom "assert" functions commonly used in declearn tests."""
 
+import importlib
 import json
-from typing import Any, Dict, List, Optional, Tuple, Union
+from collections.abc import Generator, Sequence
+from typing import Any, Dict, List, Optional, Tuple, Type, Union
 
 import numpy as np
+from numpy.testing import assert_array_equal
+from numpy.typing import ArrayLike
 
 from declearn.utils import json_pack, json_unpack
-
 
 __all__ = [
     "assert_dict_equal",
     "assert_json_serializable_dict",
     "assert_list_equal",
+    "assert_batch_equal",
+    "to_numpy",
 ]
 
 
@@ -192,3 +197,71 @@ def assert_values_equal(
         assert np.allclose(val_a, val_b, atol=np_tolerance, rtol=0.0)
     else:
         assert val_a == val_b
+
+
+def flatten_and_assert(
+    nested_x: Sequence,
+    nested_y: Sequence,
+    unpack_types: Tuple[Type] = (list, set, tuple),
+) -> Generator:
+    """
+    Utility function to jointly flatten two arbitrality nested combination of
+    iterables, and ensure the type and len of the elements of both inputs is
+    similar along the way.
+
+    Parameters
+    ----------
+    nested_x: Sequence
+        A possibly nested sequence to flatten and compare with nested_y
+    nested_y: Sequence
+        A possibly nested sequence to flatten and compare with nested_x
+    unpack_type: Tuple[Type], default = (list, set, tuple)
+        The dobject types considered for flattening. Can be replaced by
+        collections.abc.Iterable for the broadest unpacking policy, but
+        this is not tested.
+
+    Note : The function only unpacks the types provided as part of the
+    `unpack_type` argument."""
+
+    for idx, el_x in enumerate(nested_x):
+        el_y = nested_y[idx]
+        if isinstance(el_x, unpack_types):
+            assert isinstance(el_y, type(el_x))
+            assert len(el_x) == len(el_y)
+            yield from flatten_and_assert(el_x, el_y)
+        else:
+            yield el_x, el_y
+
+
+def to_numpy(array: ArrayLike, framework: str) -> np.ndarray:
+    """Convert an input framework-based structure to a numpy array."""
+    if isinstance(array, np.ndarray):
+        return array
+    if framework == "jax":
+        return np.asarray(array)
+    if framework == "tensorflow":  # add support for IndexedSlices
+        tensorflow = importlib.import_module("tensorflow")
+        if isinstance(array, tensorflow.IndexedSlices):
+            with tensorflow.device(array.device):
+                return tensorflow.convert_to_tensor(array).numpy()
+    return array.numpy()  # type: ignore
+
+
+def assert_batch_equal(
+    result: Sequence, expected: Sequence, framework: str
+) -> None:
+    """Utility function to test that a batch of the declearn.typing.Batch
+    type is equal to an expected, numpy-based declearn.typing.Batch output.
+    """
+    # Flatten and assert type and shape of the arbitrarily nested batch
+    gen = flatten_and_assert(result, expected)
+    # Check all elements are equal
+    for out in gen:
+        res, exp = out
+        # batchj element is None
+        if res is None:
+            assert exp is None
+        # batch element is a tensor
+        else:
+            res = to_numpy(res, framework)
+            assert_array_equal(res, exp)
