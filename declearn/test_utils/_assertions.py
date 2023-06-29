@@ -202,7 +202,7 @@ def assert_values_equal(
 def flatten_and_assert(
     nested_x: Sequence,
     nested_y: Sequence,
-    unpack_types: Tuple[Type] = (list, set, tuple),
+    unpack_types: Tuple[Type[Any], ...] = (list, set, tuple),
 ) -> Generator:
     """
     Utility function to jointly flatten two arbitrality nested combination of

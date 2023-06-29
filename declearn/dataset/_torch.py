@@ -1,6 +1,25 @@
+# coding: utf-8
+
+# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# et Automatique)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Dataset implementation to serve torch datasets."""
+
 import dataclasses
 import importlib
-from functools import cache, partial
+from functools import partial
 from typing import (
     Any,
     Callable,
@@ -31,8 +50,18 @@ TorchBatch = Tuple[
 
 @register_type(group="Dataset")
 class TorchDataset(Dataset):
-    """wrapping torch dataset"""
+    """Dataset subclass serving torch Datasets.
 
+    This subclass implements:
+
+    * yielding (X, [y], [w]) batches matching the expected batch
+      format, with each elements being either a torch.tensor,
+      an iterable of torch.tensors, or None
+    * loading the source data from which batches are derived
+      using the provided torch.dataset
+    """
+
+    # arguments serve modularity; pylint: disable=too-many-arguments
     _type_key: ClassVar[str] = "TorchDataset"
 
     def __init__(
@@ -71,19 +100,22 @@ class TorchDataset(Dataset):
         self.gen = None
         if self.seed is not None:
             torch.manual_seed(self.seed)
+            # pylint: disable=no-member
             self.gen = torch.Generator().manual_seed(seed)
 
     def get_data_specs(
         self,
     ) -> DataSpecs:
         """Return a DataSpecs object describing this dataset."""
-        specs = {"n_samples": len(self.dataset)}  # type: ignore
-        run_cond = hasattr(self.dataset, "get_data_specs")
-        if run_cond and isinstance(self.dataset.get_data_specs(), dict):  # type: ignore
-            user_specs = self.dataset.get_data_specs()  # type: ignore
-            self.check_dataset_specs(user_specs)
-            specs.update(user_specs)
-        return DataSpecs(**specs)
+        specs = {"n_samples": len(self.dataset)}  # Dict[str, Any]
+        if hasattr(self.dataset, "get_data_specs"):
+            user_specs = self.dataset.get_data_specs()
+            cond = isinstance(user_specs, dict)  # type: ignore
+            if cond:
+                user_specs = self.dataset.get_data_specs()  # type: ignore
+                self.check_dataset_specs(user_specs)
+                specs.update(user_specs)
+        return DataSpecs(**specs)  # type: ignore
 
     def generate_batches(
         self,
@@ -135,7 +167,7 @@ class TorchDataset(Dataset):
             sampler_class = importlib.import_module(module)
             n_samples = len(self.dataset)
             rate = batch_size / n_samples
-            batch_sampler = sampler_class(
+            batch_sampler = sampler_class(  # type: ignore
                 num_samples=n_samples,
                 sample_rate=rate,
                 generator=self.gen,
@@ -171,9 +203,10 @@ class TorchDataset(Dataset):
         for key in specs.keys():
             if key not in acceptable:
                 raise ValueError(
-                    "All keys of the dictionnary returned by your original Torch"
-                    "Dataset method `get_specs()` must conform to one of the fields"
-                    f"found in `declearn.dataset.DataSpecs`. '{key}' did not. "
+                    "All keys of the dictionnary returned by your original"
+                    " Torch Dataset method `get_specs()` must conform to one"
+                    "of the fields found in `declearn.dataset.DataSpecs`."
+                    f"'{key}' did not. "
                 )
 
     @staticmethod
@@ -190,7 +223,7 @@ class TorchDataset(Dataset):
 # Utility functions
 
 
-def get_data_item_info(data_item) -> Optional[Dict[str, Any]]:
+def get_data_item_info(data_item) -> Dict[str, Any]:
     """Check that the user-defined dataset `__getitem__` method returns a
     data_item that is easily castable to the format expected for
     declearn-based optimization. If not, raises an error.
@@ -217,6 +250,7 @@ def transform_batch(batch, data_item_info) -> TorchBatch:
     three containing the batched data and patched with Nones.
     """
     original_batch = torch.utils.data.default_collate(batch)
+    out: TorchBatch
     if data_item_info["type"] == torch.Tensor:
         out = (original_batch, None, None)
     else:

@@ -19,9 +19,8 @@
 
 import sys
 import warnings
-from typing import Any, List, Literal
+from typing import List, Literal
 
-import numpy as np
 import pytest
 
 try:

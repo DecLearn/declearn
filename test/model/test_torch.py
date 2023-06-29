@@ -22,7 +22,6 @@ import sys
 import typing
 from typing import Any, List, Literal, Tuple
 
-import numpy as np
 import pytest
 
 try:

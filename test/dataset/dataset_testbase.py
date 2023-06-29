@@ -1,16 +1,36 @@
+# coding: utf-8
+
+# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# et Automatique)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Unit tests for instances of 'declearn.dataset.Dataset'"""
+
 from abc import abstractmethod
 from dataclasses import asdict
-from typing import Any, Tuple
 
 import numpy as np
-from numpy.testing import assert_array_equal
 
-from declearn.dataset import Dataset, DataSpecs
+from declearn.dataset import Dataset
 from declearn.test_utils import assert_batch_equal, to_numpy
 
 
 class DatasetTestToolbox:
+
     """TestCase fixture-provider protocol."""
+
+    # pylint: disable=too-few-public-methods
 
     framework: str
 
@@ -23,7 +43,6 @@ class DatasetTestToolbox:
     @abstractmethod
     def get_dataset(self) -> Dataset:
         """Convert the test data into a framework-specific dataset"""
-
 
 
 class DatasetTestSuite:

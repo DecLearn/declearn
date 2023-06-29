@@ -70,6 +70,7 @@ class InMemoryDataset(Dataset):
     """
 
     # attributes serve clarity; pylint: disable=too-many-instance-attributes
+    # arguments serve modularity; pylint: disable=too-many-arguments
 
     _type_key: ClassVar[str] = "InMemoryDataset"
 

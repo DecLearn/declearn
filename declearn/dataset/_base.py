@@ -93,6 +93,7 @@ class Dataset(metaclass=ABCMeta):
     straightforward to specify as part of FL algorithms.
     """
 
+    # arguments serve modularity; pylint: disable=too-many-arguments
     _type_key: ClassVar[str] = NotImplemented
 
     @abstractmethod

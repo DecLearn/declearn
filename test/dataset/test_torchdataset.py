@@ -1,3 +1,22 @@
+# coding: utf-8
+
+# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# et Automatique)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Unit tests objects for 'declearn.dataset.TorchDataset'"""
+
 import sys
 from dataclasses import asdict
 from typing import Tuple
@@ -9,13 +28,25 @@ import torch
 from declearn.dataset import TorchDataset, transform_batch
 from declearn.test_utils import assert_batch_equal, to_numpy
 
+# Relative imports from the unit tests code of the parent class.
+# pylint: disable=wrong-import-order, wrong-import-position
+# fmt: off
 sys.path.append(".")
 from dataset_testbase import DatasetTestSuite, DatasetTestToolbox
+
+sys.path.pop()
+# pylint: enable=wrong-import-order, wrong-import-position
+# fmt: on
+
+# false-positives; pylint: disable=no-member
 
 SEED = 0
 
 
 class CustomDataset(torch.utils.data.Dataset):
+
+    """Basic torch.utils.data.Dataset for testing purposes"""
+
     def __init__(self, inputs, labels, weights) -> None:
         self.inputs = inputs
         self.labels = labels
@@ -30,12 +61,15 @@ class CustomDataset(torch.utils.data.Dataset):
         return self.inputs[idx, :], self.labels[idx], self.weights[idx]
 
     def get_data_specs(self):
+        """Basic get_data_spec method"""
         return {"classes": tuple(range(1, 5))}
 
 
 class TorchDatasetTestToolbox(DatasetTestToolbox):
 
     """Toolbox for Torch Dataset"""
+
+    # pylint: disable=too-few-public-methods
 
     framework = "torch"
 

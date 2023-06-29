@@ -63,6 +63,8 @@ from declearn.utils import run_as_processes, set_device_policy
 
 # optional frameworks' dependencies pylint: disable=ungrouped-imports
 # pylint: disable=duplicate-code
+# false-positives; pylint: disable=no-member
+
 # tensorflow imports
 try:
     import tensorflow as tf  # type: ignore
@@ -80,6 +82,9 @@ else:
     from declearn.model.torch import TorchModel
 
     class CustomDataset(torch.utils.data.Dataset):
+
+        """Basic torch.utils.data.Dataset for testing purposes"""
+
         def __init__(self, inputs, labels) -> None:
             self.inputs = torch.from_numpy(inputs)
             self.labels = torch.from_numpy(labels)
@@ -144,6 +149,7 @@ def get_model(framework: FrameworkType) -> Model:
 
 
 def get_dataset(framework: FrameworkType, inputs, labels):
+    """Return a framework-appropriate dataset"""
     if framework == "torch":
         return TorchDataset(CustomDataset(inputs, labels))
     return InMemoryDataset(inputs, labels)

@@ -19,7 +19,7 @@
 
 import sys
 import warnings
-from typing import Iterator, Type, Union
+from typing import Iterator, Type
 
 import numpy as np
 import pytest
