@@ -34,16 +34,10 @@ class CustomDataset(torch.utils.data.Dataset):
 
 
 class TorchDatasetTestToolbox(DatasetTestToolbox):
-    # def __init__(self):
-    #     pass
-    framework = "torch"
 
-    # @staticmethod
-    # def to_numpy(
-    #     tensor: torch.Tensor,
-    # ) -> np.ndarray:
-    #     """Convert an input tensor to a numpy array."""
-    #     return tensor.cpu().numpy()
+    """Toolbox for Torch Dataset"""
+
+    framework = "torch"
 
     def get_dataset(self) -> TorchDataset:
         return TorchDataset(

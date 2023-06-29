@@ -24,32 +24,6 @@ class DatasetTestToolbox:
     def get_dataset(self) -> Dataset:
         """Convert the test data into a framework-specific dataset"""
 
-    # @staticmethod
-    # def to_numpy(
-    #     tensor: Any,
-    # ) -> np.ndarray:
-    #     """Convert an input tensor to a numpy array."""
-
-    # def assert_batch_equal(self, result, expected):
-    #     """Utility function to test that a batch of the declearn.typing.Batch
-    #     type is equal to an expected declearn.typing.Batch output, written using
-    #     only numpy arrays as DataArrays.
-
-    #     Note; the function is convoluted and has no generality,"""
-    #     for i, res in enumerate(result):
-    #         for j, el in enumerate(expected[i]):
-    #             # batch element is None
-    #             if el is None:
-    #                 assert res[j] is None
-    #             # batch element is an iterable (e.g. input is a list of tensors)
-    #             elif isinstance(el, (list, tuple)):
-    #                 for k, el_k in enumerate(el):
-    #                     res_jk = self.to_numpy(res[j][k])
-    #                     assert_array_equal(res_jk, el_k)
-    #             # batch element is a tensor
-    #             else:
-    #                 res_j = self.to_numpy(res[j])
-    #                 assert_array_equal(res_j, el)
 
 
 class DatasetTestSuite:
