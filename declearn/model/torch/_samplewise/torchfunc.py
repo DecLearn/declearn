@@ -40,9 +40,12 @@ def build_samplewise_grads_fn_backend(
 ) -> GetGradientsFunction:
     """Implementation of `build_samplewise_grads_fn` for Torch 2.0."""
 
-    def run_forward(params, frozen, inputs, y_true, s_wght):
+    def run_forward(params, frozen, buffers, inputs, y_true, s_wght):
         """Run the forward pass in a functional way."""
-        y_pred = torch.func.functional_call(model, [params, frozen], *inputs)
+        # backend closure function; pylint: disable=too-many-arguments
+        y_pred = torch.func.functional_call(
+            model, [params, frozen, buffers], *inputs
+        )
         s_loss = loss_fn(y_pred, y_true)
         if s_wght is not None:
             s_loss.mul_(s_wght.to(s_loss.device))
@@ -53,8 +56,9 @@ def build_samplewise_grads_fn_backend(
     def get_clipped_grads(inputs, y_true, s_wght, clip=None):
         """Compute gradients and optionally clip them."""
         params, frozen = get_params(model)
+        buffers = dict(model.named_buffers())
         grads = get_grads(
-            params, frozen, inputs, y_true, None if clip else s_wght
+            params, frozen, buffers, inputs, y_true, None if clip else s_wght
         )
         if clip:
             clip_and_scale_grads_inplace(grads.values(), clip, s_wght)
@@ -62,7 +66,7 @@ def build_samplewise_grads_fn_backend(
 
     # Wrap the former function to compute and clip sample-wise gradients.
     in_dims = ([0] * inputs, 0 if y_true else None, 0 if s_wght else None)
-    return torch.func.vmap(get_clipped_grads, in_dims)
+    return torch.func.vmap(get_clipped_grads, in_dims, randomness="same")
 
 
 def get_params(
