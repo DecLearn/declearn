@@ -110,3 +110,10 @@ pip install declearn[all,tests]  # install all extra and testing dependencies
 - On some systems, the square brackets used our pip install are not properly
   parsed. Try replacing `[` by `\[` and `]` by `\]`, or putting the instruction
   between quotes (`pip install "declearn[...]"`).
+- Regarding Torch: declearn currently supports both late 1.10-1.13 versions and
+  2.X ones. You may use either one freely, but may run into issues regarding
+  co-dependent versions of `torch`, `functorch` (in 1.10-1.13) and `opacus` (if
+  you want to use [differential privacy](./user-guide/local_dp.md) features).
+  You may use the `torch1` or `torch2` extra dependency specifier to explicitly
+  target either the 1.13 or latest 2.X torch version and install the proper
+  versions of the other packages (including opacus).

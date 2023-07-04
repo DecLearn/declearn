@@ -48,13 +48,13 @@ dependencies = [
 [project.optional-dependencies]
 all = [  # all non-tests extra dependencies
     "dm-haiku == 0.0.9",
-    "functorch",
+    "functorch >= 1.10, < 3.0",
     "grpcio >= 1.45",
     "jax[cpu] >= 0.4, < 0.5",
     "opacus ~= 1.1",
     "protobuf >= 3.19",
     "tensorflow ~= 2.5",
-    "torch ~= 1.10",
+    "torch >= 1.10, < 3.0",
     "websockets ~= 10.1",
 ]
 # thematically grouped dependencies (part of "all")
@@ -72,9 +72,19 @@ haiku = [
 tensorflow = [
     "tensorflow ~= 2.5",
 ]
-torch = [
-    "functorch",  # note: functorch is internalized by torch 2.0
-    "torch ~= 1.10",
+torch = [  # generic requirements for Torch
+    "functorch >= 1.10, < 3.0",  # note: unused with torch >=2.0
+    "torch >= 1.10, < 3.0",
+]
+torch1 = [  # Torch 1.13 (latest pre-2.0 version) + Opacus
+    "functorch ~= 1.13.0",
+    "opacus ~= 1.3.0",
+    "torch ~= 1.13.0",
+]
+torch2 = [  # Torch 2.X version + Opacus
+    "functorch ~= 2.0",  # unused, but useful to linters and pip
+    "opacus ~= 1.4",
+    "torch ~= 2.0",
 ]
 websockets = [
     "websockets ~= 10.1",
