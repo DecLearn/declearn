@@ -23,9 +23,9 @@ from typing import Any, Generic, List, Protocol, Tuple, Type, TypeVar, Union
 import numpy as np
 
 from declearn.model.api import Model, Vector
+from declearn.test_utils import to_numpy
 from declearn.typing import Batch
 from declearn.utils import json_pack, json_unpack
-
 
 VectorT = TypeVar("VectorT", bound=Vector)
 
@@ -35,12 +35,7 @@ class ModelTestCase(Protocol, Generic[VectorT]):
 
     vector_cls: VectorT
     tensor_cls: Union[Type[Any], Tuple[Type[Any], ...]]
-
-    @staticmethod
-    def to_numpy(
-        tensor: Any,
-    ) -> np.ndarray:
-        """Convert an input tensor to a numpy array."""
+    framework: str
 
     @property
     def dataset(
@@ -120,7 +115,7 @@ class ModelTestSuite:
         my_batch = test_case.dataset[0]
         assert isinstance(my_batch[0], test_case.tensor_cls)
         np_batch = tuple(
-            None if arr is None else test_case.to_numpy(arr)
+            None if arr is None else to_numpy(arr, test_case.framework)
             for arr in my_batch
         )
         assert isinstance(np_batch[0], np.ndarray)
@@ -131,7 +126,7 @@ class ModelTestSuite:
         # Allow for a numerical imprecision of 10^-9.
         diff = my_grads - np_grads
         max_err = max(
-            np.abs(test_case.to_numpy(weight)).max()
+            np.abs(to_numpy(weight, test_case.framework)).max()
             for weight in diff.coefs.values()
         )
         assert max_err < 1e-8
@@ -182,7 +177,7 @@ class ModelTestSuite:
         assert w_end != w_srt
         diff = (w_end - w_srt) - grads
         assert all(
-            np.abs(test_case.to_numpy(weight)).max() < 1e-6
+            np.abs(to_numpy(weight, test_case.framework)).max() < 1e-6
             for weight in diff.coefs.values()
         )
         # Check that gradients and updated weights are properly placed.

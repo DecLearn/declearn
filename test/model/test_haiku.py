@@ -116,6 +116,7 @@ class HaikuTestCase(ModelTestCase):
 
     vector_cls = JaxNumpyVector
     tensor_cls = jax.Array
+    framework = "jax"
 
     def __init__(
         self,
@@ -130,14 +131,6 @@ class HaikuTestCase(ModelTestCase):
         self.kind = kind
         self.device = device
         set_device_policy(gpu=(device == "gpu"), idx=0)
-
-    @staticmethod
-    def to_numpy(
-        tensor: Any,
-    ) -> np.ndarray:
-        """Convert an input jax jax.Array to a numpy jax.Array."""
-        assert isinstance(tensor, jax.Array)
-        return np.asarray(tensor)
 
     @property
     def dataset(

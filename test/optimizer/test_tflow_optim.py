@@ -35,15 +35,15 @@ except ModuleNotFoundError:
 
 from declearn.model.tensorflow import TensorflowOptiModule, TensorflowVector
 from declearn.optimizer.modules import OptiModule
-from declearn.test_utils import GradientsTestCase
+from declearn.test_utils import GradientsTestCase, to_numpy
 from declearn.utils import set_device_policy
-
 
 # dirty trick to import from `model_testing.py`;
 # fmt: off
 # pylint: disable=wrong-import-order, wrong-import-position
 sys.path.append(".")
 from test_modules import OptiModuleTestSuite
+
 sys.path.pop()
 # fmt: on
 
@@ -115,13 +115,6 @@ def fix_adam_epsilon(
     return module
 
 
-def to_numpy(tensor: Union[tf.Tensor, tf.IndexedSlices]) -> np.ndarray:
-    """Convert a tensorflow Tensor or IndexedSlices to numpy."""
-    if isinstance(tensor, tf.IndexedSlices):
-        return tensor.values.numpy()
-    return tensor.numpy()
-
-
 @pytest.fixture(name="framework")
 def framework_fixture():
     """Fixture to ensure 'TensorflowOptiModule' only receives tf gradients."""
@@ -164,7 +157,10 @@ class TestTensorflowOptiModule(OptiModuleTestSuite):
             grads_dec = optim_dec.run(gradients).coefs
             # Assert that the output gradients are (nearly) identical.
             assert all(
-                np.allclose(to_numpy(grads_tfk[key]), to_numpy(grads_dec[key]))
+                np.allclose(
+                    to_numpy(grads_tfk[key], "tensorflow"),
+                    to_numpy(grads_dec[key], "tensorflow"),
+                )
                 for key in gradients.coefs
             )
 

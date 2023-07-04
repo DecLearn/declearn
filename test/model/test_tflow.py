@@ -66,6 +66,7 @@ class TensorflowTestCase(ModelTestCase):
 
     vector_cls = TensorflowVector
     tensor_cls = tf.Tensor
+    framework = "tensorflow"
 
     def __init__(
         self,
@@ -80,16 +81,6 @@ class TensorflowTestCase(ModelTestCase):
         self.kind = kind
         self.device = device
         set_device_policy(gpu=(device == "GPU"), idx=0)
-
-    @staticmethod
-    def to_numpy(
-        tensor: Any,
-    ) -> np.ndarray:
-        """Convert an input tensor to a numpy array."""
-        if isinstance(tensor, tf.IndexedSlices):
-            tensor = tf.convert_to_tensor(tensor)
-        assert isinstance(tensor, tf.Tensor)
-        return tensor.numpy()
 
     @property
     def dataset(

@@ -30,8 +30,8 @@ from declearn.test_utils import (
     FrameworkType,
     GradientsTestCase,
     list_available_frameworks,
+    to_numpy,
 )
-
 
 Plugin = Union[OptiModule, Regularizer]
 
@@ -124,7 +124,7 @@ class PluginTestBase:
                 )
             else:
                 coefs = {
-                    key: f_case.to_numpy(val)
+                    key: to_numpy(val, f_case.framework)
                     for key, val in output.coefs.items()
                 }
                 results.append(NumpyVector(coefs))

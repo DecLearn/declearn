@@ -36,7 +36,7 @@ from declearn.utils import set_device_policy
 # dirty trick to import from `model_testing.py`;
 # pylint: disable=wrong-import-order, wrong-import-position
 sys.path.append(".")
-from model_testing import ModelTestSuite, ModelTestCase
+from model_testing import ModelTestCase, ModelTestSuite
 
 
 class ExtractLSTMFinalOutput(torch.nn.Module):
@@ -100,6 +100,7 @@ class TorchTestCase(ModelTestCase):
 
     vector_cls = TorchVector
     tensor_cls = torch.Tensor
+    framework = "torch"
 
     def __init__(
         self,
@@ -112,14 +113,6 @@ class TorchTestCase(ModelTestCase):
         self.kind = kind
         self.device = device
         set_device_policy(gpu=(device == "GPU"), idx=0)
-
-    @staticmethod
-    def to_numpy(
-        tensor: Any,
-    ) -> np.ndarray:
-        """Convert an input tensor to a numpy array."""
-        assert isinstance(tensor, torch.Tensor)
-        return tensor.cpu().numpy()
 
     @property
     def dataset(

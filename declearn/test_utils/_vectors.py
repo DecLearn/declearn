@@ -102,19 +102,6 @@ class GradientsTestCase:
             return jnp.asarray(array)
         raise ValueError(f"Invalid framework '{self.framework}'")
 
-    def to_numpy(self, array: ArrayLike) -> np.ndarray:
-        """Convert an input framework-based structure to a numpy array."""
-        if isinstance(array, np.ndarray):
-            return array
-        if self.framework == "jax":
-            return np.asarray(array)
-        if self.framework == "tensorflow":  # add support for IndexedSlices
-            tensorflow = importlib.import_module("tensorflow")
-            if isinstance(array, tensorflow.IndexedSlices):
-                with tensorflow.device(array.device):
-                    return tensorflow.convert_to_tensor(array).numpy()
-        return array.numpy()  # type: ignore
-
     @property
     def mock_gradient(self) -> Vector:
         """Instantiate a Vector with random-valued mock gradients.

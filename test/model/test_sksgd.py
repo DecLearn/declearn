@@ -31,7 +31,7 @@ from declearn.typing import Batch
 # dirty trick to import from `model_testing.py`;
 # pylint: disable=wrong-import-order, wrong-import-position
 sys.path.append(".")
-from model_testing import ModelTestSuite, ModelTestCase
+from model_testing import ModelTestCase, ModelTestSuite
 
 
 class SklearnSGDTestCase(ModelTestCase):
@@ -50,6 +50,7 @@ class SklearnSGDTestCase(ModelTestCase):
 
     vector_cls = NumpyVector
     tensor_cls = (np.ndarray, csr_matrix)
+    framework = "numpy"
 
     def __init__(
         self,
@@ -61,16 +62,6 @@ class SklearnSGDTestCase(ModelTestCase):
         self.n_classes = n_classes
         self.s_weights = s_weights
         self.as_sparse = as_sparse
-
-    @staticmethod
-    def to_numpy(
-        tensor: Any,
-    ) -> np.ndarray:
-        """Convert an input tensor to a numpy array."""
-        assert isinstance(tensor, (np.ndarray, csr_matrix))
-        if isinstance(tensor, csr_matrix):
-            tensor = tensor.toarray()
-        return tensor
 
     @property
     def dataset(

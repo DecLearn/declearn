@@ -42,7 +42,7 @@ class InMemoryDatasetTestToolbox(DatasetTestToolbox):
 
     # pylint: disable=too-few-public-methods
 
-    framework = "torch"
+    framework = "numpy"
 
     def get_dataset(self) -> InMemoryDataset:
         return InMemoryDataset(self.data, self.label, self.weights, seed=SEED)

@@ -17,15 +17,15 @@
 
 """Custom "assert" functions commonly used in declearn tests."""
 
-import importlib
+
 import json
 from collections.abc import Generator, Sequence
 from typing import Any, Dict, List, Optional, Tuple, Type, Union
 
 import numpy as np
 from numpy.testing import assert_array_equal
-from numpy.typing import ArrayLike
 
+from declearn.test_utils._convert import to_numpy
 from declearn.utils import json_pack, json_unpack
 
 __all__ = [
@@ -33,7 +33,6 @@ __all__ = [
     "assert_json_serializable_dict",
     "assert_list_equal",
     "assert_batch_equal",
-    "to_numpy",
 ]
 
 
@@ -231,20 +230,6 @@ def flatten_and_assert(
             yield from flatten_and_assert(el_x, el_y)
         else:
             yield el_x, el_y
-
-
-def to_numpy(array: ArrayLike, framework: str) -> np.ndarray:
-    """Convert an input framework-based structure to a numpy array."""
-    if isinstance(array, np.ndarray):
-        return array
-    if framework == "jax":
-        return np.asarray(array)
-    if framework == "tensorflow":  # add support for IndexedSlices
-        tensorflow = importlib.import_module("tensorflow")
-        if isinstance(array, tensorflow.IndexedSlices):
-            with tensorflow.device(array.device):
-                return tensorflow.convert_to_tensor(array).numpy()
-    return array.numpy()  # type: ignore
 
 
 def assert_batch_equal(
