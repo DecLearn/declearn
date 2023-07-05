@@ -89,7 +89,8 @@ class DeclearnTestCase:
         """Return a Model suitable for the learning task and framework."""
         if self.framework.lower() == "sksgd":
             return SklearnSGDModel.from_parameters(
-                kind=("regressor" if self.kind == "Reg" else "classifier")
+                kind=("regressor" if self.kind == "Reg" else "classifier"),
+                dtype="float32",
             )
         if self.framework.lower() == "tflow":
             return self._build_tflow_model()
