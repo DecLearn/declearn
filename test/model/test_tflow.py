@@ -32,6 +32,7 @@ except ModuleNotFoundError:
     pytest.skip("TensorFlow is unavailable", allow_module_level=True)
 
 from declearn.model.tensorflow import TensorflowModel, TensorflowVector
+from declearn.model.tensorflow.utils import build_keras_loss
 from declearn.typing import Batch
 from declearn.utils import set_device_policy
 
@@ -221,3 +222,66 @@ class TestTensorflowModel(ModelTestSuite):
         device = f"{test_case.device}:0"
         for var in tfmod.weights:
             assert var.device.endswith(device)
+
+
+class TestBuildKerasLoss:
+    """Unit tests for `build_keras_loss` util function."""
+
+    def test_build_keras_loss_from_string_class_name(self) -> None:
+        """Test `build_keras_loss` with a valid class name string input."""
+        loss = build_keras_loss(
+            "BinaryCrossentropy", tf.keras.losses.Reduction.SUM
+        )
+        assert isinstance(loss, tf.keras.losses.BinaryCrossentropy)
+        assert loss.reduction == tf.keras.losses.Reduction.SUM
+
+    def test_build_keras_loss_from_string_function_name(self) -> None:
+        """Test `build_keras_loss` with a valid function name string input."""
+        loss = build_keras_loss(
+            "binary_crossentropy", tf.keras.losses.Reduction.SUM
+        )
+        assert isinstance(loss, tf.keras.losses.BinaryCrossentropy)
+        assert loss.reduction == tf.keras.losses.Reduction.SUM
+
+    def test_build_keras_loss_from_string_noclass_function_name(self) -> None:
+        """Test `build_keras_loss` with a valid function name string input."""
+        loss = build_keras_loss("mse", tf.keras.losses.Reduction.SUM)
+        assert isinstance(loss, tf.keras.losses.Loss)
+        assert hasattr(loss, "loss_fn")
+        assert loss.loss_fn is tf.keras.losses.mse
+        assert loss.reduction == tf.keras.losses.Reduction.SUM
+
+    def test_build_keras_loss_from_loss_instance(self) -> None:
+        """Test `build_keras_loss` with a valid keras Loss input."""
+        # Set up a BinaryCrossentropy loss instance.
+        loss = tf.keras.losses.BinaryCrossentropy(
+            reduction=tf.keras.losses.Reduction.SUM
+        )
+        assert loss.reduction == tf.keras.losses.Reduction.SUM
+        # Pass it through the util and verify that reduction changes.
+        loss = build_keras_loss(loss, tf.keras.losses.Reduction.NONE)
+        assert isinstance(loss, tf.keras.losses.BinaryCrossentropy)
+        assert loss.reduction == tf.keras.losses.Reduction.NONE
+
+    def test_build_keras_loss_from_loss_function(self) -> None:
+        """Test `build_keras_loss` with a valid keras loss function input."""
+        loss = build_keras_loss(
+            tf.keras.losses.binary_crossentropy, tf.keras.losses.Reduction.SUM
+        )
+        assert isinstance(loss, tf.keras.losses.Loss)
+        assert hasattr(loss, "loss_fn")
+        assert loss.loss_fn is tf.keras.losses.binary_crossentropy
+        assert loss.reduction == tf.keras.losses.Reduction.SUM
+
+    def test_build_keras_loss_from_custom_function(self) -> None:
+        """Test `build_keras_loss` with a valid custom loss function input."""
+
+        def loss_fn(y_true: tf.Tensor, y_pred: tf.Tensor) -> tf.Tensor:
+            """Custom loss function."""
+            return tf.reduce_sum(tf.cast(tf.equal(y_true, y_pred), tf.float32))
+
+        loss = build_keras_loss(loss_fn, tf.keras.losses.Reduction.SUM)
+        assert isinstance(loss, tf.keras.losses.Loss)
+        assert hasattr(loss, "loss_fn")
+        assert loss.loss_fn is loss_fn
+        assert loss.reduction == tf.keras.losses.Reduction.SUM
