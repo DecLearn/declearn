@@ -70,7 +70,7 @@ class SklearnSGDTestCase(ModelTestCase):
         assert isinstance(tensor, (np.ndarray, csr_matrix))
         if isinstance(tensor, csr_matrix):
             tensor = tensor.toarray()
-        return tensor  # type: ignore
+        return tensor
 
     @property
     def dataset(
@@ -78,15 +78,15 @@ class SklearnSGDTestCase(ModelTestCase):
     ) -> List[Batch]:
         """Suited toy binary-classification dataset."""
         rng = np.random.default_rng(seed=0)
-        inputs = rng.normal(size=(2, 32, 8))
+        inputs = rng.normal(size=(2, 32, 8)).astype("float32")
         if self.as_sparse:
             inputs = [csr_matrix(arr) for arr in inputs]  # type: ignore
         if isinstance(self.n_classes, int):
-            labels = rng.choice(self.n_classes, size=(2, 32)).astype(float)
+            labels = rng.choice(self.n_classes, size=(2, 32)).astype("float32")
         else:
-            labels = rng.normal(size=(2, 32))
+            labels = rng.normal(size=(2, 32)).astype("float32")
         if self.s_weights:
-            s_wght = np.exp(rng.normal(size=(2, 32)))
+            s_wght = np.exp(rng.normal(size=(2, 32)).astype("float32"))
             s_wght /= s_wght.sum(axis=1, keepdims=True) * 32
             batches = list(zip(inputs, labels, s_wght))
         else:
@@ -99,7 +99,7 @@ class SklearnSGDTestCase(ModelTestCase):
     ) -> SklearnSGDModel:
         """Suited toy binary-classification model."""
         skmod = (SGDClassifier if self.n_classes else SGDRegressor)()
-        model = SklearnSGDModel(skmod)
+        model = SklearnSGDModel(skmod, dtype="float32")
         data_info = {"features_shape": (8,)}  # type: Dict[str, Any]
         if self.n_classes:
             data_info["classes"] = np.arange(self.n_classes)

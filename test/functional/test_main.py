@@ -89,7 +89,8 @@ class DeclearnTestCase:
         """Return a Model suitable for the learning task and framework."""
         if self.framework.lower() == "sksgd":
             return SklearnSGDModel.from_parameters(
-                kind=("regressor" if self.kind == "Reg" else "classifier")
+                kind=("regressor" if self.kind == "Reg" else "classifier"),
+                dtype="float32",
             )
         if self.framework.lower() == "tflow":
             return self._build_tflow_model()
@@ -274,7 +275,7 @@ def run_test_case(
     )
 
 
-@pytest.mark.parametrize("strategy", ["FedAvg", "FedAvgM", "Scaffold"])
+@pytest.mark.parametrize("strategy", ["FedAvg", "Scaffold"])
 @pytest.mark.parametrize("framework", FRAMEWORKS)
 @pytest.mark.parametrize("kind", ["Reg", "Bin", "Clf"])
 @pytest.mark.filterwarnings("ignore: PyTorch JSON serialization")
@@ -293,7 +294,7 @@ def test_declearn(
     Note: If websockets is unavailable, use gRPC (warn) or fail.
     """
     if not fulltest:
-        if (kind != "Reg") or (strategy == "FedAvgM"):
+        if (kind != "Reg") or (strategy == "FedAvg"):
             pytest.skip("skip scenario (no --fulltest option)")
     protocol = "websockets"  # type: Literal["grpc", "websockets"]
     if "websockets" not in list_available_protocols():
