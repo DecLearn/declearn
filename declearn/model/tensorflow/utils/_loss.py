@@ -85,22 +85,9 @@ def build_keras_loss(
     # Case when 'loss' is already a Loss object.
     if isinstance(loss, tf.keras.losses.Loss):
         loss.reduction = reduction
-    # Case when 'loss' is a string.
+    # Case when 'loss' is a string: deserialize and/or wrap into a Loss object.
     elif isinstance(loss, str):
-        cls = tf.keras.losses.deserialize(loss)
-        # Case when the string was deserialized into a function.
-        if inspect.isfunction(cls):
-            # Try altering the string to gather its object counterpart.
-            loss = "".join(word.capitalize() for word in loss.split("_"))
-            try:
-                loss = tf.keras.losses.deserialize(loss)
-                loss.reduction = reduction
-            # If this failed, try wrapping the function using LossFunction.
-            except ValueError:
-                loss = LossFunction(cls)
-        # Case when the string was deserialized into a class.
-        else:
-            loss = cls(reduction=reduction)
+        loss = get_keras_loss_from_string(name=loss, reduction=reduction)
     # Case when 'loss' is a function: wrap it up using LossFunction.
     elif inspect.isfunction(loss):
         loss = LossFunction(loss, reduction=reduction)
@@ -111,3 +98,32 @@ def build_keras_loss(
         )
     # Otherwise, properly configure the reduction scheme and return.
     return loss
+
+
+def get_keras_loss_from_string(
+    name: str,
+    reduction: str,
+) -> tf.keras.losses.Loss:
+    """Instantiate a keras Loss object from a registered string identifier.
+
+    - If `name` matches a Loss registration name, return an instance.
+    - If it matches a loss function registration name, return either
+      an instance from its name-matching Loss subclass, or a custom
+      Loss subclass instance wrapping the function.
+    - If it does not match anything, raise a ValueError.
+    """
+    loss = tf.keras.losses.deserialize(name)
+    if isinstance(loss, tf.keras.losses.Loss):
+        loss.reduction = reduction
+        return loss
+    if inspect.isfunction(loss):
+        try:
+            name = "".join(word.capitalize() for word in name.split("_"))
+            return get_keras_loss_from_string(name, reduction)
+        except ValueError:
+            return LossFunction(
+                loss, reduction=reduction, name=getattr(loss, "__name__", None)
+            )
+    raise ValueError(
+        f"Name '{loss}' cannot be deserialized into a keras loss."
+    )
