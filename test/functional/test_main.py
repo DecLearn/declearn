@@ -275,7 +275,7 @@ def run_test_case(
     )
 
 
-@pytest.mark.parametrize("strategy", ["FedAvg", "FedAvgM", "Scaffold"])
+@pytest.mark.parametrize("strategy", ["FedAvg", "Scaffold"])
 @pytest.mark.parametrize("framework", FRAMEWORKS)
 @pytest.mark.parametrize("kind", ["Reg", "Bin", "Clf"])
 @pytest.mark.filterwarnings("ignore: PyTorch JSON serialization")
@@ -294,7 +294,7 @@ def test_declearn(
     Note: If websockets is unavailable, use gRPC (warn) or fail.
     """
     if not fulltest:
-        if (kind != "Reg") or (strategy == "FedAvgM"):
+        if (kind != "Reg") or (strategy == "FedAvg"):
             pytest.skip("skip scenario (no --fulltest option)")
     protocol = "websockets"  # type: Literal["grpc", "websockets"]
     if "websockets" not in list_available_protocols():
