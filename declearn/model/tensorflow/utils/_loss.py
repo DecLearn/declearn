@@ -96,7 +96,7 @@ def build_keras_loss(
                 loss = tf.keras.losses.deserialize(loss)
                 loss.reduction = reduction
             # If this failed, try wrapping the function using LossFunction.
-            except ValueError:
+            except (AttributeError, ValueError):
                 loss = LossFunction(cls)
         # Case when the string was deserialized into a class.
         else:
