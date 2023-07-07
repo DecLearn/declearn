@@ -70,8 +70,10 @@ from ._build import (
 try:
     from . import grpc
 except ImportError:
+    # pragma: no cover
     _INSTALLABLE_BACKENDS["grpc"] = ("grpcio", "protobuf")
 try:
     from . import websockets
 except ImportError:
+    # pragma: no cover
     _INSTALLABLE_BACKENDS["websockets"] = ("websockets",)
