@@ -95,9 +95,11 @@ class TorchDataset(Dataset):
         """
         super().__init__()
         self.dataset = dataset
+        self.data_item_info = get_data_item_info(self.dataset[0])
         # Assign a random number generator.
         self.seed = seed
         self.gen = None
+        self.my_collate = self.get_custom_collate(self.data_item_info)
         if self.seed is not None:
             torch.manual_seed(self.seed)
             # pylint: disable=no-member
@@ -186,12 +188,11 @@ class TorchDataset(Dataset):
                 batch_size=batch_size,
                 drop_last=drop_remainder,
             )
-        data_item_info = get_data_item_info(self.dataset[0])
-        my_collate = self.get_custom_collate(data_item_info)  # type: ignore
+        # type: ignore
         yield from DataLoader(
             dataset=self.dataset,
             batch_sampler=batch_sampler,
-            collate_fn=my_collate,
+            collate_fn=self.my_collate,
         )
 
     @staticmethod
