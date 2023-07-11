@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Script to run a federated client on the heart-disease example."""
+"""Script to run a federated client on the MNIST example."""
 
 import datetime
 import logging
@@ -27,13 +27,14 @@ import declearn
 import declearn.model.tensorflow
 
 
-FILEDIR = os.path.dirname(__file__)
+FILEDIR = os.path.dirname(os.path.abspath(__file__))
+DEFAULT_CERT = os.path.join(FILEDIR, "ca-cert.pem")
 
 
 def run_client(
     client_name: str,
-    ca_cert: str,
     data_folder: str,
+    ca_cert: str = DEFAULT_CERT,
     protocol: str = "websockets",
     serv_uri: str = "wss://localhost:8765",
     verbose: bool = True,
@@ -44,16 +45,16 @@ def run_client(
     ---------
     client_name: str
         Name of the client (i.e. center data from which to use).
-    ca_cert: str
-        Path to the certificate authority file that was used to
-        sign the server's SSL certificate.
     data_folder: str
         The parent folder of this client's data
+    ca_cert: str, default="./ca-cert.pem"
+        Path to the certificate authority file that was used to
+        sign the server's SSL certificate.
     protocol: str, default="websockets"
         Name of the communication protocol to use.
     serv_uri: str, default="wss://localhost:8765"
         URI of the server to which to connect.
-    verbose:
+    verbose: bool, default=True
         Whether to log everything to the console, or filter out most non-error
         information.
     """
@@ -94,7 +95,7 @@ def run_client(
 
     ### (3) Define network communication parameters.
 
-    # Here, use websockets protocol on localhost:8765,
+    # Here, by default, use websockets protocol on localhost:8765,
     # with SSL encryption.
     network = declearn.communication.build_client(
         protocol=protocol,
@@ -104,7 +105,7 @@ def run_client(
     )
 
     ### (4) Run any necessary import statement.
-    # We imported `import declearn.model.tensorflow`
+    # We imported `import declearn.model.tensorflow`.
 
     ### (5) Instantiate a FederatedClient and run it.
 

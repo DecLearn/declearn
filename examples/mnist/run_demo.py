@@ -15,11 +15,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Demonstration script using the UCI Heart Disease Dataset."""
+"""Demonstration script using the MNIST dataset."""
 
-import glob
 import os
 import tempfile
+from typing import Literal, Optional
 
 import fire  # type: ignore
 
@@ -29,15 +29,17 @@ from declearn.utils import run_as_processes
 # Perform local imports.
 # pylint: disable=wrong-import-position, wrong-import-order
 with make_importable(os.path.dirname(__file__)):
-    from client import run_client
-    from server import run_server
+    from prepare_data import prepare_mnist
+    from run_client import run_client
+    from run_server import run_server
 # pylint: enable=wrong-import-position, wrong-import-order
 
-FILEDIR = os.path.join(os.path.dirname(__file__))
-DATADIR = glob.glob(f"{FILEDIR}/data*")[0]
 
-
-def run_demo(nb_clients: int = 3, data_folder: str = DATADIR) -> None:
+def run_demo(
+    nb_clients: int = 3,
+    scheme: Literal["iid", "labels", "biased"] = "iid",
+    seed: Optional[int] = None,
+) -> None:
     """Run a server and its clients using multiprocessing.
 
     Parameters
@@ -49,14 +51,19 @@ def run_demo(nb_clients: int = 3, data_folder: str = DATADIR) -> None:
         Relative path to the folder holding client's data
 
     """
+    # Generate the MNIST split data for this demo.
+    data_folder = prepare_mnist(nb_clients, scheme, seed=seed)
     # Use a temporary directory for single-use self-signed SSL files.
     with tempfile.TemporaryDirectory() as folder:
         # Generate self-signed SSL certificates and gather their paths.
         ca_cert, sv_cert, sv_pkey = generate_ssl_certificates(folder)
         # Specify the server and client routines that need executing.
         server = (run_server, (nb_clients, sv_cert, sv_pkey))
+        client_args = tuple(
+            [data_folder, ca_cert, "websockets", "wss://localhost:8765", False]
+        )
         clients = [
-            (run_client, (f"client_{idx}", ca_cert, data_folder))
+            (run_client, (f"client_{idx}", *client_args))
             for idx in range(nb_clients)
         ]
         # Run routines in isolated processes. Raise if any failed.

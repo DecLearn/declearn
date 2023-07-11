@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Script to run a federated server on the heart-disease example."""
+"""Script to run a federated server on the MNIST example."""
 
 import datetime
 import os
@@ -24,6 +24,7 @@ import fire  # type: ignore
 import tensorflow as tf  # type: ignore
 
 import declearn
+import declearn.model.tensorflow
 
 
 FILEDIR = os.path.dirname(os.path.abspath(__file__))
@@ -82,8 +83,7 @@ def run_server(
 
     ### (1) Define a model
 
-    # Here we use a scikit-learn SGD classifier and parametrize it
-    # into a L2-penalized binary logistic regression.
+    # Here we use a tensorflow-implemented small Convolutional Neural Network.
     stack = [
         tf.keras.layers.InputLayer(input_shape=(28, 28, 1)),
         tf.keras.layers.Conv2D(32, 3, 1, activation="relu"),
@@ -128,7 +128,7 @@ def run_server(
 
     ### (3) Define network communication parameters.
 
-    # Here, use websockets protocol on localhost:8765, with SSL encryption.
+    # Use user-provided parameters (or default WSS on localhost:8765).
     network = declearn.communication.build_server(
         protocol=protocol,
         host=host,
@@ -161,7 +161,7 @@ def run_server(
         batch_size=32,
         n_epoch=1,
     )
-    # Evaluation rounds. by default,  1 epoch with train's batch size.
+    # Evaluation rounds. By default, 1 epoch with train's batch size.
     evaluate = declearn.main.config.EvaluateConfig(
         batch_size=128,
     )
