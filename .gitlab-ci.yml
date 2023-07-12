@@ -1,53 +1,55 @@
-# Official language image, in version 3.8(.latest)
-image: python:3.8
-
-# Set up a virtual environment.
-before_script:
-  - python -m venv venv
-  - source venv/bin/activate
-
-# Run the test suite using tox.
-# This job is called when commits are pushed to the main or a release branch.
-test:
-  script:
+# Shared configuration elements between test jobs.
+.config:
+  # Official Python language image, in version 3.8(.latest)
+  image: python:3.8
+  # Set up a virtual environment, with latest pip and tox installed.
+  before_script:
+    - python -m venv venv
+    - source venv/bin/activate
+    - pip install -U pip
     - pip install -U tox
-    - tox -e py38
+  # Configure coverage export and collection.
   artifacts:
     reports:
       coverage_report:
         coverage_format: cobertura
         path: coverage.xml
   coverage: /(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/
-  rules:
-    - if: ($CI_PIPELINE_SOURCE == "push") &&
-          (($CI_COMMIT_BRANCH == "develop") || ($CI_COMMIT_BRANCH =~ "/^r\d\.\d+/"))
+  # Run on a shared Gitlab CI Runner.
   tags:
     - ci.inria.fr
-    - small
+    - medium
 
-# Run the test suite using tox, with --fulltest option.
-# This job is called on creation and pushes to non-Draft MRs.
-# It may also be launched manually upon pushes to Draft MRs or main/dev branch.
-test-full:
+# Basic test suite: skip GPU use and a few extra integration tests scenarios.
+# This job is called when commits are pushed to a non-draft MR branch.
+# It may also be called manually on commits to draft MR branches.
+test-minimal:
+  extends:
+    .config
   script:
-    - pip install -U tox
-    - tox -e py38 -- --fulltest
-  artifacts:
-    reports:
-      coverage_report:
-        coverage_format: cobertura
-        path: coverage.xml
-  coverage: /(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/
+    - tox -e py38 -- --cpu-only
   rules:
     - if: ($CI_PIPELINE_SOURCE == "merge_request_event") &&
           ($CI_MERGE_REQUEST_TITLE !~ /^Draft:.*/)
     - if: ($CI_PIPELINE_SOURCE == "merge_request_event") &&
           ($CI_MERGE_REQUEST_TITLE =~ /^Draft:.*/)
       when: manual
+      allow_failure: true
+
+# Exhaustive test suite: lint the code, run all tests, use GPU when available.
+# This job is called when commits are pushed to a main branch.
+# It may also be called manually on commits to MR branches.
+test-maximal:
+  extends:
+    .config
+  script:
+    - tox -e py38 -- --fulltest
+  rules:
     - if: ($CI_PIPELINE_SOURCE == "push") &&
-          (($CI_COMMIT_BRANCH == "develop") || ($CI_COMMIT_BRANCH =~ "/^r\d\.\d+/"))
+          (
+            ($CI_COMMIT_BRANCH == "develop") ||
+            ($CI_COMMIT_BRANCH =~ "/^r\d\.\d+/")
+          )
+    - if: ($CI_PIPELINE_SOURCE == "merge_request_event")
       when: manual
-      allow_failure: true  # do not block the base "test" pipeline
-  tags:
-    - ci.inria.fr
-    - small
+      allow_failure: true
