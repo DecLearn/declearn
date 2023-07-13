@@ -17,25 +17,21 @@
 
 """Model subclass to wrap PyTorch models."""
 
-import functools
 import io
+import functools
 import warnings
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
-import functorch  # type: ignore
-
-try:
-    import functorch.compile  # type: ignore
-except ModuleNotFoundError:
-    COMPILE_AVAILABLE = False
-else:
-    COMPILE_AVAILABLE = True
 import numpy as np
 import torch
 from typing_extensions import Self  # future: import from typing (py >=3.11)
 
 from declearn.model.api import Model
 from declearn.model.torch.utils import AutoDeviceModule, select_device
+from declearn.model.torch._samplewise import (
+    GetGradientsFunction,
+    build_samplewise_grads_fn,
+)
 from declearn.model.torch._vector import TorchVector
 from declearn.model._utils import raise_on_stringsets_mismatch
 from declearn.typing import Batch
@@ -75,6 +71,25 @@ class TorchModel(Model):
       `update_device_policy` method.
     - You may consult the device policy currently enforced by a TorchModel
       instance by accessing its `device_policy` property.
+
+    Notes regarding `torch.compile` support (torch >=2.0):
+
+    - If you want the wrapped model to be optimized via `torch.compile`, it
+      should be so _prior_ to being wrapped using `TorchModel`.
+    - The compilation will not be used when computing sample-wise-clipped
+      gradients, as `torch.func` and `torch.compile` do not play along yet.
+    - The information that the module was compiled will be saved as part of
+      the `TorchModel` config, so that using `TorchModel.from_config` will
+      trigger it again when possible; this is however limited to calling
+      `torch.compile`, meaning that any other argument will be lost.
+    - Note that the former point notably affects the way clients will run
+      a server-emitted `TorchModel` as part of a FL process: client that
+      run Torch 1.X will be able to use the un-optimized module, while
+      clients running Torch 2.0 will use compilation, but in a rather crude
+      flavor, that may not be suitable for some specific/advanced cases.
+    - Enhanced support for `torch.compile` is on the roadmap. If you run
+      into issues and/or have requests or advice on that topic, feel free
+      to let us know by contacting us via mail or GitLab.
     """
 
     def __init__(
@@ -101,15 +116,19 @@ class TorchModel(Model):
         # Select the device where to place computations, and wrap the model.
         policy = get_device_policy()
         device = select_device(gpu=policy.gpu, idx=policy.idx)
-        model = AutoDeviceModule(model, device=device)
-        super().__init__(model)
+        super().__init__(AutoDeviceModule(model, device=device))
         # Assign loss module and set it not to reduce sample-wise values.
         if not isinstance(loss, torch.nn.Module):
             raise TypeError("'loss' should be a torch.nn.Module instance.")
         loss.reduction = "none"  # type: ignore
         self._loss_fn = AutoDeviceModule(loss, device=device)
-        # Compute and assign a functional version of the model.
-        self._func_model, _ = functorch.make_functional(self._model)
+        # Detect torch-compiled models and extract underlying module.
+        self._raw_model = self._model
+        if hasattr(torch, "compile") and hasattr(model, "_orig_mod"):
+            self._raw_model = AutoDeviceModule(
+                module=getattr(model, "_orig_mod"),
+                device=self._model.device,
+            )
 
     @property
     def device_policy(
@@ -137,12 +156,16 @@ class TorchModel(Model):
             "PyTorch JSON serialization relies on pickle, which may be unsafe."
         )
         with io.BytesIO() as buffer:
-            torch.save(self._model.module, buffer)
+            torch.save(self._raw_model.module, buffer)
             model = buffer.getbuffer().hex()
         with io.BytesIO() as buffer:
             torch.save(self._loss_fn.module, buffer)
             loss = buffer.getbuffer().hex()
-        return {"model": model, "loss": loss}
+        return {
+            "model": model,
+            "loss": loss,
+            "compile": self._raw_model is not self._model,
+        }
 
     @classmethod
     def from_config(
@@ -154,13 +177,15 @@ class TorchModel(Model):
             model = torch.load(buffer)
         with io.BytesIO(bytes.fromhex(config["loss"])) as buffer:
             loss = torch.load(buffer)
+        if config.get("compile", False) and hasattr(torch, "compile"):
+            model = torch.compile(model)
         return cls(model=model, loss=loss)
 
     def get_weights(
         self,
         trainable: bool = False,
     ) -> TorchVector:
-        params = self._model.named_parameters()
+        params = self._raw_model.named_parameters()
         if trainable:
             weights = {k: p.data for k, p in params if p.requires_grad}
         else:
@@ -177,12 +202,12 @@ class TorchModel(Model):
             raise TypeError("TorchModel requires TorchVector weights.")
         self._verify_weights_compatibility(weights, trainable=trainable)
         if trainable:
-            state_dict = self._model.state_dict()
+            state_dict = self._raw_model.state_dict()
             state_dict.update(weights.coefs)
         else:
             state_dict = weights.coefs
         # NOTE: this preserves the device placement of current states
-        self._model.load_state_dict(state_dict)
+        self._raw_model.load_state_dict(state_dict)
 
     def _verify_weights_compatibility(
         self,
@@ -206,12 +231,9 @@ class TorchModel(Model):
             In case some expected keys are missing, or additional keys
             are present. Be verbose about the identified mismatch(es).
         """
+        params = self._raw_model.named_parameters()
         received = set(vector.coefs)
-        expected = {
-            name
-            for name, param in self._model.named_parameters()
-            if (not trainable) or param.requires_grad
-        }
+        expected = {n for n, p in params if (not trainable) or p.requires_grad}
         raise_on_stringsets_mismatch(
             received, expected, context="model weights"
         )
@@ -241,7 +263,7 @@ class TorchModel(Model):
         # Collect weights' gradients and return them in a Vector container.
         grads = {
             k: p.grad.detach().clone()
-            for k, p in self._model.named_parameters()
+            for k, p in self._raw_model.named_parameters()
             if p.requires_grad
         }
         return TorchVector(grads)
@@ -281,8 +303,8 @@ class TorchModel(Model):
         max_norm: float,
     ) -> TorchVector:
         """Compute and return batch-averaged sample-wise-clipped gradients."""
-        # Compute sample-wise clipped gradients, using functorch.
-        grads = self._compute_samplewise_gradients(batch, max_norm)
+        # Compute sample-wise clipped gradients, using functional torch.
+        grads = self._compute_samplewise_gradients(batch, clip=max_norm)
         # Batch-average the resulting sample-wise gradients.
         return TorchVector(
             {name: tensor.mean(dim=0) for name, tensor in grads.coefs.items()}
@@ -291,92 +313,49 @@ class TorchModel(Model):
     def _compute_samplewise_gradients(
         self,
         batch: Batch,
-        max_norm: Optional[float],
+        clip: Optional[float],
     ) -> TorchVector:
         """Compute and return stacked sample-wise gradients over a batch."""
-        # Unpack the inputs, gather parameters and list gradients to compute.
         inputs, y_true, s_wght = self._unpack_batch(batch)
-        params = []  # type: List[torch.nn.Parameter]
-        idxgrd = []  # type: List[int]
-        pnames = []  # type: List[str]
-        for index, (name, param) in enumerate(self._model.named_parameters()):
-            params.append(param)
-            if param.requires_grad:
-                idxgrd.append(index + 3)
-                pnames.append(name)
-        # Gather or build the sample-wise clipped gradients computing function.
         grads_fn = self._build_samplewise_grads_fn(
-            idxgrd=tuple(idxgrd),
             inputs=len(inputs),
             y_true=(y_true is not None),
             s_wght=(s_wght is not None),
         )
-        # Call it on the current inputs, with optional clipping.
         with torch.no_grad():
-            grads = grads_fn(inputs, y_true, s_wght, *params, clip=max_norm)
-        # Wrap the results into a TorchVector and return it.
-        return TorchVector(dict(zip(pnames, grads)))
+            grads = grads_fn(inputs, y_true, s_wght, clip=clip)  # type: ignore
+        return TorchVector(grads)
 
     @functools.lru_cache
     def _build_samplewise_grads_fn(
         self,
-        idxgrd: Tuple[int, ...],
         inputs: int,
         y_true: bool,
         s_wght: bool,
-    ) -> Callable[..., List[torch.Tensor]]:
-        """Build a functorch-based sample-wise gradients-computation function.
+    ) -> GetGradientsFunction:
+        """Build an optimizer sample-wise gradients-computation function.
 
         This function is cached, i.e. repeated calls with the same parameters
         will return the same object - enabling to reduce runtime costs due to
         building and (when available) compiling the output function.
 
-        Parameters
-        ----------
-        idxgrd: tuple of int
-            Pre-incremented indices of the parameters that require gradients.
-        inputs: int
-            Number of input tensors.
-        y_true: bool
-            Whether a true labels tensor is provided.
-        s_wght: bool
-            Whether a sample weights tensor is provided.
-
         Returns
         -------
-        grads_fn: callable[inputs, y_true, s_wght, *params, /, clip]
-            Functorch-optimized function to efficiently compute sample-
-            wise gradients based on batched inputs, and optionally clip
-            them based on a maximum l2-norm value `clip`.
+        grads_fn: callable[[inputs, y_true, s_wght, clip], grads]
+            Function to efficiently compute and return sample-wise gradients
+            wrt trainable model parameters based on a batch of inputs, with
+            opt. clipping based on a maximum l2-norm value `clip`.
+
+        Note
+        ----
+        The underlying backend code depends on your Torch version, so as to
+        enable optimizing operations using either `functorch` for torch 1.1X
+        or `torch.func` for torch 2.X.
         """
-
-        def forward(inputs, y_true, s_wght, *params):
-            """Conduct the forward pass in a functional way."""
-            y_pred = self._func_model(params, *inputs)
-            return self._compute_loss(y_pred, y_true, s_wght)
-
-        def grads_fn(inputs, y_true, s_wght, *params, clip=None):
-            """Compute gradients and optionally clip them."""
-            gfunc = functorch.grad(forward, argnums=idxgrd)
-            grads = gfunc(inputs, y_true, None, *params)
-            if clip:
-                for grad in grads:
-                    # future: use torch.linalg.norm when supported by functorch
-                    norm = torch.norm(grad, p=2, keepdim=True)
-                    # false-positive; pylint: disable=no-member
-                    grad.mul_(torch.clamp(clip / norm, max=1))
-                    if s_wght is not None:
-                        grad.mul_(s_wght.to(grad.device))
-            return grads
-
-        # Wrap the former function to compute and clip sample-wise gradients.
-        in_axes = [[0] * inputs, 0 if y_true else None, 0 if s_wght else None]
-        in_axes.extend([None] * sum(1 for _ in self._model.parameters()))
-        grads_fn = functorch.vmap(grads_fn, tuple(in_axes))
-        # Compile the resulting function to decrease runtime costs.
-        if not COMPILE_AVAILABLE:
-            return grads_fn
-        return functorch.compile.aot_function(grads_fn, functorch.compile.nop)
+        # NOTE: torch.func is not compatible with torch.compile yet
+        return build_samplewise_grads_fn(
+            self._raw_model, self._loss_fn, inputs, y_true, s_wght
+        )
 
     def apply_updates(
         self,
@@ -387,7 +366,7 @@ class TorchModel(Model):
         self._verify_weights_compatibility(updates, trainable=True)
         with torch.no_grad():
             for key, upd in updates.coefs.items():
-                tns = self._model.get_parameter(key)
+                tns = self._raw_model.get_parameter(key)
                 tns.add_(upd.to(tns.device))
 
     def compute_batch_predictions(
@@ -403,11 +382,31 @@ class TorchModel(Model):
                 "creating labels from the base inputs."
             )
         self._model.eval()
+        self._handle_torch_compile_eval_issue(inputs)
         with torch.no_grad():
             y_pred = self._model(*inputs).cpu().numpy()
         y_true = y_true.cpu().numpy()
         s_wght = None if s_wght is None else s_wght.cpu().numpy()
         return y_true, y_pred, s_wght  # type: ignore
+
+    def _handle_torch_compile_eval_issue(
+        self,
+        inputs: List[torch.Tensor],
+    ) -> None:
+        """Clumsily handle issues with `torch.compile` and `torch.no_grad`.
+
+        As of Torch 2.0.1, running a compiled model's first forward pass
+        within a `torch.no_grad` context results in the model's future
+        weights updates not being properly taken into account.
+
+        Therefore, when wrapping a compiled model, this method runs a lost
+        forward pass outside of a no-grad context on its first call (later
+        it does nothing).
+        """
+        if (self._raw_model is self._model) or hasattr(self, "__eval_called"):
+            return
+        self._model(*inputs)
+        setattr(self, "__eval_called", True)
 
     def loss_function(
         self,

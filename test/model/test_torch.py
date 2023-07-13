@@ -19,6 +19,7 @@
 
 import json
 import sys
+import typing
 from typing import Any, List, Literal, Tuple
 
 import numpy as np
@@ -69,6 +70,9 @@ class FlattenCNNOutput(torch.nn.Module):
         return inputs.view(*shape)
 
 
+Kind = Literal["MLP", "MLP-tune", "MLP-compile", "RNN", "CNN"]
+
+
 class TorchTestCase(ModelTestCase):
     """PyTorch test-case-provider fixture.
 
@@ -88,6 +92,11 @@ class TorchTestCase(ModelTestCase):
         - stack: 32 7x7 conv. filters, then 8x8 max pooling
                  16 5x5 conv. filters, then 8x8 avg pooling
                  1 output neuron with sigmoid activation
+
+
+    Additional scenarios include "MLP-tune", where the MLP's first hidden
+    layer is frozen, and "MLP-compile", where the MLP is optimized using
+    `torch.compile` (available in torch >=2.0 only).
     """
 
     vector_cls = TorchVector
@@ -95,11 +104,11 @@ class TorchTestCase(ModelTestCase):
 
     def __init__(
         self,
-        kind: Literal["MLP", "MLP-tune", "RNN", "CNN"],
+        kind: Kind,
         device: Literal["CPU", "GPU"],
     ) -> None:
         """Specify the desired model architecture."""
-        if kind not in ("MLP", "MLP-tune", "RNN", "CNN"):
+        if kind not in typing.get_args(Kind):
             raise ValueError(f"Invalid torch test architecture: '{kind}'.")
         self.kind = kind
         self.device = device
@@ -169,6 +178,8 @@ class TorchTestCase(ModelTestCase):
                 torch.nn.Sigmoid(),
             ]
         nnmod = torch.nn.Sequential(*stack)
+        if self.kind == "MLP-compile":
+            nnmod = torch.compile(nnmod)  # type: ignore
         return TorchModel(nnmod, loss=torch.nn.BCELoss())
 
     def assert_correct_device(
@@ -184,13 +195,15 @@ class TorchTestCase(ModelTestCase):
 
 @pytest.fixture(name="test_case")
 def fixture_test_case(
-    kind: Literal["MLP", "MLP-tune", "RNN", "CNN"],
+    kind: Kind,
     device: Literal["CPU", "GPU"],
     cpu_only: bool,
 ) -> TorchTestCase:
     """Fixture to access a TorchTestCase."""
     if cpu_only and device == "GPU":
         pytest.skip(reason="--cpu-only mode")
+    if kind == "MLP-compile" and not hasattr(torch, "compile"):
+        pytest.skip(reason="'torch.compile' is unavailable")
     return TorchTestCase(kind, device)
 
 
@@ -200,7 +213,7 @@ if torch.cuda.device_count():
 
 
 @pytest.mark.parametrize("device", DEVICES)
-@pytest.mark.parametrize("kind", ["MLP", "MLP-tune", "RNN", "CNN"])
+@pytest.mark.parametrize("kind", typing.get_args(Kind))
 class TestTorchModel(ModelTestSuite):
     """Unit tests for declearn.model.torch.TorchModel."""
 
