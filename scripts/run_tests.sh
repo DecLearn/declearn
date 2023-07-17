@@ -119,7 +119,7 @@ run_declearn_tests() {
     run_commands "declearn test suite" "${commands[@]}"
     status=$?
     # Display and export the cumulated coverage.
-    coverage report
+    coverage report --precision=2
     coverage xml
     # Return the success/failure status of tests.
     return $status
