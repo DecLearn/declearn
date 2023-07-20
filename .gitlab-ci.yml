@@ -1,10 +1,80 @@
-# Shared configuration elements between test jobs.
-.config:
-  # Official Python language image, in version 3.8(.latest)
+### Overall configuration
+
+# Define conditions under which pipelines may be run,
+# and create custom variables for jobs to re-use.
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      variables:
+        IS_MERGE_REQ: "true"
+        BRANCH_NAME: $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME
+    - if: ($CI_PIPELINE_SOURCE == "push") &&
+          (($CI_COMMIT_BRANCH == "develop") ||
+           ($CI_COMMIT_BRANCH =~ "/^r\d\.\d+/"))
+      variables:
+        IS_CORE_PUSH: "true"
+        BRANCH_NAME: $CI_COMMIT_BRANCH
+
+# Pipeline stages: clean-up cached files, then run tests.
+stages:
+  - clean
+  - test
+
+# Use environment variables to;
+# - keep pip cache files between runs (on the Docker executor)
+# - keep tox cache files, but make them branch-specific
+# - keep the small venv where pip and tox are installed
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.pip"
+  TOX_CACHE_DIR: "$CI_PROJECT_DIR/.tox"
+  GIT_CLEAN_FLAGS: -ffdx -e .pip -e .tox -e venv
+
+# Shared configuration elements between all jobs.
+default:
   image: python:3.8
-  # Ensure pip cache is preserved.
+  tags:
+    - magnet
+    - gpu
+
+
+### Clean stage
+
+# Manual job to remove the tox cache for the current branch.
+clean-tox-cache-current-branch:
+  stage: clean
   variables:
-    PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+    TOX_WORKDIR: $TOX_CACHE_DIR/$BRANCH_NAME
+  script:
+    - echo "Removing tox venv for current branch at $TOX_WORKDIR"
+    - rm -rf $TOX_WORKDIR
+  when: manual
+  allow_failure: true
+
+# Automatic job to remove the tox cache for a merged branch.
+clean-tox-cache-merged-branch:
+  stage: clean
+  script:
+    - MERGED_BRANCH=$(echo $CI_COMMIT_TITLE | grep -P "'.*?'(?= into)" -o)
+    - echo "Removing tox venv for merged branch $MERGED_BRANCH"
+    - rm -rf $TOX_CACHE_DIR/${MERGED_BRANCH:1:-1}
+  rules:
+    - if: $IS_CORE_PUSH && ($CI_COMMIT_TITLE =~ /Merge branch '.*?' into '.*?'/)
+
+# Manual job to remove the tox cache for the current branch.
+clean-tox-cache-full:
+  stage: clean
+  script:
+    - echo "Removing the entire tox cache at $TOX_CACHE_DIR"
+    - rm -rf $TOX_CACHE_DIR
+  when: manual
+  allow_failure: true
+
+
+### Test stage
+
+# Shared configuration elements between test jobs.
+.test_cfg:
+  stage: test
   # Set up a virtual environment, with latest pip and tox installed.
   before_script:
     - python -m venv venv
@@ -18,27 +88,21 @@
         coverage_format: cobertura
         path: coverage.xml
   coverage: /(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/
-  tags:
-    - ci.inria.fr
-    - small
-
-cache:
-  paths:
-    - .cache/pip
+  # Define the preserved-across-jobs, branch-dependent tox workdir.
+  variables:
+    TOX_WORKDIR: $TOX_CACHE_DIR/$BRANCH_NAME
 
 # Basic test suite: skip GPU use and a few extra integration tests scenarios.
 # This job is called when commits are pushed to a non-draft MR branch.
 # It may also be called manually on commits to draft MR branches.
 test-minimal:
   extends:
-    .config
+    .test_cfg
   script:
-    - tox -e py38 -- --cpu-only
+    - tox -e py38 --workdir=$TOX_WORKDIR -- --cpu-only
   rules:
-    - if: ($CI_PIPELINE_SOURCE == "merge_request_event") &&
-          ($CI_MERGE_REQUEST_TITLE !~ /^Draft:.*/)
-    - if: ($CI_PIPELINE_SOURCE == "merge_request_event") &&
-          ($CI_MERGE_REQUEST_TITLE =~ /^Draft:.*/)
+    - if: $IS_MERGE_REQ && ($CI_MERGE_REQUEST_TITLE !~ /^Draft:.*/)
+    - if: $IS_MERGE_REQ && ($CI_MERGE_REQUEST_TITLE =~ /^Draft:.*/)
       when: manual
       allow_failure: true
 
@@ -47,16 +111,12 @@ test-minimal:
 # It may also be called manually on commits to MR branches.
 test-maximal:
   extends:
-    .config
+    .test_cfg
   script:
-    - tox -e py38 -- --fulltest
+    - tox -e py38 --workdir=$TOX_WORKDIR -- --fulltest
   rules:
-    - if: ($CI_PIPELINE_SOURCE == "push") &&
-          (
-            ($CI_COMMIT_BRANCH == "develop") ||
-            ($CI_COMMIT_BRANCH =~ "/^r\d\.\d+/")
-          )
-    - if: ($CI_PIPELINE_SOURCE == "merge_request_event")
+    - if: $IS_CORE_PUSH
+    - if: $IS_MERGE_REQ
       when: manual
       allow_failure: true  # do not block the base "test" pipeline
   tags:
