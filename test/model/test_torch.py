@@ -210,6 +210,15 @@ def fixture_test_case(
 DEVICES = ["CPU"]
 if torch.cuda.device_count():
     DEVICES.append("GPU")
+    if hasattr(torch, "compile"):
+        # NOTE: this disables some failures regarding torch.compile
+        # capabilities; it notably serves to fix cuda-incompatibility
+        # issues (including on our current CI runner)
+        # torch-advised private access;
+        # pylint: disable=protected-access,ungrouped-imports
+        # fmt: off
+        import torch._dynamo
+        torch._dynamo.config.suppress_errors = True
 
 
 @pytest.mark.parametrize("device", DEVICES)
