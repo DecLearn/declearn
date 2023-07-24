@@ -39,17 +39,6 @@ default:
 
 ### Clean stage
 
-# Manual job to remove the tox cache for the current branch.
-clean-tox-cache-current-branch:
-  stage: clean
-  variables:
-    TOX_WORKDIR: $TOX_CACHE_DIR/$BRANCH_NAME
-  script:
-    - echo "Removing tox venv for current branch at $TOX_WORKDIR"
-    - rm -rf $TOX_WORKDIR
-  when: manual
-  allow_failure: true
-
 # Automatic job to remove the tox cache for a merged branch.
 clean-tox-cache-merged-branch:
   stage: clean
@@ -61,6 +50,21 @@ clean-tox-cache-merged-branch:
     - if: $IS_CORE_PUSH && ($CI_COMMIT_TITLE =~ /Merge branch '.*?' into '.*?'/)
 
 # Manual job to remove the tox cache for the current branch.
+# Also called when a merge commit is detected on a main branch.
+clean-tox-cache-current-branch:
+  stage: clean
+  variables:
+    TOX_WORKDIR: $TOX_CACHE_DIR/$BRANCH_NAME
+  script:
+    - echo "Removing tox venv for current branch at $TOX_WORKDIR"
+    - rm -rf $TOX_WORKDIR
+  rules:
+    - if: $IS_CORE_PUSH && ($CI_COMMIT_TITLE =~ /Merge branch '.*?' into '.*?'/)
+      when: always
+    - when: manual
+      allow_failure: true
+
+# Manual job to remove the tox cache for the all branches.
 clean-tox-cache-full:
   stage: clean
   script:
