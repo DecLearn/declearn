@@ -17,6 +17,42 @@
 
 : '
 Bash script to launch test pipelines for declearn.
+
+This script comprises the following (types of) functions:
+
+- Backend utilities to verbosely run (sets of) commands and report
+  on their success/failure status:
+    - run_command "<command> [arguments]*"
+        Verbosely run a single string-defined command.
+    - run_commands "context" ["<commmand> [arguments]+"]+
+        Verbosely run a sequence of string-defined commands,
+        and report on the number of failed ones afterwards.
+
+- Functions that run (sets of) commands defining a category of tests:
+    - lint_declearn_code
+        Run the pylint, mypy and black commands on the source code.
+    - lint_declearn_tests
+        Run the pylint, mypy and black commands on the tests code.
+    - run_declearn_tests [pytest_args]*
+        Run unit and integrations tests, managing coverage computation
+        and reporting, using pytest, flags to which may be provided.
+
+- Functions that make up bits of the 'run_declearn_tests' one:
+    - run_unit_tests [pytest_args]*
+    - run_integration_tests [pytest_args]*
+    - run_torch13_tests [pytest_args]*
+
+- The 'main' entry point, that enables calling any of the category of tests.
+
+Instructions for developers/maintainers:
+- For linters, you may add or edit the commands that are run, which are
+  declared as an array of strings within the code of the 'lint_' functions.
+- For tests, you may:
+    - edit commands as part of any of the current backend functions
+    - add (or remove) a backend function that runs one or multiple commands,
+      and edit accordingly the array of commands under 'run_declearn_tests'
+- If you want to add a new group of tests, write up a function for it, and
+  edit 'main' to add an input argument case for triggering it.
 '
 
 run_command(){
