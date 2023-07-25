@@ -1,7 +1,7 @@
 # Unit tests and code analysis
 
 Unit tests, as well as more-involved functional ones, are implemented under
-the `test/` folder of the declearn gitlab repository. Functional tests are
+the `test/` folder of the declearn gitlab repository. Integration tests are
 isolated in the `test/functional/` subfolder to enable one to easily exclude
 them in order to run unit tests only.
 
@@ -16,7 +16,7 @@ tools are [black](https://github.com/psf/black) for code formatting,
 [mypy](https://mypy.readthedocs.io/) for static type-cheking.
 
 
-## Running the unit tests suite
+## Running the test suite
 
 ### Running the test suite using tox
 
@@ -39,18 +39,52 @@ below), run:
 tox [tox options] -- --fulltest
 ```
 
-The tests pipeline specified under the `tox.ini` file runs the following:
+You may alternatively trigger some specific categories of tests, using one of:
+```bash
+tox -e py{version}-tests       # run unit and integration tests
+tox -e py{version}-lint_code   # run static code analysis on the source code
+tox -e py{version}-lint_tests  # run static code analysis on the tests' code
+```
 
-- install declearn in an isolated environment
-- run unit tests
-- run functional tests
-- run pylint on declearn, then on the tests' code
-- run mypy on declearn
-- run black on declearn, in check mode
+Note that calling all three commands is equivalent to running the basic
+`tox -e py{version}` job and is somewhat less efficient, as an isolated
+virtual environment will be created for each and every one of them (in
+spite of containing the same package and dependencies).
 
-### Running unit tests using pytest
+### Running the test suite using a bash script
 
-To run all the tests, simply use:
+Under the hood, `tox` makes calls to the `scripts/run_tests.sh` bash script,
+where the categories of tests and associate commands are defined. End-users
+may skip the build isolation offered by tox and call that script directly;
+it is however not advised as it will require you to first install declearn
+(_not_ in editable mode for tests' code's linting) and will not protect you
+from side effects of packages pre-installed in your current python environment.
+
+If you want to call that script, call one of:
+```bash
+bash scripts/run_tests.sh lint_code
+bash scripts/run_tests.sh lint_tests
+bash scripts/run_tests.sh run_tests  # optionally adding pytest flags
+```
+
+The actual takeaway from this section is that developers that want to edit or
+expand the tests suite by altering or adding commands to be run should have a
+look at that bash script and edit it. Further information and instructions are
+provided as part of its internal documentation.
+
+### Running the test suite components manually
+
+You may prefer to run test suite components manually, e.g. because you want
+to investigate a specific type of test or run tests for a single part of the
+code (notably when something fails and requires fixing). To do so, please
+refer to the next section about running targetted tests by manually calling
+the various tools that make up the test suite.
+
+## Running targetted tests
+
+### Running unit and integration tests with pytest
+
+To run all the unit and integration tests, simply use:
 
 ```bash
 pytest test
@@ -88,7 +122,7 @@ You may also arguments to compute and export coverage statistics, using the
 pytest --cov=declearn --cov-report=html tests/
 ```
 
-## Running black to format the code
+### Running black to format the code
 
 The [black](https://github.com/psf/black) code formatter is used to enforce
 uniformity of the source code's formatting style. It is configured to have
@@ -128,7 +162,7 @@ tool. You may run this check manually:
 black --check declearn  # or any specific file or folder
 ```
 
-## Running pylint to check the code
+### Running pylint to check the code
 
 The [pylint](https://pylint.pycqa.org/) linter is expected to be used for
 static code analysis. As a consequence, `# pylint: disable=[some-warning]`
@@ -153,7 +187,7 @@ which both result in a score associated with the analyzed code. If the score
 does not equal 10/10, the test suite will fail - notably preventing acceptance
 of merge requests.
 
-## Running mypy to type-check the code
+### Running mpypy to type-check the code
 
 The [mypy](https://mypy.readthedocs.io/) linter is expected to be used for
 static type-checking code analysis. As a consequence, `# type: ignore` comments
@@ -180,3 +214,29 @@ mypy declearn
 Note that the test suite run with tox comprises the previous command. If mypy
 identifies errors, the test suite will fail - notably preventing acceptance
 of merge requests.
+
+## Notes regarding the GitLab CI/CD
+
+Our GitLab repository is doted with CI/CD (continuous integration / continuous
+delivery) tools, that have the test suite be automatically run when commits are
+pushed to the repository under certain conditions. The rules for this can be
+founder under the `.gitlab-ci.yml` YAML file, which should be somewhat readable
+by someone with limited or no prior knowledge of the GitLab CI/CD tools (that
+are otherwise [documented here](https://docs.gitlab.com/ee/ci/)).
+
+To summarize the current CI/CD configuration:
+
+- The test suite is run when commits are pushed to the development or a release
+  branch (including on merge commits).
+- The test suite is run with some restrictions (no GPU use, limited number of
+  integration tests) on commits to a branch with an open, non-draft Merge
+  Request (MR).
+- Both forms (minimal/maximal) of the test suite may be manually triggered for
+  commits made to a branch with an open, draft MR.
+- Tox is used when running jobs, with some re-use of the created environments
+  but isolation across branches.
+- Some manual and/or automated jobs enable removing the tox cache, to collect
+  unused files and/or force the full environment recreation.
+
+Note that we currently rely on a self-hosted GitLab Runner that uses a Docker
+executor to run jobs and has access to a GPU, that some tests make use of.
