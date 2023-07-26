@@ -18,24 +18,9 @@
 """Dataset implementation to serve torch datasets."""
 
 import dataclasses
-import importlib
-from functools import partial
-from typing import (
-    Any,
-    Callable,
-    ClassVar,
-    Dict,
-    Iterator,
-    List,
-    Optional,
-    Tuple,
-    Union,
-)
+from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, Union
 
 import torch
-from torch.utils.data import BatchSampler, DataLoader
-from torch.utils.data import Dataset as OriginalTorchDataset
-from torch.utils.data import RandomSampler, Sampler, SequentialSampler
 
 from declearn.dataset._base import Dataset, DataSpecs
 from declearn.typing import Batch
@@ -66,10 +51,10 @@ class TorchDataset(Dataset):
 
     def __init__(
         self,
-        dataset: OriginalTorchDataset,
+        dataset: torch.utils.data.Dataset,
         seed: Optional[int] = None,
     ) -> None:
-        """
+        """Instantiate a declearn Dataset wrapping a torch.utils.data.Dataset.
 
         Instantiate the declearn dataset interface from an existing
         torch.utils.data.Dataset object. Minimal checks run on the user
@@ -103,21 +88,29 @@ class TorchDataset(Dataset):
         if self.seed is not None:
             torch.manual_seed(self.seed)
             # pylint: disable=no-member
-            self.gen = torch.Generator().manual_seed(seed)
+            self.gen = torch.Generator().manual_seed(self.seed)
+
+    def _get_length(self) -> int:
+        """Access the wrapped torch Dataset's length, raising if undefined."""
+        try:
+            return len(self.dataset)  # type: ignore
+        except TypeError as exc:
+            raise TypeError(
+                "'TorchDataset' requires the input dataset to implement the "
+                "'__len__' method to expose its size."
+            ) from exc
 
     def get_data_specs(
         self,
     ) -> DataSpecs:
         """Return a DataSpecs object describing this dataset."""
-        specs = {"n_samples": len(self.dataset)}  # Dict[str, Any]
+        specs = {"n_samples": self._get_length()}  # type: Dict[str, Any]
         if hasattr(self.dataset, "get_data_specs"):
             user_specs = self.dataset.get_data_specs()
-            cond = isinstance(user_specs, dict)  # type: ignore
-            if cond:
-                user_specs = self.dataset.get_data_specs()  # type: ignore
+            if isinstance(user_specs, dict):
                 self.check_dataset_specs(user_specs)
                 specs.update(user_specs)
-        return DataSpecs(**specs)  # type: ignore
+        return DataSpecs(**specs)
 
     def generate_batches(
         self,
@@ -144,8 +137,8 @@ class TorchDataset(Dataset):
             If `poisson=True`, this is used to determine the number
             of returned batches (notwithstanding their actual size).
         replacement: bool, default=False
-            Whether to do randopm sampling with or without replacement.
-            Ignored if shuffle = False or poisson = True.
+            Whether to do random sampling with or without replacement.
+            Ignored if `shuffle=False` or `poisson=True`.
         poisson: bool, default=False
             Whether to use Poisson sampling, i.e. make up batches by
             drawing samples with replacement, resulting in variable-
@@ -156,40 +149,49 @@ class TorchDataset(Dataset):
         Yields
         ------
         inputs: torch.Tensor or list(torch.Tensor)
-            Input features
-        targets: torch.Tensor or None
-            Optional target labels or values
+            Input features.
+        targets: torch.Tensor or list(torch.Tensor) or None
+            Optional target labels or values.
         weights: torch.Tensor or None
-            Optional sample weights
-
+            Optional sample weights.
         """
-        sampler: Sampler
+        # arguments serve modularity; pylint: disable=too-many-arguments
         if poisson:
-            module = "opacus.utils.UniformWithReplacementSampler"
-            sampler_class = importlib.import_module(module)
-            n_samples = len(self.dataset)
-            rate = batch_size / n_samples
-            batch_sampler = sampler_class(  # type: ignore
+            try:
+                # conditional import; pylint: disable=import-outside-toplevel
+                from opacus.utils.uniform_sampler import (  # type: ignore
+                    UniformWithReplacementSampler,
+                )
+            except ModuleNotFoundError as exc:
+                # pragma: no cover
+                raise ImportError(
+                    "Cannot use Poisson sampling on 'TorchDataset': "
+                    "missing optional dependency 'opacus', required "
+                    "for this feature."
+                ) from exc
+            n_samples = self._get_length()
+            batch_sampler = UniformWithReplacementSampler(
                 num_samples=n_samples,
-                sample_rate=rate,
+                sample_rate=batch_size / n_samples,
                 generator=self.gen,
             )
         else:
             if shuffle:
-                sampler = RandomSampler(
-                    data_source=self.dataset,
+                sampler = torch.utils.data.RandomSampler(
+                    data_source=self.dataset,  # type: ignore  # sized Dataset
                     replacement=replacement,
                     generator=self.gen,
-                )
+                )  # type: torch.utils.data.Sampler
             else:
-                sampler = SequentialSampler(data_source=self.dataset)
-            batch_sampler = BatchSampler(
+                sampler = torch.utils.data.SequentialSampler(
+                    data_source=self.dataset  # type: ignore  # sized Dataset
+                )
+            batch_sampler = torch.utils.data.BatchSampler(
                 sampler=sampler,
                 batch_size=batch_size,
                 drop_last=drop_remainder,
             )
-        # type: ignore
-        yield from DataLoader(
+        yield from torch.utils.data.DataLoader(
             dataset=self.dataset,
             batch_sampler=batch_sampler,
             collate_fn=self.my_collate,
