@@ -80,24 +80,6 @@ except ModuleNotFoundError:
 else:
     from declearn.dataset.torch import TorchDataset
     from declearn.model.torch import TorchModel
-
-    class CustomDataset(torch.utils.data.Dataset):
-
-        """Basic torch.utils.data.Dataset for testing purposes"""
-
-        def __init__(self, inputs, labels) -> None:
-            self.inputs = torch.from_numpy(inputs)
-            self.labels = torch.from_numpy(labels)
-
-        def __len__(self):
-            return len(self.labels)
-
-        def __getitem__(
-            self, idx: int
-        ) -> Tuple[torch.Tensor, torch.Tensor, None]:
-            return self.inputs[idx, :], self.labels[idx]
-
-
 # pylint: enable=duplicate-code
 # haiku and jax imports
 try:
@@ -151,7 +133,9 @@ def get_model(framework: FrameworkType) -> Model:
 def get_dataset(framework: FrameworkType, inputs, labels):
     """Return a framework-appropriate dataset"""
     if framework == "torch":
-        return TorchDataset(CustomDataset(inputs, labels))
+        inputs = torch.from_numpy(inputs)
+        labels = torch.from_numpy(labels)
+        return TorchDataset(torch.utils.data.TensorDataset(inputs, labels))
     return InMemoryDataset(inputs, labels)
 
 
