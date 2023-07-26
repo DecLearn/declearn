@@ -26,7 +26,6 @@ import numpy as np
 import torch
 from typing_extensions import Self  # future: import from typing (py >=3.11)
 
-from declearn.dataset import TorchBatch
 from declearn.model._utils import raise_on_stringsets_mismatch
 from declearn.model.api import Model
 from declearn.model.torch._samplewise import (
@@ -41,6 +40,7 @@ from declearn.utils import DevicePolicy, get_device_policy, register_type
 __all__ = [
     "TorchModel",
 ]
+
 
 @register_type(name="TorchModel", group="Model")
 class TorchModel(Model):
@@ -262,7 +262,11 @@ class TorchModel(Model):
         return TorchVector(grads)
 
     @staticmethod
-    def _unpack_batch(batch: Batch) -> TorchBatch:
+    def _unpack_batch(
+        batch: Batch,
+    ) -> Tuple[
+        List[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor]
+    ]:
         """Unpack and enforce Tensor conversion to an input data batch."""
         # fmt: off
         # Define an array-to-tensor conversion routine.
