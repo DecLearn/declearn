@@ -37,6 +37,12 @@ Dataset subclasses
 * [InMemoryDataset][declearn.dataset.InMemoryDataset]:
     Dataset subclass serving numpy(-like) memory-loaded data arrays.
 
+Manual-import submodules
+------------------------
+* [torch]
+    [TorchDataset][declearn.dataset.torch.TorchDataset]-providing submodule,
+    that is to be manually imported (as it relies on an optional dependency).
+
 Utility submodules
 ------------------
 * [examples]
@@ -57,4 +63,3 @@ from . import examples
 from ._base import Dataset, DataSpecs, load_dataset_from_json
 from ._inmemory import InMemoryDataset
 from ._split_data import split_data
-from ._torch import TorchDataset, TorchBatch

@@ -23,9 +23,15 @@ from typing import List, Tuple, Union
 
 import numpy as np
 import pytest
-import torch
 
-from declearn.dataset import TorchDataset
+# pylint: disable=duplicate-code
+try:
+    import torch
+except ModuleNotFoundError:
+    pytest.skip("PyTorch is unavailable", allow_module_level=True)
+# pylint: enable=duplicate-code
+
+from declearn.dataset.torch import TorchDataset
 from declearn.test_utils import assert_batch_equal, to_numpy
 
 # Relative imports from the unit tests code of the parent class.

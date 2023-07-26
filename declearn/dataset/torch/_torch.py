@@ -28,15 +28,7 @@ from declearn.utils import register_type
 
 
 __all__ = [
-    "TorchBatch",
     "TorchDataset",
-]
-
-
-TorchBatch = Tuple[
-    Union[List[torch.Tensor], torch.Tensor],
-    Optional[torch.Tensor],
-    Optional[torch.Tensor],
 ]
 
 
@@ -231,7 +223,11 @@ class TorchDataset(Dataset):
             List[Tuple[Union[torch.Tensor, List[torch.Tensor]], ...]],
             List[Union[torch.Tensor, List[torch.Tensor]]],
         ],
-    ) -> TorchBatch:
+    ) -> Tuple[
+        Union[List[torch.Tensor], torch.Tensor],
+        Optional[torch.Tensor],
+        Optional[torch.Tensor],
+    ]:
         """Custom collate function to structure samples into a batch.
 
         Parameters

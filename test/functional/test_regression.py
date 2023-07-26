@@ -78,7 +78,7 @@ try:
 except ModuleNotFoundError:
     pass
 else:
-    from declearn.dataset._torch import TorchDataset
+    from declearn.dataset.torch import TorchDataset
     from declearn.model.torch import TorchModel
 
     class CustomDataset(torch.utils.data.Dataset):
