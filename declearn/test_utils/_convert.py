@@ -18,14 +18,15 @@
 """Utilities to convert to and from numpy, commonly used in declearn tests."""
 
 import importlib
+from typing import Any
 
 import numpy as np
-from numpy.typing import ArrayLike
+
 
 __all__ = ["to_numpy"]
 
 
-def to_numpy(array: ArrayLike, framework: str) -> np.ndarray:
+def to_numpy(array: Any, framework: str) -> np.ndarray:
     """Convert an input framework-based structure to a numpy array."""
     if isinstance(array, np.ndarray):
         return array
@@ -36,4 +37,9 @@ def to_numpy(array: ArrayLike, framework: str) -> np.ndarray:
         if isinstance(array, tensorflow.IndexedSlices):
             with tensorflow.device(array.device):
                 return tensorflow.convert_to_tensor(array).numpy()
-    return array.numpy()  # type: ignore
+        return array.numpy()
+    if framework == "torch":
+        return array.cpu().numpy()
+    raise ValueError(
+        f"Invalid 'framework' from which to convert to numpy: '{framework}'."
+    )
