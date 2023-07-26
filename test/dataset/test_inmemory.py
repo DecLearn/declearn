@@ -17,21 +17,16 @@
 
 """Unit tests objects for 'declearn.dataset.InMemoryDataset'"""
 
-import sys
+import os
 
 import pytest
 
 from declearn.dataset import InMemoryDataset
+from declearn.test_utils import make_importable
 
-# Relative imports from the unit tests code of the parent class.
-# pylint: disable=wrong-import-order, wrong-import-position
-# fmt: off
-sys.path.append(".")
-from dataset_testbase import DatasetTestSuite, DatasetTestToolbox
-
-sys.path.pop()
-# pylint: enable=wrong-import-order, wrong-import-position
-# fmt: on
+# relative imports from `dataset_testbase.py`
+with make_importable(os.path.dirname(__file__)):
+    from dataset_testbase import DatasetTestSuite, DatasetTestToolbox
 
 
 SEED = 0

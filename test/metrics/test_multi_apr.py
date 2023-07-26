@@ -18,21 +18,16 @@
 """Unit tests for `declearn.metrics.MulticlassAccuracyPrecisionRecall`."""
 
 import os
-import sys
 
 import numpy as np
 import pytest
 
 from declearn.metrics import MulticlassAccuracyPrecisionRecall
+from declearn.test_utils import make_importable
 
-# dirty trick to import from `metric_testing.py`;
-# fmt: off
-# pylint: disable=wrong-import-order, wrong-import-position
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-from metric_testing import MetricTestCase, MetricTestSuite
-sys.path.pop()
-# pylint: enable=wrong-import-order, wrong-import-position
-# fmt: on
+# relative imports from `metric_testing.py`
+with make_importable(os.path.dirname(__file__)):
+    from metric_testing import MetricTestCase, MetricTestSuite
 
 
 @pytest.fixture(name="test_case")

@@ -18,9 +18,9 @@
 """Unit tests for TorchModel."""
 
 import json
-import sys
+import os
 import typing
-from typing import Any, List, Literal, Tuple
+from typing import List, Literal, Tuple
 
 import pytest
 
@@ -30,13 +30,13 @@ except ModuleNotFoundError:
     pytest.skip("PyTorch is unavailable", allow_module_level=True)
 
 from declearn.model.torch import TorchModel, TorchVector
+from declearn.test_utils import make_importable
 from declearn.typing import Batch
 from declearn.utils import set_device_policy
 
-# dirty trick to import from `model_testing.py`;
-# pylint: disable=wrong-import-order, wrong-import-position
-sys.path.append(".")
-from model_testing import ModelTestCase, ModelTestSuite
+# relative imports from `model_testing.py`
+with make_importable(os.path.dirname(__file__)):
+    from model_testing import ModelTestCase, ModelTestSuite
 
 
 class ExtractLSTMFinalOutput(torch.nn.Module):

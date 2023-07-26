@@ -18,7 +18,7 @@
 """Unit tests objects for 'declearn.dataset.TorchDataset'"""
 
 import dataclasses
-import sys
+import os
 from typing import List, Tuple, Union
 
 import numpy as np
@@ -32,19 +32,12 @@ except ModuleNotFoundError:
 # pylint: enable=duplicate-code
 
 from declearn.dataset.torch import TorchDataset
-from declearn.test_utils import assert_batch_equal, to_numpy
+from declearn.test_utils import assert_batch_equal, make_importable, to_numpy
 
-# Relative imports from the unit tests code of the parent class.
-# pylint: disable=wrong-import-order, wrong-import-position
-# fmt: off
-sys.path.append(".")
-from dataset_testbase import DatasetTestSuite, DatasetTestToolbox
+# relative imports from `dataset_testbase.py`
+with make_importable(os.path.dirname(__file__)):
+    from dataset_testbase import DatasetTestSuite, DatasetTestToolbox
 
-sys.path.pop()
-# pylint: enable=wrong-import-order, wrong-import-position
-# fmt: on
-
-# false-positives; pylint: disable=no-member
 
 SEED = 0
 
@@ -102,11 +95,10 @@ class TestTorchDataset(DatasetTestSuite):
         Note: imperfect test, depends on a specific seed implementation"""
         expected = np.array([1, 2, 4, 3])
         result = toolbox.get_dataset().generate_batches(1, shuffle=True)
+        framework = toolbox.framework
         assert all(
-            (
-                to_numpy(res[1], toolbox.framework)[0] == expected[i]
-                for i, res in enumerate(result)
-            )
+            to_numpy(res[1], framework)[0] == expected[i]  # type: ignore
+            for i, res in enumerate(result)
         )
 
     def test_generate_batches_replacement_seeded(
@@ -118,11 +110,10 @@ class TestTorchDataset(DatasetTestSuite):
         result = toolbox.get_dataset().generate_batches(
             1, replacement=True, shuffle=True
         )
+        framework = toolbox.framework
         assert all(
-            (
-                to_numpy(res[1], toolbox.framework)[0] == expected[i]
-                for i, res in enumerate(result)
-            )
+            to_numpy(res[1], framework)[0] == expected[i]  # type: ignore
+            for i, res in enumerate(result)
         )
 
     def test_get_data_specs_custom(self, toolbox: DatasetTestToolbox):
@@ -134,11 +125,11 @@ class TestTorchDataset(DatasetTestSuite):
         """Test the 'collate_to_batch' util with single-tensor x samples."""
 
         samples = [
-            torch.tensor([1, 2]),
-            torch.tensor([3, 4]),
+            torch.Tensor([1, 2]),
+            torch.Tensor([3, 4]),
         ]  # type: List[Union[torch.Tensor, List[torch.Tensor]]]
         expected_output = (
-            torch.tensor([[1, 2], [3, 4]]),
+            torch.Tensor([[1, 2], [3, 4]]),
             None,
             None,
         )
@@ -151,11 +142,11 @@ class TestTorchDataset(DatasetTestSuite):
     ):
         """Test the 'collate_to_batch' util with (x,) samples."""
         samples = [
-            (torch.tensor([1, 2]),),
-            (torch.tensor([3, 4]),),
+            (torch.Tensor([1, 2]),),
+            (torch.Tensor([3, 4]),),
         ]  # type: List[Tuple[Union[torch.Tensor, List[torch.Tensor]], ...]]
         expected_output = (
-            torch.tensor([[1, 2], [3, 4]]),
+            torch.Tensor([[1, 2], [3, 4]]),
             None,
             None,
         )
@@ -165,12 +156,12 @@ class TestTorchDataset(DatasetTestSuite):
     def test_collate_to_batch_two_tensors(self, toolbox: DatasetTestToolbox):
         """Test the 'collate_to_batch' util with (x, y) samples."""
         samples = [
-            (torch.tensor([1, 2]), torch.tensor([0.0])),
-            (torch.tensor([3, 4]), torch.tensor([1.0])),
+            (torch.Tensor([1, 2]), torch.Tensor([0.0])),
+            (torch.Tensor([3, 4]), torch.Tensor([1.0])),
         ]  # type: List[Tuple[Union[torch.Tensor, List[torch.Tensor]], ...]]
         expected_output = (
-            torch.tensor([[1, 2], [3, 4]]),
-            torch.tensor([[0.0], [1.0]]),
+            torch.Tensor([[1, 2], [3, 4]]),
+            torch.Tensor([[0.0], [1.0]]),
             None,
         )
         output = TorchDataset.collate_to_batch(samples)
@@ -179,12 +170,12 @@ class TestTorchDataset(DatasetTestSuite):
     def test_collate_to_batch_list_in_tuple(self, toolbox: DatasetTestToolbox):
         """Test the 'collate_to_batch' util with ([x1, x2], y) samples."""
         samples = [
-            ([torch.tensor([1, 2]), torch.tensor([3, 4])], torch.tensor([0])),
-            ([torch.tensor([5, 6]), torch.tensor([7, 8])], torch.tensor([1])),
+            ([torch.Tensor([1, 2]), torch.Tensor([3, 4])], torch.Tensor([0])),
+            ([torch.Tensor([5, 6]), torch.Tensor([7, 8])], torch.Tensor([1])),
         ]  # type: List[Tuple[Union[torch.Tensor, List[torch.Tensor]], ...]]
         expected_output = (
-            [torch.tensor([[1, 2], [5, 6]]), torch.tensor([[3, 4], [7, 8]])],
-            torch.tensor([[0], [1]]),
+            [torch.Tensor([[1, 2], [5, 6]]), torch.Tensor([[3, 4], [7, 8]])],
+            torch.Tensor([[0], [1]]),
             None,
         )
         output = TorchDataset.collate_to_batch(samples)
@@ -195,11 +186,11 @@ class TestTorchDataset(DatasetTestSuite):
     ):
         """Test the 'collate_to_batch' util with [x1, x2] samples."""
         samples = [
-            [torch.tensor([1, 2]), torch.tensor([3, 4])],
-            [torch.tensor([5, 6]), torch.tensor([7, 8])],
+            [torch.Tensor([1, 2]), torch.Tensor([3, 4])],
+            [torch.Tensor([5, 6]), torch.Tensor([7, 8])],
         ]  # type: List[Union[torch.Tensor, List[torch.Tensor]]]
         expected_output = (
-            [torch.tensor([[1, 2], [5, 6]]), torch.tensor([[3, 4], [7, 8]])],
+            [torch.Tensor([[1, 2], [5, 6]]), torch.Tensor([[3, 4], [7, 8]])],
             None,
             None,
         )
