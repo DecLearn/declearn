@@ -18,13 +18,20 @@
 """Dataset implementation to serve torch datasets."""
 
 import dataclasses
-from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, Union
+from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
 
 import torch
 
 from declearn.dataset._base import Dataset, DataSpecs
 from declearn.typing import Batch
 from declearn.utils import register_type
+
+
+__all__ = [
+    "TorchBatch",
+    "TorchDataset",
+]
+
 
 TorchBatch = Tuple[
     Union[List[torch.Tensor], torch.Tensor],
@@ -66,24 +73,33 @@ class TorchDataset(Dataset):
             return either a single torch.Tensor (the model inputs) or a
             tuple of (model inputs, optional label, optional sample weights)
             as torch.Tensors or list of torch.Tensors.
-        target: data array or str or None, default=None
-            Optional data array containing target labels (for supervised
-            learning)
-        s_wght: int or str or function or None, default=None
-            Optional data array containing sample weights
         seed: int or None, default=None
             Optional seed for the random number generator based on which
             the dataset is (optionally) shuffled when generating batches.
+
+        Notes
+        -----
+        The wrapped `torch.utils.data.Dataset`:
+
+        - *must* implement the `__len__` method, defining its size.
+        - *may* implement a `get_data_specs` method, returning metadata
+          that are to be shared with the FL server, as a dict with keys
+          and types that match the `declearn.dataset.DataSpecs` fields.
+        - should return sample-level (unbatched) elements, as either:
+            - (inputs,)
+            - (inputs, labels)
+            - (inputs, labels, weights)
+          where:
+            - inputs may be a single tensor or list of tensors
+            - labels may be a single tensor or None
+            - weights may be a single tensor or None
         """
         super().__init__()
         self.dataset = dataset
-        self.data_item_info = get_data_item_info(self.dataset[0])
         # Assign a random number generator.
         self.seed = seed
-        self.gen = None
-        self.my_collate = self.get_custom_collate(self.data_item_info)
+        self.gen = None  # type: Optional[torch.Generator]
         if self.seed is not None:
-            torch.manual_seed(self.seed)
             # pylint: disable=no-member
             self.gen = torch.Generator().manual_seed(self.seed)
 
@@ -191,7 +207,7 @@ class TorchDataset(Dataset):
         yield from torch.utils.data.DataLoader(
             dataset=self.dataset,
             batch_sampler=batch_sampler,
-            collate_fn=self.my_collate,
+            collate_fn=self.collate_to_batch,
         )
 
     @staticmethod
@@ -210,50 +226,38 @@ class TorchDataset(Dataset):
                 )
 
     @staticmethod
-    def get_custom_collate(data_item_info: Dict[str, Any]) -> Callable:
-        """Given the type and lenght of the items returned by
-        `self.dataset.__getitem__()`, returns the appropriate utility function
-        to cast the data items to the expected output format. This function
-        is meant to be used  as an argument to the torch Dataloader.
+    def collate_to_batch(
+        samples: Union[
+            List[Tuple[Union[torch.Tensor, List[torch.Tensor]], ...]],
+            List[Union[torch.Tensor, List[torch.Tensor]]],
+        ],
+    ) -> TorchBatch:
+        """Custom collate function to structure samples into a batch.
 
+        Parameters
+        ----------
+        samples:
+            List of sample elements that are to be collated into a batch.
+            Each sample may either be:
+
+            - a single Tensor or list of Tensors, denoting input data
+            - a tuple containing 1 to 3 (lists of) Tensors, denoting,
+              in that order: input data, target labels and sample
+              weights.
+
+        Returns
+        -------
+        batch:
+            Batch of (x, y, w) stacked samples, where x may be a list,
+            and y and w may be None.
         """
-        return partial(transform_batch, data_item_info=data_item_info)
-
-
-# Utility functions
-
-
-def get_data_item_info(data_item) -> Dict[str, Any]:
-    """Check that the user-defined dataset `__getitem__` method returns a
-    data_item that is easily castable to the format expected for
-    declearn-based optimization. If not, raises an error.
-
-    Note : we assume that if the dataset returns a tuple of tensors of
-    the form (input,label,weights). The edge case with no labels provided
-    but the sample weights is not currently covered."""
-
-    if isinstance(data_item, torch.Tensor):
-        return {"type": torch.Tensor, "len": None}
-    if isinstance(data_item, tuple) and 0 < len(data_item) < 4:
-        return {"type": tuple, "len": len(data_item)}
-    raise ValueError(
-        "Your orignal Torch Dataset should return either a single"
-        "torch.Tensor (the model inputs) or a tuple of (model"
-        "inputs, optional label, optional sample weights) as torch"
-        ".Tensors"
-    )
-
-
-def transform_batch(batch, data_item_info) -> TorchBatch:
-    """
-    Based on the type and shape of data items, returns a tuple of lenght
-    three containing the batched data and patched with Nones.
-    """
-    original_batch = torch.utils.data.default_collate(batch)
-    out: TorchBatch
-    if data_item_info["type"] == torch.Tensor:
-        out = (original_batch, None, None)
-    else:
-        patch = [None for _ in range(3 - data_item_info["len"])]
-        out = (*original_batch, *patch)  # type: ignore
-    return out
+        if not isinstance(samples[0], tuple):
+            samples = [(sample,) for sample in samples]  # type: ignore
+        batch = torch.utils.data.default_collate(samples)
+        if not 1 <= len(batch) <= 3:
+            raise TypeError(
+                "Raw batches should contain 1 to 3 elements, denoting (in "
+                "that order) model inputs, true labels and sample weights."
+            )
+        padding = [None] * (3 - len(batch))
+        return (*batch, *padding)  # type: ignore

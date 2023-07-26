@@ -17,15 +17,15 @@
 
 """Unit tests objects for 'declearn.dataset.TorchDataset'"""
 
+import dataclasses
 import sys
-from dataclasses import asdict
-from typing import Tuple
+from typing import List, Tuple, Union
 
 import numpy as np
 import pytest
 import torch
 
-from declearn.dataset import TorchDataset, transform_batch
+from declearn.dataset import TorchDataset
 from declearn.test_utils import assert_batch_equal, to_numpy
 
 # Relative imports from the unit tests code of the parent class.
@@ -56,9 +56,10 @@ class CustomDataset(torch.utils.data.Dataset):
         return len(self.labels)
 
     def __getitem__(
-        self, idx: int
+        self,
+        idx: int,
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        return self.inputs[idx, :], self.labels[idx], self.weights[idx]
+        return self.inputs[idx], self.labels[idx], self.weights[idx]
 
     def get_data_specs(self):
         """Basic get_data_spec method"""
@@ -121,62 +122,80 @@ class TestTorchDataset(DatasetTestSuite):
     def test_get_data_specs_custom(self, toolbox: DatasetTestToolbox):
         """Test the get_data_spec method"""
         specs = toolbox.get_dataset().get_data_specs()
-        assert asdict(specs)["classes"] == tuple(range(1, 5))
+        assert dataclasses.asdict(specs)["classes"] == tuple(range(1, 5))
 
-    def test_transform_batch_single_tensor(self, toolbox: DatasetTestToolbox):
-        """
-        Test the declearn.dataset.transform_batch utility function on
-        a single tensor.
+    def test_collate_to_batch_single_tensor(self, toolbox: DatasetTestToolbox):
+        """Test the 'collate_to_batch' util with single-tensor x samples."""
 
-        Note : batches are wrapped in list to stick to expected input format
-        of torch.utils.data.default_collate(batch)
-        """
-        batch = [torch.tensor([[1, 2], [3, 4]])]
-        data_item_info = {"type": torch.Tensor, "len": 1}
-        expected_output = [(np.array([[[1, 2], [3, 4]]]), None, None)]
-        output = [transform_batch(batch, data_item_info)]
+        samples = [
+            torch.tensor([1, 2]),
+            torch.tensor([3, 4]),
+        ]  # type: List[Union[torch.Tensor, List[torch.Tensor]]]
+        expected_output = (
+            torch.tensor([[1, 2], [3, 4]]),
+            None,
+            None,
+        )
+        output = TorchDataset.collate_to_batch(samples)
         assert_batch_equal(output, expected_output, toolbox.framework)
 
-    def test_transform_batch_two_tensors(self, toolbox: DatasetTestToolbox):
-        """
-        Test the declearn.dataset.transform_batch utility function on
-        two tensors tensor.
-
-        Note : batches are wrapped in list to stick to expected input format
-        of torch.utils.data.default_collate(batch)
-        """
-        batch = [
+    def test_collate_to_batch_single_tensor_in_tuple(
+        self,
+        toolbox: DatasetTestToolbox,
+    ):
+        """Test the 'collate_to_batch' util with (x,) samples."""
+        samples = [
+            (torch.tensor([1, 2]),),
+            (torch.tensor([3, 4]),),
+        ]  # type: List[Tuple[Union[torch.Tensor, List[torch.Tensor]], ...]]
+        expected_output = (
             torch.tensor([[1, 2], [3, 4]]),
-            torch.tensor([[1, 2], [3, 4]]),
-        ]
-        data_item_info = {"type": torch.Tensor, "len": 1}
-        expected_output = [
-            (np.array([[[1, 2], [3, 4]], [[1, 2], [3, 4]]]), None, None)
-        ]
-        output = [transform_batch(batch, data_item_info)]
+            None,
+            None,
+        )
+        output = TorchDataset.collate_to_batch(samples)
         assert_batch_equal(output, expected_output, toolbox.framework)
 
-    def test_transform_batch_list_in_tuple(self, toolbox: DatasetTestToolbox):
-        """
-        Test the declearn.dataset.transform_batch utility function on
-        a (input,label) tuple, where input is a list of tensors.
+    def test_collate_to_batch_two_tensors(self, toolbox: DatasetTestToolbox):
+        """Test the 'collate_to_batch' util with (x, y) samples."""
+        samples = [
+            (torch.tensor([1, 2]), torch.tensor([0.0])),
+            (torch.tensor([3, 4]), torch.tensor([1.0])),
+        ]  # type: List[Tuple[Union[torch.Tensor, List[torch.Tensor]], ...]]
+        expected_output = (
+            torch.tensor([[1, 2], [3, 4]]),
+            torch.tensor([[0.0], [1.0]]),
+            None,
+        )
+        output = TorchDataset.collate_to_batch(samples)
+        assert_batch_equal(output, expected_output, toolbox.framework)
 
-        Note : batches are wrapped in list to stick to expected input format
-        of torch.utils.data.default_collate(batch)
-        """
-        batch = [
-            (
-                [torch.tensor([1, 2]), torch.tensor([3, 4])],
-                torch.tensor([0, 0]),
-            )
-        ]
-        data_item_info = {"type": tuple, "len": 2}
-        expected_output = [
-            (
-                [np.array([[1, 2]]), np.array([[3, 4]])],
-                torch.tensor([[0, 0]]),
-                None,
-            )
-        ]
-        output = [transform_batch(batch, data_item_info)]
+    def test_collate_to_batch_list_in_tuple(self, toolbox: DatasetTestToolbox):
+        """Test the 'collate_to_batch' util with ([x1, x2], y) samples."""
+        samples = [
+            ([torch.tensor([1, 2]), torch.tensor([3, 4])], torch.tensor([0])),
+            ([torch.tensor([5, 6]), torch.tensor([7, 8])], torch.tensor([1])),
+        ]  # type: List[Tuple[Union[torch.Tensor, List[torch.Tensor]], ...]]
+        expected_output = (
+            [torch.tensor([[1, 2], [5, 6]]), torch.tensor([[3, 4], [7, 8]])],
+            torch.tensor([[0], [1]]),
+            None,
+        )
+        output = TorchDataset.collate_to_batch(samples)
+        assert_batch_equal(output, expected_output, toolbox.framework)
+
+    def test_collate_to_batch_multiple_inputs_no_labels(
+        self, toolbox: DatasetTestToolbox
+    ):
+        """Test the 'collate_to_batch' util with [x1, x2] samples."""
+        samples = [
+            [torch.tensor([1, 2]), torch.tensor([3, 4])],
+            [torch.tensor([5, 6]), torch.tensor([7, 8])],
+        ]  # type: List[Union[torch.Tensor, List[torch.Tensor]]]
+        expected_output = (
+            [torch.tensor([[1, 2], [5, 6]]), torch.tensor([[3, 4], [7, 8]])],
+            None,
+            None,
+        )
+        output = TorchDataset.collate_to_batch(samples)
         assert_batch_equal(output, expected_output, toolbox.framework)

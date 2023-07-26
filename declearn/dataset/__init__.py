@@ -57,4 +57,4 @@ from . import examples
 from ._base import Dataset, DataSpecs, load_dataset_from_json
 from ._inmemory import InMemoryDataset
 from ._split_data import split_data
-from ._torch import TorchDataset, TorchBatch, transform_batch
+from ._torch import TorchDataset, TorchBatch
