@@ -20,7 +20,7 @@
 import warnings
 from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass
-from typing import Any, ClassVar, Iterator, List, Optional, Set, Tuple, Union
+from typing import Any, Iterator, List, Optional, Set, Tuple, Union
 
 from declearn.typing import Batch
 from declearn.utils import access_registered, create_types_registry, json_load
@@ -93,9 +93,6 @@ class Dataset(metaclass=ABCMeta):
     straightforward to specify as part of FL algorithms.
     """
 
-    # arguments serve modularity; pylint: disable=too-many-arguments
-    _type_key: ClassVar[str] = NotImplemented
-
     @abstractmethod
     def get_data_specs(
         self,
@@ -103,7 +100,7 @@ class Dataset(metaclass=ABCMeta):
         """Return a DataSpecs object describing this dataset."""
 
     @abstractmethod
-    def generate_batches(
+    def generate_batches(  # pylint: disable=too-many-arguments
         self,
         batch_size: int,
         shuffle: bool = False,
@@ -127,8 +124,8 @@ class Dataset(metaclass=ABCMeta):
             If `poisson=True`, this is used to determine the number
             of returned batches (notwithstanding their actual size).
         replacement: bool, default=False
-            Whether to do randopm sampling with or without replacement.
-            Ignored if shuffle = False or poisson = True.
+            Whether to do random sampling with or without replacement.
+            Ignored if `shuffle=False` or `poisson=True`.
         poisson: bool, default=False
             Whether to use Poisson sampling, i.e. make up batches by
             drawing samples with replacement, resulting in variable-

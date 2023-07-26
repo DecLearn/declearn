@@ -46,9 +46,6 @@ class TorchDataset(Dataset):
       using the provided torch.dataset
     """
 
-    # arguments serve modularity; pylint: disable=too-many-arguments
-    _type_key: ClassVar[str] = "TorchDataset"
-
     def __init__(
         self,
         dataset: torch.utils.data.Dataset,
