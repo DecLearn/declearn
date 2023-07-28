@@ -26,26 +26,19 @@ import numpy as np
 import torch
 from typing_extensions import Self  # future: import from typing (py >=3.11)
 
+from declearn.model._utils import raise_on_stringsets_mismatch
 from declearn.model.api import Model
-from declearn.model.torch.utils import AutoDeviceModule, select_device
 from declearn.model.torch._samplewise import (
     GetGradientsFunction,
     build_samplewise_grads_fn,
 )
 from declearn.model.torch._vector import TorchVector
-from declearn.model._utils import raise_on_stringsets_mismatch
+from declearn.model.torch.utils import AutoDeviceModule, select_device
 from declearn.typing import Batch
 from declearn.utils import DevicePolicy, get_device_policy, register_type
 
-
 __all__ = [
     "TorchModel",
-]
-
-
-# alias for unpacked Batch structures, converted to torch.Tensor objects
-TensorBatch = Tuple[
-    List[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor]
 ]
 
 
@@ -269,7 +262,11 @@ class TorchModel(Model):
         return TorchVector(grads)
 
     @staticmethod
-    def _unpack_batch(batch: Batch) -> TensorBatch:
+    def _unpack_batch(
+        batch: Batch,
+    ) -> Tuple[
+        List[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor]
+    ]:
         """Unpack and enforce Tensor conversion to an input data batch."""
         # fmt: off
         # Define an array-to-tensor conversion routine.
@@ -282,7 +279,7 @@ class TorchModel(Model):
         if not isinstance(inputs, (tuple, list)):
             inputs = [inputs]
         # Ensure output data was converted to Tensor.
-        output = [list(map(convert, inputs)), convert(y_true), convert(s_wght)]
+        output = (list(map(convert, inputs)), convert(y_true), convert(s_wght))
         return output  # type: ignore
 
     def _compute_loss(

@@ -70,6 +70,7 @@ class InMemoryDataset(Dataset):
     """
 
     # attributes serve clarity; pylint: disable=too-many-instance-attributes
+    # arguments serve modularity; pylint: disable=too-many-arguments
 
     _type_key: ClassVar[str] = "InMemoryDataset"
 
@@ -377,6 +378,7 @@ class InMemoryDataset(Dataset):
         batch_size: int,
         shuffle: bool = False,
         drop_remainder: bool = True,
+        replacement: bool = False,
         poisson: bool = False,
     ) -> Iterator[Batch]:
         """Yield batches of data samples.
@@ -395,6 +397,8 @@ class InMemoryDataset(Dataset):
             samples than `batch_size`, or yield it anyway.
             If `poisson=True`, this is used to determine the number
             of returned batches (notwithstanding their actual size).
+        replacement: bool, default=False
+            Not used in this class.
         poisson: bool, default=False
             Whether to use Poisson sampling, i.e. make up batches by
             drawing samples with replacement, resulting in variable-

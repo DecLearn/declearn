@@ -33,20 +33,18 @@ same values (up to reasonable numerical precision) for all
 of these.
 """
 
-import sys
+import os
 from typing import Type
 
 import pytest
 
 from declearn.optimizer.regularizers import Regularizer
+from declearn.test_utils import make_importable
 from declearn.utils import access_types_mapping
 
-# relative import; pylint: disable=wrong-import-order, wrong-import-position
-# fmt: off
-sys.path.append(".")
-from optim_testing import PluginTestBase
-sys.path.pop()
-# fmt: on
+# relative imports from `optim_testing.py`
+with make_importable(os.path.dirname(__file__)):
+    from optim_testing import PluginTestBase
 
 
 REGULARIZER_SUBCLASSES = access_types_mapping(group="Regularizer")

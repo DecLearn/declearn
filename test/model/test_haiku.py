@@ -17,7 +17,7 @@
 
 """Unit tests for HaikuModel."""
 
-import sys
+import os
 import warnings
 from typing import Any, Callable, Dict, List, Literal, Union
 
@@ -33,13 +33,13 @@ except ModuleNotFoundError:
     pytest.skip("jax and/or haiku are unavailable", allow_module_level=True)
 
 from declearn.model.haiku import HaikuModel, JaxNumpyVector
+from declearn.test_utils import make_importable
 from declearn.typing import Batch
 from declearn.utils import set_device_policy
 
-# dirty trick to import from `model_testing.py`;
-# pylint: disable=wrong-import-order, wrong-import-position
-sys.path.append(".")
-from model_testing import ModelTestCase, ModelTestSuite
+# relative imports from `model_testing.py`
+with make_importable(os.path.dirname(__file__)):
+    from model_testing import ModelTestCase, ModelTestSuite
 
 # Overriding float32 default in jax
 jaxconfig.update("jax_enable_x64", True)
@@ -116,6 +116,7 @@ class HaikuTestCase(ModelTestCase):
 
     vector_cls = JaxNumpyVector
     tensor_cls = jax.Array
+    framework = "jax"
 
     def __init__(
         self,
@@ -130,14 +131,6 @@ class HaikuTestCase(ModelTestCase):
         self.kind = kind
         self.device = device
         set_device_policy(gpu=(device == "gpu"), idx=0)
-
-    @staticmethod
-    def to_numpy(
-        tensor: Any,
-    ) -> np.ndarray:
-        """Convert an input jax jax.Array to a numpy jax.Array."""
-        assert isinstance(tensor, jax.Array)
-        return np.asarray(tensor)
 
     @property
     def dataset(

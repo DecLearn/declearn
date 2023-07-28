@@ -31,9 +31,9 @@ from declearn.test_utils import (
     FrameworkType,
     GradientsTestCase,
     list_available_frameworks,
+    to_numpy,
 )
 from declearn.utils import json_pack, json_unpack, set_device_policy
-
 
 set_device_policy(gpu=False)  # run Vector unit tests on CPU only
 
@@ -52,7 +52,9 @@ class TestVectorAbstractMethods:
         grad = GradientsTestCase(framework)
         ones = grad.mock_ones
         test_coefs = ones.sum().coefs
-        test_values = [grad.to_numpy(test_coefs[el]) for el in test_coefs]
+        test_values = [
+            to_numpy(test_coefs[el], grad.framework) for el in test_coefs
+        ]
         values = [25.0, 4.0, 1.0]
         assert values == test_values
 
@@ -63,13 +65,17 @@ class TestVectorAbstractMethods:
         values = [np.ones((5, 5)), np.ones((4,)), np.ones((1,))]
         # test Vector
         test_coefs = zeros.maximum(ones).coefs
-        test_values = [grad.to_numpy(test_coefs[el]) for el in test_coefs]
+        test_values = [
+            to_numpy(test_coefs[el], grad.framework) for el in test_coefs
+        ]
         assert all(
             (values[i] == test_values[i]).all() for i in range(len(values))
         )
         # test float
         test_coefs = zeros.maximum(1.0).coefs
-        test_values = [grad.to_numpy(test_coefs[el]) for el in test_coefs]
+        test_values = [
+            to_numpy(test_coefs[el], grad.framework) for el in test_coefs
+        ]
         assert all(
             (values[i] == test_values[i]).all() for i in range(len(values))
         )
@@ -81,13 +87,17 @@ class TestVectorAbstractMethods:
         values = [np.zeros((5, 5)), np.zeros((4,)), np.zeros((1,))]
         # test Vector
         test_coefs = ones.minimum(zeros).coefs
-        test_values = [grad.to_numpy(test_coefs[el]) for el in test_coefs]
+        test_values = [
+            to_numpy(test_coefs[el], grad.framework) for el in test_coefs
+        ]
         assert all(
             (values[i] == test_values[i]).all() for i in range(len(values))
         )
         # test float
         test_coefs = zeros.minimum(1.0).coefs
-        test_values = [grad.to_numpy(test_coefs[el]) for el in test_coefs]
+        test_values = [
+            to_numpy(test_coefs[el], grad.framework) for el in test_coefs
+        ]
         assert all(
             (values[i] == test_values[i]).all() for i in range(len(values))
         )
@@ -98,8 +108,12 @@ class TestVectorAbstractMethods:
         ones = grad.mock_ones
         for vec in ones, -1 * ones:
             test_coefs = vec.sign().coefs
-            test_values = [grad.to_numpy(test_coefs[el]) for el in test_coefs]
-            values = [grad.to_numpy(vec.coefs[el]) for el in vec.coefs]
+            test_values = [
+                to_numpy(test_coefs[el], grad.framework) for el in test_coefs
+            ]
+            values = [
+                to_numpy(vec.coefs[el], grad.framework) for el in vec.coefs
+            ]
             assert all(
                 (values[i] == test_values[i]).all() for i in range(len(values))
             )
@@ -133,7 +147,9 @@ class TestVector:
                 (zeros + ones - zeros) / (ones + ones)
             )
             test_coefs = test_grad.coefs
-            test_values = [grad.to_numpy(test_coefs[el]) for el in test_coefs]
+            test_values = [
+                to_numpy(test_coefs[el], grad.framework) for el in test_coefs
+            ]
             return all(
                 (values[i] == test_values[i]).all() for i in range(len(values))
             )

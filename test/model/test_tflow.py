@@ -17,11 +17,10 @@
 
 """Unit tests for TensorflowModel."""
 
-import sys
+import os
 import warnings
-from typing import Any, List, Literal
+from typing import List, Literal
 
-import numpy as np
 import pytest
 
 try:
@@ -33,13 +32,13 @@ except ModuleNotFoundError:
 
 from declearn.model.tensorflow import TensorflowModel, TensorflowVector
 from declearn.model.tensorflow.utils import build_keras_loss
+from declearn.test_utils import make_importable
 from declearn.typing import Batch
 from declearn.utils import set_device_policy
 
-# dirty trick to import from `model_testing.py`;
-# pylint: disable=wrong-import-order, wrong-import-position
-sys.path.append(".")
-from model_testing import ModelTestCase, ModelTestSuite
+# relative imports from `model_testing.py`
+with make_importable(os.path.dirname(__file__)):
+    from model_testing import ModelTestCase, ModelTestSuite
 
 
 class TensorflowTestCase(ModelTestCase):
@@ -67,6 +66,7 @@ class TensorflowTestCase(ModelTestCase):
 
     vector_cls = TensorflowVector
     tensor_cls = tf.Tensor
+    framework = "tensorflow"
 
     def __init__(
         self,
@@ -81,16 +81,6 @@ class TensorflowTestCase(ModelTestCase):
         self.kind = kind
         self.device = device
         set_device_policy(gpu=(device == "GPU"), idx=0)
-
-    @staticmethod
-    def to_numpy(
-        tensor: Any,
-    ) -> np.ndarray:
-        """Convert an input tensor to a numpy array."""
-        if isinstance(tensor, tf.IndexedSlices):
-            tensor = tf.convert_to_tensor(tensor)
-        assert isinstance(tensor, tf.Tensor)
-        return tensor.numpy()
 
     @property
     def dataset(

@@ -20,9 +20,7 @@
 import warnings
 from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass
-from typing import Any, ClassVar, Iterator, List, Optional, Set, Tuple, Union
-
-from typing_extensions import Self  # future: import from typing (py >=3.11)
+from typing import Any, Iterator, List, Optional, Set, Tuple, Union
 
 from declearn.typing import Batch
 from declearn.utils import access_registered, create_types_registry, json_load
@@ -30,7 +28,6 @@ from declearn.utils import access_registered, create_types_registry, json_load
 __all__ = [
     "DataSpecs",
     "Dataset",
-    "load_dataset_from_json",
 ]
 
 
@@ -47,7 +44,9 @@ class DataSpecs:
     """
 
     n_samples: int
-    features_shape: Union[Tuple[Optional[int], ...], List[Optional[int]]]
+    features_shape: Optional[
+        Union[Tuple[Optional[int], ...], List[Optional[int]]]
+    ] = None
     classes: Optional[Set[Any]] = None
     data_type: Optional[str] = None
     n_features: Optional[int] = None  # DEPRECATED as of declearn v2.2
@@ -75,7 +74,8 @@ class DataSpecs:
                     "Both 'features_shape' and deprecated 'n_features' were "
                     "passed to 'DataSpecs.__init__', with incoherent values."
                 )
-        self.n_features = self.features_shape[-1]
+        if self.features_shape:
+            self.n_features = self.features_shape[-1]
 
 
 @create_types_registry
@@ -93,30 +93,6 @@ class Dataset(metaclass=ABCMeta):
     straightforward to specify as part of FL algorithms.
     """
 
-    _type_key: ClassVar[str] = NotImplemented
-
-    @abstractmethod
-    def save_to_json(
-        self,
-        path: str,
-    ) -> None:
-        """Write a JSON file enabling dataset re-creation.
-
-        Parameters
-        ----------
-        path: str
-            Path to the main JSON file where to dump the dataset.
-            Additional files may be created in the same folder.
-        """
-
-    @classmethod
-    @abstractmethod
-    def load_from_json(
-        cls,
-        path: str,
-    ) -> Self:
-        """Instantiate a dataset based on local files."""
-
     @abstractmethod
     def get_data_specs(
         self,
@@ -124,11 +100,12 @@ class Dataset(metaclass=ABCMeta):
         """Return a DataSpecs object describing this dataset."""
 
     @abstractmethod
-    def generate_batches(
+    def generate_batches(  # pylint: disable=too-many-arguments
         self,
         batch_size: int,
         shuffle: bool = False,
         drop_remainder: bool = True,
+        replacement: bool = False,
         poisson: bool = False,
     ) -> Iterator[Batch]:
         """Yield batches of data samples.
@@ -146,6 +123,9 @@ class Dataset(metaclass=ABCMeta):
             samples than `batch_size`, or yield it anyway.
             If `poisson=True`, this is used to determine the number
             of returned batches (notwithstanding their actual size).
+        replacement: bool, default=False
+            Whether to do random sampling with or without replacement.
+            Ignored if `shuffle=False` or `poisson=True`.
         poisson: bool, default=False
             Whether to use Poisson sampling, i.e. make up batches by
             drawing samples with replacement, resulting in variable-

@@ -34,7 +34,7 @@ of these.
 """
 
 import functools
-import sys
+import os
 from typing import Type
 
 import pytest
@@ -44,15 +44,14 @@ from declearn.test_utils import (
     GradientsTestCase,
     assert_dict_equal,
     assert_json_serializable_dict,
+    make_importable,
 )
 from declearn.utils import access_types_mapping, set_device_policy
 
-# relative import; pylint: disable=wrong-import-order, wrong-import-position
-# fmt: off
-sys.path.append(".")
-from optim_testing import PluginTestBase
-sys.path.pop()
-# fmt: on
+# relative imports from `optim_testing.py`
+with make_importable(os.path.dirname(__file__)):
+    from optim_testing import PluginTestBase
+
 
 # Access the list of modules to test; remove some that have dedicated tests.
 OPTIMODULE_SUBCLASSES = access_types_mapping(group="OptiModule")

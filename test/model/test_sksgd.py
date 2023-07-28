@@ -17,7 +17,7 @@
 
 """Unit tests for SklearnSGDModel."""
 
-import sys
+import os
 from typing import Any, Dict, List, Optional
 
 import numpy as np
@@ -26,12 +26,12 @@ from scipy.sparse import csr_matrix  # type: ignore
 from sklearn.linear_model import SGDClassifier, SGDRegressor  # type: ignore
 
 from declearn.model.sklearn import NumpyVector, SklearnSGDModel
+from declearn.test_utils import make_importable
 from declearn.typing import Batch
 
-# dirty trick to import from `model_testing.py`;
-# pylint: disable=wrong-import-order, wrong-import-position
-sys.path.append(".")
-from model_testing import ModelTestSuite, ModelTestCase
+# relative imports from `model_testing.py`
+with make_importable(os.path.dirname(__file__)):
+    from model_testing import ModelTestCase, ModelTestSuite
 
 
 class SklearnSGDTestCase(ModelTestCase):
@@ -50,6 +50,7 @@ class SklearnSGDTestCase(ModelTestCase):
 
     vector_cls = NumpyVector
     tensor_cls = (np.ndarray, csr_matrix)
+    framework = "numpy"
 
     def __init__(
         self,
@@ -61,16 +62,6 @@ class SklearnSGDTestCase(ModelTestCase):
         self.n_classes = n_classes
         self.s_weights = s_weights
         self.as_sparse = as_sparse
-
-    @staticmethod
-    def to_numpy(
-        tensor: Any,
-    ) -> np.ndarray:
-        """Convert an input tensor to a numpy array."""
-        assert isinstance(tensor, (np.ndarray, csr_matrix))
-        if isinstance(tensor, csr_matrix):
-            tensor = tensor.toarray()
-        return tensor
 
     @property
     def dataset(
