@@ -18,7 +18,7 @@
 """Dataset implementation to serve torch datasets."""
 
 import dataclasses
-from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, Union
 
 import torch
 
@@ -49,6 +49,12 @@ class TorchDataset(Dataset):
     def __init__(
         self,
         dataset: torch.utils.data.Dataset,
+        collate_fn: Optional[
+            Callable[
+                [List[Tuple[Union[torch.Tensor, List[torch.Tensor]], ...]]],
+                Tuple[Union[List[torch.Tensor], torch.Tensor], ...],
+            ]
+        ] = None,
         seed: Optional[int] = None,
     ) -> None:
         """Instantiate a declearn Dataset wrapping a torch.utils.data.Dataset.
@@ -66,6 +72,10 @@ class TorchDataset(Dataset):
             return either a single torch.Tensor (the model inputs) or a
             tuple of (model inputs, optional label, optional sample weights)
             as torch.Tensors or list of torch.Tensors.
+        collate_fn: callable or None, default=None
+            Optional collate function to merge a list of samples (formatted
+            as tuples of tensors and/or lists of tensors) into a mini-batch.
+            If None, use `torch.utils.data.default_collate`.
         seed: int or None, default=None
             Optional seed for the random number generator based on which
             the dataset is (optionally) shuffled when generating batches.
@@ -79,6 +89,7 @@ class TorchDataset(Dataset):
           that are to be shared with the FL server, as a dict with keys
           and types that match the `declearn.dataset.DataSpecs` fields.
         - should return sample-level (unbatched) elements, as either:
+            - inputs
             - (inputs,)
             - (inputs, labels)
             - (inputs, labels, weights)
@@ -86,9 +97,17 @@ class TorchDataset(Dataset):
             - inputs may be a single tensor or list of tensors
             - labels may be a single tensor or None
             - weights may be a single tensor or None
+
+        When dealing with data that requires specific processing to be
+        batched (e.g. some sort of padding), please use a `collate_fn`
+        to define that processing. For samples that all share the same
+        shape, the default collate function should suffice.
         """
         super().__init__()
         self.dataset = dataset
+        if collate_fn is None:
+            collate_fn = torch.utils.data.default_collate
+        self.collate_fn = collate_fn
         # Assign a random number generator.
         self.seed = seed
         self.gen = None  # type: Optional[torch.Generator]
@@ -206,8 +225,8 @@ class TorchDataset(Dataset):
                     f"'{key}' did not. "
                 )
 
-    @staticmethod
     def collate_to_batch(
+        self,
         samples: Union[
             List[Tuple[Union[torch.Tensor, List[torch.Tensor]], ...]],
             List[Union[torch.Tensor, List[torch.Tensor]]],
@@ -217,7 +236,12 @@ class TorchDataset(Dataset):
         Optional[torch.Tensor],
         Optional[torch.Tensor],
     ]:
-        """Custom collate function to structure samples into a batch.
+        """Custom collate method to structure samples into a batch.
+
+        This method wraps up the `collate_fn` attribute of this instance
+        (which, by default, is `torch.utils.data.default_collate`) so as
+        to take into account the declearn specs about the input data and
+        output batches' formatting.
 
         Parameters
         ----------
@@ -238,7 +262,7 @@ class TorchDataset(Dataset):
         """
         if not isinstance(samples[0], tuple):
             samples = [(sample,) for sample in samples]  # type: ignore
-        batch = torch.utils.data.default_collate(samples)
+        batch = self.collate_fn(samples)  # type: ignore
         if not 1 <= len(batch) <= 3:
             raise TypeError(
                 "Raw batches should contain 1 to 3 elements, denoting (in "
