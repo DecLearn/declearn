@@ -19,7 +19,10 @@
 
 import dataclasses
 import warnings
-from typing import Iterator, List, Optional, Set
+from typing import (
+    # fmt: off
+    Callable, Iterator, List, Literal, Optional, Set, Tuple, Union
+)
 
 import numpy as np
 import tensorflow as tf  # type: ignore
@@ -34,6 +37,9 @@ __all__ = [
 ]
 
 
+BatchMode = Literal["default", "padded", "ragged"]
+
+
 @register_type(group="Dataset")
 class TensorflowDataset(Dataset):
     """Dataset subclass to wrap up 'tensorflow.data.Dataset' instances."""
@@ -42,6 +48,7 @@ class TensorflowDataset(Dataset):
         self,
         dataset: tf.data.Dataset,
         buffer_size: Optional[int] = None,
+        batch_mode: BatchMode = "default",
         seed: Optional[int] = None,
     ) -> None:
         """Wrap up a 'tensorflow.data.Dataset' into a declearn Dataset.
@@ -58,6 +65,10 @@ class TensorflowDataset(Dataset):
             and shuffle when sampling from the original dataset. The higher,
             the better the shuffling, but also the more memory costly.
             If None, use context-based `batch_size * 10` value.
+        batch_mode: str in {"default", "padded", "ragged"}
+            Flag specifying how to batch inputs. Use "padded" or "ragged" to
+            batch up variable-dimension samples (e.g. sequences of tokens),
+            using either `tf.data.Dataset.padded_batch` or `.ragged_batch`.
         seed: int or None, default=None
             Optional seed for the random number generator based on which
             the dataset is (optionally) shuffled when generating batches.
@@ -85,9 +96,10 @@ class TensorflowDataset(Dataset):
         self.dataset = dataset
         self._dspecs = parse_and_validate_tensorflow_dataset(self.dataset)
         warn_if_dataset_is_likely_batched(self.dataset)
-        # Assign the buffer_size parameter and set up an opt.-seeded RNG.
+        # Assign additional parameters and set up an opt.-seeded RNG.
+        self.batch_mode = batch_mode
         self.buffer_size = buffer_size
-        self._rng = np.random.default_rng(seed)
+        self.rng = np.random.default_rng(seed)
 
     def get_data_specs(
         self,
@@ -107,8 +119,86 @@ class TensorflowDataset(Dataset):
         replacement: bool = False,
         poisson: bool = False,
     ) -> Iterator[Batch]:
-        # Ramifications gain from being factored altogether.
-        # pylint: disable=too-many-arguments, too-many-locals
+        # inherited signature; pylint: disable=too-many-arguments
+        if poisson:
+            generator = self._generate_batches_poisson(
+                batch_size=batch_size,
+                drop_remainder=drop_remainder,
+            )
+        else:
+            generator = self._generate_batches_batching(
+                batch_size=batch_size,
+                drop_remainder=drop_remainder,
+                shuffle=shuffle,
+                replacement=replacement,
+            )
+        yield from generator
+
+    def _generate_batches_batching(
+        self,
+        batch_size: int,
+        drop_remainder: bool,
+        shuffle: bool,
+        replacement: bool,
+    ) -> Iterator[Batch]:
+        """Backend to `generate_batches` when `poisson=False`."""
+        # Start setting up the dataset, then setup optional shuffling.
+        dataset, _, n_batches, none_pads = self._prepare_dataset(
+            batch_size=batch_size, drop_remainder=drop_remainder
+        )
+        if shuffle:
+            dataset = self._setup_shuffling(
+                dataset, batch_size=batch_size, replacement=replacement
+            )
+        # Set up batching, opt. in padded or ragged mode.
+        batch = get_batch_function(self.batch_mode, dataset=dataset)
+        dataset = batch(batch_size=batch_size, drop_remainder=drop_remainder)
+        dataset = dataset.take(n_batches).map(lambda *s: (*s, *none_pads))
+        yield from dataset
+
+    def _generate_batches_poisson(
+        self,
+        batch_size: int,
+        drop_remainder: bool,
+    ) -> Iterator[Batch]:
+        """Backend to `generate_batches` when `poisson=True`."""
+        # Start setting up the dataset, then setup shuffling with replacement.
+        dataset, n_samples, n_batches, none_pads = self._prepare_dataset(
+            batch_size=batch_size, drop_remainder=drop_remainder
+        )
+        dataset = self._setup_shuffling(
+            dataset, batch_size=batch_size, replacement=True
+        )
+        # Draw batches' size, that follows a Binomial law.
+        srate = batch_size / n_samples
+        sizes = self.rng.binomial(n=n_samples, p=srate, size=n_batches)
+        # Fetch and batch up samples manually.
+        itersamples = iter(dataset)
+        stack = get_stack_function(self.batch_mode)
+        for size in sizes:
+            if not size:  # skip empty batches (edge case)
+                continue
+            samples = [
+                # infinite iterator; pylint: disable=stop-iteration-return
+                next(itersamples)
+                for _ in range(size)
+            ]
+            batch = tf.nest.map_structure(stack, *samples)
+            yield (*batch, *none_pads)  # type: ignore
+
+    def _prepare_dataset(
+        self,
+        batch_size: int,
+        drop_remainder: bool,
+    ) -> Tuple[tf.data.Dataset, int, int, List[None]]:
+        """Run initial preparations to generate batches from the dataset.
+
+        Return
+        - the wrapped dataset (optionally with some transforms),
+        - the number of samples in the initial dataset
+        - the number of batches that should be yielded
+        - a list of None values to end up adding to complete batches
+        """
         dataset = self.dataset
         if self._dspecs.single_el:
             dataset = dataset.map(lambda x: (x,))
@@ -117,42 +207,26 @@ class TensorflowDataset(Dataset):
         n_samples = self._dspecs.n_samples
         n_batches = n_samples // batch_size
         n_batches += (not drop_remainder) and (n_samples % batch_size)
-        # Optionally shuffle samples (with or without replacement).
-        if poisson:
-            shuffle = replacement = True
-        if shuffle:
-            if replacement:
-                dataset = dataset.repeat(count=None)
-            dataset = dataset.shuffle(
-                seed=self._rng.integers(2**63),
-                buffer_size=self.buffer_size or batch_size * 10,
-            )
-        # Handle the Poisson sampling case.
-        if poisson:
-            # Draw batches' size (that follows a Binomial law).
-            sizes = self._rng.binomial(
-                n=n_samples, p=batch_size / n_samples, size=n_batches
-            )
-            # Fetch and batch up samples manually.
-            itersamples = iter(dataset)
-            for size in sizes:
-                # Skip empty batches (edge case due to small batch_size).
-                if not size:
-                    continue
-                # infinite iterator; pylint: disable=stop-iteration-return
-                samples = [next(itersamples) for _ in range(size)]
-                batch = tf.nest.map_structure(
-                    lambda *x: None if x[0] is None else tf.stack(x), *samples
-                )
-                yield (*batch, *none_pads)  # type: ignore
-        # Handle the batching case.
-        else:
-            dataset = dataset.batch(
-                batch_size=batch_size,
-                drop_remainder=drop_remainder,
-            ).take(n_batches)
-            dataset = dataset.map(lambda *s: (*s, *none_pads))
-            yield from dataset
+        # Return that information.
+        return dataset, n_samples, n_batches, none_pads
+
+    def _setup_shuffling(
+        self,
+        dataset: tf.data.Dataset,
+        batch_size: int,
+        replacement: bool,
+    ) -> tf.data.Dataset:
+        """Transform a dataset into a shuffled one, opt. with replacement.
+
+        Use `self.buffer_size` or `10 * batch_size` as buffer size.
+        If `replacement`, the returned dataset is an infinite iterator.
+        """
+        if replacement:
+            dataset = dataset.repeat(count=None)
+        return dataset.shuffle(
+            seed=self.rng.integers(2**63),
+            buffer_size=self.buffer_size or batch_size * 10,
+        )
 
 
 # All following are backend tools for 'TensorflowDataset'.
@@ -196,8 +270,9 @@ def parse_and_validate_tensorflow_dataset(
     info.n_padding = 3 - len(spec)
     if int(tf.version.VERSION.split(".", 2)[1]) >= 13:
         info.n_samples = int(dataset.cardinality().numpy())
-    else:
-        # pragma: no cover
+        if info.n_samples == tf.data.UNKNOWN_CARDINALITY:
+            info.n_samples = 0  # force evaluating via next logic branch
+    if not info.n_samples:
         info.n_samples = sum(1 for _ in dataset.scan(0, lambda s, _: (s, s)))
     # Gather information about input features.
     inputs = tf.nest.flatten(spec[0])[0]
@@ -238,3 +313,63 @@ def warn_if_dataset_is_likely_batched(
             "this warning.",
             category=RuntimeWarning,
         )
+
+
+def get_batch_function(
+    batch_mode: BatchMode,
+    dataset: tf.data.Dataset,
+) -> Callable[..., tf.data.Dataset]:
+    """Return a bound method to batch an input `tf.data.Dataset`."""
+    if batch_mode == "default":
+        return dataset.batch
+    if batch_mode == "padded":
+        return dataset.padded_batch
+    if batch_mode == "ragged":
+        return dataset.ragged_batch
+    raise TypeError(
+        "Invalid value for 'batch_mode': should be one of "
+        f"{{'default', 'padded', 'ragged'}}, not '{batch_mode}'."
+    )
+
+
+def get_stack_function(
+    batch_mode: BatchMode,
+) -> Callable[[Union[List[None], List[tf.Tensor]]], Optional[tf.Tensor],]:
+    """Return a function to stack sample-wise atomic elements."""
+    if batch_mode == "default":
+        return _stack_default
+    if batch_mode == "padded":
+        return _stack_padded
+    if batch_mode == "ragged":
+        return _stack_ragged
+    raise TypeError(
+        "Invalid value for 'batch_mode': should be one of "
+        f"{{'default', 'padded', 'ragged'}}, not '{batch_mode}'."
+    )
+
+
+def _stack_default(
+    *samples: Union[None, tf.Tensor],
+) -> Optional[tf.Tensor]:
+    """Stack sample-wise atomic elements."""
+    if samples[0] is None:
+        return None
+    return tf.stack(samples)
+
+
+def _stack_padded(
+    *samples: Union[None, tf.Tensor],
+) -> Optional[tf.Tensor]:
+    """Pad and stack sample-wise atomic elements."""
+    if samples[0] is None:
+        return None
+    return tf.ragged.stack(samples).to_tensor()
+
+
+def _stack_ragged(
+    *samples: Union[None, tf.Tensor],
+) -> Optional[tf.Tensor]:
+    """Stack sample-wise atomic elements into a tf.RaggedTensor."""
+    if samples[0] is None:
+        return None
+    return tf.ragged.stack(samples)

@@ -21,6 +21,7 @@ import os
 import warnings
 
 # pylint: disable=duplicate-code
+import numpy as np
 import pytest
 
 try:
@@ -40,6 +41,9 @@ with make_importable(os.path.dirname(__file__)):
     from dataset_testbase import DatasetTestSuite, DatasetTestToolbox
 
 
+SEED = 20230731
+
+
 class TensorflowDatasetTestToolbox(DatasetTestToolbox):
     """Toolbox for TensorflowDataset."""
 
@@ -47,13 +51,11 @@ class TensorflowDatasetTestToolbox(DatasetTestToolbox):
 
     framework = "tensorflow"
 
-    seed = 20230731
-
     def get_dataset(self) -> Dataset:
         dst = tf.data.Dataset.from_tensor_slices(
             (self.data, self.label, self.weights)
         )
-        return TensorflowDataset(dst, seed=self.seed)
+        return TensorflowDataset(dst, seed=SEED)
 
 
 @pytest.fixture(name="toolbox")
@@ -62,5 +64,75 @@ def fixture_dataset() -> DatasetTestToolbox:
     return TensorflowDatasetTestToolbox()
 
 
-class TestTensorflowDataset(DatasetTestSuite):
+@pytest.fixture(name="sentences_dataset")
+def fixture_sentences_dataset() -> tf.data.Dataset:
+    """Fixture to setup a tf.data.Dataset yielding sequences of tokens."""
+    # Generate 32 variable-size sequences of int (tokenized sentences).
+    rng = np.random.default_rng(seed=SEED)
+    samples = [rng.choice(128, size=rng.choice(100) + 1) for _ in range(32)]
+    # Wrap this data into a tensorflow dataset and return it.
+    tf_data = tf.data.Dataset.from_generator(
+        lambda: iter(samples),
+        output_signature=tf.TensorSpec(shape=(None,), dtype=tf.int32),
+    )
+    return tf_data
+
+
+class TestTensorflowDatasetBase(DatasetTestSuite):
     """Unit tests for `declearn.dataset.tensorflow.TensorflowDataset`."""
+
+    def test_generate_padded_batches(
+        self,
+        sentences_dataset: tf.data.Dataset,
+    ) -> None:
+        """Test 'generate_batches' with samples that require padding."""
+        dataset = TensorflowDataset(sentences_dataset, batch_mode="padded")
+        batches = list(dataset.generate_batches(batch_size=8, poisson=False))
+        # Verify that there are 4 batches, with inputs of shape (8, [1-100]).
+        assert len(batches) == 4
+        shapes = [inputs.shape for inputs, _, _ in batches]  # type: ignore
+        assert all(shp[0] == 8 for shp in shapes)  # single batch size
+        assert len(set(shp[1] for shp in shapes)) > 1  # various seq length
+        assert all(1 <= shp[1] <= 100 for shp in shapes)
+
+    def test_generate_padded_batches_with_poisson(
+        self,
+        sentences_dataset: tf.data.Dataset,
+    ) -> None:
+        """Test 'generate_batches(poisson=True)' with samples to be padded."""
+        dataset = TensorflowDataset(sentences_dataset, batch_mode="padded")
+        batches = list(dataset.generate_batches(batch_size=8, poisson=True))
+        # Verify that there are 4 batches, with inputs of shape (?, [1-100]).
+        assert len(batches) == 4
+        shapes = [inputs.shape for inputs, _, _ in batches]  # type: ignore
+        assert len(set(shp[0] for shp in shapes)) > 1  # various batch size
+        assert len(set(shp[1] for shp in shapes)) > 1  # various seq length
+        assert all(1 <= shp[1] <= 100 for shp in shapes)
+
+    def test_generate_ragged_batches(
+        self,
+        sentences_dataset: tf.data.Dataset,
+    ) -> None:
+        """Test 'generate_batches' with samples that require ragging."""
+        dataset = TensorflowDataset(sentences_dataset, batch_mode="ragged")
+        batches = list(dataset.generate_batches(batch_size=8, poisson=False))
+        # Verify that there are 4 ragged batches, with inputs of shape (8, ?).
+        assert len(batches) == 4
+        assert all(isinstance(x, tf.RaggedTensor) for x, _, _ in batches)
+        shapes = [inputs.shape for inputs, _, _ in batches]  # type: ignore
+        assert all(shp[0] == 8 for shp in shapes)  # single batch size
+        assert all(shp[1] is None for shp in shapes)  # ragged seq length
+
+    def test_generate_ragged_batches_with_poisson(
+        self,
+        sentences_dataset: tf.data.Dataset,
+    ) -> None:
+        """Test 'generate_batches(poisson=True)' with samples to be ragged."""
+        dataset = TensorflowDataset(sentences_dataset, batch_mode="ragged")
+        batches = list(dataset.generate_batches(batch_size=8, poisson=True))
+        # Verify that there are 4 ragged batches, with inputs of shape (?, ?).
+        assert len(batches) == 4
+        assert all(isinstance(x, tf.RaggedTensor) for x, _, _ in batches)
+        shapes = [inputs.shape for inputs, _, _ in batches]  # type: ignore
+        assert len(set(shp[0] for shp in shapes)) > 1  # various batch size
+        assert all(shp[1] is None for shp in shapes)  # ragged seq length
