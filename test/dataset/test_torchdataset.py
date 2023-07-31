@@ -31,7 +31,7 @@ except ModuleNotFoundError:
     pytest.skip("PyTorch is unavailable", allow_module_level=True)
 # pylint: enable=duplicate-code
 
-from declearn.dataset.torch import TorchDataset
+from declearn.dataset.torch import TorchDataset, collate_with_padding
 from declearn.test_utils import assert_batch_equal, make_importable, to_numpy
 
 # relative imports from `dataset_testbase.py`
@@ -83,6 +83,33 @@ class TorchDatasetTestToolbox(DatasetTestToolbox):
 def fixture_dataset() -> DatasetTestToolbox:
     """Fixture to access a TorchTestCase."""
     return TorchDatasetTestToolbox()
+
+
+class SentencesDataset(torch.utils.data.Dataset):
+    """Custom torch.utils.data.Dataset with sequences of tokens as inputs."""
+
+    def __init__(self) -> None:
+        # Generate 32 variable-size sequences of int (tokenized sentences).
+        rng = np.random.default_rng(seed=SEED)
+        self.inputs = torch.utils.data.default_convert(
+            [rng.choice(128, size=rng.choice(64) + 1) for _ in range(32)]
+        )
+        # Generate scalar binary labels.
+        self.labels = torch.from_numpy(  # pylint: disable=no-member
+            rng.choice(2, size=32)
+        )
+
+    def __len__(self) -> int:
+        return len(self.inputs)
+
+    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, torch.Tensor]:
+        return self.inputs[idx], self.labels[idx]
+
+
+@pytest.fixture(name="sentences_dataset")
+def fixture_sentences_dataset() -> torch.utils.data.Dataset:
+    """Fixture to setup a torch Dataset yielding sequences of tokens."""
+    return SentencesDataset()
 
 
 class TestTorchDataset(DatasetTestSuite):
@@ -215,3 +242,35 @@ class TestTorchDataset(DatasetTestSuite):
         dataset = toolbox.get_dataset()
         output = dataset.collate_to_batch(samples)
         assert_batch_equal(output, expected_output, toolbox.framework)
+
+    def test_generate_padded_batches(
+        self,
+        sentences_dataset: torch.utils.data.Dataset,
+    ) -> None:
+        """Test 'generate_batches' with samples that require padding."""
+        dataset = TorchDataset(
+            sentences_dataset, collate_fn=collate_with_padding
+        )
+        batches = list(dataset.generate_batches(batch_size=4, poisson=False))
+        # Verify that there are 8 batches, with inputs of shape (4, [1-64]).
+        assert len(batches) == 8
+        shapes = [inputs.shape for inputs, _, _ in batches]  # type: ignore
+        assert all(shp[0] == 4 for shp in shapes)  # single batch size
+        assert len(set(shp[1] for shp in shapes)) > 1  # various seq length
+        assert all(1 <= shp[1] <= 64 for shp in shapes)
+
+    def test_generate_padded_batches_with_poisson(
+        self,
+        sentences_dataset: torch.utils.data.Dataset,
+    ) -> None:
+        """Test 'generate_batches(poisson=True)' with samples to be padded."""
+        dataset = TorchDataset(
+            sentences_dataset, collate_fn=collate_with_padding
+        )
+        batches = list(dataset.generate_batches(batch_size=4, poisson=True))
+        # Verify that there are 8 batches, with inputs of shape (?, [1-64]).
+        assert len(batches) == 8
+        shapes = [inputs.shape for inputs, _, _ in batches]  # type: ignore
+        assert len(set(shp[0] for shp in shapes)) > 1  # various batch size
+        assert len(set(shp[1] for shp in shapes)) > 1  # various seq length
+        assert all(1 <= shp[1] <= 64 for shp in shapes)

@@ -15,19 +15,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Backend utils for 'TorchDataset'."""
+"""Utils to handle torch datasets and power up declearn's `TorchDataset`."""
 
-from typing import Optional
+from typing import List, Optional, Tuple, Union
 
 import torch
 
 __all__ = [
     "PoissonSampler",
+    "collate_with_padding",
 ]
 
 
 class PoissonSampler(torch.utils.data.Sampler):
-    """Custom 'torch.utils.data.Sampler' implementing Poisson sampling.
+    """Custom `torch.utils.data.Sampler` implementing Poisson sampling.
 
     This sampler is equivalent to the `UniformWithReplacementSampler`
     from the third-party `opacus` library, with the exception that it
@@ -71,3 +72,58 @@ class PoissonSampler(torch.utils.data.Sampler):
             if not indx:
                 continue
             yield indx
+
+
+def collate_with_padding(
+    samples: List[Tuple[Union[torch.Tensor, List[torch.Tensor]], ...]],
+) -> Tuple[Union[List[torch.Tensor], torch.Tensor], ...]:
+    """Collate input elements into batches, with padding when required.
+
+    This custom collate function is designed to enable padding samples of
+    variable length as part of their stacking into mini-batches. It relies
+    on the `torch.nn.utils.rnn.pad_sequence` utility function and supports
+    receiving samples that contain both inputs that need padding and that
+    do not (e.g. variable-length token sequences as inputs but fixed-size
+    values as labels).
+
+    It may be used as `collate_fn` argument to the declearn `TorchDataset`
+    to wrap up data that needs such collation - but users are free to set
+    up and use their own custom function if this fails to fit their data.
+
+    Parameters
+    ----------
+    samples:
+        Sample-level records, formatted as (same-structure) tuples with
+        torch tensors and/or lists of tensors as elements. None elements
+        are also supported.
+
+    Returns
+    -------
+    batch:
+        Tuple with the same structure as input ones, collating sample-level
+        records into batched tensors.
+    """
+    output = []  # type: List[Union[List[torch.Tensor], torch.Tensor]]
+    for i, element in enumerate(samples[0]):
+        if element is None:
+            output.append(None)
+            continue
+        if isinstance(element, (list, tuple)):
+            out = [
+                torch.nn.utils.rnn.pad_sequence(
+                    [smp[i][j] for smp in samples],
+                    batch_first=True,
+                )
+                for j in range(len(element))
+            ]  # type: Union[torch.Tensor, List[torch.Tensor]]
+        elif element.shape:
+            out = torch.nn.utils.rnn.pad_sequence(
+                [smp[i] for smp in samples],  # type: ignore  # false-positive
+                batch_first=True,
+            )
+        else:
+            out = torch.stack(  # pylint: disable=no-member
+                [smp[i] for smp in samples]  # type: ignore
+            )
+        output.append(out)
+    return tuple(output)

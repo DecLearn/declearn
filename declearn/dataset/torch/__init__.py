@@ -17,8 +17,19 @@
 
 """Dataset interface to wrap up 'torch.utils.data.Dataset' instances.
 
+The main class implementing by this submodule is `TorchDataset`:
+
 * [TorchDataset][declarn.dataset.torch.TorchDataset]:
     Dataset subclass serving torch Datasets.
+
+Some utils are also exposed here, either used as part of the `TorchDataset`
+backend or to be used in conjunction with it:
+
+* [PoissonSampler][declearn.dataset.torch.PoissonSampler]:
+    Custom `torch.utils.data.Sampler` implementing Poisson sampling.
+* [collate_with_padding][declearn.dataset.torch.collate_with_padding]:
+    Custom collate function that implements variable-lenght inputs' padding.
 """
 
+from ._utils import PoissonSampler, collate_with_padding
 from ._torch import TorchDataset
