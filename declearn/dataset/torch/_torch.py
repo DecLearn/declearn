@@ -23,6 +23,7 @@ from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
 import torch
 
 from declearn.dataset._base import Dataset, DataSpecs
+from declearn.dataset.torch._utils import PoissonSampler
 from declearn.typing import Batch
 from declearn.utils import register_type
 
@@ -162,24 +163,12 @@ class TorchDataset(Dataset):
         """
         # arguments serve modularity; pylint: disable=too-many-arguments
         if poisson:
-            try:
-                # conditional import; pylint: disable=import-outside-toplevel
-                from opacus.utils.uniform_sampler import (  # type: ignore
-                    UniformWithReplacementSampler,
-                )
-            except ModuleNotFoundError as exc:
-                # pragma: no cover
-                raise ImportError(
-                    "Cannot use Poisson sampling on 'TorchDataset': "
-                    "missing optional dependency 'opacus', required "
-                    "for this feature."
-                ) from exc
             n_samples = self._get_length()
-            batch_sampler = UniformWithReplacementSampler(
+            batch_sampler = PoissonSampler(
                 num_samples=n_samples,
                 sample_rate=batch_size / n_samples,
                 generator=self.gen,
-            )
+            )  # type: torch.utils.data.Sampler
         else:
             if shuffle:
                 sampler = torch.utils.data.RandomSampler(
