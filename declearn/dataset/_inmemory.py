@@ -398,7 +398,8 @@ class InMemoryDataset(Dataset):
             If `poisson=True`, this is used to determine the number
             of returned batches (notwithstanding their actual size).
         replacement: bool, default=False
-            Not used in this class.
+            Whether to do random sampling with or without replacement.
+            Ignored if `shuffle=False` or `poisson=True`.
         poisson: bool, default=False
             Whether to use Poisson sampling, i.e. make up batches by
             drawing samples with replacement, resulting in variable-
@@ -427,7 +428,9 @@ class InMemoryDataset(Dataset):
             batch_size = order.shape[1]  # n_samples
             order = order.flatten()
         else:
-            order = self._samples_batching(batch_size, shuffle, drop_remainder)
+            order = self._samples_batching(
+                batch_size, shuffle, replacement, drop_remainder
+            )
         # Build array-wise batch iterators.
         iterators = [
             self._build_iterator(data, batch_size, order)
@@ -440,6 +443,7 @@ class InMemoryDataset(Dataset):
         self,
         batch_size: int,
         shuffle: bool = False,
+        replacement: bool = False,
         drop_remainder: bool = True,
     ) -> np.ndarray:
         """Create an ordering of samples to conduct their batching.
@@ -452,6 +456,9 @@ class InMemoryDataset(Dataset):
             Whether to shuffle data samples prior to batching.
             Note that the shuffling will differ on each call
             to this method.
+        replacement: bool, default=False
+            Whether to draw samples with replacement.
+            Unused if `shuffle=False`.
         drop_remainder: bool, default=True
             Whether to drop the last batch if it contains less
             samples than `batch_size`, or yield it anyway.
@@ -467,7 +474,10 @@ class InMemoryDataset(Dataset):
         order = np.arange(self.feats.shape[0])
         # Optionally set up samples' shuffling.
         if shuffle:
-            order = self._rng.permutation(order)
+            if replacement:
+                order = self._rng.choice(order, size=len(order), replace=True)
+            else:
+                order = self._rng.permutation(order)
         # Optionally drop last batch if its size is too small.
         if drop_remainder:
             limit = len(order) - (len(order) % batch_size)

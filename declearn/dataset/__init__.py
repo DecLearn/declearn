@@ -39,15 +39,22 @@ Dataset subclasses
 
 Manual-import submodules
 ------------------------
-* [torch]
-    [TorchDataset][declearn.dataset.torch.TorchDataset]-providing submodule,
-    that is to be manually imported (as it relies on an optional dependency).
+
+The following submodules are to be manually imported, as they rely on optional
+dependencies that may be absent and/or costly to import:
+
+* [tensorflow][declearn.dataset.tensorflow]:
+    TensorFlow-specific submodule, providing with
+    [TensorflowDataset][declearn.dataset.tensorflow.TensorflowDataset].
+* [torch][declearn.dataset.torch]:
+    Torch-specific submodule, providing with
+    [TorchDataset][declearn.dataset.torch.TorchDataset].
 
 Utility submodules
 ------------------
-* [examples]
+* [examples][declearn.dataset.examples]:
     Utils to fetch and prepare some open-source datasets.
-* [utils]
+* [utils][declearn.dataset.utils]:
     Utils to manipulate datasets (load, save, split...).
 
 Utility entry-point

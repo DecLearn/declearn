@@ -95,6 +95,34 @@ class DatasetTestSuite:
         )
         assert_batch_equal(result, expected, toolbox.framework)
 
+    def test_generate_batches_replacement(self, toolbox: DatasetTestToolbox):
+        """Test the 'replacement' argument of 'generate_batches'."""
+        # Generate batches with replacement, 4 times (due to small dataset).
+        dataset = toolbox.get_dataset()
+        batches = [
+            next(dataset.generate_batches(4, shuffle=True, replacement=True))
+            for _ in range(4)
+        ]
+        # Verify that in at least one case, there are repeated samples.
+        assert any(
+            len(np.unique(to_numpy(batch[1], toolbox.framework))) < 4
+            for batch in batches
+        )
+
+    def test_generate_batches_poisson(self, toolbox: DatasetTestToolbox):
+        """Test the 'poisson' argument of 'generate_batches'."""
+        # Generate poisson-sampled batches, 4 times (due to small dataset).
+        dataset = toolbox.get_dataset()
+        batches = [
+            next(dataset.generate_batches(2, poisson=True)) for _ in range(4)
+        ]
+        b_sizes = [
+            to_numpy(x, framework=toolbox.framework).shape[0]
+            for x, *_ in batches
+        ]
+        # Assert that Poisson sampling results in varying-size batches.
+        assert len(set(b_sizes)) > 1
+
     def test_get_data_specs(self, toolbox: DatasetTestToolbox):
         """Test the get_data_spec method"""
         specs = toolbox.get_dataset().get_data_specs()
