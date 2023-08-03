@@ -379,7 +379,7 @@ class Vector(metaclass=ABCMeta):
         self,
         other: Any,
     ) -> Self:
-        return self.__mul__(1 / other)
+        return self.__truediv__(other) ** -1
 
     def __pow__(
         self,
