@@ -18,7 +18,10 @@
 """TensorflowVector data arrays container."""
 
 import warnings
-from typing import Any, Callable, Dict, Optional, Set, Type, TypeVar, Union
+from typing import (
+    # fmt: off
+    Any, Callable, Dict, Optional, Set, Tuple, Type, TypeVar, Union
+)
 
 # fmt: off
 import numpy as np
@@ -164,6 +167,14 @@ class TensorflowVector(Vector):
         if not getattr(func, "_pre_wrapped", False):
             func = preserve_tensor_device(func)
         return super()._apply_operation(other, func)
+
+    def shapes(
+        self,
+    ) -> Dict[str, Tuple[int, ...]]:
+        return {
+            key: tuple(coef.shape.as_list())
+            for key, coef in self.coefs.items()
+        }
 
     def dtypes(
         self,
