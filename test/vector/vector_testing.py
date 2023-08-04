@@ -384,6 +384,33 @@ class VectorScalarOpTests:
         scalar = round(abs(self._generate_scalar() * 10))
         self._test_op_scalar_left(factory, scalar, operator.pow)
 
+    def test_square(
+        self,
+        factory: VectorFactory,
+    ) -> None:
+        """Test that square operation (via power) works."""
+        vector = factory.make_vector(seed=0)
+        expect = {
+            key: np.square(to_numpy(val, factory.framework))
+            for key, val in vector.coefs.items()
+        }
+        result = vector**2
+        factory.assert_equal(expect, result)
+
+    def test_square_root(
+        self,
+        factory: VectorFactory,
+    ) -> None:
+        """Test that square root operation (via power) works."""
+        vector = factory.make_vector(seed=0)
+        vector = vector * vector.sign()  # positive values only
+        expect = {
+            key: np.sqrt(to_numpy(val, factory.framework))
+            for key, val in vector.coefs.items()
+        }
+        result = vector**0.5
+        factory.assert_equal(expect, result)
+
     def test_minimum_scalar(
         self,
         factory: VectorFactory,
