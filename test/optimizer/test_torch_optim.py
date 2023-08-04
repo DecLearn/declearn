@@ -153,9 +153,18 @@ class TestTorchOptiModule(OptiModuleTestSuite):
         )
         assert outpt_b == outpt_a
 
+    # similarity with tensorflow counterpart; pylint: disable=duplicate-code
+
     @pytest.mark.parametrize("device", DEVICES)
-    def test_device_placement(self, optim_cls: str, device: str) -> None:
+    def test_device_placement(
+        self,
+        optim_cls: str,
+        device: str,
+        cpu_only: bool,
+    ) -> None:
         """Test that the optimizer and computations are properly placed."""
+        if cpu_only and device == "GPU":
+            pytest.skip(reason="--cpu-only mode")
         # Set the device policy, setup a module and run computations.
         set_device_policy(gpu=(device == "GPU"), idx=None)
         module = TorchOptiModule(optim_cls)
@@ -176,6 +185,8 @@ class TestTorchOptiModule(OptiModuleTestSuite):
         )
         # Reset device policy to run other tests on CPU as expected.
         set_device_policy(gpu=False)
+
+    # pylint: enable=duplicate-code
 
 
 class FakeOptimizer(torch.optim.Optimizer):

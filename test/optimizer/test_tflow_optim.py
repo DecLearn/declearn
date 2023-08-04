@@ -184,8 +184,15 @@ class TestTensorflowOptiModule(OptiModuleTestSuite):
         assert outpt_b == outpt_a
 
     @pytest.mark.parametrize("device", DEVICES)
-    def test_device_placement(self, optim: str, device: str) -> None:
+    def test_device_placement(
+        self,
+        optim: str,
+        device: str,
+        cpu_only: bool,
+    ) -> None:
         """Test that the optimizer and computations are properly placed."""
+        if cpu_only and device == "GPU":
+            pytest.skip(reason="--cpu-only mode")
         # Set the device policy, setup a module and run computations.
         set_device_policy(gpu=(device == "GPU"), idx=None)
         module = TensorflowOptiModule(optim)
