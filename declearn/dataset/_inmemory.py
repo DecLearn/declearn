@@ -22,7 +22,7 @@ import os
 from typing import Any, ClassVar, Dict, Iterator, List, Optional, Set, Union
 
 import numpy as np
-import pandas as pd  # type: ignore
+import pandas as pd
 from numpy.typing import ArrayLike
 from scipy.sparse import spmatrix  # type: ignore
 from sklearn.datasets import load_svmlight_file  # type: ignore
@@ -171,8 +171,8 @@ class InMemoryDataset(Dataset):
             return self.data
         if isinstance(self.data, pd.DataFrame):
             if isinstance(self.f_cols[-1], str):
-                return self.data.loc[:, self.f_cols]
-            return self.data.iloc[:, self.f_cols]
+                return self.data.loc[:, self.f_cols]  # type: ignore
+            return self.data.iloc[:, self.f_cols]  # type: ignore
         return self.data[:, self.f_cols]  # type: ignore
 
     @property
@@ -181,7 +181,7 @@ class InMemoryDataset(Dataset):
         if (not self.expose_classes) or (self.target is None):
             return None
         if isinstance(self.target, pd.DataFrame):
-            return set(self.target.unstack().unique().tolist())
+            return set(self.target.unstack().unique().tolist())  # type: ignore
         if isinstance(self.target, pd.Series):
             return set(self.target.unique().tolist())
         if isinstance(self.target, np.ndarray):
