@@ -47,10 +47,21 @@ class TensorflowVectorFactory(VectorFactory):
         self,
         seed: int = 0,
     ) -> TensorflowVector:
+        # Generate values and convert them to tensors.
         values = self.make_values(seed)
-        return TensorflowVector(
-            {key: tf.convert_to_tensor(val) for key, val in values.items()}
+        tensor = {
+            key: tf.convert_to_tensor(val) for key, val in values.items()
+        }
+        # Wrap the first one as IndexedSlices, made to be equivalent to their
+        # dense counterpart. This is not very realistic, but enables testing
+        # support for these structures while maintaining the possibility to
+        # compare outputs' values with numpy and other frameworks.
+        tensor[self.names[0]] = tf.IndexedSlices(
+            values=tensor[self.names[0]],
+            indices=tf.range(self.shapes[0][0]),
+            dense_shape=tf.convert_to_tensor(self.shapes[0]),
         )
+        return TensorflowVector(tensor)
 
 
 @pytest.fixture(name="factory")
