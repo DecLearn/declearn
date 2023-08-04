@@ -340,14 +340,14 @@ class SklearnSGDModel(Model):
         config: Dict[str, Any],
     ) -> Self:
         """Instantiate a SklearnSGDModel from a configuration dict."""
-        for key in ("kind", "params", "dtype"):
+        for key in ("kind", "params"):
             if key not in config:
                 raise KeyError(f"Missing key '{key}' in the config dict.")
         if config["kind"] == "classifier":
             skmod = SGDClassifier(**config["params"])
         else:
             skmod = SGDRegressor(**config["params"])
-        model = cls(skmod, dtype=config["dtype"])
+        model = cls(skmod, dtype=config.get("dtype", "float64"))
         if config.get("data_info"):
             model.initialize(config["data_info"])
         return model
@@ -374,8 +374,8 @@ class SklearnSGDModel(Model):
                 raise KeyError(
                     f"Missing required '{key}' in the received vector."
                 )
-        self._model.coef_ = weights.coefs["coef"].copy()
-        self._model.intercept_ = weights.coefs["intercept"].copy()
+        self._model.coef_ = weights.coefs["coef"].astype(self._dtype)
+        self._model.intercept_ = weights.coefs["intercept"].astype(self._dtype)
 
     def compute_batch_gradients(
         self,
