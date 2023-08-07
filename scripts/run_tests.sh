@@ -202,7 +202,7 @@ run_torch13_tests() {
         echo "Running unit tests for torch 1.13."
         command="pytest $@
             --cov --cov-append --cov-report=
-            test/model/test_torch.py
+            test/model/test_torch_model.py
         "
         run_command $command
         status=$?
