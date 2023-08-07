@@ -249,7 +249,7 @@ class TestTorchDataset(DatasetTestSuite):
     ) -> None:
         """Test 'generate_batches' with samples that require padding."""
         dataset = TorchDataset(
-            sentences_dataset, collate_fn=collate_with_padding
+            sentences_dataset, collate_fn=collate_with_padding, seed=SEED
         )
         batches = list(dataset.generate_batches(batch_size=4, poisson=False))
         # Verify that there are 8 batches, with inputs of shape (4, [1-64]).
@@ -265,7 +265,7 @@ class TestTorchDataset(DatasetTestSuite):
     ) -> None:
         """Test 'generate_batches(poisson=True)' with samples to be padded."""
         dataset = TorchDataset(
-            sentences_dataset, collate_fn=collate_with_padding
+            sentences_dataset, collate_fn=collate_with_padding, seed=SEED
         )
         batches = list(dataset.generate_batches(batch_size=4, poisson=True))
         # Verify that there are 8 batches, with inputs of shape (?, [1-64]).

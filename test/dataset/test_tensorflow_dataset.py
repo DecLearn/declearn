@@ -86,7 +86,9 @@ class TestTensorflowDatasetBase(DatasetTestSuite):
         sentences_dataset: tf.data.Dataset,
     ) -> None:
         """Test 'generate_batches' with samples that require padding."""
-        dataset = TensorflowDataset(sentences_dataset, batch_mode="padded")
+        dataset = TensorflowDataset(
+            sentences_dataset, batch_mode="padded", seed=SEED
+        )
         batches = list(dataset.generate_batches(batch_size=8, poisson=False))
         # Verify that there are 4 batches, with inputs of shape (8, [1-100]).
         assert len(batches) == 4
@@ -100,7 +102,9 @@ class TestTensorflowDatasetBase(DatasetTestSuite):
         sentences_dataset: tf.data.Dataset,
     ) -> None:
         """Test 'generate_batches(poisson=True)' with samples to be padded."""
-        dataset = TensorflowDataset(sentences_dataset, batch_mode="padded")
+        dataset = TensorflowDataset(
+            sentences_dataset, batch_mode="padded", seed=SEED
+        )
         batches = list(dataset.generate_batches(batch_size=8, poisson=True))
         # Verify that there are 4 batches, with inputs of shape (?, [1-100]).
         assert len(batches) == 4
@@ -114,7 +118,9 @@ class TestTensorflowDatasetBase(DatasetTestSuite):
         sentences_dataset: tf.data.Dataset,
     ) -> None:
         """Test 'generate_batches' with samples that require ragging."""
-        dataset = TensorflowDataset(sentences_dataset, batch_mode="ragged")
+        dataset = TensorflowDataset(
+            sentences_dataset, batch_mode="ragged", seed=SEED
+        )
         batches = list(dataset.generate_batches(batch_size=8, poisson=False))
         # Verify that there are 4 ragged batches, with inputs of shape (8, ?).
         assert len(batches) == 4
@@ -128,7 +134,9 @@ class TestTensorflowDatasetBase(DatasetTestSuite):
         sentences_dataset: tf.data.Dataset,
     ) -> None:
         """Test 'generate_batches(poisson=True)' with samples to be ragged."""
-        dataset = TensorflowDataset(sentences_dataset, batch_mode="ragged")
+        dataset = TensorflowDataset(
+            sentences_dataset, batch_mode="ragged", seed=SEED
+        )
         batches = list(dataset.generate_batches(batch_size=8, poisson=True))
         # Verify that there are 4 ragged batches, with inputs of shape (?, ?).
         assert len(batches) == 4
