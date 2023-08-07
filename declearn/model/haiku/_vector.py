@@ -18,7 +18,7 @@
 """JaxNumpyVector data arrays container."""
 
 import warnings
-from typing import Any, Callable, Dict, Optional, Set, Type
+from typing import Any, Callable, Dict, Optional, Set, Type, Union
 
 import jax
 import jax.numpy as jnp
@@ -133,7 +133,7 @@ class JaxNumpyVector(Vector):
 
     def minimum(
         self,
-        other: Any,
+        other: Union[Self, float],
     ) -> Self:
         if isinstance(other, JaxNumpyVector):
             return self._apply_operation(other, jnp.minimum)
@@ -141,7 +141,7 @@ class JaxNumpyVector(Vector):
 
     def maximum(
         self,
-        other: Any,
+        other: Union[Self, float],
     ) -> Self:
         if isinstance(other, Vector):
             return self._apply_operation(other, jnp.maximum)

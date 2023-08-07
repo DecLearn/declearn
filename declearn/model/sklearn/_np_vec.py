@@ -21,7 +21,6 @@ import warnings
 from typing import Any, Callable, Dict, Optional, Union
 
 import numpy as np
-from numpy.typing import ArrayLike
 from typing_extensions import Self  # future: import from typing (Py>=3.11)
 
 from declearn.model.api._vector import Vector, register_vector_type
@@ -105,7 +104,7 @@ class NumpyVector(Vector):
 
     def minimum(
         self,
-        other: Union["Vector", float, ArrayLike],
+        other: Union[Self, float],
     ) -> Self:
         if isinstance(other, NumpyVector):
             return self._apply_operation(other, np.minimum)
@@ -113,7 +112,7 @@ class NumpyVector(Vector):
 
     def maximum(
         self,
-        other: Union["Vector", float, ArrayLike],
+        other: Union[Self, float],
     ) -> Self:
         if isinstance(other, Vector):
             return self._apply_operation(other, np.maximum)

@@ -24,7 +24,6 @@ from typing import (
     Any, Callable, Dict, Generic, Optional, Set, Tuple, Type, TypeVar, Union
 )
 
-from numpy.typing import ArrayLike
 from typing_extensions import Self  # future: import from typing (Py>=3.11)
 
 from declearn.utils import (
@@ -425,14 +424,14 @@ class Vector(Generic[T], metaclass=ABCMeta):
     @abstractmethod
     def minimum(
         self,
-        other: Union[Self, float, ArrayLike],
+        other: Union[Self, float],
     ) -> Self:
         """Compute coef.-wise, element-wise minimum wrt to another Vector."""
 
     @abstractmethod
     def maximum(
         self,
-        other: Union[Self, float, ArrayLike],
+        other: Union[Self, float],
     ) -> Self:
         """Compute coef.-wise, element-wise maximum wrt to another Vector."""
 

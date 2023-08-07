@@ -262,7 +262,7 @@ class TensorflowVector(Vector):
 
     def minimum(
         self,
-        other: Any,
+        other: Union[Self, float],
     ) -> Self:
         if isinstance(other, Vector):
             return self._apply_operation(other, tf_op_min)
@@ -270,7 +270,7 @@ class TensorflowVector(Vector):
 
     def maximum(
         self,
-        other: Any,
+        other: Union[Self, float],
     ) -> Self:
         if isinstance(other, Vector):
             return self._apply_operation(other, tf_op_max)
