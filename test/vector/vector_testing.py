@@ -132,6 +132,20 @@ class VectorSelfOpTests:
         vecbis = type(vector).unpack(data)
         assert vector == vecbis
 
+    def test_build(
+        self,
+        factory: VectorFactory,
+    ) -> None:
+        """Test that a Vector can be re-created via the `Vector.build` generic.
+
+        This indirectly verifies the proper type-registration of the
+        tested Vector subclass and of its associate data types.
+        """
+        vector = factory.make_vector(seed=0)
+        vecbis = Vector.build(vector.coefs)
+        assert isinstance(vecbis, type(vector))
+        assert vector == vecbis
+
     def test_sign(
         self,
         factory: VectorFactory,
