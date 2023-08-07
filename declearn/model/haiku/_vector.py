@@ -17,12 +17,13 @@
 
 """JaxNumpyVector data arrays container."""
 
-from typing import Any, Callable, Dict, Optional, Set, Type
+import warnings
+from typing import Any, Callable, Dict, Optional, Set, Type, Union
 
 import jax
 import jax.numpy as jnp
+import jaxlib
 import numpy as np
-from jax.config import config as jaxconfig
 from typing_extensions import Self  # future: import from typing (Py>=3.11)
 
 from declearn.model.api import Vector, register_vector_type
@@ -35,10 +36,13 @@ __all__ = [
 ]
 
 
-jaxconfig.update("jax_enable_x64", True)  # enable float64 support
+jax.config.update("jax_enable_x64", True)  # enable float64 support
 
 
-@register_vector_type(jax.Array)
+@register_vector_type(
+    jax.Array,
+    jaxlib.xla_extension.ArrayImpl,  # pylint: disable=c-extension-no-member
+)
 class JaxNumpyVector(Vector):
     """Vector subclass to store jax.numpy.ndarray coefficients.
 
@@ -129,7 +133,7 @@ class JaxNumpyVector(Vector):
 
     def minimum(
         self,
-        other: Any,
+        other: Union[Self, float],
     ) -> Self:
         if isinstance(other, JaxNumpyVector):
             return self._apply_operation(other, jnp.minimum)
@@ -137,7 +141,7 @@ class JaxNumpyVector(Vector):
 
     def maximum(
         self,
-        other: Any,
+        other: Union[Self, float],
     ) -> Self:
         if isinstance(other, Vector):
             return self._apply_operation(other, jnp.maximum)
@@ -148,6 +152,13 @@ class JaxNumpyVector(Vector):
         axis: Optional[int] = None,
         keepdims: bool = False,
     ) -> Self:
+        if isinstance(axis, int) or keepdims:
+            warnings.warn(  # pragma: no cover
+                "The 'axis' and 'keepdims' arguments of 'JaxNumpyVector.sum' "
+                "have been deprecated as of declearn v2.3, and will be "
+                "removed in version 2.6 and/or 3.0.",
+                DeprecationWarning,
+            )
         coefs = {
             key: jnp.array(jnp.sum(val, axis=axis, keepdims=keepdims))
             for key, val in self.coefs.items()

@@ -24,7 +24,6 @@ from typing import (
     Any, Callable, Dict, Generic, Optional, Set, Tuple, Type, TypeVar, Union
 )
 
-from numpy.typing import ArrayLike
 from typing_extensions import Self  # future: import from typing (Py>=3.11)
 
 from declearn.utils import (
@@ -162,7 +161,8 @@ class Vector(Generic[T], metaclass=ABCMeta):
         types = [VECTOR_TYPES.get(type(coef)) for coef in coefs.values()]
         if types[0] is None:
             raise TypeError(
-                f"No Vector class was registered for coef. type '{types[0]}'."
+                "No Vector class was registered for coefficient type "
+                f"'{type(list(coefs.values())[0])}'."
             )
         if not all(cls == types[0] for cls in types[1:]):
             raise TypeError(
@@ -424,14 +424,14 @@ class Vector(Generic[T], metaclass=ABCMeta):
     @abstractmethod
     def minimum(
         self,
-        other: Union[Self, float, ArrayLike],
+        other: Union[Self, float],
     ) -> Self:
         """Compute coef.-wise, element-wise minimum wrt to another Vector."""
 
     @abstractmethod
     def maximum(
         self,
-        other: Union[Self, float, ArrayLike],
+        other: Union[Self, float],
     ) -> Self:
         """Compute coef.-wise, element-wise maximum wrt to another Vector."""
 

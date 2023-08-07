@@ -17,10 +17,10 @@
 
 """NumpyVector data arrays container."""
 
+import warnings
 from typing import Any, Callable, Dict, Optional, Union
 
 import numpy as np
-from numpy.typing import ArrayLike
 from typing_extensions import Self  # future: import from typing (Py>=3.11)
 
 from declearn.model.api._vector import Vector, register_vector_type
@@ -104,7 +104,7 @@ class NumpyVector(Vector):
 
     def minimum(
         self,
-        other: Union["Vector", float, ArrayLike],
+        other: Union[Self, float],
     ) -> Self:
         if isinstance(other, NumpyVector):
             return self._apply_operation(other, np.minimum)
@@ -112,7 +112,7 @@ class NumpyVector(Vector):
 
     def maximum(
         self,
-        other: Union["Vector", float, ArrayLike],
+        other: Union[Self, float],
     ) -> Self:
         if isinstance(other, Vector):
             return self._apply_operation(other, np.maximum)
@@ -123,6 +123,13 @@ class NumpyVector(Vector):
         axis: Optional[int] = None,
         keepdims: bool = False,
     ) -> Self:
+        if isinstance(axis, int) or keepdims:
+            warnings.warn(  # pragma: no cover
+                "The 'axis' and 'keepdims' arguments of 'NumpyVector.sum' "
+                "have been deprecated as of declearn v2.3, and will be "
+                "removed in version 2.6 and/or 3.0.",
+                DeprecationWarning,
+            )
         coefs = {
             key: np.array(np.sum(val, axis=axis, keepdims=keepdims))
             for key, val in self.coefs.items()

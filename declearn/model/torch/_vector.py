@@ -17,7 +17,8 @@
 
 """TorchVector data arrays container."""
 
-from typing import Any, Callable, Dict, Optional, Set, Tuple, Type
+import warnings
+from typing import Any, Callable, Dict, Optional, Set, Tuple, Type, Union
 
 import numpy as np
 import torch
@@ -170,24 +171,24 @@ class TorchVector(Vector):
 
     def minimum(
         self,
-        other: Any,
+        other: Union[Self, float],
     ) -> Self:
         # false-positive; pylint: disable=no-member
         if isinstance(other, Vector):
             return self._apply_operation(other, torch.minimum)
         if isinstance(other, float):
-            other = torch.Tensor([other])
+            other = torch.Tensor([other])  # type: ignore  # scalar Tensor
         return self.apply_func(torch.minimum, other)
 
     def maximum(
         self,
-        other: Any,
+        other: Union[Self, float],
     ) -> Self:
         # false-positive; pylint: disable=no-member
         if isinstance(other, Vector):
             return self._apply_operation(other, torch.maximum)
         if isinstance(other, float):
-            other = torch.Tensor([other])
+            other = torch.Tensor([other])  # type: ignore  # scalar Tensor
         return self.apply_func(torch.maximum, other)
 
     def sum(
@@ -195,6 +196,13 @@ class TorchVector(Vector):
         axis: Optional[int] = None,
         keepdims: bool = False,
     ) -> Self:
+        if isinstance(axis, int) or keepdims:
+            warnings.warn(  # pragma: no cover
+                "The 'axis' and 'keepdims' arguments of 'TorchVector.sum' "
+                "have been deprecated as of declearn v2.3, and will be "
+                "removed in version 2.6 and/or 3.0.",
+                DeprecationWarning,
+            )
         coefs = {
             key: val.sum(dim=axis, keepdims=keepdims)
             for key, val in self.coefs.items()
