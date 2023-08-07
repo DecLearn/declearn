@@ -21,8 +21,8 @@ from typing import Any, Callable, Dict, Optional, Set, Type
 
 import jax
 import jax.numpy as jnp
+import jaxlib
 import numpy as np
-from jax.config import config as jaxconfig
 from typing_extensions import Self  # future: import from typing (Py>=3.11)
 
 from declearn.model.api import Vector, register_vector_type
@@ -35,10 +35,13 @@ __all__ = [
 ]
 
 
-jaxconfig.update("jax_enable_x64", True)  # enable float64 support
+jax.config.update("jax_enable_x64", True)  # enable float64 support
 
 
-@register_vector_type(jax.Array)
+@register_vector_type(
+    jax.Array,
+    jaxlib.xla_extension.ArrayImpl,  # pylint: disable=c-extension-no-member
+)
 class JaxNumpyVector(Vector):
     """Vector subclass to store jax.numpy.ndarray coefficients.
 
