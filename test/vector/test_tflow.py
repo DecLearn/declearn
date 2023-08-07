@@ -26,6 +26,7 @@ try:
 except ModuleNotFoundError:
     pytest.skip(reason="TensorFlow is unavailable", allow_module_level=True)
 
+from declearn.model.sklearn import NumpyVector
 from declearn.model.tensorflow import TensorflowVector
 from declearn.utils import set_device_policy
 from declearn.test_utils import make_importable
@@ -46,21 +47,23 @@ class TensorflowVectorFactory(VectorFactory):
     def make_vector(
         self,
         seed: int = 0,
+        first_as_slices: bool = True,
     ) -> TensorflowVector:
         # Generate values and convert them to tensors.
         values = self.make_values(seed)
         tensor = {
             key: tf.convert_to_tensor(val) for key, val in values.items()
         }
-        # Wrap the first one as IndexedSlices, made to be equivalent to their
-        # dense counterpart. This is not very realistic, but enables testing
-        # support for these structures while maintaining the possibility to
-        # compare outputs' values with numpy and other frameworks.
-        tensor[self.names[0]] = tf.IndexedSlices(
-            values=tensor[self.names[0]],
-            indices=tf.range(self.shapes[0][0]),
-            dense_shape=tf.convert_to_tensor(self.shapes[0]),
-        )
+        if first_as_slices:
+            # Wrap the first one as IndexedSlices, made to be equivalent to
+            # their dense counterpart. This is not very realistic, but enables
+            # testing support for these structures as it enables comparing
+            # outputs' values with numpy and other frameworks.
+            tensor[self.names[0]] = tf.IndexedSlices(
+                values=tensor[self.names[0]],
+                indices=tf.range(self.shapes[0][0]),
+                dense_shape=tf.convert_to_tensor(self.shapes[0]),
+            )
         return TensorflowVector(tensor)
 
 
@@ -72,3 +75,38 @@ def fixture_factory() -> TensorflowVectorFactory:
 
 class TestTensorflowVector(VectorTestSuite):
     """Unit tests for TensorflowVector."""
+
+    def test_sub_numpy_vector(
+        self,
+        factory: TensorflowVectorFactory,
+    ) -> None:
+        """Test subtracting a NumpyVector from a TensorflowVector."""
+        tf_ref = factory.make_vector(seed=0, first_as_slices=False)
+        tf_vec = factory.make_vector(seed=1, first_as_slices=False)
+        np_vec = NumpyVector(factory.make_values(seed=1))
+        result = tf_ref - np_vec
+        expect = tf_ref - tf_vec
+        assert isinstance(result, TensorflowVector)
+        assert result == expect
+
+    def test_rsub_numpy_vector(
+        self,
+        factory: TensorflowVectorFactory,
+    ) -> None:
+        """Test subtracting a TensorflowVector from a NumpyVector."""
+        tf_ref = factory.make_vector(seed=0, first_as_slices=False)
+        tf_vec = factory.make_vector(seed=1, first_as_slices=False)
+        np_vec = NumpyVector(factory.make_values(seed=1))
+        result = np_vec - tf_ref
+        expect = tf_vec - tf_ref
+        assert isinstance(result, TensorflowVector)
+        assert result == expect
+
+    def test_not_equal_dense_or_slices(
+        self,
+        factory: TensorflowVectorFactory,
+    ) -> None:
+        """Test that tensorflow Tensor and IndexedSlices are deemed unequal."""
+        vec_a = factory.make_vector(seed=0, first_as_slices=True)
+        vec_b = factory.make_vector(seed=0, first_as_slices=False)
+        assert vec_a != vec_b

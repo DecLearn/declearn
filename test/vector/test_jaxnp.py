@@ -28,6 +28,7 @@ except ModuleNotFoundError:
 
 from declearn.model.haiku import JaxNumpyVector
 from declearn.model.haiku.utils import select_device
+from declearn.model.sklearn import NumpyVector
 from declearn.utils import set_device_policy
 from declearn.test_utils import make_importable
 
@@ -65,3 +66,29 @@ def fixture_factory() -> JaxNumpyVectorFactory:
 
 class TestJaxNumpyVector(VectorTestSuite):
     """Unit tests for JaxNumpyVector."""
+
+    def test_sub_numpy_vector(
+        self,
+        factory: JaxNumpyVectorFactory,
+    ) -> None:
+        """Test subtracting a NumpyVector from a TorchVector."""
+        jx_ref = factory.make_vector(seed=0)
+        jx_vec = factory.make_vector(seed=1)
+        np_vec = NumpyVector(factory.make_values(seed=1))
+        result = jx_ref - np_vec
+        expect = jx_ref - jx_vec
+        assert isinstance(result, JaxNumpyVector)
+        assert result == expect
+
+    def test_rsub_numpy_vector(
+        self,
+        factory: JaxNumpyVectorFactory,
+    ) -> None:
+        """Test subtracting a TorchVector from a TorchVector."""
+        jx_ref = factory.make_vector(seed=0)
+        jx_vec = factory.make_vector(seed=1)
+        np_vec = NumpyVector(factory.make_values(seed=1))
+        result = np_vec - jx_ref
+        expect = jx_vec - jx_ref
+        assert isinstance(result, JaxNumpyVector)
+        assert result == expect

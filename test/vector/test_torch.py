@@ -26,6 +26,7 @@ try:
 except ModuleNotFoundError:
     pytest.skip(reason="PyTorch is unavailable", allow_module_level=True)
 
+from declearn.model.sklearn import NumpyVector
 from declearn.model.torch import TorchVector
 from declearn.utils import set_device_policy
 from declearn.test_utils import make_importable
@@ -62,3 +63,29 @@ def fixture_factory() -> TorchVectorFactory:
 
 class TestTorchVector(VectorTestSuite):
     """Unit tests for TorchVector."""
+
+    def test_sub_numpy_vector(
+        self,
+        factory: TorchVectorFactory,
+    ) -> None:
+        """Test subtracting a NumpyVector from a TorchVector."""
+        pt_ref = factory.make_vector(seed=0)
+        pt_vec = factory.make_vector(seed=1)
+        np_vec = NumpyVector(factory.make_values(seed=1))
+        result = pt_ref - np_vec
+        expect = pt_ref - pt_vec
+        assert isinstance(result, TorchVector)
+        assert result == expect
+
+    def test_rsub_numpy_vector(
+        self,
+        factory: TorchVectorFactory,
+    ) -> None:
+        """Test subtracting a TorchVector from a TorchVector."""
+        pt_ref = factory.make_vector(seed=0)
+        pt_vec = factory.make_vector(seed=1)
+        np_vec = NumpyVector(factory.make_values(seed=1))
+        result = np_vec - pt_ref
+        expect = pt_vec - pt_ref
+        assert isinstance(result, TorchVector)
+        assert result == expect
