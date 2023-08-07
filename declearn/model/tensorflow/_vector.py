@@ -156,7 +156,7 @@ class TensorflowVector(Vector):
         **kwargs: Any,
     ) -> Self:
         if not getattr(func, "_pre_wrapped", False):
-            func = preserve_tensor_device(func)
+            func = preserve_tensor_device(func)  # pragma: no cover
         return super().apply_func(func, *args, **kwargs)
 
     def _apply_operation(
@@ -165,7 +165,7 @@ class TensorflowVector(Vector):
         func: Callable[[Any, Any], Any],
     ) -> Self:
         if not getattr(func, "_pre_wrapped", False):
-            func = preserve_tensor_device(func)
+            func = preserve_tensor_device(func)  # pragma: no cover
         return super()._apply_operation(other, func)
 
     def shapes(
@@ -224,7 +224,7 @@ class TensorflowVector(Vector):
             return tf.IndexedSlices(val, ind, shp)
         try:
             return tf.convert_to_tensor(data)
-        except TypeError as exc:
+        except TypeError as exc:  # pragma: no cover
             raise TypeError("Invalid tf.Tensor dump received.") from exc
 
     def __eq__(
@@ -282,16 +282,22 @@ class TensorflowVector(Vector):
         keepdims: bool = False,
     ) -> Self:
         if keepdims or (axis is not None):
-            if any(
+            if any(  # pragma: no cover
                 isinstance(x, tf.IndexedSlices) for x in self.coefs.values()
             ):
-                warnings.warn(
+                warnings.warn(  # pragma: no cover
                     "Calling `TensorflowVector.sum()` with non-default "
                     "arguments and tf.IndexedSlices coefficients might "
                     "result in unexpected outputs, due to the latter "
                     "being converted to their dense counterpart.",
                     category=RuntimeWarning,
                 )
+            warnings.warn(  # pragma: no cover
+                "The 'axis' and 'keepdims' arguments of 'TensorflowVector.sum'"
+                " have been deprecated as of declearn v2.3, and will be "
+                "removed in version 2.6 and/or 3.0.",
+                DeprecationWarning,
+            )
         return self.apply_func(tf.reduce_sum, axis=axis, keepdims=keepdims)
 
     def __pow__(
