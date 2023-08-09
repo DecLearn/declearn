@@ -36,7 +36,9 @@ Adaptive learning-rate algorithms
 Gradient clipping algorithms
 ----------------------------
 * [L2Clipping][declearn.optimizer.modules.L2Clipping]:
-    Fixed-threshold L2-norm gradient clipping module.
+    Fixed-threshold, per-parameter-L2-norm gradient clipping module.
+* [L2GlobalClipping][declearn.optimizer.modules.L2GlobalClipping]:
+    Fixed-threshold, global-L2-norm gradient clipping module.
 
 Momentum algorithms
 -------------------
