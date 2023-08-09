@@ -220,7 +220,7 @@ class InMemoryDataset(Dataset):
         )
 
     @staticmethod
-    def load_data_array(
+    def load_data_array(  # pragma: no cover
         path: str,
         **kwargs: Any,
     ) -> DataArray:
@@ -241,7 +241,7 @@ class InMemoryDataset(Dataset):
         return load_data_array(path, **kwargs)
 
     @staticmethod
-    def save_data_array(
+    def save_data_array(  # pragma: no cover
         path: str,
         array: Union[DataArray, pd.Series],
     ) -> str:

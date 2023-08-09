@@ -159,7 +159,7 @@ class NbSamplesField(DataInfoField):
 
 
 @register_data_info_field
-class InputShapeField(DataInfoField):
+class InputShapeField(DataInfoField):  # pragma: no cover
     """Specifications for 'input_shape' data_info field."""
 
     field = "input_shape"
@@ -216,7 +216,7 @@ class InputShapeField(DataInfoField):
 
 
 @register_data_info_field
-class NbFeaturesField(DataInfoField):
+class NbFeaturesField(DataInfoField):  # pragma: no cover
     """Deprecated specifications for 'n_features' data_info field."""
 
     field = "n_features"

@@ -127,7 +127,7 @@ class Aggregator(metaclass=ABCMeta):
         self,
     ) -> Dict[str, Any]:
         """Return a JSON-serializable dict with this object's parameters."""
-        return {}
+        return {}  # pragma: no cover
 
     @classmethod
     def from_config(
