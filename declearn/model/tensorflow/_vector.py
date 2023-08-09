@@ -295,7 +295,7 @@ class TensorflowVector(Vector):
             warnings.warn(  # pragma: no cover
                 "The 'axis' and 'keepdims' arguments of 'TensorflowVector.sum'"
                 " have been deprecated as of declearn v2.3, and will be "
-                "removed in version 2.6 and/or 3.0.",
+                "removed in version 2.5 and/or 3.0.",
                 DeprecationWarning,
             )
         return self.apply_func(tf.reduce_sum, axis=axis, keepdims=keepdims)
