@@ -33,8 +33,9 @@ from declearn.communication.websockets._tools import (
     send_websockets_message,
 )
 
-
-CHUNK_LENGTH = 100000
+__all__ = [
+    "WebsocketsClient",
+]
 
 
 class WebsocketsClient(NetworkClient):

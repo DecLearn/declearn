@@ -23,6 +23,13 @@ from typing import Union
 from websockets.legacy.protocol import WebSocketCommonProtocol
 
 
+__all__ = [
+    "StreamRefusedError",
+    "receive_websockets_message",
+    "send_websockets_message",
+]
+
+
 FLAG_STREAM_START = "STREAM_START"
 FLAG_STREAM_CLOSE = "STREAM_CLOSE"
 FLAG_STREAM_ALLOW = "STREAM_ALLOW"
