@@ -37,6 +37,7 @@ are run with either a single or three clients at once.
 """
 
 import asyncio
+import secrets
 from typing import AsyncIterator, Dict, List, Optional, Tuple
 
 import pytest
@@ -51,7 +52,7 @@ from declearn.communication import (
 from declearn.communication.api import NetworkClient, NetworkServer
 
 
-### 1. Test that connections can properly be set up.
+### 1. Test that connections can be properly set up.
 
 
 @pytest_asyncio.fixture(name="server")
@@ -203,15 +204,18 @@ class TestNetworkExchanges:
 
     @pytest.mark.asyncio
     async def test_exchanges(
-        self, agents: Tuple[NetworkServer, List[NetworkClient]]
+        self,
+        agents: Tuple[NetworkServer, List[NetworkClient]],
     ) -> None:
         """Run all tests with the same fixture-provided agents."""
         await self.clients_to_server(agents)
         await self.server_to_clients_broadcast(agents)
         await self.server_to_clients_individual(agents)
+        await self.clients_to_server_large(agents)
 
     async def clients_to_server(
-        self, agents: Tuple[NetworkServer, List[NetworkClient]]
+        self,
+        agents: Tuple[NetworkServer, List[NetworkClient]],
     ) -> None:
         """Test that clients can send messages to the server."""
         server, clients = agents
@@ -226,7 +230,8 @@ class TestNetworkExchanges:
         }
 
     async def server_to_clients_broadcast(
-        self, agents: Tuple[NetworkServer, List[NetworkClient]]
+        self,
+        agents: Tuple[NetworkServer, List[NetworkClient]],
     ) -> None:
         """Test that the server can send a shared message to all clients."""
         server, clients = agents
@@ -237,7 +242,8 @@ class TestNetworkExchanges:
         assert all(reply == msg for reply in replies)
 
     async def server_to_clients_individual(
-        self, agents: Tuple[NetworkServer, List[NetworkClient]]
+        self,
+        agents: Tuple[NetworkServer, List[NetworkClient]],
     ) -> None:
         """Test that the server can send individual messages to clients."""
         server, clients = agents
@@ -252,3 +258,24 @@ class TestNetworkExchanges:
             reply == messages[client.name]
             for client, reply in zip(clients, replies)
         )
+
+    async def clients_to_server_large(
+        self,
+        agents: Tuple[NetworkServer, List[NetworkClient]],
+    ) -> None:
+        """Test that the clients can send large messages to the server."""
+        server, clients = agents
+        coros = []
+        large = secrets.token_bytes(2**22).hex()
+        for idx, client in enumerate(clients):
+            msg = messaging.GenericMessage(
+                action="test", params={"idx": idx, "content": large}
+            )
+            coros.append(client.send_message(msg))
+        messages, *_ = await asyncio.gather(server.wait_for_messages(), *coros)
+        assert messages == {
+            c.name: messaging.GenericMessage(
+                action="test", params={"idx": i, "content": large}
+            )
+            for i, c in enumerate(clients)
+        }
