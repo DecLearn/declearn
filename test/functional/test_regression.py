@@ -139,7 +139,7 @@ def get_dataset(framework: FrameworkType, inputs, labels):
         inputs = torch.from_numpy(inputs)
         labels = torch.from_numpy(labels)
         return TorchDataset(torch.utils.data.TensorDataset(inputs, labels))
-    return InMemoryDataset(inputs, labels)
+    return InMemoryDataset(inputs, labels, expose_data_type=True)
 
 
 def prep_client_datasets(
