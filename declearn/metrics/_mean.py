@@ -23,6 +23,7 @@ from typing import ClassVar, Dict, Optional, Union
 import numpy as np
 
 from declearn.metrics._api import Metric
+from declearn.metrics._utils import squeeze_into_identical_shapes
 
 __all__ = [
     "MeanMetric",
@@ -129,6 +130,7 @@ class MeanAbsoluteError(MeanMetric):
         y_pred: np.ndarray,
     ) -> np.ndarray:
         # Sample-wise (sum of) absolute error function.
+        y_true, y_pred = squeeze_into_identical_shapes(y_true, y_pred)
         errors = np.abs(y_true - y_pred)
         while errors.ndim > 1:
             errors = errors.sum(axis=-1)
@@ -158,6 +160,7 @@ class MeanSquaredError(MeanMetric):
         y_pred: np.ndarray,
     ) -> np.ndarray:
         # Sample-wise (sum of) squared error function.
+        y_true, y_pred = squeeze_into_identical_shapes(y_true, y_pred)
         errors = np.square(y_true - y_pred)
         while errors.ndim > 1:
             errors = errors.sum(axis=-1)

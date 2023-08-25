@@ -24,7 +24,7 @@ import numpy as np
 import pytest
 
 from declearn.metrics import MeanAbsoluteError, MeanSquaredError, Metric
-from declearn.test_utils import make_importable
+from declearn.test_utils import assert_dict_equal, make_importable
 
 # relative imports from `metric_testing.py`
 with make_importable(os.path.dirname(__file__)):
@@ -69,7 +69,7 @@ class MeanMetricTestSuite(MetricTestSuite):
     """Unit tests suite for `MeanMetric` subclasses."""
 
     def test_update_errors(self, test_case: MetricTestCase) -> None:
-        """Test that `update` raises on improper `s_wght` shapes."""
+        """Test that `update` raises on improper input shapes."""
         metric = test_case.metric
         inputs = test_case.inputs
         # Test with multi-dimensional sample weights.
@@ -80,11 +80,33 @@ class MeanMetricTestSuite(MetricTestSuite):
         s_wght = np.ones(shape=(len(inputs["y_pred"]) + 2,))
         with pytest.raises(ValueError):
             metric.update(inputs["y_true"], inputs["y_pred"], s_wght)
+        # Test with mismatching-shape inputs.
+        y_true = inputs["y_true"]
+        y_pred = np.stack([inputs["y_pred"], inputs["y_pred"]], axis=-1)
+        with pytest.raises(ValueError):
+            metric.update(y_true, y_pred, s_wght)
 
     def test_zero_result(self, test_case: MetricTestCase) -> None:
         """Test that `get_results` works with zero-valued divisor."""
         metric = test_case.metric
         assert metric.get_result() == {metric.name: 0.0}
+
+    def test_update_expanded_shape(self, test_case: MetricTestCase) -> None:
+        """Test that the metric supports expanded-dim input predictions."""
+        # Gather states with basic inputs.
+        metric, inputs = test_case.metric, test_case.inputs
+        metric.update(**inputs)
+        states = metric.get_states()
+        metric.reset()
+        # Do the same with expanded-dim predictions.
+        metric.update(
+            inputs["y_true"],
+            np.expand_dims(inputs["y_pred"], -1),
+            inputs.get("s_wght"),
+        )
+        st_bis = metric.get_states()
+        # Verify that results are the same.
+        assert_dict_equal(states, st_bis)
 
 
 @pytest.mark.parametrize("weighted", [False, True], ids=["base", "weighted"])

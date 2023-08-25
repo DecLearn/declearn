@@ -22,6 +22,7 @@ from typing import ClassVar, Dict, Optional, Union
 import numpy as np
 
 from declearn.metrics._api import Metric
+from declearn.metrics._utils import squeeze_into_identical_shapes
 
 __all__ = [
     "RSquared",
@@ -113,6 +114,7 @@ class RSquared(Metric):
         y_pred: np.ndarray,
         s_wght: Optional[np.ndarray] = None,
     ) -> None:
+        y_true, y_pred = squeeze_into_identical_shapes(y_true, y_pred)
         # Verify sample weights' shape, or set up 1-valued ones.
         s_wght = self._prepare_sample_weights(s_wght, n_samples=len(y_pred))
         # Update the residual sum of squares. wSSr = sum(w * (y - p)^2)
