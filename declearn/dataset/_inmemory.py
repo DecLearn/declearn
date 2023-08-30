@@ -199,7 +199,7 @@ class InMemoryDataset(Dataset):
             return set(np.unique(self.target).tolist())
         if isinstance(self.target, spmatrix):
             return set(np.unique(self.target.tocsr().data).tolist())
-        raise TypeError(
+        raise TypeError(  # pragma: no cover
             f"Invalid 'target' attribute type: '{type(self.target)}'."
         )
 
@@ -218,15 +218,15 @@ class InMemoryDataset(Dataset):
             return list(dtypes)[0]
         if isinstance(self.feats, (pd.Series, np.ndarray, spmatrix)):
             return str(self.feats.dtype)
-        raise TypeError(
+        raise TypeError(  # pragma: no cover
             f"Invalid 'data' attribute type: '{type(self.target)}'."
         )
 
     @staticmethod
-    def load_data_array(  # pragma: no cover
+    def load_data_array(
         path: str,
         **kwargs: Any,
-    ) -> DataArray:
+    ) -> DataArray:  # pragma: no cover
         """Load a data array from a dump file.
 
         As of declearn v2.2, this staticmethod is DEPRECATED in favor of
@@ -244,10 +244,10 @@ class InMemoryDataset(Dataset):
         return load_data_array(path, **kwargs)
 
     @staticmethod
-    def save_data_array(  # pragma: no cover
+    def save_data_array(
         path: str,
         array: Union[DataArray, pd.Series],
-    ) -> str:
+    ) -> str:  # pragma: no cover
         """Save a data array to a dump file.
 
         As of declearn v2.2, this staticmethod is DEPRECATED in favor of
