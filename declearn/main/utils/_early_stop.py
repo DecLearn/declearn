@@ -105,7 +105,7 @@ class EarlyStopping:
             self._best_metric = metric
         if self.relative:
             diff /= self._best_metric
-        if diff < self.tolerance:
+        if diff <= self.tolerance:
             self._n_iter_stuck += 1
         else:
             self._n_iter_stuck = 0
