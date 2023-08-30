@@ -149,6 +149,11 @@ class InMemoryDataset(Dataset):
                 target = self.data[target]
             else:
                 target = load_data_array(target)
+                if (
+                    isinstance(target, pd.DataFrame)
+                    and len(target.columns) == 1
+                ):
+                    target = target.iloc[:, 0]
         self.target = target
         # Assign the (optional) sample weights data array.
         if isinstance(s_wght, str):
