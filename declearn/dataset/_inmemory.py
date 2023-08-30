@@ -210,16 +210,16 @@ class InMemoryDataset(Dataset):
         """Unique data type."""
         if not self.expose_data_type:
             return None
-        if isinstance(self.data, pd.DataFrame):
-            dtypes = [str(t) for t in list(self.data.dtypes)]
+        if isinstance(self.feats, pd.DataFrame):
+            dtypes = {str(t) for t in list(self.feats.dtypes)}
             if len(dtypes) > 1:
                 raise ValueError(
                     "Cannot work with mixed data types:"
                     "ensure the `data` attribute has unique dtype"
                 )
-            return dtypes[0]
-        if isinstance(self.data, (pd.Series, np.ndarray, spmatrix)):
-            return str(self.data.dtype)
+            return list(dtypes)[0]
+        if isinstance(self.feats, (pd.Series, np.ndarray, spmatrix)):
+            return str(self.feats.dtype)
         raise TypeError(
             f"Invalid 'data' attribute type: '{type(self.target)}'."
         )
