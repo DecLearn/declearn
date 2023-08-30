@@ -73,11 +73,12 @@ class DataTypeField(DataInfoField):
         cls,
         value: Any,
     ) -> bool:
-        if isinstance(value, str):
-            try:
-                np.dtype(value)
-            except TypeError:
-                return False
+        if not isinstance(value, str):
+            return False
+        try:
+            np.dtype(value)
+        except TypeError:
+            return False
         return True
 
     @classmethod
@@ -159,12 +160,12 @@ class NbSamplesField(DataInfoField):
 
 
 @register_data_info_field
-class InputShapeField(DataInfoField):
+class InputShapeField(DataInfoField):  # pragma: no cover
     """Specifications for 'input_shape' data_info field."""
 
     field = "input_shape"
     types = (tuple, list)
-    doc = "Input features' batched shape, checked to be equal."
+    doc = "DEPRECATED - Input features' batched shape, checked to be equal."
 
     @classmethod
     def is_valid(
@@ -216,12 +217,12 @@ class InputShapeField(DataInfoField):
 
 
 @register_data_info_field
-class NbFeaturesField(DataInfoField):
+class NbFeaturesField(DataInfoField):  # pragma: no cover
     """Deprecated specifications for 'n_features' data_info field."""
 
     field = "n_features"
     types = (int,)
-    doc = "Number of input features, checked to be equal."
+    doc = "DEPRECATED - Number of input features, checked to be equal."
 
     @classmethod
     def is_valid(

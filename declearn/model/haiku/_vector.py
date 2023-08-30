@@ -156,7 +156,7 @@ class JaxNumpyVector(Vector):
             warnings.warn(  # pragma: no cover
                 "The 'axis' and 'keepdims' arguments of 'JaxNumpyVector.sum' "
                 "have been deprecated as of declearn v2.3, and will be "
-                "removed in version 2.6 and/or 3.0.",
+                "removed in version 2.5 and/or 3.0.",
                 DeprecationWarning,
             )
         coefs = {

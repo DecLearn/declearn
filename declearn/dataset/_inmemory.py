@@ -19,7 +19,7 @@
 
 import os
 import warnings
-from typing import Any, ClassVar, Dict, Iterator, List, Optional, Set, Union
+from typing import Any, Dict, Iterator, List, Optional, Set, Union
 
 import numpy as np
 import pandas as pd
@@ -71,8 +71,6 @@ class InMemoryDataset(Dataset):
 
     # attributes serve clarity; pylint: disable=too-many-instance-attributes
     # arguments serve modularity; pylint: disable=too-many-arguments
-
-    _type_key: ClassVar[str] = "InMemoryDataset"
 
     def __init__(
         self,
@@ -149,6 +147,11 @@ class InMemoryDataset(Dataset):
                 target = self.data[target]
             else:
                 target = load_data_array(target)
+                if (
+                    isinstance(target, pd.DataFrame)
+                    and len(target.columns) == 1
+                ):
+                    target = target.iloc[:, 0]
         self.target = target
         # Assign the (optional) sample weights data array.
         if isinstance(s_wght, str):
@@ -196,7 +199,7 @@ class InMemoryDataset(Dataset):
             return set(np.unique(self.target).tolist())
         if isinstance(self.target, spmatrix):
             return set(np.unique(self.target.tocsr().data).tolist())
-        raise TypeError(
+        raise TypeError(  # pragma: no cover
             f"Invalid 'target' attribute type: '{type(self.target)}'."
         )
 
@@ -205,17 +208,17 @@ class InMemoryDataset(Dataset):
         """Unique data type."""
         if not self.expose_data_type:
             return None
-        if isinstance(self.data, pd.DataFrame):
-            dtypes = [str(t) for t in list(self.data.dtypes)]
+        if isinstance(self.feats, pd.DataFrame):
+            dtypes = {str(t) for t in list(self.feats.dtypes)}
             if len(dtypes) > 1:
                 raise ValueError(
                     "Cannot work with mixed data types:"
                     "ensure the `data` attribute has unique dtype"
                 )
-            return dtypes[0]
-        if isinstance(self.data, (pd.Series, np.ndarray, spmatrix)):
-            return str(self.data.dtype)
-        raise TypeError(
+            return list(dtypes)[0]
+        if isinstance(self.feats, (pd.Series, np.ndarray, spmatrix)):
+            return str(self.feats.dtype)
+        raise TypeError(  # pragma: no cover
             f"Invalid 'data' attribute type: '{type(self.target)}'."
         )
 
@@ -223,7 +226,7 @@ class InMemoryDataset(Dataset):
     def load_data_array(
         path: str,
         **kwargs: Any,
-    ) -> DataArray:
+    ) -> DataArray:  # pragma: no cover
         """Load a data array from a dump file.
 
         As of declearn v2.2, this staticmethod is DEPRECATED in favor of
@@ -244,7 +247,7 @@ class InMemoryDataset(Dataset):
     def save_data_array(
         path: str,
         array: Union[DataArray, pd.Series],
-    ) -> str:
+    ) -> str:  # pragma: no cover
         """Save a data array to a dump file.
 
         As of declearn v2.2, this staticmethod is DEPRECATED in favor of
@@ -308,7 +311,7 @@ class InMemoryDataset(Dataset):
         path = os.path.abspath(path)
         folder = os.path.dirname(path)
         info = {}  # type: Dict[str, Any]
-        info["type"] = self._type_key
+        info["type"] = "InMemoryDataset"  # NOTE: for backward compatibility
         # Optionally create data dumps. Record data dumps' paths.
         # fmt: off
         info["data"] = (
@@ -349,16 +352,11 @@ class InMemoryDataset(Dataset):
         if "config" not in dump:
             raise KeyError("Missing key in the JSON file: 'config'.")
         info = dump["config"]
-        for key in ("type", "data", "target", "s_wght", "f_cols"):
+        for key in ("data", "target", "s_wght", "f_cols"):
             if key not in info:
                 error = f"Missing key in the JSON file: 'config/{key}'."
                 raise KeyError(error)
-        key = info.pop("type")
-        if key != cls._type_key:
-            raise TypeError(
-                f"Incorrect 'type' field: got '{key}', "
-                f"expected '{cls._type_key}'."
-            )
+        info.pop("type", None)
         # Instantiate the object and return it.
         return cls(**info)
 

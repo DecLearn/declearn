@@ -69,11 +69,9 @@ from ._build import (
 # Concrete implementations using various protocols:
 try:
     from . import grpc
-except ImportError:
-    # pragma: no cover
+except ImportError:  # pragma: no cover
     _INSTALLABLE_BACKENDS["grpc"] = ("grpcio", "protobuf")
 try:
     from . import websockets
-except ImportError:
-    # pragma: no cover
+except ImportError:  # pragma: no cover
     _INSTALLABLE_BACKENDS["websockets"] = ("websockets",)

@@ -33,8 +33,9 @@ from declearn.communication.websockets._tools import (
     send_websockets_message,
 )
 
-
-ADD_HEADER = False  # revise: drop this constant (choose a behaviour)
+__all__ = [
+    "WebsocketsServer",
+]
 
 
 class WebsocketsServer(NetworkServer):
@@ -106,18 +107,12 @@ class WebsocketsServer(NetworkServer):
     ) -> None:
         """Start the websockets server."""
         # Set up the websockets connections handling process.
-        extra_headers = (
-            ws.Headers(Connection="keep-alive")  # type: ignore
-            if ADD_HEADER
-            else None
-        )
         server = ws.serve(  # type: ignore  # pylint: disable=no-member
             self._handle_connection,
             host=self.host,
             port=self.port,
             logger=self.logger,
             ssl=self._ssl,
-            extra_headers=extra_headers,
             ping_timeout=None,  # disable timeout on keep-alive pings
         )
         # Run the websockets server.

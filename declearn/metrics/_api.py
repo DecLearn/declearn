@@ -347,7 +347,9 @@ class Metric(metaclass=ABCMeta):
         return s_wght
 
     @staticmethod
-    def normalize_weights(s_wght: np.ndarray) -> np.ndarray:
+    def normalize_weights(  # pragma: no cover
+        s_wght: np.ndarray,
+    ) -> np.ndarray:
         """Utility method to ensure weights sum to one.
 
         Note that this method may or may not be used depending on

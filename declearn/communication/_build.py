@@ -48,7 +48,7 @@ def raise_if_installable(
     exc: Optional[Exception] = None,
 ) -> None:
     """Raise a RuntimeError if a given protocol is missing but installable."""
-    if protocol in _INSTALLABLE_BACKENDS:
+    if protocol in _INSTALLABLE_BACKENDS:  # pragma: no cover
         raise RuntimeError(
             f"The '{protocol}' communication protocol network endpoints "
             "could not be imported, but could be installed by satisfying "
@@ -95,7 +95,7 @@ def build_client(
     protocol = protocol.strip().lower()
     try:
         cls = access_registered(name=protocol, group="NetworkClient")
-    except KeyError as exc:
+    except KeyError as exc:  # pragma: no cover
         raise_if_installable(protocol, exc)
         raise KeyError(
             "Failed to retrieve NetworkClient "
@@ -153,7 +153,7 @@ def build_server(
     protocol = protocol.strip().lower()
     try:
         cls = access_registered(name=protocol, group="NetworkServer")
-    except KeyError as exc:
+    except KeyError as exc:  # pragma: no cover
         raise_if_installable(protocol, exc)
         raise KeyError(
             "Failed to retrieve NetworkServer "

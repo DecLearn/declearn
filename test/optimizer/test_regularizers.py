@@ -38,16 +38,16 @@ from typing import Type
 
 import pytest
 
+from declearn.optimizer import list_optim_regularizers
 from declearn.optimizer.regularizers import Regularizer
 from declearn.test_utils import make_importable
-from declearn.utils import access_types_mapping
 
 # relative imports from `optim_testing.py`
 with make_importable(os.path.dirname(__file__)):
     from optim_testing import PluginTestBase
 
 
-REGULARIZER_SUBCLASSES = access_types_mapping(group="Regularizer")
+REGULARIZER_SUBCLASSES = list_optim_regularizers()
 
 
 @pytest.mark.parametrize(
