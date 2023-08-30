@@ -38,6 +38,7 @@ import os
 from typing import Type
 
 import pytest
+from declearn.optimizer import list_optim_modules
 from declearn.optimizer.modules import NoiseModule, OptiModule
 from declearn.test_utils import (
     FrameworkType,
@@ -46,7 +47,7 @@ from declearn.test_utils import (
     assert_json_serializable_dict,
     make_importable,
 )
-from declearn.utils import access_types_mapping, set_device_policy
+from declearn.utils import set_device_policy
 
 # relative imports from `optim_testing.py`
 with make_importable(os.path.dirname(__file__)):
@@ -54,7 +55,7 @@ with make_importable(os.path.dirname(__file__)):
 
 
 # Access the list of modules to test; remove some that have dedicated tests.
-OPTIMODULE_SUBCLASSES = access_types_mapping(group="OptiModule")
+OPTIMODULE_SUBCLASSES = list_optim_modules()
 OPTIMODULE_SUBCLASSES.pop("tensorflow-optim", None)
 OPTIMODULE_SUBCLASSES.pop("torch-optim", None)
 
