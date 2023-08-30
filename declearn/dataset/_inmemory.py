@@ -19,7 +19,7 @@
 
 import os
 import warnings
-from typing import Any, ClassVar, Dict, Iterator, List, Optional, Set, Union
+from typing import Any, Dict, Iterator, List, Optional, Set, Union
 
 import numpy as np
 import pandas as pd
@@ -71,8 +71,6 @@ class InMemoryDataset(Dataset):
 
     # attributes serve clarity; pylint: disable=too-many-instance-attributes
     # arguments serve modularity; pylint: disable=too-many-arguments
-
-    _type_key: ClassVar[str] = "InMemoryDataset"
 
     def __init__(
         self,
@@ -313,7 +311,7 @@ class InMemoryDataset(Dataset):
         path = os.path.abspath(path)
         folder = os.path.dirname(path)
         info = {}  # type: Dict[str, Any]
-        info["type"] = self._type_key
+        info["type"] = "InMemoryDataset"  # NOTE: for backward compatibility
         # Optionally create data dumps. Record data dumps' paths.
         # fmt: off
         info["data"] = (
@@ -354,16 +352,11 @@ class InMemoryDataset(Dataset):
         if "config" not in dump:
             raise KeyError("Missing key in the JSON file: 'config'.")
         info = dump["config"]
-        for key in ("type", "data", "target", "s_wght", "f_cols"):
+        for key in ("data", "target", "s_wght", "f_cols"):
             if key not in info:
                 error = f"Missing key in the JSON file: 'config/{key}'."
                 raise KeyError(error)
-        key = info.pop("type")
-        if key != cls._type_key:
-            raise TypeError(
-                f"Incorrect 'type' field: got '{key}', "
-                f"expected '{cls._type_key}'."
-            )
+        info.pop("type", None)
         # Instantiate the object and return it.
         return cls(**info)
 
