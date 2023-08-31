@@ -4,9 +4,31 @@ Contributions to `declearn` are welcome, whether to provide fixes, suggest
 new features (_e.g._ new subclasses of the core abstractions) or even push
 forward framework evolutions and API revisions.
 
-To contribute directly to the code (beyond posting issues on gitlab), please
-create a dedicated branch, and submit a **Merge Request** once you want your
-work reviewed and further processed to end up integrated into the package.
+## GitLab and GitHub repositories
+
+At the moment, declearn is being published on two mirrored public repositories:
+
+- [Inria's GitLab](https://gitlab.inria.fr/magnet/declearn/declearn2) is where
+  the code is primarily hosted and developed.
+
+- [GitHub](https://github.com/declearn/declearn) hosts a mirroring repository
+  where only the main and release branches are copied from the GitLab source.
+
+Contributions are welcome on both platforms:
+- GitHub is purposed to facilitate the interaction with end-users, that may
+  easily open issues to report bugs, request new features or ask questions
+  about the package.
+- GitLab remains the place where core developers operate, notably as our CI/CD
+  tooling has been developed for that platform. In the future, it may be (more
+  or less progressively) replaced with GitHub as main development place if the
+  onboarding of external contributors proves too difficult.
+
+If you want to contribute directly to the code, you may open a Merge Request
+(on GitLab) or Pull Request (on GitHub) to submit your code and ideas for
+review and eventual integration into the package. GitHub-posted contributions
+will need to transit via GitLab to be integrated. If you want an account for
+the Inria GitLab, feel free to let us know (as it is unfortunately not yet
+possible to register without an invitation).
 
 ## Git branching strategy
 
