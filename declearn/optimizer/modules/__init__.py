@@ -77,6 +77,7 @@ from ._adaptive import (
 )
 from ._clipping import (
     L2Clipping,
+    L2GlobalClipping,
 )
 from ._momentum import (
     EWMAModule,
