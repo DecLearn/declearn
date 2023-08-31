@@ -4,3 +4,4 @@
 - [User Guide](user-guide/)
 - [API Reference](api-reference/)
 - [Developer Guide](devs-guide/)
+- [Release Notes](release-notes/)
