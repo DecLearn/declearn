@@ -128,7 +128,8 @@ class EvaluateConfig(TrainingConfig):
 
     Please refer to the parent class `TrainingConfig` for details
     on the wrapped parameters / attribute. Note that `n_epoch` is
-    most-likely ignored by handling classes.
+    dropped when this config is turned into an EvaluationRequest
+    message.
     """
 
     drop_remainder: bool = False
