@@ -213,7 +213,7 @@ class TorchDataset(Dataset):
     @staticmethod
     def check_dataset_specs(specs) -> None:
         """Utility function checking that user-defined `get_specs()`
-        method returns valid [DataSpecs][declearn.dataset.Dataspecs]
+        method returns valid [DataSpecs][declearn.dataset.DataSpecs]
         fields."""
         acceptable = {f.name for f in dataclasses.fields(DataSpecs)}
         for key in specs.keys():

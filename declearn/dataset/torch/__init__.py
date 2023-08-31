@@ -19,7 +19,7 @@
 
 The main class implementing by this submodule is `TorchDataset`:
 
-* [TorchDataset][declarn.dataset.torch.TorchDataset]:
+* [TorchDataset][declearn.dataset.torch.TorchDataset]:
     Dataset subclass serving torch Datasets.
 
 Some utils are also exposed here, either used as part of the `TorchDataset`

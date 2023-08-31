@@ -17,7 +17,7 @@
 
 """Dataset interface to wrap up 'tensorflow.data.Dataset' instances.
 
-* [TensorflowDataset][declarn.dataset.tensorflow.TensorflowDataset]:
+* [TensorflowDataset][declearn.dataset.tensorflow.TensorflowDataset]:
     Dataset subclass to wrap up 'tensorflow.data.Dataset' instances.
 """
 
