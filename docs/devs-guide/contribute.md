@@ -15,6 +15,7 @@ At the moment, declearn is being published on two mirrored public repositories:
   where only the main and release branches are copied from the GitLab source.
 
 Contributions are welcome on both platforms:
+
 - GitHub is purposed to facilitate the interaction with end-users, that may
   easily open issues to report bugs, request new features or ask questions
   about the package.
