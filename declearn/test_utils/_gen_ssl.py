@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Shared fixtures for declearn.communication module testing."""
+"""Utils to automate self-signing-based SSL certificates generation."""
 
 import datetime
 import ipaddress
@@ -39,6 +39,7 @@ def generate_ssl_certificates(
     password: Optional[str] = None,
     alt_ips: Optional[Collection[str]] = None,
     alt_dns: Optional[Collection[str]] = None,
+    duration: int = 30,
 ) -> Tuple[str, str, str]:
     """Generate a self-signed CA and a CA-signed SSL certificate.
 
@@ -70,6 +71,8 @@ def generate_ssl_certificates(
     alt_dns: collection[str] or None, default=None
         Optional list of additional domain names to certify.
         This is only implemented for OpenSSL >= 3.0.
+    duration: int, default=30
+        Validity duration for both the CA and server certificates.
 
     Returns
     -------
@@ -80,12 +83,15 @@ def generate_ssl_certificates(
     sv_pkey: str
         Path to the server's private key PEM file.
     """
+    # arguments serve modularity; pylint: disable=too-many-arguments
     # Generate a self-signed root CA.
-    ca_cert, ca_pkey = gen_ssl_ca(folder, password)
+    ca_cert, ca_pkey = gen_ssl_ca(folder, password, duration)
     # Generate a server CSR and a private key.
     sv_csrq, sv_pkey = gen_ssl_csr(folder, c_name, alt_ips, alt_dns, password)
     # Sign the CSR into a server certificate using the root CA.
-    sv_cert = gen_ssl_cert(folder, sv_csrq, ca_cert, ca_pkey, password)
+    sv_cert = gen_ssl_cert(
+        folder, sv_csrq, ca_cert, ca_pkey, password, duration
+    )
     # Return paths that are used by declearn network-communication endpoints.
     return ca_cert, sv_cert, sv_pkey
 
@@ -154,6 +160,7 @@ def load_private_rsa_key(
 def gen_ssl_ca(
     folder: str,
     password: Optional[str] = None,
+    duration: int = 30,
 ) -> Tuple[str, str]:
     """Generate a self-signed CA certificate and its private key.
 
@@ -170,6 +177,8 @@ def gen_ssl_ca(
         Path to the created CA PEM file.
     key_path:
         Path to the created private RSA key PEM file.
+    duration:
+        Validity duration of the created certificate, in days.
     """
     # Generate a private key and load it in memory.
     ca_pkey = os.path.join(folder, "ca-pkey.pem")
@@ -191,7 +200,7 @@ def gen_ssl_ca(
         public_key=key.public_key(),
         serial_number=x509.random_serial_number(),
         not_valid_before=today,
-        not_valid_after=today + datetime.timedelta(days=365),
+        not_valid_after=today + datetime.timedelta(days=duration),
     ).sign(key, cryptography.hazmat.primitives.hashes.SHA256())
     # Export the certificate to a PEM file.
     ca_cert = os.path.join(folder, "ca-cert.pem")
@@ -270,6 +279,7 @@ def gen_ssl_cert(
     ca_cert: str,
     ca_pkey: str,
     password: Optional[str] = None,
+    duration: int = 30,
 ) -> str:
     """Sign a CSR into a certificate using a given CA.
 
@@ -285,12 +295,15 @@ def gen_ssl_cert(
         Path to the private key of the CA.
     password:
         Optional password to decrypt the CA private key.
+    duration:
+        Validity duration of the created certificate, in days.
 
     Returns
     -------
     cert_path:
         Path to the created certificate PEM file.
     """
+    # backend function; pylint: disable=too-many-arguments
     # Load the CSR, the CA cert and its private key.
     with open(sv_csrq, "rb") as file:
         csr = x509.load_pem_x509_csr(file.read())
@@ -305,7 +318,7 @@ def gen_ssl_cert(
         public_key=csr.public_key(),
         serial_number=x509.random_serial_number(),
         not_valid_before=today,
-        not_valid_after=today + datetime.timedelta(days=30),
+        not_valid_after=today + datetime.timedelta(days=duration),
         extensions=list(csr.extensions),
     ).sign(key, cryptography.hazmat.primitives.hashes.SHA256())
     # Export the certificate to a PEM file and return its path.
