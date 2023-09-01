@@ -194,14 +194,20 @@ def gen_ssl_ca(
     ]
     subject_name = x509.Name(identifiers)
     today = datetime.datetime.now(datetime.timezone.utc)
-    cert = x509.CertificateBuilder(
+    cert_builder = x509.CertificateBuilder(
         subject_name=subject_name,
         issuer_name=subject_name,
         public_key=key.public_key(),
         serial_number=x509.random_serial_number(),
         not_valid_before=today,
         not_valid_after=today + datetime.timedelta(days=duration),
-    ).sign(key, cryptography.hazmat.primitives.hashes.SHA256())
+    )
+    cert_builder = cert_builder.add_extension(
+        x509.BasicConstraints(ca=True, path_length=None), critical=True
+    )
+    cert = cert_builder.sign(
+        key, cryptography.hazmat.primitives.hashes.SHA256()
+    )
     # Export the certificate to a PEM file.
     ca_cert = os.path.join(folder, "ca-cert.pem")
     cert_bytes = cert.public_bytes(crypto_serialization.Encoding.PEM)
