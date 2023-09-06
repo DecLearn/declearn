@@ -23,13 +23,6 @@ import warnings
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 
 import functorch  # type: ignore
-
-try:
-    import functorch.compile  # type: ignore
-except ModuleNotFoundError:
-    COMPILE_AVAILABLE = False
-else:
-    COMPILE_AVAILABLE = True
 import numpy as np
 import torch
 from typing_extensions import Self  # future: import from typing (py >=3.11)
@@ -372,11 +365,7 @@ class TorchModel(Model):
         # Wrap the former function to compute and clip sample-wise gradients.
         in_axes = [[0] * inputs, 0 if y_true else None, 0 if s_wght else None]
         in_axes.extend([None] * sum(1 for _ in self._model.parameters()))
-        grads_fn = functorch.vmap(grads_fn, tuple(in_axes))
-        # Compile the resulting function to decrease runtime costs.
-        if not COMPILE_AVAILABLE:
-            return grads_fn
-        return functorch.compile.aot_function(grads_fn, functorch.compile.nop)
+        return functorch.vmap(grads_fn, tuple(in_axes))
 
     def apply_updates(
         self,
