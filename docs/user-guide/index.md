@@ -12,5 +12,7 @@ This guide is structured this way:
     Description of the declearn code's structure and of the main APIs.
 - [Hands-on usage](./usage.md):<br/>
     Guide on how to set up your own federated learning task using declearn.
+- [Guide to the Optimizer API](./optimizer.md):<br/>
+    API, design principles and practical how-tos of the declearn Optimizer.
 - [Local Differential Privacy capabilities](./local_dp.md):<br/>
     Description of the local-DP features of declearn.
