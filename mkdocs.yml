@@ -16,6 +16,7 @@ repo_name: magnet/declearn
 markdown_extensions:
   - pymdownx.arithmatex:  # mathjax
       generic: true
+  - pymdownx.superfences  # code coloring
 
 extra:
   version:
