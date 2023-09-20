@@ -18,7 +18,7 @@
 """Model abstraction API."""
 
 from abc import ABCMeta, abstractmethod
-from typing import Any, Dict, Generic, Optional, Set, Tuple, TypeVar
+from typing import Any, Dict, Generic, List, Optional, Set, Tuple, TypeVar
 
 import numpy as np
 from typing_extensions import Self  # future: import from typing (py >=3.11)
@@ -62,6 +62,8 @@ class Model(Generic[VectorT], metaclass=ABCMeta):
     ) -> None:
         """Instantiate a Model interface wrapping a 'model' object."""
         self._model = model
+        # Declare a private list where to record batch-wise training losses.
+        self._loss_history = []  # type: List[float]
 
     def get_wrapped_model(self) -> Any:
         """Getter to access the wrapped framework-specific model object.
@@ -202,6 +204,10 @@ class Model(Generic[VectorT], metaclass=ABCMeta):
         to its trainable parameters for the given data batch.
         Optionally clip sample-wise gradients before batch-averaging.
 
+        Record the loss value over the batch, which may be collected
+        (and thereof purged from the internal memory) by calling the
+        `collect_training_losses` method.
+
         Parameters
         ----------
         batch: declearn.typing.Batch
@@ -226,6 +232,25 @@ class Model(Generic[VectorT], metaclass=ABCMeta):
         updates: VectorT,
     ) -> None:
         """Apply updates to the model's weights."""
+
+    def collect_training_losses(
+        self,
+    ) -> List[float]:
+        """Collect batch-wise training losses accumulated over time.
+
+        Return all recorded batch-averaged loss values computed a
+        part of `compute_batch_gradients` calls, and clear them
+        from memory, so that next time this method is called, only
+        new values are returned.
+
+        Returns
+        -------
+        losses:
+            List of bath-averaged loss values computed over inputs
+            to the `compute_batch_gradients` method.
+        """
+        losses, self._loss_history = self._loss_history, []
+        return losses
 
     @abstractmethod
     def compute_batch_predictions(

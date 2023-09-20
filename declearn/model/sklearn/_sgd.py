@@ -397,6 +397,11 @@ class SklearnSGDModel(Model):
         # Optionally re-weight gradients based on sample weights.
         if s_wght is not None:
             grad = [g * w for g, w in zip(grad, s_wght)]
+        # Compute and record the loss value on the entire batch.
+        loss = self.loss_function(
+            y_data, self._predict(x_data)  # type: ignore
+        )
+        self._loss_history.append(float(loss.mean()))
         # Batch-average the gradients and return them.
         return sum(grad) / len(grad)  # type: ignore
 

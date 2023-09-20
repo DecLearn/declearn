@@ -385,23 +385,29 @@ class HaikuModel(Model):
         rng = next(self._rng_gen)
         # Compute batch-averaged gradients, opt. clipped on a per-sample basis.
         if max_norm:
-            grads = self._clipped_grad_fn(
+            grads, loss = self._clipped_grads_and_loss_fn(
                 train_params, fixed_params, rng, inputs, max_norm
             )
             grads = [value.mean(0) for value in grads]
         else:
-            grads = jax.tree_util.tree_leaves(
-                self._grad_fn(train_params, fixed_params, rng, inputs)
+            loss, grads_tree = self._loss_and_grads_fn(
+                train_params, fixed_params, rng, inputs
             )
+            grads = jax.tree_util.tree_leaves(grads_tree)
+        # Record the batch-averaged loss value.
+        self._loss_history.append(float(np.array(loss).mean()))
         # Return the gradients, flattened into a JaxNumpyVector container.
         return JaxNumpyVector(dict(zip(self._trainable, grads)))
 
     @functools.cached_property
-    def _grad_fn(
+    def _loss_and_grads_fn(
         self,
-    ) -> Callable[[hk.Params, hk.Params, jax.Array, JaxBatch], hk.Params]:
+    ) -> Callable[
+        [hk.Params, hk.Params, jax.Array, JaxBatch],
+        Tuple[jax.Array, hk.Params],
+    ]:
         """Lazy-built jax function to compute batch-averaged gradients."""
-        return jax.jit(jax.grad(self._forward))
+        return jax.jit(jax.value_and_grad(self._forward))
 
     def _forward(
         self,
@@ -436,10 +442,11 @@ class HaikuModel(Model):
         return jnp.mean(s_loss)
 
     @functools.cached_property
-    def _clipped_grad_fn(
+    def _clipped_grads_and_loss_fn(
         self,
     ) -> Callable[
-        [hk.Params, hk.Params, jax.Array, JaxBatch, float], List[jax.Array]
+        [hk.Params, hk.Params, jax.Array, JaxBatch, float],
+        Tuple[List[jax.Array], jax.Array],
     ]:
         """Lazy-built jax function to compute clipped sample-wise gradients.
 
@@ -447,17 +454,17 @@ class HaikuModel(Model):
         applying optional parameters to pytrees.
         """
 
-        def clipped_grad_fn(
+        def clipped_grads_and_loss_fn(
             train_params: hk.Params,
             fixed_params: hk.Params,
             rng: jax.Array,
             batch: JaxBatch,
             max_norm: float,
-        ) -> List[jax.Array]:
+        ) -> Tuple[List[jax.Array], jax.Array]:
             """Compute and clip gradients wrt parameters for a sample."""
             inputs, y_true, s_wght = batch
             batch = (inputs, y_true, None)
-            grads = jax.grad(self._forward)(
+            loss, grads = jax.value_and_grad(self._forward)(
                 train_params, fixed_params, rng, batch
             )
             grads_flat = [
@@ -466,10 +473,10 @@ class HaikuModel(Model):
             ]
             if s_wght is not None:
                 grads_flat = [g * s_wght for g in grads_flat]
-            return grads_flat
+            return grads_flat, loss
 
         in_axes = [None, None, None, 0, None]  # map on inputs' first dimension
-        return jax.jit(jax.vmap(clipped_grad_fn, in_axes))
+        return jax.jit(jax.vmap(clipped_grads_and_loss_fn, in_axes))
 
     def _unpack_batch(
         self,

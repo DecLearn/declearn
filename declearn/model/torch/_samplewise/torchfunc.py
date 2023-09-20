@@ -51,22 +51,24 @@ def build_samplewise_grads_fn_backend(
             s_loss.mul_(s_wght.to(s_loss.device))
         return s_loss.mean()
 
-    get_grads = torch.func.grad(run_forward, argnums=0)
+    get_grads_and_loss = torch.func.grad_and_value(run_forward, argnums=0)
 
-    def get_clipped_grads(inputs, y_true, s_wght, clip=None):
+    def get_clipped_grads_and_loss(inputs, y_true, s_wght, clip=None):
         """Compute gradients and optionally clip them."""
         params, frozen = get_params(model)
         buffers = dict(model.named_buffers())
-        grads = get_grads(
+        grads, loss = get_grads_and_loss(
             params, frozen, buffers, inputs, y_true, None if clip else s_wght
         )
         if clip:
             clip_and_scale_grads_inplace(grads.values(), clip, s_wght)
-        return grads
+        return grads, loss.detach()
 
     # Wrap the former function to compute and clip sample-wise gradients.
     in_dims = ([0] * inputs, 0 if y_true else None, 0 if s_wght else None)
-    return torch.func.vmap(get_clipped_grads, in_dims, randomness="same")
+    return torch.func.vmap(
+        get_clipped_grads_and_loss, in_dims, randomness="same"
+    )
 
 
 def get_params(

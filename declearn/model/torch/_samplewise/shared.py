@@ -17,7 +17,7 @@
 
 """Shared code for torch-version-dependent backend code."""
 
-from typing import Callable, Dict, Iterable, List, Optional
+from typing import Callable, Dict, Iterable, List, Optional, Tuple
 
 import torch
 
@@ -34,7 +34,7 @@ GetGradientsFunction = Callable[
         Optional[torch.Tensor],
         Optional[float],
     ],
-    Dict[str, torch.Tensor],
+    Tuple[Dict[str, torch.Tensor], torch.Tensor],
 ]
 """Signature for sample-wise gradients computation functions."""
 
