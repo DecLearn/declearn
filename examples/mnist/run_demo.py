@@ -44,12 +44,10 @@ def run_demo(
 
     Parameters
     ------
-
     n_clients: int
         number of clients to run.
     data_folder: str
         Relative path to the folder holding client's data
-
     """
     # Generate the MNIST split data for this demo.
     data_folder = prepare_mnist(nb_clients, scheme, seed=seed)
@@ -59,11 +57,11 @@ def run_demo(
         ca_cert, sv_cert, sv_pkey = generate_ssl_certificates(folder)
         # Specify the server and client routines that need executing.
         server = (run_server, (nb_clients, sv_cert, sv_pkey))
-        client_args = tuple(
-            [data_folder, ca_cert, "websockets", "wss://localhost:8765", False]
-        )
+        client_kwargs = {
+            "data_folder": data_folder, "ca_cert": ca_cert, "verbose": False
+        }
         clients = [
-            (run_client, (f"client_{idx}", *client_args))
+            (run_client, (f"client_{idx}",), client_kwargs)
             for idx in range(nb_clients)
         ]
         # Run routines in isolated processes. Raise if any failed.

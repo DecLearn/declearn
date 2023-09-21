@@ -26,7 +26,7 @@ from declearn.communication import NetworkClientConfig
 from declearn.dataset import InMemoryDataset
 from declearn.dataset.examples import load_heart_uci
 from declearn.main import FederatedClient
-from declearn.test_utils import make_importable, setup_client_argparse
+from declearn.test_utils import setup_client_argparse
 
 
 FILEDIR = os.path.dirname(__file__)
@@ -37,6 +37,7 @@ def run_client(
     ca_cert: str,
     protocol: str = "websockets",
     serv_uri: str = "wss://localhost:8765",
+    verbose: bool = True,
 ) -> None:
     """Instantiate and run a given client.
 
@@ -51,6 +52,9 @@ def run_client(
         Name of the communication protocol to use.
     serv_uri: str, default="wss://localhost:8765"
         URI of the server to which to connect.
+    verbose: bool, default=True
+        Whether to be verbose in the displayed contents, including
+        all logger information and progress bars.
     """
 
     # (1-2) Interface training and optional validation data.
@@ -87,8 +91,11 @@ def run_client(
     # (5) Instantiate a FederatedClient and run it.
 
     client = FederatedClient(
-        # fmt: off
-        network, train, valid, checkpoint=f"{FILEDIR}/results/{name}"
+        netwk=network,
+        train_data=train,
+        valid_data=valid,
+        checkpoint=f"{FILEDIR}/results/{name}",
+        verbose=verbose,
         # Note: you may add `share_metrics=False` to prevent sending
         # evaluation metrics to the server, out of privacy concerns
     )

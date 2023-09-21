@@ -136,7 +136,9 @@ def run_client(
         paths.get("valid_data"),
         target=paths.get("valid_target"),
     )
-    client = FederatedClient(network, train, valid, checkpoint, logger=logger)
+    client = FederatedClient(
+        network, train, valid, checkpoint, logger=logger, verbose=False
+    )
     client.run()
 
 
