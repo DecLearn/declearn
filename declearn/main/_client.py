@@ -20,7 +20,10 @@
 import asyncio
 import dataclasses
 import logging
+import os
 from typing import Any, Dict, Optional, Union
+
+import numpy as np
 
 from declearn.communication import NetworkClientConfig, messaging
 from declearn.communication.api import NetworkClient
@@ -356,6 +359,16 @@ class FederatedClient:
         assert self.trainmanager is not None
         # Run the training round.
         reply = self.trainmanager.training_round(message)
+        # Collect and optionally record batch-wise training losses.
+        # Note: collection enables purging them from memory.
+        losses = self.trainmanager.model.collect_training_losses()
+        if self.ckptr is not None:
+            self.ckptr.save_metrics(
+                metrics={"training_losses": np.array(losses)},
+                prefix="training_losses",
+                append=True,
+                timestamp=f"round_{message.round_i}",
+            )
         # Send training results (or error message) to the server.
         await self.netwk.send_message(reply)
 
@@ -412,7 +425,7 @@ class FederatedClient:
             message.loss,
         )
         if self.ckptr:
-            path = f"{self.ckptr.folder}/model_state_best.json"
+            path = os.path.join(self.ckptr.folder, "model_state_best.json")
             self.logger.info("Checkpointing final weights under %s.", path)
             assert self.trainmanager is not None  # for mypy
             self.trainmanager.model.set_weights(message.weights)
