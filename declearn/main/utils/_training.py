@@ -21,6 +21,7 @@ import logging
 from typing import Any, ClassVar, Dict, List, Optional, Tuple, Union
 
 import numpy as np
+import tqdm
 
 from declearn.communication import messaging
 from declearn.dataset import Dataset
@@ -51,6 +52,7 @@ class TrainingManager:
         valid_data: Optional[Dataset] = None,
         metrics: Union[MetricSet, List[MetricInputType], None] = None,
         logger: Union[logging.Logger, str, None] = None,
+        verbose: bool = True,
     ) -> None:
         """Instantiate the client-side training and evaluation process.
 
@@ -74,6 +76,9 @@ class TrainingManager:
             Logger to use, or name of a logger to set up with
             `declearn.utils.get_logger`.
             If None, use `type(self).__name__`.
+        verbose: bool, default=True
+            Whether to display progress bars when running training
+            and validation rounds.
         """
         # arguments serve modularity; pylint: disable=too-many-arguments
         self.model = model
@@ -84,6 +89,7 @@ class TrainingManager:
         if not isinstance(logger, logging.Logger):
             logger = get_logger(logger or f"{type(self).__name__}")
         self.logger = logger
+        self.verbose = verbose
 
     def _prepare_metrics(
         self,
@@ -228,6 +234,8 @@ class TrainingManager:
         )
         # Run batch train steps for as long as constraints allow it.
         stop_training = False
+        if self.verbose:
+            progress_bar = tqdm.tqdm(desc="Training round", unit=" steps")
         while not (stop_training or epochs.saturated):
             for batch in self.train_data.generate_batches(**batch_cfg):
                 try:
@@ -236,6 +244,8 @@ class TrainingManager:
                     self.logger.warning("Interrupting training round: %s", exc)
                     stop_training = True
                     break
+                if self.verbose:
+                    progress_bar.update()
                 constraints.increment()
                 if constraints.saturated:
                     stop_training = True
@@ -372,9 +382,13 @@ class TrainingManager:
         self.metrics.reset()
         # Run batch evaluation steps for as long as constraints allow it.
         dataset = self.valid_data or self.train_data
+        if self.verbose:
+            progress_bar = tqdm.tqdm(desc="Evaluation round", unit=" batches")
         for batch in dataset.generate_batches(**batch_cfg):
             inputs = self.model.compute_batch_predictions(batch)
             self.metrics.update(*inputs)
+            if self.verbose:
+                progress_bar.update()
             constraints.increment()
             if constraints.saturated:
                 break

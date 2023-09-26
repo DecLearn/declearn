@@ -72,9 +72,12 @@ class DPTrainingManager(TrainingManager):
         valid_data: Optional[Dataset] = None,
         metrics: Union[MetricSet, List[MetricInputType], None] = None,
         logger: Union[logging.Logger, str, None] = None,
+        verbose: bool = True,
     ) -> None:
         # inherited signature; pylint: disable=too-many-arguments
-        super().__init__(model, optim, train_data, valid_data, metrics, logger)
+        super().__init__(
+            model, optim, train_data, valid_data, metrics, logger, verbose
+        )
         # Add DP-related fields: accountant, clipping norm and budget.
         self.accountant = None  # type: Optional[IAccountant]
         self.sclip_norm = None  # type: Optional[float]

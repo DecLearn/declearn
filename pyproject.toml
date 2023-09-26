@@ -41,6 +41,7 @@ dependencies = [
     "requests ~= 2.18",
     "scikit-learn >= 1.0",
     "tomli >= 2.0 ; python_version < '3.11'",
+    "tqdm ~= 4.62",
     "typing_extensions >= 4.0",
 ]
 

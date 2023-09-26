@@ -115,6 +115,7 @@ def run_client(
         valid_data=valid,
         checkpoint=checkpoint,
         logger=logger,
+        verbose=verbose,
     )
     client.run()
 

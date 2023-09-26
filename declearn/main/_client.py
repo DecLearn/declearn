@@ -29,7 +29,7 @@ from declearn.communication import NetworkClientConfig, messaging
 from declearn.communication.api import NetworkClient
 from declearn.dataset import Dataset, load_dataset_from_json
 from declearn.main.utils import Checkpointer, TrainingManager
-from declearn.utils import get_logger
+from declearn.utils import LOGGING_LEVEL_MAJOR, get_logger
 
 
 __all__ = [
@@ -50,6 +50,7 @@ class FederatedClient:
         checkpoint: Union[Checkpointer, Dict[str, Any], str, None] = None,
         share_metrics: bool = True,
         logger: Union[logging.Logger, str, None] = None,
+        verbose: bool = True,
     ) -> None:
         """Instantiate a client to participate in a federated learning task.
 
@@ -81,6 +82,11 @@ class FederatedClient:
             Logger to use, or name of a logger to set up with
             `declearn.utils.get_logger`.
             If None, use `type(self):netwk.name`.
+        verbose: bool, default=True
+            Whether to verbose about ongoing operations.
+            If True, display progress bars during training and validation
+            rounds. If False and `logger is None`, set the logger's level
+            to filter off most routine information.
         """
         # arguments serve modularity; pylint: disable=too-many-arguments
         # Assign the wrapped NetworkClient.
@@ -101,7 +107,8 @@ class FederatedClient:
         # Assign the logger and optionally replace that of the network client.
         if not isinstance(logger, logging.Logger):
             logger = get_logger(
-                logger or f"{type(self).__name__}-{netwk.name}"
+                name=logger or f"{type(self).__name__}-{netwk.name}",
+                level=logging.INFO if verbose else LOGGING_LEVEL_MAJOR,
             )
         self.logger = logger
         if replace_netwk_logger:
@@ -122,8 +129,9 @@ class FederatedClient:
         if checkpoint is not None:
             checkpoint = Checkpointer.from_specs(checkpoint)
         self.ckptr = checkpoint
-        # Record the metric-sharing boolean switch.
+        # Record the metric-sharing and verbosity bool values.
         self.share_metrics = bool(share_metrics)
+        self.verbose = bool(verbose)
         # Create a TrainingManager slot, populated at initialization phase.
         self.trainmanager = None  # type: Optional[TrainingManager]
 
@@ -265,6 +273,7 @@ class FederatedClient:
             valid_data=self.valid_data,
             metrics=message.metrics,
             logger=self.logger,
+            verbose=self.verbose,
         )
         # If instructed to do so, await a PrivacyRequest to set up DP-SGD.
         if message.dpsgd:
@@ -338,6 +347,7 @@ class FederatedClient:
             valid_data=self.trainmanager.valid_data,
             metrics=self.trainmanager.metrics,
             logger=self.trainmanager.logger,
+            verbose=self.trainmanager.verbose,
         )
         self.trainmanager.make_private(message)
 

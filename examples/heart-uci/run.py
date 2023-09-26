@@ -45,7 +45,8 @@ def run_demo(
         # Specify the server and client routines that need executing.
         server = (run_server, (nb_clients, sv_cert, sv_pkey))
         clients = [
-            (run_client, (name, ca_cert)) for name in NAMES[:nb_clients]
+            (run_client, {"name": name, "ca_cert": ca_cert, "verbose": False})
+            for name in NAMES[:nb_clients]
         ]
         # Run routines in isolated processes. Raise if any failed.
         success, outp = run_as_processes(server, *clients)
