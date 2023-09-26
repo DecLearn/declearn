@@ -253,6 +253,7 @@ class TorchModel(Model):
         y_pred = self._model(*inputs)
         loss = self._compute_loss(y_pred, y_true, s_wght)
         loss.backward()
+        self._loss_history.append(float(loss.detach().cpu().numpy().mean()))
         # Collect weights' gradients and return them in a Vector container.
         grads = {
             k: p.grad.detach().clone()
@@ -320,7 +321,10 @@ class TorchModel(Model):
             s_wght=(s_wght is not None),
         )
         with torch.no_grad():
-            grads = grads_fn(inputs, y_true, s_wght, clip=clip)  # type: ignore
+            grads, loss = grads_fn(
+                inputs, y_true, s_wght, clip=clip
+            )  # type: ignore
+            self._loss_history.append(float(loss.cpu().numpy().mean()))
         return TorchVector(grads)
 
     @functools.lru_cache

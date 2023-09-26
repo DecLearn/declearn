@@ -55,13 +55,13 @@ def build_samplewise_grads_fn_backend(
         """Compute gradients and optionally clip them."""
         params, idxgrd, pnames = get_params(model)
         buffers = list(model.buffers())
-        gfunc = functorch.grad(run_forward, argnums=tuple(idxgrd))
-        grads = gfunc(
+        gfunc = functorch.grad_and_value(run_forward, argnums=tuple(idxgrd))
+        grads, loss = gfunc(
             inputs, y_true, (None if clip else s_wght), buffers, *params
         )
         if clip:
             clip_and_scale_grads_inplace(grads, clip, s_wght)
-        return dict(zip(pnames, grads))
+        return dict(zip(pnames, grads)), loss.detach()
 
     # Wrap the former function to compute and clip sample-wise gradients.
     in_dims = ([0] * inputs, 0 if y_true else None, 0 if s_wght else None)

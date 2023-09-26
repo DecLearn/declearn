@@ -237,10 +237,11 @@ class TensorflowModel(Model):
         with tf.device(self._device):
             data = self._unpack_batch(batch)
             if max_norm is None:
-                grads = self._compute_batch_gradients(*data)
+                grads, loss = self._compute_batch_gradients(*data)
             else:
                 norm = tf.constant(max_norm)
-                grads = self._compute_clipped_gradients(*data, norm)
+                grads, loss = self._compute_clipped_gradients(*data, norm)
+        self._loss_history.append(float(loss.numpy()))
         grads_and_vars = zip(grads, self._model.trainable_weights)
         return TensorflowVector(
             {var.name: grad for grad, var in grads_and_vars}
@@ -267,14 +268,14 @@ class TensorflowModel(Model):
         inputs: tf.Tensor,
         y_true: Optional[tf.Tensor],
         s_wght: Optional[tf.Tensor],
-    ) -> List[tf.Tensor]:
+    ) -> Tuple[List[tf.Tensor], tf.Tensor]:
         """Compute and return batch-averaged gradients of trainable weights."""
         with tf.GradientTape() as tape:
             y_pred = self._model(inputs, training=True)
             loss = self._model.compute_loss(inputs, y_true, y_pred, s_wght)
             loss = tf.reduce_mean(loss)
             grad = tape.gradient(loss, self._model.trainable_weights)
-        return grad
+        return grad, loss
 
     @tf.function  # optimize tensorflow runtime
     def _compute_clipped_gradients(
@@ -283,26 +284,26 @@ class TensorflowModel(Model):
         y_true: Optional[tf.Tensor],
         s_wght: Optional[tf.Tensor],
         max_norm: Union[tf.Tensor, float],
-    ) -> List[tf.Tensor]:
+    ) -> Tuple[List[tf.Tensor], tf.Tensor]:
         """Compute and return sample-wise-clipped batch-averaged gradients."""
-        grad = self._compute_samplewise_gradients(inputs, y_true)
+        grad, loss = self._compute_samplewise_gradients(inputs, y_true)
         if s_wght is None:
             s_wght = tf.cast(1, grad[0].dtype)
         grad = self._clip_and_average_gradients(grad, max_norm, s_wght)
-        return grad
+        return grad, loss
 
     @tf.function  # optimize tensorflow runtime
     def _compute_samplewise_gradients(
         self,
         inputs: tf.Tensor,
         y_true: Optional[tf.Tensor],
-    ) -> List[tf.Tensor]:
+    ) -> Tuple[List[tf.Tensor], tf.Tensor]:
         """Compute and return sample-wise gradients for a given batch."""
         with tf.GradientTape() as tape:
             y_pred = self._model(inputs, training=True)
             loss = self._model.compute_loss(inputs, y_true, y_pred)
             grad = tape.jacobian(loss, self._model.trainable_weights)
-        return grad
+        return grad, tf.reduce_mean(loss)
 
     @staticmethod
     @tf.function  # optimize tensorflow runtime

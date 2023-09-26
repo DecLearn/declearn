@@ -62,10 +62,12 @@ def build_samplewise_grads_fn(
 
     Returns
     -------
-    grads_fn: callable[[inputs, y_true, s_wght, clip], grads]
+    grads_fn: callable[[inputs, y_true, s_wght, clip], (grads, loss)]
         Function that efficiently computes and returns sample-wise gradients
         wrt trainable model parameters based on a batch of inputs, with opt.
         clipping based on a maximum l2-norm value `clip`.
+        It returns the sample-wise gradients as a dict of tensors with their
+        parameter name as key, plus the sample-wise loss values as a tensor.
 
     Note
     ----
