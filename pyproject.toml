@@ -73,17 +73,12 @@ tensorflow = [
     "tensorflow ~= 2.5",
 ]
 torch = [  # generic requirements for Torch
-    "functorch >= 1.10, < 3.0",  # note: unused with torch >=2.0
-    "torch >= 1.10, < 3.0",
+    "torch >= 1.13, < 3.0",
 ]
-torch1 = [  # Torch 1.13 (latest pre-2.0 version) + Opacus
-    "functorch ~= 1.13.0",
-    "opacus ~= 1.3.0",
+torch1 = [  # Torch 1.13 (latest pre-2.0 version)
     "torch ~= 1.13.0",
 ]
-torch2 = [  # Torch 2.X version + Opacus
-    "functorch ~= 2.0",  # unused, but useful to linters and pip
-    "opacus ~= 1.4",
+torch2 = [  # Torch 2.X version
     "torch ~= 2.0",
 ]
 websockets = [
