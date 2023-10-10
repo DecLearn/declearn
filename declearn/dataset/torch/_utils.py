@@ -54,6 +54,8 @@ class PoissonSampler(torch.utils.data.Sampler):
         generator: torch.Generator or None, default=None
             Optional RNG, that may be used to produce seeded results.
         """
+        # super init is empty and its signature will change in torch 2.2
+        # pylint: disable=super-init-not-called
         self.num_samples = num_samples
         self.sample_rate = sample_rate
         self.generator = generator

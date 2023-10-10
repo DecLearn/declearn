@@ -95,7 +95,7 @@ docs = [
 tests = [
     "black ~= 23.0",
     "mypy ~= 1.0",
-    "pylint >= 2.14",
+    "pylint ~= 3.0",
     "pytest >= 6.1",
     "pytest-asyncio",
     "pytest-cov >= 4.0",

@@ -193,7 +193,7 @@ def _parameters_to_fields(
         # Parse out the parameter's name, annotated type and default value.
         fname = param.name
         ftype = Any if param.annotation is param.empty else param.annotation
-        field = dataclasses.field()
+        field = dataclasses.field()  # pylint: disable=invalid-field-call
         if param.default is not param.empty:
             field.default = param.default
         # Turn *args into a list and **kwargs into a dict.
