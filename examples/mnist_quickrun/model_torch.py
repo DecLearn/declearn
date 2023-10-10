@@ -15,25 +15,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Simple TensorFlow-backed CNN model for the MNIST quickrun example."""
+"""Simple Torch-backed CNN model for the MNIST quickrun example."""
 
-import tensorflow as tf
+import torch
 
-from declearn.model.tensorflow import TensorflowModel
+from declearn.model.torch import TorchModel
 
 
 stack = [
-    tf.keras.layers.InputLayer(input_shape=(28, 28, 1)),
-    tf.keras.layers.Conv2D(8, 3, 1, activation="relu"),
-    tf.keras.layers.MaxPool2D(2),
-    tf.keras.layers.Dropout(0.25),
-    tf.keras.layers.Flatten(),
-    tf.keras.layers.Dense(64, activation="relu"),
-    tf.keras.layers.Dropout(0.5),
-    tf.keras.layers.Dense(10, activation="softmax"),
+    torch.nn.Unflatten(dim=0, unflattened_size=(-1, 1)),
+    torch.nn.Conv2d(1, 8, 3, 1),
+    torch.nn.ReLU(),
+    torch.nn.MaxPool2d(2),
+    torch.nn.Dropout(0.25),
+    torch.nn.Flatten(),
+    torch.nn.Linear(1352, 64),
+    torch.nn.ReLU(),
+    torch.nn.Dropout(0.5),
+    torch.nn.Linear(64, 10),
+    torch.nn.Softmax(dim=-1),
 ]
-network = tf.keras.models.Sequential(stack)
+network = torch.nn.Sequential(*stack)
 
 # This needs to be called "model"; otherwise, a different name must be
 # specified via the experiment's TOML configuration file.
-model = TensorflowModel(network, loss="sparse_categorical_crossentropy")
+model = TorchModel(network, loss=torch.nn.CrossEntropyLoss())

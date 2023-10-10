@@ -288,7 +288,10 @@ where to report it. An example:
 
 ```python
 [experiment]
-metrics=[["multi-classif",{labels = [0,1,2,3,4,5,6,7,8,9]}]] # Accuracy metric
+metrics = [
+    # Multi-label Accuracy, Precision, Recall and F1-Score.
+    ["multi-classif", {labels = [0,1,2,3,4,5,6,7,8,9]}]
+]
 checkpoint = "./result_custom" # Custom location for results
 ```
 

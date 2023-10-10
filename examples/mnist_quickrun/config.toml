@@ -1,6 +1,6 @@
 # This is a minimal TOML file for the MNIST example
 # It contains the bare minimum to make the experiment run.
-# See quickstart for more details. 
+# See quickstart for more details.
 
 # The TOML is parsed by python as dictionnary with each `[header]`
 # as a key. Note the "=" sign and the absence of quotes around keys.
@@ -12,7 +12,7 @@
     port = 8765 # Port used, works as-is on most set ups
 
 [data] # Where to find your data
-    data_folder = "examples/mnist_quickrun/data_iid" 
+    data_folder = "examples/mnist_quickrun/data_iid"
 
 [optim] # Optimization options for both client and server
     aggregator = "averaging" # Server aggregation strategy
@@ -37,5 +37,7 @@
     batch_size = 128 # Evaluation batch size
 
 [experiment] # What to report during the experiment and where to report it
-    metrics=[["multi-classif",{labels = [0,1,2,3,4,5,6,7,8,9]}]] # Accuracy metric
-
+    metrics = [
+        # Multi-label Accuracy, Precision, Recall and F-Score.
+        ["multi-classif", {labels = [0,1,2,3,4,5,6,7,8,9]}]
+    ]
