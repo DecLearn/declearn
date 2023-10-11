@@ -37,6 +37,7 @@ classifiers = [
 dependencies = [
     "cryptography >= 35.0",
     "fire ~= 0.4",
+    "gmpy2 ~= 2.1",
     "pandas >= 1.2, < 3.0",
     "requests ~= 2.18",
     "scikit-learn ~= 1.0",
@@ -130,6 +131,7 @@ exclude = [".*_pb2.*.py$"]
 follow_imports = "skip"  # otherwise excluded files are checked
 
 [tool.pylint.main]
+extension-pkg-allow-list = ["gmpy2"]
 fail-under = 10
 ignore-patterns = ["(.*_pb2.*py$)"]
 
