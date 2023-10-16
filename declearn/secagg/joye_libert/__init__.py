@@ -15,13 +15,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Secure Aggregation features and utils.
+"""Joye-Libert homomorphic summation tools.
 
-* [joye_libert][declearn.secagg.joye_libert]:
-    Joye-Libert homomorphic summation tools.
-* [shamir][declearn.secagg.shamir]:
-    Shamir secret-sharing tools.
+* [BIPRIME][declearn.secagg.joye_libert.BIPRIME]:
+    Default Biprime value used as modulus in Joye-Libert functions.
+* [encrypt][declearn.secagg.joye_libert.encrypt]:
+    Apply Joye-Libert encryption to an integer value.
+* [sum_decrypt][declearn.secagg.joye_libert.sum_decrypt]:
+    Apply Joye-Libert aggregate decryption of a list of encrypted integers.
 """
 
-from . import joye_libert
-from . import shamir
+from ._joye_libert import (
+    BIPRIME,
+    encrypt,
+    sum_decrypt,
+)
