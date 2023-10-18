@@ -15,16 +15,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Secure Aggregation features and utils.
+"""Utils for SecAgg features and schemes.
 
-* [joye_libert][declearn.secagg.joye_libert]:
-    Joye-Libert homomorphic summation tools.
-* [shamir][declearn.secagg.shamir]:
-    Shamir secret-sharing tools.
-* [utils][declearn.secagg.utils]:
-    Utils for SecAgg features and schemes.
+Prime number generation utils
+-----------------------------
+
+* [generate_random_biprime][declearn.secagg.utils.generate_random_biprime]
+    Generate a random biprime integer with a target bit length.
+* [generate_random_prime][declearn.secagg.utils.generate_random_prime]
+    Generate a random prime integer with given bit length.
 """
 
-from . import joye_libert
-from . import shamir
-from . import utils
+from ._prime import (
+    generate_random_biprime,
+    generate_random_prime,
+)
