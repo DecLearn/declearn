@@ -24,12 +24,14 @@ import gmpy2  # type: ignore
 
 
 __all__ = [
+    "DEFAULT_SHAMIR_PRIME",
     "generate_secret_shares",
     "recover_shared_secret",
 ]
 
 
 DEFAULT_SHAMIR_PRIME = 2**127 - 1
+"""Default prime value used as modulus in Shamir Secret Sharing functions."""
 
 
 def generate_secret_shares(

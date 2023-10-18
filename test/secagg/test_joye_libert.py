@@ -21,7 +21,7 @@ import secrets
 
 import pytest
 
-from declearn.secagg.joye_libert import BIPRIME, encrypt, sum_decrypt
+from declearn.secagg.joye_libert import DEFAULT_BIPRIME, encrypt, sum_decrypt
 
 
 def test_encrypt_joye_libert_single_value() -> None:
@@ -30,7 +30,7 @@ def test_encrypt_joye_libert_single_value() -> None:
     p_key = secrets.randbelow(2**1024)
     c_val = encrypt(value, index=0, secret=p_key)
     assert isinstance(c_val, int)
-    assert c_val.bit_length() <= (BIPRIME**2).bit_length()
+    assert c_val.bit_length() <= (DEFAULT_BIPRIME**2).bit_length()
 
 
 def test_encrypt_joye_libert_variable_indices() -> None:

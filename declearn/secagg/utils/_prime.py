@@ -19,7 +19,7 @@
 
 import secrets
 
-import gmpy2
+import gmpy2  # type: ignore
 
 
 __all__ = [

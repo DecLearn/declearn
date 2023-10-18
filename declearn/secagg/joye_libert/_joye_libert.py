@@ -23,7 +23,7 @@ from typing import List
 import gmpy2  # type: ignore
 
 __all__ = [
-    "BIPRIME",
+    "DEFAULT_BIPRIME",
     "encrypt",
     "sum_decrypt",
 ]
@@ -40,7 +40,7 @@ PRIME_Q = int(
     "7152471113855966527410223993208656880021149734530570"
     "88521173384791077635017567166681500095602864712097"
 )
-BIPRIME = PRIME_P * PRIME_Q
+DEFAULT_BIPRIME = int(gmpy2.mul(PRIME_P, PRIME_Q))
 """Default Biprime value used as modulus in Joye-Libert functions."""
 
 
@@ -86,7 +86,7 @@ def encrypt(
     value: int,
     index: int,
     secret: int,
-    modulus: int = BIPRIME,
+    modulus: int = DEFAULT_BIPRIME,
 ) -> int:
     """Apply Joye-Libert encryption to an integer value.
 
@@ -116,7 +116,7 @@ def sum_decrypt(
     values: List[int],
     index: int,
     public: int,
-    modulus: int = BIPRIME,
+    modulus: int = DEFAULT_BIPRIME,
 ) -> int:
     """Apply Joye-Libert sum-decryption of a list of encrypted integers.
 

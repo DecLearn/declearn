@@ -17,7 +17,7 @@
 
 """Joye-Libert homomorphic summation tools.
 
-* [BIPRIME][declearn.secagg.joye_libert.BIPRIME]:
+* [DEFAULT_BIPRIME][declearn.secagg.joye_libert.DEFAULT_BIPRIME]:
     Default Biprime value used as modulus in Joye-Libert functions.
 * [encrypt][declearn.secagg.joye_libert.encrypt]:
     Apply Joye-Libert encryption to an integer value.
@@ -26,7 +26,7 @@
 """
 
 from ._joye_libert import (
-    BIPRIME,
+    DEFAULT_BIPRIME,
     encrypt,
     sum_decrypt,
 )

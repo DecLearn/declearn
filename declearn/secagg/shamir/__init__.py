@@ -17,6 +17,8 @@
 
 """Shamir Secret Sharing tools.
 
+* [DEFAULT_SHAMIR_PRIME][declearn.secagg.shamir.DEFAULT_SHAMIR_PRIME]:
+    Default prime value used as modulus in Shamir Secret Sharing functions.
 * [generate_secret_shares][declearn.secagg.shamir.generate_secret_shares]:
     Generate secret shares using the Shamir (k, n) threshold scheme.
 * [recover_shared_secret][declearn.secagg.shamir.recover_shared_secret]:
@@ -24,6 +26,7 @@
 """
 
 from ._shamir import (
+    DEFAULT_SHAMIR_PRIME,
     generate_secret_shares,
     recover_shared_secret,
 )
