@@ -23,9 +23,11 @@ This submodules exports the building blocks of the Model and Vector APIs:
     Abstract class defining an API to interface a ML model.
 * [Vector][declearn.model.api.Vector]:
     Abstract class defining an API to manipulate (sets of) data arrays.
+* [VectorSpec][declearn.model.api.VectorSpec]:
+    Metadata container to specify a Vector for its (un)flattening.
 * [register_vector_type][declearn.model.api.register_vector_type]:
     Decorate a Vector subclass to make it buildable with `Vector.build`.
 """
 
-from ._vector import Vector, register_vector_type
+from ._vector import Vector, VectorSpec, register_vector_type
 from ._model import Model

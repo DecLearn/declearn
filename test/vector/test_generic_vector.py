@@ -17,13 +17,14 @@
 
 """Unit tests on 'declearn.model.api.Vector', using an ad-hoc subclass."""
 
-from typing import Any, Union
+import uuid
+from typing import Any, List, Tuple, Union
 
 import numpy as np
 import pytest
 from typing_extensions import Self
 
-from declearn.model.api import Vector, register_vector_type
+from declearn.model.api import Vector, VectorSpec, register_vector_type
 
 
 class Scalar(float):
@@ -69,6 +70,19 @@ class ScalarFloatVector(Vector):
         self,
     ) -> Self:
         return self
+
+    def flatten(
+        self,
+    ) -> Tuple[List[float], VectorSpec]:
+        raise NotImplementedError("This method is unimplemented.")
+
+    @classmethod
+    def unflatten(
+        cls,
+        values: List[float],
+        v_spec: VectorSpec,
+    ) -> Self:
+        raise NotImplementedError("This method is unimplemented.")
 
 
 class TestScalarFloatVector:
@@ -165,3 +179,43 @@ class TestVectorErrors:
         other = [0.0, 1.0]
         with pytest.raises(TypeError):
             vec_a + other  # pylint: disable=pointless-statement
+
+    def test_build_from_specs_wrong_specs_type(self) -> None:
+        """Test that `Vector.build_from_specs` raises on mistyped specs."""
+        with pytest.raises(TypeError):
+            Vector.build_from_specs(
+                [0.0, 1.0], v_spec="wrong-type"  # type: ignore
+            )
+
+    def test_build_from_specs_missing_vector_type(self) -> None:
+        """Test that `Vector.build_from_specs` raises on unregistered type."""
+        specs = VectorSpec(
+            names=["a", "b"],
+            shapes={"a": (1,), "b": (1,)},
+            dtypes={"a": "float", "b": "float"},
+            v_type=None,
+        )
+        with pytest.raises(KeyError):
+            Vector.build_from_specs([0.0, 1.0], specs)
+
+    def test_build_from_specs_unregistered_vector_type(self) -> None:
+        """Test that `Vector.build_from_specs` raises on unregistered type."""
+        specs = VectorSpec(
+            names=["a", "b"],
+            shapes={"a": (1,), "b": (1,)},
+            dtypes={"a": "float", "b": "float"},
+            v_type=(str(uuid.uuid4()), "Vector"),  # unregistered
+        )
+        with pytest.raises(KeyError):
+            Vector.build_from_specs([0.0, 1.0], specs)
+
+    def test_build_from_specs_wrong_vector_type(self) -> None:
+        """Test that `Vector.build_from_specs` raises on non-Vector type."""
+        specs = VectorSpec(
+            names=["a", "b"],
+            shapes={"a": (1,), "b": (1,)},
+            dtypes={"a": "float", "b": "float"},
+            v_type=("SklearnSGDModel", "Model"),  # not a Vector subclass
+        )
+        with pytest.raises(TypeError):
+            Vector.build_from_specs([0.0, 1.0], specs)
