@@ -24,9 +24,16 @@ Prime number generation utils
     Generate a random biprime integer with a target bit length.
 * [generate_random_prime][declearn.secagg.utils.generate_random_prime]
     Generate a random prime integer with given bit length.
+
+Quantization utils
+------------------
+
+* [Quantizer][declearn.secagg.utils.Quantizer]:
+    Data (un)quantization facility for finite-domain int/float conversion.
 """
 
 from ._prime import (
     generate_random_biprime,
     generate_random_prime,
 )
+from ._quantize import Quantizer
