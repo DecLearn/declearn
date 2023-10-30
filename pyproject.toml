@@ -48,13 +48,12 @@ dependencies = [
 [project.optional-dependencies]
 all = [  # all non-tests extra dependencies
     "dm-haiku ~= 0.0.9",
-    "functorch >= 1.10, < 3.0",
     "grpcio >= 1.45",
     "jax[cpu] ~= 0.4.1",
     "opacus ~= 1.1",
     "protobuf >= 3.19",
     "tensorflow ~= 2.5",
-    "torch >= 1.10, < 3.0",
+    "torch >= 1.13, < 3.0",
     "websockets ~= 10.1",
 ]
 # thematically grouped dependencies (part of "all")
