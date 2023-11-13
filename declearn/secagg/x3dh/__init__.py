@@ -15,18 +15,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Secure Aggregation features and utils.
+"""Extended Triple Diffie-Hellman (X3DH) key agreement tools."""
 
-* [joye_libert][declearn.secagg.joye_libert]:
-    Joye-Libert homomorphic summation tools.
-* [shamir][declearn.secagg.shamir]:
-    Shamir secret-sharing tools.
-* [x3dh][declearn.secagg.x3dh]:
-    Extended Triple Diffie-Hellman (X3DH) key agreement tools.
-* [utils][declearn.secagg.utils]:
-    Utils for SecAgg features and schemes.
-"""
-
-from . import joye_libert
-from . import shamir
-from . import utils
+from ._x3dh import X3DHManager
