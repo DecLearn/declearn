@@ -30,3 +30,4 @@
 from . import joye_libert
 from . import shamir
 from . import utils
+from . import x3dh
