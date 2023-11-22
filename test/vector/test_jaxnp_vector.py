@@ -36,9 +36,11 @@ with make_importable(os.path.dirname(__file__)):
     from vector_testing import VectorFactory, VectorTestSuite
 
 
-jax.config.update("jax_enable_x64", True)
-
+# Disable GPU use for these tests.
 set_device_policy(gpu=False)
+
+# Enable float64 support.
+jax.config.update("jax_enable_x64", True)
 
 
 class JaxNumpyVectorFactory(VectorFactory):
