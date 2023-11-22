@@ -142,10 +142,11 @@ def _get_model_tflow() -> TensorflowModel:
     tfmod = tf.keras.Sequential(tf.keras.layers.Dense(units=1))
     tfmod.build([None, 100])
     model = TensorflowModel(tfmod, loss="mean_squared_error")
-    zeros = {
-        key: tf.zeros_like(val)
-        for key, val in model.get_weights().coefs.items()
-    }
+    with tf.device("CPU"):
+        zeros = {
+            key: tf.zeros_like(val)
+            for key, val in model.get_weights().coefs.items()
+        }
     model.set_weights(TensorflowVector(zeros))
     return model
 
@@ -170,26 +171,30 @@ def _get_model_haiku() -> HaikuModel:
     """Return a linear model with MSE loss in Haiku, with zero weights."""
     model = HaikuModel(haiku_model_fn, loss=haiku_loss_fn)
     model.initialize({"data_type": "float32", "features_shape": (100,)})
+    zeros_like = jax.jit(jax.numpy.zeros_like, backend="cpu")
     zeros = {
-        key: jax.numpy.zeros_like(val)
-        for key, val in model.get_weights().coefs.items()
+        key: zeros_like(val) for key, val in model.get_weights().coefs.items()
     }
     model.set_weights(JaxNumpyVector(zeros))
     return model
 
 
-def get_dataset(framework: FrameworkType, inputs, labels):
+def get_dataset(
+    framework: FrameworkType,
+    inputs: np.ndarray,
+    labels: np.ndarray,
+) -> Dataset:
     """Return a framework-appropriate dataset"""
     if framework == "torch":
-        inputs = torch.from_numpy(inputs)
-        labels = torch.from_numpy(labels)
-        return TorchDataset(torch.utils.data.TensorDataset(inputs, labels))
+        pt_inp = torch.from_numpy(inputs)
+        pt_lab = torch.from_numpy(labels)
+        return TorchDataset(torch.utils.data.TensorDataset(pt_inp, pt_lab))
     if framework == "tensorflow":
-        inputs = tf.convert_to_tensor(inputs)
-        labels = tf.convert_to_tensor(labels)
-        return TensorflowDataset(
-            tf.data.Dataset.from_tensor_slices((inputs, labels))
-        )
+        with tf.device("CPU"):
+            tf_inp = tf.convert_to_tensor(inputs)
+            tf_lab = tf.convert_to_tensor(labels)
+            tf_dst = tf.data.Dataset.from_tensor_slices((tf_inp, tf_lab))
+        return TensorflowDataset(tf_dst)
     return InMemoryDataset(inputs, labels, expose_data_type=True)
 
 
