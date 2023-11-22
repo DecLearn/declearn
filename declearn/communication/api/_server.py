@@ -369,7 +369,7 @@ class NetworkServer(metaclass=ABCMeta):
         received = await asyncio.gather(*routines, return_exceptions=True)
         messages = {}  # type: Dict[str, Message]
         for client, message in zip(clients, received):
-            if isinstance(message, Exception):
+            if isinstance(message, BaseException):
                 raise message
             messages[client] = message
         return messages
