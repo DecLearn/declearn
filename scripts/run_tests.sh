@@ -193,8 +193,11 @@ run_torch13_tests() {
     : '
     Verbosely run Torch 1.13-specific unit tests.
 
-    Install Torch 1.13 at the start of this function, and re-install
-    torch >=2.0 at the end of it, together with its co-dependencies.
+    Install Torch 1.13 at the start of this function, and attempt
+    to re-install torch >=2.0 at the end of it, together with its
+    co- dependencies. (This last step fails with a warning when
+    the initial torch was installed from an extra index, e.g. to
+    have support for a specific CUDA version.)
     '
     echo "Installing torch 1.13 and its co-dependencies."
     TORCH_DEPS=$(pip freeze | grep -e torch -e opacus)
