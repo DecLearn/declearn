@@ -196,7 +196,8 @@ run_torch13_tests() {
     Install Torch 1.13 at the start of this function, and re-install
     torch >=2.0 at the end of it, together with its co-dependencies.
     '
-    echo "Re-installing torch 1.13 and its co-dependencies."
+    echo "Installing torch 1.13 and its co-dependencies."
+    TORCH_DEPS=$(pip freeze | grep -e torch -e opacus)
     pip install .[torch1]
     if [[ $? -eq 0 ]]; then
         echo "Running unit tests for torch 1.13."
@@ -211,7 +212,7 @@ run_torch13_tests() {
         status=1
     fi
     echo "Re-installing torch 2.X and its co-dependencies."
-    pip install .[torch2]
+    pip install $TORCH_DEPS
     return $status
 }
 
