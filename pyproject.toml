@@ -58,7 +58,7 @@ all = [  # all non-tests extra dependencies
 ]
 # thematically grouped dependencies (part of "all")
 dp = [
-    "opacus ~= 1.1",
+    "opacus ~= 1.4",
 ]
 grpc = [
     "grpcio >= 1.45",
