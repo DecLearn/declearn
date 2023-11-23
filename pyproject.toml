@@ -36,13 +36,13 @@ classifiers = [
 ]
 dependencies = [
     "cryptography >= 35.0",
-    "fire >= 0.4",
-    "pandas >= 1.2",
+    "fire ~= 0.4",
+    "pandas ~= 1.2",
     "requests ~= 2.18",
-    "scikit-learn >= 1.0",
-    "tomli >= 2.0 ; python_version < '3.11'",
+    "scikit-learn ~= 1.0",
+    "tomli ~= 2.0 ; python_version < '3.11'",
     "tqdm ~= 4.62",
-    "typing_extensions >= 4.0",
+    "typing_extensions ~= 4.0",
 ]
 
 [project.optional-dependencies]
@@ -50,7 +50,7 @@ all = [  # all non-tests extra dependencies
     "dm-haiku ~= 0.0.9",
     "grpcio >= 1.45",
     "jax[cpu] ~= 0.4.1",
-    "opacus ~= 1.1",
+    "opacus ~= 1.4",
     "protobuf >= 3.19",
     "tensorflow ~= 2.5",
     "torch >= 1.13, < 3.0",
@@ -85,19 +85,19 @@ websockets = [
 ]
 # docs-building dependencies
 docs = [
-    "mkdocstrings[python] >= 0.8",
-    "mkdocs-autorefs",
-    "mkdocs-literate-nav",
-    "mkdocs-material >= 9.1",
+    "mkdocstrings[python] ~= 0.8",
+    "mkdocs-autorefs ~= 0.4",
+    "mkdocs-literate-nav ~= 0.4",
+    "mkdocs-material ~= 9.1",
 ]
 # test-specific dependencies
 tests = [
     "black ~= 23.0",
     "mypy ~= 1.0",
     "pylint ~= 3.0",
-    "pytest >= 6.1",
-    "pytest-asyncio",
-    "pytest-cov >= 4.0",
+    "pytest ~= 7.4",
+    "pytest-asyncio ~= 0.20",
+    "pytest-cov ~= 4.0",
 ]
 
 [project.urls]
