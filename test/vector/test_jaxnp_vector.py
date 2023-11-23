@@ -21,10 +21,14 @@ import os
 
 import pytest
 
+# pylint: disable=duplicate-code
+
 try:
     import jax
 except ModuleNotFoundError:
     pytest.skip("jax and/or haiku are unavailable", allow_module_level=True)
+
+# pylint: enable=duplicate-code
 
 from declearn.model.haiku import JaxNumpyVector
 from declearn.model.haiku.utils import select_device

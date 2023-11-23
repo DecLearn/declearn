@@ -40,7 +40,7 @@ from declearn.utils import set_device_policy
 with make_importable(os.path.dirname(__file__)):
     from model_testing import ModelTestCase, ModelTestSuite
 
-# Override float32 default in jax.
+# Enable float64 support.
 jax.config.update("jax_enable_x64", True)
 
 
