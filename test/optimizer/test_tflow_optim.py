@@ -43,9 +43,6 @@ with make_importable(os.path.dirname(__file__)):
     from test_modules import OptiModuleTestSuite
 
 
-set_device_policy(gpu=False)  # force most tests to run on CPU
-
-
 DEVICES = ["CPU"]
 if tf.config.list_logical_devices("GPU"):
     DEVICES.append("GPU")

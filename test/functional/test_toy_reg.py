@@ -110,9 +110,6 @@ SEED = 0
 R2_THRESHOLD = 0.9999
 
 
-set_device_policy(gpu=False)  # disable GPU use to avoid concurrence
-
-
 def get_model(framework: FrameworkType) -> Model:
     """Set up a simple toy regression model, with zero-valued weights."""
     set_device_policy(gpu=False)  # disable GPU use to avoid concurrence

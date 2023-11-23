@@ -29,15 +29,11 @@ except ModuleNotFoundError:
 from declearn.model.haiku import JaxNumpyVector
 from declearn.model.haiku.utils import select_device
 from declearn.model.sklearn import NumpyVector
-from declearn.utils import set_device_policy
 from declearn.test_utils import make_importable
 
 with make_importable(os.path.dirname(__file__)):
     from vector_testing import VectorFactory, VectorTestSuite
 
-
-# Disable GPU use for these tests.
-set_device_policy(gpu=False)
 
 # Enable float64 support.
 jax.config.update("jax_enable_x64", True)
