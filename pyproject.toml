@@ -47,7 +47,8 @@ dependencies = [
 
 [project.optional-dependencies]
 all = [  # all non-tests extra dependencies
-    "dm-haiku ~= 0.0.9",
+    "dm-haiku >= 0.0.9, <= 0.0.11 ; python_version > '3.8'",
+    "dm-haiku >= 0.0.9, <= 0.0.10 ; python_version == '3.8'",
     "grpcio >= 1.45",
     "jax[cpu] ~= 0.4.1",
     "opacus ~= 1.4",
@@ -65,7 +66,8 @@ grpc = [
     "protobuf >= 3.19",
 ]
 haiku = [
-    "dm-haiku ~= 0.0.9",
+    "dm-haiku >= 0.0.9, <= 0.0.11 ; python_version > '3.8'",
+    "dm-haiku >= 0.0.9, <= 0.0.10 ; python_version == '3.8'",
     "jax[cpu] ~= 0.4.1",  # NOTE: GPU support must be manually installed
 ]
 tensorflow = [
