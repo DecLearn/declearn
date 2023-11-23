@@ -55,7 +55,7 @@ all = [  # all non-tests extra dependencies
     "protobuf >= 3.19",
     "tensorflow ~= 2.5",
     "torch >= 1.13, < 3.0",
-    "websockets ~= 10.1",
+    "websockets >= 10.1, < 13.0",
 ]
 # thematically grouped dependencies (part of "all")
 dp = [
@@ -83,7 +83,7 @@ torch2 = [  # Torch 2.X version
     "torch ~= 2.0",
 ]
 websockets = [
-    "websockets ~= 10.1",
+    "websockets >= 10.1, < 13.0",
 ]
 # docs-building dependencies
 docs = [
