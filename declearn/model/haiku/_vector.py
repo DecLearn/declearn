@@ -123,7 +123,10 @@ class JaxNumpyVector(Vector):
         valid = isinstance(other, JaxNumpyVector)
         valid = valid and (self.coefs.keys() == other.coefs.keys())
         return valid and all(
-            jnp.array_equal(self.coefs[k], other.coefs[k]) for k in self.coefs
+            jnp.array_equal(
+                val, jax.device_put(other.coefs[key], val.device())
+            )
+            for key, val in self.coefs.items()
         )
 
     def sign(
