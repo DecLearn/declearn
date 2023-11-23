@@ -127,7 +127,7 @@ lint_declearn_tests() {
     '
     commands=(
         "pylint --recursive=y test"
-        "mypy --install-types --non-interactive --exclude=conftest.py declearn"
+        "mypy --install-types --non-interactive --exclude=conftest.py test"
         "black --check test"
     )
     run_commands "declearn test code static analysis" "${commands[@]}"
