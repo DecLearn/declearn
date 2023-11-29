@@ -164,8 +164,8 @@ class ScaffoldClientModule(OptiModule):
         steps, we rewrite it as eta_l * Sum_k(grad(y_i^k) - D_i),
         where we define D_i = (c_i - c). Thus we rewrite c_i^+ as:
             c_i^+ = D_i + (1/K)*Sum_k(grad(y_i^k) - D_i)
-        When then note that D_i is constant and can be taken out
-        of the summation term, leaving us with:
+        When then note that D_i is constant across steps, and can
+        thus be taken out of the summation term, leaving us with:
             c_i^+ = Avg_k(grad(y_i^k))
 
         Hence the new local state can be computed by averaging the
