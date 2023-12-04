@@ -47,7 +47,6 @@ from declearn.test_utils import (
     assert_json_serializable_dict,
     make_importable,
 )
-from declearn.utils import set_device_policy
 
 # relative imports from `optim_testing.py`
 with make_importable(os.path.dirname(__file__)):
@@ -58,8 +57,6 @@ with make_importable(os.path.dirname(__file__)):
 OPTIMODULE_SUBCLASSES = list_optim_modules()
 OPTIMODULE_SUBCLASSES.pop("tensorflow-optim", None)
 OPTIMODULE_SUBCLASSES.pop("torch-optim", None)
-
-set_device_policy(gpu=False)  # run all OptiModule tests on CPU
 
 
 class OptiModuleTestSuite(PluginTestBase):

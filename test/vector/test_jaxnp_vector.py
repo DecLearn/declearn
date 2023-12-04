@@ -21,24 +21,26 @@ import os
 
 import pytest
 
+# pylint: disable=duplicate-code
+
 try:
     import jax
 except ModuleNotFoundError:
     pytest.skip("jax and/or haiku are unavailable", allow_module_level=True)
 
+# pylint: enable=duplicate-code
+
 from declearn.model.haiku import JaxNumpyVector
 from declearn.model.haiku.utils import select_device
 from declearn.model.sklearn import NumpyVector
-from declearn.utils import set_device_policy
 from declearn.test_utils import make_importable
 
 with make_importable(os.path.dirname(__file__)):
     from vector_testing import VectorFactory, VectorTestSuite
 
 
+# Enable float64 support.
 jax.config.update("jax_enable_x64", True)
-
-set_device_policy(gpu=False)
 
 
 class JaxNumpyVectorFactory(VectorFactory):

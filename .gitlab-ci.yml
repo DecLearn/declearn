@@ -103,7 +103,7 @@ test-minimal:
   extends:
     .test_cfg
   script:
-    - tox -e py38 --workdir=$TOX_WORKDIR -- --cpu-only
+    - tox -e py38-ci --workdir=$TOX_WORKDIR -- --cpu-only
   rules:
     - if: $IS_MERGE_REQ && ($CI_MERGE_REQUEST_TITLE !~ /^Draft:.*/)
     - if: $IS_MERGE_REQ && ($CI_MERGE_REQUEST_TITLE =~ /^Draft:.*/)
@@ -117,7 +117,7 @@ test-maximal:
   extends:
     .test_cfg
   script:
-    - tox -e py38 --workdir=$TOX_WORKDIR -- --fulltest
+    - tox -e py38-ci --workdir=$TOX_WORKDIR -- --fulltest
   rules:
     - if: $IS_CORE_PUSH
     - if: $IS_MERGE_REQ

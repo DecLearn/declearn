@@ -98,8 +98,8 @@ class GradientsTestCase:
             torch = importlib.import_module("torch")
             return torch.from_numpy(array)
         if self.framework == "jax":
-            jnp = importlib.import_module("jax.numpy")
-            return jnp.asarray(array)
+            jax = importlib.import_module("jax")
+            return jax.device_put(array, jax.devices("cpu")[0])
         raise ValueError(f"Invalid framework '{self.framework}'")
 
     @property

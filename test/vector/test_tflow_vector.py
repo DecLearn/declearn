@@ -28,14 +28,10 @@ except ModuleNotFoundError:
 
 from declearn.model.sklearn import NumpyVector
 from declearn.model.tensorflow import TensorflowVector
-from declearn.utils import set_device_policy
 from declearn.test_utils import make_importable
 
 with make_importable(os.path.dirname(__file__)):
     from vector_testing import VectorFactory, VectorTestSuite
-
-
-set_device_policy(gpu=False)
 
 
 class TensorflowVectorFactory(VectorFactory):

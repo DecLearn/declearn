@@ -15,22 +15,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Shared pytest fixtures for testing optmizer and plugins."""
+"""Shared pytest fixtures for testing Vector classes."""
 
 
 import pytest
 
-from declearn.test_utils import list_available_frameworks
 from declearn.utils import set_device_policy
-
-
-@pytest.fixture(name="framework", params=list_available_frameworks())
-def framework_fixture(request):
-    """Fixture to provide with the name of a model framework."""
-    return request.param
 
 
 @pytest.fixture(autouse=True)
 def disable_gpu():
-    """Ensure 'declearn.optimizer' submodule unit tests run on CPU only."""
+    """Ensure 'Vector' unit tests run on CPU only.
+
+    Note: GPU is tested functionnally as part of 'Model' unit tests.
+    It may be interesting in the future to add dedicated tests for
+    GPU support (notably as to operations on Vectors that are placed
+    on distinct devices).
+    """
     set_device_policy(gpu=False)

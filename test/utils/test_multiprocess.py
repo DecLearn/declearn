@@ -18,7 +18,7 @@
 """Unit tests for 'declearn.utils.run_as_processes'."""
 
 import time
-from typing import Any, Dict, NoReturn, Type
+from typing import Any, Dict, NoReturn, Tuple, Type
 
 import pytest
 
@@ -49,31 +49,31 @@ class TestRunAsProcesses:
     # Tests with unproper inputs (priot to running any mp.Process).
 
     def test_unproper_specs_wrong_routine_type(self) -> None:
-        """Docstring."""
+        """Test that a TypeError is raised on an unproper input type."""
         routine = {}  # type: Dict[Any, Any]
         with pytest.raises(TypeError):
             run_as_processes(routine)  # type: ignore  # deliberate mistype
 
     def test_unproper_specs_wrong_routine_length(self) -> None:
-        """Docstring."""
+        """Test that a TypeError is raised on an unproper input type."""
         routine = (sleep_routine,)
         with pytest.raises(TypeError):
             run_as_processes(routine)  # type: ignore  # deliberate mistype
 
     def test_unproper_specs_wrong_function_type(self) -> None:
-        """Docstring."""
-        routine = (None, tuple())
+        """Test that a TypeError is raised on an unproper input type."""
+        routine = (None, tuple())  # type: Tuple[None, Tuple]
         with pytest.raises(TypeError):
             run_as_processes(routine)  # type: ignore  # deliberate mistype
 
     def test_unproper_specs_wrong_args_kwargs_type(self) -> None:
-        """Docstring."""
+        """Test that a TypeError is raised on an unproper input type."""
         routine = (sleep_routine, None)
         with pytest.raises(TypeError):
             run_as_processes(routine)  # type: ignore  # deliberate mistype
 
     def test_unproper_specs_wrong_args_kwargs_order(self) -> None:
-        """Docstring."""
+        """Test that a TypeError is raised on an unproper input type."""
         routine = (sleep_routine, {"duration": 0.01}, tuple())  # type: ignore
         with pytest.raises(TypeError):
             run_as_processes(routine)  # type: ignore  # deliberate mistype
@@ -81,14 +81,14 @@ class TestRunAsProcesses:
     # Tests with a single routine.
 
     def test_sleep_routine_with_args(self) -> None:
-        """Docstring."""
+        """Test that running a single routine with args works properly."""
         success, outputs = run_as_processes((sleep_routine, (0.01,)))
         assert success
         assert isinstance(outputs, list) and len(outputs) == 1
         assert outputs[0] == 0.01
 
     def test_sleep_routine_with_kwargs(self) -> None:
-        """Docstring."""
+        """Test that running a single routine with kwargs works properly."""
         success, outputs = run_as_processes(
             (sleep_routine, {"duration": (0.01)})
         )
@@ -97,7 +97,7 @@ class TestRunAsProcesses:
         assert outputs[0] == 0.01
 
     def test_fail_routine_with_args_and_kwargs(self) -> None:
-        """Docstring."""
+        """Test that running a single routine with args and kwargs works."""
         err_msg = "Triggered exception."
         success, outputs = run_as_processes(
             (fail_routine, (err_msg,), {"duration": 0.01})
@@ -111,7 +111,7 @@ class TestRunAsProcesses:
     # Tests with multiple routines.
 
     def test_multiple_sleep_routines(self) -> None:
-        """Docstring."""
+        """Test that running a pair of parallel routines works properly."""
         success, outputs = run_as_processes(
             (sleep_routine, {"duration": 0.1}),
             (sleep_routine, (0.01,)),
@@ -122,7 +122,7 @@ class TestRunAsProcesses:
         assert outputs[1] == 0.01
 
     def test_sleep_and_fail_with_autostop(self) -> None:
-        """Docstring."""
+        """Test autostop=True, using a long routine and a failing one."""
         err_msg = "Mock exception."
         err_cls = AttributeError
         srt_time = time.time()
@@ -142,7 +142,7 @@ class TestRunAsProcesses:
         assert err_cls.__name__ in str(outputs[1])
 
     def test_sleep_and_fail_without_autostop(self) -> None:
-        """Docstring."""
+        """Test autostop=False, using a long routine and a failing one."""
         err_msg = "Mock exception."
         err_cls = AttributeError
         srt_time = time.time()

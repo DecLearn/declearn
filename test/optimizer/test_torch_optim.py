@@ -40,9 +40,6 @@ with make_importable(os.path.dirname(__file__)):
     from test_modules import OptiModuleTestSuite
 
 
-set_device_policy(gpu=False)  # force most tests to run on CPU
-
-
 DEVICES = ["CPU"]
 if torch.cuda.device_count():
     DEVICES.append("GPU")

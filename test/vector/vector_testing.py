@@ -168,7 +168,7 @@ class VectorSelfOpTests:
         expect = {
             key: np.sum(to_numpy(val, factory.framework))
             for key, val in vector.coefs.items()
-        }
+        }  # type: Dict[str, np.ndarray]
         result = vector.sum()
         factory.assert_equal(expect, result)
 

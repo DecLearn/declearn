@@ -18,7 +18,7 @@
 """Unit tests for `declearn.communication.api.NetworkServer` classes."""
 
 import asyncio
-from typing import AsyncIterator, Dict
+from typing import AsyncIterator, Dict, Tuple
 from unittest import mock
 
 import pytest
@@ -295,12 +295,14 @@ class TestNetworkServerSend:
         """Test that 'send_message' properly handles clients' identity."""
         server.handler.registered_clients = {0: "mock.0", 1: "mock.1"}
         msg = messaging.GenericMessage(action="test", params={})
-        # Create tasks to send a message and have another client request one.
         req = messaging.GetMessageRequest(timeout=1).to_string()
+        # Create tasks to send a message and have another client request one.
         send = server.send_message(msg, client="mock.0", timeout=1)
         recv = server.handler.handle_message(req, 1)
         # Check that both routines time out.
-        excpt, reply = await asyncio.gather(send, recv, return_exceptions=True)
+        excpt, reply = await asyncio.gather(
+            send, recv, return_exceptions=True
+        )  # type: Tuple[asyncio.TimeoutError, messaging.Error]
         assert isinstance(excpt, asyncio.TimeoutError)
         assert isinstance(reply, messaging.Error)
         assert reply.message == messaging.flags.CHECK_MESSAGE_TIMEOUT
