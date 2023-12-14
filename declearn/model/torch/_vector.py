@@ -177,8 +177,10 @@ class TorchVector(Vector):
         if isinstance(other, Vector):
             return self._apply_operation(other, torch.minimum)
         if isinstance(other, float):
-            other = torch.Tensor([other])  # type: ignore  # scalar Tensor
-        return self.apply_func(torch.minimum, other)
+            return self._operate_with_float(torch.minimum, other)
+        raise TypeError(  # pragma: no-cover
+            f"Unsupported input type to '{self.__class__.__name__}.minimum'."
+        )
 
     def maximum(
         self,
@@ -188,8 +190,32 @@ class TorchVector(Vector):
         if isinstance(other, Vector):
             return self._apply_operation(other, torch.maximum)
         if isinstance(other, float):
-            other = torch.Tensor([other])  # type: ignore  # scalar Tensor
-        return self.apply_func(torch.maximum, other)
+            return self._operate_with_float(torch.maximum, other)
+        raise TypeError(  # pragma: no-cover
+            f"Unsupported input type to '{self.__class__.__name__}.maximum'."
+        )
+
+    def _operate_with_float(
+        self,
+        func: Callable[[torch.Tensor, torch.Tensor], torch.Tensor],
+        other: float,
+    ) -> Self:
+        """Apply an operation on coefficients with a single float.
+
+        Handle tensor-conversion and device-placement issues that are
+        specific to (some) Torch (functions).
+        """
+        # Create Tensors wrapping the scalar on each required device.
+        device_other = {
+            device: torch.Tensor([other]).to(device)
+            for device in {val.device for val in self.coefs.values()}
+        }
+        # Apply the function to coefficients and re-wrap as a TorchVector.
+        coefs = {
+            key: func(val, device_other[val.device])
+            for key, val in self.coefs.items()
+        }
+        return self.__class__(coefs)
 
     def sum(
         self,
