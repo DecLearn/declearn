@@ -43,8 +43,11 @@ Concrete classes
     Average-based-aggregation Aggregator subclass.
 * [GradientMaskedAveraging][declearn.aggregator.GradientMaskedAveraging]:
     Gradient Masked Averaging Aggregator subclass.
+* [SumAggregator][declearn.aggregator.SumAggregator]:
+    Sum-aggregation Aggregator subclass.
 """
 
 from ._api import Aggregator, ModelUpdates, list_aggregators
 from ._avg import AveragingAggregator
 from ._gma import GradientMaskedAveraging
+from ._sum import SumAggregator
