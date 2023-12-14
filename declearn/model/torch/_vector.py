@@ -173,7 +173,7 @@ class TorchVector(Vector):
             return self._apply_operation(other, torch.minimum)
         if isinstance(other, float):
             return self._operate_with_float(torch.minimum, other)
-        raise TypeError(  # pragma: no-cover
+        raise TypeError(  # pragma: no cover
             f"Unsupported input type to '{self.__class__.__name__}.minimum'."
         )
 
@@ -185,7 +185,7 @@ class TorchVector(Vector):
             return self._apply_operation(other, torch.maximum)
         if isinstance(other, float):
             return self._operate_with_float(torch.maximum, other)
-        raise TypeError(  # pragma: no-cover
+        raise TypeError(  # pragma: no cover
             f"Unsupported input type to '{self.__class__.__name__}.maximum'."
         )
 
