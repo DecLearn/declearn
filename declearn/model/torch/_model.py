@@ -274,7 +274,7 @@ class TorchModel(Model):
         def convert(data: Any) -> Optional[torch.Tensor]:
             if (data is None) or isinstance(data, torch.Tensor):
                 return data
-            return torch.from_numpy(data)  # pylint: disable=no-member
+            return torch.from_numpy(data)
         # Ensure inputs is a list.
         inputs, y_true, s_wght = batch
         if not isinstance(inputs, (tuple, list)):
@@ -414,8 +414,8 @@ class TorchModel(Model):
         y_true: np.ndarray,
         y_pred: np.ndarray,
     ) -> np.ndarray:
-        tns_pred = torch.from_numpy(y_pred)  # pylint: disable=no-member
-        tns_true = torch.from_numpy(y_true)  # pylint: disable=no-member
+        tns_pred = torch.from_numpy(y_pred)
+        tns_true = torch.from_numpy(y_true)
         s_loss = self._loss_fn(tns_pred, tns_true)
         return s_loss.cpu().numpy().squeeze()
 

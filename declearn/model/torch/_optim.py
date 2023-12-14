@@ -224,7 +224,6 @@ class TorchOptiModule(OptiModule):
         Place the artifical parameters and optimizer states on the
         same device as the input gradients.
         """
-        # false-positive on torch.zeros_like; pylint: disable=no-member
         self._params = {
             key: torch.nn.Parameter(torch.zeros_like(grad))
             for key, grad in gradients.coefs.items()
@@ -300,7 +299,7 @@ class TorchOptiModule(OptiModule):
         # Restore weight variables' specifications from the input state dict.
         self._params = {}
         for key, (shape, dtype) in state["specs"].items():
-            zeros = torch.zeros(  # false-positive; pylint: disable=no-member
+            zeros = torch.zeros(
                 tuple(shape), dtype=getattr(torch, dtype), device=device
             )
             self._params[key] = torch.nn.Parameter(zeros)
@@ -312,7 +311,7 @@ class TorchOptiModule(OptiModule):
         sdict["state"] = {
             key: {
                 k: (
-                    torch.from_numpy(v).to(device)  # pylint: disable=no-member
+                    torch.from_numpy(v).to(device)
                     if isinstance(v, np.ndarray)
                     else v
                 )

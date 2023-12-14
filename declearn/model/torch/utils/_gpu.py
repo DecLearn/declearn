@@ -32,7 +32,7 @@ __all__ = [
 def select_device(
     gpu: bool,
     idx: Optional[int] = None,
-) -> torch.device:  # pylint: disable=no-member
+) -> torch.device:
     """Select a backing device to use based on inputs and availability.
 
     Parameters
@@ -57,14 +57,14 @@ def select_device(
     """
     # Case when instructed to use the CPU device.
     if not gpu:
-        return torch.device("cpu")  # pylint: disable=no-member
+        return torch.device("cpu")
     # Case when no GPU is available: warn and use the CPU instead.
     if gpu and not torch.cuda.is_available():
         warnings.warn(
             "Cannot use a GPU device: either CUDA is unavailable "
             "or no GPU is visible to torch."
         )
-        return torch.device("cpu")  # pylint: disable=no-member
+        return torch.device("cpu")
     # Case when the desired GPU is invalid: select another one.
     if (idx or 0) >= torch.cuda.device_count():
         warnings.warn(

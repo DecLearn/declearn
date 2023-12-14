@@ -50,7 +50,6 @@ def clip_and_scale_grads_inplace(
     """
     for grad in grads:
         norm = torch.norm(grad, p=2, keepdim=True)
-        # false-positive; pylint: disable=no-member
         grad.mul_(torch.clamp(clip / norm, max=1))
         if wght is not None:
             grad.mul_(wght.to(grad.device))

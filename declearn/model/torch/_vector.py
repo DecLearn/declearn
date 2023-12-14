@@ -71,23 +71,23 @@ class TorchVector(Vector):
 
     @property
     def _op_add(self) -> Callable[[Any, Any], Any]:
-        return torch.add  # pylint: disable=no-member
+        return torch.add
 
     @property
     def _op_sub(self) -> Callable[[Any, Any], Any]:
-        return torch.sub  # pylint: disable=no-member
+        return torch.sub
 
     @property
     def _op_mul(self) -> Callable[[Any, Any], Any]:
-        return torch.mul  # pylint: disable=no-member
+        return torch.mul
 
     @property
     def _op_div(self) -> Callable[[Any, Any], Any]:
-        return torch.div  # pylint: disable=no-member
+        return torch.div
 
     @property
     def _op_pow(self) -> Callable[[Any, Any], Any]:
-        return torch.pow  # pylint: disable=no-member
+        return torch.pow
 
     @property
     def compatible_vector_types(self) -> Set[Type[Vector]]:
@@ -104,7 +104,6 @@ class TorchVector(Vector):
     ) -> Self:
         # Convert 'other' NumpyVector to a (CPU-backed) TorchVector.
         if isinstance(other, NumpyVector):
-            # false-positive; pylint: disable=no-member
             coefs = {
                 key: torch.from_numpy(val) for key, val in other.coefs.items()
             }
@@ -144,9 +143,7 @@ class TorchVector(Vector):
         policy = get_device_policy()
         device = select_device(gpu=policy.gpu, idx=policy.idx)
         coefs = {
-            # false-positive on `torch.from_numpy`; pylint: disable=no-member
-            key: torch.from_numpy(dat).to(device)
-            for key, dat in data.items()
+            key: torch.from_numpy(dat).to(device) for key, dat in data.items()
         }
         return cls(coefs)
 
@@ -166,14 +163,12 @@ class TorchVector(Vector):
         return valid
 
     def sign(self) -> Self:
-        # false-positive; pylint: disable=no-member
         return self.apply_func(torch.sign)
 
     def minimum(
         self,
         other: Union[Self, float],
     ) -> Self:
-        # false-positive; pylint: disable=no-member
         if isinstance(other, Vector):
             return self._apply_operation(other, torch.minimum)
         if isinstance(other, float):
@@ -186,7 +181,6 @@ class TorchVector(Vector):
         self,
         other: Union[Self, float],
     ) -> Self:
-        # false-positive; pylint: disable=no-member
         if isinstance(other, Vector):
             return self._apply_operation(other, torch.maximum)
         if isinstance(other, float):
