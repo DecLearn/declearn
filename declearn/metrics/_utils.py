@@ -22,6 +22,7 @@ from typing import Tuple
 import numpy as np
 
 __all__ = [
+    "safe_division",
     "squeeze_into_identical_shapes",
 ]
 
@@ -52,3 +53,14 @@ def squeeze_into_identical_shapes(
         "Received inputs with incompatible shapes: "
         f"y_true has shape {y_true.shape}, y_pred has shape {y_pred.shape}."
     )
+
+
+def safe_division(
+    num: float,
+    den: float,
+    default: float = 0.0,
+) -> float:
+    """Perform a division, avoiding ZeroDivisionError in favor of a default."""
+    if den == 0.0:
+        return default
+    return num / den

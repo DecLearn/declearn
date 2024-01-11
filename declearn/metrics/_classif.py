@@ -24,6 +24,7 @@ import sklearn  # type: ignore
 import sklearn.metrics  # type: ignore
 
 from declearn.metrics._api import Metric
+from declearn.metrics._utils import safe_division
 
 __all__ = [
     "BinaryAccuracyPrecisionRecall",
@@ -89,22 +90,17 @@ class BinaryAccuracyPrecisionRecall(Metric):
         self,
     ) -> Dict[str, Union[float, np.ndarray]]:
         # Unpack state variables for code readability.
-        tpos = self._states["tpos"]
-        tneg = self._states["tneg"]
-        fpos = self._states["fpos"]
-        fneg = self._states["fneg"]
-        # Compute metrics, avoiding division-by-zero errors.
-        if tpos != 0:
-            scores = {
-                "accuracy": (tpos + tneg) / (tpos + tneg + fpos + fneg),
-                "precision": tpos / (tpos + fpos),
-                "recall": tpos / (tpos + fneg),
-                "f-score": (tpos + tpos) / (tpos + tpos + fpos + fneg),
-            }
-        else:
-            scores = {
-                k: 0.0 for k in ("accuracy", "precision", "recall", "f-score")
-            }
+        tpos = self._states["tpos"]  # type: float  # type: ignore
+        tneg = self._states["tneg"]  # type: float  # type: ignore
+        fpos = self._states["fpos"]  # type: float  # type: ignore
+        fneg = self._states["fneg"]  # type: float  # type: ignore
+        # Compute metrics, catching division-by-zero errors (replace with 0.0).
+        scores = {
+            "accuracy": safe_division(tpos + tneg, tpos + tneg + fpos + fneg),
+            "precision": safe_division(tpos, tpos + fpos),
+            "recall": safe_division(tpos, tpos + fneg),
+            "f-score": safe_division(tpos + tpos, tpos + tpos + fpos + fneg),
+        }  # type: Dict[str, Union[float, np.ndarray]]
         # Add the confusion matrix and return.
         scores["confusion"] = np.array([[tneg, fpos], [fneg, tpos]])
         return scores
