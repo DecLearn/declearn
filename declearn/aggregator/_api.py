@@ -17,8 +17,10 @@
 
 """Model updates aggregation API."""
 
-from abc import ABCMeta, abstractmethod
-from typing import Any, ClassVar, Dict, Type, TypeVar
+import abc
+import dataclasses
+import warnings
+from typing import Any, ClassVar, Dict, Generic, Type, TypeVar, Union
 
 from typing_extensions import Self  # future: import from typing (py >=3.11)
 
@@ -31,39 +33,126 @@ from declearn.utils import (
 
 __all__ = [
     "Aggregator",
+    "ModelUpdates",
 ]
 
 
 T = TypeVar("T")
 
 
+@dataclasses.dataclass
+class ModelUpdates:
+    """Base dataclass for model updates' sharing and aggregation."""
+
+    updates: Vector
+    weights: Union[int, float]
+
+    def to_dict(
+        self,
+    ) -> Dict[str, Any]:
+        """Return a JSON-serializable dict representation of this instance."""
+        return dataclasses.asdict(self)
+
+    def __add__(
+        self,
+        other: Any,
+    ) -> Self:
+        """Overload the sum operator to aggregate multiple instances."""
+        try:
+            return self.aggregate(other)
+        except TypeError:
+            return NotImplemented
+
+    def __radd__(
+        self,
+        other: Any,
+    ) -> Self:
+        """Enable `0 + ModelUpdates`, to support `sum(List[ModelUpdates])`."""
+        if isinstance(other, int) and not other:
+            return self
+        return NotImplemented
+
+    def aggregate(
+        self,
+        other: Self,
+    ) -> Self:
+        """Aggregate this with another instance of the same class.
+
+        Parameters
+        ----------
+        other:
+            Another instance of the same type as `self`.
+
+        Returns
+        -------
+        aggregated:
+            An instance of the same class containing aggregated values.
+
+        Raises
+        ------
+        TypeError
+            If `other` is of unproper type.
+        ValueError
+            If any field's aggregation fails.
+        """
+        if not isinstance(other, self.__class__):
+            raise TypeError(
+                f"'{self.__class__.__name__}.aggregate' received a wrongful "
+                f"'other'  argument: excepted same type, got '{type(other)}'."
+            )
+        # Run the fields' aggregation, wrapping any exception as ValueError.
+        try:
+            results = {
+                field.name: (
+                    getattr(self, field.name) + getattr(other, field.name)
+                )
+                for field in dataclasses.fields(self)
+            }
+        except Exception as exc:
+            raise ValueError(
+                "Exception encountered while aggregating two instances "
+                f"of '{self.__class__.__name__}': {repr(exc)}."
+            ) from exc
+        # If everything went right, return the resulting ModelUpdates.
+        return self.__class__(**results)
+
+
+ModelUpdatesT = TypeVar("ModelUpdatesT", bound=ModelUpdates)
+
+
 @create_types_registry
-class Aggregator(metaclass=ABCMeta):
-    """Abstract class defining an API for Vector aggregation.
+class Aggregator(Generic[ModelUpdatesT], metaclass=abc.ABCMeta):
+    """Abstract class defining an API for model updates aggregation.
 
     The aim of this abstraction (which itself operates on the Vector
     abstraction, so as to provide framework-agnostic algorithms) is
     to enable implementing arbitrary aggregation rules to turn local
-    model updates into global updates in a federated learning context.
+    model updates into global updates in a federated or decentralized
+    learning context.
 
-    An Aggregator is typically meant to be used on a round-wise basis
-    by the orchestrating server of a centralized federated learning
-    process, to aggregate the client-wise model updated into a Vector
-    that may then be used as "gradients" by the server's Optimizer to
-    update the global model.
+    An Aggregator has three main purposes:
+
+    - Preparing and packaging data that is to be shared with peers
+      based on local model updates into a `ModelUpdates` container
+      that implements aggregation, usually via summation.
+    - Finalizing such a data container into model updates.
 
     Abstract
     --------
-    The following attribute and method require to be overridden
+    The following class attributes and methods must be implemented
     by any non-abstract child class of `Aggregator`:
 
-    - name: str class attribute
-        Name identifier of the class (should be unique across existing
-        Aggregator classes). Also used for automatic types-registration
-        of the class (see `Inheritance` section below).
-    - aggregate(updates: Dict[str, Vector], n_steps: Dict[str, int]) -> Vector:
-        Aggregate input vectors into a single one.
-        This is the main method for any `Aggregator`.
+    - name:
+        Name identifier of the class (should be unique across Aggregator
+        classes). Also used for automatic type-registration of the class
+        (see `Inheritance` section below).
+    - updates_cls:
+        Type of `ModelUpdates` on which this class is designed to operate.
+
+    - prepare_for_sharing(updates: Vector, n_steps: int) -> ModelUpdates:
+        Pre-process and package local model updates for aggregation.
+    - finalize_updates(updates: ModelUpdates):
+        Finalize pre-aggregated data into global model updates.
 
     Overridable
     -----------
@@ -81,8 +170,11 @@ class Aggregator(metaclass=ABCMeta):
     See `declearn.utils.register_type` for details on types registration.
     """
 
-    name: ClassVar[str] = NotImplemented
+    name: ClassVar[str]
     """Name identifier of the class, unique across Aggregator classes."""
+
+    updates_cls: ClassVar[Type[ModelUpdates]] = ModelUpdates
+    """Type of 'ModelUpdates' on which this class is designed to operate."""
 
     def __init_subclass__(
         cls,
@@ -94,13 +186,62 @@ class Aggregator(metaclass=ABCMeta):
         if register:
             register_type(cls, cls.name, group="Aggregator")
 
-    @abstractmethod
+    @abc.abstractmethod
+    def prepare_for_sharing(
+        self,
+        updates: Vector,
+        n_steps: int,  # revise: generalize kwargs?
+    ) -> ModelUpdatesT:
+        """Pre-process and package local model updates for aggregation.
+
+        Parameters
+        ----------
+        updates:
+            Local model updates, as a Vector value.
+        n_steps:
+            Number of local training steps taken to produce `updates`.
+
+        Returns
+        -------
+        updates:
+            Data to be shared with peers, wrapped into a `ModelUpdates`
+            (subclass) instance.
+        """
+
+    @abc.abstractmethod
+    def finalize_updates(
+        self,
+        updates: ModelUpdatesT,
+    ) -> Vector:
+        """Finalize pre-aggregated data into global model updates.
+
+        Parameters
+        ----------
+        updates:
+            `ModelUpdates` instance holding aggregated data to finalize,
+            resulting from peers' shared instances' sum-aggregation.
+        """
+
+    def get_config(
+        self,
+    ) -> Dict[str, Any]:
+        """Return a JSON-serializable dict with this object's parameters."""
+        return {}  # pragma: no cover
+
+    @classmethod
+    def from_config(
+        cls,
+        config: Dict[str, Any],
+    ) -> Self:
+        """Instantiate an Aggregator from its configuration dict."""
+        return cls(**config)
+
     def aggregate(
         self,
         updates: Dict[str, Vector[T]],
         n_steps: Dict[str, int],  # revise: abstract~generalize kwargs use
     ) -> Vector[T]:
-        """Aggregate input vectors into a single one.
+        """DEPRECATED - Aggregate input vectors into a single one.
 
         Parameters
         ----------
@@ -122,20 +263,20 @@ class Aggregator(metaclass=ABCMeta):
         TypeError
             If the input `updates` are an empty dict.
         """
-
-    def get_config(
-        self,
-    ) -> Dict[str, Any]:
-        """Return a JSON-serializable dict with this object's parameters."""
-        return {}  # pragma: no cover
-
-    @classmethod
-    def from_config(
-        cls,
-        config: Dict[str, Any],
-    ) -> Self:
-        """Instantiate an Aggregator from its configuration dict."""
-        return cls(**config)
+        warnings.warn(
+            "'Aggregator.aggregate' was deprecated in DecLearn v2.4 in favor "
+            "of new API methods. It will be removed in DecLearn v2.6 and/or "
+            "v3.0.",
+            DeprecationWarning,
+        )
+        if not updates:
+            raise TypeError("'Aggregator.aggregate' received an empty dict.")
+        partials = [
+            self.prepare_for_sharing(updates[client], n_steps[client])
+            for client in updates
+        ]
+        aggregated = sum(partials[1:], start=partials[0])
+        return self.finalize_updates(aggregated)
 
 
 def list_aggregators() -> Dict[str, Type[Aggregator]]:

@@ -17,9 +17,14 @@
 
 """Gradient Masked Averaging aggregation class."""
 
-from typing import Any, ClassVar, Dict, Optional
+import dataclasses
+import warnings
+from typing import Any, Dict, Optional
 
-from declearn.aggregator._base import AveragingAggregator
+from typing_extensions import Self  # future: import from typing (py >=3.11)
+
+from declearn.aggregator._api import Aggregator, ModelUpdates
+from declearn.aggregator._avg import AveragingAggregator
 from declearn.model.api import Vector
 
 __all__ = [
@@ -27,7 +32,31 @@ __all__ = [
 ]
 
 
-class GradientMaskedAveraging(AveragingAggregator):
+@dataclasses.dataclass
+class GMAModelUpdates(ModelUpdates):
+    """Dataclass for GradientMaskedAveraging model updates."""
+
+    up_sign: Optional[Vector] = None
+
+    def aggregate(
+        self,
+        other: Self,
+    ) -> Self:
+        # Ensure updates' sign are defined and will be aggregated,
+        # without having a side effect on 'self' nor on 'other'.
+        if isinstance(other, GMAModelUpdates):
+            if other.up_sign is None:
+                other_dict = other.to_dict()
+                other_dict["up_sign"] = other.updates.sign() * other.weights
+                other = type(other)(**other_dict)
+            if self.up_sign is None:
+                self_dict = self.to_dict()
+                self_dict["up_sign"] = self.updates.sign() * self.weights
+                return other.aggregate(self.__class__(**self_dict))
+        return super().aggregate(other)
+
+
+class GradientMaskedAveraging(Aggregator[GMAModelUpdates]):
     """Gradient Masked Averaging Aggregator subclass.
 
     This class implements the gradient masked averaging algorithm
@@ -55,7 +84,8 @@ class GradientMaskedAveraging(AveragingAggregator):
         https://arxiv.org/abs/2201.11986
     """
 
-    name: ClassVar[str] = "gradient-masked-averaging"
+    name = "gradient-masked-averaging"
+    updates_cls = GMAModelUpdates
 
     def __init__(
         self,
@@ -86,7 +116,7 @@ class GradientMaskedAveraging(AveragingAggregator):
           clients' base weights will be set to 1.
         """
         self.threshold = threshold
-        super().__init__(steps_weighted, client_weights)
+        self._avg = AveragingAggregator(steps_weighted, client_weights)
 
     def get_config(
         self,
@@ -95,19 +125,53 @@ class GradientMaskedAveraging(AveragingAggregator):
         config["threshold"] = self.threshold
         return config
 
-    def aggregate(
+    def prepare_for_sharing(
         self,
-        updates: Dict[str, Vector],
-        n_steps: Dict[str, int],
+        updates: Vector,
+        n_steps: int,
+    ) -> GMAModelUpdates:
+        data = self._avg.prepare_for_sharing(updates, n_steps)
+        return GMAModelUpdates(data.updates, data.weights)
+
+    def finalize_updates(
+        self,
+        updates: GMAModelUpdates,
     ) -> Vector:
-        # Perform gradients' averaging.
-        output = super().aggregate(updates, n_steps)
-        # Compute agreement scores as to gradients' direction.
-        g_sign = {client: grads.sign() for client, grads in updates.items()}
-        scores = super().aggregate(g_sign, n_steps)
+        # Average model updates.
+        values = self._avg.finalize_updates(
+            ModelUpdates(updates.updates, updates.weights)
+        )
+        # Return if signs were not computed, denoting a lack of aggregation.
+        if updates.up_sign is None:
+            return values
+        # Compute the average direction, taken as an agreement score.
+        scores = self._avg.finalize_updates(
+            ModelUpdates(updates.up_sign, updates.weights)
+        )
         scores = scores * scores.sign()
         # Derive masking scores, using the thresholding hyper-parameter.
         clip = (scores - self.threshold).sign().maximum(0.0)
         scores = (1 - clip) * scores + clip  # s = 1 if s > t else s
         # Correct outputs' magnitude and return them.
-        return scores * output
+        return values * scores
+
+    def compute_client_weights(  # pragma: no cover
+        self,
+        updates: Dict[str, Vector],
+        n_steps: Dict[str, int],
+    ) -> Dict[str, float]:
+        """Compute weights to use when averaging a given set of updates.
+
+        This method is DEPRECATED as of DecLearn v2.4.
+        It will be removed in DecLearn 2.6 and/or 3.0.
+        """
+        # pylint: disable=duplicate-code
+        warnings.warn(
+            f"'{self.__class__.__name__}.compute_client_weights' was"
+            " deprecated in DecLearn v2.4. It will be removed in DecLearn"
+            " v2.6 and/or v3.0.",
+            DeprecationWarning,
+        )
+        with warnings.catch_warnings():
+            warnings.simplefilter(action="ignore", category=DeprecationWarning)
+            return self._avg.compute_client_weights(updates, n_steps)
