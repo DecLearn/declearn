@@ -32,19 +32,78 @@ References
     https://arxiv.org/abs/1910.06378
 """
 
+import dataclasses
+import uuid
 import warnings
-from typing import Any, ClassVar, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Set, Union
 
 from declearn.model.api import Vector
-from declearn.optimizer.modules._api import OptiModule
+from declearn.optimizer.modules._api import AuxVar, OptiModule
 
 __all__ = [
+    "ScaffoldAuxVar",
     "ScaffoldClientModule",
     "ScaffoldServerModule",
 ]
 
 
-class ScaffoldClientModule(OptiModule):
+@dataclasses.dataclass
+class ScaffoldAuxVar(AuxVar):
+    """AuxVar subclass for Scaffold.
+
+    - In Server -> Client direction, `state` should be specified.
+    - In Client -> Server direction, `delta` should be specified.
+    """
+
+    state: Union[Vector, float, None] = None
+    delta: Union[Vector, float, None] = None
+    clients: Set[str] = dataclasses.field(default_factory=set)
+
+    def __post_init__(
+        self,
+    ) -> None:
+        if ((self.state is None) + (self.delta is None)) != 1:
+            raise ValueError(
+                "'ScaffoldAuxVar' should have exactly one of 'state' or "
+                "'delta' specified as a Vector or conventional 0.0 value."
+            )
+        if isinstance(self.clients, list):
+            self.clients = set(self.clients)
+
+    @staticmethod
+    def aggregate_clients(
+        val_a: Set[str],
+        val_b: Set[str],
+    ) -> Set[str]:
+        """Custom aggregation rule for 'clients' field."""
+        return val_a.union(val_b)
+
+    @classmethod
+    def aggregate_state(
+        cls,
+        val_a: Union[Vector, float, None],
+        val_b: Union[Vector, float, None],
+    ) -> None:
+        """Custom aggregation rule for 'state' field, raising when due."""
+        if (val_a is not None) or (val_b is not None):
+            raise NotImplementedError(
+                "'ScaffoldAuxVar' should not be aggregating 'state' values."
+            )
+
+    def to_dict(
+        self,
+    ) -> Dict[str, Any]:
+        output = {}  # type: Dict[str, Any]
+        if self.state is not None:
+            output["state"] = self.state
+        if self.delta is not None:
+            output["delta"] = self.delta
+        if self.clients:
+            output["clients"] = list(self.clients)
+        return output
+
+
+class ScaffoldClientModule(OptiModule[ScaffoldAuxVar]):
     """Client-side Stochastic Controlled Averaging (SCAFFOLD) module.
 
     This module is to be added to the optimizer used by a federated-
@@ -55,6 +114,8 @@ class ScaffoldClientModule(OptiModule):
     This module implements the following algorithm:
 
         Init:
+            state = 0
+            local = 0
             delta = 0
             _past = 0
             _step = 0
@@ -62,20 +123,24 @@ class ScaffoldClientModule(OptiModule):
             _past += grads
             _step += 1
             grads = grads - delta
-        Send:
-            state = (_past / _step)
-        Receive(delta):
-            delta = delta
+        Send -> l_upd:
+            loc_n = (_past / _step)
+            l_upd = loc_n - local
+            local = loc_n
+        Receive(state):
+            state = state
+            delta = local - state
             reset(_past, _step) to 0
 
-    In other words, this module receives a "delta" variable from the
-    server instance which is set as the difference between a client-
-    specific state and a shared one, and corrects input gradients by
-    adding this delta to it. At the end of a training round (made of
-    multiple steps) it computes an updated client state based on the
-    accumulated sum of corrected gradients. This value is to be sent
-    to the server, that will emit a new value for the local delta in
-    return.
+    In other words, this module applies a correction term to each
+    and every input gradient, which is defined as the difference
+    between a local (node-specific) state and a global one, which
+    is received from a paired server-side module. At the end of a
+    training round (made of multiple steps) it computes an updated
+    local state based on the accumulated sum of raw input gradients.
+    The difference between the new and previous local states is then
+    shared with the server, that aggregates client-wise updates into
+    the new global state and emits it towards nodes in return.
 
     The SCAFFOLD algorithm is described in reference [1].
     The server-side correction of aggregated gradients, the storage
@@ -98,14 +163,17 @@ class ScaffoldClientModule(OptiModule):
         https://arxiv.org/abs/1910.06378
     """
 
-    name: ClassVar[str] = "scaffold-client"
-    aux_name: ClassVar[str] = "scaffold"
+    name = "scaffold-client"
+    aux_name = "scaffold"
 
     def __init__(
         self,
     ) -> None:
         """Instantiate the client-side SCAFFOLD gradients-correction module."""
+        self.uuid = str(uuid.uuid4())
+        self.state = 0.0  # type: Union[Vector, float]
         self.delta = 0.0  # type: Union[Vector, float]
+        self.sglob = 0.0  # type: Union[Vector, float]
         self._grads = 0.0  # type: Union[Vector, float]
         self._steps = 0
 
@@ -121,7 +189,7 @@ class ScaffoldClientModule(OptiModule):
 
     def collect_aux_var(
         self,
-    ) -> Dict[str, Any]:
+    ) -> Optional[ScaffoldAuxVar]:
         """Return auxiliary variables that need to be shared between nodes.
 
         Compute and package (without applying it) the updated value
@@ -130,10 +198,9 @@ class ScaffoldClientModule(OptiModule):
 
         Returns
         -------
-        aux_var: dict[str, any]
-            JSON-serializable dict of auxiliary variables that
-            are to be shared with a ScaffoldServerModule held
-            by the orchestrating server.
+        aux_var:
+            Auxiliary variables that are to be shared, aggregated and
+            eventually passed to a server-held `ScaffoldServerModule`.
 
         Warns
         -----
@@ -142,12 +209,25 @@ class ScaffoldClientModule(OptiModule):
             (via a call to `run`) since the last call to `process_aux_var`
             (or its instantiation).
         """
-        state = self._compute_updated_state()
-        return {"state": state}
+        # Warn and return an empty dict if no steps were run.
+        if not self._steps:
+            warnings.warn(
+                "Collecting auxiliary variables from a scaffold module "
+                "that was not run. The local state update was skipped, "
+                "and empty auxiliary variables are emitted.",
+                RuntimeWarning,
+            )
+            return None
+        # Compute the updated local state and assign it.
+        state_next = self._compute_updated_state()
+        state_updt = state_next - self.state
+        self.state = state_next
+        # Send the local state's update.
+        return ScaffoldAuxVar(delta=state_updt, clients={self.uuid})
 
     def _compute_updated_state(
         self,
-    ) -> Union[Vector, float]:
+    ) -> Vector:
         """Compute and return the updated value of the local state.
 
         Note: the computed update is *not* applied by this method.
@@ -164,25 +244,28 @@ class ScaffoldClientModule(OptiModule):
         steps, we rewrite it as eta_l * Sum_k(grad(y_i^k) - D_i),
         where we define D_i = (c_i - c). Thus we rewrite c_i^+ as:
             c_i^+ = D_i + (1/K)*Sum_k(grad(y_i^k) - D_i)
-        When then note that D_i is constant across steps, and can
-        thus be taken out of the summation term, leaving us with:
-            c_i^+ = Avg_k(grad(y_i^k))
+        Noting that D_i is constant across steps, we take it out of
+        the summation term, leaving us with:
+            c_i^+ = (1/K)*Sum_k(grad(y_i^k))
 
         Hence the new local state can be computed by averaging the
         gradients input to this module along the training steps.
         """
-        if not self._steps:
-            warnings.warn(
-                "Collecting auxiliary variables from a scaffold module "
-                "that was not run. Returned zero-valued scalar updates.",
-                category=RuntimeWarning,
+        if not self._steps:  # pragma: no cover
+            raise ValueError(
+                "Cannot compute an updated state when no steps were run."
             )
-            return 0.0
+        if not isinstance(self._grads, Vector):  # pragma: no cover
+            raise TypeError(
+                "Internal gradients accumulator is not a Vector instance. "
+                "This seems to indicate that the Scaffold module received "
+                "improper-type inputs, which should not be possible."
+            )
         return self._grads / self._steps
 
     def process_aux_var(
         self,
-        aux_var: Dict[str, Any],
+        aux_var: ScaffoldAuxVar,
     ) -> None:
         """Update this module based on received shared auxiliary variables.
 
@@ -191,40 +274,62 @@ class ScaffoldClientModule(OptiModule):
 
         Parameters
         ----------
-        aux_var: dict[str, any]
-            JSON-serializable dict of auxiliary variables that are to be
-            processed by this module at the start of a training round (on
-            the client side).
-            Expected keys for this class: {"delta"}.
+        aux_var:
+            Auxiliary variables that are to be processed by this module,
+            emitted by a counterpart OptiModule on the other side of the
+            client-server relationship.
 
         Raises
         ------
         KeyError
-            If an expected auxiliary variable is missing.
+            If `aux_var` is empty.
         TypeError
-            If a variable is of unproper type, or if aux_var
-            is not formatted as it should be.
+            If `aux_var` has unproper type.
         """
-        # Expect a state variable and apply it.
-        delta = aux_var.get("delta", None)
-        if delta is None:
-            raise KeyError(
-                "Missing 'delta' key in ScaffoldClientModule's "
-                "received auxiliary variables."
-            )
-        if isinstance(delta, (float, Vector)):
-            self.delta = delta
-        else:
+        if not isinstance(aux_var, ScaffoldAuxVar):
             raise TypeError(
-                "Unsupported type for ScaffoldClientModule's "
-                "received auxiliary variable 'delta'."
+                f"'{self.__class__.__name__}.process_aux_var' received "
+                f"auxiliary variables of unproper type: '{type(aux_var)}'."
             )
-        # Reset local variables.
+        if aux_var.state is None:
+            raise KeyError(
+                "Missing 'state' data in auxiliary variables passed to "
+                f"'{self.__class__.__name__}.process_aux_var'."
+            )
+        # Assign new global state and update the local correction term.
+        self.sglob = aux_var.state
+        self.delta = self.state - self.sglob
+        # Reset internal local variables.
+        self._grads = 0.0
+        self._steps = 0
+
+    def get_state(
+        self,
+    ) -> Dict[str, Any]:
+        return {
+            "state": self.state,
+            "sglob": self.sglob,
+            "uuid": self.uuid,
+        }
+
+    def set_state(
+        self,
+        state: Dict[str, Any],
+    ) -> None:
+        for key in ("state", "sglob", "uuid"):
+            if key not in state:
+                raise KeyError(f"Missing required state variable '{key}'.")
+        # Assign received information.
+        self.state = state["state"]
+        self.sglob = state["sglob"]
+        self.uuid = state["uuid"]
+        # Reset correction state and internal local variables.
+        self.delta = self.state - self.sglob
         self._grads = 0.0
         self._steps = 0
 
 
-class ScaffoldServerModule(OptiModule):
+class ScaffoldServerModule(OptiModule[ScaffoldAuxVar]):
     """Server-side Stochastic Controlled Averaging (SCAFFOLD) module.
 
     This module is to be added to the optimizer used by a federated-
@@ -234,29 +339,26 @@ class ScaffoldServerModule(OptiModule):
 
     This module implements the following algorithm:
 
-        Init(clients):
-            state = 0
-            s_loc = {client: 0 for client in clients}
+        Init:
+            s_state = 0
+            clients = {}
         Step(grads):
             grads
-        Send:
-            delta = {client: (s_loc[client] - state); client in s_loc}
-        Receive(s_new = {client: state}):
-            s_upd = sum(s_new[client] - s_loc[client]; client in s_new)
-            s_loc.update(s_new)
-            state += s_upd / len(s_loc)
+        Send -> state:
+            state = s_state / min(len(clients), 1)
+        Receive(delta=sum(state_i^t+1 - state_i^t), clients=set{uuid}):
+            s_state += delta
+            clients.update(clients)
 
-    In other words, this module holds a shared state variable, and a
-    set of client-specific ones, which are zero-valued when created.
-    At the beginning of a training round it sends to each client its
-    delta variable, set to the difference between its current state
-    and the shared one, which is to be applied as a correction term
-    to local gradients. At the end of a training round, aggregated
-    gradients are corrected by substracting the shared state value
-    from them. Finally, updated local states received from clients
-    are recorded, and used to update the shared state variable, so
-    that new delta values can be sent to clients as the next round
-    of training starts.
+    In other words, this module holds a global state variable, set
+    to zero at instantiation. At the beginning of a training round
+    it sends it to all clients so that they can derive a correction
+    term for their processed gradients, based on a local state they
+    hold. At the end of a training round, client-wise local state
+    updates are sum-aggregated into an update for the global state
+    variable, which will be sent to clients at the start of the next
+    round. The sent state is always the average of the last known
+    local state from each and every known client.
 
     The SCAFFOLD algorithm is described in reference [1].
     The client-side correction of gradients and the computation of
@@ -269,8 +371,9 @@ class ScaffoldServerModule(OptiModule):
         https://arxiv.org/abs/1910.06378
     """
 
-    name: ClassVar[str] = "scaffold-server"
-    aux_name: ClassVar[str] = "scaffold"
+    name = "scaffold-server"
+    aux_name = "scaffold"
+    auxvar_cls = ScaffoldAuxVar
 
     def __init__(
         self,
@@ -280,29 +383,19 @@ class ScaffoldServerModule(OptiModule):
 
         Parameters
         ----------
-        clients: list[str] or None, default=None
+        clients:
+            DEPRECATED and unused starting with declearn 2.4.
             Optional list of known clients' id strings.
-
-        Notes
-        -----
-        - If this module is used under a training strategy that has
-          participating clients vary across epochs, leaving `clients`
-          to None will affect the update rule for the shared state,
-          as it uses a (n_participating / n_total_clients) term, the
-          divisor of which will be incorrect (at least on the first
-          step, potentially on following ones as well).
-        - Similarly, listing clients that in fact do not participate
-          in training will have side effects on computations.
         """
-        self.state = 0.0  # type: Union[Vector, float]
-        self.s_loc = {}  # type: Dict[str, Union[Vector, float]]
-        if clients:
-            self.s_loc = {client: 0.0 for client in clients}
-
-    def get_config(
-        self,
-    ) -> Dict[str, Any]:
-        return {"clients": list(self.s_loc)}
+        self.s_state = 0.0  # type: Union[Vector, float]
+        self.clients = set()  # type: Set[str]
+        if clients:  # pragma: no cover
+            warnings.warn(
+                "ScaffoldServerModule's 'clients' argument has been deprecated"
+                " as of declearn v2.4, and no longer has any effect. It will"
+                " be removed in declearn 2.6 and/or 3.0.",
+                DeprecationWarning,
+            )
 
     def run(
         self,
@@ -313,94 +406,68 @@ class ScaffoldServerModule(OptiModule):
 
     def collect_aux_var(
         self,
-    ) -> Dict[str, Dict[str, Any]]:
+    ) -> ScaffoldAuxVar:
         """Return auxiliary variables that need to be shared between nodes.
-
-        Package client-wise `delta = (local_state - shared_state)` variables.
 
         Returns
         -------
         aux_var:
-            JSON-serializable dict of auxiliary variables that are to
-            be shared with the client-wise ScaffoldClientModule. This
-            dict has a `{client-name: {"delta": value}}` structure.
+            `ScaffoldAuxVar` instance holding auxiliary variables that are
+            to be shared with clients' `ScaffoldClientModule` instances.
         """
-        # Compute clients' delta variable, package them and return.
-        aux_var = {}  # type: Dict[str, Dict[str, Any]]
-        for client, state in self.s_loc.items():
-            delta = state - self.state
-            aux_var[client] = {"delta": delta}
-        return aux_var
+        # When un-initialized, send lightweight information.
+        if not self.clients:
+            return ScaffoldAuxVar(state=0.0)
+        # Otherwise, compute and return the current shared state.
+        return ScaffoldAuxVar(state=self.s_state / len(self.clients))
 
     def process_aux_var(
         self,
-        aux_var: Dict[str, Dict[str, Any]],
+        aux_var: ScaffoldAuxVar,
     ) -> None:
         """Update this module based on received shared auxiliary variables.
 
-        Collect updated local state variables sent by clients.
-        Update the global state variable based on the latter.
+        Update the global state variable based on the sum of client's
+        local state updates.
 
         Parameters
         ----------
-        aux_var: dict[str, dict[str, any]]
-            JSON-serializable dict of auxiliary variables that are to be
-            processed by this module before processing global updates.
-            This dict should have a `{client-name: {"state": value}}`
-            structure.
+        aux_var:
+            `ScaffoldAuxVar` resulting from the aggregation of clients'
+            `ScaffoldClientModule` auxiliary variables.
 
         Raises
         ------
         KeyError:
-            If an expected auxiliary variable is missing.
+            If `aux_var` is empty.
         TypeError:
-            If a variable is of unproper type, or if aux_var
-            is not formatted as it should be.
+            If `aux_var` is of unproper type.
         """
-        # Collect updated local states received from Scaffold client modules.
-        s_new = {}  # type: Dict[str, Union[Vector, float]]
-        for client, c_dict in aux_var.items():
-            if not isinstance(c_dict, dict):
-                raise TypeError(
-                    "ScaffoldServerModule requires auxiliary variables "
-                    "to be received as client-wise dictionaries."
-                )
-            if "state" not in c_dict:
-                raise KeyError(
-                    "Missing required 'state' key in auxiliary variables "
-                    f"received by ScaffoldServerModule from client '{client}'."
-                )
-            state = c_dict["state"]
-            if isinstance(state, float) and state == 0.0:
-                # Drop info from clients that have not processed gradients.
-                continue
-            if isinstance(state, (Vector, float)):
-                s_new[client] = state
-            else:
-                raise TypeError(
-                    "Unsupported type for auxiliary variable 'state' "
-                    f"received by ScaffoldServerModule from client '{client}'."
-                )
-        # Update the global and client-wise state variables.
-        update = sum(
-            state - self.s_loc.get(client, 0.0)
-            for client, state in s_new.items()
-        )
-        self.s_loc.update(s_new)
-        update = update / len(self.s_loc)
-        self.state = self.state + update
+        if not isinstance(aux_var, ScaffoldAuxVar):
+            raise TypeError(
+                f"'{self.__class__.__name__}.process_aux_var' received "
+                f"auxiliary variables of unproper type: '{type(aux_var)}'."
+            )
+        if aux_var.delta is None:
+            raise KeyError(
+                f"'{self.__class__.__name__}.process_aux_var' received "
+                "auxiliary variables with an empty 'delta' field."
+            )
+        # Update the list of known clients, and the sum of local states.
+        self.clients.update(aux_var.clients)
+        self.s_state += aux_var.delta
 
     def get_state(
         self,
     ) -> Dict[str, Any]:
-        return {"state": self.state, "s_loc": self.s_loc}
+        return {"s_state": self.s_state, "clients": list(self.clients)}
 
     def set_state(
         self,
         state: Dict[str, Any],
     ) -> None:
-        for key in ("state", "s_loc"):
+        for key in ("s_state", "clients"):
             if key not in state:
                 raise KeyError(f"Missing required state variable '{key}'.")
-        self.state = state["state"]
-        self.s_loc = state["s_loc"]
+        self.s_state = state["s_state"]
+        self.clients = set(state["clients"])
