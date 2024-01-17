@@ -17,7 +17,7 @@
 
 """Unit tests for `declearn.main.privacy.DPTrainingManager`."""
 
-import sys
+import os
 from typing import Any, Optional
 
 import pytest
@@ -28,16 +28,10 @@ from declearn.communication import messaging
 from declearn.dataset import DataSpecs
 from declearn.main.privacy import DPTrainingManager
 from declearn.optimizer.modules import GaussianNoiseModule
+from declearn.test_utils import make_importable
 
-
-# Relative imports from the unit tests code of the parent class.
-# pylint: disable=wrong-import-order, wrong-import-position
-# fmt: off
-sys.path.append(".")
-from test_train_manager import BATCHES, build_manager, build_train_request
-sys.path.pop()
-# pylint: enable=wrong-import-order, wrong-import-position
-# fmt: on
+with make_importable(os.path.dirname(__file__)):
+    from test_train_manager import BATCHES, build_manager, build_train_request
 
 
 BATCHES["poisson"] = True  # mock the use of Poisson sampling out of coherence
@@ -55,7 +49,11 @@ def build_dp_manager(n_batch: int) -> Any:  # DPTrainingManager with Mock attrs
     base.optim.modules = []
     # Replace the base TrainingManager with a DPTrainingManager.
     return DPTrainingManager(
-        base.model, base.optim, base.train_data, base.valid_data
+        model=base.model,
+        optim=base.optim,
+        aggrg=base.aggrg,
+        train_data=base.train_data,
+        valid_data=base.valid_data,
     )
 
 

@@ -25,6 +25,7 @@ from typing import Any, Dict, List, Optional, Tuple, Type, Union
 import numpy as np
 from typing_extensions import Self  # future: import from typing (py >=3.11)
 
+from declearn.aggregator import Aggregator
 from declearn.metrics import MetricInputType
 from declearn.model.api import Model, Vector
 from declearn.optimizer import Optimizer
@@ -154,6 +155,7 @@ class InitRequest(Message):
 
     model: Model
     optim: Optimizer
+    aggrg: Aggregator
     metrics: List[MetricInputType] = dataclasses.field(default_factory=list)
     dpsgd: bool = False
 
@@ -161,6 +163,7 @@ class InitRequest(Message):
         data = {"typekey": self.typekey}  # type: Dict[str, Any]
         data["model"] = serialize_object(self.model, group="Model").to_dict()
         data["optim"] = self.optim.get_config()
+        data["aggrg"] = serialize_object(self.aggrg, "Aggregator").to_dict()
         data["metrics"] = self.metrics
         data["dpsgd"] = self.dpsgd
         return json.dumps(data, default=json_pack)
@@ -169,6 +172,7 @@ class InitRequest(Message):
     def from_kwargs(cls, **kwargs: Any) -> Self:
         kwargs["model"] = deserialize_object(kwargs["model"])
         kwargs["optim"] = Optimizer.from_config(kwargs["optim"])
+        kwargs["aggrg"] = deserialize_object(kwargs["aggrg"])
         return cls(**kwargs)
 
 
@@ -248,7 +252,7 @@ class TrainReply(Message):
     n_epoch: int
     n_steps: int
     t_spent: float
-    updates: Vector
+    updates: Dict[str, Any]
     aux_var: Dict[str, Dict[str, Any]]
 
 

@@ -23,6 +23,7 @@ from typing import Any, ClassVar, Dict, List, Optional, Tuple, Union
 import numpy as np
 import tqdm
 
+from declearn.aggregator import Aggregator
 from declearn.communication import messaging
 from declearn.dataset import Dataset
 from declearn.main.utils._constraints import (
@@ -44,10 +45,13 @@ __all__ = [
 class TrainingManager:
     """Class wrapping the logic for local training and evaluation rounds."""
 
+    # one too-many attribute; pylint: disable=too-many-instance-attributes
+
     def __init__(
         self,
         model: Model,
         optim: Optimizer,
+        aggrg: Aggregator,
         train_data: Dataset,
         valid_data: Optional[Dataset] = None,
         metrics: Union[MetricSet, List[MetricInputType], None] = None,
@@ -62,6 +66,9 @@ class TrainingManager:
             Model instance that needs training and/or evaluating.
         optim: Optimizer
             Optimizer instance that orchestrates training steps.
+        aggrg: Aggregator
+            Aggregator instance that is used to derive global model
+            updates from peer-wise local ones.
         train_data: Dataset
             Dataset instance wrapping the local training dataset.
         valid_data: Dataset or None, default=None
@@ -83,6 +90,7 @@ class TrainingManager:
         # arguments serve modularity; pylint: disable=too-many-arguments
         self.model = model
         self.optim = optim
+        self.aggrg = aggrg
         self.train_data = train_data
         self.valid_data = valid_data
         self.metrics = self._prepare_metrics(metrics)
@@ -176,11 +184,17 @@ class TrainingManager:
             *params,
         )
         effort = self.train_under_constraints(message.batches, *params)
-        # Compute model updates and collect auxiliary variables.
+        # Compute and preprocess model updates and collect auxiliary variables.
         self.logger.info("Packing local updates to be sent to the server.")
-        return messaging.TrainReply(
+        updates = self.aggrg.prepare_for_sharing(
             updates=message.weights - self.model.get_weights(trainable=True),
-            aux_var=self.optim.collect_aux_var(),
+            n_steps=int(effort["n_steps"]),
+        ).to_dict()
+        aux_var = self.optim.collect_aux_var()
+        # Wrap them as a TrainReply together with effort metadata and return.
+        return messaging.TrainReply(
+            updates=updates,
+            aux_var=aux_var,
             n_epoch=int(effort["n_epoch"]),
             n_steps=int(effort["n_steps"]),
             t_spent=round(effort["t_spent"], 3),

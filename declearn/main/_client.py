@@ -269,6 +269,7 @@ class FederatedClient:
         self.trainmanager = TrainingManager(
             model=message.model,
             optim=message.optim,
+            aggrg=message.aggrg,
             train_data=self.train_data,
             valid_data=self.valid_data,
             metrics=message.metrics,
@@ -343,6 +344,7 @@ class FederatedClient:
         self.trainmanager = DPTrainingManager(
             model=self.trainmanager.model,
             optim=self.trainmanager.optim,
+            aggrg=self.trainmanager.aggrg,
             train_data=self.trainmanager.train_data,
             valid_data=self.trainmanager.valid_data,
             metrics=self.trainmanager.metrics,

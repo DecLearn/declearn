@@ -249,6 +249,7 @@ class FederatedServer:
         message = messaging.InitRequest(
             model=self.model,
             optim=self.c_opt,
+            aggrg=self.aggrg,
             metrics=self.metrics.get_config()["metrics"],
             dpsgd=config.privacy is not None,
         )
@@ -476,11 +477,11 @@ class FederatedServer:
                 aux_var.setdefault(module, {})[client] = params
         self.optim.process_aux_var(aux_var)
         # Compute aggregated "gradients" (updates) and apply them to the model.
-        # revise: pass n_epoch / t_spent / ?
-        gradients = self.aggrg.aggregate(
-            {client: result.updates for client, result in results.items()},
-            {client: result.n_steps for client, result in results.items()},
+        updates = sum(
+            self.aggrg.updates_cls(**result.updates)
+            for result in results.values()
         )
+        gradients = self.aggrg.finalize_updates(updates)
         self.optim.apply_gradients(self.model, gradients)
 
     async def evaluation_round(
