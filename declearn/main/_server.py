@@ -40,6 +40,7 @@ from declearn.main.utils import (
 )
 from declearn.metrics import MetricInputType, MetricSet
 from declearn.model.api import Model, Vector
+from declearn.optimizer.modules import AuxVar
 from declearn.utils import deserialize_object, get_logger
 
 
@@ -442,22 +443,14 @@ class FederatedServer:
             TrainingConfig dataclass instance wrapping data-batching
             and computational effort constraints hyper-parameters.
         """
-        # Set up shared training parameters.
-        params = {
-            "round_i": round_i,
-            "weights": self.model.get_weights(trainable=True),
-            **train_cfg.message_params,
-        }  # type: Dict[str, Any]
-        messages = {}  # type: Dict[str, messaging.Message]
-        # Dispatch auxiliary variables (which may be client-specific).
         aux_var = self.optim.collect_aux_var()
-        for client in clients:
-            params["aux_var"] = {
-                key: val.get(client, val) for key, val in aux_var.items()
-            }
-            messages[client] = messaging.TrainRequest(**params)
-        # Send client-wise messages.
-        await self.netwk.send_messages(messages)
+        message = messaging.TrainRequest(
+            round_i=round_i,
+            weights=self.model.get_weights(trainable=True),
+            aux_var={key: val.to_dict() for key, val in aux_var.items()},
+            **train_cfg.message_params,
+        )
+        await self.netwk.broadcast_message(message, clients)
 
     def _conduct_global_update(
         self,
@@ -470,16 +463,15 @@ class FederatedServer:
         results: dict[str, TrainReply]
             Client-wise TrainReply message sent after a training round.
         """
-        # Reformat received auxiliary variables and pass them to the Optimizer.
-        aux_var = {}  # type: Dict[str, Dict[str, Dict[str, Any]]]
-        for client, result in results.items():
-            for module, params in result.aux_var.items():
-                aux_var.setdefault(module, {})[client] = params
+        # Unpack, aggregate and finally process optimizer auxiliary variables.
+        aux_var = {}  # type: Dict[str, AuxVar]
+        for msg in results.values():
+            for key, aux in self.optim.unpack_aux_var(msg.aux_var).items():
+                aux_var[key] = aux_var.get(key, 0) + aux
         self.optim.process_aux_var(aux_var)
         # Compute aggregated "gradients" (updates) and apply them to the model.
         updates = sum(
-            self.aggrg.updates_cls(**result.updates)
-            for result in results.values()
+            self.aggrg.updates_cls(**msg.updates) for msg in results.values()
         )
         gradients = self.aggrg.finalize_updates(updates)
         self.optim.apply_gradients(self.model, gradients)

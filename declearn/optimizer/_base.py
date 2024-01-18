@@ -367,6 +367,31 @@ class Optimizer:
                 )
             module.process_aux_var(auxv)
 
+    def unpack_aux_var(
+        self,
+        aux_var_dicts: Dict[str, Dict[str, Any]],
+    ) -> Dict[str, AuxVar]:
+        """Unpack dict-form auxiliary variables into 'AuxVar' instances."""
+        modules = {
+            (module.aux_name or module.name): module for module in self.modules
+        }
+        aux_var = {}  # type: Dict[str, AuxVar]
+        for name, aux_dict in aux_var_dicts.items():
+            module = modules.get(name, None)
+            if module is None:
+                raise KeyError(
+                    f"No module with name '{name}' is available to unpack "
+                    "auxiliary variables."
+                )
+            if module.auxvar_cls is None:
+                raise KeyError(
+                    "Received auxiliary variables under a name that matches "
+                    f"'{module.__class__}', but that class does not provide "
+                    "with an 'auxvar_cls' class to unpack the received data."
+                )
+            aux_var[name] = module.auxvar_cls(**aux_dict)
+        return aux_var
+
     def start_round(
         self,
     ) -> None:

@@ -175,7 +175,8 @@ class TrainingManager:
         # Unpack and apply model weights and optimizer auxiliary variables.
         self.logger.info("Applying server updates to local objects.")
         self.model.set_weights(message.weights, trainable=True)
-        self.optim.process_aux_var(message.aux_var)
+        aux_var = self.optim.unpack_aux_var(message.aux_var)
+        self.optim.process_aux_var(aux_var)
         self.optim.start_round()  # trigger loss regularizer's `on_round_start`
         # Train under instructed effort constraints.
         params = message.n_epoch, message.n_steps, message.timeout
@@ -194,7 +195,7 @@ class TrainingManager:
         # Wrap them as a TrainReply together with effort metadata and return.
         return messaging.TrainReply(
             updates=updates,
-            aux_var=aux_var,
+            aux_var={key: val.to_dict() for key, val in aux_var.items()},
             n_epoch=int(effort["n_epoch"]),
             n_steps=int(effort["n_steps"]),
             t_spent=round(effort["t_spent"], 3),
