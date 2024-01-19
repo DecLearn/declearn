@@ -20,13 +20,12 @@
 import dataclasses
 import json
 from abc import ABCMeta
-from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type, Union
+from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type
 
-import numpy as np
 from typing_extensions import Self  # future: import from typing (py >=3.11)
 
 from declearn.aggregator import Aggregator, ModelUpdates
-from declearn.metrics import MetricInputType
+from declearn.metrics import MetricInputType, MetricState
 from declearn.model.api import Model, Vector
 from declearn.optimizer import Optimizer
 from declearn.optimizer.modules import AuxVar
@@ -131,9 +130,15 @@ class EvaluationReply(Message):
     loss: float
     n_steps: int
     t_spent: float
-    metrics: Dict[
-        str, Dict[str, Union[float, np.ndarray]]
-    ] = dataclasses.field(default_factory=dict)
+    metrics: Dict[str, MetricState] = dataclasses.field(default_factory=dict)
+
+    def to_kwargs(
+        self,
+    ) -> Dict[str, Any]:
+        # Undo recursive dict-conversion of dataclasses.
+        kwargs = super().to_kwargs()
+        kwargs["metrics"] = self.metrics
+        return kwargs
 
 
 @dataclasses.dataclass

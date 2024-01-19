@@ -17,13 +17,14 @@
 
 """Iterative and federative classification evaluation metrics."""
 
-from typing import Any, ClassVar, Collection, Dict, Optional, Union
+import dataclasses
+from typing import Any, Collection, Dict, Optional, Union
 
 import numpy as np
 import sklearn  # type: ignore
 import sklearn.metrics  # type: ignore
 
-from declearn.metrics._api import Metric
+from declearn.metrics._api import Metric, MetricState
 from declearn.metrics._utils import safe_division
 
 __all__ = [
@@ -32,7 +33,17 @@ __all__ = [
 ]
 
 
-class BinaryAccuracyPrecisionRecall(Metric):
+@dataclasses.dataclass
+class BinaryConfmat(MetricState):
+    """Binary confusion matrix 'MetricState'."""
+
+    tpos: float = 0.0
+    tneg: float = 0.0
+    fpos: float = 0.0
+    fneg: float = 0.0
+
+
+class BinaryAccuracyPrecisionRecall(Metric[BinaryConfmat]):
     """Binary classification accuracy, precision and recall metrics.
 
     This metric applies to binary classifier, and computes the (opt.
@@ -58,7 +69,7 @@ class BinaryAccuracyPrecisionRecall(Metric):
         Confusion matrix of predictions. Values: [[TN, FP], [FN, TP]]
     """
 
-    name: ClassVar[str] = "binary-classif"
+    name = "binary-classif"
 
     def __init__(
         self,
@@ -78,22 +89,24 @@ class BinaryAccuracyPrecisionRecall(Metric):
         self.label = label
         super().__init__()
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(
+        self,
+    ) -> Dict[str, Any]:
         return {"thresh": self.thresh, "label": self.label}
 
-    def _build_states(
+    def build_initial_states(
         self,
-    ) -> Dict[str, Union[float, np.ndarray]]:
-        return {"tpos": 0.0, "tneg": 0.0, "fpos": 0.0, "fneg": 0.0}
+    ) -> BinaryConfmat:
+        return BinaryConfmat()
 
     def get_result(
         self,
     ) -> Dict[str, Union[float, np.ndarray]]:
         # Unpack state variables for code readability.
-        tpos = self._states["tpos"]  # type: float  # type: ignore
-        tneg = self._states["tneg"]  # type: float  # type: ignore
-        fpos = self._states["fpos"]  # type: float  # type: ignore
-        fneg = self._states["fneg"]  # type: float  # type: ignore
+        tpos = self._states.tpos
+        tneg = self._states.tneg
+        fpos = self._states.fpos
+        fneg = self._states.fneg
         # Compute metrics, catching division-by-zero errors (replace with 0.0).
         scores = {
             "accuracy": safe_division(tpos + tneg, tpos + tneg + fpos + fneg),
@@ -114,13 +127,32 @@ class BinaryAccuracyPrecisionRecall(Metric):
         pos = y_true.flatten() == self.label
         tru = (y_pred.flatten() >= self.thresh) == pos
         s_wght = np.ones_like(tru) if s_wght is None else s_wght.flatten()
-        self._states["tpos"] += float(sum(s_wght * (tru & pos)))
-        self._states["tneg"] += float(sum(s_wght * (tru & ~pos)))
-        self._states["fpos"] += float(sum(s_wght * ~(tru | pos)))
-        self._states["fneg"] += float(sum(s_wght * (~tru & pos)))
+        self._states.tpos += float(sum(s_wght * (tru & pos)))
+        self._states.tneg += float(sum(s_wght * (tru & ~pos)))
+        self._states.fpos += float(sum(s_wght * ~(tru | pos)))
+        self._states.fneg += float(sum(s_wght * (~tru & pos)))
 
 
-class MulticlassAccuracyPrecisionRecall(Metric):
+@dataclasses.dataclass
+class ClassifConfmat(MetricState):
+    """Multiclass confusion matrix 'MetricState'."""
+
+    confmat: np.ndarray
+
+    @staticmethod
+    def aggregate_confmat(
+        val_a: np.ndarray,
+        val_b: np.ndarray,
+    ) -> np.ndarray:
+        """Aggregate two confusion matrix arrays."""
+        if val_a.shape != val_b.shape:
+            raise ValueError(
+                "Cannot aggregate confusion matrices with distinct shapes."
+            )
+        return val_a + val_b
+
+
+class MulticlassAccuracyPrecisionRecall(Metric[ClassifConfmat]):
     """Multiclass classification accuracy, precision and recall metrics.
 
     This metric assumes that the evaluated classifier emits a score for
@@ -144,7 +176,7 @@ class MulticlassAccuracyPrecisionRecall(Metric):
         were predicted to belong to label j.
     """
 
-    name: ClassVar[str] = "multi-classif"
+    name = "multi-classif"
 
     def __init__(
         self,
@@ -163,22 +195,23 @@ class MulticlassAccuracyPrecisionRecall(Metric):
     def get_config(self) -> Dict[str, Any]:
         return {"labels": self.labels.tolist()}
 
-    def _build_states(
+    def build_initial_states(
         self,
-    ) -> Dict[str, Union[float, np.ndarray]]:
-        return {"confm": np.zeros((len(self.labels), len(self.labels)))}
+    ) -> ClassifConfmat:
+        matrix = np.zeros((len(self.labels), len(self.labels)))
+        return ClassifConfmat(matrix)
 
     def get_result(
         self,
     ) -> Dict[str, Union[float, np.ndarray]]:
         # Compute the metrics, silencing division-by-zero errors.
-        confm = self._states["confm"]  # type: np.ndarray  # type: ignore
-        diag = np.diag(confm)  # label-wise true positives
-        pred = confm.sum(axis=0)  # label-wise number of predictions
-        true = confm.sum(axis=1)  # label-wise number of labels (support)
+        confmat = self._states.confmat
+        diag = np.diag(confmat)  # label-wise true positives
+        pred = confmat.sum(axis=0)  # label-wise number of predictions
+        true = confmat.sum(axis=1)  # label-wise number of labels (support)
         with np.errstate(invalid="ignore"):
             scores = {
-                "accuracy": diag.sum() / confm.sum(),
+                "accuracy": diag.sum() / confmat.sum(),
                 "precision": diag / pred,
                 "recall": diag / true,
                 "f-score": 2 * diag / (pred + true),
@@ -186,7 +219,7 @@ class MulticlassAccuracyPrecisionRecall(Metric):
         # Convert NaNs resulting from zero-division to zero.
         scores = {k: np.nan_to_num(v, copy=False) for k, v in scores.items()}
         # Add a copy of the confusion matrix and return.
-        scores["confusion"] = confm.copy()
+        scores["confusion"] = confmat.copy()
         return scores
 
     def update(
@@ -213,6 +246,6 @@ class MulticlassAccuracyPrecisionRecall(Metric):
             y_pred = self.labels[y_pred.argmax(axis=1)]
         elif y_pred.ndim != 1:
             raise TypeError("Expected 1-d or 2-d y_pred array.")
-        self._states["confm"] += sklearn.metrics.confusion_matrix(
+        self._states.confmat += sklearn.metrics.confusion_matrix(
             y_true, y_pred, labels=self.labels, sample_weight=s_wght
         )

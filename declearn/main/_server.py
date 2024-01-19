@@ -39,6 +39,7 @@ from declearn.main.utils import (
     aggregate_clients_data_info,
 )
 from declearn.metrics import MetricInputType, MetricSet
+from declearn.metrics._mean import MeanState
 from declearn.model.api import Model, Vector
 from declearn.optimizer.modules import AuxVar
 from declearn.utils import deserialize_object, get_logger
@@ -567,16 +568,20 @@ class FederatedServer:
         loss = 0.0
         dvsr = 0.0
         self.metrics.reset()
+        agg_states = self.metrics.get_states()
         # Iteratively update the MetricSet and loss floats based on results.
         for client, reply in results.items():
             # Case when the client reported some metrics.
             if reply.metrics:
                 states = reply.metrics.copy()
-                # Update the global metrics based on the local ones.
+                # Deal with loss metric's aggregation.
                 s_loss = states.pop("loss")
-                loss += s_loss["current"]  # type: ignore
-                dvsr += s_loss["divisor"]  # type: ignore
-                self.metrics.agg_states(states)
+                assert isinstance(s_loss, MeanState)
+                loss += s_loss.num_sum
+                dvsr += s_loss.divisor
+                # Aggregate other metrics.
+                for key, val in states.items():
+                    agg_states[key] += val
             # Case when the client only reported the aggregated local loss.
             else:
                 self.logger.info(
@@ -585,6 +590,7 @@ class FederatedServer:
                 loss += reply.loss
                 dvsr += reply.n_steps
         # Compute the final results.
+        self.metrics.set_states(agg_states)
         metrics = self.metrics.get_result()
         loss = loss / dvsr
         return loss, metrics
@@ -618,16 +624,13 @@ class FederatedServer:
         )
         # Checkpoint the client-wise metrics (or at least their loss).
         # Use the same timestamp label as for global metrics and states.
-        local = MetricSet.from_config(self.metrics.get_config())
         for client, reply in results.items():
+            metrics = {"loss": reply.loss}
             if reply.metrics:
-                local.reset()
-                local.agg_states(reply.metrics)
-                metrics = local.get_result()
-            else:
-                metrics = {"loss": reply.loss}
+                self.metrics.set_states(reply.metrics)
+                metrics.update(self.metrics.get_result())
             self.ckptr.save_metrics(
-                metrics=local.get_result(),
+                metrics=metrics,
                 prefix=f"metrics_{client}",
                 append=bool(self._loss),
                 timestamp=timestamp,

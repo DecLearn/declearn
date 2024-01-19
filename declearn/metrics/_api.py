@@ -17,15 +17,16 @@
 
 """Iterative and federative evaluation metrics base class."""
 
+import abc
 import warnings
-from abc import ABCMeta, abstractmethod
 from copy import deepcopy
-from typing import Any, ClassVar, Dict, Optional, Union
+from typing import Any, ClassVar, Dict, Generic, Optional, TypeVar, Union
 
 import numpy as np
 from typing_extensions import Self  # future: import from typing (py >=3.11)
 
 from declearn.utils import (
+    Aggregate,
     access_registered,
     create_types_registry,
     register_type,
@@ -33,11 +34,21 @@ from declearn.utils import (
 
 __all__ = [
     "Metric",
+    "MetricState",
 ]
 
 
+class MetricState(Aggregate, register=False, metaclass=abc.ABCMeta):
+    """Abstract base class for Metrics intermediate aggregatable states."""
+
+    _group_key = "MetricState"
+
+
+MetricStateT = TypeVar("MetricStateT", bound=MetricState)
+
+
 @create_types_registry(name="Metric")
-class Metric(metaclass=ABCMeta):
+class Metric(Generic[MetricStateT], metaclass=abc.ABCMeta):
     """Abstract class defining an API to compute federative metrics.
 
     This class defines an API to instantiate stateful containers
@@ -63,10 +74,12 @@ class Metric(metaclass=ABCMeta):
     >>> metric_0.udpate(y_true_0, y_pred_0)
     >>> metric_1.update(y_true_1, y_pred_1)
     >>> # Gather and share metric states (aggregated information).
-    >>> states_0 = metric_0.get_states()  # metrics_0 is unaltered
-    >>> metric_1.agg_states(states_0)     # metrics_1 is updated
+    >>> states_0 = metric_0.get_states()  # metric_0 is unaltered
+    >>> states_1 = metric_1.get_states()  # metric_1 is unaltered
     >>> # Compute results that aggregate info from both clients.
-    >>> metric_1.get_result()
+    >>> states = states_0 + states_1
+    >>> metric_0.set_states(states)  # would work the same with metrics_1
+    >>> metric_0.get_result()
     ```
 
     Abstract
@@ -77,8 +90,8 @@ class Metric(metaclass=ABCMeta):
         Name identifier of the class (should be unique across existing
         Metric classes). Also used for automatic types-registration of
         the class (see `Inheritance` section below).
-    - _build_states() -> dict[str, (float | np.ndarray)]:
-        Build and return an ensemble of state variables.
+    - build_initial_states() -> MetricState:
+        Return the initial states for this Metric instance.
         This method is called to initialize the `_states` attribute,
         that should be used and updated by other abstract methods.
     - update(y_true: np.ndarray, y_pred: np.ndarray, s_wght: np.ndarray|None):
@@ -91,23 +104,14 @@ class Metric(metaclass=ABCMeta):
 
     Overridable
     -----------
-    Some methods may be overridden based on the concrete Metric's needs.
-    The most imporant one is the states-aggregation method:
-
-    - agg_states(states: dict[str, (float | np.ndarray)]:
-        Aggregate provided state variables into self ones.
-        By default, it expects input and internal states to have
-        similar specifications, and aggregates them by summation,
-        which might no be proper depending on the actual metric.
-
-    A pair of methods may be extended to cover non-`self._states`-contained
-    variables:
+    Some methods may be overridden based on the concrete Metric's needs:
 
     - reset():
         Reset the metric to its initial state.
-    - get_states() -> dict[str, (float | np.ndarray)]:
+    - get_states() -> MetricState:
         Return a copy of the current state variables.
-
+    - set_states(MetricState):
+        Replace current state variables with a copy of inputs.
 
     Finally, depending on the hyper-parameters defined by the subclass's
     `__init__`, one should adjust JSON-configuration-interfacing methods:
@@ -134,34 +138,25 @@ class Metric(metaclass=ABCMeta):
         self,
     ) -> None:
         """Instantiate the metric object."""
-        self._states = self._build_states()
+        self._states = self.build_initial_states()
 
-    @abstractmethod
-    def _build_states(
+    @abc.abstractmethod
+    def build_initial_states(
         self,
-    ) -> Dict[str, Union[float, np.ndarray]]:
-        """Build and return an ensemble of state variables.
-
-        The state variables stored in this dict are (by default)
-        sharable with other instances of this metric and may be
-        combined with the latter's through summation in order to
-        compute final metrics in a federated way.
-
-        Note that the update process may be altered by extending
-        or overridding the `agg_states` method.
+    ) -> MetricStateT:
+        """Return the initial states for this Metric instance.
 
         Returns
         -------
-        states: dict[str, float or numpy.ndarray]
-            Dict of initial states that are to be assigned as
-            `_states` private attribute.
+        states:
+            Initial internal states for this object, as a `MetricState`.
         """
 
-    @abstractmethod
+    @abc.abstractmethod
     def get_result(
         self,
     ) -> Dict[str, Union[float, np.ndarray]]:
-        """Compute the metric(s), based on the current state variables.
+        """Compute finalized metric(s), based on the current state variables.
 
         Returns
         -------
@@ -170,7 +165,7 @@ class Metric(metaclass=ABCMeta):
             unitary float scores or numpy arrays.
         """
 
-    @abstractmethod
+    @abc.abstractmethod
     def update(
         self,
         y_true: np.ndarray,
@@ -193,11 +188,11 @@ class Metric(metaclass=ABCMeta):
         self,
     ) -> None:
         """Reset the metric to its initial state."""
-        self._states = self._build_states()
+        self._states = self.build_initial_states()
 
     def get_states(
         self,
-    ) -> Dict[str, Union[float, np.ndarray]]:
+    ) -> MetricStateT:
         """Return a copy of the current state variables.
 
         This method is designed to expose and share partial results
@@ -206,17 +201,44 @@ class Metric(metaclass=ABCMeta):
 
         Returns
         -------
-        states: dict[str, float or numpy.ndarray]
-            Dict of states that may be fed to another instance of
-            this class via its `agg_states` method.
+        states:
+            Copy of current states, as a `MetricState` instance.
         """
         return deepcopy(self._states)
 
+    def set_states(
+        self,
+        states: MetricStateT,
+    ) -> None:
+        """Replace internal states with a copy of incoming ones.
+
+        Parameters
+        ----------
+        states:
+            Replacement states, as a compatible `MetricState` instance.
+
+        Raises
+        ------
+        TypeError
+            If `states` is of improper type.
+        """
+        if not isinstance(states, type(self._states)):
+            raise TypeError(
+                f"'{self.__class__.__name__}.set_states' expected "
+                f"'{type(self._states)}' inputs, got '{type(states)}'."
+            )
+        self._states = deepcopy(states)
+
     def agg_states(
         self,
-        states: Dict[str, Union[float, np.ndarray]],
+        states: MetricStateT,
     ) -> None:
         """Aggregate provided state variables into self ones.
+
+        This method is DEPRECATED as of DecLearn v2.4, in favor of
+        merely aggregating `MetricState` instances, using either
+        their `aggregate` method or the overloaded `+` operator.
+        It will be removed in DecLearn 2.6 and/or 3.0.
 
         This method is designed to aggregate results from multiple
         similar metrics objects into a single one before computing
@@ -224,34 +246,28 @@ class Metric(metaclass=ABCMeta):
 
         Parameters
         ----------
-        states: dict[str, float or numpy.ndarray]
-            Dict of states emitted by another instance of this class
+        states:
+            `MetricState` emitted by another instance of this class
             via its `get_states` method.
 
         Raises
         ------
-        KeyError
-            If any state variable is missing from `states`.
         TypeError
-            If any state variable is of unproper type.
-        ValueError
-            If any array state variable is of unproper shape.
+            If `states` is of improper type.
         """
-        final = {}  # type: Dict[str, Union[float, np.ndarray]]
-        # Iteratively compute sum-aggregated states, running sanity checks.
-        for name, own in self._states.items():
-            if name not in states:
-                raise KeyError(f"Missing required state variable: '{name}'.")
-            oth = states[name]
-            if not isinstance(oth, type(own)):
-                raise TypeError(f"Input state '{name}' is of unproper type.")
-            if isinstance(own, np.ndarray):
-                if own.shape != oth.shape:  # type: ignore
-                    msg = f"Input state '{name}' is of unproper shape."
-                    raise ValueError(msg)
-            final[name] = own + oth
-        # Assign the sum-aggregated states.
-        self._states = final
+        warnings.warn(
+            "'Metric.agg_states' was deprecated in DecLearn v2.4, in favor "
+            "of aggregating 'MetricState' instances directly, and setting "
+            "final aggregated states using 'Metric.set_state'. It will be "
+            "removed in DecLearn 2.6 and/or 3.0.",
+            DeprecationWarning,
+        )
+        if not isinstance(states, type(self._states)):
+            raise TypeError(
+                f"'{self.__class__.__name__}.set_states' expected "
+                f"'{type(self._states)}' inputs, got '{type(states)}'."
+            )
+        self._states += states
 
     def __init_subclass__(
         cls,
@@ -343,30 +359,5 @@ class Metric(metaclass=ABCMeta):
             raise ValueError(
                 "Improper shape for 's_wght': should be a 1-d array "
                 "of sample-wise positive scalar weights."
-            )
-        return s_wght
-
-    @staticmethod
-    def normalize_weights(  # pragma: no cover
-        s_wght: np.ndarray,
-    ) -> np.ndarray:
-        """Utility method to ensure weights sum to one.
-
-        Note that this method may or may not be used depending on
-        the actual `Metric` considered, and is merely provided as
-        a utility to metric developers.
-        """
-        warn = DeprecationWarning(
-            "'Metric.normalize_weights' is unfit for the iterative "
-            "nature of the metric-computation process. It will be "
-            "removed from the Metric API in declearn v3.0."
-        )
-        warnings.warn(warn)
-        if s_wght.sum():
-            s_wght /= s_wght.sum()
-        else:
-            raise ValueError(
-                "Weights provided sum to zero, please provide only "
-                "positive weights with at least one non-zero weight."
             )
         return s_wght

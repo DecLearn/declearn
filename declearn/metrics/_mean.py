@@ -17,12 +17,13 @@
 
 """Iterative and federative generic evaluation metrics."""
 
-from abc import ABCMeta, abstractmethod
-from typing import ClassVar, Dict, Optional, Union
+import abc
+import dataclasses
+from typing import Dict, Optional, Union
 
 import numpy as np
 
-from declearn.metrics._api import Metric
+from declearn.metrics._api import Metric, MetricState
 from declearn.metrics._utils import squeeze_into_identical_shapes
 
 __all__ = [
@@ -32,7 +33,15 @@ __all__ = [
 ]
 
 
-class MeanMetric(Metric, register=False, metaclass=ABCMeta):
+@dataclasses.dataclass
+class MeanState(MetricState):
+    """Generic 'MetricState' for average-based scalar metrics."""
+
+    num_sum: float = 0.0
+    divisor: float = 0.0
+
+
+class MeanMetric(Metric[MeanState], register=False, metaclass=abc.ABCMeta):
     """Generic mean-aggregation metric template.
 
     This abstract class implements a template for Metric classes
@@ -53,7 +62,12 @@ class MeanMetric(Metric, register=False, metaclass=ABCMeta):
         an average metric across all input batches.
     """
 
-    @abstractmethod
+    def build_initial_states(
+        self,
+    ) -> MeanState:
+        return MeanState()
+
+    @abc.abstractmethod
     def metric_func(
         self,
         y_true: np.ndarray,
@@ -78,18 +92,13 @@ class MeanMetric(Metric, register=False, metaclass=ABCMeta):
             Sample-wise metric value.
         """
 
-    def _build_states(
-        self,
-    ) -> Dict[str, Union[float, np.ndarray]]:
-        return {"current": 0.0, "divisor": 0.0}
-
     def get_result(
         self,
     ) -> Dict[str, Union[float, np.ndarray]]:
-        if self._states["divisor"] == 0:
+        if self._states.divisor == 0:
             return {self.name: 0.0}
-        result = self._states["current"] / self._states["divisor"]
-        return {self.name: float(result)}
+        result = self._states.num_sum / self._states.divisor
+        return {self.name: result}
 
     def update(
         self,
@@ -99,12 +108,12 @@ class MeanMetric(Metric, register=False, metaclass=ABCMeta):
     ) -> None:
         scores = self.metric_func(y_true, y_pred)
         if s_wght is None:
-            self._states["current"] += scores.sum()
-            self._states["divisor"] += len(y_pred)
+            self._states.num_sum += float(scores.sum())
+            self._states.divisor += len(y_pred)
         else:
             s_wght = self._prepare_sample_weights(s_wght, len(y_pred))
-            self._states["current"] += (s_wght * scores).sum()
-            self._states["divisor"] += np.sum(s_wght)
+            self._states.num_sum += float((s_wght * scores).sum())
+            self._states.divisor += float(np.sum(s_wght))
 
 
 class MeanAbsoluteError(MeanMetric):
@@ -122,7 +131,7 @@ class MeanAbsoluteError(MeanMetric):
         summed over channels for (>=2)-dimensional inputs).
     """
 
-    name: ClassVar[str] = "mae"
+    name = "mae"
 
     def metric_func(
         self,
@@ -152,7 +161,7 @@ class MeanSquaredError(MeanMetric):
         summed over channels for (>=2)-dimensional inputs).
     """
 
-    name: ClassVar[str] = "mse"
+    name = "mse"
 
     def metric_func(
         self,

@@ -17,11 +17,12 @@
 
 """Iterative and federative R-Squared evaluation metric."""
 
-from typing import ClassVar, Dict, Optional, Union
+import dataclasses
+from typing import Dict, Optional, Union
 
 import numpy as np
 
-from declearn.metrics._api import Metric
+from declearn.metrics._api import Metric, MetricState
 from declearn.metrics._utils import squeeze_into_identical_shapes
 
 __all__ = [
@@ -29,7 +30,17 @@ __all__ = [
 ]
 
 
-class RSquared(Metric):
+@dataclasses.dataclass
+class R2State(MetricState):
+    """MetricState subclass for RSquared computations."""
+
+    sum_of_squared_errors: float = 0.0
+    sum_of_squared_labels: float = 0.0
+    sum_of_labels: float = 0.0
+    sum_of_weights: float = 0.0
+
+
+class RSquared(Metric[R2State]):
     """R^2 (R-Squared, coefficient of determination) regression metric.
 
     This metric applies to a regression model, and computes the (opt.
@@ -76,31 +87,25 @@ class RSquared(Metric):
             $$
     """
 
-    name: ClassVar[str] = "r2"
+    name = "r2"
 
-    def _build_states(
+    def build_initial_states(
         self,
-    ) -> Dict[str, Union[float, np.ndarray]]:
-        return {
-            "sum_of_squared_errors": 0.0,
-            "sum_of_squared_labels": 0.0,
-            "sum_of_labels": 0.0,
-            "sum_of_weights": 0.0,
-        }
+    ) -> R2State:
+        return R2State()
 
     def get_result(
         self,
     ) -> Dict[str, Union[float, np.ndarray]]:
         # Case when no samples were seen: return 0. by convention.
-        if self._states["sum_of_weights"] == 0:
+        if self._states.sum_of_weights == 0:
             return {self.name: 0.0}
         # Compute the (weighted) total sum of squares.
         ss_tot = (  # wSSt = sum(w * y^2) - (sum(w * y))^2 / sum(w)
-            self._states["sum_of_squared_labels"]
-            - self._states["sum_of_labels"] ** 2
-            / self._states["sum_of_weights"]
+            self._states.sum_of_squared_labels
+            - self._states.sum_of_labels**2 / self._states.sum_of_weights
         )
-        ss_res = self._states["sum_of_squared_errors"]
+        ss_res = self._states.sum_of_squared_errors
         # Handle the edge case where SSt is null.
         if ss_tot == 0:
             return {self.name: 1.0 if ss_res == 0 else 0.0}
@@ -119,13 +124,13 @@ class RSquared(Metric):
         s_wght = self._prepare_sample_weights(s_wght, n_samples=len(y_pred))
         # Update the residual sum of squares. wSSr = sum(w * (y - p)^2)
         ss_res = (s_wght * self._sum_to_1d(y_true - y_pred) ** 2).sum()
-        self._states["sum_of_squared_errors"] += ss_res
+        self._states.sum_of_squared_errors += ss_res
         # Update states that compose the total sum of squares.
         # wSSt = sum(w * y^2) - (sum(w * y))^2 / sum(w)
         y_true = self._sum_to_1d(y_true)
-        self._states["sum_of_squared_labels"] += (s_wght * y_true**2).sum()
-        self._states["sum_of_labels"] += (s_wght * y_true).sum()
-        self._states["sum_of_weights"] += s_wght.sum()
+        self._states.sum_of_squared_labels += (s_wght * y_true**2).sum()
+        self._states.sum_of_labels += (s_wght * y_true).sum()
+        self._states.sum_of_weights += s_wght.sum()
 
     @staticmethod
     def _sum_to_1d(val: np.ndarray) -> np.ndarray:

@@ -18,7 +18,7 @@
 """Wrapper to run local training and evaluation rounds in a FL process."""
 
 import logging
-from typing import Any, ClassVar, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import tqdm
@@ -31,7 +31,10 @@ from declearn.main.utils._constraints import (
     ConstraintSet,
     TimeoutConstraint,
 )
-from declearn.metrics import MeanMetric, Metric, MetricInputType, MetricSet
+from declearn.metrics import (
+    # fmt: off
+    MeanMetric, Metric, MetricInputType, MetricSet, MetricState
+)
 from declearn.model.api import Model
 from declearn.optimizer import Optimizer
 from declearn.typing import Batch
@@ -126,7 +129,7 @@ class TrainingManager:
         class LossMetric(MeanMetric, register=False):
             """Ad hoc Metric wrapping a model's loss function."""
 
-            name: ClassVar[str] = "loss"
+            name = "loss"
 
             def metric_func(
                 self, y_true: np.ndarray, y_pred: np.ndarray
@@ -349,7 +352,7 @@ class TrainingManager:
         timeout: Optional[int] = None,
     ) -> Tuple[
         Dict[str, Union[float, np.ndarray]],
-        Dict[str, Dict[str, Union[float, np.ndarray]]],
+        Dict[str, MetricState],
         Dict[str, float],
     ]:
         """Run local loss computation under effort constraints.
