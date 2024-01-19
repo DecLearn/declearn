@@ -27,6 +27,7 @@ from typing_extensions import Self  # future: import from typing (py >=3.11)
 from declearn.model.api import Vector
 from declearn.utils import (
     access_types_mapping,
+    add_json_support,
     create_types_registry,
     register_type,
 )
@@ -47,11 +48,32 @@ class ModelUpdates:
     updates: Vector
     weights: Union[int, float]
 
+    def __init_subclass__(
+        cls,
+        register: bool = True,
+    ) -> None:
+        """Automatically add JSON support for subclasses."""
+        if register:
+            add_json_support(
+                cls,
+                pack=cls.to_dict,
+                unpack=cls.from_dict,
+                name=f"ModelUpdates>{cls.__name__}",
+            )
+
     def to_dict(
         self,
     ) -> Dict[str, Any]:
         """Return a JSON-serializable dict representation of this instance."""
         return dataclasses.asdict(self)
+
+    @classmethod
+    def from_dict(
+        cls,
+        data: Dict[str, Any],
+    ) -> Self:
+        """Instantiate a 'ModelUpdates' object from its dict representation."""
+        return cls(**data)
 
     def __add__(
         self,
@@ -117,6 +139,9 @@ class ModelUpdates:
         return self.__class__(**results)
 
 
+ModelUpdates.__init_subclass__()  # add JSON support for the base class
+
+
 ModelUpdatesT = TypeVar("ModelUpdatesT", bound=ModelUpdates)
 
 
@@ -142,13 +167,10 @@ class Aggregator(Generic[ModelUpdatesT], metaclass=abc.ABCMeta):
     The following class attributes and methods must be implemented
     by any non-abstract child class of `Aggregator`:
 
-    - name:
+    - name: str class attribute
         Name identifier of the class (should be unique across Aggregator
         classes). Also used for automatic type-registration of the class
         (see `Inheritance` section below).
-    - updates_cls:
-        Type of `ModelUpdates` on which this class is designed to operate.
-
     - prepare_for_sharing(updates: Vector, n_steps: int) -> ModelUpdates:
         Pre-process and package local model updates for aggregation.
     - finalize_updates(updates: ModelUpdates):
@@ -156,6 +178,8 @@ class Aggregator(Generic[ModelUpdatesT], metaclass=abc.ABCMeta):
 
     Overridable
     -----------
+    - updates_cls: type[ModelUpdates] class attribute
+        Type of 'ModelUpdates' data structure used by this Aggregator class.
     - get_config() -> Dict[str, Any]:
         Return a JSON-serializable configuration dict of an instance.
     - from_config(Dict[str, Any]) -> Aggregator:
@@ -174,7 +198,7 @@ class Aggregator(Generic[ModelUpdatesT], metaclass=abc.ABCMeta):
     """Name identifier of the class, unique across Aggregator classes."""
 
     updates_cls: ClassVar[Type[ModelUpdates]] = ModelUpdates
-    """Type of 'ModelUpdates' on which this class is designed to operate."""
+    """Type of 'ModelUpdates' data structure used by this Aggregator class."""
 
     def __init_subclass__(
         cls,

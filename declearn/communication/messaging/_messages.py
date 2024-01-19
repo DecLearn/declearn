@@ -25,10 +25,11 @@ from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type, Union
 import numpy as np
 from typing_extensions import Self  # future: import from typing (py >=3.11)
 
-from declearn.aggregator import Aggregator
+from declearn.aggregator import Aggregator, ModelUpdates
 from declearn.metrics import MetricInputType
 from declearn.model.api import Model, Vector
 from declearn.optimizer import Optimizer
+from declearn.optimizer.modules import AuxVar
 from declearn.utils import (
     deserialize_object,
     json_pack,
@@ -244,11 +245,17 @@ class TrainRequest(Message):
 
     round_i: int
     weights: Vector
-    aux_var: Dict[str, Dict[str, Any]]
+    aux_var: Dict[str, AuxVar]
     batches: Dict[str, Any]
     n_epoch: Optional[int] = None
     n_steps: Optional[int] = None
     timeout: Optional[int] = None
+
+    def to_kwargs(self) -> Dict[str, Any]:
+        # Undo recursive dict-conversion of dataclasses.
+        data = super().to_kwargs()
+        data["aux_var"] = self.aux_var
+        return data
 
 
 @dataclasses.dataclass
@@ -260,8 +267,15 @@ class TrainReply(Message):
     n_epoch: int
     n_steps: int
     t_spent: float
-    updates: Dict[str, Any]
-    aux_var: Dict[str, Dict[str, Any]]
+    updates: ModelUpdates
+    aux_var: Dict[str, AuxVar]
+
+    def to_kwargs(self) -> Dict[str, Any]:
+        # Undo recursive dict-conversion of dataclasses.
+        data = super().to_kwargs()
+        data["updates"] = self.updates
+        data["aux_var"] = self.aux_var
+        return data
 
 
 _MESSAGE_CLASSES = [

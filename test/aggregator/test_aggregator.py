@@ -22,7 +22,7 @@ from typing import Dict, Type
 
 import pytest
 
-from declearn.aggregator import Aggregator, list_aggregators
+from declearn.aggregator import Aggregator, ModelUpdates, list_aggregators
 from declearn.model.api import Vector
 from declearn.test_utils import (
     FrameworkType,
@@ -70,6 +70,7 @@ class TestAggregator:
         """
         aggregator = agg_cls()
         shared_upd = aggregator.prepare_for_sharing(updates["0"], n_steps=10)
+        assert issubclass(aggregator.updates_cls, ModelUpdates)
         assert isinstance(shared_upd, aggregator.updates_cls)
         assert_json_serializable_dict(shared_upd.to_dict())
         assert shared_upd == aggregator.updates_cls(**shared_upd.to_dict())

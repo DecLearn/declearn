@@ -443,11 +443,10 @@ class FederatedServer:
             TrainingConfig dataclass instance wrapping data-batching
             and computational effort constraints hyper-parameters.
         """
-        aux_var = self.optim.collect_aux_var()
         message = messaging.TrainRequest(
             round_i=round_i,
             weights=self.model.get_weights(trainable=True),
-            aux_var={key: val.to_dict() for key, val in aux_var.items()},
+            aux_var=self.optim.collect_aux_var(),
             **train_cfg.message_params,
         )
         await self.netwk.broadcast_message(message, clients)
@@ -466,13 +465,11 @@ class FederatedServer:
         # Unpack, aggregate and finally process optimizer auxiliary variables.
         aux_var = {}  # type: Dict[str, AuxVar]
         for msg in results.values():
-            for key, aux in self.optim.unpack_aux_var(msg.aux_var).items():
+            for key, aux in msg.aux_var.items():
                 aux_var[key] = aux_var.get(key, 0) + aux
         self.optim.process_aux_var(aux_var)
         # Compute aggregated "gradients" (updates) and apply them to the model.
-        updates = sum(
-            self.aggrg.updates_cls(**msg.updates) for msg in results.values()
-        )
+        updates = sum(msg.updates for msg in results.values())
         gradients = self.aggrg.finalize_updates(updates)
         self.optim.apply_gradients(self.model, gradients)
 

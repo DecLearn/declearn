@@ -27,6 +27,7 @@ from typing_extensions import Self  # future: import from typing (py >=3.11)
 from declearn.model.api import Vector
 from declearn.utils import (
     access_registered,
+    add_json_support,
     create_types_registry,
     register_type,
 )
@@ -44,11 +45,32 @@ T = TypeVar("T")
 class AuxVar(metaclass=abc.ABCMeta):
     """Abstract base class for OptiModule auxiliary variables."""
 
+    def __init_subclass__(
+        cls,
+        register: bool = True,
+    ) -> None:
+        """Automatically add JSON support for subclasses."""
+        if register:
+            add_json_support(
+                cls,
+                pack=cls.to_dict,
+                unpack=cls.from_dict,
+                name=f"AuxVar>{cls.__name__}",
+            )
+
     def to_dict(
         self,
     ) -> Dict[str, Any]:
         """Return a JSON-serializable dict representation of this instance."""
         return dataclasses.asdict(self)
+
+    @classmethod
+    def from_dict(
+        cls,
+        data: Dict[str, Any],
+    ) -> Self:
+        """Instantiate an 'AuxVar' object from its dict representation."""
+        return cls(**data)
 
     def __add__(
         self,
