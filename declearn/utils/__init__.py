@@ -92,6 +92,8 @@ Utils to set up and configure loggers:
 Miscellaneous
 -------------
 
+* [Aggregate][declearn.utils.Aggregate]:
+    Abstract base dataclass for cross-peers data aggregation containers.
 * [TomlConfig][declearn.utils.TomlConfig]:
     Abstract base class to define TOML-parsable configuration containers.
 * [dataclass_from_func][declearn.utils.dataclass_from_func]:
@@ -102,6 +104,7 @@ Miscellaneous
     Run coroutines concurrently within individual processes.
 """
 
+from ._aggregate import Aggregate
 from ._dataclass import (
     dataclass_from_func,
     dataclass_from_init,

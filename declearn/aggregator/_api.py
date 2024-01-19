@@ -26,8 +26,8 @@ from typing_extensions import Self  # future: import from typing (py >=3.11)
 
 from declearn.model.api import Vector
 from declearn.utils import (
+    Aggregate,
     access_types_mapping,
-    add_json_support,
     create_types_registry,
     register_type,
 )
@@ -42,104 +42,13 @@ T = TypeVar("T")
 
 
 @dataclasses.dataclass
-class ModelUpdates:
+class ModelUpdates(Aggregate, register=True):
     """Base dataclass for model updates' sharing and aggregation."""
 
     updates: Vector
     weights: Union[int, float]
 
-    def __init_subclass__(
-        cls,
-        register: bool = True,
-    ) -> None:
-        """Automatically add JSON support for subclasses."""
-        if register:
-            add_json_support(
-                cls,
-                pack=cls.to_dict,
-                unpack=cls.from_dict,
-                name=f"ModelUpdates>{cls.__name__}",
-            )
-
-    def to_dict(
-        self,
-    ) -> Dict[str, Any]:
-        """Return a JSON-serializable dict representation of this instance."""
-        return dataclasses.asdict(self)
-
-    @classmethod
-    def from_dict(
-        cls,
-        data: Dict[str, Any],
-    ) -> Self:
-        """Instantiate a 'ModelUpdates' object from its dict representation."""
-        return cls(**data)
-
-    def __add__(
-        self,
-        other: Any,
-    ) -> Self:
-        """Overload the sum operator to aggregate multiple instances."""
-        try:
-            return self.aggregate(other)
-        except TypeError:
-            return NotImplemented
-
-    def __radd__(
-        self,
-        other: Any,
-    ) -> Self:
-        """Enable `0 + ModelUpdates`, to support `sum(List[ModelUpdates])`."""
-        if isinstance(other, int) and not other:
-            return self
-        return NotImplemented
-
-    def aggregate(
-        self,
-        other: Self,
-    ) -> Self:
-        """Aggregate this with another instance of the same class.
-
-        Parameters
-        ----------
-        other:
-            Another instance of the same type as `self`.
-
-        Returns
-        -------
-        aggregated:
-            An instance of the same class containing aggregated values.
-
-        Raises
-        ------
-        TypeError
-            If `other` is of unproper type.
-        ValueError
-            If any field's aggregation fails.
-        """
-        if not isinstance(other, self.__class__):
-            raise TypeError(
-                f"'{self.__class__.__name__}.aggregate' received a wrongful "
-                f"'other'  argument: excepted same type, got '{type(other)}'."
-            )
-        # Run the fields' aggregation, wrapping any exception as ValueError.
-        try:
-            results = {
-                field.name: (
-                    getattr(self, field.name) + getattr(other, field.name)
-                )
-                for field in dataclasses.fields(self)
-            }
-        except Exception as exc:
-            raise ValueError(
-                "Exception encountered while aggregating two instances "
-                f"of '{self.__class__.__name__}': {repr(exc)}."
-            ) from exc
-        # If everything went right, return the resulting ModelUpdates.
-        return self.__class__(**results)
-
-
-ModelUpdates.__init_subclass__()  # add JSON support for the base class
+    _group_key = "ModelUpdates"
 
 
 ModelUpdatesT = TypeVar("ModelUpdatesT", bound=ModelUpdates)
