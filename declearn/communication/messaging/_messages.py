@@ -20,7 +20,7 @@
 import dataclasses
 import json
 from abc import ABCMeta
-from typing import Any, Dict, List, Optional, Tuple, Type, Union
+from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type, Union
 
 import numpy as np
 from typing_extensions import Self  # future: import from typing (py >=3.11)
@@ -61,11 +61,18 @@ __all__ = [
 class Message(metaclass=ABCMeta):
     """Base class to define declearn messages."""
 
-    typekey: str = dataclasses.field(init=False)
+    typekey: ClassVar[str]
+
+    def to_kwargs(self) -> Dict[str, Any]:
+        """Return a JSON-serializable dict representation of this message."""
+        # NOTE: override this method to serialize attributes
+        #       that are not handled by declearn.utils.json_unpack
+        return dataclasses.asdict(self)
 
     def to_string(self) -> str:
         """Convert the message to a JSON-serialized string."""
-        data = dataclasses.asdict(self)
+        data = self.to_kwargs()
+        data["typekey"] = self.typekey
         return json.dumps(data, default=json_pack)
 
     @classmethod
@@ -159,14 +166,14 @@ class InitRequest(Message):
     metrics: List[MetricInputType] = dataclasses.field(default_factory=list)
     dpsgd: bool = False
 
-    def to_string(self) -> str:
-        data = {"typekey": self.typekey}  # type: Dict[str, Any]
+    def to_kwargs(self) -> Dict[str, Any]:
+        data = {}  # type: Dict[str, Any]
         data["model"] = serialize_object(self.model, group="Model").to_dict()
         data["optim"] = self.optim.get_config()
         data["aggrg"] = serialize_object(self.aggrg, "Aggregator").to_dict()
         data["metrics"] = self.metrics
         data["dpsgd"] = self.dpsgd
-        return json.dumps(data, default=json_pack)
+        return data
 
     @classmethod
     def from_kwargs(cls, **kwargs: Any) -> Self:
@@ -184,6 +191,7 @@ class JoinRequest(Message):
 
     name: str
     data_info: Dict[str, Any]
+    version: Optional[str] = None
 
 
 @dataclasses.dataclass
