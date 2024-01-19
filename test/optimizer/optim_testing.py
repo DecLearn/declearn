@@ -57,13 +57,13 @@ class PluginTestBase:
         assert type(reg_a) is type(reg_b)
         assert reg_a.get_config() == reg_b.get_config()
 
-    def test_config(self, cls: Type[Plugin]) -> None:
+    def test_rebuild_from_config(self, cls: Type[Plugin]) -> None:
         """Test a plug-in class's (get|from)_config methods."""
         plugin = cls()
         cfg = plugin.get_config()
         self.assert_equivalent(plugin, cls.from_config(cfg))
 
-    def test_specs(self, cls: Type[Plugin]) -> None:
+    def test_rebuild_from_specs(self, cls: Type[Plugin]) -> None:
         """Test that a plug-in can be rebuilt using `from_specs`."""
         plugin = cls()
         base = (

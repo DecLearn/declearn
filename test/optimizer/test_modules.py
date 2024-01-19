@@ -39,7 +39,7 @@ from typing import Type
 
 import pytest
 from declearn.optimizer import list_optim_modules
-from declearn.optimizer.modules import NoiseModule, OptiModule
+from declearn.optimizer.modules import AuxVar, NoiseModule, OptiModule
 from declearn.test_utils import (
     FrameworkType,
     GradientsTestCase,
@@ -70,9 +70,9 @@ class OptiModuleTestSuite(PluginTestBase):
         module = cls()
         module.run(test_case.mock_gradient)
         aux_var = module.collect_aux_var()
-        assert (aux_var is None) or isinstance(aux_var, dict)
-        if isinstance(aux_var, dict):
-            assert_json_serializable_dict(aux_var)
+        assert (aux_var is None) or isinstance(aux_var, AuxVar)
+        if isinstance(aux_var, AuxVar):
+            assert_json_serializable_dict(aux_var.to_dict())
 
     def test_get_state_initial(self, cls: Type[OptiModule]) -> None:
         """Test an OptiModule's get_state method at instanciation."""

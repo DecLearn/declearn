@@ -17,10 +17,13 @@
 
 """Unit tests for Scaffold OptiModule subclasses."""
 
+from unittest import mock
 
 import pytest
 from declearn.model.api import Vector
 from declearn.optimizer.modules import (
+    AuxVar,
+    ScaffoldAuxVar,
     ScaffoldClientModule,
     ScaffoldServerModule,
 )
@@ -34,88 +37,164 @@ def fixture_mock_gradients(framework: FrameworkType) -> Vector:
     return test_case.mock_gradient
 
 
-def test_scaffold_client(mock_gradients: Vector) -> None:
-    """Conduct a series of co-dependent unit tests on ScaffoldClientModule."""
-    module = ScaffoldClientModule()
-    assert module.delta == 0.0
-    # Test that initial aux_var collection raises a warning and returns 0.
-    with pytest.warns(RuntimeWarning):
+class TestScaffoldClient:
+    """Unit tests for 'ScaffoldClientModule'."""
+
+    def test_initial_values(self) -> None:
+        """Test that at first, a Scaffold module has zero-valued states."""
+        module = ScaffoldClientModule()
+        assert module.state == 0.0
+        assert module.sglob == 0.0
+        assert module.delta == 0.0
+
+    def test_initial_auxvar_collection(self) -> None:
+        """Test that initial aux_var collection warns and returns None."""
+        module = ScaffoldClientModule()
+        with pytest.warns(RuntimeWarning):
+            aux_var = module.collect_aux_var()
+        assert aux_var is None
+
+    def test_first_run(self, mock_gradients: Vector) -> None:
+        """Test that the first run works properly."""
+        module = ScaffoldClientModule()
+        # Test that there is no correction due to zero-valued states.
+        output = module.run(mock_gradients)
+        assert output == mock_gradients
+
+    def test_auxvar_collection(self, mock_gradients: Vector) -> None:
+        """Test that auxiliary variables collection works as expected."""
+        module = ScaffoldClientModule()
+        module.run(mock_gradients)
         aux_var = module.collect_aux_var()
-    assert aux_var == {"state": 0.0}
-    # Test run correctness (no correction at state 0).
-    output = module.run(mock_gradients)
-    assert output == mock_gradients
-    # Test aux_var collection after run.
-    aux_var = module.collect_aux_var()
-    assert aux_var == {"state": mock_gradients}
-    # Test mock aux_var processing (as though server-emitted).
-    with pytest.raises(KeyError):
-        module.process_aux_var({})
-    module.process_aux_var({"delta": mock_gradients})
-    assert module.delta == mock_gradients
-    # Test run correctness (with correction).
-    zeros = mock_gradients - mock_gradients
-    assert module.run(mock_gradients) == zeros
+        assert isinstance(aux_var, ScaffoldAuxVar)
+        assert aux_var.delta == mock_gradients
+        assert aux_var.state is None
+        assert aux_var.clients == {module.uuid}
+
+    def test_auxvar_processing_wrong_type(self) -> None:
+        """Test 'process_aux_var' with improper type inputs."""
+        module = ScaffoldClientModule()
+        aux_var = mock.create_autospec(AuxVar, instance=True)
+        with pytest.raises(TypeError):
+            module.process_aux_var(aux_var)  # type: ignore
+
+    def test_auxvar_processing_wrong_field(self) -> None:
+        """Test 'process_aux_var' with client-like 'ScaffoldAuxVar'."""
+        module = ScaffoldClientModule()
+        with pytest.raises(KeyError):
+            module.process_aux_var(ScaffoldAuxVar(delta=0.0))
+
+    def test_process_aux_var(self, mock_gradients: Vector) -> None:
+        """Test 'process_aux_var' with valid inputs, and its consequences."""
+        module = ScaffoldClientModule()
+        # Test that auxiliary variables processing updates correction.
+        assert module.delta == module.sglob == 0.0
+        module.process_aux_var(ScaffoldAuxVar(state=mock_gradients))
+        assert module.sglob == mock_gradients
+        assert module.delta == 0.0 - mock_gradients
+
+    def test_run_with_correction(self, mock_gradients: Vector) -> None:
+        """Test that the correction term is correctly applied."""
+        module = ScaffoldClientModule()
+        module.delta = mock_gradients  # forcefully overload
+        zeros = mock_gradients - mock_gradients
+        assert module.run(mock_gradients) == zeros
 
 
-def test_scaffold_server(mock_gradients: Vector) -> None:
-    """Conduct a series of co-dependent unit tests on ScaffoldServerModule."""
-    module = ScaffoldServerModule()
-    assert module.state == 0.0
-    # Test initial aux_var collection.
-    aux_var = module.collect_aux_var()
-    assert not aux_var
-    # Test mock aux_var processing (as though clients-emitted).
-    with pytest.raises(KeyError):
-        module.process_aux_var({"client": {"lorem": "ipsum"}})
-    with pytest.raises(TypeError):
-        module.process_aux_var({"client": {"state": [0.0]}})
-    module.process_aux_var(
-        {str(i): {"state": mock_gradients} for i in range(5)}
-    )
-    assert module.s_loc == {str(i): mock_gradients for i in range(5)}
-    assert isinstance(module.state, type(mock_gradients))
-    # Take numerical precision issues into account when checking values.
-    mock_unprecise = 5 * mock_gradients / 5
-    assert module.state == mock_unprecise
-    # Test run correctness (no correction as per algorithm).
-    assert module.run(mock_gradients) == mock_gradients
-    # Test aux_var collection after a round.
-    zeros = mock_gradients - mock_unprecise
-    aux_var = module.collect_aux_var()
-    assert aux_var == {str(i): {"delta": zeros} for i in range(5)}
+class TestScaffoldServer:
+    """Unit tests for 'ScaffoldServerModule'."""
+
+    def test_initial_values(self) -> None:
+        """Test that at first, a Scaffold module has zero-valued states."""
+        module = ScaffoldServerModule()
+        assert module.s_state == 0.0
+        assert not module.clients
+
+    def test_initial_auxvar_collection(self) -> None:
+        """Test that initial aux_var collection returns expected values."""
+        module = ScaffoldServerModule()
+        aux_var = module.collect_aux_var()
+        assert isinstance(aux_var, ScaffoldAuxVar)
+        assert aux_var.state == 0.0
+        assert aux_var.delta is None
+        assert not aux_var.clients
+
+    def test_auxvar_processing_wrong_type(self) -> None:
+        """Test 'process_aux_var' with improper type inputs."""
+        module = ScaffoldServerModule()
+        aux_var = mock.create_autospec(AuxVar, instance=True)
+        with pytest.raises(TypeError):
+            module.process_aux_var(aux_var)  # type: ignore
+
+    def test_auxvar_processing_wrong_field(self) -> None:
+        """Test 'process_aux_var' with server-like 'ScaffoldAuxVar'."""
+        module = ScaffoldServerModule()
+        with pytest.raises(KeyError):
+            module.process_aux_var(ScaffoldAuxVar(state=0.0))
+
+    def test_process_aux_var(self, mock_gradients: Vector) -> None:
+        """Test 'process_aux_var' with valid inputs, and its consequences."""
+        module = ScaffoldServerModule()
+        # Test when processing initial auxiliary variables.
+        aux_var = ScaffoldAuxVar(
+            delta=mock_gradients,
+            clients={"uuid0", "uuid1"},
+        )
+        module.process_aux_var(aux_var)
+        assert module.s_state == aux_var.delta
+        assert module.clients == aux_var.clients
+        # Test when processing a second set of auxiliary variables.
+        aux_var = ScaffoldAuxVar(
+            delta=mock_gradients,
+            clients={"uuid0", "uuid2"},
+        )
+        module.process_aux_var(aux_var)
+        assert module.s_state == aux_var.delta + aux_var.delta
+        assert module.clients == {"uuid0", "uuid1", "uuid2"}
+
+    def test_run(self, mock_gradients: Vector) -> None:
+        """Test that 'run' leaves inputs as-is."""
+        module = ScaffoldServerModule()
+        module.s_state = mock_gradients
+        vector = mock.create_autospec(Vector, instance=True)
+        assert module.run(vector) is vector
+
+    def test_collect_aux_var_initialized(self, mock_gradients: Vector) -> None:
+        """Test 'collect_aux_var' after the module is initialized."""
+        module = ScaffoldServerModule()
+        module.s_state = mock_gradients
+        module.clients = {"uuid0", "uuid1"}
+        aux_var = module.collect_aux_var()
+        assert isinstance(aux_var, ScaffoldAuxVar)
+        assert aux_var.state == mock_gradients / 2
+        assert aux_var.delta is None
+        assert not aux_var.clients
 
 
-@pytest.mark.parametrize(
-    "client_aware", [True, False], ids=["ClientAware", "ClientBlind"]
-)
-def test_scaffold_routine(client_aware: bool, mock_gradients: Vector) -> None:
+def test_scaffold_routine(mock_gradients: Vector) -> None:
     """Conduct a mock client/server SCAFFOLD training routine.
 
     This test does not verify computations' correctness, but
     rather the formal coherence of client/server exchanges.
-
-    Based on `client_aware`, the server may or not know the
-    list of clients in advance.
     """
     # Instantiate 10 clients and a server.
     clients = {f"client_{i}": ScaffoldClientModule() for i in range(10)}
-    server = ScaffoldServerModule(list(clients) if client_aware else None)
+    server = ScaffoldServerModule()
     # Run two training rounds.
     for rstep in range(2):
-        # Emit and communicate initial states from server to clients.
-        shared = server.collect_aux_var()
-        assert shared is not None
-        for client, aux_var in shared.items():
+        # Emit and communicate initial states from the server to clients.
+        aux_var = server.collect_aux_var()
+        for client in clients:
             clients[client].process_aux_var(aux_var)
         # Sample 5 participating clients. Have then run 3 training steps.
         participants = [f"client_{i}" for i in range(rstep, 10, 2)]
         for client in participants:
             for _ in range(3):
                 clients[client].run(mock_gradients)
-        # Emit, communicate and process state updates from clients to server.
-        shared = {
-            client: clients[client].collect_aux_var()
-            for client in participants
-        }
-        server.process_aux_var(shared)
+        # Emit, aggregate and process state updates from clients to server.
+        clients_aux_var = [
+            clients[client].collect_aux_var() for client in participants
+        ]
+        assert all(isinstance(x, ScaffoldAuxVar) for x in clients_aux_var)
+        aux_var = sum(clients_aux_var)  # type: ignore
+        server.process_aux_var(aux_var)
