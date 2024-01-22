@@ -58,7 +58,7 @@ def test_case_fixture(
             inputs["y_pred"] = np.array(["a", "b", "c"])[inputs["y_pred"]]
     # Declare the asociated expected metric states and results.
     confmt = np.array([[2.0, 1.0, 0.0], [0.0, 1.0, 0.0], [1.0, 0.0, 1.0]])
-    states = {"confm": confmt}
+    states = {"confmat": confmt}
     scores = {
         "accuracy": 2 / 3,
         "precision": np.array([2 / 3, 1 / 2, 1.0]),
@@ -67,9 +67,9 @@ def test_case_fixture(
         "confusion": confmt,
     }
     # Compute expected values of aggregated states and scores.
-    agg_states = {"confm": 2 * confmt}
+    agg_states = {"confmat": 2 * confmt}
     agg_scores = scores.copy()
-    agg_scores["confusion"] = agg_states["confm"]
+    agg_scores["confusion"] = agg_states["confmat"]
     # Wrap it all up into a MetricTestCase container.
     metric = MulticlassAccuracyPrecisionRecall(
         labels=["a", "b", "c"] if use_lnames else [0, 1, 2]  # type: ignore
@@ -84,6 +84,8 @@ def test_case_fixture(
 class TestMulticlassAccuracyPrecisionRecall(MetricTestSuite):
     """Unit tests for `MulticlassAccuracyPrecisionRecall`."""
 
-    def test_squeeze(self, test_case: MetricTestCase) -> None:
+    def test_update_with_squeezable_inputs(
+        self, test_case: MetricTestCase
+    ) -> None:
         with pytest.raises((AssertionError, TypeError)):
-            super().test_squeeze(test_case)
+            super().test_update_with_squeezable_inputs(test_case)

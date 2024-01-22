@@ -62,6 +62,8 @@ class MeanMetric(Metric[MeanState], register=False, metaclass=abc.ABCMeta):
         an average metric across all input batches.
     """
 
+    state_cls = MeanState
+
     def build_initial_states(
         self,
     ) -> MeanState:

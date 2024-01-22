@@ -166,6 +166,7 @@ class BinaryRocAUC(Metric[AurocState]):
     """
 
     name = "binary-roc"
+    state_cls = AurocState
 
     def __init__(
         self,
@@ -249,7 +250,7 @@ class BinaryRocAUC(Metric[AurocState]):
         return {
             "tpr": tpr,
             "fpr": fpr,
-            "thr": self._states.thresh[::-1],
+            "thresh": self._states.thresh[::-1],
             "roc_auc": auc,
         }
 
@@ -285,3 +286,19 @@ class BinaryRocAUC(Metric[AurocState]):
         )
         # Aggregate these scores into the retained states.
         self._states += states
+
+    def set_states(
+        self,
+        states: AurocState,
+    ) -> None:
+        # Prevent bounded instances from assigning unmatching inputs.
+        if self.bound and isinstance(states, AurocState):
+            if not (
+                (len(self._states.thresh) == len(states.thresh))
+                and np.all(self._states.thresh == states.thresh)
+            ):
+                raise ValueError(
+                    f"Cannot assign '{self.__class__.__name__}' states with "
+                    "unmatching thresholds to an instance with bounded ones."
+                )
+        return super().set_states(states)

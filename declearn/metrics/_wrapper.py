@@ -217,7 +217,7 @@ class MetricSet:
 
     def agg_states(
         self,
-        states: Dict[str, Dict[str, Union[float, np.ndarray]]],
+        states: Dict[str, MetricState],
     ) -> None:
         """Aggregate provided state variables into self ones.
 

@@ -70,6 +70,7 @@ class BinaryAccuracyPrecisionRecall(Metric[BinaryConfmat]):
     """
 
     name = "binary-classif"
+    state_cls = BinaryConfmat
 
     def __init__(
         self,
@@ -177,6 +178,7 @@ class MulticlassAccuracyPrecisionRecall(Metric[ClassifConfmat]):
     """
 
     name = "multi-classif"
+    state_cls = ClassifConfmat
 
     def __init__(
         self,

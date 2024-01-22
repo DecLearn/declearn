@@ -20,7 +20,7 @@
 import abc
 import warnings
 from copy import deepcopy
-from typing import Any, ClassVar, Dict, Generic, Optional, TypeVar, Union
+from typing import Any, ClassVar, Dict, Generic, Optional, Type, TypeVar, Union
 
 import numpy as np
 from typing_extensions import Self  # future: import from typing (py >=3.11)
@@ -131,8 +131,11 @@ class Metric(Generic[MetricStateT], metaclass=abc.ABCMeta):
     See `declearn.utils.register_type` for details on types registration.
     """
 
-    name: ClassVar[str] = NotImplemented
+    name: ClassVar[str]
     """Name identifier of the class, unique across Metric classes."""
+
+    state_cls: ClassVar[Type[MetricState]]
+    """Type of 'MetricState' data structure used by this 'Metric' class."""
 
     def __init__(
         self,
@@ -222,12 +225,12 @@ class Metric(Generic[MetricStateT], metaclass=abc.ABCMeta):
         TypeError
             If `states` is of improper type.
         """
-        if not isinstance(states, type(self._states)):
+        if not isinstance(states, self.state_cls):
             raise TypeError(
                 f"'{self.__class__.__name__}.set_states' expected "
-                f"'{type(self._states)}' inputs, got '{type(states)}'."
+                f"'{self.state_cls}' inputs, got '{type(states)}'."
             )
-        self._states = deepcopy(states)
+        self._states = deepcopy(states)  # type: ignore
 
     def agg_states(
         self,
@@ -262,12 +265,12 @@ class Metric(Generic[MetricStateT], metaclass=abc.ABCMeta):
             "removed in DecLearn 2.6 and/or 3.0.",
             DeprecationWarning,
         )
-        if not isinstance(states, type(self._states)):
+        if not isinstance(states, self.state_cls):
             raise TypeError(
                 f"'{self.__class__.__name__}.set_states' expected "
-                f"'{type(self._states)}' inputs, got '{type(states)}'."
+                f"'{self.state_cls}' inputs, got '{type(states)}'."
             )
-        self._states += states
+        self.set_states(self._states + states)
 
     def __init_subclass__(
         cls,

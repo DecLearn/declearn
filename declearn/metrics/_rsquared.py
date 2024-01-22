@@ -88,6 +88,7 @@ class RSquared(Metric[R2State]):
     """
 
     name = "r2"
+    state_cls = R2State
 
     def build_initial_states(
         self,
