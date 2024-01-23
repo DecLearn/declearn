@@ -18,7 +18,7 @@
 """Iterative and federative ROC AUC evaluation metrics."""
 
 import dataclasses
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any, Dict, Optional, Tuple, Type, Union
 
 import numpy as np
 import sklearn  # type: ignore
@@ -34,7 +34,31 @@ __all__ = [
 
 @dataclasses.dataclass
 class AurocState(MetricState):
-    """Dataclass for Binary AUROC metric states."""
+    """Dataclass for Binary AUROC metric states with fixed thresholds."""
+
+    tpos: np.ndarray
+    tneg: np.ndarray
+    fpos: np.ndarray
+    fneg: np.ndarray
+    thresh: np.ndarray
+
+    @staticmethod
+    def aggregate_thresh(
+        val_a: np.ndarray,
+        val_b: np.ndarray,
+    ) -> np.ndarray:
+        """Raise if thresholds differ, otherwise return them."""
+        if (len(val_a) != len(val_b)) or np.any(val_a != val_b):
+            raise ValueError(
+                "Cannot aggregate AUROC states with distinct thresholds. "
+                "To do so, use `AurocStateUnbound` containers."
+            )
+        return val_a
+
+
+@dataclasses.dataclass
+class AurocStateUnbound(AurocState):
+    """Dataclass for Binary AUROC metric states with adaptive thresholds."""
 
     tpos: np.ndarray
     tneg: np.ndarray
@@ -47,7 +71,7 @@ class AurocState(MetricState):
         other: Self,
     ) -> Self:
         """Aggregate two binary AUROC metric states."""
-        if not isinstance(other, self.__class__):
+        if not isinstance(other, AurocState):
             raise TypeError(
                 f"'{self.__class__.__name__}.aggregate' expected a similar "
                 f"type instance as input, received '{type(other)}'."
@@ -218,11 +242,16 @@ class BinaryRocAUC(Metric[AurocState]):
     def build_initial_states(
         self,
     ) -> AurocState:
-        bounds = (0, 1) if self.bound is None else self.bound
+        if self.bound is None:
+            bounds = (0.0, 1.0)
+            aggcls = AurocStateUnbound  # type: Type[AurocState]
+        else:
+            bounds = self.bound
+            aggcls = AurocState
         thresh = self._build_thresholds(*bounds)
         names = ("tpos", "tneg", "fpos", "fneg")
         states = {key: np.zeros_like(thresh) for key in names}
-        return AurocState(**states, thresh=thresh)
+        return aggcls(**states, thresh=thresh)
 
     def _build_thresholds(
         self,
@@ -267,6 +296,9 @@ class BinaryRocAUC(Metric[AurocState]):
                 min(y_pred.min(), thresh[0]),
                 max(y_pred.max(), thresh[-1]),
             )
+            aggcls = AurocStateUnbound  # type: Type[AurocState]
+        else:
+            aggcls = AurocState
         # Adjust inputs' shape if needed.
         y_pred = y_pred.reshape((-1, 1))
         y_true = y_true.reshape((-1, 1))
@@ -277,7 +309,7 @@ class BinaryRocAUC(Metric[AurocState]):
         pos = y_true == self.label
         tru = (y_pred >= thresh) == pos
         # Aggregate the former into threshold-wise TP/TN/FP/FN scores.
-        states = AurocState(
+        states = aggcls(
             tpos=(s_wght * (tru & pos)).sum(axis=0),
             tneg=(s_wght * (tru & ~pos)).sum(axis=0),
             fpos=(s_wght * ~(tru | pos)).sum(axis=0),
@@ -292,13 +324,19 @@ class BinaryRocAUC(Metric[AurocState]):
         states: AurocState,
     ) -> None:
         # Prevent bounded instances from assigning unmatching inputs.
-        if self.bound and isinstance(states, AurocState):
+        if self.bound:
+            if isinstance(states, AurocStateUnbound):
+                states = AurocState.from_dict(states.to_dict())
             if not (
                 (len(self._states.thresh) == len(states.thresh))
                 and np.all(self._states.thresh == states.thresh)
             ):
-                raise ValueError(
+                raise TypeError(
                     f"Cannot assign '{self.__class__.__name__}' states with "
                     "unmatching thresholds to an instance with bounded ones."
                 )
+        # Prevent unbounded instances from switching to bouded states.
+        elif self.bound is None and not isinstance(states, AurocStateUnbound):
+            states = AurocStateUnbound.from_dict(states.to_dict())
+        # Delegate assignment to parent call (that raises on wrong type).
         return super().set_states(states)

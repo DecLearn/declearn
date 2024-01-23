@@ -196,14 +196,28 @@ class TestBinaryRocAUC(MetricTestSuite):
         metbis.update(**test_case.inputs)
         # Test that bound into bound fails as boundaries differ.
         if metric.bound:
-            with pytest.raises(ValueError):
+            with pytest.raises(TypeError):
                 metric.set_states(metbis.get_states())
-            with pytest.raises(ValueError):
+            with pytest.raises(TypeError):
                 metbis.set_states(metric.get_states())
-        # Test that aggregation works otherwise, with thresholds being updated.
         else:
-            metric.set_states(metric.get_states() + metbis.get_states())
+            # Gather states from both metrics.
+            unbound = metric.get_states()
+            bounded = metbis.get_states()
+            assert type(bounded)
+            # Test that bound + unbound fails, as it would change type.
+            with pytest.raises(ValueError):
+                bounded + unbound  # pylint: disable=pointless-statement
+            # Test that assignment of unbound states into bounded metric fails.
+            with pytest.raises(TypeError):
+                metbis.set_states(unbound)
+            # Test that unbound + bound works, with thresholds being updated.
+            aggregated = unbound + bounded
+            metric.set_states(aggregated)
             assert metric.bound is None
             thresh = metric.get_states().thresh
-            thrbis = metbis.get_states().thresh
+            thrbis = unbound.thresh
             assert all(val in thresh for val in thrbis)
+            # Test that assignment of bounded into unbound metric works.
+            metric.set_states(bounded)
+            assert isinstance(metric.get_states(), type(unbound))
