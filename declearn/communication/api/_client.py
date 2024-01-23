@@ -22,6 +22,7 @@ import types
 from abc import ABCMeta, abstractmethod
 from typing import Any, ClassVar, Dict, Optional, Type, Union
 
+from declearn import __version__
 from declearn.communication.messaging import (
     Empty,
     Error,
@@ -188,7 +189,8 @@ class NetworkClient(metaclass=ABCMeta):
         TypeError
             If the server does not return a JoinReply message.
         """
-        reply = await self._send_message(JoinRequest(self.name, data_info))
+        query = JoinRequest(self.name, data_info, version=__version__)
+        reply = await self._send_message(query)
         # Case when a JoinReply was received.
         if isinstance(reply, JoinReply):
             self.logger.info(

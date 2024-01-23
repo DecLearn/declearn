@@ -52,6 +52,8 @@ The package is organized into the following submodules:
     Shared utils used (extensively) across all of declearn.
 """
 
+__version__ = "2.3.1"
+
 from . import (
     aggregator,
     communication,
@@ -64,5 +66,3 @@ from . import (
     typing,
     utils,
 )
-
-__version__ = "2.3.1"
