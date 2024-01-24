@@ -21,15 +21,22 @@ This module implements primitives and controllers to conduct secure
 aggregation of values using a homomorphic summation algorithm from
 Marc Joye & Benoît Libert published in 2013 [1].
 
+Controllers
+-----------
+
+* [JoyeLibertEncrypter][declearn.secagg.joye_libert.JoyeLibertEncrypter]:
+    Controller for the encryption of values that need homomorphic summation.
+
+
 Primitives
 ----------
 
 * [DEFAULT_BIPRIME][declearn.secagg.joye_libert.DEFAULT_BIPRIME]:
     Default Biprime value used as modulus in Joye-Libert functions.
-* [encrypt][declearn.secagg.joye_libert.encrypt]:
-    Apply Joye-Libert encryption to an integer value.
 * [decrypt_sum][declearn.secagg.joye_libert.decrypt_sum]:
     Apply Joye-Libert decryption to an encrypted sum of private values.
+* [encrypt][declearn.secagg.joye_libert.encrypt]:
+    Apply Joye-Libert encryption to an integer value.
  * [sum_encrypted][declearn.secagg.joye_libert.sum_encrypted]:
     Apply homomorphic summation to some Joye-Libert encrypted values.
 
@@ -43,7 +50,8 @@ References
 
 from ._joye_libert import (
     DEFAULT_BIPRIME,
-    encrypt,
     decrypt_sum,
+    encrypt,
     sum_encrypted,
 )
+from ._encrypt import JoyeLibertEncrypter
