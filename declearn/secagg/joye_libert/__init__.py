@@ -17,16 +17,33 @@
 
 """Joye-Libert homomorphic summation tools.
 
+This module implements primitives and controllers to conduct secure
+aggregation of values using a homomorphic summation algorithm from
+Marc Joye & Benoît Libert published in 2013 [1].
+
+Primitives
+----------
+
 * [DEFAULT_BIPRIME][declearn.secagg.joye_libert.DEFAULT_BIPRIME]:
     Default Biprime value used as modulus in Joye-Libert functions.
 * [encrypt][declearn.secagg.joye_libert.encrypt]:
     Apply Joye-Libert encryption to an integer value.
-* [sum_decrypt][declearn.secagg.joye_libert.sum_decrypt]:
-    Apply Joye-Libert aggregate decryption of a list of encrypted integers.
+* [decrypt_sum][declearn.secagg.joye_libert.decrypt_sum]:
+    Apply Joye-Libert decryption to an encrypted sum of private values.
+ * [sum_encrypted][declearn.secagg.joye_libert.sum_encrypted]:
+    Apply homomorphic summation to some Joye-Libert encrypted values.
+
+References
+----------
+[1] Joye & Libert, 2013.
+    A Scalable Scheme for Privacy-Preserving Aggregation
+    of Time-Series Data.
+    https://marcjoye.github.io/papers/JL13aggreg.pdf
 """
 
 from ._joye_libert import (
     DEFAULT_BIPRIME,
     encrypt,
-    sum_decrypt,
+    decrypt_sum,
+    sum_encrypted,
 )

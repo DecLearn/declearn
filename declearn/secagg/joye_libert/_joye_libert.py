@@ -18,14 +18,15 @@
 """Joye-Libert Homomorphic Summation tools."""
 
 import hashlib
-from typing import List
+from typing import List, Tuple, Union
 
 import gmpy2  # type: ignore
 
 __all__ = [
     "DEFAULT_BIPRIME",
     "encrypt",
-    "sum_decrypt",
+    "decrypt_sum",
+    "sum_encrypted",
 ]
 
 
@@ -112,18 +113,52 @@ def encrypt(
     return int(((1 + value * modulus) * hpm) % m_square)
 
 
-def sum_decrypt(
-    values: List[int],
-    index: int,
-    public: int,
+def sum_encrypted(
+    values: Union[Tuple[int, ...], List[int]],
     modulus: int = DEFAULT_BIPRIME,
 ) -> int:
-    """Apply Joye-Libert sum-decryption of a list of encrypted integers.
+    """Apply homomorphic summation to some Joye-Libert encrypted values.
 
     Parameters
     ----------
     values:
-        List of encrypted private values that need aggregation and decryption.
+        List (or tuple) of encrypted private values that need summation.
+    modulus:
+        Public biprime modulus value, defining the integer field to
+        which encrypted values belong.
+
+    Returns
+    -------
+    sum_of_values:
+        Decrypted sum of the private values.
+
+    Raises
+    ------
+    TypeError
+        If `values` is an empty list.
+    """
+    if not values:
+        raise TypeError("Cannot sum an empty list of encrypted values.")
+    m_square = gmpy2.square(modulus)
+    output = gmpy2.mpz(values[0])
+    for value in values[1:]:
+        output = (output * value) % m_square
+    return int(output)
+
+
+def decrypt_sum(
+    sum_of_values: int,
+    index: int,
+    public: int,
+    modulus: int = DEFAULT_BIPRIME,
+) -> int:
+    """Apply Joye-Libert decryption to an encrypted sum of private values.
+
+    Parameters
+    ----------
+    sum_of_values:
+        Encrypted value resulting from the aggregation of private ones,
+        using the `sum_encrypted` operator (homomorphic to summation).
     index:
         Public encryption index.
     public:
@@ -134,12 +169,10 @@ def sum_decrypt(
     Returns
     -------
     sum_of_values:
-        Decrypted sum of the private values.
+        Decrypted public sum of the encrypted private values.
     """
     m_square = gmpy2.square(modulus)
     h_t = hash_into_domain(index, modulus)
     v_t = gmpy2.powmod(h_t, public, m_square)
-    for value in values:
-        v_t *= value
-        v_t %= m_square
+    v_t = (v_t * sum_of_values) % m_square
     return int((v_t - 1) // modulus)
