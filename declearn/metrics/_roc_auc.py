@@ -55,6 +55,13 @@ class AurocState(MetricState):
             )
         return val_a
 
+    def prepare_for_secagg(
+        self,
+    ) -> Tuple[Dict[str, Any], Optional[Dict[str, Any]]]:
+        secagg = self.to_dict()
+        clrtxt = {"thresh": secagg.pop("thresh")}
+        return secagg, clrtxt
+
 
 @dataclasses.dataclass
 class AurocStateUnbound(AurocState):
@@ -158,6 +165,17 @@ class AurocStateUnbound(AurocState):
                     )
         # Return the interpolated states.
         return states_r
+
+    def prepare_for_secagg(
+        self,
+    ) -> Tuple[Dict[str, Any], Optional[Dict[str, Any]]]:
+        raise NotImplementedError(
+            f"'{self.__class__.__name__}' does not support Secure Aggregation."
+            " To use Secure Aggregation over AUROC curves, please set the "
+            "initiating 'BinaryRocAUC' instance's 'bound' parameter to a "
+            "tuple of bounding values (with an associated 'scale'), and use "
+            "the same across all peers."
+        )
 
 
 class BinaryRocAUC(Metric[AurocState]):

@@ -35,7 +35,7 @@ References
 import dataclasses
 import uuid
 import warnings
-from typing import Any, Dict, List, Optional, Set, Union
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 from declearn.model.api import Vector
 from declearn.optimizer.modules._api import AuxVar, OptiModule
@@ -101,6 +101,15 @@ class ScaffoldAuxVar(AuxVar):
         if self.clients:
             output["clients"] = list(self.clients)
         return output
+
+    def prepare_for_secagg(
+        self,
+    ) -> Tuple[Dict[str, Any], Optional[Dict[str, Any]]]:
+        if self.state is not None:
+            raise NotImplementedError(
+                "'ScaffoldAuxVar' with 'state' should not undergo SecAgg."
+            )
+        return {"delta": self.delta}, {"clients": self.clients}
 
 
 class ScaffoldClientModule(OptiModule[ScaffoldAuxVar]):

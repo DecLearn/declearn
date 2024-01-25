@@ -19,11 +19,12 @@
 
 import abc
 import dataclasses
-from typing import Any, ClassVar, Dict
+from typing import Any, ClassVar, Dict, Optional, Tuple
 
 from typing_extensions import Self  # future: import from typing (py >=3.11)
 
 from declearn.utils._json import add_json_support
+from declearn.utils._register import create_types_registry, register_type
 
 
 __all__ = [
@@ -45,6 +46,9 @@ class Aggregate(metaclass=abc.ABCMeta):
     eventually finalized into some results, across a federated
     or decentralized network of data-holding peers.
 
+    Aggregation
+    -----------
+
     By default, fields are aggregated using `default_aggregate`,
     which by default implements the mere summation of two values.
     However, the aggregation rule for any field may be overridden
@@ -54,32 +58,56 @@ class Aggregate(metaclass=abc.ABCMeta):
     some fields require to be aggregated in a specific way that
     involves crossing values from mutiple ones.
 
+    Secure Aggregation
+    ------------------
+
+    The `prepare_for_secagg` method defines whether an `Aggregate`
+    is suitable for secure aggregation, and if so, which fields
+    are to be encrypted/sum-decrypted, and which are to be shared
+    in cleartext and aggregated similarly as in cleartext mode.
+
+    By default, subclasses are assumed to support secure summation
+    and require it for each and every field. The method should be
+    overridden when this is not the case, returning a pair of dict
+    storing, respectively, fields that require secure summation,
+    and fields that are to remain cleartext. If secure aggregation
+    is not compatible with the subclass, the method should raise a
+    `NotImplementedError`.
+
     Serialization
     -------------
 
-    By default, subclass will be made (de)serializable to and from
+    By default, subclasses will be made (de)serializable to and from
     JSON, using `declearn.utils.add_json_support` and the `to_dict`
-    and `from_dict` methods. This may be prevented by passing the
-    `register=False` keyword argument at inheritance time, i.e.:
-    `MyAggregate(Aggregate, register=False)`.
+    and `from_dict` methods. They will also be type-registered using
+    `declearn.utils.register_type`. This may be prevented by passing
+    the `register=False` keyword argument at inheritance time, i.e.
+    `class MyAggregate(Aggregate, register=False):`.
 
-    Note that first-child subclasses of `Aggregate` need to define
-    the class attribute `_group_key` that acts as a root for their
-    children' JSON-registration name.
+    For this to succeed, first-child subclasses of `Aggregate` need
+    to define the class attribute `_group_key`, that acts as a root
+    for their children' JSON-registration name, and the group name
+    for their type registration. They also need to be passed the
+    `base_cls=True` keyword argument at inheritance time, i.e.
+    `class FirstChild(Aggregate, base_cls=True):`.
     """
 
     _group_key: ClassVar[str]  # Group key for JSON registration.
 
     def __init_subclass__(
         cls,
+        base_cls: bool = False,
         register: bool = True,
     ) -> None:
-        """Automatically add JSON support for subclasses."""
+        """Automatically type-register and add JSON support for subclasses."""
+        if base_cls:
+            create_types_registry(cls, name=cls._group_key)
         if register:
             name = f"{cls._group_key}>{cls.__name__}"
             add_json_support(
                 cls, pack=cls.to_dict, unpack=cls.from_dict, name=name
             )
+            register_type(cls, name=cls.__name__, group=cls._group_key)
 
     def to_dict(
         self,
@@ -165,3 +193,37 @@ class Aggregate(metaclass=abc.ABCMeta):
     ) -> Any:
         """Aggregate two values using the default summation operator."""
         return val_a + val_b
+
+    def prepare_for_secagg(
+        self,
+    ) -> Tuple[Dict[str, Any], Optional[Dict[str, Any]]]:
+        """Return content for secure-aggregation of instances of this class.
+
+        Returns
+        -------
+        secagg_fields:
+            Dict storing fields that are compatible with encryption
+            and secure aggregation using mere summation.
+        clrtxt_fields:
+            Dict storing fields that are to be shared in cleartext
+            version. They will be aggregated using the same method
+            as usual (`aggregate_<name>` or `default_aggregate`).
+
+        Raises
+        ------
+        NotImplementedError
+            If this class does not support Secure Aggregation,
+            and its contents should therefore not be shared.
+
+        Notes for developers
+        --------------------
+        - `secagg_fields` values should have one of the following types:
+            - `int` (for positive integer values only)
+            - `float`
+            - `numpy.ndarray` (with any floating or integer dtype)
+            - `Vector`
+        - Classes that are incompatible with secure aggregation should
+          implement a `raise NotImplementedError` statement, explaining
+          whether SecAgg cannot or is yet-to-be supported.
+        """
+        return self.to_dict(), None

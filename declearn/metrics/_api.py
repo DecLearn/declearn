@@ -38,7 +38,9 @@ __all__ = [
 ]
 
 
-class MetricState(Aggregate, register=False, metaclass=abc.ABCMeta):
+class MetricState(
+    Aggregate, base_cls=True, register=False, metaclass=abc.ABCMeta
+):
     """Abstract base class for Metrics intermediate aggregatable states."""
 
     _group_key = "MetricState"

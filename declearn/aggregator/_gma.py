@@ -19,7 +19,7 @@
 
 import dataclasses
 import warnings
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple
 
 from typing_extensions import Self  # future: import from typing (py >=3.11)
 
@@ -54,6 +54,14 @@ class GMAModelUpdates(ModelUpdates):
                 self_dict["up_sign"] = self.updates.sign() * self.weights
                 return other.aggregate(self.__class__(**self_dict))
         return super().aggregate(other)
+
+    def prepare_for_secagg(
+        self,
+    ) -> Tuple[Dict[str, Any], Optional[Dict[str, Any]]]:
+        data = self.to_dict()
+        if self.up_sign is None:
+            data["up_sign"] = self.updates.sign() * self.weights
+        return data, None
 
 
 class GradientMaskedAveraging(Aggregator[GMAModelUpdates]):

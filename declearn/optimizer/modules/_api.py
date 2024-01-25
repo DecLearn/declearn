@@ -41,7 +41,7 @@ T = TypeVar("T")
 
 
 @dataclasses.dataclass
-class AuxVar(Aggregate, register=False, metaclass=abc.ABCMeta):
+class AuxVar(Aggregate, base_cls=True, register=False, metaclass=abc.ABCMeta):
     """Abstract base class for OptiModule auxiliary variables."""
 
     _group_key = "AuxVar"

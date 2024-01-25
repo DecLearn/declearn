@@ -42,7 +42,7 @@ T = TypeVar("T")
 
 
 @dataclasses.dataclass
-class ModelUpdates(Aggregate, register=True):
+class ModelUpdates(Aggregate, base_cls=True, register=True):
     """Base dataclass for model updates' sharing and aggregation."""
 
     updates: Vector
