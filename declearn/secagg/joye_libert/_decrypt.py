@@ -17,17 +17,18 @@
 
 """Data decrypter for SecAgg using Joye-Libert homomorphic summation."""
 
-from typing import List, Union
+from typing import Any, Dict, List, Union
 
 import numpy as np
 from declearn.model.api import Vector, VectorSpec
 
-from declearn.secagg.joye_libert._encrypt import ArraySpec
+from declearn.secagg.joye_libert._aggregate import ArraySpec, JLSAggregate
 from declearn.secagg.joye_libert._joye_libert import (
     DEFAULT_BIPRIME,
     decrypt_sum,
 )
 from declearn.secagg.utils import Quantizer
+from declearn.utils import Aggregate
 
 __all__ = [
     "JoyeLibertDecrypter",
@@ -172,3 +173,35 @@ class JoyeLibertDecrypter:
         raise TypeError(
             f"Cannot decrypt inputs with specs of type '{type(specs)}'."
         )
+
+    def decrypt_aggregate(
+        self,
+        value: JLSAggregate,
+    ) -> Aggregate:
+        """Decrypt a 'JLSAggregate' wrapping a summation of private values."""
+        # Perform basic verifications.
+        if not isinstance(value, JLSAggregate):
+            raise TypeError(
+                f"'{self.__class__.__name__}.decrypt_aggregate' expects "
+                f"'JLSAggregate' inputs but received a '{type(value)}'."
+            )
+        if value.biprime != self.biprime:
+            raise ValueError(
+                "Cannot decrypt a 'JLSAggregate' with mismatching 'biprime'."
+            )
+        if value.n_aggrg != self.n_peers:
+            raise ValueError(
+                f"'{self.__class__.__name__}.decrypt_aggregate' expects "
+                "input 'JLSAggregate' to result from the summation of "
+                f"{self.n_peers} instances, but it appears {value.n_aggrg} "
+                "values were in fact summed."
+            )
+        # Iteratively decrypt and recover encrypted fields.
+        srt = end = 0
+        fields = {}  # type: Dict[str, Any]
+        for name, size, specs in value.enc_specs:
+            end += size
+            fields[name] = self.decrypt_value(value.encrypted[srt:end], specs)
+            srt = end
+        # Instantiate and return from decrypted and cleartext fields.
+        return value.agg_cls(**fields, **value.cleartext)

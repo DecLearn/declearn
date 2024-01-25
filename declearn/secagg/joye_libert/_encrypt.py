@@ -22,20 +22,21 @@ from typing import List, Tuple, Union
 import numpy as np
 from declearn.model.api import Vector, VectorSpec
 
+from declearn.secagg.joye_libert._aggregate import (
+    ArraySpec,
+    EncryptedSpecs,
+    JLSAggregate,
+)
 from declearn.secagg.joye_libert._joye_libert import (
     DEFAULT_BIPRIME,
     encrypt,
 )
 from declearn.secagg.utils import Quantizer
+from declearn.utils import Aggregate
 
 __all__ = [
     "JoyeLibertEncrypter",
 ]
-
-ArraySpec = Tuple[List[int], str]
-
-
-ArraySpec = Tuple[List[int], str]
 
 
 class JoyeLibertEncrypter:
@@ -161,3 +162,27 @@ class JoyeLibertEncrypter:
         if isinstance(value, int):
             return [self.encrypt_int(value)], False
         raise TypeError(f"Cannot encrypt inputs with type '{type(value)}'.")
+
+    def encrypt_aggregate(
+        self,
+        value: Aggregate,
+    ) -> JLSAggregate:
+        """Encrypt an 'Aggregate' instance that needs secure aggregation."""
+        # Gather fields that need encryption and fields that remain cleartext.
+        cryptable, cleartext = value.prepare_for_secagg()
+        # Iteratively encrypt fields that need it.
+        encrypted = []  # type: List[int]
+        enc_specs = []  # type: EncryptedSpecs
+        for key, val in cryptable.items():
+            enc_v, spec = self.encrypt_value(val)
+            encrypted.extend(enc_v)
+            enc_specs.append((key, len(enc_v), spec))
+        # Wrap the results into a 'JLSAggregate' structure.
+        return JLSAggregate(
+            encrypted=encrypted,
+            enc_specs=enc_specs,
+            cleartext=cleartext,
+            biprime=self.biprime,
+            agg_cls=type(value),
+            n_aggrg=1,
+        )

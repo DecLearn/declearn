@@ -42,6 +42,13 @@ Primitives
  * [sum_encrypted][declearn.secagg.joye_libert.sum_encrypted]:
     Apply homomorphic summation to some Joye-Libert encrypted values.
 
+
+Aggregate
+---------
+
+* [JLSAggregate][declearn.secagg.joye_libert.JLSAggregate]:
+    'Aggregate'-like container for Joye-Libert encrypted values.
+
 References
 ----------
 [1] Joye & Libert, 2013.
@@ -56,5 +63,6 @@ from ._joye_libert import (
     encrypt,
     sum_encrypted,
 )
+from ._aggregate import JLSAggregate
 from ._encrypt import JoyeLibertEncrypter
 from ._decrypt import JoyeLibertDecrypter
