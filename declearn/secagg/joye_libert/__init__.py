@@ -24,6 +24,8 @@ Marc Joye & Benoît Libert published in 2013 [1].
 Controllers
 -----------
 
+* [JoyeLibertDecrypter][declearn.secagg.joye_libert.JoyeLibertDecrypter]:
+    Controller for the decryption of (homomorphic) sums of encrypted values.
 * [JoyeLibertEncrypter][declearn.secagg.joye_libert.JoyeLibertEncrypter]:
     Controller for the encryption of values that need homomorphic summation.
 
@@ -55,3 +57,4 @@ from ._joye_libert import (
     sum_encrypted,
 )
 from ._encrypt import JoyeLibertEncrypter
+from ._decrypt import JoyeLibertDecrypter
