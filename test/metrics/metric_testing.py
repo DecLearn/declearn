@@ -53,6 +53,8 @@ class MetricTestCase(Generic[MetricStateT]):
         Expected metric states after aggregating `states` into themselves.
     agg_scores: dict[str, float or np.ndarray]
         Expected metric results after aggregating `states` into themselves.
+    supports_secagg: bool
+        Whether the Metric is supposed to support SecAgg.
     """
 
     metric: Metric[MetricStateT]
@@ -61,6 +63,7 @@ class MetricTestCase(Generic[MetricStateT]):
     scores: Dict[str, Union[float, np.ndarray]]
     agg_states: MetricStateT
     agg_scores: Dict[str, Union[float, np.ndarray]]
+    supports_secagg: bool = True
 
     def __post_init__(self) -> None:
         if isinstance(self.states, dict):
@@ -233,3 +236,34 @@ class MetricTestSuite:
         assert isinstance(metter, type(metric))
         cfgter = metter.get_config()
         assert_dict_equal(cfgter, config)
+
+    def test_secagg_compatibility(self, test_case: MetricTestCase) -> None:
+        """Test that the metric supports secure aggregation."""
+        # Set up a Metric and gather its states after one update.
+        metric = test_case.metric
+        metric.update(**test_case.inputs)
+        states = metric.get_states()
+        # If SecAgg is expected not be supported, exit after catching error.
+        if not test_case.supports_secagg:
+            with pytest.raises(NotImplementedError):
+                states.prepare_for_secagg()
+            return
+        # Otherwise, call 'prepare_for_secagg' and verify return types.
+        secagg, clrtxt = states.prepare_for_secagg()
+        assert isinstance(secagg, dict)
+        assert isinstance(clrtxt, dict) or (clrtxt is None)
+        # Perform aggregation as defined for SecAgg (but in cleartext).
+        secagg = {key: val + val for key, val in secagg.items()}
+        if clrtxt is None:
+            clrtxt = {}
+        else:
+            clrtxt = {
+                key: getattr(
+                    states, f"aggregate_{key}", states.default_aggregate
+                )(val, val)
+                for key, val in clrtxt.items()
+            }
+        output = type(states)(**secagg, **clrtxt)
+        # Verify that results match expectations.
+        expect = states + states
+        assert_dict_equal(expect.to_dict(), output.to_dict())

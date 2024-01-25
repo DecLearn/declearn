@@ -72,8 +72,9 @@ def test_case_fixture(
     agg_scores = scores.copy()
     # Instantiate a BinaryRocAUC and return a MetricTestCase.
     metric = BinaryRocAUC(scale=scale, bound=((0.2, 0.8) if bound else None))
+    supports_secagg = bound
     return MetricTestCase(
-        metric, inputs, states, scores, agg_states, agg_scores
+        metric, inputs, states, scores, agg_states, agg_scores, supports_secagg
     )
 
 

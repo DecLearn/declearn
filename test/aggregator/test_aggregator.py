@@ -110,6 +110,40 @@ class TestAggregator:
         assert isinstance(replica, agg_cls)
         assert_dict_equal(agg_config, replica.get_config())
 
+    @pytest.mark.parametrize("framework", VECTOR_FRAMEWORKS)
+    def test_secagg_compatibility(
+        self,
+        agg_cls: Type[Aggregator],
+        updates: Dict[str, Vector],
+    ) -> None:
+        """Test that the aggregator support secure aggregation."""
+        # Setup an Aggregator and produce two sets of ModelUpdates.
+        aggregator = agg_cls()
+        updates_a = aggregator.prepare_for_sharing(updates["0"], n_steps=10)
+        updates_b = aggregator.prepare_for_sharing(updates["1"], n_steps=20)
+        # Extract fields as if for SecAgg and verify type correctness.
+        sec_a, clr_a = updates_a.prepare_for_secagg()
+        sec_b, clr_b = updates_b.prepare_for_secagg()
+        assert isinstance(sec_a, dict) and isinstance(sec_b, dict)
+        assert isinstance(clr_a, dict) or clr_a is None
+        assert isinstance(clr_b, type(clr_b))
+        # Conduct their aggregation as defined for SecAgg (but in cleartext).
+        secagg = {key: val + sec_b[key] for key, val in sec_a.items()}
+        if clr_a is None:
+            clrtxt = {}
+        else:
+            clrtxt = {
+                key: getattr(
+                    updates_a, f"aggregate_{key}", updates_a.default_aggregate
+                )(val, clr_b[key])
+                for key, val in clr_a.items()
+            }
+        output = type(updates_a)(**secagg, **clrtxt)
+        # Verify that results match expectations.
+        result = aggregator.finalize_updates(output)
+        expect = aggregator.finalize_updates(updates_a + updates_b)
+        assert result == expect
+
     # DEPRECATED: the following tests cover deprecated methods
 
     @pytest.mark.parametrize("framework", VECTOR_FRAMEWORKS)
