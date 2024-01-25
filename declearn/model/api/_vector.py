@@ -79,6 +79,14 @@ class VectorSpec:
     kwargs: Dict[str, Any] = dataclasses.field(default_factory=dict)
 
 
+add_json_support(
+    cls=VectorSpec,
+    pack=dataclasses.asdict,
+    unpack=lambda x: VectorSpec(**x),
+    name="VectorSpec",
+)
+
+
 @create_types_registry
 class Vector(Generic[T], metaclass=ABCMeta):
     """Abstract class defining an API to manipulate (sets of) data arrays.
