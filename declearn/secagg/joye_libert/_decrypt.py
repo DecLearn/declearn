@@ -88,7 +88,9 @@ class JoyeLibertDecrypter:
         self.pub_key = pub_key
         self.n_peers = n_peers
         self.biprime = biprime
-        self.quantizer = Quantizer(val_range=clipval, int_range=2**bitsize)
+        self.quantizer = Quantizer(
+            val_range=clipval, int_range=2**bitsize - 1
+        )
         self._qt_corr = (n_peers - 1) * self.quantizer.quantize_value(0.0)
         self._t_index = 0
 

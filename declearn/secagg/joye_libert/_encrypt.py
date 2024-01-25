@@ -83,7 +83,9 @@ class JoyeLibertEncrypter:
         """
         self.prv_key = prv_key
         self.biprime = biprime
-        self.quantizer = Quantizer(val_range=clipval, int_range=2**bitsize)
+        self.quantizer = Quantizer(
+            val_range=clipval, int_range=2**bitsize - 1
+        )
         self._t_index = 0
 
     def encrypt_int(

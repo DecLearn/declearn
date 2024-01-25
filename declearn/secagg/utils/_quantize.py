@@ -18,6 +18,7 @@
 """Data quantization utils to enable SecAgg features over float values."""
 
 import functools
+import warnings
 from typing import List
 
 import numpy as np
@@ -57,7 +58,7 @@ class Quantizer:
         Notes
         -----
         - The input parameters may not be changed after instantiation.
-        - If `int_range` is small enough (on most systems, `<=2**64`),
+        - If `int_range` is small enough (on most systems, `< 2**64`),
           the (un)quantization operations will be runnable using numpy,
           enabling the use of the `(un)quantize_array` methods, notably
           as backend of the `(un)quantize_list` ones that will therefore
@@ -213,7 +214,7 @@ class Quantizer:
     ) -> np.ndarray:
         """Quantize a numpy array onto the target finite integer field.
 
-        This method may only be called if `self.int_range <= 2**64`,
+        This method may only be called if `self.int_range <= 2**64 - 1`,
         as numpy does not support integers above unsigned 64-bit ones.
 
         Parameters
@@ -235,7 +236,12 @@ class Quantizer:
         dtype = self._int_dtype
         clipped = values.clip(min=-self.val_range, max=self.val_range)
         outputs = np.round((clipped + self.val_range) / self._step_size)
-        return outputs.astype(dtype)
+        with warnings.catch_warnings():
+            warnings.simplefilter(action="ignore")
+            outputs = np.where(
+                outputs < self.int_range, outputs.astype(dtype), self.int_range
+            )
+        return outputs
 
     def unquantize_array(
         self,
