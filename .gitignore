@@ -1,0 +1,25 @@
+# Build files.
+build/
+dist/
+*.egg-info/
+# Cache files.
+__pycache__
+*.pyc
+*_cache/
+.tox/
+# Configuration files.
+.vscode
+# Coverage files
+.coverage
+htmlcov
+coverage.xml
+# Data files generated under examples.
+examples/*/*.csv
+examples/*/*.pem
+examples/*/*/
+# Documentation online rendering files.
+public/
+site/
+docs/api-reference/*/
+docs/api-reference/SUMMARY.md
+docs/api-reference/typing.md
