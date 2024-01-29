@@ -22,12 +22,12 @@ from typing import Any, Dict, Optional, Type, TypedDict, Union
 
 from typing_extensions import Self  # future: import from typing (Py>=3.11)
 
+from declearn.typing import SupportsConfig
+from declearn.utils._json import json_dump, json_load
 from declearn.utils._register import (
     access_registered,
     access_registration_info,
 )
-from declearn.utils._json import json_dump, json_load
-from declearn.typing import SupportsConfig
 
 
 __all__ = [
