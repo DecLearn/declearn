@@ -15,22 +15,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Secure Aggregation features and utils.
+"""Routines to set up secure aggregation controllers for Federated Learning.
 
-* [joye_libert][declearn.secagg.joye_libert]:
-    Joye-Libert homomorphic summation tools.
-* [setup][declearn.secagg.setup]:
-    Routines to set up secure aggregation controllers for Federated Learning.
-* [shamir][declearn.secagg.shamir]:
-    Shamir secret-sharing tools.
-* [utils][declearn.secagg.utils]:
-    Utils for SecAgg features and schemes.
-* [x3dh][declearn.secagg.x3dh]:
-    Extended Triple Diffie-Hellman (X3DH) key agreement tools.
+Joye-Libert
+-----------
+
+* [ClientJoyeLibertSetup][declearn.secagg.joye_libert.ClientJoyeLibertSetup]:
+    Client-side routine to set up a Joye-Libert encryption controller.
+* [ServerJoyeLibertSetup][declearn.secagg.joye_libert.ServerJoyeLibertSetup]:
+    Server-side routine to set up a Joye-Libert decryption controller.
 """
 
-from . import joye_libert
-from . import shamir
-from . import utils
-from . import x3dh
-from . import setup
+from ._jl_client import ClientJoyeLibertSetup
+from ._jl_server import ServerJoyeLibertSetup
