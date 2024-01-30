@@ -183,7 +183,11 @@ class X3DHServerRound:  # pylint: disable=too-few-public-methods
         await self._transmit_x3dh_responses(requests, messages)
         # Verify that each and every client is done and okay.
         messages = await self.netwk.wait_for_messages(clients)
-        await self._verify_messages_validity(messages, "x3dh-over-okay")
+        await self._verify_messages_validity(messages, "x3dh-okay")
+        # If things went right, confirm it to all clients.
+        await self.netwk.broadcast_message(
+            messaging.GenericMessage(action="x3dh-okay", params={}), clients
+        )
 
     async def _send_initial_requests(
         self,
@@ -271,28 +275,36 @@ class X3DHServerRound:  # pylint: disable=too-few-public-methods
         }
         await self.netwk.send_messages(replies)
 
-    async def _verify_messages_validity(  # pragma: no cover
+    async def _verify_messages_validity(
         self,
         messages: Dict[str, messaging.Message],
         action: str,
     ) -> Dict[str, messaging.GenericMessage]:
         """Send an Error message and raise if messages are unproper."""
         error = f"Expected GenericMessage(action='{action}') messages"
-        errors = "\n".join(
-            msg.message
-            for msg in messages.values()
+        # Scan for Error messages. Send an Error to other clients.
+        errors = {
+            client: msg.message
+            for client, msg in messages.items()
             if isinstance(msg, messaging.Error)
-        )
+        }
         if errors:
-            error = f"{error}, got the following Error messages:\n{errors}"
+            error += ", got the following Error messages:\n"
+            error += "\n".join(errors.values())
+            await self.netwk.broadcast_message(
+                messaging.Error("Some clients reported errors."),
+                clients=set(messages).difference(errors),
+            )
             raise RuntimeError(error)
+        # Scan for unproper messages. Send an Error to all clients.
+        err_msg = ""
         for msg in messages.values():
             if not isinstance(msg, messaging.GenericMessage):
-                errors += f"\n{type(msg)}"
+                err_msg += f"\n{type(msg)}"
             elif msg.action != action:
-                errors += f"\nGenericMessage(action='{msg.action}')"
-        if errors:
-            error += f", got the following unproper message types:{errors}"
+                err_msg += f"\nGenericMessage(action='{msg.action}')"
+        if err_msg:
+            err_msg += f", got the following unproper message types:{err_msg}"
             await self.netwk.broadcast_message(
                 messaging.Error(error), clients=set(messages)
             )
@@ -343,6 +355,9 @@ class X3DHClientRound:  # pylint: disable=too-few-public-methods
         # Process X3DH responses from peers and send back final status.
         msg = await self.netwk.check_message()
         await self._process_x3dh_responses(msg)
+        # Await confirmation that things went right for all peers.
+        msg = await self.netwk.check_message()
+        await self._verify_message_validity(msg, action="x3dh-okay")
 
     async def _create_x3dh_requests(
         self,
@@ -371,7 +386,7 @@ class X3DHClientRound:  # pylint: disable=too-few-public-methods
                 self.x3dhm.process_handshake_request(request)
                 for request in query.params["requests"]
             ]
-        except (KeyError, TypeError, ValueError) as exc:  # pragma: no cover
+        except (KeyError, TypeError, ValueError) as exc:
             await self.netwk.send_message(messaging.Error(repr(exc)))
             raise exc
         reply = messaging.GenericMessage(
@@ -391,22 +406,24 @@ class X3DHClientRound:  # pylint: disable=too-few-public-methods
         try:
             for response in query.params["responses"]:
                 self.x3dhm.process_handshake_response(response)
-        except (KeyError, TypeError, ValueError) as exc:  # pragma: no cover
+        except (KeyError, TypeError, ValueError) as exc:
             await self.netwk.send_message(messaging.Error(repr(exc)))
             raise exc
-        reply = messaging.GenericMessage(action="x3dh-over-okay", params={})
+        reply = messaging.GenericMessage(action="x3dh-okay", params={})
         await self.netwk.send_message(reply)
 
-    async def _verify_message_validity(  # pragma: no cover
+    async def _verify_message_validity(
         self,
         msg: messaging.Message,
         action: str,
     ) -> messaging.GenericMessage:
         """Send an Error message and/or raise if a message is unproper."""
         error = f"Expected a GenericMessage(action='{action}')"
+        # When an Error is received, merely raise using its content.
         if isinstance(msg, messaging.Error):
             error = f"{error}, received an Error message: {msg.message}."
             raise RuntimeError(error)
+        # Otherwise, send an Error if the message is unproper, or return it.
         if not isinstance(msg, messaging.GenericMessage):
             error = f"{error}, got a {type(msg)}."
         elif msg.action != action:
