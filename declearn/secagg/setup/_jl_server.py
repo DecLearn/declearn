@@ -17,7 +17,6 @@
 
 """Server-side code for Joye-Libert SecAgg setup."""
 
-import asyncio
 import math
 from typing import Dict, List, Optional, Set, Tuple
 
@@ -27,14 +26,14 @@ from declearn.communication.api import NetworkServer
 from declearn.secagg.joye_libert import JoyeLibertDecrypter
 from declearn.secagg.shamir import recover_shared_secret
 from declearn.secagg.utils import generate_random_prime
-from declearn.secagg.x3dh import X3DHServerRound
+from declearn.secagg.x3dh import run_x3dh_setup_server
 
 __all__ = [
     "ServerJoyeLibertSetup",
 ]
 
 
-class ServerJoyeLibertSetup:
+class ServerJoyeLibertSetup:  # pylint: disable=too-few-public-methods
     """Server-side routine for the setup of Joye-Libert-based SecAgg.
 
     This class defines a routine that is to be run in parallel to that
@@ -86,12 +85,6 @@ class ServerJoyeLibertSetup:
         self.bitsize = bitsize
         self.clipval = clipval
 
-    def run(
-        self,
-    ) -> None:
-        """Run the Joye-Libert SecAgg setup."""
-        asyncio.run(self.async_run())
-
     async def async_run(
         self,
         clients: Optional[Set[str]] = None,
@@ -112,7 +105,7 @@ class ServerJoyeLibertSetup:
         # Exchange pre-set hyperparameters and public id keys.
         biprime, id_keys = await self._exchange_hyperparameters(clients)
         # Have clients run X3DH to setup symmetric private key pairs.
-        await X3DHServerRound(self.netwk).async_run(clients)
+        await run_x3dh_setup_server(netwk=self.netwk, clients=clients)
         # Orchestrate the generation and exchange of encrypted secret shares.
         prime = await self._exchange_shamir_secret_shares(id_keys, biprime)
         # Receive public secret shares and recover the Joye-Libert public key.

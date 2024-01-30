@@ -181,7 +181,7 @@ class X3DHManager:
             If the input `request` cannot be parsed as expected.
         ValueError:
             If the received signed pre-key's signature does not match
-            the received identify key.
+            the received identity key.
         """
         # Gather peer public keys, and generate an ephemeral key.
         id_key, sp_key, ot_key = self._parse_and_verify_request(request)
@@ -191,12 +191,13 @@ class X3DHManager:
         self_ix_key = self._convert_private_ed25519_to_x25519(self.id_key)
         ix_key = self._convert_public_ed25519_to_x25519(id_key)
         # Run the Diffie-Hellman steps.
-        dh_1 = self_ix_key.exchange(sp_key)
-        dh_2 = self_ek_key.exchange(ix_key)
-        dh_3 = self_ek_key.exchange(sp_key)
-        dh_4 = self_ek_key.exchange(ot_key)
+        dh_key = (
+            self_ix_key.exchange(sp_key)
+            + self_ek_key.exchange(ix_key)
+            + self_ek_key.exchange(sp_key)
+            + self_ek_key.exchange(ot_key)
+        )
         # Run the derivation algorithm and record the resulting shared key.
-        dh_key = dh_1 + dh_2 + dh_3 + dh_4
         self._derive_and_record_shared_secret(id_key, dh_key)
         # Set up information to be sent back.
         id_key_pub = self.id_key.public_key().public_bytes_raw()
@@ -310,9 +311,13 @@ class X3DHManager:
         Raises
         ------
         KeyError
-            If the inputs cannot be properly parsed.
             If the one-time public key part of the bundle is not
             (or no longer) known to this instance.
+        TypeError
+            If the input `response` cannot be parsed as expected.
+        ValueError
+            If the AEAD (authenticated encryption associated data)
+            part of the response cannot be verified.
         """
         # Parse received bundled keys and retrieve the one-time pre-key.
         id_key, ek_key, self_ot_key, aead_msg = self._parse_response_data(

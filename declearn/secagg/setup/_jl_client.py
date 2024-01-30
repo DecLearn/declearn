@@ -17,7 +17,6 @@
 
 """Client-side code for Joye-Libert SecAgg setup."""
 
-import asyncio
 import base64
 import secrets
 from typing import Dict, List, Tuple
@@ -33,14 +32,14 @@ from declearn.communication import messaging
 from declearn.communication.api import NetworkClient
 from declearn.secagg.joye_libert import DEFAULT_BIPRIME, JoyeLibertEncrypter
 from declearn.secagg.shamir import generate_secret_shares
-from declearn.secagg.x3dh import X3DHClientRound, X3DHManager
+from declearn.secagg.x3dh import run_x3dh_setup_client
 
 __all__ = [
     "ClientJoyeLibertSetup",
 ]
 
 
-class ClientJoyeLibertSetup:
+class ClientJoyeLibertSetup:  # pylint: disable=too-few-public-methods
     """Client-side routine for the setup of Joye-Libert-based SecAgg.
 
     This class defines a routine that is to be run in parallel to peer
@@ -110,15 +109,10 @@ class ClientJoyeLibertSetup:
           bits integers, whereas biprime is 1023-bits-large by default.
         """
         self.netwk = netwk
-        self.x3dhm = X3DHManager(prv_key, trusted)
-        self.id_key = self.x3dhm.id_key.public_key().public_bytes_raw()
+        self.prv_key = prv_key
+        self.trusted = trusted
+        self.id_key = self.prv_key.public_key().public_bytes_raw()
         self.biprime = biprime
-
-    def run(
-        self,
-    ) -> None:
-        """Run the Joye-Libert SecAgg setup."""
-        asyncio.run(self.async_run())
 
     async def async_run(
         self,
@@ -136,15 +130,17 @@ class ClientJoyeLibertSetup:
         bitsize, clipval = await self._exchange_hyperparameters()
         # Run X3DH (Extended Triple Diffie-Hellman) to create ephemeral
         # pairwise symmetric encryption keys across clients.
-        msg = await self.netwk.check_message()
-        assert isinstance(msg, messaging.GenericMessage)
-        await X3DHClientRound(self.netwk, self.x3dhm).async_run(msg)
+        secret_peer_keys = await run_x3dh_setup_client(
+            self.netwk, self.prv_key, self.trusted
+        )
         # Generate a private Joye-Libert key.
         secret_key = secrets.randbits(2 * self.biprime.bit_length())
         # Generate, encrypt and send secret shares of that key.
-        share = await self._exchange_shamir_secret_shares(secret_key)
+        share = await self._exchange_shamir_secret_shares(
+            secret=secret_key, s_keys=secret_peer_keys
+        )
         # Receive, decrypt and sum secret shares; send their public sum.
-        await self._recover_public_share(share)
+        await self._recover_public_share(share=share, s_keys=secret_peer_keys)
         # Instantiate and return a JoyeLibert crypter.
         return JoyeLibertEncrypter(
             prv_key=secret_key,
@@ -176,14 +172,14 @@ class ClientJoyeLibertSetup:
     async def _exchange_shamir_secret_shares(
         self,
         secret: int,
+        s_keys: Dict[bytes, bytes],
     ) -> int:
         """Generate, encrypt and send shares of a secret key."""
         # Receive a public large prime number from the server.
         mprime = await self._receive_shamir_prime()
         # Split it into secret shares using Shamir algorithm.
         xcoord = {
-            idk: int.from_bytes(idk, "big")
-            for idk in {self.id_key, *self.x3dhm.secrets}
+            idk: int.from_bytes(idk, "big") for idk in {self.id_key, *s_keys}
         }
         shares = dict(
             generate_secret_shares(
@@ -199,7 +195,7 @@ class ClientJoyeLibertSetup:
         id_keys = {coord: idk for idk, coord in xcoord.items()}
         peer_shares = {}  # type: Dict[str, str]
         for coord, share in shares.items():
-            key = base64.urlsafe_b64encode(self.x3dhm.secrets[id_keys[coord]])
+            key = base64.urlsafe_b64encode(s_keys[id_keys[coord]])
             enc = cryptography.fernet.Fernet(key).encrypt(
                 share.to_bytes(mprime.bit_length(), "big")
             )
@@ -226,6 +222,7 @@ class ClientJoyeLibertSetup:
     async def _recover_public_share(
         self,
         share: int,
+        s_keys: Dict[bytes, bytes],
     ) -> None:
         """Receive, decrypt and sum secret shares; send their public sum."""
         # Receive, decrypt and sum partial shares adressed to this peer.
@@ -233,7 +230,7 @@ class ClientJoyeLibertSetup:
         assert isinstance(msg, messaging.GenericMessage)
         assert msg.action == "jls-shares"
         for idk, val in msg.params.items():
-            key = self.x3dhm.secrets[bytes.fromhex(idk)]
+            key = s_keys[bytes.fromhex(idk)]
             key = base64.urlsafe_b64encode(key)
             shr = cryptography.fernet.Fernet(key).decrypt(bytes.fromhex(val))
             share += int.from_bytes(shr, "big")

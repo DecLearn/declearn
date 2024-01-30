@@ -19,11 +19,11 @@
 
 * [X3DHManager][declearn.secagg.x3dh.X3DHManager]:
     X3DH (Extended Triple Diffie-Hellman) key agreement manager.
-* [X3DHClientRound][declearn.secagg.x3dh.X3DHClientRound]:
-    Client-side routine for X3DH (Extended Triple Diffie-Hellman) setup.
-* [X3DHServerRound][declearn.secagg.x3dh.X3DHServerRound]:
-    Server-side routine for X3DH (Extended Triple Diffie-Hellman) setup.
+* [run_x3dh_setup_client][declearn.secagg.x3dh.run_x3dh_setup_client]:
+    Participate in a X3DH (Extended Triple Diffie-Hellman) protocol.
+* [run_x3dh_setup_server][declearn.secagg.x3dh.run_x3dh_setup_server]:
+    Orchestrate a X3DH (Extended Triple Diffie-Hellman) protocol run.
 """
 
 from ._x3dh import X3DHManager
-from ._routines import X3DHClientRound, X3DHServerRound
+from ._setup import run_x3dh_setup_client, run_x3dh_setup_server
