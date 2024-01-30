@@ -168,11 +168,12 @@ run_unit_tests() {
     '
     echo "Running DecLearn unit tests."
     command="pytest $@
-        --cov --cov-append --cov-report=
+        --cov=declearn --cov-append --cov-report=
         --ignore=test/functional/
         test
     "
-    run_command $command
+    echo -e "\e[34m$command\e[0m"
+    if $command; then return 0; else return 1; fi
 }
 
 
@@ -182,10 +183,11 @@ run_integration_tests() {
     '
     echo "Running DecLearn integration tests."
     command="pytest $@
-        --cov --cov-append --cov-report=
+        --cov=declearn --cov-append --cov-report=
         test/functional/
     "
-    run_command $command
+    echo -e "\e[34m$command\e[0m"
+    if $command; then return 0; else return 1; fi
 }
 
 
@@ -205,10 +207,10 @@ run_torch13_tests() {
     if [[ $? -eq 0 ]]; then
         echo "Running unit tests for torch 1.13."
         command="pytest $@
-            --cov --cov-append --cov-report=
+            --cov=declearn --cov-append --cov-report=
             test/model/test_torch_model.py
         "
-        run_command $command
+        echo -e "\e[34m$command\e[0m"
         status=$?
     else
         echo "\e[31mSkipping tests as installation failed.\e[0m"
