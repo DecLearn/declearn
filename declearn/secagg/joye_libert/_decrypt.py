@@ -41,6 +41,11 @@ class JoyeLibertDecrypter:
     This class makes use of primitives implementing an algorithm
     proposed by Joye & Libert [1] for homomorphic summation.
 
+    It is designed to be used together with the `JoyeLibertEncrypter`
+    counterpart class, as well as either the `sum_encrypted` function
+    or built-in aggregation rules of `JLSAggregate` to sum encrypted
+    values prior to their being input for decryption.
+
     References
     ----------
     [1] Joye & Libert, 2013.
@@ -98,7 +103,18 @@ class JoyeLibertDecrypter:
         self,
         value: int,
     ) -> int:
-        """Decrypt an encrypted sum of private integer values."""
+        """Decrypt an encrypted sum of private positive integer values.
+
+        Parameters
+        ----------
+        value:
+            Encrypted sum of private positive integer values.
+
+        Returns
+        -------
+        decrypted:
+            Decrypted positive integer value.
+        """
         output = decrypt_sum(
             value,
             index=self._t_index,
@@ -112,7 +128,18 @@ class JoyeLibertDecrypter:
         self,
         value: int,
     ) -> float:
-        """Decrypt an encrypted sum of private float values."""
+        """Decrypt an encrypted sum of private float values.
+
+        Parameters
+        ----------
+        value:
+            Encrypted sum of private float values.
+
+        Returns
+        -------
+        decrypted:
+            Decrypted float value.
+        """
         int_val = self.decrypt_int(value)
         int_val -= self._qt_corr
         return self.quantizer.unquantize_value(int_val)
@@ -122,13 +149,29 @@ class JoyeLibertDecrypter:
         values: List[int],
         specs: ArraySpec,
     ) -> np.ndarray:
-        """Decrypt an encrypted sum of private numpy array of values."""
+        """Decrypt an encrypted sum of private numpy array of values.
+
+        Parameters
+        ----------
+        value:
+            Encrypted sum of private array values.
+        specs:
+            Tuple storing array shape and dtype metadata.
+
+        Returns
+        -------
+        decrypted:
+            Decrypted numpy array instance, with shape and dtype
+            matching input `specs`.
+        """
         s_val = [self.decrypt_int(val) for val in values]
         shape, dtype = specs
-        if issubclass(np.dtype(dtype).type, np.floating):
+        if not issubclass(np.dtype(dtype).type, np.unsignedinteger):
             s_val = self.quantizer.unquantize_list(  # type: ignore[assignment]
-                [val - self._qt_corr for val in values]
+                [val - self._qt_corr for val in s_val]
             )
+            if issubclass(np.dtype(dtype).type, np.signedinteger):
+                s_val = [round(x) for x in s_val]
         return np.array(s_val, dtype=dtype).reshape(shape)
 
     def decrypt_vector(
@@ -136,12 +179,71 @@ class JoyeLibertDecrypter:
         values: List[int],
         specs: VectorSpec,
     ) -> Vector:
-        """Decrypt an encrypted sum of private Vector of values."""
+        """Decrypt an encrypted sum of private Vector of values.
+
+        Parameters
+        ----------
+        value:
+            Encrypted sum of private vector coefficient values.
+        specs:
+            `VectorSpec` instance storing metadata of the `Vector`
+            structure.
+
+        Returns
+        -------
+        decrypted:
+            Decrypted `Vector` instance, with specs matching `specs`.
+        """
         int_val = [self.decrypt_int(val) - self._qt_corr for val in values]
         flt_val = self.quantizer.unquantize_list(int_val)
         return Vector.build_from_specs(flt_val, specs)
 
-    def decrypt_value(
+    def decrypt_aggregate(
+        self,
+        value: JLSAggregate,
+    ) -> Aggregate:
+        """Decrypt a 'JLSAggregate' wrapping a summation of private values.
+
+        Parameters
+        ----------
+        value:
+            `JLSAggregate` object wrapping aggregated encrypted data
+            and associate metadata about its source `Aggregate` type.
+
+        Returns
+        -------
+        decrypted:
+            `Aggregate` instance recovered from `value`, with cleartext
+            fields storing securely aggregated values.
+        """
+        # Perform basic verifications.
+        if not isinstance(value, JLSAggregate):
+            raise TypeError(
+                f"'{self.__class__.__name__}.decrypt_aggregate' expects "
+                f"'JLSAggregate' inputs but received a '{type(value)}'."
+            )
+        if value.biprime != self.biprime:
+            raise ValueError(
+                "Cannot decrypt a 'JLSAggregate' with mismatching 'biprime'."
+            )
+        if value.n_aggrg != self.n_peers:
+            raise ValueError(
+                f"'{self.__class__.__name__}.decrypt_aggregate' expects "
+                "input 'JLSAggregate' to result from the summation of "
+                f"{self.n_peers} instances, but it appears {value.n_aggrg} "
+                "values were in fact summed."
+            )
+        # Iteratively decrypt and recover encrypted fields.
+        srt = end = 0
+        fields = {}  # type: Dict[str, Any]
+        for name, size, specs in value.enc_specs:
+            end += size
+            fields[name] = self._decrypt_value(value.encrypted[srt:end], specs)
+            srt = end
+        # Instantiate and return from decrypted and cleartext fields.
+        return value.agg_cls(**fields, **value.cleartext)
+
+    def _decrypt_value(
         self,
         values: List[int],
         specs: Union[bool, ArraySpec, VectorSpec],
@@ -175,35 +277,3 @@ class JoyeLibertDecrypter:
         raise TypeError(
             f"Cannot decrypt inputs with specs of type '{type(specs)}'."
         )
-
-    def decrypt_aggregate(
-        self,
-        value: JLSAggregate,
-    ) -> Aggregate:
-        """Decrypt a 'JLSAggregate' wrapping a summation of private values."""
-        # Perform basic verifications.
-        if not isinstance(value, JLSAggregate):
-            raise TypeError(
-                f"'{self.__class__.__name__}.decrypt_aggregate' expects "
-                f"'JLSAggregate' inputs but received a '{type(value)}'."
-            )
-        if value.biprime != self.biprime:
-            raise ValueError(
-                "Cannot decrypt a 'JLSAggregate' with mismatching 'biprime'."
-            )
-        if value.n_aggrg != self.n_peers:
-            raise ValueError(
-                f"'{self.__class__.__name__}.decrypt_aggregate' expects "
-                "input 'JLSAggregate' to result from the summation of "
-                f"{self.n_peers} instances, but it appears {value.n_aggrg} "
-                "values were in fact summed."
-            )
-        # Iteratively decrypt and recover encrypted fields.
-        srt = end = 0
-        fields = {}  # type: Dict[str, Any]
-        for name, size, specs in value.enc_specs:
-            end += size
-            fields[name] = self.decrypt_value(value.encrypted[srt:end], specs)
-            srt = end
-        # Instantiate and return from decrypted and cleartext fields.
-        return value.agg_cls(**fields, **value.cleartext)

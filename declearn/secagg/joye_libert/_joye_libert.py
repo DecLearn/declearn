@@ -89,16 +89,16 @@ def encrypt(
     secret: int,
     modulus: int = DEFAULT_BIPRIME,
 ) -> int:
-    """Apply Joye-Libert encryption to an integer value.
+    """Apply Joye-Libert encryption to a positive integer value.
 
     Parameters
     ----------
     value:
-        Private value that needs encrypting.
+        Private positive integer that needs encrypting.
     index:
         Public encryption index.
     secret:
-        Private integer value used to encrypt the value.
+        Private key (large integer) used to encrypt the value.
     modulus:
         Public biprime modulus value.
 
@@ -106,6 +106,7 @@ def encrypt(
     -------
     crypted:
         Crypted transform of the private value.
+        Positive int in `[0, modulus**2[`.
     """
     m_square = gmpy2.square(modulus)
     h_t = hash_into_domain(index, modulus)
