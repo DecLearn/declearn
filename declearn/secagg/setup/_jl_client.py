@@ -116,8 +116,14 @@ class ClientJoyeLibertSetup:  # pylint: disable=too-few-public-methods
 
     async def async_run(
         self,
+        message: messaging.Message,
     ) -> JoyeLibertEncrypter:
         """Run the Joye-Libert SecAgg setup routine.
+
+        Parameters
+        ----------
+        message:
+            Joye-Libert setup request from the server.
 
         Returns
         -------
@@ -127,7 +133,7 @@ class ClientJoyeLibertSetup:  # pylint: disable=too-few-public-methods
             decrypter.
         """
         # Exchange pre-set hyperparameters and public id keys.
-        bitsize, clipval = await self._exchange_hyperparameters()
+        bitsize, clipval = await self._exchange_hyperparameters(message)
         # Run X3DH (Extended Triple Diffie-Hellman) to create ephemeral
         # pairwise symmetric encryption keys across clients.
         secret_peer_keys = await run_x3dh_setup_client(
@@ -151,10 +157,10 @@ class ClientJoyeLibertSetup:  # pylint: disable=too-few-public-methods
 
     async def _exchange_hyperparameters(
         self,
+        msg: messaging.Message,
     ) -> Tuple[int, float]:
         """Receive quantization hyper-parameters. Send biprime and id key."""
-        # Await initial message, containing quantization parameters.
-        msg = await self.netwk.check_message()
+        # Process initial message, containing quantization parameters.
         assert isinstance(msg, messaging.GenericMessage)
         assert msg.action == "jls-init"
         bitsize = msg.params["bitsize"]  # type: int
