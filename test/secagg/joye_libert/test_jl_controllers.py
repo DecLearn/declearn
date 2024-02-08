@@ -17,9 +17,12 @@
 
 """Unit tests for Joye-Libert encryption and decryption controllers."""
 
+import copy
 import dataclasses
+import os
 import secrets
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple, Union
+from unittest import mock
 
 import numpy as np
 import pytest
@@ -36,10 +39,11 @@ from declearn.secagg.joye_libert import (
 from declearn.test_utils import (
     FrameworkType,
     GradientsTestCase,
+    assert_json_serializable_dict,
     list_available_frameworks,
     to_numpy,
 )
-from declearn.utils import Aggregate, set_device_policy
+from declearn.utils import Aggregate, json_dump, json_load, set_device_policy
 
 
 @dataclasses.dataclass
@@ -121,14 +125,20 @@ class TestJoyeLibertEncrypter:
         assert isinstance(bis_val, int) and bis_val < encrypter.biprime**2
         assert bis_val != enc_val
 
+    @pytest.mark.parametrize(
+        "large_quantizer_field", [True, False], ids=["quant128", "quant64"]
+    )
     @pytest.mark.parametrize("dtype", ["int8", "int32", "float16", "float64"])
     def test_encrypt_array(
         self,
         dtype: str,
+        large_quantizer_field: bool,
     ) -> None:
         """Test that encryption of a numpy array has proper outputs."""
         prv_key = secrets.randbits(2 * DEFAULT_BIPRIME.bit_length())
-        encrypter = JoyeLibertEncrypter(prv_key)
+        encrypter = JoyeLibertEncrypter(
+            prv_key, bitsize=128 if large_quantizer_field else 64
+        )
         rng = np.random.default_rng()
         # Test that an int array is encrypted into a list of int (+ specs).
         clr_arr = rng.uniform(-10, 10, size=(8, 4)).astype(dtype)
@@ -206,6 +216,24 @@ class TestJoyeLibertEncrypter:
         assert encrypted.agg_cls is MockAggregate
         assert encrypted.biprime == encrypter.biprime
         assert encrypted.n_aggrg == 1
+
+    def test_encrypt_aggregate_with_invalid_type(
+        self,
+    ) -> None:
+        """Test error raising when trying to encrypt unsupported types."""
+        prv_key = secrets.randbits(2 * DEFAULT_BIPRIME.bit_length())
+        encrypter = JoyeLibertEncrypter(prv_key)
+        # Set up a MockAggregate with a non-Vector MagicMock 'vector' field.
+        aggregate = MockAggregate(
+            string="mock",
+            scalar_int=0,
+            scalar_float=0.0,
+            np_array=np.array([0.0]),
+            vector=mock.MagicMock(),
+        )
+        # Test that the latter field raises a TypeError.
+        with pytest.raises(TypeError):
+            encrypter.encrypt_aggregate(aggregate)
 
 
 @pytest.mark.parametrize("n_peers", [1, 3])
@@ -405,3 +433,194 @@ class TestJoyeLibertDecrypter:
             np.allclose(val, aggregate.vector.coefs[key])
             for key, val in decrypted.vector.coefs.items()
         )
+
+
+@dataclasses.dataclass
+class MockSimpleAggregate(Aggregate, base_cls=True, register=True):
+    """Simple mock Aggregate child class."""
+
+    _group_key = "mock-simple-aggregate"
+
+    value: Union[int, float]
+
+
+@pytest.fixture(name="decrypter")
+def decrypter_fixture() -> JoyeLibertDecrypter:
+    """Provide with a simple one-peer JoyeLibertDecrypter."""
+    pub_key = -secrets.randbits(2 * DEFAULT_BIPRIME.bit_length())
+    return JoyeLibertDecrypter(pub_key=pub_key, n_peers=1)
+
+
+class TestJoyeLibertDecrypterExceptions:
+    """Unit tests for exception-raising 'JoyeLibertDecrypter' uses."""
+
+    def test_decrypt_aggregate_error_invalid_type(
+        self,
+        decrypter: JoyeLibertDecrypter,
+    ) -> None:
+        """Test that decryption of a non- JLSAggregate raises properly."""
+        aggregate = mock.MagicMock()
+        with pytest.raises(TypeError):
+            decrypter.decrypt_aggregate(aggregate)
+
+    def test_mock_aggregate_validity(
+        self,
+        decrypter: JoyeLibertDecrypter,
+    ) -> None:
+        """Merely test that the Aggregate sublass used can work properly."""
+        encrypted = JLSAggregate(
+            encrypted=[secrets.randbelow(decrypter.biprime**2)],
+            enc_specs=[("value", 1, True)],
+            cleartext=None,
+            agg_cls=MockSimpleAggregate,
+            biprime=decrypter.biprime,
+            n_aggrg=decrypter.n_peers,
+        )
+        decrypted = decrypter.decrypt_aggregate(encrypted)
+        assert isinstance(decrypted, MockSimpleAggregate)
+        assert isinstance(decrypted.value, float)
+
+    def test_decrypt_aggregate_error_invalid_biprime(
+        self,
+        decrypter: JoyeLibertDecrypter,
+    ) -> None:
+        """Test that decryption of a non- JLSAggregate raises properly."""
+        encrypted = JLSAggregate(
+            encrypted=[secrets.randbelow(decrypter.biprime**2)],
+            enc_specs=[("value", 1, True)],
+            cleartext=None,
+            agg_cls=MockSimpleAggregate,
+            biprime=decrypter.biprime - 1,  # invalid biprime here
+            n_aggrg=decrypter.n_peers,
+        )
+        with pytest.raises(ValueError):
+            decrypter.decrypt_aggregate(encrypted)
+
+    def test_decrypt_aggregate_error_invalid_n_aggrg(
+        self,
+        decrypter: JoyeLibertDecrypter,
+    ) -> None:
+        """Test that decryption of a non- JLSAggregate raises properly."""
+        encrypted = JLSAggregate(
+            encrypted=[secrets.randbelow(decrypter.biprime**2)],
+            enc_specs=[("value", 1, True)],
+            cleartext=None,
+            agg_cls=MockSimpleAggregate,
+            biprime=decrypter.biprime,
+            n_aggrg=decrypter.n_peers + 1,  # invalid n_aggrg here
+        )
+        with pytest.raises(ValueError):
+            decrypter.decrypt_aggregate(encrypted)
+
+    def test_decrypt_aggregate_error_invalid_field_type(
+        self,
+        decrypter: JoyeLibertDecrypter,
+    ) -> None:
+        """Test that decryption of a non- JLSAggregate raises properly."""
+        encrypted = JLSAggregate(
+            encrypted=[secrets.randbelow(decrypter.biprime**2)],
+            enc_specs=[("value", 1, mock.MagicMock())],  # invalid specs here
+            cleartext=None,
+            agg_cls=MockSimpleAggregate,
+            biprime=decrypter.biprime,
+            n_aggrg=decrypter.n_peers,
+        )
+        with pytest.raises(TypeError):
+            decrypter.decrypt_aggregate(encrypted)
+
+
+@pytest.fixture(name="jls_agg")
+def jls_agg_fixture() -> JLSAggregate:
+    """Provide with a simple JLSAggregate based on MockSimpleAggregate."""
+    return JLSAggregate(
+        encrypted=[secrets.randbelow(DEFAULT_BIPRIME**2)],
+        enc_specs=[("value", 1, False)],
+        cleartext=None,
+        agg_cls=MockSimpleAggregate,
+        biprime=DEFAULT_BIPRIME,
+        n_aggrg=1,
+    )
+
+
+class TestJLSAggregate:
+    """Unit tests on the 'JLSAggregate' data structure."""
+
+    def test_dict_serialization(
+        self,
+        jls_agg: JLSAggregate,
+    ) -> None:
+        """Test that dict-serialization of a JLSAggregate works properly."""
+        jls_dict = jls_agg.to_dict()
+        assert_json_serializable_dict(jls_dict)
+        jls_bis = JLSAggregate.from_dict(jls_dict)
+        assert isinstance(jls_bis, JLSAggregate)
+        assert jls_bis.to_dict() == jls_dict
+
+    def test_json_serialization(
+        self,
+        jls_agg: JLSAggregate,
+        tmp_path: str,
+    ) -> None:
+        """Test that JSON-serialization of a JLSAggregate works properly."""
+        path = os.path.join(tmp_path, "agg.json")
+        json_dump(jls_agg, path)
+        jls_bis = json_load(path)
+        assert isinstance(jls_bis, JLSAggregate)
+        assert jls_bis.to_dict() == jls_agg.to_dict()
+
+    def test_dict_deserialization_error(
+        self,
+        jls_agg: JLSAggregate,
+    ) -> None:
+        """Test that dict-deserialization exceptions are caught."""
+        # Test that the KeyError due to missing data is wrapped as TypeError.
+        jls_dict = jls_agg.to_dict()
+        jls_dict.pop("encrypted")
+        with pytest.raises(TypeError):
+            JLSAggregate.from_dict(jls_dict)
+
+    def test_aggregate(
+        self,
+        jls_agg: JLSAggregate,
+    ) -> None:
+        """Test that aggregation / summation works properly.
+
+        We already have functional tests, hence this test is quite limited.
+        """
+        result = jls_agg + jls_agg
+        assert isinstance(result, JLSAggregate)
+        assert result.n_aggrg == 2
+
+    def test_aggregate_error_invalid_type(
+        self,
+        jls_agg: JLSAggregate,
+    ) -> None:
+        """Test that JLSAggregate aggregation raises on improper types."""
+        mock_agg = mock.MagicMock()
+        mock_agg.__radd__.side_effect = NotImplementedError
+        # Test that type is properly checked in `aggregate`.
+        with pytest.raises(TypeError):
+            jls_agg.aggregate(mock_agg)
+        # Test that type is properly checked in `__add__`.
+        with pytest.raises(NotImplementedError):
+            jls_agg + mock_agg  # pylint: disable=pointless-statement
+
+    def test_aggregate_error_invalid_biprime(
+        self,
+        jls_agg: JLSAggregate,
+    ) -> None:
+        """Test that JLSAggregate aggregation raises on distinct biprime."""
+        jls_bis = copy.deepcopy(jls_agg)
+        jls_bis.biprime += 1
+        with pytest.raises(ValueError):
+            jls_agg.aggregate(jls_bis)
+
+    def test_aggregate_error_invalid_specs(
+        self,
+        jls_agg: JLSAggregate,
+    ) -> None:
+        """Test that JLSAggregate aggregation raises on distinct encspecs."""
+        jls_bis = copy.deepcopy(jls_agg)
+        jls_bis.enc_specs = [("value", 1, True)]
+        with pytest.raises(ValueError):
+            jls_agg.aggregate(jls_bis)
