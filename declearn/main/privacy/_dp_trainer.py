@@ -23,6 +23,7 @@ from typing import List, Optional, Tuple, Union
 from opacus.accountants import IAccountant, create_accountant  # type: ignore
 from opacus.accountants.utils import get_noise_multiplier  # type: ignore
 
+from declearn.aggregator import Aggregator
 from declearn.communication import messaging
 from declearn.dataset import Dataset
 from declearn.main.utils import TrainingManager
@@ -68,6 +69,7 @@ class DPTrainingManager(TrainingManager):
         self,
         model: Model,
         optim: Optimizer,
+        aggrg: Aggregator,
         train_data: Dataset,
         valid_data: Optional[Dataset] = None,
         metrics: Union[MetricSet, List[MetricInputType], None] = None,
@@ -76,7 +78,14 @@ class DPTrainingManager(TrainingManager):
     ) -> None:
         # inherited signature; pylint: disable=too-many-arguments
         super().__init__(
-            model, optim, train_data, valid_data, metrics, logger, verbose
+            model=model,
+            optim=optim,
+            aggrg=aggrg,
+            train_data=train_data,
+            valid_data=valid_data,
+            metrics=metrics,
+            logger=logger,
+            verbose=verbose,
         )
         # Add DP-related fields: accountant, clipping norm and budget.
         self.accountant = None  # type: Optional[IAccountant]

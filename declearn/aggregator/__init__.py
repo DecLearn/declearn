@@ -30,6 +30,8 @@ API tools
 
 * [Aggregator][declearn.aggregator.Aggregator]:
     Abstract base class defining an API for Vector aggregation.
+* [ModelUpdates][declearn.aggregator.ModelUpdates]:
+    Base dataclass for model updates' sharing and aggregation.
 * [list_aggregators][declearn.aggregator.list_aggregators]:
     Return a mapping of registered Aggregator subclasses.
 
@@ -43,6 +45,6 @@ Concrete classes
     Gradient Masked Averaging Aggregator subclass.
 """
 
-from ._api import Aggregator, list_aggregators
-from ._base import AveragingAggregator
+from ._api import Aggregator, ModelUpdates, list_aggregators
+from ._avg import AveragingAggregator
 from ._gma import GradientMaskedAveraging

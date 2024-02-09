@@ -26,7 +26,7 @@ import pytest
 
 from declearn.model.api import Model, Vector
 from declearn.optimizer import Optimizer
-from declearn.optimizer.modules import OptiModule
+from declearn.optimizer.modules import AuxVar, OptiModule
 from declearn.optimizer.regularizers import Regularizer
 from declearn.test_utils import assert_json_serializable_dict
 
@@ -213,7 +213,7 @@ class TestOptimizer:
         mod_b.aux_name = None
         optim = Optimizer(lrate=0.001, modules=[mod_a, mod_b])
         # Process "valid" auxiliary variables and verify their proper passing.
-        aux_var = {"mock": {"mock": "aux_vars"}}
+        aux_var = {"mock": mock.create_autospec(AuxVar, instance=True)}
         assert optim.process_aux_var(aux_var) is None
         mod_a.process_aux_var.assert_called_once_with(aux_var["mock"])
         mod_b.process_aux_var.assert_not_called()
@@ -221,8 +221,9 @@ class TestOptimizer:
     def test_process_aux_var_invalid(self) -> None:
         """Test that `Optimizer.process_aux_var` raises expected errors."""
         optim = Optimizer(lrate=0.001)
+        aux_var = {"mock": mock.create_autospec(AuxVar, instance=True)}
         with pytest.raises(KeyError):
-            optim.process_aux_var({"mock": {"mock": "aux_vars"}})
+            optim.process_aux_var(aux_var)
 
     def test_start_round(self) -> None:
         """Test, using mocks, that `Optimizer.start_round` works."""

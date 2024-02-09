@@ -35,6 +35,7 @@ from declearn.communication.messaging import (
     flags,
     parse_message_from_string,
 )
+from declearn.version import VERSION
 
 
 __all__ = [
@@ -145,7 +146,7 @@ class MessagesHandler:
         self,
         message: JoinRequest,
         context: Any,
-    ) -> JoinReply:
+    ) -> Union[Error, JoinReply]:
         """Handle a join request."""
         # Case when client is already registered: warn but send OK.
         if context in self.registered_clients:
@@ -158,12 +159,35 @@ class MessagesHandler:
         elif self.registration_status != flags.REGISTRATION_OPEN:
             self.logger.info("Rejecting registration request.")
             reply = JoinReply(accept=False, flag=self.registration_status)
+        # Case when the client uses an incompatible declearn version.
+        elif (err := self._verify_version_compatibility(message)) is not None:
+            return err
         # Case when registration is opened: register the client.
         else:
             self._register_client(message, context)
             reply = JoinReply(accept=True, flag=flags.REGISTERED_WELCOME)
         # Return the selected reply.
         return reply
+
+    def _verify_version_compatibility(
+        self,
+        message: JoinRequest,
+    ) -> Optional[Error]:
+        """Return an 'Error' if a 'JoinRequest' is of incompatible version."""
+        if message.version is None:
+            message.version = "<2.4"
+        elif message.version.split(".")[:2] == VERSION.split(".")[:2]:
+            return None
+        self.logger.info(
+            "Received a registration request under name %s, that is "
+            "invalid due to the client using DecLearn '%s'.",
+            message.name,
+            message.version,
+        )
+        return Error(
+            "Cannot register due to the DecLearn version in use. "
+            f"Please update to `declearn ~= {VERSION}`."
+        )
 
     def _register_client(
         self,

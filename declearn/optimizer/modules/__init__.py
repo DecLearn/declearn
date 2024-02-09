@@ -17,8 +17,10 @@
 
 """Optimizer gradients-alteration algorithms, implemented as plug-in modules.
 
-API base class
---------------
+API base classes
+----------------
+* [AuxVar][declearn.optimizer.modules.AuxVar]:
+    Abstract base class for OptiModule auxiliary variables.
 * [OptiModule][declearn.optimizer.modules.OptiModule]:
     Abstact base class for optimizer plug-in algorithms.
 
@@ -64,9 +66,12 @@ Scaffold is implemented as a pair of complementary modules:
     Client-side Scaffold module.
 * [ScaffoldServerModule][declearn.optimizer.modules.ScaffoldServerModule]:
     Server-side Scaffold module.
+* [ScaffoldAuxVar][declearn.optimizer.modules.ScaffoldAuxVar]:
+    AuxVar subclass for Scaffold modules.
 """
 
 from ._api import (
+    AuxVar,
     OptiModule,
 )
 from ._adaptive import (
@@ -89,6 +94,7 @@ from ._noise import (
     NoiseModule,
 )
 from ._scaffold import (
+    ScaffoldAuxVar,
     ScaffoldClientModule,
     ScaffoldServerModule,
 )

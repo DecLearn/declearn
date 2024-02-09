@@ -68,12 +68,13 @@ def test_case_fixture(
         raise ValueError("Unsupported 'scale' testing parameter.")
     # Compute expected aggregated states and scores.
     agg_states = {key: 2 * val for key, val in states.items()}
-    agg_states["thr"] = states["thr"]
+    agg_states["thresh"] = states["thresh"]
     agg_scores = scores.copy()
     # Instantiate a BinaryRocAUC and return a MetricTestCase.
     metric = BinaryRocAUC(scale=scale, bound=((0.2, 0.8) if bound else None))
+    supports_secagg = bound
     return MetricTestCase(
-        metric, inputs, states, scores, agg_states, agg_scores
+        metric, inputs, states, scores, agg_states, agg_scores, supports_secagg
     )
 
 
@@ -104,7 +105,7 @@ def _test_case_1d() -> (
         "fneg": np.array(
             [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 2.0, 2.0]
         ),
-        "thr": np.array(
+        "thresh": np.array(
             [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
         ),
     }  # type: Dict[str, Union[float, np.ndarray]]
@@ -115,7 +116,7 @@ def _test_case_1d() -> (
         "fpr": np.array(
             [0.0, 0.0, 0.5, 0.5, 0.5, 0.5, 1.0, 1.0, 1.0, 1.0, 1.0]
         ),
-        "thr": np.array(
+        "thresh": np.array(
             [1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.0]
         ),
         "roc_auc": 0.625,
@@ -163,7 +164,7 @@ def _test_case_2d() -> (
         "fneg": np.array(
             [0.0, 0.0, 0.0, 0.0, 0.0, 2.0, 2.0, 3.0, 3.0, 4.0, 6.0]
         ),
-        "thr": np.array(
+        "thresh": np.array(
             [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
         ),
     }  # type: Dict[str, Union[float, np.ndarray]]
@@ -174,7 +175,7 @@ def _test_case_2d() -> (
         "fpr": np.array(
             [0.0, 0.0, 0.0, 0.0, 1 / 6, 1 / 6, 1 / 6, 1 / 6, 2 / 3, 1.0, 1.0]
         ),
-        "thr": np.array(
+        "thresh": np.array(
             [1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.0]
         ),
         "roc_auc": 0.9305555555555556,
@@ -196,14 +197,28 @@ class TestBinaryRocAUC(MetricTestSuite):
         metbis.update(**test_case.inputs)
         # Test that bound into bound fails as boundaries differ.
         if metric.bound:
-            with pytest.raises(ValueError):
-                metric.agg_states(metbis.get_states())
-            with pytest.raises(ValueError):
-                metbis.agg_states(metric.get_states())
-        # Test that aggregation works otherwise, with thresholds being updated.
+            with pytest.raises(TypeError):
+                metric.set_states(metbis.get_states())
+            with pytest.raises(TypeError):
+                metbis.set_states(metric.get_states())
         else:
-            metric.agg_states(metbis.get_states())
+            # Gather states from both metrics.
+            unbound = metric.get_states()
+            bounded = metbis.get_states()
+            assert type(bounded)
+            # Test that bound + unbound fails, as it would change type.
+            with pytest.raises(ValueError):
+                bounded + unbound  # pylint: disable=pointless-statement
+            # Test that assignment of unbound states into bounded metric fails.
+            with pytest.raises(TypeError):
+                metbis.set_states(unbound)
+            # Test that unbound + bound works, with thresholds being updated.
+            aggregated = unbound + bounded
+            metric.set_states(aggregated)
             assert metric.bound is None
-            thresh = metric.get_states()["thr"]
-            thrbis = metbis.get_states()["thr"]
+            thresh = metric.get_states().thresh
+            thrbis = unbound.thresh
             assert all(val in thresh for val in thrbis)
+            # Test that assignment of bounded into unbound metric works.
+            metric.set_states(bounded)
+            assert isinstance(metric.get_states(), type(unbound))

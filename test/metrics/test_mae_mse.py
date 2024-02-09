@@ -24,7 +24,7 @@ import numpy as np
 import pytest
 
 from declearn.metrics import MeanAbsoluteError, MeanSquaredError, Metric
-from declearn.test_utils import assert_dict_equal, make_importable
+from declearn.test_utils import make_importable
 
 # relative imports from `metric_testing.py`
 with make_importable(os.path.dirname(__file__)):
@@ -51,11 +51,11 @@ def test_case_fixture(
     if weighted:
         s_wght = inputs["s_wght"] = np.abs(np.random.normal(size=(32,)))
         errors = errors * s_wght
-        states = {"current": errors.sum(), "divisor": s_wght.sum()}
+        states = {"num_sum": errors.sum(), "divisor": s_wght.sum()}
     else:
-        states = {"current": errors.sum(), "divisor": 32}
+        states = {"num_sum": errors.sum(), "divisor": 32}
     scores = {
-        case: states["current"] / states["divisor"]
+        case: states["num_sum"] / states["divisor"]
     }  # type: Dict[str, Union[float, np.ndarray]]
     # Compute derived aggregation results. Wrap as a test case and return.
     agg_states = {key: 2 * val for key, val in states.items()}
@@ -90,23 +90,6 @@ class MeanMetricTestSuite(MetricTestSuite):
         """Test that `get_results` works with zero-valued divisor."""
         metric = test_case.metric
         assert metric.get_result() == {metric.name: 0.0}
-
-    def test_update_expanded_shape(self, test_case: MetricTestCase) -> None:
-        """Test that the metric supports expanded-dim input predictions."""
-        # Gather states with basic inputs.
-        metric, inputs = test_case.metric, test_case.inputs
-        metric.update(**inputs)
-        states = metric.get_states()
-        metric.reset()
-        # Do the same with expanded-dim predictions.
-        metric.update(
-            inputs["y_true"],
-            np.expand_dims(inputs["y_pred"], -1),
-            inputs.get("s_wght"),
-        )
-        st_bis = metric.get_states()
-        # Verify that results are the same.
-        assert_dict_equal(states, st_bis)
 
 
 @pytest.mark.parametrize("weighted", [False, True], ids=["base", "weighted"])

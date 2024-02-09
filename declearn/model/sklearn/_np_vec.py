@@ -18,12 +18,13 @@
 """NumpyVector data arrays container."""
 
 import warnings
-from typing import Any, Callable, Dict, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 from typing_extensions import Self  # future: import from typing (Py>=3.11)
 
-from declearn.model.api._vector import Vector, register_vector_type
+from declearn.model.api._vector import Vector, VectorSpec, register_vector_type
+from declearn.model._utils import flatten_numpy_arrays, unflatten_numpy_arrays
 
 
 __all__ = [
@@ -135,3 +136,23 @@ class NumpyVector(Vector):
             for key, val in self.coefs.items()
         }
         return self.__class__(coefs)
+
+    def flatten(
+        self,
+    ) -> Tuple[List[float], VectorSpec]:
+        v_spec = self.get_vector_specs()
+        values = flatten_numpy_arrays(
+            [self.coefs[name] for name in v_spec.names]
+        )
+        return values, v_spec
+
+    @classmethod
+    def unflatten(
+        cls,
+        values: List[float],
+        v_spec: VectorSpec,
+    ) -> Self:
+        shapes = [v_spec.shapes[name] for name in v_spec.names]
+        dtypes = [v_spec.dtypes[name] for name in v_spec.names]
+        arrays = unflatten_numpy_arrays(values, shapes, dtypes)
+        return cls(dict(zip(v_spec.names, arrays)))

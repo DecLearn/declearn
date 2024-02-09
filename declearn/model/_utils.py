@@ -17,11 +17,15 @@
 
 """Miscellaneous private backend utils used in model code."""
 
-from typing import Set
+from typing import List, Set, Tuple
+
+import numpy as np
 
 
 __all__ = [
+    "flatten_numpy_arrays",
     "raise_on_stringsets_mismatch",
+    "unflatten_numpy_arrays",
 ]
 
 
@@ -56,3 +60,58 @@ def raise_on_stringsets_mismatch(
             + f"Missing key(s) in inputs: {missing}\n" * bool(missing)
             + f"Unexpected key(s) in inputs: {unexpct}\n" * bool(unexpct)
         )
+
+
+def flatten_numpy_arrays(
+    arrays: List[np.ndarray],
+) -> List[float]:
+    """Flatten a list of numpy arrays into a list of float values.
+
+    Parameters
+    ----------
+    arrays:
+        List of numpy arrays to flatten and concatenate.
+
+    Returns
+    -------
+    values:
+        List of float values made from concatenating, flattening
+        and converting input numpy arrays to python float values.
+    """
+    return [
+        value
+        for array in arrays
+        for value in array.ravel().astype(float).tolist()
+    ]
+
+
+def unflatten_numpy_arrays(
+    values: List[float],
+    shapes: List[Tuple[int, ...]],
+    dtypes: List[str],
+) -> List[np.ndarray]:
+    """Unflatten a list of numpy arrays from a list of float values.
+
+    Parameters
+    ----------
+    values:
+        List of float values to put back into a list of numpy arrays.
+    shapes:
+        List of shapes of the numpy arrays to reconstruct.
+    dtypes:
+        List of dtypes of the numpy arrays to reconstruct.
+
+    Returns
+    -------
+    arrays:
+        List of numpy arrays storing the input values, enforcing the
+        input specs as to shapes and dtypes.
+    """
+    arrays = []  # type: List[np.ndarray]
+    start = 0
+    for shape, dtype in zip(shapes, dtypes):
+        end = start + int(np.prod(shape))
+        array = np.array(values[start:end]).astype(dtype).reshape(shape)
+        arrays.append(array)
+        start = end
+    return arrays

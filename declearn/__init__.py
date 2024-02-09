@@ -50,6 +50,8 @@ The package is organized into the following submodules:
     Type hinting utils, defined and exposed for code readability purposes.
 * [utils][declearn.utils]:
     Shared utils used (extensively) across all of declearn.
+* [version][declearn.version]:
+    DecLearn version information, as hard-coded constants.
 """
 
 from . import (
@@ -63,6 +65,7 @@ from . import (
     optimizer,
     typing,
     utils,
+    version,
 )
 
-__version__ = "2.3.1"
+__version__ = version.VERSION

@@ -20,14 +20,15 @@
 import dataclasses
 import json
 from abc import ABCMeta
-from typing import Any, Dict, List, Optional, Tuple, Type, Union
+from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type
 
-import numpy as np
 from typing_extensions import Self  # future: import from typing (py >=3.11)
 
-from declearn.metrics import MetricInputType
+from declearn.aggregator import Aggregator, ModelUpdates
+from declearn.metrics import MetricInputType, MetricState
 from declearn.model.api import Model, Vector
 from declearn.optimizer import Optimizer
+from declearn.optimizer.modules import AuxVar
 from declearn.utils import (
     deserialize_object,
     json_pack,
@@ -60,11 +61,18 @@ __all__ = [
 class Message(metaclass=ABCMeta):
     """Base class to define declearn messages."""
 
-    typekey: str = dataclasses.field(init=False)
+    typekey: ClassVar[str]
+
+    def to_kwargs(self) -> Dict[str, Any]:
+        """Return a JSON-serializable dict representation of this message."""
+        # NOTE: override this method to serialize attributes
+        #       that are not handled by declearn.utils.json_unpack
+        return dataclasses.asdict(self)
 
     def to_string(self) -> str:
         """Convert the message to a JSON-serialized string."""
-        data = dataclasses.asdict(self)
+        data = self.to_kwargs()
+        data["typekey"] = self.typekey
         return json.dumps(data, default=json_pack)
 
     @classmethod
@@ -122,9 +130,15 @@ class EvaluationReply(Message):
     loss: float
     n_steps: int
     t_spent: float
-    metrics: Dict[
-        str, Dict[str, Union[float, np.ndarray]]
-    ] = dataclasses.field(default_factory=dict)
+    metrics: Dict[str, MetricState] = dataclasses.field(default_factory=dict)
+
+    def to_kwargs(
+        self,
+    ) -> Dict[str, Any]:
+        # Undo recursive dict-conversion of dataclasses.
+        kwargs = super().to_kwargs()
+        kwargs["metrics"] = self.metrics
+        return kwargs
 
 
 @dataclasses.dataclass
@@ -154,21 +168,24 @@ class InitRequest(Message):
 
     model: Model
     optim: Optimizer
+    aggrg: Aggregator
     metrics: List[MetricInputType] = dataclasses.field(default_factory=list)
     dpsgd: bool = False
 
-    def to_string(self) -> str:
-        data = {"typekey": self.typekey}  # type: Dict[str, Any]
+    def to_kwargs(self) -> Dict[str, Any]:
+        data = {}  # type: Dict[str, Any]
         data["model"] = serialize_object(self.model, group="Model").to_dict()
         data["optim"] = self.optim.get_config()
+        data["aggrg"] = serialize_object(self.aggrg, "Aggregator").to_dict()
         data["metrics"] = self.metrics
         data["dpsgd"] = self.dpsgd
-        return json.dumps(data, default=json_pack)
+        return data
 
     @classmethod
     def from_kwargs(cls, **kwargs: Any) -> Self:
         kwargs["model"] = deserialize_object(kwargs["model"])
         kwargs["optim"] = Optimizer.from_config(kwargs["optim"])
+        kwargs["aggrg"] = deserialize_object(kwargs["aggrg"])
         return cls(**kwargs)
 
 
@@ -180,6 +197,7 @@ class JoinRequest(Message):
 
     name: str
     data_info: Dict[str, Any]
+    version: Optional[str] = None
 
 
 @dataclasses.dataclass
@@ -232,11 +250,17 @@ class TrainRequest(Message):
 
     round_i: int
     weights: Vector
-    aux_var: Dict[str, Dict[str, Any]]
+    aux_var: Dict[str, AuxVar]
     batches: Dict[str, Any]
     n_epoch: Optional[int] = None
     n_steps: Optional[int] = None
     timeout: Optional[int] = None
+
+    def to_kwargs(self) -> Dict[str, Any]:
+        # Undo recursive dict-conversion of dataclasses.
+        data = super().to_kwargs()
+        data["aux_var"] = self.aux_var
+        return data
 
 
 @dataclasses.dataclass
@@ -248,8 +272,15 @@ class TrainReply(Message):
     n_epoch: int
     n_steps: int
     t_spent: float
-    updates: Vector
-    aux_var: Dict[str, Dict[str, Any]]
+    updates: ModelUpdates
+    aux_var: Dict[str, AuxVar]
+
+    def to_kwargs(self) -> Dict[str, Any]:
+        # Undo recursive dict-conversion of dataclasses.
+        data = super().to_kwargs()
+        data["updates"] = self.updates
+        data["aux_var"] = self.aux_var
+        return data
 
 
 _MESSAGE_CLASSES = [

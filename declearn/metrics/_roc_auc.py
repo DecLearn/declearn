@@ -17,20 +17,168 @@
 
 """Iterative and federative ROC AUC evaluation metrics."""
 
-from typing import Any, ClassVar, Dict, Optional, Tuple, Union
+import dataclasses
+from typing import Any, Dict, Optional, Tuple, Type, Union
 
 import numpy as np
 import sklearn  # type: ignore
 import sklearn.metrics  # type: ignore
+from typing_extensions import Self  # future: import from typing (py>= 3.11)
 
-from declearn.metrics._api import Metric
+from declearn.metrics._api import Metric, MetricState
 
 __all__ = [
     "BinaryRocAUC",
 ]
 
 
-class BinaryRocAUC(Metric):
+@dataclasses.dataclass
+class AurocState(MetricState):
+    """Dataclass for Binary AUROC metric states with fixed thresholds."""
+
+    tpos: np.ndarray
+    tneg: np.ndarray
+    fpos: np.ndarray
+    fneg: np.ndarray
+    thresh: np.ndarray
+
+    @staticmethod
+    def aggregate_thresh(
+        val_a: np.ndarray,
+        val_b: np.ndarray,
+    ) -> np.ndarray:
+        """Raise if thresholds differ, otherwise return them."""
+        if (len(val_a) != len(val_b)) or np.any(val_a != val_b):
+            raise ValueError(
+                "Cannot aggregate AUROC states with distinct thresholds. "
+                "To do so, use `AurocStateUnbound` containers."
+            )
+        return val_a
+
+    def prepare_for_secagg(
+        self,
+    ) -> Tuple[Dict[str, Any], Optional[Dict[str, Any]]]:
+        secagg = self.to_dict()
+        clrtxt = {"thresh": secagg.pop("thresh")}
+        return secagg, clrtxt
+
+
+@dataclasses.dataclass
+class AurocStateUnbound(AurocState):
+    """Dataclass for Binary AUROC metric states with adaptive thresholds."""
+
+    tpos: np.ndarray
+    tneg: np.ndarray
+    fpos: np.ndarray
+    fneg: np.ndarray
+    thresh: np.ndarray
+
+    def aggregate(
+        self,
+        other: Self,
+    ) -> Self:
+        """Aggregate two binary AUROC metric states."""
+        if not isinstance(other, AurocState):
+            raise TypeError(
+                f"'{self.__class__.__name__}.aggregate' expected a similar "
+                f"type instance as input, received '{type(other)}'."
+            )
+        # Case when both states have the same thresholds.
+        if (len(self.thresh) == len(other.thresh)) and np.all(
+            self.thresh == other.thresh
+        ):
+            return self.__class__(
+                tpos=self.tpos + other.tpos,
+                tneg=self.tneg + other.tneg,
+                fpos=self.fpos + other.fpos,
+                fneg=self.fneg + other.fneg,
+                thresh=self.thresh,
+            )
+        # Case when thresholds need to be combined and values interpolated.
+        thresh = np.union1d(self.thresh, other.thresh)
+        s_keys = ("tpos", "tneg", "fpos", "fneg")
+        states_a = self._interpolate_roc_states(
+            thresh_r=thresh,
+            thresh_p=self.thresh,
+            states_p={key: getattr(self, key) for key in s_keys},
+        )
+        states_b = self._interpolate_roc_states(
+            thresh_r=thresh,
+            thresh_p=other.thresh,
+            states_p={key: getattr(other, key) for key in s_keys},
+        )
+        states = {key: states_a[key] + states_b[key] for key in s_keys}
+        return self.__class__(**states, thresh=thresh)
+
+    @staticmethod
+    def _interpolate_roc_states(
+        thresh_r: np.ndarray,
+        thresh_p: np.ndarray,
+        states_p: Dict[str, np.ndarray],
+    ) -> Dict[str, np.ndarray]:
+        """Interpolate ROC states values to fit given thresholds.
+
+        Parameters
+        ----------
+        thresh_r: 1d-array
+            1-d array of unique and sorted reference thresholds.
+        thresh_p: 1d-array
+            1-d array of unique and sorted partial thresholds.
+            `thresh_p` must be a subset of `thresh_r`.
+        states_p: dict[str, 1d-array]
+            Dict of named 1-d arrays of state values, aligned on
+            `thresh_p` and monotonically increasing or decreasing.
+
+        Returns
+        -------
+        states_r: dict[str, 1d-array]
+            Dict of names 1-d arrays of interpolated state values,
+            aligned on `thresh_r`.
+        """
+        keys = {"tpos", "tneg", "fpos", "fneg"}.intersection(states_p)
+        states_r = {key: np.zeros_like(thresh_r) for key in keys}
+        max_p = len(thresh_p) - 1
+        idp = 0
+        for idr, thr in enumerate(thresh_r):
+            # Case when the threshold exists in the partial subset.
+            if thresh_p[idp] == thr:
+                for key in states_r:
+                    states_r[key][idr] = states_p[key][idp]
+                idp = min(idp + 1, max_p)
+            # Case when the threshold is below the subset's minimum.
+            elif idp == 0:
+                for key in states_r:
+                    states_r[key][idr] = states_p[key][idp]
+            # Case when the threshold is above the subset's maximum.
+            elif thresh_p[max_p] < thr:
+                for key in states_r:
+                    states_r[key][idr] = states_p[key][max_p]
+            # Case when the threshold-indexed values must be interpolated.
+            else:
+                t_inf = thresh_p[idp - 1]
+                t_sup = thresh_p[idp]
+                for key in states_r:
+                    v_inf = states_p[key][idp - 1]
+                    v_sup = states_p[key][idp]
+                    states_r[key][idr] = thr * (
+                        (v_sup - v_inf) / (t_sup - t_inf)
+                    )
+        # Return the interpolated states.
+        return states_r
+
+    def prepare_for_secagg(
+        self,
+    ) -> Tuple[Dict[str, Any], Optional[Dict[str, Any]]]:
+        raise NotImplementedError(
+            f"'{self.__class__.__name__}' does not support Secure Aggregation."
+            " To use Secure Aggregation over AUROC curves, please set the "
+            "initiating 'BinaryRocAUC' instance's 'bound' parameter to a "
+            "tuple of bounding values (with an associated 'scale'), and use "
+            "the same across all peers."
+        )
+
+
+class BinaryRocAUC(Metric[AurocState]):
     """ROC AUC metric for binary classification.
 
     This metric applies to a binary classifier, and computes the (opt.
@@ -59,7 +207,8 @@ class BinaryRocAUC(Metric):
     processing or states-aggregating steps.
     """
 
-    name: ClassVar[str] = "binary-roc"
+    name = "binary-roc"
+    state_cls = AurocState
 
     def __init__(
         self,
@@ -98,7 +247,9 @@ class BinaryRocAUC(Metric):
         self.bound = bound
         super().__init__()
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(
+        self,
+    ) -> Dict[str, Any]:
         return {"scale": self.scale, "label": self.label, "bound": self.bound}
 
     @property
@@ -106,15 +257,19 @@ class BinaryRocAUC(Metric):
         """Numerical precision of threshold values."""
         return int(f"{self.scale:.1e}".rsplit("-", 1)[-1])
 
-    def _build_states(
+    def build_initial_states(
         self,
-    ) -> Dict[str, Union[float, np.ndarray]]:
-        bounds = (0, 1) if self.bound is None else self.bound
+    ) -> AurocState:
+        if self.bound is None:
+            bounds = (0.0, 1.0)
+            aggcls = AurocStateUnbound  # type: Type[AurocState]
+        else:
+            bounds = self.bound
+            aggcls = AurocState
         thresh = self._build_thresholds(*bounds)
         names = ("tpos", "tneg", "fpos", "fneg")
         states = {key: np.zeros_like(thresh) for key in names}
-        states["thr"] = thresh
-        return states  # type: ignore
+        return aggcls(**states, thresh=thresh)
 
     def _build_thresholds(
         self,
@@ -130,10 +285,10 @@ class BinaryRocAUC(Metric):
         self,
     ) -> Dict[str, Union[float, np.ndarray]]:
         # Unpack state variables for code readability.
-        tpos = self._states["tpos"][::-1]  # type: ignore
-        tneg = self._states["tneg"][::-1]  # type: ignore
-        fpos = self._states["fpos"][::-1]  # type: ignore
-        fneg = self._states["fneg"][::-1]  # type: ignore
+        tpos = self._states.tpos[::-1]
+        tneg = self._states.tneg[::-1]
+        fpos = self._states.fpos[::-1]
+        fneg = self._states.fneg[::-1]
         # Compute true- and false-positive rates and derive AUC.
         with np.errstate(invalid="ignore"):
             tpr = np.nan_to_num(tpos / (tpos + fneg), copy=False)
@@ -142,7 +297,7 @@ class BinaryRocAUC(Metric):
         return {
             "tpr": tpr,
             "fpr": fpr,
-            "thr": self._states["thr"][::-1],  # type: ignore
+            "thresh": self._states.thresh[::-1],
             "roc_auc": auc,
         }
 
@@ -153,12 +308,15 @@ class BinaryRocAUC(Metric):
         s_wght: Optional[np.ndarray] = None,
     ) -> None:
         # Set up the scaled set of thresholds at which to estimate states.
-        thresh = self._states["thr"]  # type: np.ndarray  # type: ignore
+        thresh = self._states.thresh
         if self.bound is None:
             thresh = self._build_thresholds(
                 min(y_pred.min(), thresh[0]),
                 max(y_pred.max(), thresh[-1]),
             )
+            aggcls = AurocStateUnbound  # type: Type[AurocState]
+        else:
+            aggcls = AurocState
         # Adjust inputs' shape if needed.
         y_pred = y_pred.reshape((-1, 1))
         y_true = y_true.reshape((-1, 1))
@@ -169,138 +327,34 @@ class BinaryRocAUC(Metric):
         pos = y_true == self.label
         tru = (y_pred >= thresh) == pos
         # Aggregate the former into threshold-wise TP/TN/FP/FN scores.
-        states = {
-            "tpos": (s_wght * (tru & pos)).sum(axis=0),
-            "tneg": (s_wght * (tru & ~pos)).sum(axis=0),
-            "fpos": (s_wght * ~(tru | pos)).sum(axis=0),
-            "fneg": (s_wght * (~tru & pos)).sum(axis=0),
-        }
+        states = aggcls(
+            tpos=(s_wght * (tru & pos)).sum(axis=0),
+            tneg=(s_wght * (tru & ~pos)).sum(axis=0),
+            fpos=(s_wght * ~(tru | pos)).sum(axis=0),
+            fneg=(s_wght * (~tru & pos)).sum(axis=0),
+            thresh=thresh,
+        )
         # Aggregate these scores into the retained states.
-        thresh, states = _combine_roc_states(
-            thresh,
-            states,
-            self._states["thr"],  # type: ignore
-            self._states,  # type: ignore
-        )
-        self._states = states  # type: ignore
-        self._states["thr"] = thresh
+        self._states += states
 
-    def agg_states(
+    def set_states(
         self,
-        states: Dict[str, Union[float, np.ndarray]],
+        states: AurocState,
     ) -> None:
-        # Run sanity check on input states.
-        for name in ("tpos", "tneg", "fpos", "fneg", "thr"):
-            if name not in states:
-                raise KeyError(f"Missing required state variable: '{name}'.")
-            if not isinstance(states[name], np.ndarray):
-                raise TypeError(f"Input state '{name}' is of unproper type.")
-            if states[name].ndim != 1:  # type: ignore
-                raise ValueError(f"Input state array '{name}' should be 1-d.")
-        # Gather thresholds. Raise if they differ and self is locked.
-        thr_own = self._states["thr"]  # type: np.ndarray  # type: ignore
-        thr_oth = states["thr"]  # type: np.ndarray  # type: ignore
+        # Prevent bounded instances from assigning unmatching inputs.
         if self.bound:
-            if (len(thr_own) != len(thr_oth)) or np.any(thr_own != thr_oth):
-                msg = "Input thresholds differ from bounded self ones."
-                raise ValueError(msg)
-        # Combine input states with self ones.
-        thresh, states = _combine_roc_states(  # type: ignore
-            thr_own, self._states, thr_oth, states  # type: ignore
-        )
-        self._states = states
-        self._states["thr"] = thresh
-
-
-def _combine_roc_states(
-    thresh_a: np.ndarray,
-    states_a: Dict[str, np.ndarray],
-    thresh_b: np.ndarray,
-    states_b: Dict[str, np.ndarray],
-) -> Tuple[np.ndarray, Dict[str, np.ndarray]]:
-    """Combine ROC states values, re-indexing them to thresholds if needed.
-
-    Parameters
-    ----------
-    thresh_a: 1d-array
-        1-d array of unique and sorted thresholds indexing `states_a`.
-    states_a: dict[str, 1d-array]
-        Dict of named 1-d arrays of state values, aligned on `thresh_a`.
-    thresh_b: 1d-array
-        1-d array of unique and sorted thresholds indexing `states_b`.
-    states_b: dict[str, 1d-array]
-        Dict of named 1-d arrays of state values, aligned on `thresh_b`.
-
-    Returns
-    -------
-    thresh: 1d-array
-        1-d array of unique and sorted thresholds computed as the union
-        of `thresh_a` and `thresh_b`.
-    states: dict[str, 1d-array]
-        Dict of named 1-d arrays of state values, aligned on `thresh`,
-        that are the sum of (interpolated) `states_a` and `states_b`.
-    """
-    # Case when thresholds are the same: simply sum up values and return.
-    if (len(thresh_a) == len(thresh_b)) and np.all(thresh_a == thresh_b):
-        states = {key: states_a[key] + states_b[key] for key in states_a}
-        return thresh_a, states
-    # Case when thresholds need alignment.
-    thresh = np.union1d(thresh_a, thresh_b)
-    states_a = _interpolate_roc_states(thresh, thresh_a, states_a)
-    states_b = _interpolate_roc_states(thresh, thresh_b, states_b)
-    states = {key: states_a[key] + states_b[key] for key in states_a}
-    return thresh, states
-
-
-def _interpolate_roc_states(
-    thresh_r: np.ndarray,
-    thresh_p: np.ndarray,
-    states_p: Dict[str, np.ndarray],
-) -> Dict[str, np.ndarray]:
-    """Interpolate ROC states values to fit given thresholds.
-
-    Parameters
-    ----------
-    thresh_r: 1d-array
-        1-d array of unique and sorted reference thresholds.
-    thresh_p: 1d-array
-        1-d array of unique and sorted partial thresholds.
-        `thresh_p` must be a subset of `thresh_r`.
-    states_p: dict[str, 1d-array]
-        Dict of named 1-d arrays of state values, aligned on
-        `thresh_p` and monotonically increasing or decreasing.
-
-    Returns
-    -------
-    states_r: dict[str, 1d-array]
-        Dict of names 1-d arrays of interpolated state values,
-        aligned on `thresh_r`.
-    """
-    keys = {"tpos", "tneg", "fpos", "fneg"}.intersection(states_p)
-    states_r = {key: np.zeros_like(thresh_r) for key in keys}
-    max_p = len(thresh_p) - 1
-    idp = 0
-    for idr, thr in enumerate(thresh_r):
-        # Case when the threshold exists in the partial subset.
-        if thresh_p[idp] == thr:
-            for key in states_r:
-                states_r[key][idr] = states_p[key][idp]
-            idp = min(idp + 1, max_p)
-        # Case when the threshold is below the subset's minimum.
-        elif idp == 0:
-            for key in states_r:
-                states_r[key][idr] = states_p[key][idp]
-        # Case when the threshold is above the subset's maximum.
-        elif thresh_p[max_p] < thr:
-            for key in states_r:
-                states_r[key][idr] = states_p[key][max_p]
-        # Case when the threshold-indexed values must and can be interpolated.
-        else:
-            t_inf = thresh_p[idp - 1]
-            t_sup = thresh_p[idp]
-            for key in states_r:
-                v_inf = states_p[key][idp - 1]
-                v_sup = states_p[key][idp]
-                states_r[key][idr] = thr * ((v_sup - v_inf) / (t_sup - t_inf))
-    # Return the interpolated states.
-    return states_r
+            if isinstance(states, AurocStateUnbound):
+                states = AurocState.from_dict(states.to_dict())
+            if not (
+                (len(self._states.thresh) == len(states.thresh))
+                and np.all(self._states.thresh == states.thresh)
+            ):
+                raise TypeError(
+                    f"Cannot assign '{self.__class__.__name__}' states with "
+                    "unmatching thresholds to an instance with bounded ones."
+                )
+        # Prevent unbounded instances from switching to bouded states.
+        elif self.bound is None and not isinstance(states, AurocStateUnbound):
+            states = AurocStateUnbound.from_dict(states.to_dict())
+        # Delegate assignment to parent call (that raises on wrong type).
+        return super().set_states(states)

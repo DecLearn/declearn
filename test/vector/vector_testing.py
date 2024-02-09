@@ -23,7 +23,7 @@ from typing import Any, Callable, Dict, ClassVar, Generic, Type, TypeVar
 
 import numpy as np
 
-from declearn.model.api import Vector
+from declearn.model.api import Vector, VectorSpec
 from declearn.test_utils import assert_json_serializable_dict, to_numpy
 
 
@@ -143,6 +143,47 @@ class VectorSelfOpTests:
         """
         vector = factory.make_vector(seed=0)
         vecbis = Vector.build(vector.coefs)
+        assert isinstance(vecbis, type(vector))
+        assert vector == vecbis
+
+    def test_flatten(
+        self,
+        factory: VectorFactory,
+    ) -> None:
+        """Test that a Vector's `flatten` method outputs proper-type data."""
+        vector = factory.make_vector(seed=0)
+        values, v_spec = vector.flatten()
+        assert isinstance(values, list)
+        assert all(isinstance(x, float) for x in values)
+        assert isinstance(v_spec, VectorSpec)
+        assert v_spec.names == factory.names
+        assert v_spec.shapes == dict(zip(factory.names, factory.shapes))
+        assert v_spec.dtypes == dict(zip(factory.names, factory.dtypes))
+        assert isinstance(v_spec.v_type, tuple)
+        assert len(v_spec.v_type) == 2
+        assert all(isinstance(s, str) for s in v_spec.v_type)
+
+    def test_flatten_unflatten(
+        self,
+        factory: VectorFactory,
+    ) -> None:
+        """Test that a Vector can be flattened and then unflattened."""
+        vector = factory.make_vector(seed=0)
+        values, v_spec = vector.flatten()
+        vecbis = type(vector).unflatten(values, v_spec)
+        assert vector == vecbis
+
+    def test_build_from_specs(
+        self,
+        factory: VectorFactory,
+    ) -> None:
+        """Test that the `Vector.build_from_specs` generic works.
+
+        It is designed to enable unflattening a Vector from its specs.
+        """
+        vector = factory.make_vector(seed=0)
+        values, v_spec = vector.flatten()
+        vecbis = Vector.build_from_specs(values, v_spec)
         assert isinstance(vecbis, type(vector))
         assert vector == vecbis
 

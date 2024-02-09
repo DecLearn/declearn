@@ -18,7 +18,7 @@
 """JaxNumpyVector data arrays container."""
 
 import warnings
-from typing import Any, Callable, Dict, Optional, Set, Type, Union
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Type, Union
 
 import jax
 import jax.numpy as jnp
@@ -26,9 +26,10 @@ import jaxlib
 import numpy as np
 from typing_extensions import Self  # future: import from typing (Py>=3.11)
 
-from declearn.model.api import Vector, register_vector_type
+from declearn.model.api import Vector, VectorSpec, register_vector_type
 from declearn.model.haiku.utils import select_device
 from declearn.model.sklearn import NumpyVector
+from declearn.model._utils import flatten_numpy_arrays, unflatten_numpy_arrays
 from declearn.utils import get_device_policy
 
 __all__ = [
@@ -182,3 +183,26 @@ class JaxNumpyVector(Vector):
         device = select_device(gpu=policy.gpu, idx=policy.idx)
         coefs = {k: jax.device_put(arr, device) for k, arr in data.items()}
         return cls(coefs)
+
+    # similar code to that of TorchVector; pylint: disable=duplicate-code
+
+    def flatten(
+        self,
+    ) -> Tuple[List[float], VectorSpec]:
+        v_spec = self.get_vector_specs()
+        arrays = self.pack()
+        values = flatten_numpy_arrays([arrays[name] for name in v_spec.names])
+        return values, v_spec
+
+    @classmethod
+    def unflatten(
+        cls,
+        values: List[float],
+        v_spec: VectorSpec,
+    ) -> Self:
+        shapes = [v_spec.shapes[name] for name in v_spec.names]
+        dtypes = [v_spec.dtypes[name] for name in v_spec.names]
+        arrays = unflatten_numpy_arrays(values, shapes, dtypes)
+        return cls.unpack(dict(zip(v_spec.names, arrays)))
+
+    # pylint: enable=duplicate-code

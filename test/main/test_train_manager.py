@@ -22,6 +22,7 @@ from typing import Any, Iterator, Optional
 
 import numpy
 
+from declearn.aggregator import Aggregator
 from declearn.communication import messaging
 from declearn.dataset import Dataset
 from declearn.main.utils import TrainingManager
@@ -40,11 +41,14 @@ def build_manager(n_batch: int) -> Any:  # TrainingManager with Mock attributes
     model = mock.create_autospec(Model, instance=True)
     model.compute_batch_predictions.return_value = (MockArray, MockArray, None)
     optim = mock.create_autospec(Optimizer, instance=True)
+    aggrg = mock.create_autospec(Aggregator, instance=True)
     train_data = build_mock_dataset(n_batch)
     valid_data = build_mock_dataset(n_batch)
     metrics = mock.create_autospec(MetricSet, instance=True)
     metrics.metrics = []
-    return TrainingManager(model, optim, train_data, valid_data, metrics)
+    return TrainingManager(
+        model, optim, aggrg, train_data, valid_data, metrics
+    )
 
 
 def build_mock_dataset(n_batch: int) -> Dataset:
@@ -95,6 +99,9 @@ class TestTrainingRound:
         assert reply.n_steps == 100
         assert manager.optim.run_train_step.call_count == 100
         manager.train_data.generate_batches.assert_called_once_with(**BATCHES)
+        manager.aggrg.prepare_for_sharing.assert_called_once_with(
+            updates=mock.ANY, n_steps=100
+        )
 
     def test_training_round_with_steps_constraint_1(self) -> None:
         """Test running a 20-steps (< 1 epoch) training round."""
@@ -105,6 +112,9 @@ class TestTrainingRound:
         assert reply.n_steps == 20
         assert manager.optim.run_train_step.call_count == 20
         manager.train_data.generate_batches.assert_called_once_with(**BATCHES)
+        manager.aggrg.prepare_for_sharing.assert_called_once_with(
+            updates=mock.ANY, n_steps=20
+        )
 
     def test_training_round_with_steps_constraint_2(self) -> None:
         """Test running a 150-steps (1.5 epochs) training round."""
@@ -115,6 +125,9 @@ class TestTrainingRound:
         assert reply.n_steps == 150
         assert manager.optim.run_train_step.call_count == 150
         assert manager.train_data.generate_batches.call_count == 2
+        manager.aggrg.prepare_for_sharing.assert_called_once_with(
+            updates=mock.ANY, n_steps=150
+        )
 
     def test_training_round_with_timeout_constraint(self) -> None:
         """Test running a time-constrained training round."""
@@ -124,6 +137,9 @@ class TestTrainingRound:
         assert 0.1 <= reply.t_spent
         assert manager.optim.run_train_step.call_count == reply.n_steps
         assert manager.train_data.generate_batches.call_count == reply.n_epoch
+        manager.aggrg.prepare_for_sharing.assert_called_once_with(
+            updates=mock.ANY, n_steps=reply.n_steps
+        )
 
     def test_training_round_with_multiple_constraints_1(self) -> None:
         """Test running a min(3 epoch, 150 steps) training round."""
@@ -135,6 +151,9 @@ class TestTrainingRound:
         assert reply.n_steps == 150
         assert manager.optim.run_train_step.call_count == 150
         assert manager.train_data.generate_batches.call_count == 2
+        manager.aggrg.prepare_for_sharing.assert_called_once_with(
+            updates=mock.ANY, n_steps=150
+        )
 
     def test_training_round_with_multiple_constraints_2(self) -> None:
         """Test running a min(3 epoch, 500 steps) training round."""
@@ -146,6 +165,9 @@ class TestTrainingRound:
         assert reply.n_steps == 300
         assert manager.optim.run_train_step.call_count == 300
         assert manager.train_data.generate_batches.call_count == 3
+        manager.aggrg.prepare_for_sharing.assert_called_once_with(
+            updates=mock.ANY, n_steps=300
+        )
 
     def test_training_round_with_multiple_constraints_3(self) -> None:
         """Test running a min(10 epochs, 0.1 second) training round."""
@@ -158,6 +180,9 @@ class TestTrainingRound:
         assert 0.1 <= reply.t_spent
         assert manager.optim.run_train_step.call_count == reply.n_steps
         assert manager.train_data.generate_batches.call_count == reply.n_epoch
+        manager.aggrg.prepare_for_sharing.assert_called_once_with(
+            updates=mock.ANY, n_steps=reply.n_steps
+        )
 
 
 def build_evaluation_request(

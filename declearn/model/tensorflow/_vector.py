@@ -20,7 +20,7 @@
 import warnings
 from typing import (
     # fmt: off
-    Any, Callable, Dict, Optional, Set, Tuple, Type, TypeVar, Union
+    Any, Callable, Dict, List, Optional, Set, Tuple, Type, TypeVar, Union
 )
 
 # fmt: off
@@ -32,13 +32,14 @@ from tensorflow.python.framework.ops import EagerTensor  # type: ignore
 from typing_extensions import Self  # future: import from typing (Py>=3.11)
 # fmt: on
 
-from declearn.model.api import Vector, register_vector_type
+from declearn.model.api import Vector, VectorSpec, register_vector_type
 from declearn.model.sklearn import NumpyVector
 from declearn.model.tensorflow.utils import (
     add_indexed_slices_support,
     preserve_tensor_device,
     select_device,
 )
+from declearn.model._utils import flatten_numpy_arrays, unflatten_numpy_arrays
 from declearn.utils import get_device_policy
 
 
@@ -312,3 +313,73 @@ class TensorflowVector(Vector):
             if other == 0.5:
                 return self.apply_func(tf_op_sqrt)
         return super().__pow__(other)
+
+    def get_vector_specs(
+        self,
+    ) -> VectorSpec:
+        # Add IndexedSlices information to the base specs.
+        specs = super().get_vector_specs()
+        slices = [
+            name
+            for name in specs.names
+            if isinstance(self.coefs[name], tf.IndexedSlices)
+        ]
+        if slices:
+            specs.kwargs["slices"] = slices
+        return specs
+
+    def flatten(
+        self,
+    ) -> Tuple[List[float], VectorSpec]:
+        v_spec = self.get_vector_specs()
+        arrays = []  # type: List[np.ndarray]
+        for name in v_spec.names:
+            if isinstance(self.coefs[name], tf.IndexedSlices):
+                warnings.warn(
+                    "Flattening a 'tf.IndexedSlices' structure into an "
+                    "exhaustive list of floats. This may result in a high "
+                    "memory cost.",
+                    UserWarning,
+                )
+                arrays.append(
+                    np.array(tf.convert_to_tensor(self.coefs[name]).numpy())
+                )
+            else:
+                arrays.append(np.array(self.coefs[name].numpy()))
+        values = flatten_numpy_arrays(arrays)
+        return values, v_spec
+
+    @classmethod
+    def unflatten(
+        cls,
+        values: List[float],
+        v_spec: VectorSpec,
+    ) -> Self:
+        # Convert values to numpy arrays.
+        shapes = [v_spec.shapes[name] for name in v_spec.names]
+        dtypes = [v_spec.dtypes[name] for name in v_spec.names]
+        arrays = unflatten_numpy_arrays(values, shapes, dtypes)
+        # Gather information about IndexedSlices and prepare a list of tensors.
+        slices = v_spec.kwargs.get("slices", [])
+        tf_dat = {}  # Dict[str, Union[tf.Tensor, tf.IndexedSlices]]
+        # Convert numpy arrays back to tensorflow structures.
+        # Operate under the current device-placement policy.
+        policy = get_device_policy()
+        device = select_device(gpu=policy.gpu, idx=policy.idx)
+        with tf.device(device):
+            for name, array in zip(v_spec.names, arrays):
+                # Recover IndexedSlices structures from dense arrays.
+                if name in slices:
+                    non_zero = np.any(
+                        array != 0.0, axis=tuple(range(1, array.ndim))
+                    )
+                    ind = np.where(non_zero)[0].astype("int32")
+                    tf_dat[name] = tf.IndexedSlices(
+                        values=tf.convert_to_tensor(array[non_zero]),
+                        indices=tf.convert_to_tensor(ind),
+                        dense_shape=tf.convert_to_tensor(array.shape),
+                    )
+                # Otherwise, merely convert arrays to tensors.
+                else:
+                    tf_dat[name] = tf.convert_to_tensor(array)
+        return cls(tf_dat)

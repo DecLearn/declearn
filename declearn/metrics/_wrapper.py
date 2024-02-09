@@ -17,12 +17,13 @@
 
 """Wrapper for an ensemble of Metric objects."""
 
+import warnings
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 from typing_extensions import Self  # future: import from typing (py >=3.11)
 
-from declearn.metrics._api import Metric
+from declearn.metrics._api import Metric, MetricState
 
 __all__ = [
     "MetricInputType",
@@ -118,7 +119,7 @@ class MetricSet:
         Raises
         ------
         TypeError
-            If `metrics` is of unproper type.
+            If `metrics` is of improper type.
 
         Other exceptions may be raised when calling this class's `__init__`.
         """
@@ -178,7 +179,7 @@ class MetricSet:
 
     def get_states(
         self,
-    ) -> Dict[str, Dict[str, Union[float, np.ndarray]]]:
+    ) -> Dict[str, MetricState]:
         """Return a copy of the current state variables.
 
         This method is designed to expose and share partial results
@@ -187,17 +188,43 @@ class MetricSet:
 
         Returns
         -------
-        states: dict[str, dict[str, float or numpy.ndarray]]
-            Dict of states that may be fed to another instance of
-            this class via its `agg_states` method.
+        states:
+            Dict of metric states that may be aggregated with their
+            counterparts and re-assigned for finalization using the
+            `set_states` then `get_result` methods of this object.
         """
         return {metric.name: metric.get_states() for metric in self.metrics}
 
+    def set_states(
+        self,
+        states: Dict[str, MetricState],
+    ) -> None:
+        """Replace internal states with a copy of incoming ones.
+
+        Parameters
+        ----------
+        states:
+            Replacement states, as a compatible `MetricState` instance.
+
+        Raises
+        ------
+        TypeError
+            If any metric states are of improper type.
+        """
+        for metric in self.metrics:
+            if metric.name in states:
+                metric.set_states(states[metric.name])
+
     def agg_states(
         self,
-        states: Dict[str, Dict[str, Union[float, np.ndarray]]],
+        states: Dict[str, MetricState],
     ) -> None:
         """Aggregate provided state variables into self ones.
+
+        This method is DEPRECATED as of DecLearn v2.4, in favor of
+        merely aggregating `MetricState` instances, using either
+        their `aggregate` method or the overloaded `+` operator.
+        It will be removed in DecLearn 2.6 and/or 3.0.
 
         This method is designed to aggregate results from multiple
         similar metrics objects into a single one before computing
@@ -214,13 +241,22 @@ class MetricSet:
         KeyError
             If any state variable is missing from `states`.
         TypeError
-            If any state variable is of unproper type.
+            If any state variable is of improper type.
         ValueError
-            If any array state variable is of unproper shape.
+            If any array state variable is of improper shape.
         """
-        for metric in self.metrics:
-            if metric.name in states:
-                metric.agg_states(states[metric.name])
+        warnings.warn(
+            "'MetricSet.agg_states' was deprecated in DecLearn v2.4, in favor "
+            "of aggregating 'MetricState' instances directly, and setting "
+            "final aggregated states using 'MetricSet.set_state'. It will be "
+            "removed in DecLearn 2.6 and/or 3.0.",
+            DeprecationWarning,
+        )
+        with warnings.catch_warnings():
+            warnings.simplefilter(action="ignore", category=DeprecationWarning)
+            for metric in self.metrics:
+                if metric.name in states:
+                    metric.agg_states(states[metric.name])
 
     def get_config(
         self,

@@ -25,6 +25,8 @@ Abstractions
 ------------
 * [Metric][declearn.metrics.Metric]:
     Abstract base class defining an API for metrics' computation.
+* [MetricState][declearn.metric.MetricState]:
+    Abstract base class for Metrics intermediate aggregatable states.
 * [MeanMetric][declearn.metrics.MeanMetric]:
     Abstract class that defines a template for simple scores' averaging.
 
@@ -64,7 +66,7 @@ Regression metrics
 
 """
 
-from ._api import Metric
+from ._api import Metric, MetricState
 from ._classif import (
     BinaryAccuracyPrecisionRecall,
     MulticlassAccuracyPrecisionRecall,

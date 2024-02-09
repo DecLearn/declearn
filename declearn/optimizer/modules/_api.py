@@ -17,19 +17,22 @@
 
 """Base API for plug-in gradients-alteration algorithms."""
 
-from abc import ABCMeta, abstractmethod
-from typing import Any, ClassVar, Dict, Optional, TypeVar
+import abc
+import dataclasses
+from typing import Any, ClassVar, Dict, Generic, Optional, Type, TypeVar
 
 from typing_extensions import Self  # future: import from typing (py >=3.11)
 
 from declearn.model.api import Vector
 from declearn.utils import (
+    Aggregate,
     access_registered,
     create_types_registry,
     register_type,
 )
 
 __all__ = [
+    "AuxVar",
     "OptiModule",
 ]
 
@@ -37,8 +40,18 @@ __all__ = [
 T = TypeVar("T")
 
 
+@dataclasses.dataclass
+class AuxVar(Aggregate, base_cls=True, register=False, metaclass=abc.ABCMeta):
+    """Abstract base class for OptiModule auxiliary variables."""
+
+    _group_key = "AuxVar"
+
+
+AuxVarT = TypeVar("AuxVarT", bound=AuxVar)
+
+
 @create_types_registry
-class OptiModule(metaclass=ABCMeta):
+class OptiModule(Generic[AuxVarT], metaclass=abc.ABCMeta):
     """Abstract class defining an API to implement gradients adaptation tools.
 
     The aim of this abstraction (which itself operates on the Vector
@@ -74,18 +87,21 @@ class OptiModule(metaclass=ABCMeta):
     As defined at `OptiModule` level, they have no effect and may thus
     be safely ignored when implementing self-contained algorithms.
 
-    - collect_aux_var() -> Optional[Dict[str, Any]]:
-        Emit a JSON-serializable dict of auxiliary variables,
-        to be received by a counterpart of this module on the
+    - collect_aux_var() -> Optional[AuxVar]:
+        Emit an `AuxVar` instance holding auxiliary variables,
+        that may be shared with peers, aggregated across them,
+        and eventually processed by a counterpart module on the
         other side of the client/server relationship.
-    - process_aux_var(Dict[str, Any]) -> None:
-        Process a dict of auxiliary variables, received from
-        a counterpart to this module on the other side of the
-        client/server relationship.
+    - process_aux_var(AuxVar) -> None:
+        Process auxiliary variables received from a counterpart
+        module on the other side of the client/server relationship.
     - aux_name: optional[str] class attribute, default=None
         Name to use when sending or receiving auxiliary variables
         between synchronous client/server modules, that therefore
         need to share the *same* `aux_name`.
+    - auxvar_cls: optional[type[AuxVar]] class attribute, default=None
+        Type of `AuxVar` used by this module (defining the actual
+        signature of `collect_aux_var` and `process_aux_var`).
 
     Inheritance
     -----------
@@ -107,6 +123,9 @@ class OptiModule(metaclass=ABCMeta):
     be unique to that pair of classes across all OptiModule classes.
     """
 
+    auxvar_cls: Optional[Type[AuxVar]] = None
+    """Optional `AuxVar` subtype used by this module and its counterpart."""
+
     def __init_subclass__(
         cls,
         register: bool = True,
@@ -117,7 +136,7 @@ class OptiModule(metaclass=ABCMeta):
         if register:
             register_type(cls, cls.name, group="OptiModule")
 
-    @abstractmethod
+    @abc.abstractmethod
     def run(
         self,
         gradients: Vector[T],
@@ -143,65 +162,55 @@ class OptiModule(metaclass=ABCMeta):
 
     def collect_aux_var(
         self,
-    ) -> Optional[Dict[str, Any]]:
+    ) -> Optional[AuxVarT]:
         """Return auxiliary variables that need to be shared between nodes.
 
         Returns
         -------
-        aux_var: Optional[Dict[str, Any]]
-            Optional JSON-serializable dict of auxiliary variables that
-            are to be shared with a similarly-named OptiModule on the
-            other side of the client-server relationship.
+        aux_var: Optional[AuxVar]
+            Optional `AuxVar` instance holding auxiliary variables that
+            are to be shared with a counterpart OptiModule on the other
+            side of the client-server relationship.
 
         Notes
         -----
-        Specfications for the output and calling context depend on whether
-        the module is part of a client's optimizer or of the server's one:
+        The calling context depend ons whether the module is part of a
+        client's optimizer or of the server's one:
 
         - Client:
-            - `aux_var` is dict[str, any] or None.
             - `collect_aux_var` is expected to happen after taking a series
               of local optimization steps, before sending the local updates
               to the server for aggregation and further processing.
         - Server:
-            - `aux_var` may be None ; dict[str, any] (to send the same values
-              to each and every client) ; or dict[str, dict[str, any]] with
-              clients' names as keys and client-wise new aux_var as values
-              so as to send distinct values to the clients.
             - `collect_aux_var` is expected to happen when the global model
-              weights are ready to be shared with clients, i.e. at the very
-              end of a training round or at the beginning of the training
-              process.
+              weights are ready to be shared with clients, i.e. either at
+              the very end or very beginning of a training round.
         """
         return None
 
     def process_aux_var(
         self,
-        aux_var: Dict[str, Any],
+        aux_var: AuxVarT,
     ) -> None:
         """Update this module based on received shared auxiliary variables.
 
         Parameters
         ----------
-        aux_var: dict[str, any]
-            JSON-serializable dict of auxiliary variables that are to be
-            processed by this module at the start of a training round (on
-            the client side) or before processing global updates (on the
-            server side).
+        aux_var:
+            Auxiliary variables that are to be processed by this module,
+            emitted by a counterpart OptiModule on the other side of the
+            client-server relationship.
 
         Notes
         -----
-        Specfications for the inputs and calling context depend on whether
-        the module is part of a client's optimizer or of the server's one:
+        The calling context depends on whether the module is part of a
+        client's optimizer or of the server's one:
 
         - Client:
-            - `aux_var` is dict[str, any] and may be client-specific.
             - `process_aux_var` is expected to happen at the beginning of
               a training round to define gradients' processing during the
               local optimization steps taken through that round.
         - Server:
-            - `aux_var` is dict[str, dict[str, any]] with clients' names as
-              primary keys and client-wise collected aux_var as values.
             - `process_aux_var` is expected to happen upon receiving local
               updates (and, thus, aux_var), before the aggregated updates
               are computed and passed through the server optimizer (which
@@ -210,12 +219,18 @@ class OptiModule(metaclass=ABCMeta):
         Raises
         ------
         KeyError
-            If an expected auxiliary variable is missing.
+            If received auxiliary variables lack some required data.
+        NotImplementedError
+            If auxiliary variables are passed to a module that is not meant
+            to receive any.
         TypeError
-            If a variable is of unproper type, or if aux_var
-            is not formatted as it should be.
+            If `aux_var` or one of its fields has unproper type.
         """
-        # API-defining method; pylint: disable=unused-argument
+        if aux_var is not None:  # pragma: no cover
+            raise NotImplementedError(
+                f"'{self.__class__.__name__}.process_aux_var' was called, but"
+                " this class is not designed to receive auxiliary variables."
+            )
 
     def get_config(
         self,
@@ -311,4 +326,8 @@ class OptiModule(metaclass=ABCMeta):
         KeyError
             If an expected state variable is missing from `state`.
         """
-        # API-defining method; pylint: disable=unused-argument
+        if state:
+            raise KeyError(
+                f"'{self.__class__.__name__}.set_state' received some data, "
+                "but it is not implemented to actually use any."
+            )

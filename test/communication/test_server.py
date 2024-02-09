@@ -24,6 +24,7 @@ from unittest import mock
 import pytest
 import pytest_asyncio
 
+from declearn import __version__ as VERSION
 from declearn.communication import (
     build_server,
     list_available_protocols,
@@ -132,7 +133,7 @@ class TestNetworkServerRegister:
     async def test_server_early_request(self, server: NetworkServer) -> None:
         """Test that early 'JoinRequest' are adequately rejected."""
         ctx = mock.MagicMock()
-        req = messaging.JoinRequest("mock", {}).to_string()
+        req = messaging.JoinRequest("mock", {}, VERSION).to_string()
         rep = await server.handler.handle_message(req, context=ctx)
         assert isinstance(rep, messaging.JoinReply)
         assert not rep.accept
@@ -144,7 +145,7 @@ class TestNetworkServerRegister:
         clients_info = asyncio.create_task(
             server.wait_for_clients(min_clients=1)
         )
-        join_request = messaging.JoinRequest("mock", {})
+        join_request = messaging.JoinRequest("mock", {}, VERSION)
         server_reply = asyncio.create_task(
             server.handler.handle_message(join_request.to_string(), context=0)
         )
@@ -177,7 +178,7 @@ class TestNetworkServerRegister:
         )
         join_replies = []
         for idx in range(3):
-            req = messaging.JoinRequest("mock", {}).to_string()
+            req = messaging.JoinRequest("mock", {}, VERSION).to_string()
             ctx = min(idx, 1)  # first and second contexts will be the same
             join_replies.append(server.handler.handle_message(req, ctx))
         # Run the former routines concurrently. Verify server-side results.

@@ -25,7 +25,7 @@ from typing import (
 from typing_extensions import Self  # future: import from typing (py >=3.11)
 
 from declearn.model.api import Model, Vector
-from declearn.optimizer.modules import OptiModule
+from declearn.optimizer.modules import AuxVar, OptiModule
 from declearn.optimizer.regularizers import Regularizer
 from declearn.typing import Batch
 
@@ -93,11 +93,11 @@ class Optimizer:
     -----------
     - apply_gradients(Model, Vector) -> None:
         Update a Model based on a pre-computed Vector of gradients.
-    - collect_aux_var() -> Dict[str, Dict[str, Any]]:
+    - collect_aux_var() -> Dict[str, AuxVar]:
         Collect and package plug-in modules' auxiliary variables.
     - compute_updates_from_gradients(Model, Vector) -> Vector:
         Compute and return model updates based on pre-computed gradients.
-    - process_aux_var(Dict[str, Dict[str, Any]]) -> None:
+    - process_aux_var(Dict[str, AuxVar]) -> None:
         Pass auxiliary variables to plug-in modules for processing.
     - run_train_step(Model, batch) -> None:
         Compute gradients of a Model over a Batch and apply updates.
@@ -310,27 +310,27 @@ class Optimizer:
 
     def collect_aux_var(
         self,
-    ) -> Dict[str, Dict[str, Any]]:
+    ) -> Dict[str, AuxVar]:
         """Return auxiliary variables that need to be shared between nodes.
 
         Returns
         -------
-        aux_var: dict[str, dict[str, ...]]
+        aux_var:
             Dict that associates `module.collect_aux_var()` values
             to `module.name` keys for each and every module plugged
-            in this optimizer that does produce auxiliary variables.
+            in this optimizer that produces auxiliary variables.
         """
-        aux_var = {}  # type: Dict[str, Dict[str, Any]]
+        aux_var = {}  # type: Dict[str, AuxVar]
         for module in self.modules:
             auxv = module.collect_aux_var()
-            if auxv:
+            if auxv is not None:
                 name = module.aux_name or module.name
                 aux_var[name] = auxv
         return aux_var
 
     def process_aux_var(
         self,
-        aux_var: Dict[str, Dict[str, Any]],
+        aux_var: Dict[str, AuxVar],
     ) -> None:
         """Update plug-in modules based on received shared auxiliary variables.
 
@@ -339,12 +339,14 @@ class Optimizer:
 
         Parameters
         ----------
-        aux_var: dict[str, dict[str, ...]]
+        aux_var: dict[str, AuxVar]
             Auxiliary variables received from the counterpart optimizer
             (on the other side of the client/server relationship), that
-            are to be a {`module.name`: `module.collect_aux_var()`} *or*
-            a {`module.name`: {client: `module.collect_aux_var()`}} dict
-            (depending on which side this optimizer is on).
+            are packed as a `{module.name: module.auxvar_cls}` dict for
+            modules that do use auxiliary variables.
+            When auxiliary variables from multiple peers are due to be
+            processed, they must be aggregated prior to being passed to
+            this method.
 
         Raises
         ------
@@ -357,7 +359,7 @@ class Optimizer:
             (module.aux_name or module.name): module for module in self.modules
         }
         for name, auxv in aux_var.items():
-            module = modules.get(name)
+            module = modules.get(name, None)
             if module is None:
                 raise KeyError(
                     f"No module with name '{name}' is available to receive "

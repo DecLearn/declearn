@@ -17,16 +17,21 @@
 
 """Vector abstraction API."""
 
+import dataclasses
 import operator
+import warnings
 from abc import ABCMeta, abstractmethod
 from typing import (
     # fmt: off
-    Any, Callable, Dict, Generic, Optional, Set, Tuple, Type, TypeVar, Union
+    Any, Callable, Dict, Generic, List, Optional,
+    Set, Tuple, Type, TypeVar, Union
 )
 
 from typing_extensions import Self  # future: import from typing (Py>=3.11)
 
 from declearn.utils import (
+    access_registered,
+    access_registration_info,
     add_json_support,
     create_types_registry,
     register_type,
@@ -34,6 +39,7 @@ from declearn.utils import (
 
 __all__ = [
     "Vector",
+    "VectorSpec",
     "register_vector_type",
 ]
 
@@ -44,6 +50,41 @@ VECTOR_TYPES = {}  # type: Dict[Type[Any], Type[Vector]]
 
 T = TypeVar("T")
 """Type-annotation for the data structures proper to a given Vector class."""
+
+
+@dataclasses.dataclass
+class VectorSpec:
+    """Metadata container to specify a Vector for its (un)flattening.
+
+    Fields
+    ------
+    names:
+        List of names of the coefficient tensors.
+    shapes:
+        Dict associating shapes (as tuples of int) to coefficient names.
+    dtypes:
+        Dict associating dtypes (as string values) to coefficient names.
+    v_type:
+        Optional (name, group) tuple of strings containing registration
+        information enabling to recover the `Vector` subclass.
+    kwargs:
+        Dict containing any subclass-specific metadata useful in building
+        back a Vector from its specifications and flattened values.
+    """
+
+    names: List[str]
+    shapes: Dict[str, Tuple[int, ...]]
+    dtypes: Dict[str, str]
+    v_type: Optional[Tuple[str, str]] = None
+    kwargs: Dict[str, Any] = dataclasses.field(default_factory=dict)
+
+
+add_json_support(
+    cls=VectorSpec,
+    pack=dataclasses.asdict,
+    unpack=lambda x: VectorSpec(**x),
+    name="VectorSpec",
+)
 
 
 @create_types_registry
@@ -440,6 +481,157 @@ class Vector(Generic[T], metaclass=ABCMeta):
         self,
     ) -> Self:
         """Compute coefficient-wise sum of elements."""
+
+    def get_vector_specs(
+        self,
+    ) -> VectorSpec:
+        """Return a VectorSpec instance storing metadata on this Vector.
+
+        This method is mostly meant to be called by the `flatten` class
+        method, and is merely implemented to define some common grounds
+        across all Vector subclasses.
+        """
+        try:
+            v_type = access_registration_info(type(self))
+        except KeyError:  # pragma: no cover
+            v_type = None
+            warnings.warn(
+                "Accessing specs of an unregistered Vector subclass.",
+                UserWarning,
+            )
+        return VectorSpec(
+            names=list(self.coefs),
+            shapes=self.shapes(),
+            dtypes=self.dtypes(),
+            v_type=v_type,
+        )
+
+    @abstractmethod
+    def flatten(
+        self,
+    ) -> Tuple[List[float], VectorSpec]:
+        """Flatten this Vector into a list of float and a metadata dict.
+
+        If this Vector contains any sparse data structure, it is expected
+        that zero-valued coefficients *are* part of the output values, as
+        the (un)flattening methods are aimed at enabling SecAgg features,
+        that may involve summing up tensors with distinct sparsity, which
+        cannot be easily anticipated in a decentralized fashin.
+
+        Returns
+        -------
+        values:
+            List of concatenated float (or int) values from this Vector.
+        v_spec:
+            VectorSpec instance storing metadata enabling to convert the
+            flattened values into a Vector instance similar to this one.
+        """
+
+    @classmethod
+    @abstractmethod
+    def unflatten(
+        cls,
+        values: List[float],
+        v_spec: VectorSpec,
+    ) -> Self:
+        """Unflatten a Vector from a list of float and a metadata dict.
+
+        This is the counterpart method to `flatten` and is defined at
+        the level of each Vector subclass. You may alternatively use
+        the `Vector.build_from_specs` generic method to automate the
+        identification of the target Vector subclass and pass inputs
+        to its `unflatten` method.
+
+        Parameters
+        ----------
+        values:
+            List of concatenated float (or int) values of the Vector.
+        v_spec:
+            VectorSpec instance storing metadata enabling to convert the
+            flattened values into an instance of this Vector class, with
+            proper data shapes and dtypes.
+
+        Returns
+        -------
+        vector:
+            Recovered Vector matching the one that was flattened into
+            the input arguments.
+
+        Raises
+        ------
+        KeyError
+            If the input specifications do not match expectations from
+            this specific Vector subclass.
+        ValueError
+            If the input values cannot be turned back into the shapes
+            and dtypes specified by input vector specs.
+        """
+
+    @staticmethod
+    def build_from_specs(
+        values: List[float],
+        v_spec: VectorSpec,
+    ) -> "Vector":
+        """Unflatten a Vector from a list of float and a metadata dict.
+
+        This staticmethod is a more generic version of the `unflatten`
+        classmethod, that may be called from the `Vector` ABC directly
+        in order to recreate a Vector from its specifications without
+        prior knowledge of the output Vector subclass, retrieved from
+        the `v_spec` information rather than from end-user knowledge.
+
+        Parameters
+        ----------
+        values:
+            List of concatenated float (or int) values of the Vector.
+        v_spec:
+            VectorSpec instance storing metadata enabling to convert
+            the flattened values into a Vector instance of a proper
+            type and with proper data shapes and dtypes.
+
+        Returns
+        -------
+        vector:
+            Recovered Vector matching the one that was flattened into
+            the input arguments.
+
+        Raises
+        ------
+        KeyError
+            If the input specifications do not enable retrieving the
+            Vector subclass constructor to use.
+            If the input specifications do not match expectations from
+            that target Vector subclass.
+        TypeError
+            If the inputs do not match type expectations.
+        ValueError
+            If the input values cannot be turned back into the shapes
+            and dtypes specified by input vector specs.
+        """
+        if not isinstance(v_spec, VectorSpec):
+            raise TypeError(
+                f"Expected 'v_spec' to be a VectorSpec, not '{type(v_spec)}'."
+            )
+        if v_spec.v_type is None:
+            raise KeyError(
+                "'Vector.build_from_specs' requires the input VectorSpec "
+                "to specify registration information of the target Vector "
+                "subclass."
+            )
+        try:
+            cls = access_registered(*v_spec.v_type)
+        except KeyError as exc:
+            raise KeyError(
+                "'Vector.build_from_specs' could not retrieve the target "
+                "Vector subclass based on provided registration information."
+            ) from exc
+        if not (isinstance(cls, type) and issubclass(cls, Vector)):
+            raise TypeError(
+                "'Vector.build_from_specs' retrieved something that is not a "
+                "Vector subclass based on provided registration information: "
+                f"'{cls}'."
+            )
+        return cls.unflatten(values, v_spec)
 
 
 def register_vector_type(

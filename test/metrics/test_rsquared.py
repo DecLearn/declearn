@@ -76,10 +76,12 @@ class TestRSquared(MeanMetricTestSuite):
         # Case when no samples have been seen: return 0.
         assert metric.get_result() == {metric.name: 0.0}
         # Case when SSt is null but SSr is not: return 0.
-        states = getattr(metric, "_states")
-        states["sum_of_weights"] = 1.0
-        states["sum_of_squared_errors"] = 0.1
+        states = metric.get_states()
+        states.sum_of_weights = 1.0
+        states.sum_of_squared_errors = 0.1
+        metric.set_states(states)
         assert metric.get_result() == {metric.name: 0.0}
         # Case when SSt and SSr are null but samples have been seen: return 1.
-        states["sum_of_squared_errors"] = 0.0
+        states.sum_of_squared_errors = 0.0
+        metric.set_states(states)
         assert metric.get_result() == {metric.name: 1.0}
