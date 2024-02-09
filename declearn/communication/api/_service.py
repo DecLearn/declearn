@@ -22,7 +22,6 @@ import logging
 from typing import Any, Dict, Optional, Set, Union
 
 
-from declearn import __version__
 from declearn.communication.messaging import (
     Empty,
     Error,
@@ -36,6 +35,7 @@ from declearn.communication.messaging import (
     flags,
     parse_message_from_string,
 )
+from declearn.version import VERSION
 
 
 __all__ = [
@@ -176,7 +176,7 @@ class MessagesHandler:
         """Return an 'Error' if a 'JoinRequest' is of incompatible version."""
         if message.version is None:
             message.version = "<2.4"
-        elif message.version.split(".")[:2] == __version__.split(".")[:2]:
+        elif message.version.split(".")[:2] == VERSION.split(".")[:2]:
             return None
         self.logger.info(
             "Received a registration request under name %s, that is "
@@ -186,7 +186,7 @@ class MessagesHandler:
         )
         return Error(
             "Cannot register due to the DecLearn version in use. "
-            f"Please update to `declearn ~= {__version__}`."
+            f"Please update to `declearn ~= {VERSION}`."
         )
 
     def _register_client(
