@@ -27,7 +27,7 @@ import grpc  # type: ignore
 from cryptography.hazmat.primitives import serialization
 
 from declearn.communication.api import NetworkServer
-from declearn.communication.api._service import MessagesHandler
+from declearn.communication.api.backend import MessagesHandler
 from declearn.communication.grpc.protobufs import message_pb2
 from declearn.communication.grpc.protobufs.message_pb2_grpc import (
     MessageBoardServicer,

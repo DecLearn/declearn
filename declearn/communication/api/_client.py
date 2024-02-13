@@ -17,19 +17,26 @@
 
 """Abstract class defining an API for client-side communication endpoints."""
 
+import abc
+import asyncio
 import logging
 import types
-from abc import ABCMeta, abstractmethod
+import warnings
 from typing import Any, ClassVar, Dict, Optional, Type, Union
 
+from typing_extensions import Self  # future: import from typing (py >=3.11)
 
-from declearn.communication.messaging import (
-    Empty,
-    Error,
-    GetMessageRequest,
-    JoinReply,
-    JoinRequest,
-    Message,
+from declearn.communication.api.backend import flags
+from declearn.communication.api.backend.actions import (
+    Accept,
+    ActionMessage,
+    # Drop,  # FUTURE: implement a method to drop politely
+    Join,
+    Ping,
+    Recv,
+    Reject,
+    Send,
+    parse_action_from_string,
 )
 from declearn.utils import create_types_registry, get_logger, register_type
 from declearn.version import VERSION
@@ -40,7 +47,7 @@ __all__ = [
 
 
 @create_types_registry
-class NetworkClient(metaclass=ABCMeta):
+class NetworkClient(metaclass=abc.ABCMeta):
     """Abstract class defining an API for client-side communication endpoints.
 
     This class defines the key methods used to communicate between a
@@ -56,7 +63,7 @@ class NetworkClient(metaclass=ABCMeta):
     >>> client = ClientSubclass("example.domain.com:8765", "name", "cert_path")
     >>> await client.start()
     >>> try:
-    >>>     client.register(data_info)
+    >>>     client.register()
     >>>     ...
     >>> finally:
     >>>     await client.stop()
@@ -66,7 +73,7 @@ class NetworkClient(metaclass=ABCMeta):
     object as an asynchronous context manager:
     ```
     >>> async with ClientSubclass(...) as client:
-    >>>     client.register(data_info)
+    >>>     client.register()
     >>>     ...
     ```
 
@@ -90,7 +97,6 @@ class NetworkClient(metaclass=ABCMeta):
         if register:
             register_type(cls, cls.protocol, group="NetworkClient")
 
-    @abstractmethod
     def __init__(
         self,
         server_uri: str,
@@ -114,7 +120,6 @@ class NetworkClient(metaclass=ABCMeta):
             Logger to use, or name of a logger to set up using
             `declearn.utils.get_logger`. If None, use `type(self)-name`.
         """
-        # Assign basic attributes. Note: children must handle 'certificate'.
         self.server_uri = server_uri
         self.name = name
         self._ssl = self._setup_ssl_context(certificate)
@@ -124,7 +129,7 @@ class NetworkClient(metaclass=ABCMeta):
             self.logger = get_logger(logger or f"{type(self).__name__}-{name}")
 
     @staticmethod
-    @abstractmethod
+    @abc.abstractmethod
     def _setup_ssl_context(
         certificate: Optional[str] = None,
     ) -> Any:
@@ -135,16 +140,20 @@ class NetworkClient(metaclass=ABCMeta):
 
     # similar to NetworkServer API; pylint: disable=duplicate-code
 
-    @abstractmethod
-    async def start(self) -> None:
+    @abc.abstractmethod
+    async def start(
+        self,
+    ) -> None:
         """Start the client, i.e. connect to the server.
 
         Note: this method can be called safely even if the
         client is already running (simply having no effect).
         """
 
-    @abstractmethod
-    async def stop(self) -> None:
+    @abc.abstractmethod
+    async def stop(
+        self,
+    ) -> None:
         """Stop the client, i.e. close all connections.
 
         Note: this method can be called safely even if the
@@ -153,7 +162,7 @@ class NetworkClient(metaclass=ABCMeta):
 
     async def __aenter__(
         self,
-    ) -> "NetworkClient":
+    ) -> Self:
         await self.start()
         return self
 
@@ -167,107 +176,126 @@ class NetworkClient(metaclass=ABCMeta):
 
     # pylint: enable=duplicate-code
 
-    async def register(
-        self,
-        data_info: Dict[str, Any],
-    ) -> bool:
-        """Request the server to join a federating learning session.
-
-        Parameters
-        ----------
-        data_info : dict[str, any]
-            JSON-serializable dictionary holding information on the local
-            data that the server will use to set up the training model.
-
-        Returns
-        -------
-        accepted: bool
-            Whether the registration request was accepted by the server
-            or not.
-
-        Raises
-        -------
-        TypeError
-            If the server does not return a JoinReply message.
-        """
-        query = JoinRequest(self.name, data_info, version=VERSION)
-        reply = await self._send_message(query)
-        # Case when a JoinReply was received.
-        if isinstance(reply, JoinReply):
-            self.logger.info(
-                "Registration was %saccepted: '%s'",
-                "" if reply.accept else "not ",
-                reply.flag,
-            )
-            return reply.accept
-        # Case when an Error was received.
-        if isinstance(reply, Error):
-            self.logger.error(
-                "Registration request triggered an error:\n%s", reply.message
-            )
-            return False
-        # Otherwise, raise.
-        raise TypeError(
-            "Received an undue message type in response to JoinRequest."
-        )
-
-    @abstractmethod
+    @abc.abstractmethod
     async def _send_message(
         self,
-        message: Message,
-    ) -> Message:
+        message: str,
+    ) -> str:
         """Send a message to the server and return the obtained reply.
 
         This method should be defined by concrete NetworkClient child
         classes, and implement communication-protocol-specific code
-        to send a Message (of any kind) to the server and await the
-        primary reply from the `MessagesHandler` used by the server.
+        to send a message to the server and await the primary reply
+        from the `MessagesHandler` used by the server.
         """
+
+    async def _exchange_action_messages(
+        self,
+        message: ActionMessage,
+    ) -> ActionMessage:
+        """Send an `ActionMessage` to the server and await its response."""
+        query = message.to_string()
+        reply = await self._send_message(query)
+        try:
+            return parse_action_from_string(reply)
+        except Exception as exc:
+            error = "Failed to decode a reply from the server."
+            self.logger.critical(error)
+            raise RuntimeError(error) from exc
+
+    async def register(
+        self,
+        data_info: Optional[Dict[str, Any]] = None,
+    ) -> bool:
+        """Register to the server as a client.
+
+        Returns
+        -------
+        accepted: bool
+            Whether the registration request was accepted by the server.
+
+        Raises
+        -------
+        TypeError
+            If the server does not return a valid message.
+            This is a failsafe and should never happen.
+        """
+        if data_info:
+            warnings.warn(
+                "Sending dataset information is no longer part of the client "
+                "registration process. The argument was ignored, and will be "
+                "removed in DecLearn version 2.4 and/or 3.0.",
+                DeprecationWarning,
+            )
+        query = Join(name=self.name, version=VERSION)
+        reply = await self._exchange_action_messages(query)
+        # Case when registration was accepted.
+        if isinstance(reply, Accept):
+            self.logger.info("Registration was accepted: '%s'", reply.flag)
+            return True
+        # Case when registration was rejected.
+        if isinstance(reply, Reject):
+            self.logger.error("Registration was rejected: '%s'", reply.flag)
+            return False
+        # Otherwise, raise.
+        error = (
+            "Received an undue response type when attempting to register "
+            f"with the server: '{type(reply)}'."
+        )
+        self.logger.critical(error)
+        raise TypeError(error)
 
     async def send_message(
         self,
-        message: Message,
+        message: str,
     ) -> None:
         """Send a message to the server.
 
         Parameters
         ----------
-        message: Message
-            Message instance that is to be delivered to the server.
+        message: str
+            Message string that is to be delivered to the server.
 
         Raises
         ------
         RuntimeError
-            If the server emits an Error message in response to the
-            message sent.
+            If the server rejects the sent message.
         TypeError
-            If the server returns a non-Empty message.
+            If the server returns neither a ping-back nor rejection message.
+            This is a failsafe and should never happen.
 
         Note
         ----
         The message sent here is designed to be received using the
         `NetworkServer.wait_for_messages` method.
         """
-        reply = await self._send_message(message)
-        if isinstance(reply, Empty):
+        query = Send(message)
+        reply = await self._exchange_action_messages(query)
+        if isinstance(reply, Ping):
             return None
-        if isinstance(reply, Error):
-            raise RuntimeError(
-                f"Message was rejected with error: {reply.message}"
-            )
-        raise TypeError(
-            "Received an undue message type in response to the posted message."
+        if isinstance(reply, Reject):
+            error = f"Message was rejected: {reply.flag}"
+            self.logger.error(error)
+            raise RuntimeError(error)
+        error = (
+            "Received an undue response type when attempting to send a "
+            f"message: '{type(reply)}'."
         )
+        self.logger.critical(error)
+        raise TypeError(error)
 
-    async def check_message(self, timeout: Optional[int] = None) -> Message:
-        """Retrieve the next message sent by the server.
+    async def recv_message(
+        self,
+        timeout: Optional[int] = None,
+    ) -> str:
+        """Await a message from the server, with optional timeout.
 
         Parameters
         ----------
         timeout: int or None, default=None
-            Optional timeout delay, after which the server will send an
-            Error message with `messaging.flags.CHECK_MESSAGE_TIMEOUT`
-            if no other message awaits collection by this client.
+            Optional timeout delay, after which the server will send
+            a timeout notification to this client if no message is
+            available for it.
 
         Returns
         -------
@@ -279,5 +307,51 @@ class NetworkClient(metaclass=ABCMeta):
         The message received here is expected to have been sent
         using one of the following `NetorkServer` methods:
         `send_message`, `send_messages`, or `broadcast_message`.
+
+        Raises
+        ------
+        asyncio.TimeoutError
+            If no message is available after the `timeout` delay.
+        RuntimeError
+            If the request is rejected by the server.
+        TypeError
+            If the server returns data of unproper type.
+            This is a failsafe and should never happen.
         """
-        return await self._send_message(GetMessageRequest(timeout))
+        # Send a query, get a reply and return its content when possible.
+        query = Recv(timeout)
+        reply = await self._exchange_action_messages(query)
+        if isinstance(reply, Send):
+            return reply.content
+        # Handle the various kinds of failures and raise accordingly.
+        if isinstance(reply, Reject):
+            if reply.flag == flags.CHECK_MESSAGE_TIMEOUT:
+                error = "Message-retrieval request timed out."
+                self.logger.error(error)
+                raise asyncio.TimeoutError(error)
+            error = f"Message-retrieval request was rejected: '{reply.flag}'."
+            self.logger.error(error)
+            raise RuntimeError(error)
+        error = (
+            "Received an undue response type when attempting to receive a "
+            f"message: '{type(reply)}'."
+        )
+        self.logger.critical(error)
+        raise TypeError(error)
+
+    async def check_message(
+        self,
+        timeout: Optional[int] = None,
+    ) -> str:
+        """Await a message from the server, with optional timeout.
+
+        This method is DEPRECATED in favor of the `recv_message` one.
+        It acts as an alias and will be removed in v2.6 and/or v3.0.
+        """
+        warnings.warn(
+            "'NetworkServer.check_message' was renamed as 'recv_message' "
+            "in DecLearn 2.4. It now acts as an alias, but will be removed "
+            "in version 2.6 and/or 3.0.",
+            DeprecationWarning,
+        )
+        return await self.recv_message(timeout)

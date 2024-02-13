@@ -38,12 +38,8 @@ abstract base dataclass, and its children:
 It also exposes the [parse_message_from_string]\
 [declearn.communication.messaging.parse_message_from_string]
 function to recover the structures above from a dump string.
-
-Finally, it exposes a set of [flags][declearn.communication.messaging.flags],
-as constant strings that may be used conventionally as part of messages.
 """
 
-from . import flags
 from ._messages import (
     CancelTraining,
     Empty,

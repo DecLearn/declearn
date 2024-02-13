@@ -15,19 +15,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Communication flags used in declearn communication backends.
+"""Communication flags used by the declearn communication backend.
 
-This module exposes the following flags, which are all str constants:
-
-- REGISTRATION_UNSTARTED
-- REGISTRATION_OPEN
-- REGISTRATION_CLOSED
-- REGISTERED_WELCOME
-- REGISTERED_ALREADY
-- CHECK_MESSAGE_TIMEOUT
-- INVALID_MESSAGE
-- REJECT_UNREGISTERED
+This module exposes conventional flags, which are all str constants.
 """
+
+__all__ = [
+    "CHECK_MESSAGE_TIMEOUT",
+    "INVALID_MESSAGE",
+    "REGISTERED_WELCOME",
+    "REGISTERED_ALREADY",
+    "REGISTRATION_UNSTARTED",
+    "REGISTRATION_OPEN",
+    "REGISTRATION_CLOSED",
+    "REJECT_UNREGISTERED",
+]
 
 
 # Registration flags.
