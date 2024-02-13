@@ -126,7 +126,28 @@ ACTION_MESSAGES = {cls.__name__.lower(): cls for cls in _ACTION_CLASSES}
 def parse_action_from_string(
     string: str,
 ) -> ActionMessage:
-    """Parse a serialized 'ActionMessage' from a string."""
+    """Parse a serialized `ActionMessage` from a string.
+
+    Parameters
+    ----------
+    string:
+        Serialized `ActionMessage` instance string.
+
+    Returns
+    -------
+    action:
+        `ActionMessage` recovered from `string`.
+
+    Raises
+    ------
+    KeyError
+        If the string cannot be mapped to an `ActionMessage` class.
+    LegacyMessageError
+        If the string appears to be a serialized legacy `Message`,
+        probably received from an older-declearn-version peer.
+    ValueError
+        If the string cannot be parsed properly.
+    """
     try:
         data = json.loads(string)
     except json.JSONDecodeError as exc:
@@ -135,7 +156,8 @@ def parse_action_from_string(
         raise ValueError(
             "Failed to parse 'ActionMessage' string: no 'action' key."
         )
-    cls = ACTION_MESSAGES.get(data["action"], None)
+    action = data.pop("action")
+    cls = ACTION_MESSAGES.get(action, None)
     if cls is None:
         raise KeyError(
             "Failed to parse 'ActionMessage' string: no class matches "
