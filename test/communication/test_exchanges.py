@@ -43,11 +43,11 @@ from typing import AsyncIterator, Dict, List, Optional, Tuple
 import pytest
 import pytest_asyncio
 
+from declearn import messaging
 from declearn.communication import (
     build_client,
     build_server,
     list_available_protocols,
-    messaging,
 )
 from declearn.communication.api import NetworkClient, NetworkServer
 
@@ -133,7 +133,7 @@ class TestNetworkRegister:
         self, server: NetworkServer, client: NetworkClient
     ) -> None:
         """Test that early registration requests are rejected."""
-        accepted = await client.register(data_info={"test": 42})
+        accepted = await client.register()
         assert not accepted
         assert not server.client_names
 
@@ -142,11 +142,11 @@ class TestNetworkRegister:
         self, server: NetworkServer, client: NetworkClient
     ) -> None:
         """Test that client registration works properly."""
-        data_info, accepted = await asyncio.gather(
+        output, accepted = await asyncio.gather(
             server.wait_for_clients(1),
-            client.register(data_info={"test": 42}),
+            client.register(),
         )
-        assert data_info == {"client": {"test": 42}}
+        assert output is None
         assert accepted
         assert server.client_names == {"client"}
 
@@ -159,7 +159,7 @@ class TestNetworkRegister:
         with pytest.raises(RuntimeError):
             await server.wait_for_clients(timeout=1)
         # Try registering after that timeout.
-        accepted = await client.register(data_info={"test": 42})
+        accepted = await client.register()
         assert not accepted
 
 
@@ -184,7 +184,7 @@ async def agents_fixture(
     await asyncio.gather(*[client.start() for client in clients])
     await asyncio.gather(
         server.wait_for_clients(n_clients, timeout=2),
-        *[client.register({}) for client in clients],
+        *[client.register() for client in clients],
     )
     # Yield the server and clients. On exit, stop the clients.
     yield server, clients
@@ -223,7 +223,12 @@ class TestNetworkExchanges:
         for idx, client in enumerate(clients):
             msg = messaging.GenericMessage(action="test", params={"idx": idx})
             coros.append(client.send_message(msg))
-        messages, *_ = await asyncio.gather(server.wait_for_messages(), *coros)
+        protos, *_ = await asyncio.gather(server.wait_for_messages(), *coros)
+        assert all(
+            isinstance(proto, messaging.SerializedMessage)
+            for proto in protos.values()
+        )
+        messages = {key: proto.deserialize() for key, proto in protos.items()}
         assert messages == {
             c.name: messaging.GenericMessage(action="test", params={"idx": i})
             for i, c in enumerate(clients)
@@ -237,9 +242,12 @@ class TestNetworkExchanges:
         server, clients = agents
         msg = messaging.GenericMessage(action="test", params={"value": 42})
         send = server.broadcast_message(msg)
-        recv = [client.check_message(timeout=1) for client in clients]
+        recv = [client.recv_message(timeout=1) for client in clients]
         _, *replies = await asyncio.gather(send, *recv)
-        assert all(reply == msg for reply in replies)
+        assert all(
+            isinstance(reply, messaging.SerializedMessage) for reply in replies
+        )
+        assert all(reply.deserialize() == msg for reply in replies)
 
     async def server_to_clients_individual(
         self,
@@ -252,10 +260,13 @@ class TestNetworkExchanges:
             for idx, name in enumerate(server.client_names)
         }  # type: Dict[str, messaging.Message]
         send = server.send_messages(messages)
-        recv = [client.check_message(timeout=1) for client in clients]
+        recv = [client.recv_message(timeout=1) for client in clients]
         _, *replies = await asyncio.gather(send, *recv)
         assert all(
-            reply == messages[client.name]
+            isinstance(reply, messaging.SerializedMessage) for reply in replies
+        )
+        assert all(
+            reply.deserialize() == messages[client.name]
             for client, reply in zip(clients, replies)
         )
 
@@ -272,7 +283,12 @@ class TestNetworkExchanges:
                 action="test", params={"idx": idx, "content": large}
             )
             coros.append(client.send_message(msg))
-        messages, *_ = await asyncio.gather(server.wait_for_messages(), *coros)
+        protos, *_ = await asyncio.gather(server.wait_for_messages(), *coros)
+        assert all(
+            isinstance(proto, messaging.SerializedMessage)
+            for proto in protos.values()
+        )
+        messages = {key: proto.deserialize() for key, proto in protos.items()}
         assert messages == {
             c.name: messaging.GenericMessage(
                 action="test", params={"idx": i, "content": large}
