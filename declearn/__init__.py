@@ -40,6 +40,8 @@ The package is organized into the following submodules:
     Data interfacing API and implementations.
 * [main][declearn.main]:
     Main classes implementing a Federated Learning process.
+* [messaging][declearn.messaging]:
+    API and default classes to define parsable messages for applications.
 * [metrics][declearn.metrics]:
     Iterative and federative evaluation metrics computation tools.
 * [model][declearn.model]:
@@ -61,6 +63,7 @@ from . import (
     dataset,
     main,
     metrics,
+    messaging,
     model,
     optimizer,
     typing,

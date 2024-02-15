@@ -38,6 +38,7 @@ from declearn.communication.api.backend.actions import (
     Send,
     parse_action_from_string,
 )
+from declearn.messaging import Message, SerializedMessage
 from declearn.utils import create_types_registry, get_logger, register_type
 from declearn.version import VERSION
 
@@ -247,14 +248,14 @@ class NetworkClient(metaclass=abc.ABCMeta):
 
     async def send_message(
         self,
-        message: str,
+        message: Message,
     ) -> None:
         """Send a message to the server.
 
         Parameters
         ----------
         message: str
-            Message string that is to be delivered to the server.
+            Message instance that is to be delivered to the server.
 
         Raises
         ------
@@ -269,7 +270,7 @@ class NetworkClient(metaclass=abc.ABCMeta):
         The message sent here is designed to be received using the
         `NetworkServer.wait_for_messages` method.
         """
-        query = Send(message)
+        query = Send(message.to_string())
         reply = await self._exchange_action_messages(query)
         if isinstance(reply, Ping):
             return None
@@ -287,7 +288,7 @@ class NetworkClient(metaclass=abc.ABCMeta):
     async def recv_message(
         self,
         timeout: Optional[int] = None,
-    ) -> str:
+    ) -> SerializedMessage:
         """Await a message from the server, with optional timeout.
 
         Parameters
@@ -299,8 +300,8 @@ class NetworkClient(metaclass=abc.ABCMeta):
 
         Returns
         -------
-        message: Message
-            Message received from the server.
+        message: SerializedMessage
+            Serialized message received from the server.
 
         Note
         ----
@@ -322,7 +323,7 @@ class NetworkClient(metaclass=abc.ABCMeta):
         query = Recv(timeout)
         reply = await self._exchange_action_messages(query)
         if isinstance(reply, Send):
-            return reply.content
+            return SerializedMessage.from_message_string(reply.content)
         # Handle the various kinds of failures and raise accordingly.
         if isinstance(reply, Reject):
             if reply.flag == flags.CHECK_MESSAGE_TIMEOUT:
@@ -342,7 +343,7 @@ class NetworkClient(metaclass=abc.ABCMeta):
     async def check_message(
         self,
         timeout: Optional[int] = None,
-    ) -> str:
+    ) -> SerializedMessage:
         """Await a message from the server, with optional timeout.
 
         This method is DEPRECATED in favor of the `recv_message` one.
