@@ -37,17 +37,26 @@ import dataclasses
 import json
 from typing import Optional
 
+
+from declearn.version import VERSION
+
 __all__ = [
     "Accept",
     "ActionMessage",
     "Drop",
     "Join",
+    "LegacyReject",
+    "LegacyMessageError",
     "Ping",
     "Recv",
     "Reject",
     "Send",
     "parse_action_from_string",
 ]
+
+
+class LegacyMessageError(Exception):
+    """Custom exception to denote legacy Message being received."""
 
 
 @dataclasses.dataclass
@@ -82,7 +91,7 @@ class Join(ActionMessage):
     """Client action message to request joining a server."""
 
     name: str
-    version: Optional[str] = None
+    version: str
 
 
 @dataclasses.dataclass
@@ -153,6 +162,10 @@ def parse_action_from_string(
     except json.JSONDecodeError as exc:
         raise ValueError("Failed to parse 'ActionMessage' string.") from exc
     if "action" not in data:
+        if "typekey" in data:
+            raise LegacyMessageError(
+                f"Received a legacy message with type '{data['typekey']}'."
+            )
         raise ValueError(
             "Failed to parse 'ActionMessage' string: no 'action' key."
         )
@@ -164,3 +177,21 @@ def parse_action_from_string(
             f"'{data['action']}' key."
         )
     return cls(**data)
+
+
+@dataclasses.dataclass
+class LegacyReject(ActionMessage):
+    """Server action to reject a legacy client's (registration) message.
+
+    This message will be serialized in a way that is compatible with the
+    legacy message parser, but not with the current one.
+    """
+
+    def to_string(
+        self,
+    ) -> str:
+        message = (
+            "Cannot communicate due to the DecLearn version in use. "
+            f"Please update to `declearn ~= {VERSION}`."
+        )
+        return json.dumps({"typekey": "error", "message": message})

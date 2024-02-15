@@ -29,6 +29,8 @@ from declearn.communication.api.backend.actions import (
     ActionMessage,
     Drop,
     Join,
+    LegacyMessageError,
+    LegacyReject,
     Ping,
     Recv,
     Reject,
@@ -103,9 +105,13 @@ class MessagesHandler:
             message = parse_action_from_string(string)
         except (KeyError, TypeError, ValueError) as exc:
             self.logger.info(
-                "%s encountered while parsing received message: %s", repr(exc)
+                "Exception encountered while parsing received message: %s",
+                repr(exc),
             )
             return Reject(flags.INVALID_MESSAGE)
+        except LegacyMessageError as exc:
+            self.logger.info(repr(exc))
+            return LegacyReject()
         # Case: join request from a (new) client. Handle it.
         if isinstance(message, Join):
             return await self._handle_join_request(message, context)
@@ -169,9 +175,7 @@ class MessagesHandler:
         message: Join,
     ) -> Optional[Reject]:
         """Return an 'Error' if a 'JoinRequest' is of incompatible version."""
-        if message.version is None:
-            message.version = "<2.4"
-        elif message.version.split(".")[:2] == VERSION.split(".")[:2]:
+        if message.version.split(".")[:2] == VERSION.split(".")[:2]:
             return None
         self.logger.info(
             "Received a registration request under name %s, that is "
