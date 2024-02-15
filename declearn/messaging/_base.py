@@ -38,7 +38,11 @@ __all__ = [
     "EvaluationRequest",
     "GenericMessage",
     "InitRequest",
+    "InitReply",
+    "MetadataQuery",
+    "MetadataReply",
     "PrivacyRequest",
+    "PrivacyReply",
     "StopTraining",
     "TrainReply",
     "TrainRequest",
@@ -136,6 +140,31 @@ class InitRequest(Message):
 
 
 @dataclasses.dataclass
+class InitReply(Message):
+    """Client-emitted message indicating that initialization went fine."""
+
+    typekey = "init_reply"
+
+
+@dataclasses.dataclass
+class MetadataQuery(Message):
+    """Server-emitted request for metadata on a client's dataset."""
+
+    typekey = "metadata_query"
+
+    fields: List[str]
+
+
+@dataclasses.dataclass
+class MetadataReply(Message):
+    """Client-emitted metadata in response to a server request."""
+
+    typekey = "metadata_reply"
+
+    data_info: Dict[str, Any]
+
+
+@dataclasses.dataclass
 class PrivacyRequest(Message):
     """Server-emitted request to set up local differential privacy."""
 
@@ -154,6 +183,13 @@ class PrivacyRequest(Message):
     batches: Dict[str, Any]
     n_epoch: Optional[int]
     n_steps: Optional[int]
+
+
+@dataclasses.dataclass
+class PrivacyReply(Message):
+    """Client-emitted message indicating that DP setup went fine."""
+
+    typekey = "privacy_reply"
 
 
 @dataclasses.dataclass

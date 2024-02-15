@@ -35,7 +35,11 @@ Base messages
 * [EvaluationRequest][declearn.messaging.EvaluationRequest]
 * [GenericMessage][declearn.messaging.GenericMessage]
 * [InitRequest][declearn.messaging.InitRequest]
+* [InitReply][declearn.messaging.InitReply]
+* [MetadataQuery][declearn.messaging.MetadataQuery]
+* [MetadataReply][declearn.messaging.MetadataReply]
 * [PrivacyRequest][declearn.messaging.PrivacyRequest]
+* [PrivacyReply][declearn.messaging.PrivacyReply]
 * [StopTraining][declearn.messaging.StopTraining]
 * [TrainReply][declearn.messaging.TrainReply]
 * [TrainRequest][declearn.messaging.TrainRequest]
@@ -53,7 +57,11 @@ from ._base import (
     EvaluationRequest,
     GenericMessage,
     InitRequest,
+    InitReply,
+    MetadataQuery,
+    MetadataReply,
     PrivacyRequest,
+    PrivacyReply,
     StopTraining,
     TrainReply,
     TrainRequest,
