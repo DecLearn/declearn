@@ -18,7 +18,6 @@
 """Dataset implementation to serve scikit-learn compatible in-memory data."""
 
 import os
-import warnings
 from typing import Any, Dict, Iterator, List, Optional, Set, Union
 
 import numpy as np
@@ -221,48 +220,6 @@ class InMemoryDataset(Dataset):
         raise TypeError(  # pragma: no cover
             f"Invalid 'data' attribute type: '{type(self.target)}'."
         )
-
-    @staticmethod
-    def load_data_array(
-        path: str,
-        **kwargs: Any,
-    ) -> DataArray:  # pragma: no cover
-        """Load a data array from a dump file.
-
-        As of declearn v2.2, this staticmethod is DEPRECATED in favor of
-        `declearn.dataset.utils.load_data_array`, which is now calls. It
-        will be removed in v2.4 and/or v3.0.
-
-        See [declearn.dataset.utils.load_data_array][] for more details.
-        """
-        warnings.warn(
-            "'InMemoryDataset.load_data_array' has been deprecated in favor"
-            " of `declearn.dataset.utils.load_data_array`. It will be removed"
-            " in version 2.4 and/or 3.0.",
-            category=DeprecationWarning,
-        )
-        return load_data_array(path, **kwargs)
-
-    @staticmethod
-    def save_data_array(
-        path: str,
-        array: Union[DataArray, pd.Series],
-    ) -> str:  # pragma: no cover
-        """Save a data array to a dump file.
-
-        As of declearn v2.2, this staticmethod is DEPRECATED in favor of
-        `declearn.dataset.utils.save_data_array`, which is now calls. It
-        will be removed in v2.4 and/or v3.0.
-
-        See [declearn.dataset.utils.save_data_array][] for more details.
-        """
-        warnings.warn(
-            "'InMemoryDataset.save_data_array' has been deprecated in favor"
-            " of `declearn.dataset.utils.save_data_array`. It will be removed"
-            " in version 2.4 and/or 3.0.",
-            category=DeprecationWarning,
-        )
-        return save_data_array(path, array)
 
     @classmethod
     def from_svmlight(
