@@ -334,7 +334,7 @@ def get_batch_function(
 
 def get_stack_function(
     batch_mode: BatchMode,
-) -> Callable[[Union[List[None], List[tf.Tensor]]], Optional[tf.Tensor],]:
+) -> Callable[[Union[List[None], List[tf.Tensor]]], Optional[tf.Tensor]]:
     """Return a function to stack sample-wise atomic elements."""
     if batch_mode == "default":
         return _stack_default

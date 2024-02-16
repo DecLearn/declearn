@@ -89,8 +89,7 @@ def create_config_file(checkpointer: Checkpointer, type_obj: str) -> str:
 
 
 class TestCheckpointer:
-
-    """Unit tests for Checkpointer class"""
+    """Unit tests for Checkpointer class."""
 
     def test_init_default(self, tmp_path: str) -> None:
         """Test `Checkpointer.__init__` with `max_history=None`."""

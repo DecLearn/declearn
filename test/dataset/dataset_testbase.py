@@ -27,7 +27,6 @@ from declearn.test_utils import assert_batch_equal, to_numpy
 
 
 class DatasetTestToolbox:
-
     """TestCase fixture-provider protocol."""
 
     # pylint: disable=too-few-public-methods
@@ -46,8 +45,7 @@ class DatasetTestToolbox:
 
 
 class DatasetTestSuite:
-
-    """Base tests for declearn Dataset abstract methods"""
+    """Base tests for declearn Dataset abstract methods."""
 
     def test_generate_batches_batchsize(self, toolbox: DatasetTestToolbox):
         """Test batch_size argument to test_generate_batches method"""

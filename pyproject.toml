@@ -94,7 +94,7 @@ docs = [
 ]
 # test-specific dependencies
 tests = [
-    "black ~= 23.0",
+    "black ~= 24.0",
     "mypy ~= 1.0",
     "pylint ~= 3.0",
     "pytest ~= 7.4",

@@ -373,7 +373,7 @@ class TorchModel(Model):
     def compute_batch_predictions(
         self,
         batch: Batch,
-    ) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray],]:
+    ) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray]]:
         inputs, y_true, s_wght = self._unpack_batch(batch)
         if y_true is None:
             raise TypeError(
