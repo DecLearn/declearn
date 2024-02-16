@@ -8,7 +8,7 @@ requires = [
 
 [project]
 name = "declearn"
-version = "2.3.1"
+version = "2.4.0"
 description = "Declearn - a python package for private decentralized learning."
 readme = "README.md"
 requires-python = ">=3.8"
