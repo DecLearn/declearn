@@ -68,10 +68,10 @@ async def server_fixture(
         port=8765,
         certificate=ssl_cert["server_cert"] if ssl else None,
         private_key=ssl_cert["server_pkey"] if ssl else None,
+        heartbeat=0.1,  # fasten tests by setting a low heartbeat
     )
-    await server.start()
-    yield server
-    await server.stop()
+    async with server:
+        yield server
 
 
 def client_from_server(
@@ -118,9 +118,8 @@ async def client_fixture(
         c_name="client",
         ca_ssl=ssl_cert["client_cert"] if ssl else None,
     )
-    await client.start()
-    yield client
-    await client.stop()
+    async with client:
+        yield client
 
 
 @pytest.mark.parametrize("ssl", [True, False], ids=["ssl", "no_ssl"])
@@ -157,7 +156,7 @@ class TestNetworkRegister:
         """Test that late client registration fails properly."""
         # Wait for clients, with a timeout.
         with pytest.raises(RuntimeError):
-            await server.wait_for_clients(timeout=1)
+            await server.wait_for_clients(timeout=0.1)
         # Try registering after that timeout.
         accepted = await client.register()
         assert not accepted
@@ -183,7 +182,7 @@ async def agents_fixture(
     # Start the clients and have the server register them.
     await asyncio.gather(*[client.start() for client in clients])
     await asyncio.gather(
-        server.wait_for_clients(n_clients, timeout=2),
+        server.wait_for_clients(n_clients, timeout=1),
         *[client.register() for client in clients],
     )
     # Yield the server and clients. On exit, stop the clients.

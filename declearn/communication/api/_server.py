@@ -97,6 +97,7 @@ class NetworkServer(metaclass=abc.ABCMeta):
         certificate: Optional[str] = None,
         private_key: Optional[str] = None,
         password: Optional[str] = None,
+        heartbeat: float = 1.0,
         logger: Union[logging.Logger, str, None] = None,
     ) -> None:
         """Instantiate the server-side communications handler.
@@ -118,6 +119,9 @@ class NetworkServer(metaclass=abc.ABCMeta):
             Optional password used to access `private_key`, or path to a
             file from which to read such a password.
             If None but a password is needed, an input will be prompted.
+        heartbeat: float, default=1.0
+            Delay (in seconds) between verifications when checking for a
+            message having beend received from or collected by a client.
         logger: logging.Logger or str or None, default=None,
             Logger to use, or name of a logger to set up with
             `declearn.utils.get_logger`. If None, use `type(self)`.
@@ -130,7 +134,7 @@ class NetworkServer(metaclass=abc.ABCMeta):
             self.logger = logger
         else:
             self.logger = get_logger(logger or f"{type(self).__name__}")
-        self.handler = MessagesHandler(self.logger)
+        self.handler = MessagesHandler(logger=self.logger, heartbeat=heartbeat)
 
     @property
     @abc.abstractmethod

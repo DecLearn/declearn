@@ -102,7 +102,13 @@ def build_client(
             f"class for protocol '{protocol}'."
         ) from exc
     assert issubclass(cls, NetworkClient)  # guaranteed by TypesRegistry
-    return cls(server_uri, name, certificate, logger, **kwargs)
+    return cls(
+        server_uri=server_uri,
+        name=name,
+        certificate=certificate,
+        logger=logger,
+        **kwargs,
+    )
 
 
 def build_server(
@@ -112,6 +118,7 @@ def build_server(
     certificate: Optional[str] = None,
     private_key: Optional[str] = None,
     password: Optional[str] = None,
+    heartbeat: float = 1.0,
     logger: Union[logging.Logger, str, None] = None,
     **kwargs: Any,
 ) -> NetworkServer:
@@ -137,6 +144,9 @@ def build_server(
         Optional password used to access `private_key`, or path to a
         file from which to read such a password.
         If None but a password is needed, an input will be prompted.
+    heartbeat: float, default=1.0
+        Delay (in seconds) between verifications when checking for a
+        message having beend received from or collected by a client.
     logger: logging.Logger or str or None, default=None,
         Logger to use, or name of a logger to set up with
         `declearn.utils.get_logger`. If None, use `type(server)`.
@@ -161,7 +171,14 @@ def build_server(
         ) from exc
     assert issubclass(cls, NetworkServer)  # guaranteed by TypesRegistry
     return cls(
-        host, port, certificate, private_key, password, logger, **kwargs
+        host=host,
+        port=port,
+        certificate=certificate,
+        private_key=private_key,
+        password=password,
+        heartbeat=heartbeat,
+        logger=logger,
+        **kwargs,
     )
 
 

@@ -30,7 +30,7 @@ from declearn.communication import (
     list_available_protocols,
 )
 from declearn.communication.api import NetworkServer
-from declearn.communication.api.backend import actions, flags
+from declearn.communication.api.backend import MessagesHandler, actions, flags
 from declearn.utils import access_types_mapping, get_logger
 from declearn.version import VERSION
 
@@ -59,7 +59,7 @@ class TestNetworkServerInit:
         assert isinstance(server, cls)
         assert server.host == "127.0.0.1"
         assert server.port == 8765
-        assert server.handler.__class__.__name__ == "MessagesHandler"
+        assert isinstance(server.handler, MessagesHandler)
 
     def test_init_ssl(self, protocol: str, ssl_cert: Dict[str, str]) -> None:
         """Test that instantiation with optional SSL parameters works."""
@@ -121,6 +121,7 @@ async def server_fixture(
         protocol=protocol,
         host="127.0.0.1",
         port=8765,
+        heartbeat=0.1,  # fasten tests by setting a low heartbeat
     )
     async with server:
         yield server
@@ -158,7 +159,7 @@ class TestNetworkServerRegister:
     async def test_server_await_timeout(self, server: NetworkServer) -> None:
         """Test 'wait_for_clients' with an expected timeout error."""
         with pytest.raises(RuntimeError):
-            await server.wait_for_clients(timeout=1)
+            await server.wait_for_clients(timeout=0.1)
 
     @pytest.mark.asyncio
     async def test_server_await_clients(self, server: NetworkServer) -> None:

@@ -130,10 +130,9 @@ async def secure_grpc_client_fixture(
 @pytest_asyncio.fixture(name="insecure_declearn_server")
 async def insecure_declearn_server_fixture() -> AsyncIterator[GrpcServer]:
     """Create and return a GrpcServer with unsecured communications."""
-    server = GrpcServer(host=HOST, port=PORT)
-    await server.start()
-    yield server
-    await server.stop()
+    server = GrpcServer(host=HOST, port=PORT, heartbeat=0.1)
+    async with server:
+        yield server
 
 
 @pytest_asyncio.fixture(name="secure_declearn_server")
@@ -146,10 +145,10 @@ async def secure_declearn_server_fixture(
         port=PORT,
         certificate=ssl_cert["server_cert"],
         private_key=ssl_cert["server_pkey"],
+        heartbeat=0.1,
     )
-    await server.start()
-    yield server
-    await server.stop()
+    async with server:
+        yield server
 
 
 @pytest_asyncio.fixture(name="insecure_declearn_client")

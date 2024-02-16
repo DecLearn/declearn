@@ -50,6 +50,7 @@ class WebsocketsServer(NetworkServer):
         certificate: Optional[str] = None,
         private_key: Optional[str] = None,
         password: Optional[str] = None,
+        heartbeat: float = 1.0,
         logger: Union[logging.Logger, str, None] = None,
     ) -> None:
         """Instantiate the server-side WebSockets communications handler.
@@ -71,13 +72,16 @@ class WebsocketsServer(NetworkServer):
             Optional password used to access `private_key`, or path to a
             file from which to read such a password.
             If None but a password is needed, an input will be prompted.
+        heartbeat: float, default=1.0
+            Delay (in seconds) between verifications when checking for a
+            message having beend received from or collected by a client.
         logger: logging.Logger or str or None, default=None,
             Logger to use, or name of a logger to set up with
             `declearn.utils.get_logger`. If None, use `type(self)`.
         """
         # inherited signature; pylint: disable=too-many-arguments
         super().__init__(
-            host, port, certificate, private_key, password, logger
+            host, port, certificate, private_key, password, heartbeat, logger
         )
         self._server = None  # type: Optional[WebSocketServer]
 

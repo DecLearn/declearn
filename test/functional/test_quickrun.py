@@ -21,6 +21,7 @@ import os
 import pathlib
 
 import numpy as np
+import pytest
 
 from declearn.dataset import split_data
 from declearn.quickrun import quickrun
@@ -37,6 +38,7 @@ CONFIG_TOML = """
 protocol = "websockets"
 host = "127.0.0.1"
 port = 8080
+heartbeat = 0.1
 
 [data]
 
@@ -63,7 +65,8 @@ metrics = [
 """
 
 
-def test_quickrun_mnist(tmp_path: str) -> None:
+@pytest.mark.asyncio
+async def test_quickrun_mnist(tmp_path: str) -> None:
     """Run a very basic MNIST example using 'declearn-quickrun'."""
     # Download, prepare and split the MNIST dataset into iid shards.
     split_data(tmp_path, n_shards=2, seed=0)
@@ -79,4 +82,4 @@ def test_quickrun_mnist(tmp_path: str) -> None:
     with open(config, "w", encoding="utf-8") as file:
         file.write(CONFIG_TOML)
     # Run the quickrun experiment.
-    quickrun(config)
+    await quickrun(config)
