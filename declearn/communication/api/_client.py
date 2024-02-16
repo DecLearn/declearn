@@ -287,13 +287,13 @@ class NetworkClient(metaclass=abc.ABCMeta):
 
     async def recv_message(
         self,
-        timeout: Optional[int] = None,
+        timeout: Optional[float] = None,
     ) -> SerializedMessage:
         """Await a message from the server, with optional timeout.
 
         Parameters
         ----------
-        timeout: int or None, default=None
+        timeout: float or None, default=None
             Optional timeout delay, after which the server will send
             a timeout notification to this client if no message is
             available for it.
@@ -342,7 +342,7 @@ class NetworkClient(metaclass=abc.ABCMeta):
 
     async def check_message(
         self,
-        timeout: Optional[int] = None,
+        timeout: Optional[float] = None,
     ) -> SerializedMessage:
         """Await a message from the server, with optional timeout.
 

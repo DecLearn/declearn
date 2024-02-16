@@ -103,7 +103,7 @@ class Ping(ActionMessage):
 class Recv(ActionMessage):
     """Client action message to get content from the server."""
 
-    timeout: Optional[int] = None
+    timeout: Optional[float] = None
 
 
 @dataclasses.dataclass

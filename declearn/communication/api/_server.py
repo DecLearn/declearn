@@ -200,7 +200,7 @@ class NetworkServer(metaclass=abc.ABCMeta):
         self,
         min_clients: int = 1,
         max_clients: Optional[int] = None,
-        timeout: Optional[int] = None,
+        timeout: Optional[float] = None,
     ) -> None:
         """Wait for clients to register for training, with given criteria.
 
@@ -212,7 +212,7 @@ class NetworkServer(metaclass=abc.ABCMeta):
             required - once reached, registration will be closed.
         max_clients: int or None, default=None
             Maximum number of clients authorized to register.
-        timeout: int or None, default=None
+        timeout: float or None, default=None
             Optional maximum waiting time (in seconds) beyond which
             to close registration and either return or raise.
 
@@ -228,7 +228,7 @@ class NetworkServer(metaclass=abc.ABCMeta):
         self,
         message: Message,
         client: str,
-        timeout: Optional[int] = None,
+        timeout: Optional[float] = None,
     ) -> None:
         """Send a message to a given client and wait for it to be collected.
 
@@ -238,7 +238,7 @@ class NetworkServer(metaclass=abc.ABCMeta):
             Message instance that is to be delivered to the client.
         client: str
             Identifier of the client to whom the message is addressed.
-        timeout: int or None, default=None
+        timeout: float or None, default=None
             Optional maximum delay (in seconds) beyond which to stop
             waiting for collection and raise an asyncio.TimeoutError.
 
@@ -253,7 +253,7 @@ class NetworkServer(metaclass=abc.ABCMeta):
     async def send_messages(
         self,
         messages: Mapping[str, Message],
-        timeout: Optional[int] = None,
+        timeout: Optional[float] = None,
     ) -> None:
         """Send messages to an ensemble of clients and await their collection.
 
@@ -261,7 +261,7 @@ class NetworkServer(metaclass=abc.ABCMeta):
         ----------
         messages: dict[str, Message]
             Dict mapping client names to the messages addressed to them.
-        timeout: int or None, default=None
+        timeout: float or None, default=None
             Optional maximum delay (in seconds) beyond which to stop
             waiting for collection and raise an asyncio.TimeoutError.
 
@@ -281,7 +281,7 @@ class NetworkServer(metaclass=abc.ABCMeta):
         self,
         message: Message,
         clients: Optional[Set[str]] = None,
-        timeout: Optional[int] = None,
+        timeout: Optional[float] = None,
     ) -> None:
         """Send a message to an ensemble of clients and await its collection.
 
@@ -292,7 +292,7 @@ class NetworkServer(metaclass=abc.ABCMeta):
         clients: set[str] or None, default=None
             Optional subset of registered clients, messages from
             whom to wait for. If None, set to `self.client_names`.
-        timeout: int or None, default=None
+        timeout: float or None, default=None
             Optional maximum delay (in seconds) beyond which to stop
             waiting for collection and raise an asyncio.TimeoutError.
 
@@ -336,14 +336,14 @@ class NetworkServer(metaclass=abc.ABCMeta):
 
     async def wait_for_messages_with_timeout(
         self,
-        timeout: int,
+        timeout: float,
         clients: Optional[Set[str]] = None,
     ) -> Tuple[Dict[str, SerializedMessage], List[str]]:
         """Wait for an ensemble of clients to have sent a message.
 
         Parameters
         ----------
-        timeout: int or None, default=None
+        timeout: float or None, default=None
             Maximum waiting delay (in seconds) before returning
             received messages, even if some are missing.
         clients: set[str] or None, default=None

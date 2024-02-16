@@ -226,7 +226,9 @@ class MessagesHandler:
         """Handle a message-receiving request."""
         # Set up the optional timeout mechanism.
         timeout = message.timeout
-        countdown = max(timeout // self.heartbeat, 1) if timeout else -1
+        countdown = (
+            max(math.ceil(timeout / self.heartbeat), 1) if timeout else -1
+        )
         # Wait for a message to be available or timeout to be reached.
         name = self.registered_clients[context]
         while (not self.outgoing_messages.get(name)) and countdown:
@@ -286,7 +288,7 @@ class MessagesHandler:
         self,
         message: str,
         client: str,
-        timeout: Optional[int] = None,
+        timeout: Optional[float] = None,
     ) -> None:
         """Post a message for a client and wait for it to be collected.
 
@@ -296,7 +298,7 @@ class MessagesHandler:
             Message string that is to be posted for the client to collect.
         client: str
             Name of the client to whom the message is addressed.
-        timeout: int or None, default=None
+        timeout: float or None, default=None
             Optional maximum delay (in seconds) beyond which to stop
             waiting for collection and raise an asyncio.TimeoutError.
 
@@ -313,7 +315,9 @@ class MessagesHandler:
         """
         # Post the message. Wait for it to have been collected.
         self.post_message(message, client)
-        countdown = max(timeout // self.heartbeat, 1) if timeout else -1
+        countdown = (
+            max(math.ceil(timeout / self.heartbeat), 1) if timeout else -1
+        )
         while self.outgoing_messages.get(client, False) and countdown:
             await asyncio.sleep(self.heartbeat)
             countdown -= 1
@@ -352,7 +356,7 @@ class MessagesHandler:
     async def recv_message(
         self,
         client: str,
-        timeout: Optional[int] = None,
+        timeout: Optional[float] = None,
     ) -> str:
         """Wait for a message to be received from a given client.
 
@@ -360,7 +364,7 @@ class MessagesHandler:
         ----------
         client: str
             Name of the client whose emitted message to check for.
-        timeout: int or None, default=None
+        timeout: float or None, default=None
             Optional maximum delay (in seconds) beyond which to stop
             waiting for a message and raise an asyncio.TimeoutError.
 
@@ -380,7 +384,9 @@ class MessagesHandler:
         See the `check_message` method to synchronously check whether
         a message from the client is available and return it or None.
         """
-        countdown = max(timeout // self.heartbeat, 1) if timeout else -1
+        countdown = (
+            max(math.ceil(timeout / self.heartbeat), 1) if timeout else -1
+        )
         while countdown:
             message = self.check_message(client)
             if message is not None:
@@ -407,7 +413,7 @@ class MessagesHandler:
         self,
         min_clients: int = 1,
         max_clients: Optional[int] = None,
-        timeout: Optional[int] = None,
+        timeout: Optional[float] = None,
     ) -> None:
         """Wait for clients to register for training, with given criteria.
 
@@ -419,7 +425,7 @@ class MessagesHandler:
             required - once reached, registration will be closed.
         max_clients: int or None, default=None
             Maximum number of clients authorized to register.
-        timeout: int or None, default=None
+        timeout: float or None, default=None
             Optional maximum waiting time (in seconds) beyond which
             to close registration and either return or raise.
 
@@ -441,7 +447,7 @@ class MessagesHandler:
         self,
         min_clients: int = 1,
         max_clients: Optional[int] = None,
-        timeout: Optional[int] = None,
+        timeout: Optional[float] = None,
     ) -> None:
         """Backend of `wait_for_clients` method, without safeguards."""
         # Parse information on the required number of clients.
@@ -455,7 +461,9 @@ class MessagesHandler:
             max_clients = max(min_clients, max_clients)
         # Wait for the required number of clients to have joined.
         self.open_clients_registration()
-        countdown = max(timeout // self.heartbeat, 1) if timeout else -1
+        countdown = (
+            max(math.ceil(timeout / self.heartbeat), 1) if timeout else -1
+        )
         while countdown and (len(self.registered_clients) < max_clients):
             await asyncio.sleep(self.heartbeat)
             countdown -= 1
