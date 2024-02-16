@@ -17,15 +17,19 @@
 
 """Abstract class defining an API for server-side communication endpoints."""
 
+import abc
 import asyncio
 import logging
 import types
-from abc import ABCMeta, abstractmethod
-from typing import Any, Dict, Optional, Set, Type, Union, ClassVar
+from typing import (
+    # fmt: off
+    Any, ClassVar, Dict, List, Mapping, Optional, Set, Type, Tuple, Union
+)
 
+from typing_extensions import Self  # future: import from typing (py >=3.11)
 
-from declearn.communication.api._service import MessagesHandler
-from declearn.communication.messaging import Message
+from declearn.communication.api.backend import MessagesHandler
+from declearn.messaging import Message, SerializedMessage
 from declearn.utils import create_types_registry, get_logger, register_type
 
 
@@ -35,7 +39,7 @@ __all__ = [
 
 
 @create_types_registry
-class NetworkServer(metaclass=ABCMeta):
+class NetworkServer(metaclass=abc.ABCMeta):
     """Abstract class defining an API for server-side communication endpoints.
 
     This class defines the key methods used to communicate between
@@ -53,7 +57,7 @@ class NetworkServer(metaclass=ABCMeta):
     ... )
     >>> await server.start()
     >>> try:
-    >>>     data_info = server.wait_for_clients(...)
+    >>>     server.wait_for_clients(...)
     >>>     ...
     >>> finally:
     >>>     await server.stop()
@@ -63,7 +67,7 @@ class NetworkServer(metaclass=ABCMeta):
     object as an asynchronous context manager:
     ```
     >>> async with ServerSubclass(...) as server:
-    >>>     data_info = server.wait_for_clients(...)
+    >>>     server.wait_for_clients(...)
     >>>     ...
     ```
 
@@ -86,7 +90,6 @@ class NetworkServer(metaclass=ABCMeta):
         if register:
             register_type(cls, cls.protocol, group="NetworkServer")
 
-    @abstractmethod
     def __init__(
         self,
         host: str,
@@ -94,6 +97,7 @@ class NetworkServer(metaclass=ABCMeta):
         certificate: Optional[str] = None,
         private_key: Optional[str] = None,
         password: Optional[str] = None,
+        heartbeat: float = 1.0,
         logger: Union[logging.Logger, str, None] = None,
     ) -> None:
         """Instantiate the server-side communications handler.
@@ -115,6 +119,9 @@ class NetworkServer(metaclass=ABCMeta):
             Optional password used to access `private_key`, or path to a
             file from which to read such a password.
             If None but a password is needed, an input will be prompted.
+        heartbeat: float, default=1.0
+            Delay (in seconds) between verifications when checking for a
+            message having beend received from or collected by a client.
         logger: logging.Logger or str or None, default=None,
             Logger to use, or name of a logger to set up with
             `declearn.utils.get_logger`. If None, use `type(self)`.
@@ -127,10 +134,10 @@ class NetworkServer(metaclass=ABCMeta):
             self.logger = logger
         else:
             self.logger = get_logger(logger or f"{type(self).__name__}")
-        self.handler = MessagesHandler(self.logger)
+        self.handler = MessagesHandler(logger=self.logger, heartbeat=heartbeat)
 
     @property
-    @abstractmethod
+    @abc.abstractmethod
     def uri(self) -> str:
         """URI on which this server is exposed, to be requested by clients."""
 
@@ -159,7 +166,7 @@ class NetworkServer(metaclass=ABCMeta):
         return self._setup_ssl_context(certificate, private_key, password)
 
     @staticmethod
-    @abstractmethod
+    @abc.abstractmethod
     def _setup_ssl_context(
         certificate: str,
         private_key: str,
@@ -167,13 +174,13 @@ class NetworkServer(metaclass=ABCMeta):
     ) -> Any:
         """Set up and return a SSL context object suitable for this class."""
 
-    @abstractmethod
+    @abc.abstractmethod
     async def start(
         self,
     ) -> None:
         """Initialize the server and start welcoming communications."""
 
-    @abstractmethod
+    @abc.abstractmethod
     async def stop(
         self,
     ) -> None:
@@ -181,7 +188,7 @@ class NetworkServer(metaclass=ABCMeta):
 
     async def __aenter__(
         self,
-    ) -> "NetworkServer":
+    ) -> Self:
         await self.start()
         return self
 
@@ -197,8 +204,8 @@ class NetworkServer(metaclass=ABCMeta):
         self,
         min_clients: int = 1,
         max_clients: Optional[int] = None,
-        timeout: Optional[int] = None,
-    ) -> Dict[str, Dict[str, Any]]:
+        timeout: Optional[float] = None,
+    ) -> None:
         """Wait for clients to register for training, with given criteria.
 
         Parameters
@@ -209,7 +216,7 @@ class NetworkServer(metaclass=ABCMeta):
             required - once reached, registration will be closed.
         max_clients: int or None, default=None
             Maximum number of clients authorized to register.
-        timeout: int or None, default=None
+        timeout: float or None, default=None
             Optional maximum waiting time (in seconds) beyond which
             to close registration and either return or raise.
 
@@ -218,37 +225,78 @@ class NetworkServer(metaclass=ABCMeta):
         RuntimeError
             If the number of registered clients does not abide by the
             provided boundaries at the end of the process.
-
-        Returns
-        -------
-        client_info: dict[str, dict[str, any]]
-            A dictionary where the keys are the participants
-            and the values are their information.
         """
-        return await self.handler.wait_for_clients(
-            min_clients, max_clients, timeout
-        )
+        await self.handler.wait_for_clients(min_clients, max_clients, timeout)
+
+    async def send_message(
+        self,
+        message: Message,
+        client: str,
+        timeout: Optional[float] = None,
+    ) -> None:
+        """Send a message to a given client and wait for it to be collected.
+
+        Parameters
+        ----------
+        message: str
+            Message instance that is to be delivered to the client.
+        client: str
+            Identifier of the client to whom the message is addressed.
+        timeout: float or None, default=None
+            Optional maximum delay (in seconds) beyond which to stop
+            waiting for collection and raise an asyncio.TimeoutError.
+
+        Raises
+        ------
+        asyncio.TimeoutError
+            If `timeout` is set and is reached while the message is
+            yet to be collected by the client.
+        """
+        await self.handler.send_message(message.to_string(), client, timeout)
+
+    async def send_messages(
+        self,
+        messages: Mapping[str, Message],
+        timeout: Optional[float] = None,
+    ) -> None:
+        """Send messages to an ensemble of clients and await their collection.
+
+        Parameters
+        ----------
+        messages: dict[str, Message]
+            Dict mapping client names to the messages addressed to them.
+        timeout: float or None, default=None
+            Optional maximum delay (in seconds) beyond which to stop
+            waiting for collection and raise an asyncio.TimeoutError.
+
+        Raises
+        ------
+        asyncio.TimeoutError
+            If `timeout` is set and is reached while the message is
+            yet to be collected by at least one of the clients.
+        """
+        routines = [
+            self.send_message(message, client, timeout)
+            for client, message in messages.items()
+        ]
+        await asyncio.gather(*routines, return_exceptions=False)
 
     async def broadcast_message(
         self,
         message: Message,
         clients: Optional[Set[str]] = None,
-        heartbeat: int = 1,
-        timeout: Optional[int] = None,
+        timeout: Optional[float] = None,
     ) -> None:
         """Send a message to an ensemble of clients and await its collection.
 
         Parameters
         ----------
-        message: Message
-            Message instance that is to be delivered to the client.
+        message: str
+            Message instance that is to be delivered to the clients.
         clients: set[str] or None, default=None
             Optional subset of registered clients, messages from
             whom to wait for. If None, set to `self.client_names`.
-        heartbeat: int, default=1
-            Delay (in seconds) between verifications that the message
-            has been collected by the client.
-        timeout: int or None, default=None
+        timeout: float or None, default=None
             Optional maximum delay (in seconds) beyond which to stop
             waiting for collection and raise an asyncio.TimeoutError.
 
@@ -261,115 +309,75 @@ class NetworkServer(metaclass=ABCMeta):
         if clients is None:
             clients = self.client_names
         messages = {client: message for client in clients}
-        await self.send_messages(messages, heartbeat, timeout)
-
-    async def send_messages(
-        self,
-        messages: Dict[str, Message],
-        heartbeat: int = 1,
-        timeout: Optional[int] = None,
-    ) -> None:
-        """Send a message to an ensemble of clients and await its collection.
-
-        Parameters
-        ----------
-        messages: dict[str, Message]
-            Dict mapping Message instances that are to be delivered
-            to the names of their destinatory client.
-        heartbeat: int, default=1
-            Delay (in seconds) between verifications that the message
-            has been collected by the client.
-        timeout: int or None, default=None
-            Optional maximum delay (in seconds) beyond which to stop
-            waiting for collection and raise an asyncio.TimeoutError.
-
-        Raises
-        ------
-        asyncio.TimeoutError
-            If `timeout` is set and is reached while the message is
-            yet to be collected by at least one of the clients.
-        """
-        routines = [
-            self.send_message(message, client, heartbeat, timeout)
-            for client, message in messages.items()
-        ]
-        results = await asyncio.gather(*routines, return_exceptions=True)
-        for result in results:
-            if isinstance(result, Exception):
-                raise result
-
-    async def send_message(
-        self,
-        message: Message,
-        client: str,
-        heartbeat: int = 1,
-        timeout: Optional[int] = None,
-    ) -> None:
-        """Send a message to a given client and wait for it to be collected.
-
-        Parameters
-        ----------
-        message: Message
-            Message instance that is to be delivered to the client.
-        client: str
-            Identifier of the client to whom the message is addressed.
-        heartbeat: int, default=1
-            Delay (in seconds) between verifications that the message
-            has been collected by the client.
-        timeout: int or None, default=None
-            Optional maximum delay (in seconds) beyond which to stop
-            waiting for collection and raise an asyncio.TimeoutError.
-
-        Raises
-        ------
-        asyncio.TimeoutError
-            If `timeout` is set and is reached while the message is
-            yet to be collected by the client.
-        """
-        await self.handler.send_message(message, client, heartbeat, timeout)
+        await self.send_messages(messages, timeout)
 
     async def wait_for_messages(
         self,
         clients: Optional[Set[str]] = None,
-        heartbeat: int = 1,
-        timeout: Optional[int] = None,
-    ) -> Dict[str, Message]:
-        """Wait for an ensemble of clients to have sent a message.
+    ) -> Dict[str, SerializedMessage]:
+        """Wait for messages from (a subset of) all clients.
 
         Parameters
         ----------
         clients: set[str] or None, default=None
             Optional subset of registered clients, messages from
             whom to wait for. If None, set to `self.client_names`.
-        heartbeat: int, default=1
-            Delay (in seconds) between verifications that a client
-            has sent their message.
-        timeout: int or None, default=None
-            Optional maximum delay (in seconds) beyond which to stop
-            waiting for messages and raise an asyncio.TimeoutError.
 
-        Raises
-        ------
-        asyncio.TimeoutError
-            If any of the clients has failed to deliver a message
-            before `timeout` was reached.
+        Returns
+        -------
+        messages:
+            A dictionary mapping clients' names to the serialized
+            messages they sent to the server.
+        """
+        if clients is None:
+            clients = self.client_names
+        routines = [self.handler.recv_message(client) for client in clients]
+        received = await asyncio.gather(*routines, return_exceptions=False)
+        return {
+            client: SerializedMessage.from_message_string(string)
+            for client, string in zip(clients, received)
+        }
+
+    async def wait_for_messages_with_timeout(
+        self,
+        timeout: float,
+        clients: Optional[Set[str]] = None,
+    ) -> Tuple[Dict[str, SerializedMessage], List[str]]:
+        """Wait for an ensemble of clients to have sent a message.
+
+        Parameters
+        ----------
+        timeout: float or None, default=None
+            Maximum waiting delay (in seconds) before returning
+            received messages, even if some are missing.
+        clients: set[str] or None, default=None
+            Optional subset of registered clients, messages from
+            whom to wait for. If None, set to `self.client_names`.
 
         Returns
         -------
         messages: dict[str, Message]
             A dictionary where the keys are the clients' names and
             the values are Message objects they sent to the server.
+        timeouts: list[str]
+            List of names of clients that failed to send a message
+            prior to `timeout` being reached.
         """
         if clients is None:
             clients = self.client_names
         routines = [
-            self.handler.recv_message(client, heartbeat, timeout)
-            for client in clients
+            self.handler.recv_message(client, timeout) for client in clients
         ]
         received = await asyncio.gather(*routines, return_exceptions=True)
-        messages = {}  # type: Dict[str, Message]
-        for client, message in zip(clients, received):
-            if isinstance(message, BaseException):
-                raise message
-            messages[client] = message
-        return messages
+        messages = {}  # type: Dict[str, SerializedMessage]
+        timeouts = []  # type: List[str]
+        for client, output in zip(clients, received):
+            if isinstance(output, asyncio.TimeoutError):
+                timeouts.append(client)
+            elif isinstance(output, BaseException):
+                raise output
+            else:
+                messages[client] = SerializedMessage.from_message_string(
+                    output
+                )
+        return messages, timeouts

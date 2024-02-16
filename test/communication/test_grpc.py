@@ -28,13 +28,14 @@ test scripts.
 """
 
 import asyncio
+import uuid
 from typing import AsyncIterator, Dict, Iterator
 
 import grpc  # type: ignore
 import pytest
 import pytest_asyncio
 
-from declearn.communication.messaging import Empty
+from declearn.communication.api.backend.actions import Ping
 from declearn.communication.grpc._server import load_pem_file
 from declearn.communication.grpc import GrpcClient, GrpcServer
 from declearn.communication.grpc.protobufs import message_pb2
@@ -43,6 +44,7 @@ from declearn.communication.grpc.protobufs.message_pb2_grpc import (
     MessageBoardStub,
     add_MessageBoardServicer_to_server,
 )
+from declearn.messaging import Message
 
 #################################################################
 # 0. Set up pytest fixtures to avoid redundant code in tests
@@ -50,6 +52,12 @@ from declearn.communication.grpc.protobufs.message_pb2_grpc import (
 HOST = "localhost"
 PORT = 50051
 SERVER_URI = f"{HOST}:{PORT}"
+
+
+class StubMessage(Message):
+    """Minimal stub Message subclass."""
+
+    typekey = f"stub-{uuid.uuid4()}"
 
 
 class FakeMessageBoard(MessageBoardServicer):
@@ -67,7 +75,7 @@ class FakeMessageBoard(MessageBoardServicer):
         request: message_pb2.Message,
         context: grpc.ServicerContext,
     ) -> Iterator[message_pb2.Message]:
-        yield message_pb2.Message(message=Empty().to_string())
+        yield message_pb2.Message(message=Ping().to_string())
 
 
 @pytest_asyncio.fixture(name="insecure_grpc_server")
@@ -122,10 +130,9 @@ async def secure_grpc_client_fixture(
 @pytest_asyncio.fixture(name="insecure_declearn_server")
 async def insecure_declearn_server_fixture() -> AsyncIterator[GrpcServer]:
     """Create and return a GrpcServer with unsecured communications."""
-    server = GrpcServer(host=HOST, port=PORT)
-    await server.start()
-    yield server
-    await server.stop()
+    server = GrpcServer(host=HOST, port=PORT, heartbeat=0.1)
+    async with server:
+        yield server
 
 
 @pytest_asyncio.fixture(name="secure_declearn_server")
@@ -138,10 +145,10 @@ async def secure_declearn_server_fixture(
         port=PORT,
         certificate=ssl_cert["server_cert"],
         private_key=ssl_cert["server_pkey"],
+        heartbeat=0.1,
     )
-    await server.start()
-    yield server
-    await server.stop()
+    async with server:
+        yield server
 
 
 @pytest_asyncio.fixture(name="insecure_declearn_client")
@@ -260,7 +267,7 @@ async def test_client_with_insecure_grpc_server(
     """Unit test for minimal unsecured GrpcClient use."""
     # fixture; pylint: disable=unused-argument
     client = insecure_declearn_client
-    await client.send_message(Empty())
+    await client.send_message(StubMessage())
 
 
 @pytest.mark.asyncio
@@ -271,7 +278,7 @@ async def test_secure_client_with_secure_grpc_server(
     """Unit test for minimal secured GrpcClient use."""
     # fixture; pylint: disable=unused-argument
     client = secure_declearn_client
-    await client.send_message(Empty())
+    await client.send_message(StubMessage())
 
 
 @pytest.mark.asyncio
@@ -283,7 +290,7 @@ async def test_insecure_client_with_secure_grpc_server_fails(
     # fixture; pylint: disable=unused-argument
     client = insecure_declearn_client
     with pytest.raises(grpc.aio.AioRpcError):
-        await client.send_message(Empty())
+        await client.send_message(StubMessage())
 
 
 #################################################################
@@ -302,7 +309,7 @@ async def test_client_with_insecure_server(
     await asyncio.gather(
         server.wait_for_clients(1, timeout=5), client.register({})
     )
-    await client.send_message(Empty())
+    await client.send_message(StubMessage())
 
 
 @pytest.mark.asyncio
@@ -317,7 +324,7 @@ async def test_secure_client_with_secure_server(
     await asyncio.gather(
         server.wait_for_clients(1, timeout=5), client.register({})
     )
-    await client.send_message(Empty())
+    await client.send_message(StubMessage())
 
 
 @pytest.mark.asyncio
@@ -329,7 +336,7 @@ async def test_insecure_client_with_secure_server_fails(
     # fixture; pylint: disable=unused-argument
     client = insecure_declearn_client
     with pytest.raises(grpc.aio.AioRpcError):
-        await client.send_message(Empty())
+        await client.send_message(StubMessage())
 
 
 @pytest.mark.asyncio
@@ -341,4 +348,4 @@ async def test_secure_client_with_insecure_server_fails(
     # fixture; pylint: disable=unused-argument
     client = secure_declearn_client
     with pytest.raises(grpc.aio.AioRpcError):
-        await client.send_message(Empty())
+        await client.send_message(StubMessage())

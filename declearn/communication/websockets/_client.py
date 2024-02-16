@@ -27,7 +27,6 @@ from websockets.client import WebSocketClientProtocol
 from websockets.exceptions import ConnectionClosedOK, ConnectionClosedError
 
 from declearn.communication.api import NetworkClient
-from declearn.communication.messaging import Message, parse_message_from_string
 from declearn.communication.websockets._tools import (
     receive_websockets_message,
     send_websockets_message,
@@ -132,22 +131,20 @@ class WebsocketsClient(NetworkClient):
 
     async def _send_message(
         self,
-        message: Message,
-    ) -> Message:
+        message: str,
+    ) -> str:
         """Send a message to the server and return the obtained reply."""
         if self._socket is None:
             raise RuntimeError("Cannot communicate while not connected.")
-        string = message.to_string()
-        await send_websockets_message(string, self._socket)
+        await send_websockets_message(message, self._socket)
         answer = await self._socket.recv()
-        string = await receive_websockets_message(
+        return await receive_websockets_message(
             message=answer, socket=self._socket, allow_chunks=True
         )
-        return parse_message_from_string(string)
 
     async def register(
         self,
-        data_info: Dict[str, Any],
+        data_info: Optional[Dict[str, Any]] = None,
     ) -> bool:
         try:
             return await super().register(data_info)

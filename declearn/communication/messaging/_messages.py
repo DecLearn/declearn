@@ -17,23 +17,25 @@
 
 """Dataclasses defining messages used in declearn communications."""
 
+import abc
 import dataclasses
-import json
-from abc import ABCMeta
-from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type
+import warnings
+from typing import Any, Dict, Optional
 
-from typing_extensions import Self  # future: import from typing (py >=3.11)
 
-from declearn.aggregator import Aggregator, ModelUpdates
-from declearn.metrics import MetricInputType, MetricState
-from declearn.model.api import Model, Vector
-from declearn.optimizer import Optimizer
-from declearn.optimizer.modules import AuxVar
-from declearn.utils import (
-    deserialize_object,
-    json_pack,
-    json_unpack,
-    serialize_object,
+from declearn.messaging import (
+    CancelTraining,
+    Error,
+    EvaluationReply,
+    EvaluationRequest,
+    GenericMessage,
+    InitRequest,
+    Message,
+    PrivacyRequest,
+    SerializedMessage,
+    StopTraining,
+    TrainReply,
+    TrainRequest,
 )
 
 
@@ -58,102 +60,30 @@ __all__ = [
 
 
 @dataclasses.dataclass
-class Message(metaclass=ABCMeta):
-    """Base class to define declearn messages."""
+class DeprecatedMessage(Message, register=False, metaclass=abc.ABCMeta):
+    """DEPRECATED Message subtype."""
 
-    typekey: ClassVar[str]
-
-    def to_kwargs(self) -> Dict[str, Any]:
-        """Return a JSON-serializable dict representation of this message."""
-        # NOTE: override this method to serialize attributes
-        #       that are not handled by declearn.utils.json_unpack
-        return dataclasses.asdict(self)
-
-    def to_string(self) -> str:
-        """Convert the message to a JSON-serialized string."""
-        data = self.to_kwargs()
-        data["typekey"] = self.typekey
-        return json.dumps(data, default=json_pack)
-
-    @classmethod
-    def from_kwargs(cls, **kwargs: Any) -> Self:
-        """Parse the message from JSON-deserialized attributes."""
-        # NOTE: override this method to de-serialize attributes
-        #       that are not handled by declearn.utils.json_pack
-        return cls(**kwargs)
+    def __post_init__(
+        self,
+    ) -> None:
+        warnings.warn(
+            f"'{self.__class__.__name__}' was deprecated in DecLearn v2.4. "
+            "It should no longer be used and may cause failures. It will be "
+            "removed in DecLearn v2.6 and/or v3.0",
+            DeprecationWarning,
+        )
 
 
 @dataclasses.dataclass
-class CancelTraining(Message):
-    """Empty message used to ping or signal message reception."""
-
-    typekey = "cancel"
-
-    reason: str
-
-
-@dataclasses.dataclass
-class Empty(Message):
-    """Empty message used to ping or signal message reception."""
+class Empty(DeprecatedMessage):
+    """DEPRECATED empty message class."""
 
     typekey = "empty"
 
 
 @dataclasses.dataclass
-class Error(Message):
-    """Error message container, used to convey exceptions between nodes."""
-
-    typekey = "error"
-
-    message: str
-
-
-@dataclasses.dataclass
-class EvaluationRequest(Message):
-    """Server-emitted request to participate in an evaluation round."""
-
-    typekey = "eval_request"
-
-    round_i: int
-    weights: Vector
-    batches: Dict[str, Any]
-    n_steps: Optional[int]
-    timeout: Optional[int]
-
-
-@dataclasses.dataclass
-class EvaluationReply(Message):
-    """Client-emitted results from a local evaluation round."""
-
-    typekey = "eval_reply"
-
-    loss: float
-    n_steps: int
-    t_spent: float
-    metrics: Dict[str, MetricState] = dataclasses.field(default_factory=dict)
-
-    def to_kwargs(
-        self,
-    ) -> Dict[str, Any]:
-        # Undo recursive dict-conversion of dataclasses.
-        kwargs = super().to_kwargs()
-        kwargs["metrics"] = self.metrics
-        return kwargs
-
-
-@dataclasses.dataclass
-class GenericMessage(Message):
-    """Generic message format, with action/params pair."""
-
-    typekey = "generic"
-
-    action: str  # revise: Literal on possible flags?
-    params: Dict[str, Any]
-
-
-@dataclasses.dataclass
-class GetMessageRequest(Message):
-    """Client-emitted prompt to collect a message posted by the server."""
+class GetMessageRequest(DeprecatedMessage):
+    """DEPRECATED message-retrieval query message class."""
 
     typekey = "get_message"
 
@@ -161,37 +91,8 @@ class GetMessageRequest(Message):
 
 
 @dataclasses.dataclass
-class InitRequest(Message):
-    """Server-emitted request to initialize local model and optimizer."""
-
-    typekey = "init_request"
-
-    model: Model
-    optim: Optimizer
-    aggrg: Aggregator
-    metrics: List[MetricInputType] = dataclasses.field(default_factory=list)
-    dpsgd: bool = False
-
-    def to_kwargs(self) -> Dict[str, Any]:
-        data = {}  # type: Dict[str, Any]
-        data["model"] = serialize_object(self.model, group="Model").to_dict()
-        data["optim"] = self.optim.get_config()
-        data["aggrg"] = serialize_object(self.aggrg, "Aggregator").to_dict()
-        data["metrics"] = self.metrics
-        data["dpsgd"] = self.dpsgd
-        return data
-
-    @classmethod
-    def from_kwargs(cls, **kwargs: Any) -> Self:
-        kwargs["model"] = deserialize_object(kwargs["model"])
-        kwargs["optim"] = Optimizer.from_config(kwargs["optim"])
-        kwargs["aggrg"] = deserialize_object(kwargs["aggrg"])
-        return cls(**kwargs)
-
-
-@dataclasses.dataclass
-class JoinRequest(Message):
-    """Client-emitted request to join training."""
+class JoinRequest(DeprecatedMessage):
+    """DEPRECATED process joining query message class."""
 
     typekey = "join_request"
 
@@ -201,8 +102,8 @@ class JoinRequest(Message):
 
 
 @dataclasses.dataclass
-class JoinReply(Message):
-    """Server-emitted reply to a JoinRequest."""
+class JoinReply(DeprecatedMessage):
+    """DEPRECATED process joining reply message class."""
 
     typekey = "join_reply"
 
@@ -210,107 +111,43 @@ class JoinReply(Message):
     flag: str
 
 
-@dataclasses.dataclass
-class PrivacyRequest(Message):
-    """Server-emitted request to set up local differential privacy."""
-
-    # dataclass; pylint: disable=too-many-instance-attributes
-
-    typekey = "privacy_request"
-
-    # PrivacyConfig
-    budget: Tuple[float, float]
-    sclip_norm: float
-    accountant: str
-    use_csprng: bool
-    seed: Optional[int]
-    # TrainingConfig + rounds
-    rounds: int
-    batches: Dict[str, Any]
-    n_epoch: Optional[int]
-    n_steps: Optional[int]
-
-
-@dataclasses.dataclass
-class StopTraining(Message):
-    """Server-emitted notification that the training process is over."""
-
-    typekey = "stop_training"
-
-    weights: Vector
-    loss: float
-    rounds: int
-
-
-@dataclasses.dataclass
-class TrainRequest(Message):
-    """Server-emitted request to participate in a training round."""
-
-    typekey = "train_request"
-
-    round_i: int
-    weights: Vector
-    aux_var: Dict[str, AuxVar]
-    batches: Dict[str, Any]
-    n_epoch: Optional[int] = None
-    n_steps: Optional[int] = None
-    timeout: Optional[int] = None
-
-    def to_kwargs(self) -> Dict[str, Any]:
-        # Undo recursive dict-conversion of dataclasses.
-        data = super().to_kwargs()
-        data["aux_var"] = self.aux_var
-        return data
-
-
-@dataclasses.dataclass
-class TrainReply(Message):
-    """Client-emitted results from a local training round."""
-
-    typekey = "train_reply"
-
-    n_epoch: int
-    n_steps: int
-    t_spent: float
-    updates: ModelUpdates
-    aux_var: Dict[str, AuxVar]
-
-    def to_kwargs(self) -> Dict[str, Any]:
-        # Undo recursive dict-conversion of dataclasses.
-        data = super().to_kwargs()
-        data["updates"] = self.updates
-        data["aux_var"] = self.aux_var
-        return data
-
-
-_MESSAGE_CLASSES = [
-    CancelTraining,
-    Empty,
-    Error,
-    EvaluationReply,
-    EvaluationRequest,
-    GenericMessage,
-    GetMessageRequest,
-    InitRequest,
-    JoinReply,
-    JoinRequest,
-    PrivacyRequest,
-    StopTraining,
-    TrainReply,
-    TrainRequest,
-]  # type: List[Type[Message]]
-MESSAGE_CLASSES = {cls.typekey: cls for cls in _MESSAGE_CLASSES}
-
-
 def parse_message_from_string(
     string: str,
 ) -> Message:
-    """Instantiate a Message from a JSON-serialized string."""
-    data = json.loads(string, object_hook=json_unpack)
-    if "typekey" not in data:
-        raise KeyError("Missing required 'typekey'")
-    typekey = data.pop("typekey")
-    cls = MESSAGE_CLASSES.get(typekey)
-    if cls is None:
-        raise KeyError(f"No Message matches typekey '{typekey}'.")
-    return cls.from_kwargs(**data)
+    """DEPRECATED - Instantiate a Message from its serialized string.
+
+    This function was DEPRECATED in DecLearn 2.4 and will be removed
+    in v2.6 and/or v3.0. Use the `declearn.messaging.SerializedMessage`
+    API to parse serialized message strings.
+
+    Parameters
+    ----------
+    string:
+        Serialized string dump of the message.
+
+    Returns
+    -------
+    message:
+        Message instance recovered from the input string.
+
+    Raises
+    ------
+    KeyError
+        If the string's typekey does not match any supported Message
+        subclass.
+    TypeError
+        If the string cannot be parsed to identify a message typekey.
+    ValueError
+        If the serialized data fails to be properly decoded.
+    """
+    warnings.warn(
+        "'parse_message_from_string' was deprecated in DecLearn 2.4, in "
+        "favor of using 'declearn.messaging.SerializedMessage' to parse "
+        "and deserialize 'Message' instances from strings. It will be "
+        "removed in DecLearn version 2.6 and/or 3.0.",
+        DeprecationWarning,
+    )
+    serialized = SerializedMessage.from_message_string(
+        string
+    )  # type: SerializedMessage[Any]
+    return serialized.deserialize()

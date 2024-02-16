@@ -15,35 +15,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Submodule defining messaging containers and flags used in declearn.
+"""DEPRECATED submodule defining messaging containers and flags.
 
-The submodule exposes the [Message][declearn.communication.messaging.Message]
-abstract base dataclass, and its children:
+This submodule was deprecated in DecLearn 2.4 in favor of `declearn.messaging`.
+It should no longer be used, and will be removed in 2.6 and/or 3.0.
 
-* [CancelTraining][declearn.communication.messaging.CancelTraining]
+Most of its contents are re-exports of non-deprecated classes and functions
+from 'declearn.messaging'. Others will trigger deprecation warnings (and may
+cause failures) if used.
+
+Deprecated classes uniquely-defined here are:
+
 * [Empty][declearn.communication.messaging.Empty]
-* [Error][declearn.communication.messaging.Error]
-* [GenericMessage][declearn.communication.messaging.GenericMessage]
 * [GetMessageRequest][declearn.communication.messaging.GetMessageRequest]
-* [EvaluationReply][declearn.communication.messaging.EvaluationReply]
-* [EvaluationRequest][declearn.communication.messaging.EvaluationRequest]
-* [InitRequest][declearn.communication.messaging.InitRequest]
 * [JoinReply][declearn.communication.messaging.JoinReply]
 * [JoinRequest][declearn.communication.messaging.JoinRequest]
-* [PrivacyRequest][declearn.communication.messaging.PrivacyRequest]
-* [StopTraining][declearn.communication.messaging.StopTraining]
-* [TrainReply][declearn.communication.messaging.TrainReply]
-* [TrainRequest][declearn.communication.messaging.TrainRequest]
 
-It also exposes the [parse_message_from_string]\
-[declearn.communication.messaging.parse_message_from_string]
-function to recover the structures above from a dump string.
-
-Finally, it exposes a set of [flags][declearn.communication.messaging.flags],
-as constant strings that may be used conventionally as part of messages.
+The `flags` submodule is also re-exported, but should preferably be imported
+as `declearn.communication.api.backend.flags`.
 """
 
-from . import flags
+from declearn.communication.api.backend import flags
+
 from ._messages import (
     CancelTraining,
     Empty,

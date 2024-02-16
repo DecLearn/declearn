@@ -24,7 +24,8 @@ from typing import Any, Dict, List, Optional, Set, Tuple, Type, TypeVar, Union
 
 import numpy as np
 
-from declearn.communication import NetworkServerConfig, messaging
+from declearn import messaging
+from declearn.communication import NetworkServerConfig
 from declearn.communication.api import NetworkServer
 from declearn.main.config import (
     EvaluateConfig,
@@ -240,13 +241,14 @@ class FederatedServer:
         """
         # Gather the RegisterConfig instance from the main FLRunConfig.
         regst_cfg = config.register
-        # Wait for clients to register and process their data information.
+        # Wait for clients to register.
         self.logger.info("Starting clients registration process.")
-        data_info = await self.netwk.wait_for_clients(
+        await self.netwk.wait_for_clients(
             regst_cfg.min_clients, regst_cfg.max_clients, regst_cfg.timeout
         )
         self.logger.info("Clients' registration is now complete.")
-        await self._process_data_info(data_info)
+        # When needed, prompt clients for metadata and process them.
+        await self._require_and_process_data_info()
         # Serialize intialization information and send it to clients.
         message = messaging.InitRequest(
             model=self.model,
@@ -262,25 +264,18 @@ class FederatedServer:
         self.logger.info("Waiting for clients' responses.")
         await self._collect_results(
             clients=self.netwk.client_names,
-            msgtype=messaging.GenericMessage,
-            context="initialization",
+            msgtype=messaging.InitReply,
+            context="Initialization",
         )
         # If local differential privacy is configured, set it up.
         if config.privacy is not None:
             await self._initialize_dpsgd(config)
         self.logger.info("Initialization was successful.")
 
-    async def _process_data_info(
+    async def _require_and_process_data_info(
         self,
-        clients_data_info: Dict[str, Dict[str, Any]],
     ) -> None:
-        """Validate, aggregate and make use of clients' data-info.
-
-        Parameters
-        ----------
-        clients_data_info: dict[str, dict[str, any]]
-            Client-wise data-info dict, that are to be aggregated
-            and passed to the global model for initialization.
+        """Collect, validate, aggregate and make use of clients' data-info.
 
         Raises
         ------
@@ -290,6 +285,19 @@ class FederatedServer:
             raising.
         """
         fields = self.model.required_data_info  # revise: add optimizer, etc.
+        if not fields:
+            return
+        # Collect required metadata from clients.
+        query = messaging.MetadataQuery(list(fields))
+        await self.netwk.broadcast_message(query)
+        replies = await self._collect_results(
+            self.netwk.client_names,
+            msgtype=messaging.MetadataReply,
+            context="Metadata collection",
+        )
+        clients_data_info = {
+            client: reply.data_info for client, reply in replies.items()
+        }
         # Try aggregating the input data_info.
         try:
             info = aggregate_clients_data_info(clients_data_info, fields)
@@ -298,7 +306,7 @@ class FederatedServer:
             messages = {
                 client: messaging.CancelTraining(reason)
                 for client, reason in exc.messages.items()
-            }  # type: Dict[str, messaging.Message]
+            }
             await self.netwk.send_messages(messages)
             self.logger.error(exc.error)
             raise exc
@@ -339,13 +347,14 @@ class FederatedServer:
         replies = await self.netwk.wait_for_messages(clients)
         results = {}  # type: Dict[str, MessageT]
         errors = {}  # type: Dict[str, str]
-        for client, message in replies.items():
-            if isinstance(message, msgtype):
-                results[client] = message
-            elif isinstance(message, messaging.Error):
-                errors[client] = f"{context} failed: {message.message}"
+        for client, reply in replies.items():
+            if issubclass(reply.message_cls, msgtype):
+                results[client] = reply.deserialize()
+            elif issubclass(reply.message_cls, messaging.Error):
+                err_msg = reply.deserialize().message
+                errors[client] = f"{context} failed: {err_msg}"
             else:
-                errors[client] = f"Unexpected message: {message}"
+                errors[client] = f"Unexpected message: {reply.message_cls}"
         # If any client has failed to send proper results, raise.
         # future: modularize errors-handling behaviour
         if errors:
@@ -390,7 +399,7 @@ class FederatedServer:
         self.logger.info("Waiting for clients' responses.")
         await self._collect_results(
             clients=self.netwk.client_names,
-            msgtype=messaging.GenericMessage,
+            msgtype=messaging.PrivacyReply,
             context="Privacy initialization",
         )
         self.logger.info("Privacy requests were processed by clients.")

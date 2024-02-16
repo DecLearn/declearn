@@ -21,13 +21,10 @@ This is done by  defining server-side and client-side network communication
 endpoints for federated learning processes, as well as suitable messages to
 be transmitted, and the available communication protocols.
 
-This module contains the following core submodules:
+This module contains the following core submodule:
 
 * [api][declearn.communication.api]:
     Base API to define client- and server-side communication endpoints.
-* [messaging][declearn.communication.messaging]:
-    Message dataclasses defining information containers to be exchanged
-    between communication endpoints.
 
 It also exposes the following core utility functions and dataclasses:
 
@@ -43,7 +40,6 @@ It also exposes the following core utility functions and dataclasses:
 * [NetworkServerConfig][declearn.communication.NetworkServerConfig]:
     TOML-parsable dataclass for network servers' instantiation.
 
-
 Finally, it defines the following protocol-specific submodules, provided
 the associated third-party dependencies are available:
 
@@ -53,10 +49,14 @@ the associated third-party dependencies are available:
 * [websockets][declearn.communication.websockets]:
     WebSockets-based network communication endpoints.
     Requires the `websockets` third-party package.
+
+Additionnally, for retro-compatibility purposes, it exports the DEPRECATED
+[messaging][declearn.communication.messaging] submodule, that should no
+longer be used, as its contents were re-dispatched elsewhere in DecLearn.
 """
 
-# Messaging and Communications API and base tools:
-from . import api, messaging
+# Messaging API and base tools:
+from . import api
 from ._build import (
     _INSTALLABLE_BACKENDS,
     NetworkClientConfig,
@@ -75,3 +75,6 @@ try:
     from . import websockets
 except ImportError:  # pragma: no cover
     _INSTALLABLE_BACKENDS["websockets"] = ("websockets",)
+
+# DEPRECATED submodule, kept for retro-compatibility until 2.6 and/or 3.0.
+from . import messaging

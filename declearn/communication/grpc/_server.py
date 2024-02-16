@@ -27,7 +27,7 @@ import grpc  # type: ignore
 from cryptography.hazmat.primitives import serialization
 
 from declearn.communication.api import NetworkServer
-from declearn.communication.api._service import MessagesHandler
+from declearn.communication.api.backend import MessagesHandler
 from declearn.communication.grpc.protobufs import message_pb2
 from declearn.communication.grpc.protobufs.message_pb2_grpc import (
     MessageBoardServicer,
@@ -80,6 +80,7 @@ class GrpcServer(NetworkServer):
         certificate: Optional[str] = None,
         private_key: Optional[str] = None,
         password: Optional[str] = None,
+        heartbeat: float = 1.0,
         logger: Union[logging.Logger, str, None] = None,
     ) -> None:
         """Instantiate the server-side gRPC communications handler.
@@ -103,6 +104,9 @@ class GrpcServer(NetworkServer):
             Optional password used to access `private_key`, or path to a
             file from which to read such a password.
             If None but a password is needed, an input will be prompted.
+        heartbeat: float, default=1.0
+            Delay (in seconds) between verifications when checking for a
+            message having beend received from or collected by a client.
         logger: logging.Logger or str or None, default=None,
             Logger to use, or name of a logger to set up with
             `declearn.utils.get_logger`. If None, use `type(self)`.
@@ -110,7 +114,7 @@ class GrpcServer(NetworkServer):
         # inherited signature; pylint: disable=too-many-arguments
         # Assign attributes and set up the gRPC server.
         super().__init__(
-            host, port, certificate, private_key, password, logger
+            host, port, certificate, private_key, password, heartbeat, logger
         )
         self._server = None  # type: Optional[grpc.Server]
 

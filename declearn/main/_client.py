@@ -25,7 +25,8 @@ from typing import Any, Dict, Optional, Union
 
 import numpy as np
 
-from declearn.communication import NetworkClientConfig, messaging
+from declearn import messaging
+from declearn.communication import NetworkClientConfig
 from declearn.communication.api import NetworkClient
 from declearn.dataset import Dataset, load_dataset_from_json
 from declearn.main.utils import Checkpointer, TrainingManager
@@ -164,21 +165,21 @@ class FederatedClient:
             await self.initialize()
             # Process server instructions as they come.
             while True:
-                message = await self.netwk.check_message()
+                message = await self.netwk.recv_message()
                 stoprun = await self.handle_message(message)
                 if stoprun:
                     break
 
     async def handle_message(
         self,
-        message: messaging.Message,
+        message: messaging.SerializedMessage,
     ) -> bool:
         """Handle an incoming message from the server.
 
         Parameters
         ----------
-        message: messaging.Message
-            Message instance that needs triage and processing.
+        message: messaging.SerializedMessage
+            Serialized message that needs triage and processing.
 
         Returns
         -------
@@ -186,18 +187,18 @@ class FederatedClient:
             Whether to interrupt the client's message-receiving loop.
         """
         exit_loop = False
-        if isinstance(message, messaging.TrainRequest):
-            await self.training_round(message)
-        elif isinstance(message, messaging.EvaluationRequest):
-            await self.evaluation_round(message)
-        elif isinstance(message, messaging.StopTraining):
-            await self.stop_training(message)
+        if issubclass(message.message_cls, messaging.TrainRequest):
+            await self.training_round(message.deserialize())
+        elif issubclass(message.message_cls, messaging.EvaluationRequest):
+            await self.evaluation_round(message.deserialize())
+        elif issubclass(message.message_cls, messaging.StopTraining):
+            await self.stop_training(message.deserialize())
             exit_loop = True
-        elif isinstance(message, messaging.CancelTraining):
-            await self.cancel_training(message)
+        elif issubclass(message.message_cls, messaging.CancelTraining):
+            await self.cancel_training(message.deserialize())
         else:
-            error = "Unexpected instruction received from server:"
-            error += repr(message)
+            error = "Unexpected message type received from server: "
+            error += message.message_cls.__name__
             self.logger.error(error)
             raise ValueError(error)
         return exit_loop
@@ -213,13 +214,11 @@ class FederatedClient:
             If registration has failed 10 times (with a 1 minute delay
             between connection and registration attempts).
         """
-        # revise: add validation dataset specs
-        data_info = dataclasses.asdict(self.train_data.get_data_specs())
         for i in range(10):  # max_attempts (10)
             self.logger.info(
                 "Attempting to join training (attempt n°%s)", i + 1
             )
-            registered = await self.netwk.register(data_info)
+            registered = await self.netwk.register()
             if registered:
                 break
             await asyncio.sleep(60)  # delay_retries (1 minute)
@@ -248,23 +247,54 @@ class FederatedClient:
         optim: Optimizer
             Optimizer that is to be used locally to train the model.
         """
-        # Await initialization instructions. Report messages-unpacking errors.
+        # Await initialization instructions.
         self.logger.info("Awaiting initialization instructions from server.")
+        message = await self.netwk.recv_message()
+        # If a MetadataQuery is received, process it, then await InitRequest.
+        if message.message_cls is messaging.MetadataQuery:
+            await self._collect_and_send_metadata(message.deserialize())
+            message = await self.netwk.recv_message()
+        # Perform initialization, catching errors to report them to the server.
         try:
-            message = await self.netwk.check_message()
+            if not issubclass(message.message_cls, messaging.InitRequest):
+                raise TypeError(
+                    f"Awaited InitRequest message, got '{message.message_cls}'"
+                )
+            await self._initialize_trainmanager(message.deserialize())
         except Exception as exc:
             await self.netwk.send_message(messaging.Error(repr(exc)))
             raise RuntimeError("Initialization failed.") from exc
-        # Otherwise, check that the request is of valid type.
-        if not isinstance(message, messaging.InitRequest):
-            error = f"Awaited InitRequest message, got: '{message}'"
-            self.logger.error(error)
-            raise RuntimeError(error)
         # Send back an empty message to indicate that all went fine.
         self.logger.info("Notifying the server that initialization went fine.")
-        await self.netwk.send_message(
-            messaging.GenericMessage(action="InitializationOK", params={})
+        await self.netwk.send_message(messaging.InitReply())
+
+    async def _collect_and_send_metadata(
+        self,
+        message: messaging.MetadataQuery,
+    ) -> None:
+        """Collect and report some metadata based on server instructions."""
+        self.logger.info("Collecting metadata to send to the server.")
+        metadata = dataclasses.asdict(self.train_data.get_data_specs())
+        if missing := set(message.fields).difference(metadata):
+            err_msg = f"Metadata query for undefined fields: {missing}."
+            await self.netwk.send_message(messaging.Error(err_msg))
+            raise RuntimeError(err_msg)
+        data_info = {key: metadata[key] for key in message.fields}
+        self.logger.info(
+            "Sending training dataset metadata to the server: %s.",
+            list(data_info),
         )
+        await self.netwk.send_message(messaging.MetadataReply(data_info))
+
+    async def _initialize_trainmanager(
+        self,
+        message: messaging.InitRequest,
+    ) -> None:
+        """Set up a TrainingManager based on server instructions.
+
+        - Also await and set up DP constraints if instructed to do so.
+        - Checkpoint the model and optimizer if configured to do so.
+        """
         # Wrap up the model and optimizer received from the server.
         self.trainmanager = TrainingManager(
             model=message.model,
@@ -295,7 +325,7 @@ class FederatedClient:
         This method wraps the `make_private` one in the context of
         `initialize` and should never be called in another context.
         """
-        message = await self.netwk.check_message()
+        message = await self.netwk.recv_message()
         if not isinstance(message, messaging.PrivacyRequest):
             msg = f"Expected a PrivacyRequest but received a '{type(message)}'"
             self.logger.error(msg)
@@ -312,9 +342,7 @@ class FederatedClient:
             raise RuntimeError("DP-SGD initialization failed.") from exc
         # If things went right, notify the server.
         self.logger.info("Notifying the server that DP-SGD setup went fine.")
-        await self.netwk.send_message(
-            messaging.GenericMessage(action="privacy-ok", params={})
-        )
+        await self.netwk.send_message(messaging.PrivacyReply())
 
     def make_private(
         self,

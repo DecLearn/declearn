@@ -180,6 +180,7 @@ class DeclearnTestCase:
             port=8765,
             certificate=self.ssl_cert["server_cert"] if self.use_ssl else None,
             private_key=self.ssl_cert["server_pkey"] if self.use_ssl else None,
+            heartbeat=0.1,  # fasten the tests by setting up a low heartbeat
         )
 
     def build_netwk_client(

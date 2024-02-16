@@ -384,7 +384,7 @@ async def async_run_server(
     # Set up the FederatedServer.
     model = get_model(framework)
     netwk = NetworkServerConfig.from_params(
-        protocol="websockets", host="127.0.0.1", port=8765
+        protocol="websockets", host="127.0.0.1", port=8765, heartbeat=0.1
     )
     optim = FLOptimConfig.from_params(
         aggregator="averaging",
