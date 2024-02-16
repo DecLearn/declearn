@@ -20,6 +20,9 @@
 This module exposes conventional flags, which are all str constants.
 """
 
+
+from declearn.version import VERSION
+
 __all__ = [
     "CHECK_MESSAGE_TIMEOUT",
     "INVALID_MESSAGE",
@@ -43,3 +46,7 @@ REGISTERED_ALREADY = "you were already registered"
 CHECK_MESSAGE_TIMEOUT = "no available message at timeout"
 INVALID_MESSAGE = "invalid message"
 REJECT_UNREGISTERED = "rejected: not a registered user"
+REJECT_INCOMPATIBLE_VERSION = (
+    "cannot register due to the DecLearn version in use; "
+    f"please update to `declearn ~= {VERSION}`"
+)

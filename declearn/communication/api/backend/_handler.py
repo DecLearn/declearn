@@ -183,10 +183,7 @@ class MessagesHandler:
             message.name,
             message.version,
         )
-        return Reject(
-            "Cannot register due to the DecLearn version in use. "
-            f"Please update to `declearn ~= {VERSION}`."
-        )
+        return Reject(flags.REJECT_INCOMPATIBLE_VERSION)
 
     def _register_client(
         self,
