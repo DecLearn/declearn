@@ -11,8 +11,10 @@ exposed here.
 ## Overall process orchestrated by the server
 
 - Initially:
-    - have the clients connect and register for training
-    - prepare model and optimizer objects on both sides
+    - the clients connect to the server and register for training
+    - the server may collect targetted metadata from clients when required
+    - the server sets up the model, optimizers, aggregator and metrics
+    - all clients receive instructions to set up these objects as well
 - Iteratively:
     - perform a training round
     - perform an evaluation round
@@ -36,25 +38,35 @@ exposed here.
       registered, optionally under a given timeout delay)
     - close registration (reject future requests)
 - Client:
-    - gather metadata about the local training dataset
-      (_e.g._ dimensions and unique labels)
-    - connect to the server and send a request to join training,
-      including the former information
+    - connect to the server and send a request to join training
     - await the server's response (retry after a timeout if the request
       came in too soon, i.e. registration is not opened yet)
-- messaging : (JoinRequest <-> JoinReply)
 
 ### Post-registration initialization
 
-- Server:
-    - validate and aggregate clients-transmitted metadata
-    - finalize the model's initialization using those metadata
-    - send the model, local optimizer and evaluation metrics specs to clients
-- Client:
-    - instantiate the model, optimizer and metrics based on server instructions
-- messaging: (InitRequest <-> GenericMessage)
+#### (Optional) Metadata exchange
 
-### (Optional) Local differential privacy setup
+- This step is optional, and depends on the trained model's requirement
+  for dataset information (typically, features shape and/or dtype).
+- Server:
+  - query clients for targetted metadata about the local training datasets
+- Client:
+  - collect and send back queried metadata
+- messaging: (MetadataQuery <-> MetadataReply)
+- Server:
+  - validate and aggregate received information
+  - pass it to the model so as to finalize its initialization
+
+#### Initialization of the federated optimization problem
+
+- Server:
+    - set up the model, local and global optimizer, aggregator and metrics
+    - send specs to the clients so that they set up local counterpart objects
+- Client:
+    - instantiate the model, optimizer, aggregator and metrics based on specs
+- messaging: (InitRequest <-> InitReply)
+
+#### (Optional) Local differential privacy setup
 
 - This step is optional; a flag in the InitRequest at the previous step
   indicates to clients that it is to happen, as a secondary substep.
@@ -91,8 +103,8 @@ exposed here.
 
 - Server:
     - select clients that are to participate
-    - send data-batching parameters and shared model trainable weights
-    - (_send effort constraints, unused for now_)
+    - send data-batching parameters and effort constraints
+    - send shared model trainable weights
 - Client:
     - update model weights
     - perform evaluation steps based on effort constraints

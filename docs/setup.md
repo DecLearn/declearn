@@ -1,5 +1,17 @@
 # Installation guide
 
+This guide provides with all the required information to install `declearn`.
+
+**TL;DR**:<br/>
+If you want to install the latest stable version with all of its optional
+dependencies, simply run `pip install declearn[all]` from your desired
+python (preferably virtual) environment.
+
+**Important note**:<br/>
+When running a federated process with DecLearn, the server and all clients
+should use the same `major.minor` version; otherwise, clients' registration
+will fail verbosely, prompting to install the same version as the server's.
+
 ## Requirements
 
 - python >= 3.8
