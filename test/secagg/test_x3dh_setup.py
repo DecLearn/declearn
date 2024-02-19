@@ -20,7 +20,7 @@
 import asyncio
 import itertools
 import secrets
-from typing import Dict, List, Literal, Optional
+from typing import Dict, List, Literal, Mapping, Optional
 
 import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import (
@@ -28,8 +28,14 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import (
     Ed25519PublicKey,
 )
 
-from declearn.communication import messaging
+from declearn.messaging import (
+    Error,
+    GenericMessage,
+    Message,
+    SerializedMessage,
+)
 from declearn.secagg.x3dh import run_x3dh_setup_client, run_x3dh_setup_server
+from declearn.secagg.x3dh.messages import X3DHResponses
 from declearn.test_utils import MockNetworkClient, MockNetworkServer
 
 
@@ -106,36 +112,20 @@ async def run_client_routine_sending_error(
     """Run faulty client code, sending an Error message out of the blue."""
     async with MockNetworkClient(name=name) as netwk:
         await netwk.register({})
-        await netwk.check_message()  # receive x3dh-init request
-        await netwk.send_message(messaging.Error("test-error"))
-
-
-async def run_client_routine_sending_wrong_action(
-    name: str,
-    _,
-) -> messaging.Message:
-    """Run faulty client code, sending a GenericMessage with wrong action."""
-    async with MockNetworkClient(name=name) as netwk:
-        await netwk.register({})
-        await netwk.check_message()  # receive x3dh-init request
-        await netwk.send_message(
-            messaging.GenericMessage(action="trigger-error", params={})
-        )
-        return await netwk.check_message()
+        await netwk.recv_message()  # receive x3dh-init request
+        await netwk.send_message(Error("test-error"))
 
 
 async def run_client_routine_sending_wrong_type(
     name: str,
     _,
-) -> messaging.Message:
+) -> SerializedMessage:
     """Run faulty client code, sending a message with wrong type."""
     async with MockNetworkClient(name=name) as netwk:
         await netwk.register({})
-        await netwk.check_message()  # receive x3dh-init request
-        await netwk.send_message(
-            messaging.EvaluationReply(loss=0.0, n_steps=1, t_spent=0.0)
-        )
-        return await netwk.check_message()
+        await netwk.recv_message()  # receive x3dh-init request
+        await netwk.send_message(GenericMessage(action="stub", params={}))
+        return await netwk.recv_message()
 
 
 async def run_client_routine_raising_x3dh_error(
@@ -150,7 +140,6 @@ async def run_client_routine_raising_x3dh_error(
 
 FAULTY_CLIENT_ROUTINES = {
     "send_error": run_client_routine_sending_error,
-    "wrong_action": run_client_routine_sending_wrong_action,
     "wrong_type": run_client_routine_sending_wrong_type,
     "x3dh_error": run_client_routine_raising_x3dh_error,
 }
@@ -160,7 +149,7 @@ FAULTY_CLIENT_ROUTINES = {
 @pytest.mark.asyncio
 async def test_x3dh_setup_routines_with_faulty_client(
     id_keys: List[Ed25519PrivateKey],
-    fault: Literal["send_error", "wrong_action", "wrong_type", "x3dh_error"],
+    fault: Literal["send_error", "wrong_type", "x3dh_error"],
 ) -> None:
     """Test exception raising when a client is faulty."""
     n_clients = 3
@@ -189,7 +178,8 @@ async def test_x3dh_setup_routines_with_faulty_client(
     elif fault == "send_error":
         assert faulty_out is None
     else:
-        assert isinstance(faulty_out, messaging.Error)
+        assert isinstance(faulty_out, SerializedMessage)
+        assert faulty_out.message_cls is Error
 
 
 async def run_server_routine_sending_error(
@@ -198,18 +188,7 @@ async def run_server_routine_sending_error(
     """Run faulty server code, sending an Error message."""
     async with MockNetworkServer() as netwk:
         await netwk.wait_for_clients(n_clients)
-        await netwk.broadcast_message(messaging.Error("test-error"))
-
-
-async def run_server_routine_sending_wrong_action(
-    n_clients: int,
-) -> None:
-    """Run faulty server code, sending an Empty message."""
-    async with MockNetworkServer() as netwk:
-        await netwk.wait_for_clients(n_clients)
-        await netwk.broadcast_message(
-            messaging.GenericMessage(action="x3dh-error", params={})
-        )
+        await netwk.broadcast_message(Error("test-error"))
 
 
 async def run_server_routine_sending_wrong_type(
@@ -218,7 +197,7 @@ async def run_server_routine_sending_wrong_type(
     """Run faulty server code, sending an Empty message."""
     async with MockNetworkServer() as netwk:
         await netwk.wait_for_clients(n_clients)
-        await netwk.broadcast_message(messaging.Empty())
+        await netwk.broadcast_message(GenericMessage(action="stub", params={}))
 
 
 async def run_server_routine_raising_x3dh_error(
@@ -229,23 +208,19 @@ async def run_server_routine_raising_x3dh_error(
     class TemperingNetworkServer(MockNetworkServer, register=False):
         """Ad hoc NetworkServer subclass tempering with X3DH responses."""
 
-        async def send_messages(  # type: ignore
+        async def send_messages(
             self,
-            messages: Dict[str, messaging.Message],
-            heartbeat: int = 1,
-            timeout: Optional[int] = None,
+            messages: Mapping[str, Message],
+            timeout: Optional[float] = None,
         ) -> None:
             # kwargs for readability; pylint: disable=arguments-differ
             for msg in messages.values():
-                if (
-                    isinstance(msg, messaging.GenericMessage)
-                    and msg.action == "x3dh-response"
-                ):
-                    msg.params["responses"] = [
+                if isinstance(msg, X3DHResponses):
+                    msg.responses = [
                         secrets.randbits(val.bit_length())
-                        for val in msg.params["responses"]
+                        for val in msg.responses
                     ]
-            await super().send_messages(messages, heartbeat, timeout)
+            await super().send_messages(messages, timeout)
 
     async with TemperingNetworkServer() as netwk:
         await netwk.wait_for_clients(n_clients)
@@ -254,7 +229,6 @@ async def run_server_routine_raising_x3dh_error(
 
 FAULTY_SERVER_ROUTINES = {
     "send_error": run_server_routine_sending_error,
-    "wrong_action": run_server_routine_sending_wrong_action,
     "wrong_type": run_server_routine_sending_wrong_type,
     "x3dh_error": run_server_routine_raising_x3dh_error,
 }
@@ -264,7 +238,7 @@ FAULTY_SERVER_ROUTINES = {
 @pytest.mark.asyncio
 async def test_x3dh_setup_routines_with_faulty_server(
     id_keys: List[Ed25519PrivateKey],
-    fault: Literal["send_error", "wrong_action", "wrong_type", "x3dh_error"],
+    fault: Literal["send_error", "wrong_type", "x3dh_error"],
 ) -> None:
     """Test exception raising when a client is faulty."""
     n_clients = 3

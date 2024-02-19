@@ -17,7 +17,7 @@
 
 """X3DH (Extended Triple Diffie-Hellman) setup routines."""
 
-from typing import Dict, List, Optional, Set
+from typing import Dict, List, Optional, Set, Type, TypeVar
 
 import numpy as np
 from cryptography.hazmat.primitives.asymmetric.ed25519 import (
@@ -25,9 +25,15 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import (
     Ed25519PublicKey,
 )
 
-from declearn.communication import messaging
 from declearn.communication.api import NetworkClient, NetworkServer
+from declearn.messaging import Error, Message, SerializedMessage
 from declearn.secagg.x3dh._x3dh import X3DHManager
+from declearn.secagg.x3dh.messages import (
+    X3DHOkay,
+    X3DHRequests,
+    X3DHResponses,
+    X3DHTrigger,
+)
 
 
 __all__ = [
@@ -130,9 +136,12 @@ async def run_x3dh_setup_client(
     """
     x3dhm = X3DHManager(prv_key, trusted)
     routine = X3DHClientRound(netwk, x3dhm)
-    msg = await netwk.check_message()
-    await routine.async_run(msg)  # type: ignore
+    msg = await netwk.recv_message()
+    await routine.async_run(msg)
     return x3dhm.secrets
+
+
+MessageT = TypeVar("MessageT", bound=Message)
 
 
 class X3DHServerRound:  # pylint: disable=too-few-public-methods
@@ -176,18 +185,16 @@ class X3DHServerRound:  # pylint: disable=too-few-public-methods
         # Send instructions to clients so that they set up X3DH requests.
         await self._send_initial_requests(requests)
         # Gather X3DH requests and distribute them to their recipients.
-        messages = await self.netwk.wait_for_messages(clients)
-        await self._transmit_x3dh_requests(requests, messages)
+        received = await self.netwk.wait_for_messages(clients)
+        await self._transmit_x3dh_requests(requests, received)
         # Gather X3DH responses and distribute them to their recipients.
-        messages = await self.netwk.wait_for_messages(clients)
-        await self._transmit_x3dh_responses(requests, messages)
+        received = await self.netwk.wait_for_messages(clients)
+        await self._transmit_x3dh_responses(requests, received)
         # Verify that each and every client is done and okay.
-        messages = await self.netwk.wait_for_messages(clients)
-        await self._verify_messages_validity(messages, "x3dh-okay")
+        received = await self.netwk.wait_for_messages(clients)
+        await self._verify_messages_validity(received, X3DHOkay)
         # If things went right, confirm it to all clients.
-        await self.netwk.broadcast_message(
-            messaging.GenericMessage(action="x3dh-okay", params={}), clients
-        )
+        await self.netwk.broadcast_message(X3DHOkay(), clients)
 
     async def _send_initial_requests(
         self,
@@ -195,9 +202,7 @@ class X3DHServerRound:  # pylint: disable=too-few-public-methods
     ) -> None:
         """Send an initial X3DH setup instruction to clients."""
         messages = {
-            name: messaging.GenericMessage(
-                action="x3dh-init", params={"n_reqs": len(peers)}
-            )
+            name: X3DHTrigger(n_reqs=len(peers))
             for name, peers in requests.items()
         }
         await self.netwk.send_messages(messages)
@@ -227,89 +232,73 @@ class X3DHServerRound:  # pylint: disable=too-few-public-methods
     async def _transmit_x3dh_requests(
         self,
         requests: Dict[str, List[str]],
-        messages: Dict[str, messaging.Message],
+        received: Dict[str, SerializedMessage],
     ) -> None:
         """Transmit X3DH requests from clients to their peers."""
-        queries = await self._verify_messages_validity(
-            messages, "x3dh-request"
-        )
+        queries = await self._verify_messages_validity(received, X3DHRequests)
         # Receive requests from clients and dispatch them by recipient.
-        cli_reqs = {c: [] for c in queries}  # type: Dict[str, List[int]]
+        replies = {client: X3DHRequests(requests=[]) for client in queries}
         for client, cli_msg in queries.items():
-            assert len(cli_msg.params["requests"]) == len(requests[client])
-            for cli, req in zip(requests[client], cli_msg.params["requests"]):
-                cli_reqs[cli].append(req)
-        # Send requests adressed to them to each and every client.
-        replies = {
-            client: messaging.GenericMessage(
-                action="x3dh-request", params={"requests": requests}
-            )
-            for client, requests in cli_reqs.items()
-        }
+            assert len(cli_msg.requests) == len(requests[client])
+            for dst, req in zip(requests[client], cli_msg.requests):
+                replies[dst].requests.append(req)
+        # Send back triaged requests to their recipients.
         await self.netwk.send_messages(replies)
 
     async def _transmit_x3dh_responses(
         self,
         requests: Dict[str, List[str]],
-        messages: Dict[str, messaging.Message],
+        received: Dict[str, SerializedMessage],
     ) -> None:
         """Transmit X3DH responses from clients to their peers."""
-        queries = await self._verify_messages_validity(
-            messages, "x3dh-response"
-        )
-        # For each client, fetch responses adressed to them.
-        cli_resp = {c: [] for c in queries}  # type: Dict[str, List[int]]
-        cli_indx = {c: 0 for c in queries}
+        queries = await self._verify_messages_validity(received, X3DHResponses)
+        # Receive responses from clients and dispatch them by recipient.
+        replies = {client: X3DHResponses(responses=[]) for client in queries}
         for dst, sources in requests.items():
             for src in sources:
-                cli_resp[dst].append(
-                    queries[src].params["responses"][cli_indx[src]]
-                )
-                cli_indx[src] += 1
-        # Send responses adressed to them to each and every client.
-        replies = {
-            client: messaging.GenericMessage(
-                action="x3dh-response", params={"responses": responses}
-            )
-            for client, responses in cli_resp.items()
-        }
+                response = queries[src].responses.pop(0)
+                replies[dst].responses.append(response)
+        # Send back triaged responses to their recipients.
         await self.netwk.send_messages(replies)
 
     async def _verify_messages_validity(
         self,
-        messages: Dict[str, messaging.Message],
-        action: str,
-    ) -> Dict[str, messaging.GenericMessage]:
+        received: Dict[str, SerializedMessage],
+        expected: Type[MessageT],
+    ) -> Dict[str, MessageT]:
         """Send an Error message and raise if messages are unproper."""
-        error = f"Expected GenericMessage(action='{action}') messages"
-        # Scan for Error messages. Send an Error to other clients.
+        error = f"Expected '{expected}' messages"
+        # In case of Error messages, send an Error to other clients and raise.
         errors = {
-            client: msg.message
-            for client, msg in messages.items()
-            if isinstance(msg, messaging.Error)
+            client: srm.deserialize().message
+            for client, srm in received.items()
+            if issubclass(srm.message_cls, Error)
         }
         if errors:
             error += ", got the following Error messages:\n"
             error += "\n".join(errors.values())
             await self.netwk.broadcast_message(
-                messaging.Error("Some clients reported errors."),
-                clients=set(messages).difference(errors),
+                Error("Some clients reported errors."),
+                clients=set(received).difference(errors),
             )
             raise RuntimeError(error)
-        # Scan for unproper messages. Send an Error to all clients.
+        # In case of unproper messages, send an Error to all clients and raise.
         err_msg = ""
-        for msg in messages.values():
-            if not isinstance(msg, messaging.GenericMessage):
-                err_msg += f"\n{type(msg)}"
-            elif msg.action != action:
-                err_msg += f"\nGenericMessage(action='{msg.action}')"
+        messages = {}  # type: Dict[str, MessageT]
+        for cli, srm in received.items():
+            if not issubclass(srm.message_cls, expected):
+                err_msg += f"\n{srm.message_cls}"
+            else:
+                msg = srm.deserialize()
+                messages[cli] = msg
         if err_msg:
             err_msg += f", got the following unproper message types:{err_msg}"
             await self.netwk.broadcast_message(
-                messaging.Error(error), clients=set(messages)
+                Error(error), clients=set(received)
             )
             raise RuntimeError(error)
-        return messages  # type: ignore
+        # If everyting is fine, return the received messages.
+        return messages
 
 
 class X3DHClientRound:  # pylint: disable=too-few-public-methods
@@ -338,7 +327,7 @@ class X3DHClientRound:  # pylint: disable=too-few-public-methods
 
     async def async_run(
         self,
-        msg: messaging.Message,
+        msg: SerializedMessage,
     ) -> None:
         """Run the X3DH setup across the network of peers.
 
@@ -350,85 +339,72 @@ class X3DHClientRound:  # pylint: disable=too-few-public-methods
         # Process initial server instructions and send back X3DH requests.
         await self._create_x3dh_requests(msg)
         # Process X3DH requests from peers and send back responses.
-        msg = await self.netwk.check_message()
-        await self._respond_x3dh_requests(msg)
+        received = await self.netwk.recv_message()
+        await self._respond_x3dh_requests(received)
         # Process X3DH responses from peers and send back final status.
-        msg = await self.netwk.check_message()
-        await self._process_x3dh_responses(msg)
+        received = await self.netwk.recv_message()
+        await self._process_x3dh_responses(received)
         # Await confirmation that things went right for all peers.
-        msg = await self.netwk.check_message()
-        await self._verify_message_validity(msg, action="x3dh-okay")
+        received = await self.netwk.recv_message()
+        await self._verify_message_validity(received, X3DHOkay)
 
     async def _create_x3dh_requests(
         self,
-        msg: messaging.Message,
+        received: SerializedMessage,
     ) -> None:
         """Setup and send X3DH requests to the server."""
-        query = await self._verify_message_validity(msg, action="x3dh-init")
+        query = await self._verify_message_validity(received, X3DHTrigger)
         requests = [
-            self.x3dhm.create_handshake_request()
-            for _ in range(query.params["n_reqs"])
+            self.x3dhm.create_handshake_request() for _ in range(query.n_reqs)
         ]
-        reply = messaging.GenericMessage(
-            action="x3dh-request",
-            params={"requests": requests},
-        )
-        await self.netwk.send_message(reply)
+        await self.netwk.send_message(X3DHRequests(requests))
 
     async def _respond_x3dh_requests(
         self,
-        msg: messaging.Message,
+        received: SerializedMessage,
     ) -> None:
         """Process X3DH requests received from the server."""
-        query = await self._verify_message_validity(msg, action="x3dh-request")
+        query = await self._verify_message_validity(received, X3DHRequests)
         try:
             responses = [
                 self.x3dhm.process_handshake_request(request)
-                for request in query.params["requests"]
+                for request in query.requests
             ]
         except (KeyError, TypeError, ValueError) as exc:
-            await self.netwk.send_message(messaging.Error(repr(exc)))
+            await self.netwk.send_message(Error(repr(exc)))
             raise exc
-        reply = messaging.GenericMessage(
-            action="x3dh-response",
-            params={"responses": responses},
-        )
-        await self.netwk.send_message(reply)
+        await self.netwk.send_message(X3DHResponses(responses))
 
     async def _process_x3dh_responses(
         self,
-        msg: messaging.Message,
+        received: SerializedMessage,
     ) -> None:
         """Process X3DH responses received from the server."""
-        query = await self._verify_message_validity(
-            msg, action="x3dh-response"
-        )
+        query = await self._verify_message_validity(received, X3DHResponses)
         try:
-            for response in query.params["responses"]:
+            for response in query.responses:
                 self.x3dhm.process_handshake_response(response)
         except (KeyError, TypeError, ValueError) as exc:
-            await self.netwk.send_message(messaging.Error(repr(exc)))
+            await self.netwk.send_message(Error(repr(exc)))
             raise exc
-        reply = messaging.GenericMessage(action="x3dh-okay", params={})
-        await self.netwk.send_message(reply)
+        await self.netwk.send_message(X3DHOkay())
 
     async def _verify_message_validity(
         self,
-        msg: messaging.Message,
-        action: str,
-    ) -> messaging.GenericMessage:
+        received: SerializedMessage,
+        expected: Type[MessageT],
+    ) -> MessageT:
         """Send an Error message and/or raise if a message is unproper."""
-        error = f"Expected a GenericMessage(action='{action}')"
+        # If a proper message is received, deserialize and return it.
+        if issubclass(received.message_cls, expected):
+            return received.deserialize()
         # When an Error is received, merely raise using its content.
-        if isinstance(msg, messaging.Error):
+        error = f"Expected a '{expected}' message"
+        if issubclass(received.message_cls, Error):
+            msg = received.deserialize()
             error = f"{error}, received an Error message: {msg.message}."
             raise RuntimeError(error)
-        # Otherwise, send an Error if the message is unproper, or return it.
-        if not isinstance(msg, messaging.GenericMessage):
-            error = f"{error}, got a {type(msg)}."
-        elif msg.action != action:
-            error = f"{error}, got a GenericMessage(action='{msg.action}')."
-        else:
-            return msg
-        await self.netwk.send_message(messaging.Error(error))
+        # Otherwise, send an Error to the server, then raise.
+        error = f"{error}, got a {received.message_cls}."
+        await self.netwk.send_message(Error(error))
         raise RuntimeError(error)

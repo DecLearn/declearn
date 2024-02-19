@@ -23,7 +23,11 @@
     Participate in a X3DH (Extended Triple Diffie-Hellman) protocol.
 * [run_x3dh_setup_server][declearn.secagg.x3dh.run_x3dh_setup_server]:
     Orchestrate a X3DH (Extended Triple Diffie-Hellman) protocol run.
+
+Additionnaly, the [messages][declearn.secagg.x3dh.messages] submodule
+provides with dedicated message classes used during the setup.
 """
 
+from . import messages
 from ._x3dh import X3DHManager
 from ._setup import run_x3dh_setup_client, run_x3dh_setup_server
