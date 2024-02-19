@@ -51,9 +51,12 @@ def run_demo(
         # Run routines in isolated processes. Raise if any failed.
         success, outp = run_as_processes(server, *clients)
         if not success:
+            exceptions = "\n".join(
+                str(e) for e in outp if isinstance(e, RuntimeError)
+            )
             raise RuntimeError(
                 "Something went wrong during the demo. Exceptions caught:\n"
-                "\n".join(str(e) for e in outp if isinstance(e, RuntimeError))
+                + exceptions
             )
 
 
