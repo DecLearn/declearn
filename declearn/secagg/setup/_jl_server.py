@@ -21,9 +21,15 @@ import math
 from typing import Dict, List, Optional, Set, Tuple
 
 
-from declearn.communication import messaging
 from declearn.communication.api import NetworkServer
 from declearn.secagg.joye_libert import JoyeLibertDecrypter
+from declearn.secagg.setup.messages import (
+    JoyeLibertInitInfo,
+    JoyeLibertPeerInfo,
+    JoyeLibertPublicShare,
+    JoyeLibertSecretShares,
+    JoyeLibertShamirPrime,
+)
 from declearn.secagg.shamir import recover_shared_secret
 from declearn.secagg.utils import generate_random_prime
 from declearn.secagg.x3dh import run_x3dh_setup_server
@@ -126,26 +132,23 @@ class ServerJoyeLibertSetup:  # pylint: disable=too-few-public-methods
         """Send quantization hyper-parameters. Receive biprime and id keys."""
         # Send initial request to clients.
         await self.netwk.broadcast_message(
-            messaging.GenericMessage(
-                action="jls-init",
-                params={"bitsize": self.bitsize, "clipval": self.clipval},
-            ),
-            clients,
+            JoyeLibertInitInfo(bitsize=self.bitsize, clipval=self.clipval),
+            clients=clients,
         )
         # Await public biprime and identity key from clients.
         # Ensure all clients share the same biprime key.
         # Record mappings between clients' identity key and name.
-        messages = await self.netwk.wait_for_messages(clients)
+        received = await self.netwk.wait_for_messages(clients)
         biprime = 0
         id_keys = {}  # type: Dict[str, str]
-        for client, msg in messages.items():
-            assert isinstance(msg, messaging.GenericMessage)
-            assert msg.action == "jls-biprime"
+        for client, srm in received.items():
+            assert issubclass(srm.message_cls, JoyeLibertPeerInfo)
+            msg = srm.deserialize()
             if not biprime:
-                biprime = msg.params["biprime"]
+                biprime = msg.biprime
             else:
-                assert biprime == msg.params["biprime"]
-            id_keys[client] = msg.params["id_key"]
+                assert biprime == msg.biprime
+            id_keys[client] = msg.id_key
         # Return received information.
         return biprime, id_keys
 
@@ -166,17 +169,15 @@ class ServerJoyeLibertSetup:  # pylint: disable=too-few-public-methods
         prime = await self._generate_and_send_shamir_prime(clients, biprime)
         # Receive, dispatch and send back encrypted shares across clients.
         c_names = {val: key for key, val in id_keys.items()}
-        messages = await self.netwk.wait_for_messages(clients)
+        received = await self.netwk.wait_for_messages(clients)
         c_shares = {}  # type: Dict[str, Dict[str, str]]
-        for client, msg in messages.items():
-            assert isinstance(msg, messaging.GenericMessage)
-            assert msg.action == "jls-shares"
-            for idk, val in msg.params.items():
+        for client, srm in received.items():
+            assert issubclass(srm.message_cls, JoyeLibertSecretShares)
+            msg = srm.deserialize()
+            for idk, val in msg.shares.items():
                 c_shares.setdefault(c_names[idk], {})[id_keys[client]] = val
         messages = {
-            client: messaging.GenericMessage(
-                action="jls-shares", params=shares
-            )
+            client: JoyeLibertSecretShares(shares)
             for client, shares in c_shares.items()
         }
         await self.netwk.send_messages(messages)
@@ -197,10 +198,7 @@ class ServerJoyeLibertSetup:  # pylint: disable=too-few-public-methods
         bitsize = 2 * biprime.bit_length() + math.ceil(math.log2(len(clients)))
         prime = generate_random_prime(bitsize=bitsize + 1)
         await self.netwk.broadcast_message(
-            messaging.GenericMessage(
-                action="jls-mprime", params={"prime": prime}
-            ),
-            clients,
+            JoyeLibertShamirPrime(prime), clients=clients
         )
         return prime
 
@@ -211,13 +209,13 @@ class ServerJoyeLibertSetup:  # pylint: disable=too-few-public-methods
     ) -> int:
         """Recover the public Joye-Libert key from public Shamir shares."""
         # Receive public Shamir secret shares from all peers.
-        messages = await self.netwk.wait_for_messages(clients=set(id_keys))
+        received = await self.netwk.wait_for_messages(clients=set(id_keys))
         s_shares = []  # type: List[Tuple[int, int]]
-        for client, msg in messages.items():
-            assert isinstance(msg, messaging.GenericMessage)
-            assert msg.action == "jls-share"
+        for client, srm in received.items():
+            assert issubclass(srm.message_cls, JoyeLibertPublicShare)
+            msg = srm.deserialize()
             x_coord = int.from_bytes(bytes.fromhex(id_keys[client]), "big")
-            y_coord = msg.params["share"]  # type: int
+            y_coord = msg.share
             s_shares.append((x_coord, y_coord))
         # Recover the public key for Joye-Libert decryption.
         return -recover_shared_secret(shares=s_shares, mprime=prime)

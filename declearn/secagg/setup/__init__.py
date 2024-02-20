@@ -26,5 +26,6 @@ Joye-Libert
     Server-side routine to set up a Joye-Libert decryption controller.
 """
 
+from . import messages
 from ._jl_client import ClientJoyeLibertSetup
 from ._jl_server import ServerJoyeLibertSetup

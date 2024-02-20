@@ -68,7 +68,7 @@ async def run_client_routine(
         routine = ClientJoyeLibertSetup(
             netwk, prv_key=prv_key, trusted=trusted, biprime=biprime
         )
-        message = await netwk.check_message()
+        message = await netwk.recv_message()
         encrypter = await routine.async_run(message)
     return encrypter
 

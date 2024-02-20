@@ -28,9 +28,16 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import (
     Ed25519PublicKey,
 )
 
-from declearn.communication import messaging
 from declearn.communication.api import NetworkClient
+from declearn.messaging import SerializedMessage
 from declearn.secagg.joye_libert import DEFAULT_BIPRIME, JoyeLibertEncrypter
+from declearn.secagg.setup.messages import (
+    JoyeLibertInitInfo,
+    JoyeLibertPeerInfo,
+    JoyeLibertPublicShare,
+    JoyeLibertSecretShares,
+    JoyeLibertShamirPrime,
+)
 from declearn.secagg.shamir import generate_secret_shares
 from declearn.secagg.x3dh import run_x3dh_setup_client
 
@@ -116,7 +123,7 @@ class ClientJoyeLibertSetup:  # pylint: disable=too-few-public-methods
 
     async def async_run(
         self,
-        message: messaging.Message,
+        message: SerializedMessage,
     ) -> JoyeLibertEncrypter:
         """Run the Joye-Libert SecAgg setup routine.
 
@@ -157,20 +164,17 @@ class ClientJoyeLibertSetup:  # pylint: disable=too-few-public-methods
 
     async def _exchange_hyperparameters(
         self,
-        msg: messaging.Message,
+        received: SerializedMessage,
     ) -> Tuple[int, float]:
         """Receive quantization hyper-parameters. Send biprime and id key."""
         # Process initial message, containing quantization parameters.
-        assert isinstance(msg, messaging.GenericMessage)
-        assert msg.action == "jls-init"
-        bitsize = msg.params["bitsize"]  # type: int
-        clipval = msg.params["clipval"]  # type: float
+        assert issubclass(received.message_cls, JoyeLibertInitInfo)
+        message = received.deserialize()
+        bitsize = message.bitsize
+        clipval = message.clipval
         # Send back biprime number and public key.
         await self.netwk.send_message(
-            messaging.GenericMessage(
-                action="jls-biprime",
-                params={"biprime": self.biprime, "id_key": self.id_key.hex()},
-            )
+            JoyeLibertPeerInfo(biprime=self.biprime, id_key=self.id_key.hex())
         )
         # Return received information.
         return bitsize, clipval
@@ -207,7 +211,7 @@ class ClientJoyeLibertSetup:  # pylint: disable=too-few-public-methods
             )
             peer_shares[id_keys[coord].hex()] = enc.hex()
         await self.netwk.send_message(
-            messaging.GenericMessage(action="jls-shares", params=peer_shares)
+            JoyeLibertSecretShares(shares=peer_shares)
         )
         # Return the secret key, and the secret share kept local.
         return y_share
@@ -216,10 +220,10 @@ class ClientJoyeLibertSetup:  # pylint: disable=too-few-public-methods
         self,
     ) -> int:
         """Await a shared prime number for Shamir secret sharing."""
-        msg = await self.netwk.check_message()
-        assert isinstance(msg, messaging.GenericMessage)
-        assert msg.action == "jls-mprime"
-        prime = msg.params["prime"]
+        received = await self.netwk.recv_message()
+        assert issubclass(received.message_cls, JoyeLibertShamirPrime)
+        message = received.deserialize()
+        prime = message.prime
         # Verify that the received number is a large prime and return it.
         assert gmpy2.is_prime(prime)
         assert prime.bit_length() > 2 * self.biprime.bit_length()
@@ -231,18 +235,15 @@ class ClientJoyeLibertSetup:  # pylint: disable=too-few-public-methods
         s_keys: Dict[bytes, bytes],
     ) -> None:
         """Receive, decrypt and sum secret shares; send their public sum."""
-        # Receive, decrypt and sum partial shares adressed to this peer.
-        msg = await self.netwk.check_message()
-        assert isinstance(msg, messaging.GenericMessage)
-        assert msg.action == "jls-shares"
-        for idk, val in msg.params.items():
+        # Await encrypted secret shares from peers (routed by the server).
+        received = await self.netwk.recv_message()
+        assert issubclass(received.message_cls, JoyeLibertSecretShares)
+        message = received.deserialize()
+        # Iteratively decrypt and sum the received partial shares.
+        for idk, val in message.shares.items():
             key = s_keys[bytes.fromhex(idk)]
             key = base64.urlsafe_b64encode(key)
             shr = cryptography.fernet.Fernet(key).decrypt(bytes.fromhex(val))
             share += int.from_bytes(shr, "big")
         # Send back the obtained public share.
-        await self.netwk.send_message(
-            messaging.GenericMessage(
-                action="jls-share", params={"share": share}
-            )
-        )
+        await self.netwk.send_message(JoyeLibertPublicShare(share))
