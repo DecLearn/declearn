@@ -21,7 +21,12 @@ from copy import deepcopy
 from typing import Any, Dict, Iterable, List, Optional, Set, Tuple, Union
 
 import numpy as np
+# fmt: off
+# pylint: disable=import-error,no-name-in-module
 import tensorflow as tf  # type: ignore
+import tensorflow.keras as tf_keras  # type: ignore
+# pylint: enable=import-error,no-name-in-module
+# fmt: on
 from numpy.typing import ArrayLike
 from typing_extensions import Self  # future: import from typing (py >=3.11)
 
@@ -46,7 +51,7 @@ __all__ = [
 class TensorflowModel(Model):
     """Model wrapper for TensorFlow Model instances.
 
-    This `Model` subclass is designed to wrap a `tf.keras.Model` instance
+    This `Model` subclass is designed to wrap a `tf_keras.Model` instance
     to be trained federatively.
 
     Notes regarding device management (CPU, GPU, etc.):
@@ -69,9 +74,9 @@ class TensorflowModel(Model):
 
     def __init__(
         self,
-        model: tf.keras.layers.Layer,
-        loss: Union[str, tf.keras.losses.Loss],
-        metrics: Optional[List[Union[str, tf.keras.metrics.Metric]]] = None,
+        model: tf_keras.layers.Layer,
+        loss: Union[str, tf_keras.losses.Loss],
+        metrics: Optional[List[Union[str, tf_keras.metrics.Metric]]] = None,
         _from_config: bool = False,
         **kwargs: Any,
     ) -> None:
@@ -92,19 +97,19 @@ class TensorflowModel(Model):
             compiled with the model and computed using the `evaluate`
             method of the returned TensorflowModel instance.
         **kwargs: Any
-            Any additional keyword argument to `tf.keras.Model.compile`
+            Any additional keyword argument to `tf_keras.Model.compile`
             may be passed.
         """
         # Type-check the input Model and wrap it up.
-        if not isinstance(model, tf.keras.layers.Layer):
+        if not isinstance(model, tf_keras.layers.Layer):
             raise TypeError(
-                "'model' should be a tf.keras.layers.Layer instance."
+                "'model' should be a tf_keras.layers.Layer instance."
             )
-        if not isinstance(model, tf.keras.Model):
-            model = tf.keras.Sequential([model])
+        if not isinstance(model, tf_keras.Model):
+            model = tf_keras.Sequential([model])
         super().__init__(model)
         # Ensure the loss is a keras.Loss object and set its reduction to none.
-        loss = build_keras_loss(loss, reduction=tf.keras.losses.Reduction.NONE)
+        loss = build_keras_loss(loss, reduction=tf_keras.losses.Reduction.NONE)
         # Select the device where to place computations and move the model.
         policy = get_device_policy()
         self._device = select_device(gpu=policy.gpu, idx=policy.idx)
@@ -150,9 +155,9 @@ class TensorflowModel(Model):
     def get_config(
         self,
     ) -> Dict[str, Any]:
-        config = tf.keras.layers.serialize(self._model)  # type: Dict[str, Any]
+        config = tf_keras.layers.serialize(self._model)  # type: Dict[str, Any]
         kwargs = deepcopy(self._kwargs)
-        loss = tf.keras.losses.serialize(kwargs.pop("loss"))
+        loss = tf_keras.losses.serialize(kwargs.pop("loss"))
         return {"model": config, "loss": loss, "kwargs": kwargs}
 
     @classmethod
@@ -169,8 +174,8 @@ class TensorflowModel(Model):
         device = select_device(gpu=policy.gpu, idx=policy.idx)
         # Deserialize the model and loss keras objects on the device.
         with tf.device(device):
-            model = tf.keras.layers.deserialize(config["model"])
-            loss = tf.keras.losses.deserialize(config["loss"])
+            model = tf_keras.layers.deserialize(config["model"])
+            loss = tf_keras.losses.deserialize(config["loss"])
         # Instantiate the TensorflowModel, avoiding device-to-device copies.
         return cls(model, loss, **config["kwargs"], _from_config=True)
 

@@ -21,7 +21,12 @@ import functools
 import warnings
 from typing import Any, Callable, Optional, Union
 
+# fmt: off
+# pylint: disable=import-error,no-name-in-module
 import tensorflow as tf  # type: ignore
+import tensorflow.keras as tf_keras  # type: ignore
+# pylint: enable=import-error,no-name-in-module
+# fmt: on
 
 
 __all__ = [
@@ -82,9 +87,9 @@ def select_device(
 
 
 def move_layer_to_device(
-    layer: tf.keras.layers.Layer,
+    layer: tf_keras.layers.Layer,
     device: Union[tf.config.LogicalDevice, str],
-) -> tf.keras.layers.Layer:
+) -> tf_keras.layers.Layer:
     """Create a copy of an input keras layer placed on a given device.
 
     This functions creates a copy of the input layer and of all its weights.
@@ -101,13 +106,13 @@ def move_layer_to_device(
 
     Returns
     -------
-    layer: tf.keras.layers.Layer
+    layer: tf_keras.layers.Layer
         Copy of the input layer, with its weights backed on `device`.
     """
-    config = tf.keras.layers.serialize(layer)
+    config = tf_keras.layers.serialize(layer)
     weights = layer.get_weights()
     with tf.device(device):
-        layer = tf.keras.layers.deserialize(config)
+        layer = tf_keras.layers.deserialize(config)
         layer.set_weights(weights)
     return layer
 

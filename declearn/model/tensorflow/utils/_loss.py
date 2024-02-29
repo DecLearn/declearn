@@ -21,7 +21,12 @@ import inspect
 
 from typing import Any, Callable, Dict, Optional, Union
 
+# fmt: off
+# pylint: disable=import-error,no-name-in-module
 import tensorflow as tf  # type: ignore
+import tensorflow.keras as tf_keras  # type: ignore
+# pylint: enable=import-error,no-name-in-module
+# fmt: on
 
 
 __all__ = [
@@ -33,18 +38,18 @@ __all__ = [
 CallableLoss = Callable[[tf.Tensor, tf.Tensor], tf.Tensor]
 
 
-@tf.keras.utils.register_keras_serializable(package="declearn")
-class LossFunction(tf.keras.losses.Loss):
+@tf_keras.utils.register_keras_serializable(package="declearn")
+class LossFunction(tf_keras.losses.Loss):
     """Generic loss function container enabling reduction strategy control."""
 
     def __init__(
         self,
         loss_fn: Union[str, CallableLoss],
-        reduction: str = tf.keras.losses.Reduction.NONE,
+        reduction: str = tf_keras.losses.Reduction.NONE,
         name: Optional[str] = None,
     ) -> None:
         super().__init__(reduction, name)
-        self.loss_fn = tf.keras.losses.deserialize(loss_fn)
+        self.loss_fn = tf_keras.losses.deserialize(loss_fn)
 
     def call(
         self,
@@ -59,14 +64,14 @@ class LossFunction(tf.keras.losses.Loss):
     ) -> Dict[str, Any]:
         # inherited docstring; pylint: disable=missing-docstring
         config = super().get_config()  # type: Dict[str, Any]
-        config["loss_fn"] = tf.keras.losses.serialize(self.loss_fn)
+        config["loss_fn"] = tf_keras.losses.serialize(self.loss_fn)
         return config
 
 
 def build_keras_loss(
-    loss: Union[str, tf.keras.losses.Loss, CallableLoss],
-    reduction: str = tf.keras.losses.Reduction.NONE,
-) -> tf.keras.losses.Loss:
+    loss: Union[str, tf_keras.losses.Loss, CallableLoss],
+    reduction: str = tf_keras.losses.Reduction.NONE,
+) -> tf_keras.losses.Loss:
     """Type-check, deserialize and/or wrap a keras loss into a Loss object.
 
     Parameters
@@ -79,11 +84,11 @@ def build_keras_loss(
 
     Returns
     -------
-    loss_obj: tf.keras.losses.Loss
+    loss_obj: tf_keras.losses.Loss
         Loss object, configured to apply the `reduction` scheme.
     """
     # Case when 'loss' is already a Loss object.
-    if isinstance(loss, tf.keras.losses.Loss):
+    if isinstance(loss, tf_keras.losses.Loss):
         loss.reduction = reduction
     # Case when 'loss' is a string: deserialize and/or wrap into a Loss object.
     elif isinstance(loss, str):
@@ -92,7 +97,7 @@ def build_keras_loss(
     elif inspect.isfunction(loss):
         loss = LossFunction(loss, reduction=reduction)
     # Case when 'loss' is of invalid type: raise a TypeError.
-    if not isinstance(loss, tf.keras.losses.Loss):
+    if not isinstance(loss, tf_keras.losses.Loss):
         raise TypeError(
             "'loss' should be a keras Loss object or the name of one."
         )
@@ -103,7 +108,7 @@ def build_keras_loss(
 def get_keras_loss_from_string(
     name: str,
     reduction: str,
-) -> tf.keras.losses.Loss:
+) -> tf_keras.losses.Loss:
     """Instantiate a keras Loss object from a registered string identifier.
 
     - If `name` matches a Loss registration name, return an instance.
@@ -112,8 +117,8 @@ def get_keras_loss_from_string(
       Loss subclass instance wrapping the function.
     - If it does not match anything, raise a ValueError.
     """
-    loss = tf.keras.losses.deserialize(name)
-    if isinstance(loss, tf.keras.losses.Loss):
+    loss = tf_keras.losses.deserialize(name)
+    if isinstance(loss, tf_keras.losses.Loss):
         loss.reduction = reduction
         return loss
     if inspect.isfunction(loss):

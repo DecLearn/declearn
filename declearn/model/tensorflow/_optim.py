@@ -19,7 +19,12 @@
 
 from typing import Any, Dict, Union
 
+# fmt: off
+# pylint: disable=import-error,no-name-in-module
 import tensorflow as tf  # type: ignore
+import tensorflow.keras as tf_keras  # type: ignore
+# pylint: enable=import-error,no-name-in-module
+# fmt: on
 
 from declearn.model.api import Vector
 from declearn.model.tensorflow.utils import select_device
@@ -81,7 +86,7 @@ class TensorflowOptiModule(OptiModule):
 
     def __init__(
         self,
-        optim: Union[tf.keras.optimizers.Optimizer, str, Dict[str, Any]],
+        optim: Union[tf_keras.optimizers.Optimizer, str, Dict[str, Any]],
     ) -> None:
         """Instantiate a hacky tensorflow optimizer plug-in module.
 
@@ -105,7 +110,7 @@ class TensorflowOptiModule(OptiModule):
         self._device = select_device(gpu=policy.gpu, idx=policy.idx)
         # Wrap the provided optimizer, enforcing a fixed learning rate of 1.
         # Also prevent the use of weight-decay or built-in ema (~momentum).
-        self.optim = tf.keras.optimizers.get(optim)
+        self.optim = tf_keras.optimizers.get(optim)
         config = self.optim.get_config()
         config["weight_decay"] = 0
         config["use_ema"] = False
@@ -207,7 +212,7 @@ class TensorflowOptiModule(OptiModule):
     def get_config(
         self,
     ) -> Dict[str, Any]:
-        optim = tf.keras.optimizers.serialize(self.optim)
+        optim = tf_keras.optimizers.serialize(self.optim)
         return {"optim": optim}
 
     def get_state(
