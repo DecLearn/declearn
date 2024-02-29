@@ -53,7 +53,7 @@ all = [  # all non-tests extra dependencies
     "jax[cpu] ~= 0.4.1",
     "opacus ~= 1.4",
     "protobuf >= 3.19",
-    "tensorflow ~= 2.5",
+    "tensorflow ~= 2.11, < 2.16",
     "torch >= 1.13, < 3.0",
     "websockets >= 10.1, < 13.0",
 ]
@@ -71,7 +71,7 @@ haiku = [
     "jax[cpu] ~= 0.4.1",  # NOTE: GPU support must be manually installed
 ]
 tensorflow = [
-    "tensorflow ~= 2.5",
+    "tensorflow ~= 2.11, < 2.16",  # starting with 2.16 TF upgrades to Keras 3
 ]
 torch = [  # generic requirements for Torch
     "torch >= 1.13, < 3.0",
