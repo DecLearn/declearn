@@ -18,6 +18,7 @@
 """Server-side main Federated Learning orchestrating class."""
 
 import asyncio
+import copy
 import dataclasses
 import logging
 from typing import Any, Dict, List, Optional, Set, Tuple, Type, TypeVar, Union
@@ -150,6 +151,8 @@ class FederatedServer:
         # Set up private attributes to record the loss values and best weights.
         self._loss = {}  # type: Dict[int, float]
         self._best = None  # type: Optional[Vector]
+        # Set up a private attribute to prevent redundant weights sharing.
+        self._clients_holding_latest_model = set()  # type: Set[str]
 
     def run(
         self,
@@ -453,13 +456,48 @@ class FederatedServer:
             TrainingConfig dataclass instance wrapping data-batching
             and computational effort constraints hyper-parameters.
         """
-        message = messaging.TrainRequest(
+        # Set up the base training request.
+        msg_light = messaging.TrainRequest(
             round_i=round_i,
-            weights=self.model.get_weights(trainable=True),
+            weights=None,
             aux_var=self.optim.collect_aux_var(),
             **train_cfg.message_params,
         )
-        await self.netwk.broadcast_message(message, clients)
+        # Send it to clients, sparingly joining model weights.
+        await self._send_request_with_optional_weights(msg_light, clients)
+
+    async def _send_request_with_optional_weights(
+        self,
+        msg_light: Union[messaging.TrainRequest, messaging.EvaluationRequest],
+        clients: Set[str],
+    ) -> None:
+        """Send a request to clients, sparingly adding model weights to it.
+
+        Transmit the input message to all clients, adding a copy of the
+        global model weights for clients that do not already hold them.
+
+        Parameters
+        ----------
+        msg_light:
+            Message to send, with a 'weights' field left to None.
+        clients:
+            Name of the clients to whom the message is adressed.
+        """
+        # Identify clients that do not already hold latest model weights.
+        needs_weights = clients.difference(self._clients_holding_latest_model)
+        # If any client does not hold latest weights, ensure they get it.
+        if needs_weights:
+            msg_heavy = copy.copy(msg_light)
+            msg_heavy.weights = self.model.get_weights(trainable=True)
+            messages = {
+                client: msg_heavy if client in needs_weights else msg_light
+                for client in clients
+            }
+            await self.netwk.send_messages(messages)
+            self._clients_holding_latest_model.update(needs_weights)
+        # If no client requires weights, do not even access them.
+        else:
+            await self.netwk.broadcast_message(msg_light, clients)
 
     def _conduct_global_update(
         self,
@@ -482,6 +520,8 @@ class FederatedServer:
         updates = sum(msg.updates for msg in results.values())
         gradients = self.aggrg.finalize_updates(updates)
         self.optim.apply_gradients(self.model, gradients)
+        # Record that no clients hold the updated model.
+        self._clients_holding_latest_model.clear()
 
     async def evaluation_round(
         self,
@@ -547,12 +587,14 @@ class FederatedServer:
             EvaluateConfig dataclass instance wrapping data-batching
             and computational effort constraints hyper-parameters.
         """
-        message = messaging.EvaluationRequest(
+        # Set up the base evaluation request.
+        msg_light = messaging.EvaluationRequest(
             round_i=round_i,
-            weights=self.model.get_weights(trainable=True),
+            weights=None,
             **valid_cfg.message_params,
         )
-        await self.netwk.broadcast_message(message, clients)
+        # Send it to clients, sparingly joining model weights.
+        await self._send_request_with_optional_weights(msg_light, clients)
 
     def _aggregate_evaluation_results(
         self,
