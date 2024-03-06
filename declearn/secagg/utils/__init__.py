@@ -30,8 +30,15 @@ Quantization utils
 
 * [Quantizer][declearn.secagg.utils.Quantizer]:
     Data (un)quantization facility for finite-domain int/float conversion.
+
+Miscellaneous utils
+-------------------
+
+* [get_numpy_uint_dtype][declearn.secagg.utils.get_numpy_uint_dtype]:
+    Return the smallest-size numpy uint dtype for a given integer range.
 """
 
+from ._numpy import get_numpy_uint_dtype
 from ._prime import (
     generate_random_biprime,
     generate_random_prime,

@@ -23,6 +23,7 @@ from typing import List
 
 import numpy as np
 
+from declearn.secagg.utils._numpy import get_numpy_uint_dtype
 
 __all__ = [
     "Quantizer",
@@ -87,28 +88,13 @@ class Quantizer:
         return 2 * self.val_range / self.int_range
 
     @functools.cached_property
-    def _int_dtype(self) -> np.dtype:
+    def _uint_dtype(self) -> np.dtype:
         """Select the appropriate uint dtype for numpy, if any.
 
         Raise a ValueError if `self.int_range` goes beyond the numpy
         uint limit, resulting in much slower pure-python operations.
         """
-        # Gather the list of numpy uint types and their bitsize limit.
-        uint_types = [
-            (np.dtype(dtype), np.iinfo(dtype).max.bit_length())
-            for dtype in np.unsignedinteger.__subclasses__()
-        ]
-        # Find the smallest bitsize that can store the target domain values.
-        bitsize = (self.int_range - 1).bit_length()
-        for dtype, limit in sorted(uint_types, key=lambda x: x[1]):
-            if bitsize <= limit:
-                return dtype
-        # If None, raise a ValueError.
-        dtype, limit = uint_types[-1]
-        raise ValueError(
-            "Cannot quantize values through numpy onto a domain that goes "
-            f"beyond the {dtype.name} limit (int_range > 2**{limit})."
-        )
+        return get_numpy_uint_dtype(self.int_range)
 
     @functools.cached_property
     def numpy_compatible(self) -> bool:
@@ -119,7 +105,7 @@ class Quantizer:
           numpy counterparts to speed up computations by vectorization.
         """
         try:
-            self._int_dtype
+            self._uint_dtype
         except ValueError:
             return False
         return True
@@ -233,7 +219,7 @@ class Quantizer:
             If `self.int_range` goes above the maximum size for numpy
             unsigned integer.
         """
-        dtype = self._int_dtype
+        dtype = self._uint_dtype
         clipped = values.clip(min=-self.val_range, max=self.val_range)
         outputs = np.round((clipped + self.val_range) / self._step_size)
         with warnings.catch_warnings():
