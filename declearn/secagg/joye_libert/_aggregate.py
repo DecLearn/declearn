@@ -17,7 +17,10 @@
 
 """Secure Aggregation Controller using Joye-Libert homomorphic summation."""
 
-from typing import Any, Dict, List, Optional, Tuple, Type, Union
+from typing import (
+    # fmt: off
+    Any, Dict, Generic, List, Optional, Tuple, Type, TypeVar, Union
+)
 
 from typing_extensions import Self  # future: import from typing (py >=3.11)
 
@@ -36,11 +39,12 @@ __all__ = [
     "JLSAggregate",
 ]
 
+AggregateT = TypeVar("AggregateT", bound=Aggregate)
 ArraySpec = Tuple[List[int], str]
 EncryptedSpecs = List[Tuple[str, int, Union[bool, ArraySpec, VectorSpec]]]
 
 
-class JLSAggregate:
+class JLSAggregate(Generic[AggregateT]):
     """'Aggregate'-like container for Joye-Libert encrypted values."""
 
     def __init__(
@@ -48,7 +52,7 @@ class JLSAggregate:
         encrypted: List[int],
         enc_specs: EncryptedSpecs,
         cleartext: Optional[Dict[str, Any]],
-        agg_cls: Type[Aggregate],
+        agg_cls: Type[AggregateT],
         biprime: int,
         n_aggrg: int = 1,
     ) -> None:

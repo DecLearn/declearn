@@ -17,7 +17,7 @@
 
 """Data encrypter for SecAgg using Joye-Libert homomorphic summation."""
 
-from typing import List, Tuple, Union
+from typing import List, Tuple, TypeVar, Union
 
 import numpy as np
 from declearn.model.api import Vector, VectorSpec
@@ -37,6 +37,9 @@ from declearn.utils import Aggregate
 __all__ = [
     "JoyeLibertEncrypter",
 ]
+
+
+AggregateT = TypeVar("AggregateT", bound=Aggregate)
 
 
 class JoyeLibertEncrypter:
@@ -88,9 +91,7 @@ class JoyeLibertEncrypter:
         """
         self.prv_key = prv_key
         self.biprime = biprime
-        self.quantizer = Quantizer(
-            val_range=clipval, int_range=2**bitsize - 1
-        )
+        self.quantizer = Quantizer(val_range=clipval, int_range=2**bitsize - 1)
         self._t_index = 0
 
     def encrypt_int(
@@ -215,8 +216,8 @@ class JoyeLibertEncrypter:
 
     def encrypt_aggregate(
         self,
-        value: Aggregate,
-    ) -> JLSAggregate:
+        value: AggregateT,
+    ) -> JLSAggregate[AggregateT]:
         """Encrypt an 'Aggregate' instance that needs secure aggregation.
 
         Parameters

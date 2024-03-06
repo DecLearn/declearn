@@ -17,7 +17,7 @@
 
 """Data decrypter for SecAgg using Joye-Libert homomorphic summation."""
 
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Union, TypeVar
 
 import numpy as np
 from declearn.model.api import Vector, VectorSpec
@@ -33,6 +33,9 @@ from declearn.utils import Aggregate
 __all__ = [
     "JoyeLibertDecrypter",
 ]
+
+
+AggregateT = TypeVar("AggregateT", bound=Aggregate)
 
 
 class JoyeLibertDecrypter:
@@ -93,9 +96,7 @@ class JoyeLibertDecrypter:
         self.pub_key = pub_key
         self.n_peers = n_peers
         self.biprime = biprime
-        self.quantizer = Quantizer(
-            val_range=clipval, int_range=2**bitsize - 1
-        )
+        self.quantizer = Quantizer(val_range=clipval, int_range=2**bitsize - 1)
         self._qt_corr = (n_peers - 1) * self.quantizer.quantize_value(0.0)
         self._t_index = 0
 
@@ -200,8 +201,8 @@ class JoyeLibertDecrypter:
 
     def decrypt_aggregate(
         self,
-        value: JLSAggregate,
-    ) -> Aggregate:
+        value: JLSAggregate[AggregateT],
+    ) -> AggregateT:
         """Decrypt a 'JLSAggregate' wrapping a summation of private values.
 
         Parameters
