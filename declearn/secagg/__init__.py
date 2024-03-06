@@ -17,6 +17,8 @@
 
 """Secure Aggregation features and utils.
 
+* [api][declearn.secagg.api]:
+    API-defining ABCs for SecAgg controllers and encrypted data.
 * [joye_libert][declearn.secagg.joye_libert]:
     Joye-Libert homomorphic summation tools.
 * [setup][declearn.secagg.setup]:
@@ -29,6 +31,7 @@
     Extended Triple Diffie-Hellman (X3DH) key agreement tools.
 """
 
+from . import api
 from . import joye_libert
 from . import shamir
 from . import utils

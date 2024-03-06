@@ -93,7 +93,7 @@ class TestJoyeLibertEncrypter:
         assert encrypter.quantizer.int_range == 2**bitsize - 1
         assert encrypter.quantizer.val_range == clipval
 
-    def test_encrypt_int(
+    def test_encrypt_uint(
         self,
     ) -> None:
         """Test that encryption of an int has proper outputs."""
@@ -101,11 +101,11 @@ class TestJoyeLibertEncrypter:
         encrypter = JoyeLibertEncrypter(prv_key)
         # Test that an integer value is encrypted into an int.
         clr_val = secrets.randbits(32)
-        enc_val = encrypter.encrypt_int(clr_val)
+        enc_val = encrypter.encrypt_uint(clr_val)
         assert isinstance(enc_val, int) and enc_val < encrypter.biprime**2
         # Test that encrypting the same value gives a distinct output,
         # due to the increment of the internal time stamp.
-        bis_val = encrypter.encrypt_int(clr_val)
+        bis_val = encrypter.encrypt_uint(clr_val)
         assert isinstance(bis_val, int) and bis_val < encrypter.biprime**2
         assert bis_val != enc_val
 
@@ -271,7 +271,7 @@ class TestJoyeLibertDecrypter:
         assert decrypter.quantizer.int_range == 2**bitsize - 1
         assert decrypter.quantizer.val_range == clipval
 
-    def test_decrypt_int(
+    def test_decrypt_uint(
         self,
         n_peers: int,
     ) -> None:
@@ -284,11 +284,11 @@ class TestJoyeLibertDecrypter:
         # Encrypt and aggregate random int values.
         cleartext = [secrets.randbits(32) for _ in range(n_peers)]
         encrypted = [
-            JoyeLibertEncrypter(key).encrypt_int(val)
+            JoyeLibertEncrypter(key).encrypt_uint(val)
             for key, val in zip(s_keys, cleartext)
         ]
         # Test that decryption works properly.
-        decrypted = decrypter.decrypt_int(sum_encrypted(encrypted))
+        decrypted = decrypter.decrypt_uint(sum_encrypted(encrypted))
         assert isinstance(decrypted, int)
         assert decrypted == sum(cleartext)
 
