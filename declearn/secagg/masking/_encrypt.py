@@ -18,17 +18,13 @@
 """Masking-based encrypter for SecAgg."""
 
 import functools
-from typing import List, Tuple, TypeVar, Union
+from typing import Any, Dict, List, Optional, Type, TypeVar
 
 import numpy as np
 
-from declearn.model.api import Vector, VectorSpec
-from declearn.secagg.masking._aggregate import (
-    ArraySpec,
-    EncryptedSpecs,
-    MaskedAggregate,
-)
-from declearn.secagg.utils import Quantizer, get_numpy_uint_dtype
+from declearn.secagg.api import EncryptedSpecs, Encrypter
+from declearn.secagg.masking._aggregate import MaskedAggregate
+from declearn.secagg.utils import get_numpy_uint_dtype
 from declearn.utils import Aggregate
 
 __all__ = [
@@ -38,8 +34,11 @@ __all__ = [
 AggregateT = TypeVar("AggregateT", bound=Aggregate)
 
 
-class MaskingEncrypter:
-    """Masking-based encrypter for SecAgg."""
+class MaskingEncrypter(Encrypter):
+    """Controller for the mask-based encryption of values that need summation.
+
+    TODO: Add references and algorithm details.
+    """
 
     def __init__(
         self,
@@ -48,13 +47,7 @@ class MaskingEncrypter:
         bitsize: int = 64,
         clipval: float = 1e5,
     ) -> None:
-        self._pos_rng = [
-            np.random.default_rng(seed) for seed in pos_masks_seeds
-        ]
-        self._neg_rng = [
-            np.random.default_rng(seed) for seed in neg_masks_seeds
-        ]
-        self.quantizer = Quantizer(val_range=clipval, int_range=2**bitsize - 1)
+        super().__init__(bitsize=bitsize, clipval=clipval)
         if not self.quantizer.numpy_compatible:
             raise ValueError(
                 "'MaskingEncrypter' requires 'bitsize' to be low enough for "
@@ -63,6 +56,12 @@ class MaskingEncrypter:
             )
         self.max_int = 2**bitsize
         self._dtype = get_numpy_uint_dtype(self.quantizer.int_range)
+        self._pos_rng = [
+            np.random.default_rng(seed) for seed in pos_masks_seeds
+        ]
+        self._neg_rng = [
+            np.random.default_rng(seed) for seed in neg_masks_seeds
+        ]
 
     @functools.cached_property
     def n_peers(self) -> int:
@@ -82,117 +81,25 @@ class MaskingEncrypter:
             mask -= rng.integers(max_val, dtype=self._dtype, size=n_values)
         return mask
 
-    def encrypt_int(
+    def encrypt_uint(
         self,
         value: int,
     ) -> int:
         mask = int(self._generate_masks(1)[0])
         return value + mask
 
-    def encrypt_float(
+    def wrap_into_secure_aggregate(
         self,
-        value: float,
-    ) -> int:
-        int_val = self.quantizer.quantize_value(value)
-        return self.encrypt_int(int_val)
-
-    def encrypt_numpy_array(
-        self,
-        value: np.ndarray,
-    ) -> Tuple[List[int], ArraySpec]:
-        if issubclass(value.dtype.type, np.unsignedinteger):
-            int_arr = value.flatten()
-        elif issubclass(value.dtype.type, (np.integer, np.floating)):
-            qnt_arr = self.quantizer.quantize_array(value)
-            int_arr = qnt_arr.flatten()
-        else:
-            raise TypeError(
-                f"Cannot encrypt numpy array with '{value.dtype}' dtype."
-            )
-        msk_arr = self._generate_masks(len(int_arr))
-        enc_val = (int_arr + msk_arr).tolist()
-        array_spec = (list(value.shape), value.dtype.name)
-        return enc_val, array_spec
-
-    def encrypt_vector(
-        self,
-        value: Vector,
-    ) -> Tuple[List[int], VectorSpec]:
-        flt_val, v_spec = value.flatten()
-        int_arr = np.array(self.quantizer.quantize_list(flt_val))
-        msk_arr = self._generate_masks(len(int_arr))
-        enc_val = (int_arr + msk_arr).tolist()
-        return enc_val, v_spec
-
-    def encrypt_aggregate(
-        self,
-        value: AggregateT,
+        encrypted: List[int],
+        enc_specs: EncryptedSpecs,
+        cleartext: Optional[Dict[str, Any]],
+        agg_cls: Type[AggregateT],
     ) -> MaskedAggregate[AggregateT]:
-        """Encrypt an 'Aggregate' instance that needs secure aggregation.
-
-        Parameters
-        ----------
-        value:
-            Cleartext `Aggregate`-child-class instance wrapping values
-            that need encryption for secure aggregation.
-
-        Returns
-        -------
-        encrypted:
-            `MaskedAggregate` object wrapping encrypted data (and opt. some
-            cleartext fields) and specs derived from the input `value`.
-
-        Raises
-        ------
-        NotImplementedError
-            If the input `Aggregate` type does not support secure aggregation.
-        TypeError
-            If any field marked as requiring secure aggregation is not a
-            positive int, float, numerical numpy array or declearn Vector
-            instance.
-        """
-        # Gather fields that need encryption and fields that remain cleartext.
-        cryptable, cleartext = value.prepare_for_secagg()
-        # Iteratively encrypt fields that need it.
-        encrypted = []  # type: List[int]
-        enc_specs = []  # type: EncryptedSpecs
-        for key, val in cryptable.items():
-            enc_v, spec = self._encrypt_value(val)
-            encrypted.extend(enc_v)
-            enc_specs.append((key, len(enc_v), spec))
-        # Wrap the results into a 'JLSAggregate' structure.
         return MaskedAggregate(
             encrypted=encrypted,
             enc_specs=enc_specs,
             cleartext=cleartext,
-            agg_cls=type(value),
+            agg_cls=agg_cls,
             max_int=self.max_int,
             n_aggrg=1,
         )
-
-    def _encrypt_value(
-        self,
-        value: Union[int, float, np.ndarray, Vector],
-    ) -> Tuple[List[int], Union[bool, ArraySpec, VectorSpec]]:
-        """Encrypt a given value of any supported type.
-
-        Returns
-        -------
-        encrypted:
-            List of one or more integers storing the encrypted inputs.
-        specs:
-            Value indicating specifications of the input value, the
-            type of which depends on that of `value`:
-                - `VectorSpec` for `Vector` values
-                - `(shape, dtype)` tuple for `np.ndarray` values
-                - `is_float` bool for scalar int or float values
-        """
-        if isinstance(value, np.ndarray):
-            return self.encrypt_numpy_array(value)
-        if isinstance(value, Vector):
-            return self.encrypt_vector(value)
-        if isinstance(value, float):
-            return [self.encrypt_float(value)], True
-        if isinstance(value, int):
-            return [self.encrypt_int(value)], False
-        raise TypeError(f"Cannot encrypt inputs with type '{type(value)}'.")

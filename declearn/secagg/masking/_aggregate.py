@@ -17,34 +17,22 @@
 
 """Secure Aggregation Controller using Joye-Libert homomorphic summation."""
 
-from typing import (
-    # fmt: off
-    Any, Dict, Generic, List, Optional, Tuple, Type, TypeVar, Union
-)
+from typing import Any, Dict, List, Optional, Type, TypeVar
 
 from typing_extensions import Self  # future: import from typing (py >=3.11)
 
-from declearn.model.api import VectorSpec
-from declearn.utils import (
-    Aggregate,
-    access_registered,
-    access_registration_info,
-    add_json_support,
-)
+from declearn.secagg.api import EncryptedSpecs, SecureAggregate
+from declearn.utils import Aggregate
 
 __all__ = [
-    "ArraySpec",
-    "EncryptedSpecs",
     "MaskedAggregate",
 ]
 
 AggregateT = TypeVar("AggregateT", bound=Aggregate)
-ArraySpec = Tuple[List[int], str]
-EncryptedSpecs = List[Tuple[str, int, Union[bool, ArraySpec, VectorSpec]]]
 
 
-class MaskedAggregate(Generic[AggregateT]):
-    """'Aggregate'-like container for masked quantized values."""
+class MaskedAggregate(SecureAggregate[AggregateT]):
+    """'Aggregate'-like container for mask-encrypted 'Aggregate' objects."""
 
     def __init__(
         self,
@@ -52,7 +40,7 @@ class MaskedAggregate(Generic[AggregateT]):
         enc_specs: EncryptedSpecs,
         cleartext: Optional[Dict[str, Any]],
         agg_cls: Type[AggregateT],
-        max_int: int,
+        max_int: int = 2**64,
         n_aggrg: int = 1,
     ) -> None:
         """Instantiate a MaskedAggregate.
@@ -78,65 +66,29 @@ class MaskedAggregate(Generic[AggregateT]):
             aggregated into this instance.
         """
         # backend class; pylint: disable=too-many-arguments
-        self.encrypted = encrypted
-        self.enc_specs = enc_specs
-        self.cleartext = cleartext or {}
-        self.agg_cls = agg_cls
+        super().__init__(encrypted, enc_specs, cleartext, agg_cls, n_aggrg)
         self.max_int = max_int
-        self.n_aggrg = n_aggrg
 
     def aggregate(
         self,
         other: Self,
     ) -> Self:
         """Aggregate this with another instance of matching specs."""
-        if not isinstance(other, self.__class__):
-            raise TypeError(
-                f"'{self.__class__.__name__}.aggregate' expects an input "
-                f"with the same type, but received '{type(other)}'."
-            )
-        if self.max_int != other.max_int:
+        if isinstance(other, self.__class__) and self.max_int != other.max_int:
             raise ValueError(
                 f"Cannot sum '{self.__class__.__name__}' instances with"
                 " distinct field-defining maximum integer values."
             )
-        if self.enc_specs != other.enc_specs:
-            raise ValueError(
-                f"Cannot sum '{self.__class__.__name__}' instances with"
-                " distinct specs for encrypted values."
-            )
-        encrypted = [
-            (x + y) % self.max_int
-            for x, y in zip(self.encrypted, other.encrypted)
-        ]
-        default = self.agg_cls.default_aggregate
-        cleartext = (
-            None
-            if self.cleartext is None
-            else {
-                key: getattr(self.agg_cls, f"aggregate_{key}", default)(
-                    val, other.cleartext[key]
-                )
-                for key, val in self.cleartext.items()
-            }
-        )
-        n_aggrg = self.n_aggrg + other.n_aggrg
-        return self.__class__(
-            encrypted=encrypted,
-            enc_specs=self.enc_specs,
-            cleartext=cleartext,
-            agg_cls=self.agg_cls,
-            max_int=self.max_int,
-            n_aggrg=n_aggrg,
-        )
+        output = super().aggregate(other)
+        output.max_int = self.max_int
+        return output
 
-    def __add__(
+    def aggregate_encrypted(
         self,
-        other: Self,
-    ) -> Self:
-        if not isinstance(other, self.__class__):
-            return NotImplemented
-        return self.aggregate(other)
+        val_a: List[int],
+        val_b: List[int],
+    ) -> List[int]:
+        return [(a + b) % self.max_int for a, b in zip(val_a, val_b)]
 
     def to_dict(
         self,
@@ -148,51 +100,6 @@ class MaskedAggregate(Generic[AggregateT]):
         data:
             Dict representation of this instance.
         """
-        return {
-            "encrypted": self.encrypted,
-            "enc_specs": self.enc_specs,
-            "cleartext": self.cleartext,
-            "agg_cls": access_registration_info(self.agg_cls),
-            "max_int": self.max_int,
-            "n_aggrg": self.n_aggrg,
-        }
-
-    @classmethod
-    def from_dict(
-        cls,
-        data: Dict[str, Any],
-    ) -> Self:
-        """Instantiate from a dict representation.
-
-        Parameters
-        ----------
-        data:
-            Dict representation, as emitted by this class's `to_dict`.
-
-        Raises
-        ------
-        TypeError
-            If any required key is missing or has improper type or value.
-        """
-        try:
-            return cls(
-                encrypted=data["encrypted"],
-                enc_specs=[tuple(s) for s in data["enc_specs"]],
-                cleartext=data["cleartext"],
-                agg_cls=access_registered(*data["agg_cls"]),
-                max_int=data["max_int"],
-                n_aggrg=data["n_aggrg"],
-            )
-        except Exception as exc:
-            raise TypeError(
-                f"Cannot instantiate '{cls.__name__}' from input dict: "
-                f"raised '{repr(exc)}'."
-            ) from exc
-
-
-add_json_support(
-    cls=MaskedAggregate,
-    pack=MaskedAggregate.to_dict,
-    unpack=MaskedAggregate.from_dict,
-    name="MaskedAggregate",
-)
+        data = super().to_dict()
+        data["max_int"] = self.max_int
+        return data

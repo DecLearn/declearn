@@ -184,7 +184,8 @@ class Decrypter(metaclass=abc.ABCMeta):
         value:
             `SecureAggregate` object wrapping aggregated encrypted data
             and associate metadata about its source `Aggregate` type.
-            The exact expected type depends on the controller's type.
+            The exact expected type depends on the controller's type,
+            and indicated by the `secure_aggregate_cls` class attribute.
 
         Returns
         -------
