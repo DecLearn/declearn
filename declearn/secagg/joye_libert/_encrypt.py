@@ -22,7 +22,7 @@ from typing import Any, Dict, List, Optional, Type, TypeVar
 
 from declearn.secagg.api import EncryptedSpecs, Encrypter
 from declearn.secagg.joye_libert._aggregate import JLSAggregate
-from declearn.secagg.joye_libert._joye_libert import (
+from declearn.secagg.joye_libert._primitives import (
     DEFAULT_BIPRIME,
     encrypt,
 )

@@ -57,7 +57,7 @@ References
     https://marcjoye.github.io/papers/JL13aggreg.pdf
 """
 
-from ._joye_libert import (
+from ._primitives import (
     DEFAULT_BIPRIME,
     decrypt_sum,
     encrypt,

@@ -22,7 +22,7 @@ from typing import Any, Dict, List, Optional, Type, TypeVar
 from typing_extensions import Self  # future: import from typing (py >=3.11)
 
 from declearn.secagg.api import ArraySpec, EncryptedSpecs, SecureAggregate
-from declearn.secagg.joye_libert._joye_libert import (
+from declearn.secagg.joye_libert._primitives import (
     DEFAULT_BIPRIME,
     sum_encrypted,
 )
