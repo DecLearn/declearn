@@ -112,7 +112,7 @@ class TestJoyeLibertDecrypterExceptions(
     def test_decrypt_aggregate_error_invalid_biprime(
         self,
     ) -> None:
-        """Test that decryption of a non- JLSAggregate raises properly."""
+        """Test that decryption with mismatching biprime raises properly."""
         decrypter, max_value, _ = self.setup_decrypter()
         encrypted = JLSAggregate(
             encrypted=[secrets.randbelow(max_value)],
