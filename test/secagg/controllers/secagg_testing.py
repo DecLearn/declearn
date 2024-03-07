@@ -15,13 +15,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Unit tests for Joye-Libert encryption and decryption controllers."""
+"""Unit tests template for encryption and decryption controllers."""
 
+import abc
 import copy
 import dataclasses
 import os
 import secrets
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any, Dict, Generic, List, Optional, Tuple, TypeVar, Union
 from unittest import mock
 
 import numpy as np
@@ -29,13 +30,7 @@ import pytest
 
 from declearn.model.api import Vector, VectorSpec
 from declearn.model.sklearn import NumpyVector
-from declearn.secagg.joye_libert import (
-    DEFAULT_BIPRIME,
-    JLSAggregate,
-    JoyeLibertDecrypter,
-    JoyeLibertEncrypter,
-    sum_encrypted,
-)
+from declearn.secagg.api import Decrypter, Encrypter, SecureAggregate
 from declearn.test_utils import (
     FrameworkType,
     GradientsTestCase,
@@ -44,6 +39,11 @@ from declearn.test_utils import (
     to_numpy,
 )
 from declearn.utils import Aggregate, json_dump, json_load, set_device_policy
+
+
+DecrypterT = TypeVar("DecrypterT", bound=Decrypter)
+EncrypterT = TypeVar("EncrypterT", bound=Encrypter)
+SecureAggregateT = TypeVar("SecureAggregateT", bound=SecureAggregate)
 
 
 @dataclasses.dataclass
@@ -76,53 +76,52 @@ class MockAggregate(Aggregate, base_cls=True, register=True):
         return secagg_fields, clrtxt_fields
 
 
-class TestJoyeLibertEncrypter:
-    """Unit tests for 'declearn.secagg.joye_libert.JoyeLibertEncrypter'."""
+class EncrypterTestSuite(Generic[EncrypterT], metaclass=abc.ABCMeta):
+    """Unit tests for 'declearn.secagg.api.Encrypter' subclasses."""
 
-    def test_init(
+    @abc.abstractmethod
+    def setup_encrypter(
         self,
-    ) -> None:
-        """Test that instantiation hyper-parameters are properly used."""
-        prv_key = secrets.randbits(32)
-        biprime = secrets.randbits(16)
-        bitsize = 8
-        clipval = 1.0
-        encrypter = JoyeLibertEncrypter(prv_key, biprime, bitsize, clipval)
-        assert encrypter.prv_key == prv_key
-        assert encrypter.biprime == biprime
-        assert encrypter.quantizer.int_range == 2**bitsize - 1
-        assert encrypter.quantizer.val_range == clipval
+        bitsize: int = 32,
+    ) -> Tuple[EncrypterT, int]:
+        """Set up an Encrypter.
+
+        Returns
+        -------
+        encrypter:
+            `Encrypter` instance, parametrized with `bitsize`.
+        max_value:
+            Maximal expected value for encrypted integers.
+        """
 
     def test_encrypt_uint(
         self,
     ) -> None:
         """Test that encryption of an int has proper outputs."""
-        prv_key = secrets.randbits(2 * DEFAULT_BIPRIME.bit_length())
-        encrypter = JoyeLibertEncrypter(prv_key)
+        encrypter, max_value = self.setup_encrypter()
         # Test that an integer value is encrypted into an int.
         clr_val = secrets.randbits(32)
         enc_val = encrypter.encrypt_uint(clr_val)
-        assert isinstance(enc_val, int) and enc_val < encrypter.biprime**2
+        assert isinstance(enc_val, int) and enc_val < max_value
         # Test that encrypting the same value gives a distinct output,
         # due to the increment of the internal time stamp.
         bis_val = encrypter.encrypt_uint(clr_val)
-        assert isinstance(bis_val, int) and bis_val < encrypter.biprime**2
+        assert isinstance(bis_val, int) and bis_val < max_value
         assert bis_val != enc_val
 
     def test_encrypt_float(
         self,
     ) -> None:
         """Test that encryption of an int has proper outputs."""
-        prv_key = secrets.randbits(2 * DEFAULT_BIPRIME.bit_length())
-        encrypter = JoyeLibertEncrypter(prv_key)
+        encrypter, max_value = self.setup_encrypter()
         # Test that a float value is encrypted into an int.
         clr_val = secrets.randbits(32) / secrets.randbits(32)
         enc_val = encrypter.encrypt_float(clr_val)
-        assert isinstance(enc_val, int) and enc_val < encrypter.biprime**2
+        assert isinstance(enc_val, int) and enc_val < max_value
         # Test that encrypting the same value gives a distinct output,
         # due to the increment of the internal time stamp.
         bis_val = encrypter.encrypt_float(clr_val)
-        assert isinstance(bis_val, int) and bis_val < encrypter.biprime**2
+        assert isinstance(bis_val, int) and bis_val < max_value
         assert bis_val != enc_val
 
     @pytest.mark.parametrize(
@@ -135,19 +134,15 @@ class TestJoyeLibertEncrypter:
         large_quantizer_field: bool,
     ) -> None:
         """Test that encryption of a numpy array has proper outputs."""
-        prv_key = secrets.randbits(2 * DEFAULT_BIPRIME.bit_length())
-        encrypter = JoyeLibertEncrypter(
-            prv_key, bitsize=128 if large_quantizer_field else 64
+        encrypter, max_value = self.setup_encrypter(
+            bitsize=128 if large_quantizer_field else 64
         )
         rng = np.random.default_rng()
         # Test that an int array is encrypted into a list of int (+ specs).
         clr_arr = rng.uniform(-10, 10, size=(8, 4)).astype(dtype)
         enc_arr, arr_spec = encrypter.encrypt_numpy_array(clr_arr)
         assert isinstance(enc_arr, list)
-        assert all(
-            isinstance(x, int) and (x < encrypter.biprime**2)
-            for x in enc_arr
-        )
+        assert all(isinstance(x, int) and (x < max_value) for x in enc_arr)
         # Verify that the returned array spec matches inputs.
         assert isinstance(arr_spec, tuple) and len(arr_spec) == 2
         assert arr_spec == (list(clr_arr.shape), dtype)
@@ -156,8 +151,7 @@ class TestJoyeLibertEncrypter:
         self,
     ) -> None:
         """Test that encryption of an object numpy array raises TypeError."""
-        prv_key = secrets.randbits(2 * DEFAULT_BIPRIME.bit_length())
-        encrypter = JoyeLibertEncrypter(prv_key)
+        encrypter, _ = self.setup_encrypter()
         clr_val = np.array(["a", "b", "c"])
         with pytest.raises(TypeError):
             encrypter.encrypt_numpy_array(clr_val)
@@ -169,16 +163,12 @@ class TestJoyeLibertEncrypter:
     ) -> None:
         """Test that encryption of a declearn Vector has proper outputs."""
         set_device_policy(gpu=False)
-        prv_key = secrets.randbits(2 * DEFAULT_BIPRIME.bit_length())
-        encrypter = JoyeLibertEncrypter(prv_key)
+        encrypter, max_value = self.setup_encrypter()
         # Test that a Vector is encrypted into a list of int (+ specs).
         clr_vec = GradientsTestCase(framework).mock_ones
         enc_vec, vec_spec = encrypter.encrypt_vector(clr_vec)
         assert isinstance(enc_vec, list)
-        assert all(
-            isinstance(x, int) and (x < encrypter.biprime**2)
-            for x in enc_vec
-        )
+        assert all(isinstance(x, int) and (x < max_value) for x in enc_vec)
         # Verify that encrypted values differ, despite the use of all-1 inputs.
         assert len(set(enc_vec)) > 1
         # Verify that the returned VectorSpec matches inputs.
@@ -189,8 +179,7 @@ class TestJoyeLibertEncrypter:
         self,
     ) -> None:
         """Test that encryption of an Aggregate works properly."""
-        prv_key = secrets.randbits(2 * DEFAULT_BIPRIME.bit_length())
-        encrypter = JoyeLibertEncrypter(prv_key)
+        encrypter, _ = self.setup_encrypter()
         # Set up a MockAggregate and encrypt it.
         rng = np.random.default_rng()
         aggregate = MockAggregate(
@@ -204,7 +193,7 @@ class TestJoyeLibertEncrypter:
         )
         encrypted = encrypter.encrypt_aggregate(aggregate)
         # Test that the output has proper type and check some attributes.
-        assert isinstance(encrypted, JLSAggregate)
+        assert isinstance(encrypted, SecureAggregate)
         assert [n for n, *_ in encrypted.enc_specs] == [
             "scalar_int",
             "scalar_float",
@@ -214,15 +203,13 @@ class TestJoyeLibertEncrypter:
         assert all(isinstance(x, int) for x in encrypted.encrypted)
         assert encrypted.cleartext == {"string": aggregate.string}
         assert encrypted.agg_cls is MockAggregate
-        assert encrypted.biprime == encrypter.biprime
         assert encrypted.n_aggrg == 1
 
     def test_encrypt_aggregate_with_invalid_type(
         self,
     ) -> None:
         """Test error raising when trying to encrypt unsupported types."""
-        prv_key = secrets.randbits(2 * DEFAULT_BIPRIME.bit_length())
-        encrypter = JoyeLibertEncrypter(prv_key)
+        encrypter, _ = self.setup_encrypter()
         # Set up a MockAggregate with a non-Vector MagicMock 'vector' field.
         aggregate = MockAggregate(
             string="mock",
@@ -236,59 +223,53 @@ class TestJoyeLibertEncrypter:
             encrypter.encrypt_aggregate(aggregate)
 
 
-@pytest.mark.parametrize("n_peers", [1, 3])
-class TestJoyeLibertDecrypter:
-    """Unit tests for 'declearn.secagg.joye_libert.JoyeLibertDecrypter'.
+class DecrypterTestSuite(
+    Generic[DecrypterT, EncrypterT], metaclass=abc.ABCMeta
+):
+    """Unit tests for 'declearn.secagg.api.Decrypter' subclasses.
 
     These tests are not entirely unitary: they are designed under the
-    assumption that `JoyeLibertEncrypter` works properly, and test at
-    once both the formal behavior of `JoyeLibertDecrypter` and proper
-    functional behavior of both controllers as a pair. I.e. while the
-    unit tests for the encrypter only check that outputs abide by the
-    specs in terms of type, these tests check that sum-decryption of
-    encrypted values yields correct results.
+    assumption that the related `Encrypter` works properly, and test
+    both the formal behavior of the `Decrypter` and proper functional
+    behavior of both controllers as a pair.
+
+    I.e. while the unit tests for the encrypter only check that outputs
+    abide by the specs in terms of type and maximum value, these tests
+    check that sum-decryption of encrypted values yields correct results.
 
     All tests are designed to run twice, once with `n_peers=1`, once
     with `n_peers=3`. Intuitively the first case verifies decryption
     in a test-only setting, while the second tackles actual SecAgg.
     """
 
-    def test_init(
+    @abc.abstractmethod
+    def setup_decrypter_and_encrypters(
         self,
         n_peers: int,
-    ) -> None:
-        """Test that instantiation hyper-parameters are properly used."""
-        pub_key = secrets.randbits(32)
-        biprime = secrets.randbits(16)
-        bitsize = 8
-        clipval = 1.0
-        decrypter = JoyeLibertDecrypter(
-            pub_key, n_peers, biprime, bitsize, clipval
-        )
-        assert decrypter.pub_key == pub_key
-        assert decrypter.n_peers == n_peers
-        assert decrypter.biprime == biprime
-        assert decrypter.quantizer.int_range == 2**bitsize - 1
-        assert decrypter.quantizer.val_range == clipval
+    ) -> Tuple[DecrypterT, List[EncrypterT]]:
+        """Set up a Decrypter and an ensemble of Encrypters."""
+
+    @abc.abstractmethod
+    def sum_encrypted(
+        self,
+        encrypted: List[int],
+    ) -> int:
+        """Aggregate encrypted values."""
 
     def test_decrypt_uint(
         self,
         n_peers: int,
     ) -> None:
         """Test that decryption of a sum of int works properly."""
-        s_keys = [
-            secrets.randbits(2 * DEFAULT_BIPRIME.bit_length())
-            for _ in range(n_peers)
-        ]
-        decrypter = JoyeLibertDecrypter(pub_key=-sum(s_keys), n_peers=n_peers)
+        decrypter, encrypters = self.setup_decrypter_and_encrypters(n_peers)
         # Encrypt and aggregate random int values.
         cleartext = [secrets.randbits(32) for _ in range(n_peers)]
         encrypted = [
-            JoyeLibertEncrypter(key).encrypt_uint(val)
-            for key, val in zip(s_keys, cleartext)
+            encrypter.encrypt_uint(value)
+            for encrypter, value in zip(encrypters, cleartext)
         ]
         # Test that decryption works properly.
-        decrypted = decrypter.decrypt_uint(sum_encrypted(encrypted))
+        decrypted = decrypter.decrypt_uint(self.sum_encrypted(encrypted))
         assert isinstance(decrypted, int)
         assert decrypted == sum(cleartext)
 
@@ -297,21 +278,17 @@ class TestJoyeLibertDecrypter:
         n_peers: int,
     ) -> None:
         """Test that decryption of a sum of float works properly."""
-        s_keys = [
-            secrets.randbits(2 * DEFAULT_BIPRIME.bit_length())
-            for _ in range(n_peers)
-        ]
-        decrypter = JoyeLibertDecrypter(pub_key=-sum(s_keys), n_peers=n_peers)
+        decrypter, encrypters = self.setup_decrypter_and_encrypters(n_peers)
         # Encrypt and aggregate random float values.
         cleartext = [
             secrets.randbits(32) / secrets.randbits(32) for _ in range(n_peers)
         ]
         encrypted = [
-            JoyeLibertEncrypter(key).encrypt_float(val)
-            for key, val in zip(s_keys, cleartext)
+            encrypter.encrypt_float(value)
+            for encrypter, value in zip(encrypters, cleartext)
         ]
         # Test that decryption works properly.
-        decrypted = decrypter.decrypt_float(sum_encrypted(encrypted))
+        decrypted = decrypter.decrypt_float(self.sum_encrypted(encrypted))
         assert isinstance(decrypted, float)
         assert abs(decrypted - sum(cleartext)) < 1e-10
 
@@ -322,11 +299,7 @@ class TestJoyeLibertDecrypter:
         n_peers: int,
     ) -> None:
         """Test that decryption of a sum of numpy array works properly."""
-        s_keys = [
-            secrets.randbits(2 * DEFAULT_BIPRIME.bit_length())
-            for _ in range(n_peers)
-        ]
-        decrypter = JoyeLibertDecrypter(pub_key=-sum(s_keys), n_peers=n_peers)
+        decrypter, encrypters = self.setup_decrypter_and_encrypters(n_peers)
         rng = np.random.default_rng()
         # Encrypt and aggregate random numpy arrays.
         low = 0 if dtype.startswith("u") else -10
@@ -335,11 +308,12 @@ class TestJoyeLibertDecrypter:
             for _ in range(n_peers)
         ]
         encrypted = [
-            JoyeLibertEncrypter(key).encrypt_numpy_array(val)
-            for key, val in zip(s_keys, cleartext)
+            encrypter.encrypt_numpy_array(value)
+            for encrypter, value in zip(encrypters, cleartext)
         ]
         sum_values = [
-            sum_encrypted(val) for val in zip(*(val for val, _ in encrypted))
+            self.sum_encrypted(values)  # type: ignore  # false-positive
+            for values in zip(*(val for val, _ in encrypted))
         ]
         # Test that decryption works properly.
         decrypted = decrypter.decrypt_numpy_array(
@@ -361,20 +335,17 @@ class TestJoyeLibertDecrypter:
     ) -> None:
         """Test that decryption of a sum of declearn Vector works properly."""
         set_device_policy(gpu=False)
-        s_keys = [
-            secrets.randbits(2 * DEFAULT_BIPRIME.bit_length())
-            for _ in range(n_peers)
-        ]
-        decrypter = JoyeLibertDecrypter(pub_key=-sum(s_keys), n_peers=n_peers)
+        decrypter, encrypters = self.setup_decrypter_and_encrypters(n_peers)
         test_case = GradientsTestCase(framework)
         # Encrypt and aggregate Vector objects.
         cleartext = [test_case.mock_ones for _ in range(n_peers)]
         encrypted = [
-            JoyeLibertEncrypter(key).encrypt_vector(val)
-            for key, val in zip(s_keys, cleartext)
+            encrypter.encrypt_vector(value)
+            for encrypter, value in zip(encrypters, cleartext)
         ]
         sum_values = [
-            sum_encrypted(val) for val in zip(*(val for val, _ in encrypted))
+            self.sum_encrypted(values)  # type: ignore  # false-positive
+            for values in zip(*(val for val, _ in encrypted))
         ]
         # Test that decryption works properly.
         decrypted = decrypter.decrypt_vector(
@@ -396,11 +367,7 @@ class TestJoyeLibertDecrypter:
         n_peers: int,
     ) -> None:
         """Test that decryption of a sum of Aggregates works properly."""
-        s_keys = [
-            secrets.randbits(2 * DEFAULT_BIPRIME.bit_length())
-            for _ in range(n_peers)
-        ]
-        decrypter = JoyeLibertDecrypter(pub_key=-sum(s_keys), n_peers=n_peers)
+        decrypter, encrypters = self.setup_decrypter_and_encrypters(n_peers)
         # Encrypt and aggregate MockAggregate objects.
         rng = np.random.default_rng()
         cleartext = [
@@ -416,8 +383,8 @@ class TestJoyeLibertDecrypter:
             for _ in range(n_peers)
         ]
         encrypted = [
-            JoyeLibertEncrypter(key).encrypt_aggregate(val)
-            for key, val in zip(s_keys, cleartext)
+            encrypter.encrypt_aggregate(value)
+            for encrypter, value in zip(encrypters, cleartext)
         ]
         sum_aggrg = sum(encrypted[1:], start=encrypted[0])
         # Test that decryption works properly.
@@ -444,183 +411,162 @@ class MockSimpleAggregate(Aggregate, base_cls=True, register=True):
     value: Union[int, float]
 
 
-@pytest.fixture(name="decrypter")
-def decrypter_fixture() -> JoyeLibertDecrypter:
-    """Provide with a simple one-peer JoyeLibertDecrypter."""
-    pub_key = -secrets.randbits(2 * DEFAULT_BIPRIME.bit_length())
-    return JoyeLibertDecrypter(pub_key=pub_key, n_peers=1)
-
-
-class TestJoyeLibertDecrypterExceptions:
+class DecrypterExceptionsTestSuite(Generic[DecrypterT], metaclass=abc.ABCMeta):
     """Unit tests for exception-raising 'JoyeLibertDecrypter' uses."""
+
+    @abc.abstractmethod
+    def setup_decrypter(
+        self,
+    ) -> Tuple[DecrypterT, int, Dict[str, Any]]:
+        """Set up a Decrypter instance and some metatdata.
+
+        Returns
+        -------
+        decrypter:
+            `Decrypter` instance.
+        max_value:
+            Maximal value for encrypted integers.
+        kwargs:
+            Dict of algorithm-specific kwargs to set up a valid
+            `SecureAggregate` input for the returned decrypter.
+        """
 
     def test_decrypt_aggregate_error_invalid_type(
         self,
-        decrypter: JoyeLibertDecrypter,
     ) -> None:
         """Test that decryption of a non- JLSAggregate raises properly."""
+        decrypter, *_ = self.setup_decrypter()
         aggregate = mock.MagicMock()
         with pytest.raises(TypeError):
             decrypter.decrypt_aggregate(aggregate)
 
     def test_mock_aggregate_validity(
         self,
-        decrypter: JoyeLibertDecrypter,
     ) -> None:
         """Merely test that the Aggregate sublass used can work properly."""
-        encrypted = JLSAggregate(
-            encrypted=[secrets.randbelow(decrypter.biprime**2)],
+        decrypter, max_value, kwargs = self.setup_decrypter()
+        encrypted = decrypter.secure_aggregate_cls(
+            encrypted=[secrets.randbelow(max_value)],
             enc_specs=[("value", 1, True)],
             cleartext=None,
             agg_cls=MockSimpleAggregate,
-            biprime=decrypter.biprime,
             n_aggrg=decrypter.n_peers,
+            **kwargs,
         )
         decrypted = decrypter.decrypt_aggregate(encrypted)
         assert isinstance(decrypted, MockSimpleAggregate)
         assert isinstance(decrypted.value, float)
 
-    def test_decrypt_aggregate_error_invalid_biprime(
-        self,
-        decrypter: JoyeLibertDecrypter,
-    ) -> None:
-        """Test that decryption of a non- JLSAggregate raises properly."""
-        encrypted = JLSAggregate(
-            encrypted=[secrets.randbelow(decrypter.biprime**2)],
-            enc_specs=[("value", 1, True)],
-            cleartext=None,
-            agg_cls=MockSimpleAggregate,
-            biprime=decrypter.biprime - 1,  # invalid biprime here
-            n_aggrg=decrypter.n_peers,
-        )
-        with pytest.raises(ValueError):
-            decrypter.decrypt_aggregate(encrypted)
-
     def test_decrypt_aggregate_error_invalid_n_aggrg(
         self,
-        decrypter: JoyeLibertDecrypter,
     ) -> None:
         """Test that decryption of a non- JLSAggregate raises properly."""
-        encrypted = JLSAggregate(
-            encrypted=[secrets.randbelow(decrypter.biprime**2)],
+        decrypter, max_value, kwargs = self.setup_decrypter()
+        encrypted = decrypter.secure_aggregate_cls(
+            encrypted=[secrets.randbelow(max_value)],
             enc_specs=[("value", 1, True)],
             cleartext=None,
             agg_cls=MockSimpleAggregate,
-            biprime=decrypter.biprime,
             n_aggrg=decrypter.n_peers + 1,  # invalid n_aggrg here
+            **kwargs,
         )
         with pytest.raises(ValueError):
             decrypter.decrypt_aggregate(encrypted)
 
     def test_decrypt_aggregate_error_invalid_field_type(
         self,
-        decrypter: JoyeLibertDecrypter,
     ) -> None:
         """Test that decryption of a non- JLSAggregate raises properly."""
-        encrypted = JLSAggregate(
-            encrypted=[secrets.randbelow(decrypter.biprime**2)],
+        decrypter, max_value, kwargs = self.setup_decrypter()
+        encrypted = decrypter.secure_aggregate_cls(
+            encrypted=[secrets.randbelow(max_value)],
             enc_specs=[("value", 1, mock.MagicMock())],  # invalid specs here
             cleartext=None,
             agg_cls=MockSimpleAggregate,
-            biprime=decrypter.biprime,
             n_aggrg=decrypter.n_peers,
+            **kwargs,
         )
         with pytest.raises(TypeError):
             decrypter.decrypt_aggregate(encrypted)
 
 
-@pytest.fixture(name="jls_agg")
-def jls_agg_fixture() -> JLSAggregate:
-    """Provide with a simple JLSAggregate based on MockSimpleAggregate."""
-    return JLSAggregate(
-        encrypted=[secrets.randbelow(DEFAULT_BIPRIME**2)],
-        enc_specs=[("value", 1, False)],
-        cleartext=None,
-        agg_cls=MockSimpleAggregate,
-        biprime=DEFAULT_BIPRIME,
-        n_aggrg=1,
-    )
+class SecureAggregateTestSuite(
+    Generic[SecureAggregateT], metaclass=abc.ABCMeta
+):
+    """Unit tests for 'declearn.secagg.api.SecureAggregate' subclasses."""
 
-
-class TestJLSAggregate:
-    """Unit tests on the 'JLSAggregate' data structure."""
+    @abc.abstractmethod
+    def setup_secure_aggregate(
+        self,
+    ) -> SecureAggregateT:
+        """Setup a SecureAggregate wrapping a 'MockSimpleAggregate'."""
 
     def test_dict_serialization(
         self,
-        jls_agg: JLSAggregate,
     ) -> None:
-        """Test that dict-serialization of a JLSAggregate works properly."""
-        jls_dict = jls_agg.to_dict()
-        assert_json_serializable_dict(jls_dict)
-        jls_bis = JLSAggregate.from_dict(jls_dict)
-        assert isinstance(jls_bis, JLSAggregate)
-        assert jls_bis.to_dict() == jls_dict
+        """Test that dict-serialization of a SecureAggregate works properly."""
+        sec_agg = self.setup_secure_aggregate()
+        sec_dict = sec_agg.to_dict()
+        assert_json_serializable_dict(sec_dict)
+        agg_bis = type(sec_agg).from_dict(sec_dict)
+        assert isinstance(agg_bis, type(sec_agg))
+        assert agg_bis.to_dict() == sec_dict
 
     def test_json_serialization(
         self,
-        jls_agg: JLSAggregate,
         tmp_path: str,
     ) -> None:
-        """Test that JSON-serialization of a JLSAggregate works properly."""
+        """Test that JSON-serialization of a SecureAggregate works properly."""
+        sec_agg = self.setup_secure_aggregate()
         path = os.path.join(tmp_path, "agg.json")
-        json_dump(jls_agg, path)
-        jls_bis = json_load(path)
-        assert isinstance(jls_bis, JLSAggregate)
-        assert jls_bis.to_dict() == jls_agg.to_dict()
+        json_dump(sec_agg, path)
+        agg_bis = json_load(path)
+        assert isinstance(agg_bis, type(sec_agg))
+        assert agg_bis.to_dict() == sec_agg.to_dict()
 
     def test_dict_deserialization_error(
         self,
-        jls_agg: JLSAggregate,
     ) -> None:
         """Test that dict-deserialization exceptions are caught."""
         # Test that the KeyError due to missing data is wrapped as TypeError.
-        jls_dict = jls_agg.to_dict()
-        jls_dict.pop("encrypted")
+        sec_agg = self.setup_secure_aggregate()
+        sec_dict = sec_agg.to_dict()
+        sec_dict.pop("encrypted")
         with pytest.raises(TypeError):
-            JLSAggregate.from_dict(jls_dict)
+            type(sec_agg).from_dict(sec_dict)
 
     def test_aggregate(
         self,
-        jls_agg: JLSAggregate,
     ) -> None:
-        """Test that aggregation / summation works properly.
+        """Test that SecureAggregate aggregation (summation) works properly.
 
         We already have functional tests, hence this test is quite limited.
         """
-        result = jls_agg + jls_agg
-        assert isinstance(result, JLSAggregate)
+        sec_agg = self.setup_secure_aggregate()
+        result = sec_agg + sec_agg
+        assert isinstance(result, type(sec_agg))
         assert result.n_aggrg == 2
 
     def test_aggregate_error_invalid_type(
         self,
-        jls_agg: JLSAggregate,
     ) -> None:
-        """Test that JLSAggregate aggregation raises on improper types."""
+        """Test that SecureAggregate aggregation raises on improper types."""
+        sec_agg = self.setup_secure_aggregate()
         mock_agg = mock.MagicMock()
         mock_agg.__radd__.side_effect = NotImplementedError
         # Test that type is properly checked in `aggregate`.
         with pytest.raises(TypeError):
-            jls_agg.aggregate(mock_agg)
+            sec_agg.aggregate(mock_agg)
         # Test that type is properly checked in `__add__`.
         with pytest.raises(NotImplementedError):
-            jls_agg + mock_agg  # pylint: disable=pointless-statement
-
-    def test_aggregate_error_invalid_biprime(
-        self,
-        jls_agg: JLSAggregate,
-    ) -> None:
-        """Test that JLSAggregate aggregation raises on distinct biprime."""
-        jls_bis = copy.deepcopy(jls_agg)
-        jls_bis.biprime += 1
-        with pytest.raises(ValueError):
-            jls_agg.aggregate(jls_bis)
+            sec_agg + mock_agg  # pylint: disable=pointless-statement
 
     def test_aggregate_error_invalid_specs(
         self,
-        jls_agg: JLSAggregate,
     ) -> None:
-        """Test that JLSAggregate aggregation raises on distinct encspecs."""
-        jls_bis = copy.deepcopy(jls_agg)
-        jls_bis.enc_specs = [("value", 1, True)]
+        """Test that SecureAggregate aggregation raises on distinct specs."""
+        sec_agg = self.setup_secure_aggregate()
+        agg_bis = copy.deepcopy(sec_agg)
+        agg_bis.enc_specs = [("value", 1, True)]
         with pytest.raises(ValueError):
-            jls_agg.aggregate(jls_bis)
+            sec_agg.aggregate(agg_bis)
