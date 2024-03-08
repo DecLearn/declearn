@@ -21,6 +21,7 @@ import copy
 import os
 import secrets
 from typing import Any, Dict, List, Tuple
+from unittest import mock
 
 import pytest
 
@@ -63,6 +64,13 @@ class TestMaskingDecrypter(
 ):
     """Functional tests for Masking SecAgg controllers."""
 
+    def get_bitsize(self) -> int:
+        """Return the bitsize parameter to use.
+
+        This method is designed to be patchable in specific tests.
+        """
+        return 64
+
     def sum_encrypted(
         self,
         encrypted: List[int],
@@ -73,7 +81,8 @@ class TestMaskingDecrypter(
         self,
         n_peers: int,
     ) -> Tuple[MaskingDecrypter, List[MaskingEncrypter]]:
-        decrypter = MaskingDecrypter(n_peers=n_peers)
+        bitsize = self.get_bitsize()
+        decrypter = MaskingDecrypter(n_peers=n_peers, bitsize=bitsize)
         rng_seeds = [
             ([], []) for _ in range(n_peers)
         ]  # type: List[Tuple[List[int], List[int]]]
@@ -84,10 +93,18 @@ class TestMaskingDecrypter(
                 rng_seeds[j][1].append(counter)
                 counter += 1
         encrypters = [
-            MaskingEncrypter(pos_masks_seeds, neg_masks_seeds)
+            MaskingEncrypter(pos_masks_seeds, neg_masks_seeds, bitsize=bitsize)
             for pos_masks_seeds, neg_masks_seeds in rng_seeds
         ]
         return decrypter, encrypters
+
+    def test_decrypt_float_large_bitsize(
+        self,
+        n_peers: int,
+    ) -> None:
+        """Test decryption of a sum of floats with high-bitsize encryption."""
+        with mock.patch.object(self, "get_bitsize", return_value=128):
+            self.test_decrypt_float(n_peers)
 
 
 class TestMaskingDecrypterExceptions(
