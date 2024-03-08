@@ -17,7 +17,7 @@
 
 """Masking-based encrypter for SecAgg."""
 
-import functools
+import math
 from typing import Any, Dict, List, Optional, Type, TypeVar
 
 import numpy as np
@@ -47,34 +47,74 @@ class MaskingEncrypter(Encrypter):
         bitsize: int = 64,
         clipval: float = 1e5,
     ) -> None:
-        super().__init__(bitsize=bitsize, clipval=clipval)
-        if not self.quantizer.numpy_compatible:
-            raise ValueError(
-                "'MaskingEncrypter' requires 'bitsize' to be low enough for "
-                "compatibility with numpy uint dtypes. This usually means a "
-                "bitsize <= 64."
-            )
-        self.max_int = 2**bitsize
-        self._dtype = get_numpy_uint_dtype(self.quantizer.int_range)
+        """Instantiate a masking-based encryption controller.
+
+        Parameters
+        ----------
+        pos_masks_seeds:
+            Secret RNG seeds for positive masks generator.
+        neg_masks_seeds:
+            Secret RNG seeds for negative masks generator.
+        bitsize:
+            Maximum bitsize of masked private values.
+            The higher the less information lost in quantization
+            of float values. The quantization domain is reduced
+            based on the number of peers (inferred from number
+            of mask seeds).
+        clipval:
+            Maximum absolute value beyond which to clip private
+            float values upon quantizing them. This impacts the
+            information loss due to (un)quantization of floats.
+        """
+        # Set up random number generators from input seeds.
         self._pos_rng = [
             np.random.default_rng(seed) for seed in pos_masks_seeds
         ]
         self._neg_rng = [
             np.random.default_rng(seed) for seed in neg_masks_seeds
         ]
+        # Record encrypted values' bitsize and adjust quantization size.
+        # We want sum_{i=1}^n(q(x_i)) < 2**b, hence q(x) < (2**b) / n,
+        # which is (less-tightedly) bounded by 2**(b - ceil(log2(n)).
+        self.max_int = 2**bitsize
+        n_peers = len(self._pos_rng) + len(self._neg_rng) + 1
+        quant_b = bitsize - int(math.ceil(math.log2(n_peers)))
+        super().__init__(bitsize=quant_b, clipval=clipval)
+        # Identify numpy dtype for masks, if any is large enough.
+        self._dtype = None  # type: Optional[np.dtype]
+        try:
+            self._dtype = get_numpy_uint_dtype(self.max_int - 1)
+        except ValueError:
+            self._generate_masks = self._generate_masks_large
+        else:
+            self._generate_masks = self._generate_masks_numpy
 
-    @functools.cached_property
-    def n_peers(self) -> int:
-        """Number of masking peers."""
-        return len(self._pos_rng) + len(self._neg_rng)
+    def _generate_masks_large(
+        self,
+        n_values: int,
+    ) -> np.ndarray:
+        """Generate a number of masking values."""
+        bits_per_mask = int(math.log2(self.max_int)) // 8
+        values = [0] * n_values
+        for rng in self._pos_rng:
+            rbytes = rng.bytes(bits_per_mask * n_values)
+            for i in range(n_values):
+                dat = rbytes[i * bits_per_mask : (i + 1) * bits_per_mask]
+                values[i] = values[i] + int.from_bytes(dat, "big")
+        for rng in self._neg_rng:
+            rbytes = rng.bytes(bits_per_mask * n_values)
+            for i in range(n_values):
+                dat = rbytes[i * bits_per_mask : (i + 1) * bits_per_mask]
+                values[i] = values[i] - int.from_bytes(dat, "big")
+        return np.array([val % self.max_int for val in values])
 
-    def _generate_masks(
+    def _generate_masks_numpy(
         self,
         n_values: int,
     ) -> np.ndarray:
         """Generate a number of masking values."""
         mask = np.zeros(shape=(n_values,), dtype=self._dtype)
-        max_val = self.max_int // self.n_peers
+        max_val = self.max_int
         for rng in self._pos_rng:
             mask += rng.integers(max_val, dtype=self._dtype, size=n_values)
         for rng in self._neg_rng:
@@ -86,7 +126,7 @@ class MaskingEncrypter(Encrypter):
         value: int,
     ) -> int:
         mask = int(self._generate_masks(1)[0])
-        return value + mask
+        return (value + mask) % self.max_int
 
     def wrap_into_secure_aggregate(
         self,

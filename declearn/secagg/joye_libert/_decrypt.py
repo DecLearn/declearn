@@ -112,12 +112,6 @@ class JoyeLibertDecrypter(Decrypter):
         self._t_index += 1
         return output
 
-    def correct_quantized_sum(
-        self,
-        value: int,
-    ) -> int:
-        return value - self._qt_corr
-
     def decrypt_aggregate(
         self,
         value: SecureAggregate[AggregateT],

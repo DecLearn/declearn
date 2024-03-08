@@ -56,21 +56,6 @@ class TestMaskingEncrypter(EncrypterTestSuite[MaskingEncrypter]):
         max_value = encrypter.max_int
         return encrypter, max_value
 
-    @pytest.mark.parametrize(
-        "large_quantizer_field", [True, False], ids=["quant128", "quant64"]
-    )
-    @pytest.mark.parametrize("dtype", ["int8", "int32", "float16", "float64"])
-    def test_encrypt_array(
-        self,
-        dtype: str,
-        large_quantizer_field: bool,
-    ) -> None:
-        if large_quantizer_field:
-            with pytest.raises(ValueError):
-                self.setup_encrypter(bitsize=128)
-        else:
-            super().test_encrypt_array(dtype, large_quantizer_field)
-
 
 @pytest.mark.parametrize("n_peers", [2, 5])
 class TestMaskingDecrypter(

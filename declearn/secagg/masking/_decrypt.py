@@ -17,6 +17,7 @@
 
 """Data decrypter for SecAgg using Joye-Libert homomorphic summation."""
 
+import math
 from typing import TypeVar
 
 
@@ -46,14 +47,28 @@ class MaskingDecrypter(Decrypter):
         bitsize: int = 64,
         clipval: float = 1e5,
     ) -> None:
-        super().__init__(n_peers, bitsize=bitsize, clipval=clipval)
-        if not self.quantizer.numpy_compatible:
-            raise ValueError(
-                "'MaskingDecrypter' requires 'bitsize' to be low enough for "
-                "compatibility with numpy uint dtypes. This usually means a "
-                "bitsize <= 64."
-            )
+        """Instantiate a masking-based decryption controller.
+
+        Parameters
+        ----------
+        n_peers:
+            Number of peers that contribute values to the sums.
+            This is required to prevent unquantization errors
+            when decrypting float values.
+        bitsize:
+            Maximum bitsize of masked private values.
+            This also affects the precision of (un)quantization.
+        clipval:
+            Maximum absolute value beyond which to clip private
+            float values upon quantizing them. This impacts the
+            information loss due to (un)quantization of floats.
+        """
+        # Record encrypted values' bitsize and adjust quantization size.
+        # We want sum_{i=1}^n(q(x_i)) < 2**b, hence q(x) < (2**b) / n,
+        # which is (less-tightedly) bounded by 2**(b - ceil(log2(n)).
         self.max_int = 2**bitsize
+        quant_b = bitsize - int(math.ceil(math.log2(n_peers)))
+        super().__init__(n_peers, bitsize=quant_b, clipval=clipval)
 
     def decrypt_uint(
         self,

@@ -68,6 +68,7 @@ class Decrypter(metaclass=abc.ABCMeta):
         # all arguments are required; pylint: disable=too-many-arguments
         self.n_peers = n_peers
         self.quantizer = Quantizer(val_range=clipval, int_range=2**bitsize - 1)
+        self._qt_corr = (n_peers - 1) * self.quantizer.quantize_value(0.0)
 
     @abc.abstractmethod
     def decrypt_uint(
@@ -87,17 +88,16 @@ class Decrypter(metaclass=abc.ABCMeta):
             Decrypted positive integer value.
         """
 
-    def correct_quantized_sum(
+    def _correct_quantized_sum(
         self,
         value: int,
     ) -> int:
         """Apply some correction to a quantized cleartext sum of values.
 
-        This method does nothing by default, but may be overloaded by
-        `Decrypter` subclasses to finalize a decrypted quantized value
-        prior to unquantizing it.
+        This method subtracts `(n - 1) * q(0)` from inputs, to account
+        for the quantizer shifting inputs by the clipping value.
         """
-        return value
+        return value - self._qt_corr
 
     def decrypt_float(
         self,
@@ -116,7 +116,7 @@ class Decrypter(metaclass=abc.ABCMeta):
             Decrypted float value.
         """
         int_val = self.decrypt_uint(value)
-        int_val = self.correct_quantized_sum(int_val)
+        int_val = self._correct_quantized_sum(int_val)
         return self.quantizer.unquantize_value(int_val)
 
     def decrypt_numpy_array(
@@ -142,7 +142,7 @@ class Decrypter(metaclass=abc.ABCMeta):
         s_val = [self.decrypt_uint(val) for val in values]
         shape, dtype = specs
         if not issubclass(np.dtype(dtype).type, np.unsignedinteger):
-            s_val = [self.correct_quantized_sum(val) for val in s_val]
+            s_val = [self._correct_quantized_sum(val) for val in s_val]
             s_val = self.quantizer.unquantize_list(s_val)  # type: ignore
             if issubclass(np.dtype(dtype).type, np.signedinteger):
                 s_val = [round(x) for x in s_val]
@@ -169,7 +169,7 @@ class Decrypter(metaclass=abc.ABCMeta):
             Decrypted `Vector` instance, with specs matching `specs`.
         """
         int_val = [self.decrypt_uint(val) for val in values]
-        int_val = [self.correct_quantized_sum(val) for val in int_val]
+        int_val = [self._correct_quantized_sum(val) for val in int_val]
         flt_val = self.quantizer.unquantize_list(int_val)
         return Vector.build_from_specs(flt_val, specs)
 
