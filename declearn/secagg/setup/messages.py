@@ -29,6 +29,8 @@ __all__ = [
     "JoyeLibertPublicShare",
     "JoyeLibertSecretShares",
     "JoyeLibertShamirPrime",
+    "MaskingSecaggSetupInit",
+    "MaskingSecaggSetupOkay",
 ]
 
 
@@ -77,3 +79,20 @@ class JoyeLibertPublicShare(Message):
     typekey = "jls-public-share"
 
     share: int
+
+
+@dataclasses.dataclass
+class MaskingSecaggSetupInit(Message):
+    """Server-emitted message to trigger masking-based SecAgg setup."""
+
+    typekey = "masking-secagg-setup-init"
+
+    bitsize: int
+    clipval: float
+
+
+@dataclasses.dataclass
+class MaskingSecaggSetupOkay(Message):
+    """Client-emitted empty message signaling that SecAgg setup is fine."""
+
+    typekey = "masking-secagg-setup-okay"

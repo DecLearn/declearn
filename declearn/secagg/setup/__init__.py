@@ -20,12 +20,26 @@
 Joye-Libert
 -----------
 
-* [ClientJoyeLibertSetup][declearn.secagg.joye_libert.ClientJoyeLibertSetup]:
+* [ClientJoyeLibertSetup][declearn.secagg.setup.ClientJoyeLibertSetup]:
     Client-side routine to set up a Joye-Libert encryption controller.
-* [ServerJoyeLibertSetup][declearn.secagg.joye_libert.ServerJoyeLibertSetup]:
+* [ServerJoyeLibertSetup][declearn.secagg.setup.ServerJoyeLibertSetup]:
     Server-side routine to set up a Joye-Libert decryption controller.
+
+Masking-based
+-------------
+
+* [run_masking_secagg_setup_client]\
+[declearn.secagg.setup.run_masking_secagg_setup_client]:
+    Participate in a protocol to set up masking-based secure aggregation.
+* [run_masking_secagg_setup_server]\
+[declearn.secagg.setup.run_masking_secagg_setup_server]:
+    Orchestrate a protocol to set up masking-based secure aggregation.
 """
 
 from . import messages
 from ._jl_client import ClientJoyeLibertSetup
 from ._jl_server import ServerJoyeLibertSetup
+from ._masking import (
+    run_masking_secagg_setup_client,
+    run_masking_secagg_setup_server,
+)
