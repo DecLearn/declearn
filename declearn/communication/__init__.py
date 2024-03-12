@@ -21,12 +21,15 @@ This is done by  defining server-side and client-side network communication
 endpoints for federated learning processes, as well as suitable messages to
 be transmitted, and the available communication protocols.
 
-This module contains the following core submodule:
+This module contains the following core submodules:
 
 * [api][declearn.communication.api]:
     Base API to define client- and server-side communication endpoints.
+* [utils][declearn.communication.utils]:
+    Utils related to network communication endpoints' setup and usage.
 
-It also exposes the following core utility functions and dataclasses:
+
+It re-exports publicly from `utils` the following elements:
 
 * [build_client][declearn.communication.build_client]:
     Instantiate a NetworkClient, selecting its subclass based on protocol name.
@@ -57,7 +60,8 @@ longer be used, as its contents were re-dispatched elsewhere in DecLearn.
 
 # Messaging API and base tools:
 from . import api
-from ._build import (
+from . import utils
+from .utils import (
     _INSTALLABLE_BACKENDS,
     NetworkClientConfig,
     NetworkServerConfig,
