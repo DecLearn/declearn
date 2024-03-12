@@ -26,27 +26,32 @@ from declearn.version import VERSION
 __all__ = [
     "CHECK_MESSAGE_TIMEOUT",
     "INVALID_MESSAGE",
-    "REGISTERED_WELCOME",
     "REGISTERED_ALREADY",
-    "REGISTRATION_UNSTARTED",
-    "REGISTRATION_OPEN",
+    "REGISTERED_WELCOME",
     "REGISTRATION_CLOSED",
+    "REGISTRATION_OPEN",
+    "REGISTRATION_UNSTARTED",
+    "REJECT_INCOMPATIBLE_VERSION",
     "REJECT_UNREGISTERED",
+    "REJECT_UNREGISTERED_CHUNKED",
 ]
 
 
 # Registration flags.
-REGISTRATION_UNSTARTED = "registration is not opened yet"
-REGISTRATION_OPEN = "registration is open"
-REGISTRATION_CLOSED = "registration is closed"
-REGISTERED_WELCOME = "welcome, you are now registered"
 REGISTERED_ALREADY = "you were already registered"
+REGISTERED_WELCOME = "welcome, you are now registered"
+REGISTRATION_CLOSED = "registration is closed"
+REGISTRATION_OPEN = "registration is open"
+REGISTRATION_UNSTARTED = "registration is not opened yet"
 
 # Error flags.
 CHECK_MESSAGE_TIMEOUT = "no available message at timeout"
 INVALID_MESSAGE = "invalid message"
-REJECT_UNREGISTERED = "rejected: not a registered user"
 REJECT_INCOMPATIBLE_VERSION = (
     "cannot register due to the DecLearn version in use; "
     f"please update to `declearn ~= {VERSION}`"
+)
+REJECT_UNREGISTERED = "rejected: not a registered user"
+REJECT_UNREGISTERED_CHUNKED = (
+    "chunked messages from unregistered clients are not allowed"
 )
