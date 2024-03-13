@@ -66,12 +66,12 @@ class FederatedClient:
             In the latter three cases, the object's default logger will be set
             to that of this `FederatedClient`.
         train_data: Dataset or str
-            Dataset instance wrapping the training data, or path to
-            a JSON file from which it can be instantiated.
+            Dataset instance wrapping the training data.
+            (DEPRECATED) May be a path to a JSON dump file.
         valid_data: Dataset or str or None
-            Optional Dataset instance wrapping validation data, or
-            path to a JSON file from which it can be instantiated.
+            Optional Dataset instance wrapping validation data.
             If None, run evaluation rounds over `train_data`.
+            (DEPRECATED) May be a path to a JSON dump file.
         checkpoint: Checkpointer or dict or str or None, default=None
             Optional Checkpointer instance or instantiation dict to be
             used so as to save round-wise model, optimizer and metrics.

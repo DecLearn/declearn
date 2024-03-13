@@ -30,7 +30,7 @@ API tools
 * [DataSpec][declearn.dataset.DataSpecs]:
     Dataclass to wrap a dataset's metadata.
 * [load_dataset_from_json][declearn.dataset.load_dataset_from_json]
-    Utility function to parse a JSON into a dataset object.
+    DEPRECATED Utility function to parse a JSON into a dataset object.
 
 Dataset subclasses
 ------------------
