@@ -43,7 +43,23 @@ T = TypeVar("T")
 
 @dataclasses.dataclass
 class ModelUpdates(Aggregate, base_cls=True, register=True):
-    """Base dataclass for model updates' sharing and aggregation."""
+    """Base dataclass for model updates' sharing and aggregation.
+
+    Each and every `Aggregator` subclass is expected to be coupled with
+    one (or multiple) `ModelUpdates` (sub)type(s), that define which data
+    is exchanged and how it is aggregated across a network of peers. An
+    instance resulting from the aggregation of multiple peers' data may
+    be passed to an appropriate `Aggregator` instance for finalization
+    into a `Vector` of model updates.
+
+    This class also defines whether contents are compatible with secure
+    aggregation, and whether some fields should remain in cleartext no
+    matter what.
+
+    Note that subclasses are automatically type-registered, and should be
+    decorated as `dataclasses.dataclass`. To prevent registration, simply
+    pass `register=False` at inheritance.
+    """
 
     updates: Vector
     weights: Union[int, float]

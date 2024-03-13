@@ -46,16 +46,17 @@ exposed here.
 
 #### (Optional) Metadata exchange
 
-- This step is optional, and depends on the trained model's requirement
-  for dataset information (typically, features shape and/or dtype).
+This step is optional, and depends on the trained model's requirement
+for dataset information (typically, features shape and/or dtype).
+
 - Server:
-  - query clients for targetted metadata about the local training datasets
+    - query clients for targetted metadata about the local training datasets
 - Client:
-  - collect and send back queried metadata
+    - collect and send back queried metadata
 - messaging: (MetadataQuery <-> MetadataReply)
 - Server:
-  - validate and aggregate received information
-  - pass it to the model so as to finalize its initialization
+    - validate and aggregate received information
+    - pass it to the model so as to finalize its initialization
 
 #### Initialization of the federated optimization problem
 
@@ -68,8 +69,9 @@ exposed here.
 
 #### (Optional) Local differential privacy setup
 
-- This step is optional; a flag in the InitRequest at the previous step
-  indicates to clients that it is to happen, as a secondary substep.
+This step is optional; a flag in the InitRequest at the previous step
+indicates to clients that it is to happen, as a secondary substep.
+
 - Server:
     - send hyper-parameters to set up local differential privacy, including
       dp-specific hyper-parameters and information on the planned training

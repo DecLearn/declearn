@@ -60,7 +60,7 @@ The **coding rules** are fairly simple:
   are detailed in the [docstrings style guide](./docs-style.md).
 - Type-hint the code, abiding by [PEP 484](https://peps.python.org/pep-0484/);
   note that the use of Any and of "type: ignore" comments is authorized, but
-  should be remain sparse.
+  should remain parsimonious.
 - Lint your code with [mypy](http://mypy-lang.org/) (for static type checking)
   and [pylint](https://pylint.pycqa.org/en/latest/) (for more general linting);
   do use "type: ..." and "pylint: disable=..." comments where you think it

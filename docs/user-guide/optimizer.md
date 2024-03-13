@@ -448,7 +448,7 @@ Declearn introduces the notion of "auxiliary variables" to cover such cases:
   `Optimizer.collect_aux_var` and `process_aux_var`, which orchestrate calls to
   the plugged-in modules' methods of the same name.
 - Exchanged information is formatted via dedicated `AuxVar` data structures
-  (inheriting `declearn.optimizer.module.AuxVar`), that define how to aggregate
+  (inheriting `declearn.optimizer.modules.AuxVar`) that define how to aggregate
   peers' data, and indicate how to use secure aggregation on top of it (when it
   is possible to do so).
 
