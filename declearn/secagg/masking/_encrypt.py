@@ -37,7 +37,19 @@ AggregateT = TypeVar("AggregateT", bound=Aggregate)
 class MaskingEncrypter(Encrypter):
     """Controller for the mask-based encryption of values that need summation.
 
-    TODO: Add references and algorithm details.
+    This class makes use of pairwise secret RNG seeds to generate masks
+    for (uint-quantized) values that need secure summation, that cancel
+    out on summation to recover the (quantized) sum of cleartext values.
+
+    It is based on the approach proposed by Bonawitz et al. [1], without
+    thresholding (i.e. without support for clients dropping).
+
+    References
+    ----------
+    [1] Bonawitz et al., 2016.
+    Practical Secure Aggregation for Federated Learning
+    on User-Held Data.
+    https://arxiv.org/abs/1611.04482
     """
 
     def __init__(

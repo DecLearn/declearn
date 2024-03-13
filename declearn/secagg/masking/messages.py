@@ -15,70 +15,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Messages for Joye-Libert setup routines."""
+"""Messages for Masking-based SecAgg setup routines."""
 
 import dataclasses
-from typing import Dict
 
 
 from declearn.messaging import Message
 
 __all__ = [
-    "JoyeLibertInitInfo",
-    "JoyeLibertPeerInfo",
-    "JoyeLibertPublicShare",
-    "JoyeLibertSecretShares",
-    "JoyeLibertShamirPrime",
     "MaskingSecaggSetupInit",
     "MaskingSecaggSetupOkay",
 ]
-
-
-@dataclasses.dataclass
-class JoyeLibertInitInfo(Message):
-    """Message to trigger Joye-Libert setup initialization."""
-
-    typekey = "jls-init-info"
-
-    bitsize: int
-    clipval: float
-
-
-@dataclasses.dataclass
-class JoyeLibertPeerInfo(Message):
-    """Message to share a peer's public information for Joye-Libert setup."""
-
-    typekey = "jls-peer-info"
-
-    biprime: int
-    id_key: str
-
-
-@dataclasses.dataclass
-class JoyeLibertShamirPrime(Message):
-    """Message to transmit a public large prime for Shamir Secret Sharing."""
-
-    typekey = "jls-shamir-prime"
-
-    prime: int
-
-
-@dataclasses.dataclass
-class JoyeLibertSecretShares(Message):
-    """Message to transmit encrypted shares of Joye-Libert secret keys."""
-
-    typekey = "jls-secret-shares"
-
-    shares: Dict[str, str]
-
-
-@dataclasses.dataclass
-class JoyeLibertPublicShare(Message):
-    """Message to transmit a public share to a Joye-Libert public key."""
-
-    typekey = "jls-public-share"
-
-    share: int
 
 
 @dataclasses.dataclass

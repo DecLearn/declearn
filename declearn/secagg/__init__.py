@@ -20,9 +20,9 @@
 * [api][declearn.secagg.api]:
     API-defining ABCs for SecAgg controllers and encrypted data.
 * [joye_libert][declearn.secagg.joye_libert]:
-    Joye-Libert homomorphic summation tools.
-* [setup][declearn.secagg.setup]:
-    Routines to set up secure aggregation controllers for Federated Learning.
+    Secure Aggregation tools based on Joye-Libert homomorphic summation.
+* [masking][declearn.secagg.masking]:
+    Secure Aggregation tools based on values' masking with shared RNG seeds.
 * [shamir][declearn.secagg.shamir]:
     Shamir secret-sharing tools.
 * [utils][declearn.secagg.utils]:
@@ -36,4 +36,3 @@ from . import joye_libert
 from . import shamir
 from . import utils
 from . import x3dh
-from . import setup

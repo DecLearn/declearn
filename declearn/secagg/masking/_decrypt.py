@@ -36,7 +36,23 @@ AggregateT = TypeVar("AggregateT", bound=Aggregate)
 class MaskingDecrypter(Decrypter):
     """Controller for the reconstruction of sums of mask-encrypted values.
 
-    TODO: Add references and algorithm details.
+    This class expects aggregated values to have been uint-quantized and
+    masked with values that cancel out on summation. As a consequence it
+    merely has the charge to unquantize received sums, while security-
+    related efforts are left to the encrypters.
+
+    Contrary to the algorithm from Bonawitz et al. [1] on which it is
+    loosely based, this class does not implement mechanisms to support
+    clients dropping between setup and decryption. As such, it does not
+    require to query clients (possibly maliciously) for anything else
+    than the sum of encrypted (i.e. masked) values they emitted.
+
+    References
+    ----------
+    [1] Bonawitz et al., 2016.
+    Practical Secure Aggregation for Federated Learning
+    on User-Held Data.
+    https://arxiv.org/abs/1611.04482
     """
 
     secure_aggregate_cls = MaskedAggregate

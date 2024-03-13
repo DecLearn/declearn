@@ -26,6 +26,10 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import (
 )
 
 from declearn.communication.api import NetworkClient, NetworkServer
+from declearn.communication.utils import (
+    verify_client_messages_validity,
+    verify_server_message_validity,
+)
 from declearn.messaging import Error, Message, SerializedMessage
 from declearn.secagg.x3dh._x3dh import X3DHManager
 from declearn.secagg.x3dh.messages import (
@@ -126,8 +130,6 @@ async def run_x3dh_setup_client(
     KeyError
         If a peer's public identity key is not `trusted`.
         If a one-time public key is wrongfully referenced.
-    TypeError
-        If some X3DH inputs cnanot be properly parsed.
     RuntimeError
         If the protocol fails due to the server or peers not following
         expected steps or raising errors themselves.
@@ -267,38 +269,14 @@ class X3DHServerRound:  # pylint: disable=too-few-public-methods
         expected: Type[MessageT],
     ) -> Dict[str, MessageT]:
         """Send an Error message and raise if messages are unproper."""
-        error = f"Expected '{expected}' messages"
-        # In case of Error messages, send an Error to other clients and raise.
-        errors = {
-            client: srm.deserialize().message
-            for client, srm in received.items()
-            if issubclass(srm.message_cls, Error)
-        }
-        if errors:
-            error += ", got the following Error messages:\n"
-            error += "\n".join(errors.values())
-            await self.netwk.broadcast_message(
-                Error("Some clients reported errors."),
-                clients=set(received).difference(errors),
+        try:
+            return await verify_client_messages_validity(
+                self.netwk, received, expected
             )
-            raise RuntimeError(error)
-        # In case of unproper messages, send an Error to all clients and raise.
-        err_msg = ""
-        messages = {}  # type: Dict[str, MessageT]
-        for cli, srm in received.items():
-            if not issubclass(srm.message_cls, expected):
-                err_msg += f"\n{srm.message_cls}"
-            else:
-                msg = srm.deserialize()
-                messages[cli] = msg
-        if err_msg:
-            err_msg += f", got the following unproper message types:{err_msg}"
-            await self.netwk.broadcast_message(
-                Error(error), clients=set(received)
-            )
-            raise RuntimeError(error)
-        # If everyting is fine, return the received messages.
-        return messages
+        except Exception as exc:
+            raise RuntimeError(
+                "X3DH failed due to invalid messages being exchanged."
+            ) from exc
 
 
 class X3DHClientRound:  # pylint: disable=too-few-public-methods
@@ -395,16 +373,11 @@ class X3DHClientRound:  # pylint: disable=too-few-public-methods
         expected: Type[MessageT],
     ) -> MessageT:
         """Send an Error message and/or raise if a message is unproper."""
-        # If a proper message is received, deserialize and return it.
-        if issubclass(received.message_cls, expected):
-            return received.deserialize()
-        # When an Error is received, merely raise using its content.
-        error = f"Expected a '{expected}' message"
-        if issubclass(received.message_cls, Error):
-            msg = received.deserialize()
-            error = f"{error}, received an Error message: {msg.message}."
-            raise RuntimeError(error)
-        # Otherwise, send an Error to the server, then raise.
-        error = f"{error}, got a {received.message_cls}."
-        await self.netwk.send_message(Error(error))
-        raise RuntimeError(error)
+        try:
+            return await verify_server_message_validity(
+                self.netwk, received, expected
+            )
+        except Exception as exc:
+            raise RuntimeError(
+                "X3DH failed due to invalid messages being exchanged."
+            ) from exc

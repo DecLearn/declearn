@@ -22,8 +22,10 @@ from typing import Dict, List, Optional, Set, Tuple
 
 
 from declearn.communication.api import NetworkServer
-from declearn.secagg.joye_libert import JoyeLibertDecrypter
-from declearn.secagg.setup.messages import (
+from declearn.communication.utils import verify_client_messages_validity
+from declearn.messaging import Error
+from declearn.secagg.joye_libert._decrypt import JoyeLibertDecrypter
+from declearn.secagg.joye_libert.messages import (
     JoyeLibertInitInfo,
     JoyeLibertPeerInfo,
     JoyeLibertPublicShare,
@@ -35,17 +37,23 @@ from declearn.secagg.utils import generate_random_prime
 from declearn.secagg.x3dh import run_x3dh_setup_server
 
 __all__ = [
-    "ServerJoyeLibertSetup",
+    "run_joye_libert_setup_server",
 ]
 
 
-class ServerJoyeLibertSetup:  # pylint: disable=too-few-public-methods
-    """Server-side routine for the setup of Joye-Libert-based SecAgg.
+async def run_joye_libert_setup_server(
+    netwk: NetworkServer,
+    clients: Optional[Set[str]] = None,
+    bitsize: int = 64,
+    clipval: float = 1e5,
+) -> JoyeLibertDecrypter:
+    """Orchestrate a Joye-Libert SecAgg setup protocol.
 
-    This class defines a routine that is to be run in parallel to that
-    of `declearn.secagg.setup.ClientJoyeLibertSetup`, that results in
-    the setup of properly-parametrized Joye-Libert secure aggregation
-    controllers.
+    This routine starts with emitting messages that are to trigger
+    the `declearn.secagg.joye_libert.run_joye_libert_setup_server`
+    counterpart routine for all (selected) clients, that are made
+    to result in the setup of properly-parametrized Joye-Libert
+    secure aggregation controllers for all participants.
 
     This routine can be summarized as:
 
@@ -64,6 +72,40 @@ class ServerJoyeLibertSetup:  # pylint: disable=too-few-public-methods
     - Server receives the resulting public secret shares from the Clients,
       and threfore recovers the sum of clients' private keys using Shamir.
       The opposite of this sum defines the public Joye-Libert key.
+
+
+    Parameters
+    ----------
+    netwk:
+        `NetworkServer` communication endpoint, that is expected
+        to be running and already have clients registered to it
+        when this instance's `async_run` method is called.
+    clients:
+        Optional subset of clients to which to restrict the setup.
+    bitsize:
+        Quantization hyper-parameter, defining the range of output
+        quantized integers.
+    clipval:
+        Quantization hyper-parameter, defining a maximum absolute
+        value for floating point numbers being (un)quantized.
+
+    Returns
+    -------
+    decrypter:
+        Joye-Libert decryption controller, parametrized to match
+        clients' enrypter instances.
+    """
+    routine = ServerJoyeLibertSetup(netwk, bitsize, clipval)
+    return await routine.async_run(clients)
+
+
+class ServerJoyeLibertSetup:  # pylint: disable=too-few-public-methods
+    """Server-side routine for the setup of Joye-Libert-based SecAgg.
+
+    This class defines a routine that is to be run in parallel to that
+    of `declearn.secagg.setup.ClientJoyeLibertSetup`, that results in
+    the setup of properly-parametrized Joye-Libert secure aggregation
+    controllers.
     """
 
     def __init__(
@@ -139,15 +181,18 @@ class ServerJoyeLibertSetup:  # pylint: disable=too-few-public-methods
         # Ensure all clients share the same biprime key.
         # Record mappings between clients' identity key and name.
         received = await self.netwk.wait_for_messages(clients)
+        messages = await verify_client_messages_validity(
+            self.netwk, received, expected=JoyeLibertPeerInfo
+        )
         biprime = 0
         id_keys = {}  # type: Dict[str, str]
-        for client, srm in received.items():
-            assert issubclass(srm.message_cls, JoyeLibertPeerInfo)
-            msg = srm.deserialize()
+        for client, msg in messages.items():
             if not biprime:
                 biprime = msg.biprime
-            else:
-                assert biprime == msg.biprime
+            elif biprime != msg.biprime:
+                err_msg = "Clients disagree on the biprime number to use."
+                await self.netwk.broadcast_message(Error(err_msg))
+                raise RuntimeError(err_msg)
             id_keys[client] = msg.id_key
         # Return received information.
         return biprime, id_keys
@@ -170,10 +215,11 @@ class ServerJoyeLibertSetup:  # pylint: disable=too-few-public-methods
         # Receive, dispatch and send back encrypted shares across clients.
         c_names = {val: key for key, val in id_keys.items()}
         received = await self.netwk.wait_for_messages(clients)
+        messages = await verify_client_messages_validity(
+            self.netwk, received, expected=JoyeLibertSecretShares
+        )
         c_shares = {}  # type: Dict[str, Dict[str, str]]
-        for client, srm in received.items():
-            assert issubclass(srm.message_cls, JoyeLibertSecretShares)
-            msg = srm.deserialize()
+        for client, msg in messages.items():
             for idk, val in msg.shares.items():
                 c_shares.setdefault(c_names[idk], {})[id_keys[client]] = val
         messages = {
@@ -210,10 +256,11 @@ class ServerJoyeLibertSetup:  # pylint: disable=too-few-public-methods
         """Recover the public Joye-Libert key from public Shamir shares."""
         # Receive public Shamir secret shares from all peers.
         received = await self.netwk.wait_for_messages(clients=set(id_keys))
+        messages = await verify_client_messages_validity(
+            self.netwk, received, expected=JoyeLibertPublicShare
+        )
         s_shares = []  # type: List[Tuple[int, int]]
-        for client, srm in received.items():
-            assert issubclass(srm.message_cls, JoyeLibertPublicShare)
-            msg = srm.deserialize()
+        for client, msg in messages.items():
             x_coord = int.from_bytes(bytes.fromhex(id_keys[client]), "big")
             y_coord = msg.share
             s_shares.append((x_coord, y_coord))

@@ -17,15 +17,31 @@
 
 """Extended Triple Diffie-Hellman (X3DH) key agreement tools.
 
-* [X3DHManager][declearn.secagg.x3dh.X3DHManager]:
-    X3DH (Extended Triple Diffie-Hellman) key agreement manager.
+This module provides with an implementation of the X3DH protocol [1],
+that enables setting up pairwise ephemeral shared secret keys across
+a network of peers based on a pre-existing public key infrastructure.
+
+Setup routines
+--------------
+
 * [run_x3dh_setup_client][declearn.secagg.x3dh.run_x3dh_setup_client]:
     Participate in a X3DH (Extended Triple Diffie-Hellman) protocol.
 * [run_x3dh_setup_server][declearn.secagg.x3dh.run_x3dh_setup_server]:
     Orchestrate a X3DH (Extended Triple Diffie-Hellman) protocol run.
 
-Additionnaly, the [messages][declearn.secagg.x3dh.messages] submodule
-provides with dedicated message classes used during the setup.
+Backend
+-------
+
+* [X3DHManager][declearn.secagg.x3dh.X3DHManager]:
+    X3DH (Extended Triple Diffie-Hellman) key agreement manager.
+* [messages][declearn.secagg.x3dh.messages]:
+    Submodule providing with dedicated messages used for X3DH setup.
+
+References
+----------
+[1] Marlinspike & Perrin, 2016.
+    The X3DH Key Agreement Protocol.
+    https://www.signal.org/docs/specifications/x3dh/
 """
 
 from . import messages

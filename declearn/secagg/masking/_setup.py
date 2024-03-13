@@ -25,8 +25,13 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import (
 )
 
 from declearn.communication.api import NetworkClient, NetworkServer
-from declearn.secagg.masking import MaskingDecrypter, MaskingEncrypter
-from declearn.secagg.setup.messages import (
+from declearn.communication.utils import (
+    verify_client_messages_validity,
+    verify_server_message_validity,
+)
+from declearn.secagg.masking._decrypt import MaskingDecrypter
+from declearn.secagg.masking._encrypt import MaskingEncrypter
+from declearn.secagg.masking.messages import (
     MaskingSecaggSetupInit,
     MaskingSecaggSetupOkay,
 )
@@ -39,12 +44,16 @@ __all__ = [
 
 
 async def run_masking_secagg_setup_client(
-    message: MaskingSecaggSetupInit,
     netwk: NetworkClient,
     prv_key: Ed25519PrivateKey,
     trusted: List[Ed25519PublicKey],
 ) -> MaskingEncrypter:
-    """Participate in a protocol to set up masking-based secure aggregation."""
+    """Participate in a masking-based SecAgg setup protocol."""
+    # Except an initialization message containing some hyper-parameters.
+    received = await netwk.recv_message()
+    message = await verify_server_message_validity(
+        netwk, received, MaskingSecaggSetupInit
+    )
     # Respond that hyper-parameters were accepted.
     await netwk.send_message(MaskingSecaggSetupOkay())
     # Run X3DH (Extended Triple Diffie-Hellman) to create ephemeral
@@ -79,38 +88,34 @@ async def run_masking_secagg_setup_server(
     bitsize: int = 64,
     clipval: float = 1e5,
 ) -> MaskingDecrypter:
-    """Orchestrate a protocol to set up masking-based secure aggregation."""
-    # Send initial request to clients and expect an okay flag.
+    """Orchestrate a masking-based SecAgg setup protocol."""
+    # Send an initial request to clients and expect an okay flag.
     await netwk.broadcast_message(
         MaskingSecaggSetupInit(bitsize=bitsize, clipval=clipval),
         clients=clients,
     )
     replies = await netwk.wait_for_messages(clients)
-    failed = "\n".join(
-        f"\tClient '{client}': message with type '{reply.message_cls}'"
-        for client, reply in replies.items()
-        if not issubclass(reply.message_cls, MaskingSecaggSetupOkay)
-    )
-    if failed:
-        raise RuntimeError(
-            "MaskingSecagg setup failed: some clients replied with an "
-            f"unexpected message to the initial setup message:\n{failed}"
+    try:
+        await verify_client_messages_validity(
+            netwk, replies, expected=MaskingSecaggSetupOkay
         )
+    except Exception as exc:
+        raise RuntimeError(
+            "Masking-based SecAgg setup initialization failed."
+        ) from exc
     # Run X3DH (Extended Triple Diffie-Hellman) to create ephemeral
     # pairwise secrets across clients, that will be used for masking.
     await run_x3dh_setup_server(netwk, clients)
     # Except an okay flag from all clients.
     replies = await netwk.wait_for_messages(clients)
-    failed = "\n".join(
-        f"\tClient '{client}': message with type '{reply.message_cls}'"
-        for client, reply in replies.items()
-        if not issubclass(reply.message_cls, MaskingSecaggSetupOkay)
-    )
-    if failed:
-        raise RuntimeError(
-            "MaskingSecagg setup failed: some clients replied with an "
-            f"unexpected final message:\n{failed}"
+    try:
+        await verify_client_messages_validity(
+            netwk, replies, expected=MaskingSecaggSetupOkay
         )
+    except Exception as exc:
+        raise RuntimeError(
+            "Masking-based SecAgg setup finalization failed."
+        ) from exc
     # Return a decrypter.
     return MaskingDecrypter(
         n_peers=len(replies), bitsize=bitsize, clipval=clipval

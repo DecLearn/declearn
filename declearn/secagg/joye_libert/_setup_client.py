@@ -19,7 +19,7 @@
 
 import base64
 import secrets
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, TypeVar
 
 import cryptography.fernet
 import gmpy2
@@ -29,9 +29,11 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import (
 )
 
 from declearn.communication.api import NetworkClient
-from declearn.messaging import SerializedMessage
-from declearn.secagg.joye_libert import DEFAULT_BIPRIME, JoyeLibertEncrypter
-from declearn.secagg.setup.messages import (
+from declearn.communication.utils import verify_server_message_validity
+from declearn.messaging import Error, Message, SerializedMessage
+from declearn.secagg.joye_libert._primitives import DEFAULT_BIPRIME
+from declearn.secagg.joye_libert._encrypt import JoyeLibertEncrypter
+from declearn.secagg.joye_libert.messages import (
     JoyeLibertInitInfo,
     JoyeLibertPeerInfo,
     JoyeLibertPublicShare,
@@ -46,13 +48,21 @@ __all__ = [
 ]
 
 
-class ClientJoyeLibertSetup:  # pylint: disable=too-few-public-methods
-    """Client-side routine for the setup of Joye-Libert-based SecAgg.
+MessageT = TypeVar("MessageT", bound=Message)
 
-    This class defines a routine that is to be run in parallel to peer
-    clients' one and to `declearn.secagg.setup.ServerJoyeLibertSetup`,
-    resulting in the setup of properly-parametrized Joye-Libert secure
-    aggregation controllers.
+
+async def run_joye_libert_setup_client(
+    netwk: NetworkClient,
+    prv_key: Ed25519PrivateKey,
+    trusted: List[Ed25519PublicKey],
+    biprime: int = DEFAULT_BIPRIME,
+) -> JoyeLibertEncrypter:
+    """Participate in a Joye-Libert SecAgg setup protocol.
+
+    This routine is to be run in parallel to peer clients' one and to
+    `declearn.secagg.joye_libert.run_joye_libert_setup_server` and is
+    made to result in the setup of properly-parametrized Joye-Libert
+    secure aggregation controllers for all participants.
 
     This routine can be summarized as:
 
@@ -71,6 +81,73 @@ class ClientJoyeLibertSetup:  # pylint: disable=too-few-public-methods
     - Server receives the resulting public secret shares from the Clients,
       and threfore recovers the sum of clients' private keys using Shamir.
       The opposite of this sum defines the public Joye-Libert key.
+
+    This requires having shared in advance some long-lived identity keys
+    with peers, so that setup messages can be verified to originate from
+    trusted peers and not have been tampered with by the server.
+
+    Parameters
+    ----------
+    netwk:
+        `NetworkClient` communication endpoint, that is expected
+        to be running and already be registered to a server when
+        this instance's `async_run` method is called.
+    prv_key:
+        Private Ed25519 key acting as a static identity key.
+        Its public key must be known to and trusted by peers.
+    trusted:
+        List of public Ed25519 keys acting as trusted static
+        identity keys from peers. All peers must use trusted
+        keys for the setup to succeed.
+    biprime:
+        Public large biprime number defining the modulus for
+        Joye-Libert operations. All peers must have defined
+        the same value for the setup to succeed.
+
+    Returns
+    -------
+    encrypter:
+        Joye-Libert SecAgg encryption controller, set up to match
+        peer clients' hyper-parameters and server's decrypter.
+
+    Raises
+    ------
+    KeyError
+        If a peer's public identity key is not `trusted`.
+        If a temporary key is misused as part of the process.
+    RuntimeError
+        If the protocol fails due to the server or peers not following
+        expected steps or raising errors themselves.
+    ValueError
+        If a signature verification fails, that may indicate tempering.
+
+    Notes on `biprime`
+    ------------------
+    - As the biprime property of a number is (by design) hard to
+        prove, this implementation requires clients to agree on a
+        shared trusted value, that will be imposed to the server
+        and verified to be consensual as part of this setup.
+    - Clients' private keys will be set to have a bitsize equal
+        to twice that of `biprime`. Therefore, the larger `biprime`,
+        the more secure the keys, but also the heavier the encrypted
+        values, resulting in higher communication overhead costs.
+    - The biprime number should be larger that any sum of cleartext
+        values being securely aggregated. In practice this should not
+        be an issue, as encrypted values will typically be 32 or 64
+        bits integers, whereas biprime is 1023-bits-large by default.
+    """
+    routine = ClientJoyeLibertSetup(netwk, prv_key, trusted, biprime)
+    msg = await netwk.recv_message()
+    return await routine.async_run(msg)
+
+
+class ClientJoyeLibertSetup:  # pylint: disable=too-few-public-methods
+    """Client-side routine for the setup of Joye-Libert-based SecAgg.
+
+    This class defines a routine that is to be run in parallel to peer
+    clients' one and to `declearn.secagg.setup.ServerJoyeLibertSetup`,
+    resulting in the setup of properly-parametrized Joye-Libert secure
+    aggregation controllers.
     """
 
     def __init__(
@@ -99,21 +176,6 @@ class ClientJoyeLibertSetup:  # pylint: disable=too-few-public-methods
             Public large biprime number defining the modulus for
             Joye-Libert operations. All peers must have defined
             the same value for the setup to succeed.
-
-        Notes on `biprime`
-        ------------------
-        - As the biprime property of a number is (by design) hard to
-          prove, this implementation requires clients to agree on a
-          shared trusted value, that will be imposed to the server
-          and verified to be consensual as part of this setup.
-        - Clients' private keys will be set to have a bitsize equal
-          to twice that of `biprime`. Therefore, the larger `biprime`,
-          the more secure the keys, but also the heavier the encrypted
-          values, resulting in higher communication overhead costs.
-        - The biprime number should be larger that any sum of cleartext
-          values being securely aggregated. In practice this should not
-          be an issue, as encrypted values will typically be 32 or 64
-          bits integers, whereas biprime is 1023-bits-large by default.
         """
         self.netwk = netwk
         self.prv_key = prv_key
@@ -123,14 +185,15 @@ class ClientJoyeLibertSetup:  # pylint: disable=too-few-public-methods
 
     async def async_run(
         self,
-        message: SerializedMessage,
+        message: SerializedMessage[JoyeLibertInitInfo],
     ) -> JoyeLibertEncrypter:
         """Run the Joye-Libert SecAgg setup routine.
 
         Parameters
         ----------
         message:
-            Joye-Libert setup request from the server.
+            `SerializedMessage` wrapping a Joye-Libert setup
+            request from the server.
 
         Returns
         -------
@@ -138,6 +201,13 @@ class ClientJoyeLibertSetup:  # pylint: disable=too-few-public-methods
             Joye-Libert encryption controller, parametrized to
             match peer clients' hyper-parameters and server's
             decrypter.
+
+        Raises
+        ------
+        RuntimeError
+            If the protocol does not go as expected.
+
+        Exceptions from `run_x3dh_setup_client` may also be raised.
         """
         # Exchange pre-set hyperparameters and public id keys.
         bitsize, clipval = await self._exchange_hyperparameters(message)
@@ -164,12 +234,13 @@ class ClientJoyeLibertSetup:  # pylint: disable=too-few-public-methods
 
     async def _exchange_hyperparameters(
         self,
-        received: SerializedMessage,
+        received: SerializedMessage[JoyeLibertInitInfo],
     ) -> Tuple[int, float]:
         """Receive quantization hyper-parameters. Send biprime and id key."""
         # Process initial message, containing quantization parameters.
-        assert issubclass(received.message_cls, JoyeLibertInitInfo)
-        message = received.deserialize()
+        message = await verify_server_message_validity(
+            self.netwk, received, expected=JoyeLibertInitInfo
+        )
         bitsize = message.bitsize
         clipval = message.clipval
         # Send back biprime number and public key.
@@ -220,13 +291,20 @@ class ClientJoyeLibertSetup:  # pylint: disable=too-few-public-methods
         self,
     ) -> int:
         """Await a shared prime number for Shamir secret sharing."""
+        # Await the server-emitted shared prime number.
         received = await self.netwk.recv_message()
-        assert issubclass(received.message_cls, JoyeLibertShamirPrime)
-        message = received.deserialize()
+        message = await verify_server_message_validity(
+            self.netwk, received, expected=JoyeLibertShamirPrime
+        )
         prime = message.prime
-        # Verify that the received number is a large prime and return it.
-        assert gmpy2.is_prime(prime)
-        assert prime.bit_length() > 2 * self.biprime.bit_length()
+        # Verify that the received number is a large-enough prime.
+        if not (
+            gmpy2.is_prime(prime)
+            and (prime.bit_length() > 2 * self.biprime.bit_length())
+        ):
+            err_msg = "Invalid prime number for Shamir Secret Sharing."
+            await self.netwk.send_message(Error(err_msg))
+            raise RuntimeError(err_msg)
         return prime
 
     async def _recover_public_share(
@@ -237,8 +315,9 @@ class ClientJoyeLibertSetup:  # pylint: disable=too-few-public-methods
         """Receive, decrypt and sum secret shares; send their public sum."""
         # Await encrypted secret shares from peers (routed by the server).
         received = await self.netwk.recv_message()
-        assert issubclass(received.message_cls, JoyeLibertSecretShares)
-        message = received.deserialize()
+        message = await verify_server_message_validity(
+            self.netwk, received, expected=JoyeLibertSecretShares
+        )
         # Iteratively decrypt and sum the received partial shares.
         for idk, val in message.shares.items():
             key = s_keys[bytes.fromhex(idk)]

@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Joye-Libert homomorphic summation tools.
+"""Secure Aggregation tools based on Joye-Libert homomorphic summation.
 
 This module implements primitives and controllers to conduct secure
 aggregation of values using a homomorphic summation algorithm from
@@ -28,6 +28,19 @@ Controllers
     Controller for the decryption of (homomorphic) sums of encrypted values.
 * [JoyeLibertEncrypter][declearn.secagg.joye_libert.JoyeLibertEncrypter]:
     Controller for the encryption of values that need homomorphic summation.
+
+
+Setup routines
+--------------
+
+* [run_joye_libert_setup_client]\
+[declearn.secagg.joye_libert.run_joye_libert_setup_client]:
+    Participate in a Joye-Libert SecAgg setup protocol.
+* [run_joye_libert_setup_server]\
+[declearn.secagg.joye_libert.run_joye_libert_setup_server]:
+    Orchestrate a Joye-Libert SecAgg setup protocol.
+* [messages][declearn.secagg.joye_libert.messages]:
+    Submodule providing with messages for Joye-Libert SecAgg setup routines.
 
 
 Primitives
@@ -49,6 +62,7 @@ Aggregate
 * [JLSAggregate][declearn.secagg.joye_libert.JLSAggregate]:
     'Aggregate'-like container for Joye-Libert encrypted values.
 
+
 References
 ----------
 [1] Joye & Libert, 2013.
@@ -66,3 +80,6 @@ from ._primitives import (
 from ._aggregate import JLSAggregate
 from ._encrypt import JoyeLibertEncrypter
 from ._decrypt import JoyeLibertDecrypter
+from . import messages
+from ._setup_client import run_joye_libert_setup_client
+from ._setup_server import run_joye_libert_setup_server

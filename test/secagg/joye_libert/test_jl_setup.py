@@ -29,8 +29,9 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import (
 from declearn.secagg.joye_libert import (
     JoyeLibertDecrypter,
     JoyeLibertEncrypter,
+    run_joye_libert_setup_client,
+    run_joye_libert_setup_server,
 )
-from declearn.secagg.setup import ClientJoyeLibertSetup, ServerJoyeLibertSetup
 from declearn.secagg.utils import generate_random_biprime
 from declearn.test_utils import MockNetworkClient, MockNetworkServer
 
@@ -49,10 +50,9 @@ async def run_server_routine(
     """Prepare for and run the server-side setup routine."""
     async with MockNetworkServer() as netwk:
         await netwk.wait_for_clients(n_clients)
-        routine = ServerJoyeLibertSetup(
+        decrypter = await run_joye_libert_setup_server(
             netwk, bitsize=bitsize, clipval=clipval
         )
-        decrypter = await routine.async_run()
     return decrypter
 
 
@@ -65,11 +65,9 @@ async def run_client_routine(
     """Prepare for and run the client-side setup routine."""
     async with MockNetworkClient(name=name) as netwk:
         await netwk.register({})
-        routine = ClientJoyeLibertSetup(
+        encrypter = await run_joye_libert_setup_client(
             netwk, prv_key=prv_key, trusted=trusted, biprime=biprime
         )
-        message = await netwk.recv_message()
-        encrypter = await routine.async_run(message)
     return encrypter
 
 
