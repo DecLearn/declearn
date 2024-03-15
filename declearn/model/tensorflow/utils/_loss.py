@@ -48,7 +48,7 @@ class LossFunction(tf_keras.losses.Loss):
         reduction: str = tf_keras.losses.Reduction.NONE,
         name: Optional[str] = None,
     ) -> None:
-        super().__init__(reduction, name)
+        super().__init__(reduction=reduction, name=name)
         self.loss_fn = tf_keras.losses.deserialize(loss_fn)
 
     def call(

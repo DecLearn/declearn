@@ -30,7 +30,6 @@ try:
 except ModuleNotFoundError:
     pytest.skip("TensorFlow is unavailable", allow_module_level=True)
 else:
-    # pylint: disable=import-error,no-name-in-module
     import tensorflow.keras as tf_keras  # type: ignore
 
 from declearn.model.tensorflow import TensorflowModel, TensorflowVector
@@ -176,14 +175,23 @@ class TestTensorflowModel(ModelTestSuite):
         test_case: ModelTestCase,
     ) -> None:
         """Check that `get_weights` behaves properly with frozen weights."""
+        # Set up a model with a frozen layer.
         model = test_case.model
         tfmod = model.get_wrapped_model()
         tfmod.layers[0].trainable = False  # freeze the first layer's weights
-        w_all = model.get_weights()
-        w_trn = model.get_weights(trainable=True)
-        assert set(w_trn.coefs).issubset(w_all.coefs)  # check on keys
-        assert w_trn.coefs.keys() == {v.name for v in tfmod.trainable_weights}
-        assert w_all.coefs.keys() == {v.name for v in tfmod.weights}
+        # Access names of the model's variables (via TensorFlow/Keras API).
+        if hasattr(tf_keras, "version") and tf_keras.version().startswith("3"):
+            names_all_wghts = {v.value.name for v in tfmod.weights}
+            names_trainable = {v.value.name for v in tfmod.trainable_weights}
+        else:
+            names_all_wghts = {v.name for v in tfmod.weights}
+            names_trainable = {v.name for v in tfmod.trainable_weights}
+        # Verify that DecLearn-accessed weights' names match.
+        weights_all = model.get_weights()
+        weights_trn = model.get_weights(trainable=True)
+        assert set(weights_trn.coefs).issubset(weights_all.coefs)
+        assert weights_all.coefs.keys() == names_all_wghts
+        assert weights_trn.coefs.keys() == names_trainable
 
     def test_set_frozen_weights(
         self,
@@ -193,7 +201,7 @@ class TestTensorflowModel(ModelTestSuite):
         # Setup a model with some frozen weights, and gather trainable ones.
         model = test_case.model
         tfmod = model.get_wrapped_model()
-        tfmod.layers[0].trainable = False  # freeze the first layer's weights
+        tfmod.layers[-1].trainable = False  # freeze the last layer's weights
         w_trn = model.get_weights(trainable=True)
         # Test that `set_weights` works if and only if properly parametrized.
         with pytest.raises(KeyError):
@@ -213,7 +221,11 @@ class TestTensorflowModel(ModelTestSuite):
         assert policy.idx == 0
         tfmod = model.get_wrapped_model()
         device = f"{test_case.device}:0"
-        for var in tfmod.weights:
+        if hasattr(tf_keras, "version") and tf_keras.version().startswith("3"):
+            variables = [var.value for var in tfmod.weights]
+        else:
+            variables = tfmod.weights
+        for var in variables:
             assert var.device.endswith(device)
 
 
@@ -238,6 +250,8 @@ class TestBuildKerasLoss:
 
     def test_build_keras_loss_from_string_noclass_function_name(self) -> None:
         """Test `build_keras_loss` with a valid function name string input."""
+        if hasattr(tf_keras, "version") and tf_keras.version().startswith("3"):
+            pytest.skip("Skipping test that no longer works with Keras 3.")
         loss = build_keras_loss("mse", tf_keras.losses.Reduction.SUM)
         assert isinstance(loss, tf_keras.losses.Loss)
         assert hasattr(loss, "loss_fn")

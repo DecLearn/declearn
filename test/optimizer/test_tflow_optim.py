@@ -31,6 +31,8 @@ try:
         import tensorflow as tf  # type: ignore
 except ModuleNotFoundError:
     pytest.skip("TensorFlow is unavailable", allow_module_level=True)
+else:
+    import tensorflow.keras as tf_keras  # type: ignore
 # pylint: enable=duplicate-code
 
 from declearn.model.tensorflow import TensorflowOptiModule, TensorflowVector
@@ -201,7 +203,11 @@ class TestTensorflowOptiModule(OptiModuleTestSuite):
             grads = GradientsTestCase("tensorflow").mock_gradient
         updts = module.run(grads)
         # Assert that the outputs and internal states are properly placed.
+        if hasattr(tf_keras, "version") and tf_keras.version().startswith("3"):
+            optimizer_variables = [var.value for var in module.optim.variables]
+        else:
+            optimizer_variables = module.optim.variables()
         assert all(device in t.device for t in updts.coefs.values())
-        assert all(device in t.device for t in module.optim.variables())
+        assert all(device in t.device for t in optimizer_variables)
         # Reset device policy to run other tests on CPU as expected.
         set_device_policy(gpu=False)

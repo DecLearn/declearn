@@ -183,10 +183,20 @@ class TensorflowModel(Model):
         self,
         trainable: bool = False,
     ) -> TensorflowVector:
+        variables = self._get_weight_variables(trainable)
+        return TensorflowVector({var.name: var.value() for var in variables})
+
+    def _get_weight_variables(
+        self,
+        trainable: bool,
+    ) -> Iterable[tf.Variable]:
+        """Access TensorFlow Variables wrapping model weight tensors."""
         variables = (
             self._model.trainable_weights if trainable else self._model.weights
         )
-        return TensorflowVector({var.name: var.value() for var in variables})
+        if hasattr(tf_keras, "version") and tf_keras.version().startswith("3"):
+            variables = (var.value for var in variables)
+        return variables
 
     def set_weights(
         self,
@@ -198,7 +208,9 @@ class TensorflowModel(Model):
                 "TensorflowModel requires TensorflowVector weights."
             )
         self._verify_weights_compatibility(weights, trainable=trainable)
-        variables = {var.name: var for var in self._model.weights}
+        variables = {
+            var.name: var for var in self._get_weight_variables(trainable)
+        }
         with tf.device(self._device):
             for name, value in weights.coefs.items():
                 variables[name].assign(value, read_value=False)
@@ -225,9 +237,7 @@ class TensorflowModel(Model):
             In case some expected keys are missing, or additional keys
             are present. Be verbose about the identified mismatch(es).
         """
-        variables = (
-            self._model.trainable_weights if trainable else self._model.weights
-        )
+        variables = self._get_weight_variables(trainable)
         raise_on_stringsets_mismatch(
             received=set(vector.coefs),
             expected={var.name for var in variables},
@@ -247,7 +257,7 @@ class TensorflowModel(Model):
                 norm = tf.constant(max_norm)
                 grads, loss = self._compute_clipped_gradients(*data, norm)
         self._loss_history.append(float(loss.numpy()))
-        grads_and_vars = zip(grads, self._model.trainable_weights)
+        grads_and_vars = zip(grads, self._get_weight_variables(trainable=True))
         return TensorflowVector(
             {var.name: grad for grad, var in grads_and_vars}
         )
@@ -331,7 +341,7 @@ class TensorflowModel(Model):
     ) -> None:
         self._verify_weights_compatibility(updates, trainable=True)
         with tf.device(self._device):
-            for var in self._model.trainable_weights:
+            for var in self._get_weight_variables(trainable=True):
                 updt = updates.coefs[var.name]
                 if isinstance(updt, tf.IndexedSlices):
                     var.scatter_add(updt)

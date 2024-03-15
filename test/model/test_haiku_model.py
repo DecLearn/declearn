@@ -234,11 +234,18 @@ class TestHaikuModel(ModelTestSuite):
     """Unit tests for declearn.model.tensorflow.TensorflowModel."""
 
     @pytest.mark.filterwarnings("ignore: Our custom Haiku serialization")
-    def test_serialization(
+    def test_get_config(
         self,
         test_case: ModelTestCase,
     ) -> None:
-        super().test_serialization(test_case)
+        super().test_get_config(test_case)
+
+    @pytest.mark.filterwarnings("ignore: Our custom Haiku serialization")
+    def test_from_config(
+        self,
+        test_case: ModelTestCase,
+    ) -> None:
+        super().test_from_config(test_case)
 
     @pytest.mark.parametrize(
         "criterion_type", ["names", "pytree", "predicate"]

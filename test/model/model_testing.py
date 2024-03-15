@@ -17,13 +17,14 @@
 
 """Shared testing code for TensorFlow and Torch models' unit tests."""
 
+import copy
 import json
 from typing import Any, Generic, List, Protocol, Tuple, Type, TypeVar, Union
 
 import numpy as np
 
 from declearn.model.api import Model, Vector
-from declearn.test_utils import to_numpy
+from declearn.test_utils import assert_json_serializable_dict, to_numpy
 from declearn.typing import Batch
 from declearn.utils import json_pack, json_unpack
 
@@ -59,14 +60,23 @@ class ModelTestCase(Protocol, Generic[VectorT]):
 class ModelTestSuite:
     """Unit tests for a declearn Model."""
 
-    def test_serialization(
+    def test_get_config(
         self,
         test_case: ModelTestCase,
     ) -> None:
-        """Check that the model can be JSON-(de)serialized properly."""
+        """Check that the model's config is JSON-serializable."""
         model = test_case.model
-        config = json.dumps(model.get_config())
-        other = model.from_config(json.loads(config))
+        config = model.get_config()
+        assert_json_serializable_dict(config)
+
+    def test_from_config(
+        self,
+        test_case: ModelTestCase,
+    ) -> None:
+        """Check that the model can be instantiated from its config."""
+        model = test_case.model
+        config = model.get_config()
+        other = model.from_config(copy.deepcopy(config))
         assert model.get_config() == other.get_config()
         assert model.device_policy == other.device_policy
 
