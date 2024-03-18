@@ -74,7 +74,7 @@ class EvaluationRequest(Message):
     typekey = "eval_request"
 
     round_i: int
-    weights: Vector
+    weights: Optional[Vector]
     batches: Dict[str, Any]
     n_steps: Optional[int]
     timeout: Optional[int]
@@ -210,7 +210,7 @@ class TrainRequest(Message):
     typekey = "train_request"
 
     round_i: int
-    weights: Vector
+    weights: Optional[Vector]
     aux_var: Dict[str, AuxVar]
     batches: Dict[str, Any]
     n_epoch: Optional[int] = None

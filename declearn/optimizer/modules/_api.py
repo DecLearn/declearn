@@ -42,7 +42,22 @@ T = TypeVar("T")
 
 @dataclasses.dataclass
 class AuxVar(Aggregate, base_cls=True, register=False, metaclass=abc.ABCMeta):
-    """Abstract base class for OptiModule auxiliary variables."""
+    """Abstract base class for OptiModule auxiliary variables.
+
+    Each and every `OptiModule` subclass that requires information to be
+    exchanged is expected to be coupled with one (or multiple) `AuxVar`
+    subtype(s). These may be used to transmit information from a server
+    to its clients, and/or to exchange and aggregate data from clients
+    into a single `AuxVar` instance to be processed by the server.
+
+    This class also defines whether contents are compatible with secure
+    aggregation, and whether some fields should remain in cleartext no
+    matter what.
+
+    Note that subclasses are automatically type-registered, and should be
+    decorated as `dataclasses.dataclass`. To prevent registration, simply
+    pass `register=False` at inheritance.
+    """
 
     _group_key = "AuxVar"
 

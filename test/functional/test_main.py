@@ -42,10 +42,12 @@ from declearn.utils import set_device_policy
 # pylint: disable=ungrouped-imports
 FRAMEWORKS = ["Sksgd", "Tflow", "Torch"]
 try:
-    import tensorflow as tf  # type: ignore
+    import tensorflow  # type: ignore  # pylint: disable=unused-import
 except ModuleNotFoundError:
     FRAMEWORKS.remove("Tflow")
 else:
+    # pylint: disable=import-error,no-name-in-module
+    import tensorflow.keras as tf_keras  # type: ignore
     from declearn.model.tensorflow import TensorflowModel
 try:
     import torch
@@ -103,23 +105,23 @@ class DeclearnTestCase:
     ) -> Model:
         """Return a TensorflowModel suitable for the learning task."""
         if self.kind == "Reg":
-            output_layer = tf.keras.layers.Dense(1)
+            output_layer = tf_keras.layers.Dense(1)
             loss = "mse"
         elif self.kind == "Bin":
-            output_layer = tf.keras.layers.Dense(1, activation="sigmoid")
+            output_layer = tf_keras.layers.Dense(1, activation="sigmoid")
             loss = "binary_crossentropy"
         elif self.kind == "Clf":
-            output_layer = tf.keras.layers.Dense(4, activation="softmax")
+            output_layer = tf_keras.layers.Dense(4, activation="softmax")
             loss = "sparse_categorical_crossentropy"
         else:
             raise ValueError("Invalid 'kind' attribute.")
         stack = [
-            tf.keras.layers.InputLayer((32,)),
-            tf.keras.layers.Dense(32, activation="relu"),
-            tf.keras.layers.Dense(8, activation="relu"),
+            tf_keras.layers.InputLayer((32,)),
+            tf_keras.layers.Dense(32, activation="relu"),
+            tf_keras.layers.Dense(8, activation="relu"),
             output_layer,
         ]
-        model = tf.keras.Sequential(stack)
+        model = tf_keras.Sequential(stack)
         return TensorflowModel(model, loss, metrics=None)
 
     def _build_torch_model(

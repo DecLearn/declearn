@@ -43,8 +43,7 @@ SEED = 0
 
 
 class CustomDataset(torch.utils.data.Dataset):
-
-    """Basic torch.utils.data.Dataset for testing purposes"""
+    """Basic torch.utils.data.Dataset for testing purposes."""
 
     def __init__(self, inputs, labels, weights) -> None:
         self.inputs = inputs
@@ -66,8 +65,7 @@ class CustomDataset(torch.utils.data.Dataset):
 
 
 class TorchDatasetTestToolbox(DatasetTestToolbox):
-
-    """Toolbox for Torch Dataset"""
+    """Toolbox for Torch Dataset."""
 
     # pylint: disable=too-few-public-methods
 

@@ -22,7 +22,7 @@ Message API and tools
 
 * [Message][declearn.messaging.Message]:
     Abstract base dataclass to define parsable messages.
-* [SerializedMessage][declearn.messaging.SerializedMessage]]:
+* [SerializedMessage][declearn.messaging.SerializedMessage]:
     Container for serialized Message instances.
 
 

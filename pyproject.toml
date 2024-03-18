@@ -8,7 +8,7 @@ requires = [
 
 [project]
 name = "declearn"
-version = "2.3.1"
+version = "2.4.0"
 description = "Declearn - a python package for private decentralized learning."
 readme = "README.md"
 requires-python = ">=3.8"
@@ -53,7 +53,7 @@ all = [  # all non-tests extra dependencies
     "jax[cpu] ~= 0.4.1",
     "opacus ~= 1.4",
     "protobuf >= 3.19",
-    "tensorflow ~= 2.5",
+    "tensorflow ~= 2.11",
     "torch >= 1.13, < 3.0",
     "websockets >= 10.1, < 13.0",
 ]
@@ -71,7 +71,7 @@ haiku = [
     "jax[cpu] ~= 0.4.1",  # NOTE: GPU support must be manually installed
 ]
 tensorflow = [
-    "tensorflow ~= 2.5",
+    "tensorflow ~= 2.11",
 ]
 torch = [  # generic requirements for Torch
     "torch >= 1.13, < 3.0",
@@ -94,7 +94,7 @@ docs = [
 ]
 # test-specific dependencies
 tests = [
-    "black ~= 23.0",
+    "black ~= 24.0",
     "mypy ~= 1.0",
     "pylint ~= 3.0",
     "pytest ~= 7.4",

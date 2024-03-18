@@ -17,9 +17,14 @@
 
 """Hacky OptiModule subclass enabling the use of a keras Optimizer."""
 
-from typing import Any, Dict, Union
+from typing import Any, Dict, List, Union
 
+# fmt: off
+# pylint: disable=import-error,no-name-in-module
 import tensorflow as tf  # type: ignore
+import tensorflow.keras as tf_keras  # type: ignore
+# pylint: enable=import-error,no-name-in-module
+# fmt: on
 
 from declearn.model.api import Vector
 from declearn.model.tensorflow.utils import select_device
@@ -81,7 +86,7 @@ class TensorflowOptiModule(OptiModule):
 
     def __init__(
         self,
-        optim: Union[tf.keras.optimizers.Optimizer, str, Dict[str, Any]],
+        optim: Union[tf_keras.optimizers.Optimizer, str, Dict[str, Any]],
     ) -> None:
         """Instantiate a hacky tensorflow optimizer plug-in module.
 
@@ -105,7 +110,7 @@ class TensorflowOptiModule(OptiModule):
         self._device = select_device(gpu=policy.gpu, idx=policy.idx)
         # Wrap the provided optimizer, enforcing a fixed learning rate of 1.
         # Also prevent the use of weight-decay or built-in ema (~momentum).
-        self.optim = tf.keras.optimizers.get(optim)
+        self.optim = tf_keras.optimizers.get(optim)
         config = self.optim.get_config()
         config["weight_decay"] = 0
         config["use_ema"] = False
@@ -184,7 +189,7 @@ class TensorflowOptiModule(OptiModule):
                 key: tf.Variable(tf.zeros_like(grad), name=key)
                 for key, grad in gradients.coefs.items()
             }
-            self.optim.build(self._vars.values())
+            self.optim.build(list(self._vars.values()))
 
     def reset(self) -> None:
         """Reset this module to its uninitialized state.
@@ -201,13 +206,13 @@ class TensorflowOptiModule(OptiModule):
         policy = get_device_policy()
         self._device = select_device(gpu=policy.gpu, idx=policy.idx)
         with tf.device(self._device):
-            self._vars = {}
+            self._vars.clear()
             self.optim = self.optim.from_config(self.optim.get_config())
 
     def get_config(
         self,
     ) -> Dict[str, Any]:
-        optim = tf.keras.optimizers.serialize(self.optim)
+        optim = tf_keras.optimizers.serialize(self.optim)
         return {"optim": optim}
 
     def get_state(
@@ -217,10 +222,19 @@ class TensorflowOptiModule(OptiModule):
             key: (val.shape.as_list(), val.dtype.name)
             for key, val in self._vars.items()
         }
+        variables = self._get_optimizer_variables()
         state = TensorflowVector(
-            {var.name: var.value() for var in self.optim.variables()}
+            {str(i): v.value() for i, v in enumerate(variables)}
         )
         return {"specs": specs, "state": state}
+
+    def _get_optimizer_variables(
+        self,
+    ) -> List[tf.Variable]:
+        """Access wrapped optimizer's variables as 'tf.Variable' instances."""
+        if hasattr(tf_keras, "version") and tf_keras.version().startswith("3"):
+            return [var.value for var in self.optim.variables]
+        return self.optim.variables()
 
     def set_state(
         self,
@@ -239,9 +253,9 @@ class TensorflowOptiModule(OptiModule):
                 key: tf.Variable(tf.zeros(shape, dtype), name=key)
                 for key, (shape, dtype) in state["specs"].items()
             }
-            self.optim.build(self._vars.values())
+            self.optim.build(list(self._vars.values()))
         # Restore optimizer variables' values from the input state dict.
-        opt_vars = {var.name: var for var in self.optim.variables()}
+        opt_vars = self._get_optimizer_variables()
         with tf.device(self._device):
-            for key, val in state["state"].coefs.items():
-                opt_vars[key].assign(val, read_value=False)
+            for var, val in zip(opt_vars, state["state"].coefs.values()):
+                var.assign(val, read_value=False)

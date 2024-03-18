@@ -52,14 +52,6 @@ Field specifications
     Specification for the 'features_shape' field.
 * [NbSamplesField][declearn.data_info.NbSamplesField]:
     Specification for the 'n_samples' field.
-
-Deprecated field specifications
--------------------------------
-
-* [InputShapeField][declearn.data_info.InputShapeField]:
-    Deprecacted as of v2.2 in favor of FeaturesShapeField.
-* [NbFeaturesField][declearn.data_info.NbFeaturesField]:
-    Deprecacted as of v2.2 in favor of FeaturesShapeField.
 """
 
 from ._base import (
@@ -71,8 +63,6 @@ from ._base import (
 from ._fields import (
     ClassesField,
     DataTypeField,
-    InputShapeField,
     FeaturesShapeField,
-    NbFeaturesField,
     NbSamplesField,
 )

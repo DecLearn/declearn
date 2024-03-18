@@ -280,7 +280,7 @@ To implement Scaffold in Declearn, one needs to set up both server-side and
 client-side OptiModule plug-ins. The client-side module is in charge of both
 correcting input gradients and computing the required quantities to update the
 states at the end of each training round, while the server-side module merely
-manages the computation and distribution of the global and correction states.
+manages the computation and distribution of the global referencestate.
 
 The following snippet sets up a pair of client-side and server-side optimizers
 that implement Scaffold, here with a 0.001 learning rate on the client side and
@@ -447,18 +447,17 @@ Declearn introduces the notion of "auxiliary variables" to cover such cases:
 - The packaging and distribution of module-wise auxiliary variables is done by
   `Optimizer.collect_aux_var` and `process_aux_var`, which orchestrate calls to
   the plugged-in modules' methods of the same name.
-- The management and compartementalization of client-wise auxiliary variables
-  information is also automated as part of `declearn.main.FederatedServer`, to
-  prevent information leakage between clients.
+- Exchanged information is formatted via dedicated `AuxVar` data structures
+  (inheriting `declearn.optimizer.modules.AuxVar`) that define how to aggregate
+  peers' data, and indicate how to use secure aggregation on top of it (when it
+  is possible to do so).
 
 #### OptiModule and Optimizer auxiliary variables API
 
 At the level of any `OptiModule`:
 
-- `OptiModule.collect_aux_var` should output a dict that may either have a
-  simple `{key: value}` structure (for server-purposed or shared-across-clients
-  information), or a nested `{client_name: {key: value}}` structure (that is to
-  be split in order to send distinct information to the clients).
+- `OptiModule.collect_aux_var` should output either `None` or an instance of
+  a module-specific `AuxVar` subclass wrapping data to be shared.
 
 - `OptiModule.process_aux_var` should expect a dict that has the same structure
   as that emitted by `collect_aux_var` (of this module class, or of a
@@ -466,11 +465,12 @@ At the level of any `OptiModule`:
 
 At the level of a wrapping `Optimizer`:
 
-- `Optimizer.collect_aux_var` emits a `{module_aux_name: module_emitted_dict}`
-  dict.
+- `Optimizer.collect_aux_var` outputs a `{module_aux_name: module_aux_var}`
+  dict to be shared.
 
-- `Optimizer.process_aux_var` expects a `{module_aux_name: module_emitted_dict}`
-  dict as well.
+- `Optimizer.process_aux_var` expects a `{module_aux_name: module_aux_var}`
+  dict as well, containing either server-emitted or aggregated clients-emitted
+  data.
 
 As a consequence, you should note that:
 
@@ -478,10 +478,8 @@ As a consequence, you should note that:
   that have the same `name` or `aux_name`.
 - If you are using our `Optimizer` within your own orchestration code (_i.e._
   outside of our `FederatedServer` / `FederatedClient` main classes), it is up
-  to you to handle the restructuration of auxiliary variables to ensure that
-  (a) each client gets its own information (and not that of others), and that
-  (b) client-wise auxiliary variables are concatenated properly for the
-  server-side optimizer to process.
+  to you to handle the aggregation of client-wise auxiliary variables into the
+  module-wise single instance that the server should receive.
 
 #### Integration to the Declearn FL process
 
@@ -651,5 +649,5 @@ In some cases, you might want to clip your batch-averaged gradients, _e.g._ to
 prevent exploding gradients issues. This is possible in Declearn, thanks to a
 couple of `OptiModule` subclasses: `L2Clipping` (name: `'l2-clipping'`) clips
 arrays of weights based on their L2-norm, while `L2GlobalClipping` (name:
-`'l2-global-clipping`) clips all weights based on their global L2-norm (as if
+`'l2-global-clipping'`) clips all weights based on their global L2-norm (as if
 concatenated into a single array).

@@ -203,7 +203,7 @@ run_torch13_tests() {
     '
     echo "Installing torch 1.13 and its co-dependencies."
     TORCH_DEPS=$(pip freeze | grep -e torch -e opacus)
-    pip install .[torch1]
+    pip install "opacus == 1.4.0" "torch ~=1.13.0"
     if [[ $? -eq 0 ]]; then
         echo "Running unit tests for torch 1.13."
         command="pytest $@
@@ -211,6 +211,7 @@ run_torch13_tests() {
             test/model/test_torch_model.py
         "
         echo -e "\e[34m$command\e[0m"
+        $command
         status=$?
     else
         echo "\e[31mSkipping tests as installation failed.\e[0m"

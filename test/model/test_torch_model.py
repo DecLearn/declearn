@@ -17,7 +17,7 @@
 
 """Unit tests for TorchModel."""
 
-import json
+import copy
 import os
 import typing
 from typing import List, Literal, Tuple
@@ -219,7 +219,7 @@ class TestTorchModel(ModelTestSuite):
     """Unit tests for declearn.model.torch.TorchModel."""
 
     @pytest.mark.filterwarnings("ignore: PyTorch JSON serialization")
-    def test_serialization(
+    def test_get_config(
         self,
         test_case: ModelTestCase,
     ) -> None:
@@ -228,26 +228,44 @@ class TestTorchModel(ModelTestSuite):
             #       due to the (de)serialization of a custom nn.Module
             #       the expected model behaviour is, however, correct
             try:
-                self._test_serialization(test_case)
+                super().test_get_config(test_case)
             except AssertionError:
                 pytest.skip(
                     "skipping failed test due to custom nn.Module pickling"
                 )
-        self._test_serialization(test_case)
+        super().test_get_config(test_case)
 
-    def _test_serialization(
+    @pytest.mark.filterwarnings("ignore: PyTorch JSON serialization")
+    def test_from_config(
         self,
         test_case: ModelTestCase,
     ) -> None:
-        """Check that the model can be JSON-(de)serialized properly.
+        if getattr(test_case, "kind", "") == "RNN":
+            # NOTE: this test fails on python 3.8 but succeeds in 3.10
+            #       due to the (de)serialization of a custom nn.Module
+            #       the expected model behaviour is, however, correct
+            try:
+                self._test_from_config(test_case)
+            except AssertionError:
+                pytest.skip(
+                    "skipping failed test due to custom nn.Module pickling"
+                )
+        self._test_from_config(test_case)
 
-        This method replaces the parent `test_serialization` one.
+    def _test_from_config(
+        self,
+        test_case: ModelTestCase,
+    ) -> None:
+        """Check that the model can be instantiated from its config.
+
+        This method replaces the parent `test_from_config` one.
         """
         # Same setup as in parent test: a model and a config-based other.
         model = test_case.model
-        config = json.dumps(model.get_config())
-        other = model.from_config(json.loads(config))
-        # Verify that both models have the same device policy.
+        config = model.get_config()
+        other = model.from_config(copy.deepcopy(config))
+        # Verify that both models have the same config and device policy.
+        assert other.get_config() == config
         assert model.device_policy == other.device_policy
         # Verify that both models have a similar structure of modules.
         mod_a = list(model.get_wrapped_model().modules())

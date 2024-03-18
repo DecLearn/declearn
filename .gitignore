@@ -17,9 +17,10 @@ coverage.xml
 examples/*/*.csv
 examples/*/*.pem
 examples/*/*/
-# Documentation online rendering files.
+# Documentation rendered files.
 public/
 site/
 docs/api-reference/*/
 docs/api-reference/SUMMARY.md
 docs/api-reference/typing.md
+docs/api-reference/version.md

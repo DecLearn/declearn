@@ -199,31 +199,25 @@ def add_exception_catching(
     name: str,
 ) -> Callable[..., Any]:
     """Wrap a function to catch exceptions and put them in a Queue."""
-    return functools.partial(
-        _run_with_exception_catching, func=func, queue=queue, name=name
-    )
 
-
-def _run_with_exception_catching(
-    *args: Any,
-    func: Callable[..., Any],
-    queue: Queue,  # Queue[Tuple[str, Union[Any, RuntimeError]]] (py >=3.9)
-    name: str,
-    **kwargs: Any,
-) -> Any:
-    """Call the wrapped function and catch exceptions or results."""
-    try:
-        result = func(*args, **kwargs)
-    except Exception as exc:  # pylint: disable=broad-exception-caught
-        err = RuntimeError(
-            f"Exception of type {type(exc)} occurred:\n"
-            "".join(traceback.format_exception(type(exc), exc, tb=None))
-        )  # future: `traceback.format_exception(exc)` (py >=3.10)
-        queue.put((name, err))
-        sys.exit(1)
-    else:
-        queue.put((name, result))
+    @functools.wraps(func)
+    def wrapped(*args, **kwargs):
+        """Call the wrapped function and queue exceptions or results."""
+        nonlocal name, queue
+        try:
+            result = func(*args, **kwargs)
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            err = RuntimeError(
+                f"Exception of type {type(exc)} occurred:\n"
+                + "".join(traceback.format_exception(type(exc), exc, tb=None))
+            )  # future: `traceback.format_exception(exc)` (py >=3.10)
+            queue.put((name, err))
+            sys.exit(1)
+        else:
+            queue.put((name, result))
         sys.exit(0)
+
+    return wrapped
 
 
 def run_processes(

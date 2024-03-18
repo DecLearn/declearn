@@ -17,9 +17,9 @@
 
 """Dataset abstraction API."""
 
+import abc
+import dataclasses
 import warnings
-from abc import ABCMeta, abstractmethod
-from dataclasses import dataclass
 from typing import Any, Iterator, List, Optional, Set, Tuple, Union
 
 from declearn.typing import Batch
@@ -31,17 +31,9 @@ __all__ = [
 ]
 
 
-@dataclass
+@dataclasses.dataclass
 class DataSpecs:
-    """Dataclass to wrap a dataset's metadata.
-
-    Note
-    ----
-    The `n_features` attribute has been deprecated as of declearn 2.2
-    and will be removed in v2.4 and/or v3.0. It should therefore not
-    be used, whether at instantiation or afterwards. Please use the
-    `features_shape` attribute instead.
-    """
+    """Dataclass to wrap a dataset's metadata."""
 
     n_samples: int
     features_shape: Optional[
@@ -49,37 +41,10 @@ class DataSpecs:
     ] = None
     classes: Optional[Set[Any]] = None
     data_type: Optional[str] = None
-    n_features: Optional[int] = None  # DEPRECATED as of declearn v2.2
-
-    def __post_init__(self):  # pragma: no cover
-        # future: remove this (declearn >=2.4)
-        if isinstance(self.features_shape, int):
-            self.features_shape = (self.features_shape,)
-            warnings.warn(
-                "'features_shape' has replaced now-deprecated 'n_features'"
-                " and should therefore be passed as a tuple or list.",
-                RuntimeWarning,
-                stacklevel=3,
-            )
-        if self.n_features is not None:
-            warnings.warn(
-                "'DataSepc.n_features' has been deprecated as of declearn v2.2"
-                " and should therefore no longer be used. It will be removed"
-                " in v2.4 and/or v3.0.",
-                RuntimeWarning,
-                stacklevel=3,
-            )
-            if self.features_shape[-1] != self.n_features:
-                raise ValueError(
-                    "Both 'features_shape' and deprecated 'n_features' were "
-                    "passed to 'DataSpecs.__init__', with incoherent values."
-                )
-        if self.features_shape:
-            self.n_features = self.features_shape[-1]
 
 
 @create_types_registry
-class Dataset(metaclass=ABCMeta):
+class Dataset(metaclass=abc.ABCMeta):
     """Abstract class defining an API to access training or testing data.
 
     A 'Dataset' is an interface towards data that exposes methods
@@ -93,13 +58,13 @@ class Dataset(metaclass=ABCMeta):
     straightforward to specify as part of FL algorithms.
     """
 
-    @abstractmethod
+    @abc.abstractmethod
     def get_data_specs(
         self,
     ) -> DataSpecs:
         """Return a DataSpecs object describing this dataset."""
 
-    @abstractmethod
+    @abc.abstractmethod
     def generate_batches(  # pylint: disable=too-many-arguments
         self,
         batch_size: int,
@@ -146,8 +111,8 @@ class Dataset(metaclass=ABCMeta):
         """
 
 
-def load_dataset_from_json(path: str) -> Dataset:
-    """Instantiate a dataset based on a JSON dump file.
+def load_dataset_from_json(path: str) -> Dataset:  # pragma: no cover
+    """DEPRECATED Instantiate a dataset based on a JSON dump file.
 
     Parameters
     ----------
@@ -161,7 +126,25 @@ def load_dataset_from_json(path: str) -> Dataset:
     -------
     dataset: Dataset
         Dataset (subclass) instance, reloaded from JSON.
+
+    Raises
+    ------
+    NotImplementedError
+        If the target `Dataset` does not implement a `load_from_json`
+        method (which was removed from the API in DecLearn 2.3.0).
     """
+    warnings.warn(
+        "'load_dataset_from_json' was deprecated in Declearn 2.4.0, after"
+        "'Dataset.load_from_json' was removed from the API in v2.3.0. It "
+        "may raise a 'NotImplementedError', and will be removed in DecLearn "
+        "2.6 and/or 3.0.",
+        category=DeprecationWarning,
+        stacklevel=2,
+    )
     dump = json_load(path)
     cls = access_registered(dump["name"], group="Dataset")
+    if not hasattr(cls, "load_from_json"):
+        raise NotImplementedError(
+            f"Dataset class '{cls}' does not implement 'load_from_json'."
+        )
     return cls.load_from_json(path)

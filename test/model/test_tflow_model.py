@@ -29,6 +29,8 @@ try:
         import tensorflow as tf  # type: ignore
 except ModuleNotFoundError:
     pytest.skip("TensorFlow is unavailable", allow_module_level=True)
+else:
+    import tensorflow.keras as tf_keras  # type: ignore
 
 from declearn.model.tensorflow import TensorflowModel, TensorflowVector
 from declearn.model.tensorflow.utils import build_keras_loss
@@ -106,32 +108,32 @@ class TensorflowTestCase(ModelTestCase):
         """Suited toy binary-classification keras model."""
         if self.kind.startswith("MLP"):
             stack = [
-                tf.keras.layers.Dense(32, activation="relu"),
-                tf.keras.layers.Dense(16, activation="relu"),
-                tf.keras.layers.Dense(1, activation="sigmoid"),
+                tf_keras.layers.Dense(32, activation="relu"),
+                tf_keras.layers.Dense(16, activation="relu"),
+                tf_keras.layers.Dense(1, activation="sigmoid"),
             ]
             shape = [None, 64]
             if self.kind == "MLP-tune":
                 stack[0].trainable = False
         elif self.kind == "RNN":
             stack = [
-                tf.keras.layers.Embedding(100, 32),
-                tf.keras.layers.LSTM(16, activation="tanh"),
-                tf.keras.layers.Dense(1, activation="sigmoid"),
+                tf_keras.layers.Embedding(100, 32),
+                tf_keras.layers.LSTM(16, activation="tanh"),
+                tf_keras.layers.Dense(1, activation="sigmoid"),
             ]
             shape = [None, 128]
         elif self.kind == "CNN":
             cnn_kwargs = {"padding": "same", "activation": "relu"}
             stack = [
-                tf.keras.layers.Conv2D(32, 7, **cnn_kwargs),
-                tf.keras.layers.MaxPool2D((8, 8)),
-                tf.keras.layers.Conv2D(16, 5, **cnn_kwargs),
-                tf.keras.layers.AveragePooling2D((8, 8)),
-                tf.keras.layers.Reshape((16,)),
-                tf.keras.layers.Dense(1, activation="sigmoid"),
+                tf_keras.layers.Conv2D(32, 7, **cnn_kwargs),
+                tf_keras.layers.MaxPool2D((8, 8)),
+                tf_keras.layers.Conv2D(16, 5, **cnn_kwargs),
+                tf_keras.layers.AveragePooling2D((8, 8)),
+                tf_keras.layers.Reshape((16,)),
+                tf_keras.layers.Dense(1, activation="sigmoid"),
             ]
             shape = [None, 64, 64, 3]
-        tfmod = tf.keras.Sequential(stack)
+        tfmod = tf_keras.Sequential(stack)
         tfmod.build(shape)  # as model is built, no data_info is required
         return TensorflowModel(tfmod, loss="binary_crossentropy", metrics=None)
 
@@ -173,14 +175,23 @@ class TestTensorflowModel(ModelTestSuite):
         test_case: ModelTestCase,
     ) -> None:
         """Check that `get_weights` behaves properly with frozen weights."""
+        # Set up a model with a frozen layer.
         model = test_case.model
         tfmod = model.get_wrapped_model()
         tfmod.layers[0].trainable = False  # freeze the first layer's weights
-        w_all = model.get_weights()
-        w_trn = model.get_weights(trainable=True)
-        assert set(w_trn.coefs).issubset(w_all.coefs)  # check on keys
-        assert w_trn.coefs.keys() == {v.name for v in tfmod.trainable_weights}
-        assert w_all.coefs.keys() == {v.name for v in tfmod.weights}
+        # Access names of the model's variables (via TensorFlow/Keras API).
+        if hasattr(tf_keras, "version") and tf_keras.version().startswith("3"):
+            names_all_wghts = {v.value.name for v in tfmod.weights}
+            names_trainable = {v.value.name for v in tfmod.trainable_weights}
+        else:
+            names_all_wghts = {v.name for v in tfmod.weights}
+            names_trainable = {v.name for v in tfmod.trainable_weights}
+        # Verify that DecLearn-accessed weights' names match.
+        weights_all = model.get_weights()
+        weights_trn = model.get_weights(trainable=True)
+        assert set(weights_trn.coefs).issubset(weights_all.coefs)
+        assert weights_all.coefs.keys() == names_all_wghts
+        assert weights_trn.coefs.keys() == names_trainable
 
     def test_set_frozen_weights(
         self,
@@ -190,7 +201,7 @@ class TestTensorflowModel(ModelTestSuite):
         # Setup a model with some frozen weights, and gather trainable ones.
         model = test_case.model
         tfmod = model.get_wrapped_model()
-        tfmod.layers[0].trainable = False  # freeze the first layer's weights
+        tfmod.layers[-1].trainable = False  # freeze the last layer's weights
         w_trn = model.get_weights(trainable=True)
         # Test that `set_weights` works if and only if properly parametrized.
         with pytest.raises(KeyError):
@@ -210,7 +221,11 @@ class TestTensorflowModel(ModelTestSuite):
         assert policy.idx == 0
         tfmod = model.get_wrapped_model()
         device = f"{test_case.device}:0"
-        for var in tfmod.weights:
+        if hasattr(tf_keras, "version") and tf_keras.version().startswith("3"):
+            variables = [var.value for var in tfmod.weights]
+        else:
+            variables = tfmod.weights
+        for var in variables:
             assert var.device.endswith(device)
 
 
@@ -220,48 +235,50 @@ class TestBuildKerasLoss:
     def test_build_keras_loss_from_string_class_name(self) -> None:
         """Test `build_keras_loss` with a valid class name string input."""
         loss = build_keras_loss(
-            "BinaryCrossentropy", tf.keras.losses.Reduction.SUM
+            "BinaryCrossentropy", tf_keras.losses.Reduction.SUM
         )
-        assert isinstance(loss, tf.keras.losses.BinaryCrossentropy)
-        assert loss.reduction == tf.keras.losses.Reduction.SUM
+        assert isinstance(loss, tf_keras.losses.BinaryCrossentropy)
+        assert loss.reduction == tf_keras.losses.Reduction.SUM
 
     def test_build_keras_loss_from_string_function_name(self) -> None:
         """Test `build_keras_loss` with a valid function name string input."""
         loss = build_keras_loss(
-            "binary_crossentropy", tf.keras.losses.Reduction.SUM
+            "binary_crossentropy", tf_keras.losses.Reduction.SUM
         )
-        assert isinstance(loss, tf.keras.losses.BinaryCrossentropy)
-        assert loss.reduction == tf.keras.losses.Reduction.SUM
+        assert isinstance(loss, tf_keras.losses.BinaryCrossentropy)
+        assert loss.reduction == tf_keras.losses.Reduction.SUM
 
     def test_build_keras_loss_from_string_noclass_function_name(self) -> None:
         """Test `build_keras_loss` with a valid function name string input."""
-        loss = build_keras_loss("mse", tf.keras.losses.Reduction.SUM)
-        assert isinstance(loss, tf.keras.losses.Loss)
+        if hasattr(tf_keras, "version") and tf_keras.version().startswith("3"):
+            pytest.skip("Skipping test that no longer works with Keras 3.")
+        loss = build_keras_loss("mse", tf_keras.losses.Reduction.SUM)
+        assert isinstance(loss, tf_keras.losses.Loss)
         assert hasattr(loss, "loss_fn")
-        assert loss.loss_fn is tf.keras.losses.mse
-        assert loss.reduction == tf.keras.losses.Reduction.SUM
+        assert loss.loss_fn is tf_keras.losses.mse
+        assert loss.reduction == tf_keras.losses.Reduction.SUM
 
     def test_build_keras_loss_from_loss_instance(self) -> None:
         """Test `build_keras_loss` with a valid keras Loss input."""
         # Set up a BinaryCrossentropy loss instance.
-        loss = tf.keras.losses.BinaryCrossentropy(
-            reduction=tf.keras.losses.Reduction.SUM
+        loss = tf_keras.losses.BinaryCrossentropy(
+            reduction=tf_keras.losses.Reduction.SUM
         )
-        assert loss.reduction == tf.keras.losses.Reduction.SUM
+        assert loss.reduction == tf_keras.losses.Reduction.SUM
         # Pass it through the util and verify that reduction changes.
-        loss = build_keras_loss(loss, tf.keras.losses.Reduction.NONE)
-        assert isinstance(loss, tf.keras.losses.BinaryCrossentropy)
-        assert loss.reduction == tf.keras.losses.Reduction.NONE
+        loss = build_keras_loss(loss, tf_keras.losses.Reduction.NONE)
+        assert isinstance(loss, tf_keras.losses.BinaryCrossentropy)
+        assert loss.reduction == tf_keras.losses.Reduction.NONE
 
     def test_build_keras_loss_from_loss_function(self) -> None:
         """Test `build_keras_loss` with a valid keras loss function input."""
         loss = build_keras_loss(
-            tf.keras.losses.binary_crossentropy, tf.keras.losses.Reduction.SUM
+            tf_keras.losses.binary_crossentropy, tf_keras.losses.Reduction.SUM
         )
-        assert isinstance(loss, tf.keras.losses.Loss)
+        assert isinstance(loss, tf_keras.losses.Loss)
         assert hasattr(loss, "loss_fn")
-        assert loss.loss_fn is tf.keras.losses.binary_crossentropy
-        assert loss.reduction == tf.keras.losses.Reduction.SUM
+        assert loss.loss_fn is tf_keras.losses.binary_crossentropy
+        assert loss.reduction == tf_keras.losses.Reduction.SUM
 
     def test_build_keras_loss_from_custom_function(self) -> None:
         """Test `build_keras_loss` with a valid custom loss function input."""
@@ -270,8 +287,8 @@ class TestBuildKerasLoss:
             """Custom loss function."""
             return tf.reduce_sum(tf.cast(tf.equal(y_true, y_pred), tf.float32))
 
-        loss = build_keras_loss(loss_fn, tf.keras.losses.Reduction.SUM)
-        assert isinstance(loss, tf.keras.losses.Loss)
+        loss = build_keras_loss(loss_fn, tf_keras.losses.Reduction.SUM)
+        assert isinstance(loss, tf_keras.losses.Loss)
         assert hasattr(loss, "loss_fn")
         assert loss.loss_fn is loss_fn
-        assert loss.reduction == tf.keras.losses.Reduction.SUM
+        assert loss.reduction == tf_keras.losses.Reduction.SUM

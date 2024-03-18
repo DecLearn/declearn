@@ -120,15 +120,6 @@ def fixture_test_case(
 class TestSklearnSGDModel(ModelTestSuite):
     """Unit tests for declearn.model.sklearn.SklearnSGDModel."""
 
-    def test_serialization(  # type: ignore  # Liskov does not matter here
-        self,
-        test_case: SklearnSGDTestCase,
-    ) -> None:
-        # Avoid re-running tests that are unaltered by data parameters.
-        if test_case.s_weights or test_case.as_sparse:
-            return None
-        return super().test_serialization(test_case)
-
     def test_initialization(
         self,
         test_case: SklearnSGDTestCase,

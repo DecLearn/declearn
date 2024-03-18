@@ -27,14 +27,12 @@ import grpc  # type: ignore
 from cryptography.hazmat.primitives import serialization
 
 from declearn.communication.api import NetworkServer
-from declearn.communication.api.backend import MessagesHandler
+from declearn.communication.api.backend import MessagesHandler, actions, flags
 from declearn.communication.grpc.protobufs import message_pb2
 from declearn.communication.grpc.protobufs.message_pb2_grpc import (
     MessageBoardServicer,
     add_MessageBoardServicer_to_server,
 )
-from declearn.communication.messaging import Error
-
 
 __all__ = [
     "GrpcServer",
@@ -223,9 +221,7 @@ class GrpcServicer(MessageBoardServicer):
         # async is needed; pylint: disable=invalid-overridden-method
         # Case when an unknown peer attempts sending a stream: send an error.
         if context.peer() not in self.handler.registered_clients:
-            error = Error(
-                "Chunked messages from unregistered clients are not allowed."
-            )
+            error = actions.Reject(flags.REJECT_UNREGISTERED_CHUNKED)
             self.handler.logger.warning(
                 "Refused a chunks-streaming request from client %s",
                 context.peer(),

@@ -25,7 +25,7 @@ Abstractions
 ------------
 * [Metric][declearn.metrics.Metric]:
     Abstract base class defining an API for metrics' computation.
-* [MetricState][declearn.metric.MetricState]:
+* [MetricState][declearn.metrics.MetricState]:
     Abstract base class for Metrics intermediate aggregatable states.
 * [MeanMetric][declearn.metrics.MeanMetric]:
     Abstract class that defines a template for simple scores' averaging.

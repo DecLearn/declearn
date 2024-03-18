@@ -41,7 +41,21 @@ __all__ = [
 class MetricState(
     Aggregate, base_cls=True, register=False, metaclass=abc.ABCMeta
 ):
-    """Abstract base class for Metrics intermediate aggregatable states."""
+    """Abstract base class for Metrics intermediate aggregatable states.
+
+    Each and every `Metric` subclass is expected to be coupled with one
+    (or multiple) `MetricState` subtypes, which are used to exchange and
+    aggregate partial results across a network of peers, which can in the
+    end be passed to a single `Metric` instance for metrics' finalization.
+
+    This class also defines whether contents are compatible with secure
+    aggregation, and whether some fields should remain in cleartext no
+    matter what.
+
+    Note that subclasses are automatically type-registered, and should be
+    decorated as `dataclasses.dataclass`. To prevent registration, simply
+    pass `register=False` at inheritance.
+    """
 
     _group_key = "MetricState"
 

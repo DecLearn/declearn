@@ -26,8 +26,11 @@ from typing import Any, Dict, Optional, Union
 import numpy as np
 
 from declearn import messaging
-from declearn.communication import NetworkClientConfig
 from declearn.communication.api import NetworkClient
+from declearn.communication.utils import (
+    NetworkClientConfig,
+    verify_server_message_validity,
+)
 from declearn.dataset import Dataset, load_dataset_from_json
 from declearn.main.utils import Checkpointer, TrainingManager
 from declearn.utils import LOGGING_LEVEL_MAJOR, get_logger
@@ -63,12 +66,12 @@ class FederatedClient:
             In the latter three cases, the object's default logger will be set
             to that of this `FederatedClient`.
         train_data: Dataset or str
-            Dataset instance wrapping the training data, or path to
-            a JSON file from which it can be instantiated.
+            Dataset instance wrapping the training data.
+            (DEPRECATED) May be a path to a JSON dump file.
         valid_data: Dataset or str or None
-            Optional Dataset instance wrapping validation data, or
-            path to a JSON file from which it can be instantiated.
+            Optional Dataset instance wrapping validation data.
             If None, run evaluation rounds over `train_data`.
+            (DEPRECATED) May be a path to a JSON dump file.
         checkpoint: Checkpointer or dict or str or None, default=None
             Optional Checkpointer instance or instantiation dict to be
             used so as to save round-wise model, optimizer and metrics.
@@ -249,24 +252,43 @@ class FederatedClient:
         """
         # Await initialization instructions.
         self.logger.info("Awaiting initialization instructions from server.")
-        message = await self.netwk.recv_message()
+        received = await self.netwk.recv_message()
         # If a MetadataQuery is received, process it, then await InitRequest.
-        if message.message_cls is messaging.MetadataQuery:
-            await self._collect_and_send_metadata(message.deserialize())
-            message = await self.netwk.recv_message()
+        if issubclass(received.message_cls, messaging.MetadataQuery):
+            await self._collect_and_send_metadata(received.deserialize())
+            received = await self.netwk.recv_message()
+        # Ensure that an 'InitRequest' was received.
+        message = await verify_server_message_validity(
+            self.netwk, received, expected=messaging.InitRequest
+        )
         # Perform initialization, catching errors to report them to the server.
         try:
-            if not issubclass(message.message_cls, messaging.InitRequest):
-                raise TypeError(
-                    f"Awaited InitRequest message, got '{message.message_cls}'"
-                )
-            await self._initialize_trainmanager(message.deserialize())
+            self.trainmanager = TrainingManager(
+                model=message.model,
+                optim=message.optim,
+                aggrg=message.aggrg,
+                train_data=self.train_data,
+                valid_data=self.valid_data,
+                metrics=message.metrics,
+                logger=self.logger,
+                verbose=self.verbose,
+            )
         except Exception as exc:
             await self.netwk.send_message(messaging.Error(repr(exc)))
             raise RuntimeError("Initialization failed.") from exc
+        # If instructed to do so, run additional steps to set up DP-SGD.
+        if message.dpsgd:
+            await self._initialize_dpsgd()
         # Send back an empty message to indicate that all went fine.
         self.logger.info("Notifying the server that initialization went fine.")
         await self.netwk.send_message(messaging.InitReply())
+        # Optionally checkpoint the received model and optimizer.
+        if self.ckptr:
+            self.ckptr.checkpoint(
+                model=self.trainmanager.model,
+                optimizer=self.trainmanager.optim,
+                first_call=True,
+            )
 
     async def _collect_and_send_metadata(
         self,
@@ -286,37 +308,6 @@ class FederatedClient:
         )
         await self.netwk.send_message(messaging.MetadataReply(data_info))
 
-    async def _initialize_trainmanager(
-        self,
-        message: messaging.InitRequest,
-    ) -> None:
-        """Set up a TrainingManager based on server instructions.
-
-        - Also await and set up DP constraints if instructed to do so.
-        - Checkpoint the model and optimizer if configured to do so.
-        """
-        # Wrap up the model and optimizer received from the server.
-        self.trainmanager = TrainingManager(
-            model=message.model,
-            optim=message.optim,
-            aggrg=message.aggrg,
-            train_data=self.train_data,
-            valid_data=self.valid_data,
-            metrics=message.metrics,
-            logger=self.logger,
-            verbose=self.verbose,
-        )
-        # If instructed to do so, await a PrivacyRequest to set up DP-SGD.
-        if message.dpsgd:
-            await self._initialize_dpsgd()
-        # Optionally checkpoint the received model and optimizer.
-        if self.ckptr:
-            self.ckptr.checkpoint(
-                model=self.trainmanager.model,
-                optimizer=self.trainmanager.optim,
-                first_call=True,
-            )
-
     async def _initialize_dpsgd(
         self,
     ) -> None:
@@ -325,12 +316,13 @@ class FederatedClient:
         This method wraps the `make_private` one in the context of
         `initialize` and should never be called in another context.
         """
-        message = await self.netwk.recv_message()
-        if not isinstance(message, messaging.PrivacyRequest):
-            msg = f"Expected a PrivacyRequest but received a '{type(message)}'"
-            self.logger.error(msg)
-            await self.netwk.send_message(messaging.Error(msg))
-            raise RuntimeError(f"DP-SGD initialization failed: {msg}.")
+        received = await self.netwk.recv_message()
+        try:
+            message = await verify_server_message_validity(
+                self.netwk, received, expected=messaging.PrivacyRequest
+            )
+        except Exception as exc:
+            raise RuntimeError("DP-SGD initialization failed.") from exc
         self.logger.info("Received a request to set up DP-SGD.")
         try:
             self.make_private(message)
