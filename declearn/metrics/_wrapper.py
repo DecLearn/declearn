@@ -129,8 +129,8 @@ class MetricSet:
             metrics = cls(metrics)
         if not isinstance(metrics, cls):
             raise TypeError(
-                "'metrics' should be a `{cls.name}`, a valid list of Metric "
-                "instances and/or specs to wrap into one, or None."
+                f"'metrics' should be a `{cls.__name__}`, a valid list of "
+                "Metric instances and/or specs to wrap into one, or None."
             )
         return metrics
 
