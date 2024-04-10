@@ -20,10 +20,16 @@
 Prime number generation utils
 -----------------------------
 
-* [generate_random_biprime][declearn.secagg.utils.generate_random_biprime]
+* [generate_random_biprime][declearn.secagg.utils.generate_random_biprime]:
     Generate a random biprime integer with a target bit length.
-* [generate_random_prime][declearn.secagg.utils.generate_random_prime]
+* [generate_random_prime][declearn.secagg.utils.generate_random_prime]:
     Generate a random prime integer with given bit length.
+
+Public-Key Infrastructure utils
+-------------------------------
+
+* [IdentityKeys][declearn.secagg.utils.IdentityKeys]:
+    Handler to hold and load long-lived Ed25519 identity keys.
 
 Quantization utils
 ------------------
@@ -38,6 +44,7 @@ Miscellaneous utils
     Return the smallest-size numpy uint dtype for a given integer range.
 """
 
+from ._ed25519 import IdentityKeys
 from ._numpy import get_numpy_uint_dtype
 from ._prime import (
     generate_random_biprime,
