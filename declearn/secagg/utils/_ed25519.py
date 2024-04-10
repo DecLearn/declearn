@@ -19,7 +19,7 @@
 
 import functools
 import getpass
-from typing import List, Literal, Optional, Union
+from typing import List, Literal, Optional, Sequence, Union
 
 from cryptography.hazmat.primitives import (
     serialization as cryptography_serialization,
@@ -59,7 +59,7 @@ class IdentityKeys:
     def __init__(
         self,
         prv_key: Union[str, Ed25519PrivateKey],
-        trusted: Union[str, List[Union[Ed25519PublicKey, str]]],
+        trusted: Union[str, Sequence[Union[Ed25519PublicKey, str]]],
         password: Optional[bytes] = None,
     ) -> None:
         """Instantiate the Ed25519 identity keys handler.
@@ -116,7 +116,7 @@ class IdentityKeys:
 
     def _load_trusted_keys(
         self,
-        trusted: Union[str, List[Union[Ed25519PublicKey, str]]],
+        trusted: Union[str, Sequence[Union[Ed25519PublicKey, str]]],
     ) -> List[Ed25519PublicKey]:
         """Load trusted public keys from input values."""
         # Case when the path to a single file is received.
@@ -286,7 +286,7 @@ class IdentityKeys:
         with open(path, "rb") as file:
             data = file.read()
         # Attempt to identify its format and thus decode it.
-        if data.startswith(b"-----BEGIN OPENSSH PUBLIC KEY"):
+        if data.startswith(b"ssh-"):
             pkey = cls._decode_public_key(data, path, encoding="ssh")
         elif path.endswith(".pem") or data.startswith(b"-----BEGIN PUBLIC"):
             pkey = cls._decode_public_key(data, path, encoding="pem")
@@ -367,8 +367,8 @@ class IdentityKeys:
         keys = []  # type: List[Ed25519PublicKey]
         try:
             with open(path, "rb") as file:
-                for row in file:
-                    key = Ed25519PublicKey.from_public_bytes(row[:32])
+                while dat := file.read(33):
+                    key = Ed25519PublicKey.from_public_bytes(dat[:32])
                     keys.append(key)
         except BaseException as exc:
             raise ValueError(
