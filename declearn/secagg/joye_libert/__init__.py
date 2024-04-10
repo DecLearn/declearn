@@ -29,19 +29,17 @@ Controllers
 * [JoyeLibertEncrypter][declearn.secagg.joye_libert.JoyeLibertEncrypter]:
     Controller for the encryption of values that need homomorphic summation.
 
-
-Setup routines
+Setup & config
 --------------
 
-* [run_joye_libert_setup_client]\
-[declearn.secagg.joye_libert.run_joye_libert_setup_client]:
-    Participate in a Joye-Libert SecAgg setup protocol.
-* [run_joye_libert_setup_server]\
-[declearn.secagg.joye_libert.run_joye_libert_setup_server]:
-    Orchestrate a Joye-Libert SecAgg setup protocol.
+* [JoyeLibertSecaggConfigClient]\
+[declearn.secagg.joye_libert.JoyeLibertSecaggConfigClient]:
+    Client-side config and setup controller for Joye-Libert SecAgg.
+* [JoyeLibertSecaggConfigServer]\
+[declearn.secagg.joye_libert.JoyeLibertSecaggConfigServer]:
+    Server-side config and setup controller for Joye-Libert SecAgg.
 * [messages][declearn.secagg.joye_libert.messages]:
     Submodule providing with messages for Joye-Libert SecAgg setup routines.
-
 
 Primitives
 ----------
@@ -55,13 +53,11 @@ Primitives
  * [sum_encrypted][declearn.secagg.joye_libert.sum_encrypted]:
     Apply homomorphic summation to some Joye-Libert encrypted values.
 
-
 Aggregate
 ---------
 
 * [JLSAggregate][declearn.secagg.joye_libert.JLSAggregate]:
     'Aggregate'-like container for Joye-Libert encrypted values.
-
 
 References
 ----------
@@ -81,5 +77,7 @@ from ._aggregate import JLSAggregate
 from ._encrypt import JoyeLibertEncrypter
 from ._decrypt import JoyeLibertDecrypter
 from . import messages
-from ._setup_client import run_joye_libert_setup_client
-from ._setup_server import run_joye_libert_setup_server
+from ._setup import (
+    JoyeLibertSecaggConfigClient,
+    JoyeLibertSecaggConfigServer,
+)

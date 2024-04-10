@@ -17,7 +17,7 @@
 
 """API-defining ABCs for SecAgg controllers and encrypted data.
 
-Abstract base classes
+ABCs for SecAgg usage
 ---------------------
 
 * [Decrypter][declearn.secagg.api.Decrypter]:
@@ -26,6 +26,16 @@ Abstract base classes
     ABC controller for the encryption of values that need summation.
 * [SecureAggregate][declearn.secagg.api.SecureAggregate]:
     Abstract 'Aggregate'-like wrapper for encrypted 'Aggregate' objects.
+
+ABCs for SecAgg setup
+---------------------
+* [SecaggConfigClient][declearn.secagg.api.SecaggConfigClient]:
+    ABC for client-side SecAgg configuration and setup.
+* [SecaggConfigServer][declearn.secagg.api.SecaggConfigServer]:
+    ABC for server-side SecAgg configuration and setup.
+* [SecaggSetupQuery][declearn.secagg.api.SecaggSetupQuery]:
+    ABC message for all SecAgg setup init requests
+
 
 Type-hint aliases
 -----------------
@@ -38,3 +48,8 @@ Type-hint aliases
 from ._aggregate import ArraySpec, EncryptedSpecs, SecureAggregate
 from ._encrypt import Encrypter
 from ._decrypt import Decrypter
+from ._setup import (
+    SecaggConfigClient,
+    SecaggConfigServer,
+    SecaggSetupQuery,
+)

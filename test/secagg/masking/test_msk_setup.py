@@ -26,13 +26,12 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import (
     Ed25519PublicKey,
 )
 
-from declearn.secagg.joye_libert import (
-    JoyeLibertDecrypter,
-    JoyeLibertEncrypter,
-    JoyeLibertSecaggConfigClient,
-    JoyeLibertSecaggConfigServer,
+from declearn.secagg.masking import (
+    MaskingDecrypter,
+    MaskingEncrypter,
+    MaskingSecaggConfigClient,
+    MaskingSecaggConfigServer,
 )
-from declearn.secagg.utils import generate_random_biprime
 from declearn.test_utils import MockNetworkClient, MockNetworkServer
 
 
@@ -46,9 +45,9 @@ async def run_server_routine(
     n_clients: int,
     bitsize: int,
     clipval: float,
-) -> JoyeLibertDecrypter:
+) -> MaskingDecrypter:
     """Prepare for and run the server-side setup routine."""
-    config = JoyeLibertSecaggConfigServer(bitsize=bitsize, clipval=clipval)
+    config = MaskingSecaggConfigServer(bitsize=bitsize, clipval=clipval)
     async with MockNetworkServer() as netwk:
         await netwk.wait_for_clients(n_clients)
         decrypter = await config.setup_decrypter(netwk)
@@ -59,12 +58,10 @@ async def run_client_routine(
     name: str,
     prv_key: Ed25519PrivateKey,
     trusted: List[Ed25519PublicKey],
-    biprime: int,
-) -> JoyeLibertEncrypter:
+) -> MaskingEncrypter:
     """Prepare for and run the client-side setup routine."""
-    config = JoyeLibertSecaggConfigClient.from_params(
-        id_keys={"prv_key": prv_key, "trusted": trusted},
-        biprime=biprime,
+    config = MaskingSecaggConfigClient.from_params(
+        id_keys={"prv_key": prv_key, "trusted": trusted}
     )
     async with MockNetworkClient(name=name) as netwk:
         await netwk.register({})
@@ -75,19 +72,18 @@ async def run_client_routine(
 
 @pytest.mark.parametrize("n_clients", [2, 5])
 @pytest.mark.asyncio
-async def test_joye_libert_secagg_setup(
+async def test_masking_secagg_setup(
     n_clients: int,
     id_keys: List[Ed25519PrivateKey],
 ) -> None:
     """Test that the Joye-Libert setup routines work properly."""
     # Use arbitrary, non-default values.
-    bitsize = 16
+    bitsize = 32
     clipval = 100.0
-    biprime = generate_random_biprime(half_bitsize=32)
     # Setup the server and client routines.
     trusted = [key.public_key() for key in id_keys[:n_clients]]
     client_routines = [
-        run_client_routine(f"client_{i}", id_keys[i], trusted, biprime)
+        run_client_routine(f"client_{i}", id_keys[i], trusted)
         for i in range(n_clients)
     ]
     server_routine = run_server_routine(n_clients, bitsize, clipval)
@@ -96,20 +92,16 @@ async def test_joye_libert_secagg_setup(
         server_routine, *client_routines
     )
     # Verify that the decrypter has expected types and hyper-parameters.
-    assert isinstance(decrypter, JoyeLibertDecrypter)
-    assert decrypter.biprime == biprime
+    assert isinstance(decrypter, MaskingDecrypter)
     assert decrypter.quantizer.val_range == clipval
-    assert decrypter.quantizer.int_range == 2**bitsize - 1
+    assert decrypter.quantizer.int_range * n_clients < 2**bitsize
     # Verify that the encrypters have expected types and hyper-parameters.
-    prv_keys = []  # type: List[int]
+    encrypted = []  # type: List[int]
     for enc in encrypters:
-        assert isinstance(enc, JoyeLibertEncrypter)
-        assert enc.biprime == biprime
+        assert isinstance(enc, MaskingEncrypter)
         assert enc.quantizer.val_range == clipval
-        assert enc.quantizer.int_range == 2**bitsize - 1
-        prv_keys.append(enc.prv_key)
-    # Verify that the public key matches the private ones.
-    assert decrypter.pub_key == -sum(prv_keys)
-    # Verify that private keys have the expected bit size.
-    exp_size = 2 * biprime.bit_length()
-    assert all(key.bit_length() <= exp_size for key in prv_keys)
+        assert enc.quantizer.int_range == decrypter.quantizer.int_range
+        encrypted.append(enc.encrypt_uint(1))
+    # Verify that the setup encrypters and decrypter work properly.
+    assert all(x != 1 for x in encrypted)
+    assert decrypter.decrypt_uint(sum(encrypted)) == n_clients

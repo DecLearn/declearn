@@ -37,16 +37,15 @@ Controllers
 * [MaskingEncrypter][declearn.secagg.masking.MaskingEncrypter]:
     Controller for the masking of values that need summation.
 
-
-Setup routines
+Setup & config
 --------------
 
-* [run_masking_secagg_setup_client]\
-[declearn.secagg.masking.run_masking_secagg_setup_client]:
-    Participate in a masking-based SecAgg setup protocol.
-* [run_masking_secagg_setup_server]\
-[declearn.secagg.masking.run_masking_secagg_setup_server]:
-    Orchestrate a masking-based SecAgg setup protocol.
+* [MaskingSecaggConfigClient]
+[declearn.secagg.masking.MaskingSecaggConfigClient]:
+    Client-side config and setup controller for masking-based SecAgg.
+* [MaskingSecaggConfigServer]
+[declearn.secagg.masking.MaskingSecaggConfigServer]:
+    Server-side config and setup controller for masking-based SecAgg.
 * [messages][declearn.secagg.masking.messages]:
     Submodule providing with messages for masking-based SecAgg setup routines.
 
@@ -70,3 +69,8 @@ References
 from ._aggregate import MaskedAggregate
 from ._encrypt import MaskingEncrypter
 from ._decrypt import MaskingDecrypter
+from . import messages
+from ._setup import (
+    MaskingSecaggConfigClient,
+    MaskingSecaggConfigServer,
+)

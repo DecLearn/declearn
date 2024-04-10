@@ -22,21 +22,22 @@ from typing import Dict
 
 
 from declearn.messaging import Message
+from declearn.secagg.api import SecaggSetupQuery
 
 __all__ = [
-    "JoyeLibertInitInfo",
     "JoyeLibertPeerInfo",
     "JoyeLibertPublicShare",
+    "JoyeLibertSecaggSetupQuery",
     "JoyeLibertSecretShares",
     "JoyeLibertShamirPrime",
 ]
 
 
 @dataclasses.dataclass
-class JoyeLibertInitInfo(Message):
-    """Message to trigger Joye-Libert setup initialization."""
+class JoyeLibertSecaggSetupQuery(SecaggSetupQuery):
+    """Message to trigger Joye-Libert SecAgg setup initialization."""
 
-    typekey = "jls-init-info"
+    typekey = "jls-setup-query"
 
     bitsize: int
     clipval: float

@@ -19,27 +19,24 @@
 
 import dataclasses
 
-
 from declearn.messaging import Message
+from declearn.secagg.api import SecaggSetupQuery
 
 __all__ = [
-    "MaskingSecaggSetupInit",
-    "MaskingSecaggSetupOkay",
+    "MaskingSecaggSetupQuery",
+    "MaskingSecaggSetupReply",
 ]
 
 
 @dataclasses.dataclass
-class MaskingSecaggSetupInit(Message):
+class MaskingSecaggSetupQuery(SecaggSetupQuery):
     """Server-emitted message to trigger masking-based SecAgg setup."""
 
-    typekey = "masking-secagg-setup-init"
-
-    bitsize: int
-    clipval: float
+    typekey = "masking-secagg-setup-query"
 
 
 @dataclasses.dataclass
-class MaskingSecaggSetupOkay(Message):
+class MaskingSecaggSetupReply(Message):
     """Client-emitted empty message signaling that SecAgg setup is fine."""
 
-    typekey = "masking-secagg-setup-okay"
+    typekey = "masking-secagg-setup-reply"
