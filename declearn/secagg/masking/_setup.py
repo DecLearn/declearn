@@ -89,6 +89,8 @@ class MaskingSecaggConfigClient(
     from trusted peers and not have been tampered with by the server.
     """
 
+    secagg_type = "masking"
+
     async def setup_encrypter(
         self,
         netwk: NetworkClient,
@@ -182,6 +184,8 @@ class MaskingSecaggConfigServer(
     - Server merely sets up a decrypter matching the number of clients,
       after receiving confirmation from clients that setup went well.
     """
+
+    secagg_type = "masking"
 
     def prepare_secagg_setup_query(
         self,

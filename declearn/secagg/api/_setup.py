@@ -19,7 +19,7 @@
 
 import abc
 import dataclasses
-from typing import Generic, Optional, Set, TypeVar
+from typing import ClassVar, Generic, Optional, Set, TypeVar
 
 from declearn.communication.api import NetworkClient, NetworkServer
 from declearn.messaging import Message, SerializedMessage
@@ -69,6 +69,10 @@ class SecaggConfigClient(
     upon receiving a query from the server to participate in a SecAgg
     setup protocol and return an `Encrypter` matching the config.
 
+    The `secagg_type` class attribute must be defined by subclasses,
+    and paired server/client classes are expected to share the same
+    name.
+
     Fields
     ------
     id_keys:
@@ -84,6 +88,8 @@ class SecaggConfigClient(
     """
 
     id_keys: IdentityKeys
+
+    secagg_type: ClassVar[str]
 
     @abc.abstractmethod
     async def setup_encrypter(
@@ -138,6 +144,10 @@ class SecaggConfigServer(
     in setting up client-wise `Encrypter`s and returning a matching
     `Decrypter`, that abide by the configured SecAgg method.
 
+    The `secagg_type` class attribute must be defined by subclasses,
+    and paired server/client classes are expected to share the same
+    name.
+
     Fields
     ------
     bitsize:
@@ -150,6 +160,8 @@ class SecaggConfigServer(
 
     bitsize: int
     clipval: float
+
+    secagg_type: ClassVar[str]
 
     async def setup_decrypter(
         self,

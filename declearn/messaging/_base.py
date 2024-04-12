@@ -121,6 +121,7 @@ class InitRequest(Message):
     aggrg: Aggregator
     metrics: List[MetricInputType] = dataclasses.field(default_factory=list)
     dpsgd: bool = False
+    secagg: Optional[str] = None
 
     def to_kwargs(self) -> Dict[str, Any]:
         data = {}  # type: Dict[str, Any]
@@ -129,6 +130,7 @@ class InitRequest(Message):
         data["aggrg"] = serialize_object(self.aggrg, "Aggregator").to_dict()
         data["metrics"] = self.metrics
         data["dpsgd"] = self.dpsgd
+        data["secagg"] = self.secagg
         return data
 
     @classmethod

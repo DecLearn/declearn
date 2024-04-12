@@ -119,6 +119,8 @@ class JoyeLibertSecaggConfigClient(
 
     biprime: int = DEFAULT_BIPRIME
 
+    secagg_type = "joye-libert"
+
     async def _verify_server_message_validity(
         self,
         netwk: NetworkClient,
@@ -309,6 +311,8 @@ class JoyeLibertSecaggConfigServer(
       and threfore recovers the sum of clients' private keys using Shamir.
       The opposite of this sum defines the public Joye-Libert key.
     """
+
+    secagg_type = "joye-libert"
 
     def prepare_secagg_setup_query(
         self,

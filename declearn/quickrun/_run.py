@@ -105,7 +105,13 @@ async def run_server(
     checkpoint = os.path.join(checkpoint, "server")
     logger = get_logger("Server", fpath=os.path.join(checkpoint, "logger.txt"))
     server = FederatedServer(
-        model, network, optim, expe_config.metrics, checkpoint, logger
+        model=model,
+        netwk=network,
+        optim=optim,
+        metrics=expe_config.metrics,
+        secagg=None,
+        checkpoint=checkpoint,
+        logger=logger,
     )
     await server.async_run(config)
 
@@ -141,7 +147,14 @@ async def run_client(
         target=paths.get("valid_target"),
     )
     client = FederatedClient(
-        network, train, valid, checkpoint, logger=logger, verbose=False
+        netwk=network,
+        train_data=train,
+        valid_data=valid,
+        checkpoint=checkpoint,
+        secagg=None,
+        share_metrics=True,
+        logger=logger,
+        verbose=False,
     )
     await client.async_run()
 
