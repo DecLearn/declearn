@@ -29,7 +29,6 @@ from declearn.secagg.joye_libert import (
     JLSAggregate,
     JoyeLibertDecrypter,
     JoyeLibertEncrypter,
-    sum_encrypted,
 )
 from declearn.test_utils import make_importable
 
@@ -75,12 +74,6 @@ class TestJoyeLibertDecrypter(
     DecrypterTestSuite[JoyeLibertDecrypter, JoyeLibertEncrypter]
 ):
     """Functional tests for Joye-Libert SecAgg controllers."""
-
-    def sum_encrypted(
-        self,
-        encrypted: List[int],
-    ) -> int:
-        return sum_encrypted(encrypted)
 
     def setup_decrypter_and_encrypters(
         self,

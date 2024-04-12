@@ -249,13 +249,6 @@ class DecrypterTestSuite(
     ) -> Tuple[DecrypterT, List[EncrypterT]]:
         """Set up a Decrypter and an ensemble of Encrypters."""
 
-    @abc.abstractmethod
-    def sum_encrypted(
-        self,
-        encrypted: List[int],
-    ) -> int:
-        """Aggregate encrypted values."""
-
     def test_decrypt_uint(
         self,
         n_peers: int,
@@ -269,7 +262,7 @@ class DecrypterTestSuite(
             for encrypter, value in zip(encrypters, cleartext)
         ]
         # Test that decryption works properly.
-        decrypted = decrypter.decrypt_uint(self.sum_encrypted(encrypted))
+        decrypted = decrypter.decrypt_uint(decrypter.sum_encrypted(encrypted))
         assert isinstance(decrypted, int)
         assert decrypted == sum(cleartext)
 
@@ -288,7 +281,7 @@ class DecrypterTestSuite(
             for encrypter, value in zip(encrypters, cleartext)
         ]
         # Test that decryption works properly.
-        decrypted = decrypter.decrypt_float(self.sum_encrypted(encrypted))
+        decrypted = decrypter.decrypt_float(decrypter.sum_encrypted(encrypted))
         assert isinstance(decrypted, float)
         assert abs(decrypted - sum(cleartext)) < 1e-10
 
@@ -312,7 +305,7 @@ class DecrypterTestSuite(
             for encrypter, value in zip(encrypters, cleartext)
         ]
         sum_values = [
-            self.sum_encrypted(values)  # type: ignore  # false-positive
+            decrypter.sum_encrypted(values)  # type: ignore  # false-positive
             for values in zip(*(val for val, _ in encrypted))
         ]
         # Test that decryption works properly.
@@ -344,7 +337,7 @@ class DecrypterTestSuite(
             for encrypter, value in zip(encrypters, cleartext)
         ]
         sum_values = [
-            self.sum_encrypted(values)  # type: ignore  # false-positive
+            decrypter.sum_encrypted(values)  # type: ignore  # false-positive
             for values in zip(*(val for val, _ in encrypted))
         ]
         # Test that decryption works properly.

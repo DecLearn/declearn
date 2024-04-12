@@ -71,6 +71,26 @@ class Decrypter(metaclass=abc.ABCMeta):
         self._qt_corr = (n_peers - 1) * self.quantizer.quantize_value(0.0)
 
     @abc.abstractmethod
+    def sum_encrypted(
+        self,
+        values: List[int],
+    ) -> int:
+        """Aggregate (sum) two encrypted integer values.
+
+        Parameters
+        ----------
+        val_a:
+            Encrypted value that needs summation with the other.
+        val_b:
+            Encrypted value that needs summation with the other.
+
+        Returns
+        -------
+        val:
+            Encrypted value resulting from the input ones' aggregation.
+        """
+
+    @abc.abstractmethod
     def decrypt_uint(
         self,
         value: int,

@@ -71,12 +71,6 @@ class TestMaskingDecrypter(
         """
         return 64
 
-    def sum_encrypted(
-        self,
-        encrypted: List[int],
-    ) -> int:
-        return sum(encrypted)
-
     def setup_decrypter_and_encrypters(
         self,
         n_peers: int,

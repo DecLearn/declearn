@@ -17,7 +17,7 @@
 
 """Data decrypter for SecAgg using Joye-Libert homomorphic summation."""
 
-from typing import TypeVar
+from typing import List, TypeVar
 
 
 from declearn.secagg.api import Decrypter, SecureAggregate
@@ -25,6 +25,7 @@ from declearn.secagg.joye_libert._aggregate import JLSAggregate
 from declearn.secagg.joye_libert._primitives import (
     DEFAULT_BIPRIME,
     decrypt_sum,
+    sum_encrypted,
 )
 from declearn.utils import Aggregate
 
@@ -98,6 +99,12 @@ class JoyeLibertDecrypter(Decrypter):
         self.biprime = biprime
         self._qt_corr = (n_peers - 1) * self.quantizer.quantize_value(0.0)
         self._t_index = 0
+
+    def sum_encrypted(
+        self,
+        values: List[int],
+    ) -> int:
+        return sum_encrypted(values, modulus=self.biprime)
 
     def decrypt_uint(
         self,

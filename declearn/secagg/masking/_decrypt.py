@@ -18,7 +18,7 @@
 """Data decrypter for SecAgg using Joye-Libert homomorphic summation."""
 
 import math
-from typing import TypeVar
+from typing import List, TypeVar
 
 
 from declearn.secagg.api import Decrypter, SecureAggregate
@@ -85,6 +85,12 @@ class MaskingDecrypter(Decrypter):
         self.max_int = 2**bitsize
         quant_b = bitsize - int(math.ceil(math.log2(n_peers)))
         super().__init__(n_peers, bitsize=quant_b, clipval=clipval)
+
+    def sum_encrypted(
+        self,
+        values: List[int],
+    ) -> int:
+        return sum(values) % self.max_int
 
     def decrypt_uint(
         self,
