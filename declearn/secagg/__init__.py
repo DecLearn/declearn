@@ -23,6 +23,8 @@
     Secure Aggregation tools based on Joye-Libert homomorphic summation.
 * [masking][declearn.secagg.masking]:
     Secure Aggregation tools based on values' masking with shared RNG seeds.
+* [messaging][declearn.secagg.messaging]:
+    SecAgg counterparts to some default Federated Learning messages.
 * [shamir][declearn.secagg.shamir]:
     Shamir secret-sharing tools.
 * [utils][declearn.secagg.utils]:
@@ -31,8 +33,10 @@
     Extended Triple Diffie-Hellman (X3DH) key agreement tools.
 """
 
-from . import api
-from . import joye_libert
-from . import shamir
 from . import utils
+from . import api
+from . import shamir
 from . import x3dh
+from . import joye_libert
+from . import masking
+from . import messaging
