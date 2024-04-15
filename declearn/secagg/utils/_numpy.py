@@ -27,7 +27,7 @@ __all__ = [
 ]
 
 
-@functools.cache
+@functools.lru_cache
 def get_numpy_uint_dtype(
     int_range: int,
 ) -> np.dtype:
