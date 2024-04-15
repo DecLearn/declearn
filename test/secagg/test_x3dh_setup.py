@@ -205,7 +205,10 @@ async def run_server_routine_raising_x3dh_error(
 ) -> None:
     """Run faulty server code, triggering X3DH failure."""
 
-    class TemperingNetworkServer(MockNetworkServer, register=False):
+    class TemperingNetworkServer(
+        MockNetworkServer,
+        register=False,  # type: ignore[call-arg]  # false-positive
+    ):
         """Ad hoc NetworkServer subclass tempering with X3DH responses."""
 
         async def send_messages(

@@ -47,7 +47,11 @@ SecureAggregateT = TypeVar("SecureAggregateT", bound=SecureAggregate)
 
 
 @dataclasses.dataclass
-class MockAggregate(Aggregate, base_cls=True, register=True):
+class MockAggregate(
+    Aggregate,
+    base_cls=True,  # type: ignore[call-arg]  # false-positive
+    register=True,  # type: ignore[call-arg]  # false-positive
+):
     """Mock 'Aggregate' subclass for testing purposes."""
 
     _group_key = "mock-aggregate"
@@ -384,6 +388,7 @@ class DecrypterTestSuite(
         decrypted = decrypter.decrypt_aggregate(sum_aggrg)
         assert isinstance(decrypted, MockAggregate)
         aggregate = sum(cleartext[1:], start=cleartext[0])
+        assert isinstance(aggregate, MockAggregate)  # prevent mypy false-pos.
         assert decrypted.string == aggregate.string
         assert decrypted.scalar_int == aggregate.scalar_int
         assert abs(decrypted.scalar_float - aggregate.scalar_float) < 1e-10
@@ -396,7 +401,11 @@ class DecrypterTestSuite(
 
 
 @dataclasses.dataclass
-class MockSimpleAggregate(Aggregate, base_cls=True, register=True):
+class MockSimpleAggregate(
+    Aggregate,
+    base_cls=True,  # type: ignore[call-arg]  # false-positive
+    register=True,  # type: ignore[call-arg]  # false-positive
+):
     """Simple mock Aggregate child class."""
 
     _group_key = "mock-simple-aggregate"
