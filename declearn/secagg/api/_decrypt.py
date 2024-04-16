@@ -75,14 +75,12 @@ class Decrypter(metaclass=abc.ABCMeta):
         self,
         values: List[int],
     ) -> int:
-        """Aggregate (sum) two encrypted integer values.
+        """Sum some encrypted integer values into a single one.
 
         Parameters
         ----------
-        val_a:
-            Encrypted value that needs summation with the other.
-        val_b:
-            Encrypted value that needs summation with the other.
+        values:
+            Encrypted values that need summation with each other.
 
         Returns
         -------
@@ -148,8 +146,8 @@ class Decrypter(metaclass=abc.ABCMeta):
 
         Parameters
         ----------
-        value:
-            Encrypted sum of private array values.
+        values:
+            List of encrypted sums of private array values.
         specs:
             Tuple storing array shape and dtype metadata.
 
@@ -177,8 +175,8 @@ class Decrypter(metaclass=abc.ABCMeta):
 
         Parameters
         ----------
-        value:
-            Encrypted sum of private vector coefficient values.
+        values:
+            List of encrypted sums of private vector coefficient values.
         specs:
             `VectorSpec` instance storing metadata of the `Vector`
             structure.

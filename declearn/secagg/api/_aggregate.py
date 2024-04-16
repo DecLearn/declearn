@@ -41,8 +41,25 @@ __all__ = [
 ]
 
 AggregateT = TypeVar("AggregateT", bound=Aggregate)
+
 ArraySpec = Tuple[List[int], str]
+"""Type-hint alias for specifications of an encrypted numpy array.
+
+An `ArraySpec` is merely the shape and dtype of the original array.
+"""
+
 EncryptedSpecs = List[Tuple[str, int, Union[bool, ArraySpec, VectorSpec]]]
+"""Type-hint alias for specifications of encrypted 'Aggregate' fields.
+
+An `EncryptedSpecs` is a list of tuples that each specify a given field, as:
+
+- a string (the field's name)
+- an integer (the number of scalar values in the field)
+- a specifier that depends on the field's type:
+    - a `bool` for uint (`False`) or float (`True`) fields;
+    - a `(shape, dtype)` tuple (`ArraySpec`) for numpy array fields;
+    - a `VectorSpec` for declearn Vector fields.
+"""
 
 
 class SecureAggregate(Generic[AggregateT], metaclass=abc.ABCMeta):

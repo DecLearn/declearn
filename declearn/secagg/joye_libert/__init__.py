@@ -21,6 +21,12 @@ This module implements primitives and controllers to conduct secure
 aggregation of values using a homomorphic summation algorithm from
 Marc Joye & Benoît Libert published in 2013 [1].
 
+Note that Joye-Libert encryption requires operating over large integer
+fields, resulting in a relatively-costly SecAgg scheme, both in terms
+of computations and communications, as usual 32-64 bit values end up
+converted to (possibly very) large integers.
+
+
 Controllers
 -----------
 

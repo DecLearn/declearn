@@ -42,7 +42,7 @@ Type-hint aliases
 * [ArraySpec][declearn.secagg.api.ArraySpec]:
     Specification of a numpy array's dtype and shape.
 * [EncryptedSpecs][declearn.secagg.api.EncryptedSpecs]:
-    Specification of a flattened encrypted object.
+    Specification of flattened encrypted Aggregate fields.
 """
 
 from ._aggregate import ArraySpec, EncryptedSpecs, SecureAggregate

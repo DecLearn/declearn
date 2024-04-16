@@ -29,6 +29,12 @@ thresholding apart, (b) we use the X3DH protocol [2] to set up pairwise
 secrets, (c) we require a pre-existing public key infrastructure rather
 than put trust in the server to bootstrap and distribute identity keys.
 
+Note that apart from the possible loss of information due to quantization
+on an integer field, this masking-based SecAgg scheme has a very limited
+overhead of computation and communication costs, especially when a limited
+quantization bitsize B (typically, 64) is set, as encrypted values will in
+that case be represented as `uint64` values.
+
 Controllers
 -----------
 
@@ -40,10 +46,10 @@ Controllers
 Setup & config
 --------------
 
-* [MaskingSecaggConfigClient]
+* [MaskingSecaggConfigClient]\
 [declearn.secagg.masking.MaskingSecaggConfigClient]:
     Client-side config and setup controller for masking-based SecAgg.
-* [MaskingSecaggConfigServer]
+* [MaskingSecaggConfigServer]\
 [declearn.secagg.masking.MaskingSecaggConfigServer]:
     Server-side config and setup controller for masking-based SecAgg.
 * [messages][declearn.secagg.masking.messages]:
@@ -57,11 +63,13 @@ Aggregate
 
 References
 ----------
-[1] Bonawitz et al., 2016.
+- [1]
+    Bonawitz et al., 2016.
     Practical Secure Aggregation for Federated Learning
     on User-Held Data.
     https://arxiv.org/abs/1611.04482
-[2] Marlinspike & Perrin, 2016.
+- [2]
+    Marlinspike & Perrin, 2016.
     The X3DH Key Agreement Protocol.
     https://www.signal.org/docs/specifications/x3dh/
 """
