@@ -57,7 +57,7 @@ class TestJoyeLibertSecaggSetup(SecaggSetupTestCase):
 
     def assert_decrypter_validity(
         self,
-        decrypter: JoyeLibertDecrypter,
+        decrypter: JoyeLibertDecrypter,  # type: ignore[override]
         **kwargs: Any,
     ) -> None:
         # Verify decrypter type and quantization clipval.
@@ -68,8 +68,8 @@ class TestJoyeLibertSecaggSetup(SecaggSetupTestCase):
 
     def assert_encrypter_validity(
         self,
-        encrypter: JoyeLibertEncrypter,
-        decrypter: JoyeLibertDecrypter,
+        encrypter: JoyeLibertEncrypter,  # type: ignore[override]
+        decrypter: JoyeLibertDecrypter,  # type: ignore[override]
         **kwargs: Any,
     ) -> None:
         # Verify encrypter type and quantization parameters coherence.
@@ -134,7 +134,8 @@ class TestJoyeLibertSecaggSetup(SecaggSetupTestCase):
                 "declearn.secagg.joye_libert._setup.generate_random_prime",
                 return_value=13839048920,  # proper bitsize, but not a prime
             ):
-                return await self.run_server_routine(n_clients, **kwargs)
+                decrypter = await self.run_server_routine(n_clients, **kwargs)
+                return decrypter  # type: ignore[return-value]
 
         # Set up routines where the clients use distinct biprime values.
         kwargs = self.get_server_hyper_parameters()

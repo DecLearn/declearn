@@ -19,7 +19,7 @@
 
 import abc
 import asyncio
-from typing import Any, Dict, Generic, List, Tuple, Type, TypeVar
+from typing import Any, Dict, List, Tuple, Type
 
 import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import (
@@ -37,22 +37,14 @@ from declearn.secagg.api import (
 from declearn.test_utils import MockNetworkClient, MockNetworkServer
 
 
-DecrypterT = TypeVar("DecrypterT", bound=Decrypter)
-EncrypterT = TypeVar("EncrypterT", bound=Encrypter)
-SecaggSetupMsgT = TypeVar("SecaggSetupMsgT", bound=SecaggSetupQuery)
-
-
-class SecaggSetupTestCase(
-    Generic[DecrypterT, EncrypterT, SecaggSetupMsgT],
-    metaclass=abc.ABCMeta,
-):
+class SecaggSetupTestCase(metaclass=abc.ABCMeta):
     """Base class defining shared SecAgg setup tests."""
 
     decrypter_cls: Type[Decrypter]
     encrypter_cls: Type[Encrypter]
-    client_config_cls: Type[SecaggConfigClient[EncrypterT, SecaggSetupMsgT]]
-    server_config_cls: Type[SecaggConfigServer[DecrypterT, SecaggSetupMsgT]]
-    setup_msg_cls: Type[SecaggSetupMsgT]
+    client_config_cls: Type[SecaggConfigClient]
+    server_config_cls: Type[SecaggConfigServer]
+    setup_msg_cls: Type[SecaggSetupQuery]
 
     def test_prepare_secagg_setup_query(
         self,
@@ -70,7 +62,7 @@ class SecaggSetupTestCase(
         self,
         n_clients: int,
         **kwargs: Any,
-    ) -> DecrypterT:
+    ) -> Decrypter:
         """Prepare for and run the server-side setup routine."""
         config = self.server_config_cls(**kwargs)
         async with MockNetworkServer() as netwk:
@@ -84,7 +76,7 @@ class SecaggSetupTestCase(
         prv_key: Ed25519PrivateKey,
         trusted: List[Ed25519PublicKey],
         **kwargs: Any,
-    ) -> EncrypterT:
+    ) -> Encrypter:
         """Prepare for and run the client-side setup routine."""
         config = self.client_config_cls.from_params(
             id_keys={"prv_key": prv_key, "trusted": trusted}, **kwargs
@@ -131,7 +123,7 @@ class SecaggSetupTestCase(
         # Run the routines concurrently and gather resulting objects.
         decrypter, *encrypters = await (  # type: ignore[assignment]
             asyncio.gather(server_routine, *client_routines)
-        )  # type: Tuple[DecrypterT, List[EncrypterT]]
+        )  # type: Tuple[Decrypter, List[Encrypter]]
         # Verify that the resulring objects have proper types and parameters.
         kwargs = {**server_kwargs, **client_kwargs, "n_clients": n_clients}
         self.assert_decrypter_validity(decrypter, **kwargs)
@@ -145,7 +137,7 @@ class SecaggSetupTestCase(
 
     def assert_decrypter_validity(
         self,
-        decrypter: DecrypterT,
+        decrypter: Decrypter,
         **kwargs: Any,
     ) -> None:
         """Assert that a setup Decrypter matches expectations.
@@ -158,8 +150,8 @@ class SecaggSetupTestCase(
 
     def assert_encrypter_validity(
         self,
-        encrypter: EncrypterT,
-        decrypter: DecrypterT,
+        encrypter: Encrypter,
+        decrypter: Decrypter,
         **kwargs: Any,
     ) -> None:
         """Assert that a setup Encrypter matches expectations.

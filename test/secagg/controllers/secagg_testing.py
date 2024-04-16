@@ -22,7 +22,7 @@ import copy
 import dataclasses
 import os
 import secrets
-from typing import Any, Dict, Generic, List, Optional, Tuple, TypeVar, Union
+from typing import Any, Collection, Dict, Optional, Tuple, Union
 from unittest import mock
 
 import numpy as np
@@ -39,11 +39,6 @@ from declearn.test_utils import (
     to_numpy,
 )
 from declearn.utils import Aggregate, json_dump, json_load, set_device_policy
-
-
-DecrypterT = TypeVar("DecrypterT", bound=Decrypter)
-EncrypterT = TypeVar("EncrypterT", bound=Encrypter)
-SecureAggregateT = TypeVar("SecureAggregateT", bound=SecureAggregate)
 
 
 @dataclasses.dataclass
@@ -80,14 +75,14 @@ class MockAggregate(
         return secagg_fields, clrtxt_fields
 
 
-class EncrypterTestSuite(Generic[EncrypterT], metaclass=abc.ABCMeta):
+class EncrypterTestSuite(metaclass=abc.ABCMeta):
     """Unit tests for 'declearn.secagg.api.Encrypter' subclasses."""
 
     @abc.abstractmethod
     def setup_encrypter(
         self,
         bitsize: int = 32,
-    ) -> Tuple[EncrypterT, int]:
+    ) -> Tuple[Encrypter, int]:
         """Set up an Encrypter.
 
         Returns
@@ -227,9 +222,7 @@ class EncrypterTestSuite(Generic[EncrypterT], metaclass=abc.ABCMeta):
             encrypter.encrypt_aggregate(aggregate)
 
 
-class DecrypterTestSuite(
-    Generic[DecrypterT, EncrypterT], metaclass=abc.ABCMeta
-):
+class DecrypterTestSuite(metaclass=abc.ABCMeta):
     """Unit tests for 'declearn.secagg.api.Decrypter' subclasses.
 
     These tests are not entirely unitary: they are designed under the
@@ -250,7 +243,7 @@ class DecrypterTestSuite(
     def setup_decrypter_and_encrypters(
         self,
         n_peers: int,
-    ) -> Tuple[DecrypterT, List[EncrypterT]]:
+    ) -> Tuple[Decrypter, Collection[Encrypter]]:
         """Set up a Decrypter and an ensemble of Encrypters."""
 
     def test_decrypt_uint(
@@ -413,13 +406,13 @@ class MockSimpleAggregate(
     value: Union[int, float]
 
 
-class DecrypterExceptionsTestSuite(Generic[DecrypterT], metaclass=abc.ABCMeta):
+class DecrypterExceptionsTestSuite(metaclass=abc.ABCMeta):
     """Unit tests for exception-raising 'JoyeLibertDecrypter' uses."""
 
     @abc.abstractmethod
     def setup_decrypter(
         self,
-    ) -> Tuple[DecrypterT, int, Dict[str, Any]]:
+    ) -> Tuple[Decrypter, int, Dict[str, Any]]:
         """Set up a Decrypter instance and some metatdata.
 
         Returns
@@ -492,15 +485,13 @@ class DecrypterExceptionsTestSuite(Generic[DecrypterT], metaclass=abc.ABCMeta):
             decrypter.decrypt_aggregate(encrypted)
 
 
-class SecureAggregateTestSuite(
-    Generic[SecureAggregateT], metaclass=abc.ABCMeta
-):
+class SecureAggregateTestSuite(metaclass=abc.ABCMeta):
     """Unit tests for 'declearn.secagg.api.SecureAggregate' subclasses."""
 
     @abc.abstractmethod
     def setup_secure_aggregate(
         self,
-    ) -> SecureAggregateT:
+    ) -> SecureAggregate:
         """Setup a SecureAggregate wrapping a 'MockSimpleAggregate'."""
 
     def test_dict_serialization(

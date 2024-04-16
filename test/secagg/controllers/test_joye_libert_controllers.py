@@ -42,7 +42,7 @@ with make_importable(os.path.join(os.path.dirname(__file__))):
     )
 
 
-class TestJoyeLibertEncrypter(EncrypterTestSuite[JoyeLibertEncrypter]):
+class TestJoyeLibertEncrypter(EncrypterTestSuite):
     """Unit tests for 'declearn.secagg.joye_libert.JoyeLibertEncrypter'."""
 
     def test_init(
@@ -70,9 +70,7 @@ class TestJoyeLibertEncrypter(EncrypterTestSuite[JoyeLibertEncrypter]):
 
 
 @pytest.mark.parametrize("n_peers", [1, 3])
-class TestJoyeLibertDecrypter(
-    DecrypterTestSuite[JoyeLibertDecrypter, JoyeLibertEncrypter]
-):
+class TestJoyeLibertDecrypter(DecrypterTestSuite):
     """Functional tests for Joye-Libert SecAgg controllers."""
 
     def setup_decrypter_and_encrypters(
@@ -88,9 +86,7 @@ class TestJoyeLibertDecrypter(
         return decrypter, encrypters
 
 
-class TestJoyeLibertDecrypterExceptions(
-    DecrypterExceptionsTestSuite[JoyeLibertDecrypter]
-):
+class TestJoyeLibertDecrypterExceptions(DecrypterExceptionsTestSuite):
     """Unit tests for exception-raising 'JoyeLibertDecrypter' uses."""
 
     def setup_decrypter(
@@ -119,7 +115,7 @@ class TestJoyeLibertDecrypterExceptions(
             decrypter.decrypt_aggregate(encrypted)
 
 
-class TestJLSAggregate(SecureAggregateTestSuite[JLSAggregate]):
+class TestJLSAggregate(SecureAggregateTestSuite):
     """Unit tests on the 'JLSAggregate' data structure."""
 
     def setup_secure_aggregate(

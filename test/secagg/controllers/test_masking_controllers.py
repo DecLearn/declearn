@@ -42,7 +42,7 @@ with make_importable(os.path.join(os.path.dirname(__file__))):
     )
 
 
-class TestMaskingEncrypter(EncrypterTestSuite[MaskingEncrypter]):
+class TestMaskingEncrypter(EncrypterTestSuite):
     """Unit tests for 'declearn.secagg.masking.MaskingEncrypter'."""
 
     def setup_encrypter(
@@ -59,9 +59,7 @@ class TestMaskingEncrypter(EncrypterTestSuite[MaskingEncrypter]):
 
 
 @pytest.mark.parametrize("n_peers", [2, 5])
-class TestMaskingDecrypter(
-    DecrypterTestSuite[MaskingDecrypter, MaskingEncrypter]
-):
+class TestMaskingDecrypter(DecrypterTestSuite):
     """Functional tests for Masking SecAgg controllers."""
 
     def get_bitsize(self) -> int:
@@ -101,9 +99,7 @@ class TestMaskingDecrypter(
             self.test_decrypt_float(n_peers)
 
 
-class TestMaskingDecrypterExceptions(
-    DecrypterExceptionsTestSuite[MaskingDecrypter]
-):
+class TestMaskingDecrypterExceptions(DecrypterExceptionsTestSuite):
     """Unit tests for exception-raising 'MaskingDecrypter' uses."""
 
     def setup_decrypter(
@@ -131,7 +127,7 @@ class TestMaskingDecrypterExceptions(
             decrypter.decrypt_aggregate(encrypted)
 
 
-class TestMaskedAggregate(SecureAggregateTestSuite[MaskedAggregate]):
+class TestMaskedAggregate(SecureAggregateTestSuite):
     """Unit tests on the 'MaskedAggregate' data structure."""
 
     def setup_secure_aggregate(
