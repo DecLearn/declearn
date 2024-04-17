@@ -47,6 +47,7 @@ from declearn.metrics import MetricInputType, MetricSet
 from declearn.metrics._mean import MeanState
 from declearn.model.api import Model, Vector
 from declearn.optimizer.modules import AuxVar
+from declearn.secagg import parse_secagg_config_server
 from declearn.secagg.api import Decrypter, SecaggConfigServer
 from declearn.secagg.messaging import (
     SecaggEvaluationReply,
@@ -75,7 +76,7 @@ class FederatedServer:
         netwk: Union[NetworkServer, NetworkServerConfig, Dict[str, Any], str],
         optim: Union[FLOptimConfig, str, Dict[str, Any]],
         metrics: Union[MetricSet, List[MetricInputType], None] = None,
-        secagg: Optional[SecaggConfigServer] = None,
+        secagg: Union[SecaggConfigServer, Dict[str, Any], None] = None,
         checkpoint: Union[Checkpointer, Dict[str, Any], str, None] = None,
         logger: Union[logging.Logger, str, None] = None,
     ) -> None:
@@ -101,8 +102,9 @@ class FederatedServer:
             to wrap into one, defining evaluation metrics to compute in
             addition to the model's loss.
             If None, only compute and report the model's loss.
-        secagg: SecaggConfigServer or None, default=None
-            Optional SecAgg config and setup controller.
+        secagg: SecaggConfigServer or dict or None, default=None
+            Optional SecAgg config and setup controller
+            or dict of kwargs to set one up.
         checkpoint: Checkpointer or dict or str or None, default=None
             Optional Checkpointer instance or instantiation dict to be
             used so as to save round-wise model, optimizer and metrics.
@@ -161,7 +163,7 @@ class FederatedServer:
             checkpoint = Checkpointer.from_specs(checkpoint)
         self.ckptr = checkpoint
         # Assign the optional SecAgg config and declare a Decrypter slot.
-        self.secagg = secagg
+        self.secagg = self._parse_secagg(secagg)
         self._decrypter = None  # type: Optional[Decrypter]
         self._secagg_peers = set()  # type: Set[str]
         # Set up private attributes to record the loss values and best weights.
@@ -169,6 +171,25 @@ class FederatedServer:
         self._best = None  # type: Optional[Vector]
         # Set up a private attribute to prevent redundant weights sharing.
         self._clients_holding_latest_model = set()  # type: Set[str]
+
+    @staticmethod
+    def _parse_secagg(
+        secagg: Union[SecaggConfigServer, Dict[str, Any], None],
+    ) -> Optional[SecaggConfigServer]:
+        """Parse 'secagg' instantiation argument."""
+        if secagg is None:
+            return None
+        if isinstance(secagg, SecaggConfigServer):
+            return secagg
+        if isinstance(secagg, dict):
+            try:
+                return parse_secagg_config_server(**secagg)
+            except Exception as exc:
+                raise TypeError("Failed to parse 'secagg' inputs.") from exc
+        raise TypeError(
+            "'secagg' should be a 'SecaggConfigServer' instance or a dict "
+            f"of keyword arguments to set one up, not '{type(secagg)}'."
+        )
 
     def run(
         self,

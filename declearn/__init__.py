@@ -49,7 +49,7 @@ The package is organized into the following submodules:
 * [optimizer][declearn.optimizer]:
     Framework-agnostic optimizer and algorithmic plug-ins API and tools.
 * [secagg][declearn.secagg]:
-    Secure Aggregation features and utils.
+    Secure Aggregation API, methods and utils.
 * [typing][declearn.typing]:
     Type hinting utils, defined and exposed for code readability purposes.
 * [utils][declearn.utils]:

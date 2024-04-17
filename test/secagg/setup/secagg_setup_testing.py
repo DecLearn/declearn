@@ -27,6 +27,11 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import (
     Ed25519PublicKey,
 )
 
+from declearn.secagg import (
+    list_available_secagg_types,
+    parse_secagg_config_client,
+    parse_secagg_config_server,
+)
 from declearn.secagg.api import (
     Decrypter,
     Encrypter,
@@ -34,6 +39,7 @@ from declearn.secagg.api import (
     SecaggConfigServer,
     SecaggSetupQuery,
 )
+from declearn.utils import access_registered
 from declearn.test_utils import MockNetworkClient, MockNetworkServer
 
 
@@ -163,3 +169,55 @@ class SecaggSetupTestCase(metaclass=abc.ABCMeta):
         assert isinstance(encrypter, self.encrypter_cls)
         assert encrypter.quantizer.int_range == decrypter.quantizer.int_range
         assert encrypter.quantizer.val_range == decrypter.quantizer.val_range
+
+    def test_type_registration(
+        self,
+    ) -> None:
+        """Assert that the tested controllers are properly registered."""
+        # Test that the client-side config and setup class is type-registered.
+        client_cls = access_registered(
+            self.client_config_cls.secagg_type, "SecaggConfigClient"
+        )
+        assert client_cls is self.client_config_cls
+        # Test that the server-side config and setup class is type-registered.
+        server_cls = access_registered(
+            self.server_config_cls.secagg_type, "SecaggConfigServer"
+        )
+        assert server_cls is self.server_config_cls
+
+    def test_list_available_secagg_types(
+        self,
+    ) -> None:
+        """Assert that the tested controllers are referenced as available."""
+        available = list_available_secagg_types()
+        assert self.client_config_cls.secagg_type in available
+        client_cls, server_cls = available[self.client_config_cls.secagg_type]
+        assert client_cls is self.client_config_cls
+        assert server_cls is self.server_config_cls
+
+    def test_parse_secagg_config_client(
+        self,
+    ) -> None:
+        """Test that the client-side config and setup can be parsed."""
+        prv_key = Ed25519PrivateKey.generate()
+        trusted = [Ed25519PrivateKey.generate().public_key() for _ in range(2)]
+        secagg = parse_secagg_config_client(
+            secagg_type=self.client_config_cls.secagg_type,
+            id_keys={"prv_key": prv_key, "trusted": trusted},
+            **self.get_client_hyper_parameters(),
+        )
+        assert isinstance(secagg, self.client_config_cls)
+        assert secagg.id_keys.prv_key == prv_key
+
+    def test_parse_secagg_config_server(
+        self,
+    ) -> None:
+        """Test that the server-side config and setup can be parsed."""
+        kwargs = self.get_server_hyper_parameters()
+        secagg = parse_secagg_config_server(
+            secagg_type=self.server_config_cls.secagg_type,
+            **kwargs,
+        )
+        assert isinstance(secagg, self.server_config_cls)
+        assert secagg.bitsize == kwargs["bitsize"]
+        assert secagg.clipval == kwargs["clipval"]

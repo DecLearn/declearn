@@ -22,7 +22,7 @@ import dataclasses
 import logging
 import os
 import warnings
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Optional, Tuple, Union
 
 import numpy as np
 
@@ -35,6 +35,7 @@ from declearn.communication.utils import (
 from declearn.dataset import Dataset, load_dataset_from_json
 from declearn.main.utils import Checkpointer, TrainingManager
 from declearn.messaging import Message, SerializedMessage
+from declearn.secagg import parse_secagg_config_client
 from declearn.secagg.api import Encrypter, SecaggConfigClient, SecaggSetupQuery
 from declearn.secagg.messaging import SecaggEvaluationReply, SecaggTrainReply
 from declearn.utils import LOGGING_LEVEL_MAJOR, get_logger
@@ -56,7 +57,7 @@ class FederatedClient:
         train_data: Union[Dataset, str],
         valid_data: Optional[Union[Dataset, str]] = None,
         checkpoint: Union[Checkpointer, Dict[str, Any], str, None] = None,
-        secagg: Optional[SecaggConfigClient] = None,
+        secagg: Union[SecaggConfigClient, Dict[str, Any], None] = None,
         share_metrics: bool = True,
         logger: Union[logging.Logger, str, None] = None,
         verbose: bool = True,
@@ -82,8 +83,9 @@ class FederatedClient:
             used so as to save round-wise model, optimizer and metrics.
             If a single string is provided, treat it as the checkpoint
             folder path and use default values for other parameters.
-        secagg: SecaggConfigClient or None, default=None
-            Optional SecAgg config and setup controller.
+        secagg: SecaggConfigClient or dict or None, default=None
+            Optional SecAgg config and setup controller
+            or dict of kwargs to set one up.
         share_metrics: bool, default=True
             Whether to share evaluation metrics with the server,
             or save them locally and only send the model's loss.
@@ -141,7 +143,7 @@ class FederatedClient:
             checkpoint = Checkpointer.from_specs(checkpoint)
         self.ckptr = checkpoint
         # Assign the optional SecAgg config and declare an Encrypter slot.
-        self.secagg = secagg
+        self.secagg = self._parse_secagg(secagg)
         self._encrypter = None  # type: Optional[Encrypter]
         # Record the metric-sharing and verbosity bool values.
         self.share_metrics = bool(share_metrics)
@@ -155,6 +157,25 @@ class FederatedClient:
         self.verbose = bool(verbose)
         # Create a TrainingManager slot, populated at initialization phase.
         self.trainmanager = None  # type: Optional[TrainingManager]
+
+    @staticmethod
+    def _parse_secagg(
+        secagg: Union[SecaggConfigClient, Dict[str, Any], None],
+    ) -> Optional[SecaggConfigClient]:
+        """Parse 'secagg' instantiation argument."""
+        if secagg is None:
+            return None
+        if isinstance(secagg, SecaggConfigClient):
+            return secagg
+        if isinstance(secagg, dict):
+            try:
+                return parse_secagg_config_client(**secagg)
+            except Exception as exc:
+                raise TypeError("Failed to parse 'secagg' inputs.") from exc
+        raise TypeError(
+            "'secagg' should be a 'SecaggConfigClient' instance or a dict "
+            f"of keyword arguments to set one up, not '{type(secagg)}'."
+        )
 
     def run(
         self,

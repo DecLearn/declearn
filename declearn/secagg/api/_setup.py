@@ -21,12 +21,13 @@ import abc
 import dataclasses
 from typing import ClassVar, Generic, Optional, Set, TypeVar
 
+
 from declearn.communication.api import NetworkClient, NetworkServer
 from declearn.messaging import Message, SerializedMessage
 from declearn.secagg.api._decrypt import Decrypter
 from declearn.secagg.api._encrypt import Encrypter
 from declearn.secagg.utils import IdentityKeys
-from declearn.utils import TomlConfig
+from declearn.utils import TomlConfig, create_types_registry, register_type
 
 __all__ = [
     "SecaggConfigClient",
@@ -53,6 +54,7 @@ EncrypterT = TypeVar("EncrypterT", bound=Encrypter)
 SecaggSetupMsgT = TypeVar("SecaggSetupMsgT", bound=SecaggSetupQuery)
 
 
+@create_types_registry(name="SecaggConfigClient")
 @dataclasses.dataclass
 class SecaggConfigClient(
     TomlConfig,
@@ -91,6 +93,13 @@ class SecaggConfigClient(
 
     secagg_type: ClassVar[str]
 
+    def __init_subclass__(
+        cls,
+        register: bool = True,
+    ) -> None:
+        if register:
+            register_type(cls, cls.secagg_type, group="SecaggConfigClient")
+
     @abc.abstractmethod
     async def setup_encrypter(
         self,
@@ -127,6 +136,7 @@ class SecaggConfigClient(
         """
 
 
+@create_types_registry(name="SecaggConfigServer")
 @dataclasses.dataclass
 class SecaggConfigServer(
     TomlConfig,
@@ -162,6 +172,13 @@ class SecaggConfigServer(
     clipval: float
 
     secagg_type: ClassVar[str]
+
+    def __init_subclass__(
+        cls,
+        register: bool = True,
+    ) -> None:
+        if register:
+            register_type(cls, cls.secagg_type, group="SecaggConfigServer")
 
     async def setup_decrypter(
         self,
