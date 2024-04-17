@@ -19,7 +19,7 @@
 
 import asyncio
 import os
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, Tuple
 from unittest import mock
 
 import pytest
@@ -30,7 +30,6 @@ from declearn.secagg.joye_libert import (
     JoyeLibertEncrypter,
     JoyeLibertSecaggConfigClient,
     JoyeLibertSecaggConfigServer,
-    sum_encrypted,
 )
 from declearn.secagg.joye_libert.messages import JoyeLibertSecaggSetupQuery
 from declearn.secagg.utils import generate_random_biprime
@@ -78,13 +77,6 @@ class TestJoyeLibertSecaggSetup(SecaggSetupTestCase):
         biprime = decrypter.biprime
         assert encrypter.biprime == biprime
         assert encrypter.prv_key.bit_length() <= 2 * biprime.bit_length()
-
-    def sum_encrypted(
-        self,
-        encrypted: List[int],
-        **kwargs: Any,
-    ) -> int:
-        return sum_encrypted(encrypted, modulus=kwargs["biprime"])
 
     @pytest.mark.asyncio
     async def test_joye_libert_secagg_setup_disparate_biprime(

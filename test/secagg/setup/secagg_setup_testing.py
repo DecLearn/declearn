@@ -132,7 +132,7 @@ class SecaggSetupTestCase(metaclass=abc.ABCMeta):
         # Verify that encryption/decryption works for arbitrary values.
         encrypted = [encrypter.encrypt_uint(1) for encrypter in encrypters]
         assert all(isinstance(x, int) and (x != 1) for x in encrypted)
-        encrypted_sum = self.sum_encrypted(encrypted, **kwargs)
+        encrypted_sum = decrypter.sum_encrypted(encrypted)
         assert decrypter.decrypt_uint(encrypted_sum) == n_clients
 
     def assert_decrypter_validity(
@@ -163,16 +163,3 @@ class SecaggSetupTestCase(metaclass=abc.ABCMeta):
         assert isinstance(encrypter, self.encrypter_cls)
         assert encrypter.quantizer.int_range == decrypter.quantizer.int_range
         assert encrypter.quantizer.val_range == decrypter.quantizer.val_range
-
-    def sum_encrypted(
-        self,
-        encrypted: List[int],
-        **kwargs: Any,
-    ) -> int:
-        """Sum encrypted values.
-
-        Subclasses may overload this method when encrypted values are to be
-        summed using a dedicated operator rather than mere summation.
-        """
-        # overloadable method; pylint: disable=unused-argument
-        return sum(encrypted)
