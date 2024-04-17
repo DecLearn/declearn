@@ -120,39 +120,11 @@ class FederatedServer:
             logger = get_logger(logger or type(self).__name__)
         self.logger = logger
         # Assign the wrapped Model.
-        if not isinstance(model, Model):
-            model = deserialize_object(model)  # type: ignore
-        if not isinstance(model, Model):
-            raise TypeError(
-                "'model' should be a declearn Model, opt. in serialized form."
-            )
-        self.model = model
+        self.model = self._parse_model(model)
         # Assign the wrapped NetworkServer.
-        if isinstance(netwk, str):
-            netwk = NetworkServerConfig.from_toml(netwk)
-        elif isinstance(netwk, dict):
-            netwk = NetworkServerConfig(**netwk)
-        if isinstance(netwk, NetworkServerConfig):
-            if netwk.logger is None:
-                netwk.logger = self.logger
-            netwk = netwk.build_server()
-        if not isinstance(netwk, NetworkServer):
-            raise TypeError(
-                "'netwk' should be a declearn.communication.api.NetworkServer,"
-                " or the valid configuration of one."
-            )
-        self.netwk = netwk
+        self.netwk = self._parse_netwk(netwk, logger=self.logger)
         # Assign the wrapped FLOptimConfig.
-        if isinstance(optim, str):
-            optim = FLOptimConfig.from_toml(optim)
-        elif isinstance(optim, dict):
-            optim = FLOptimConfig.from_params(**optim)
-        if not isinstance(optim, FLOptimConfig):
-            raise TypeError(
-                "'optim' should be a declearn.main.config.FLOptimConfig "
-                "or a dict of parameters or the path to a TOML file from "
-                "which to instantiate one."
-            )
+        optim = self._parse_optim(optim)
         self.aggrg = optim.aggregator
         self.optim = optim.server_opt
         self.c_opt = optim.client_opt
@@ -171,6 +143,74 @@ class FederatedServer:
         self._best = None  # type: Optional[Vector]
         # Set up a private attribute to prevent redundant weights sharing.
         self._clients_holding_latest_model = set()  # type: Set[str]
+
+    @staticmethod
+    def _parse_model(
+        model: Union[Model, str, Dict[str, Any]],
+    ) -> Model:
+        """Parse 'model' instantiation argument."""
+        if isinstance(model, Model):
+            return model
+        if isinstance(model, (str, dict)):
+            try:
+                output = deserialize_object(model)  # type: ignore[arg-type]
+            except Exception as exc:
+                raise TypeError(
+                    "'model' input deserialization failed."
+                ) from exc
+            if isinstance(output, Model):
+                return output
+            raise TypeError(
+                f"'model' input was deserialized into '{type(output)}', "
+                "whereas a declearn 'Model' instance was expected."
+            )
+        raise TypeError(
+            "'model' should be a declearn Model, optionally in serialized "
+            f"form, not '{type(model)}'"
+        )
+
+    @staticmethod
+    def _parse_netwk(
+        netwk: Union[NetworkServer, NetworkServerConfig, Dict[str, Any], str],
+        logger: logging.Logger,
+    ) -> NetworkServer:
+        """Parse 'netwk' instantiation argument."""
+        # Case when a NetworkServer instance is provided: return.
+        if isinstance(netwk, NetworkServer):
+            return netwk
+        # Case when a NetworkServerConfig is expected: verify or parse.
+        if isinstance(netwk, NetworkServerConfig):
+            config = netwk
+        elif isinstance(netwk, str):
+            config = NetworkServerConfig.from_toml(netwk)
+        elif isinstance(netwk, dict):
+            config = NetworkServerConfig(**netwk)
+        else:
+            raise TypeError(
+                "'netwk' should be a 'NetworkServer' instance or the valid "
+                f"configuration of one, not '{type(netwk)}'."
+            )
+        # Instantiate from the (parsed) config.
+        if config.logger is None:
+            config.logger = logger
+        return config.build_server()
+
+    @staticmethod
+    def _parse_optim(
+        optim: Union[FLOptimConfig, str, Dict[str, Any]],
+    ) -> FLOptimConfig:
+        """Parse 'optim' instantiation argument."""
+        if isinstance(optim, FLOptimConfig):
+            return optim
+        if isinstance(optim, str):
+            return FLOptimConfig.from_toml(optim)
+        if isinstance(optim, dict):
+            return FLOptimConfig.from_params(**optim)
+        raise TypeError(
+            "'optim' should be a declearn.main.config.FLOptimConfig "
+            "or a dict of parameters or the path to a TOML file from "
+            f"which to instantiate one, not '{type(optim)}'."
+        )
 
     @staticmethod
     def _parse_secagg(

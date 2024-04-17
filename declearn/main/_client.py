@@ -103,24 +103,11 @@ class FederatedClient:
         """
         # arguments serve modularity; pylint: disable=too-many-arguments
         # Assign the wrapped NetworkClient.
-        replace_netwk_logger = False
-        if isinstance(netwk, str):
-            netwk = NetworkClientConfig.from_toml(netwk)
-        elif isinstance(netwk, dict):
-            netwk = NetworkClientConfig.from_params(**netwk)
-        if isinstance(netwk, NetworkClientConfig):
-            replace_netwk_logger = netwk.logger is None
-            netwk = netwk.build_client()
-        if not isinstance(netwk, NetworkClient):
-            raise TypeError(
-                "'netwk' should be a declearn.communication.api.NetworkClient,"
-                " or the valid configuration of one."
-            )
-        self.netwk = netwk
+        self.netwk, replace_netwk_logger = self._parse_netwk(netwk)
         # Assign the logger and optionally replace that of the network client.
         if not isinstance(logger, logging.Logger):
             logger = get_logger(
-                name=logger or f"{type(self).__name__}-{netwk.name}",
+                name=logger or f"{type(self).__name__}-{self.netwk.name}",
                 level=logging.INFO if verbose else LOGGING_LEVEL_MAJOR,
             )
         self.logger = logger
@@ -157,6 +144,34 @@ class FederatedClient:
         self.verbose = bool(verbose)
         # Create a TrainingManager slot, populated at initialization phase.
         self.trainmanager = None  # type: Optional[TrainingManager]
+
+    @staticmethod
+    def _parse_netwk(netwk) -> Tuple[NetworkClient, bool]:
+        """Parse 'netwrk' instantiation argument.
+
+        Return both a 'NetworkClient' instance and a bool indicating
+        whether that instance's logger should be replaced with that
+        of the client (set up at a latter step).
+        """
+        # Case when a NetworkClient instance is provided: return.
+        if isinstance(netwk, NetworkClient):
+            return netwk, False
+        # Case when a NetworkClientConfig is expected: verify or parse.
+        if isinstance(netwk, NetworkClientConfig):
+            config = netwk
+        elif isinstance(netwk, str):
+            config = NetworkClientConfig.from_toml(netwk)
+        elif isinstance(netwk, dict):
+            replace_netwk_logger = netwk.get("logger", None) is None
+            config = NetworkClientConfig.from_params(**netwk)
+        else:
+            raise TypeError(
+                "'netwk' should be a 'NetworkClient' instance or the valid "
+                f"configuration of one, not '{type(netwk)}'"
+            )
+        # Instantiate from the (parsed) config.
+        replace_netwk_logger = config.logger is None
+        return config.build_client(), replace_netwk_logger
 
     @staticmethod
     def _parse_secagg(
