@@ -17,8 +17,9 @@
 
 """Unit tests for 'FederatedClient'."""
 
+import contextlib
 import logging
-from typing import Optional
+from typing import Any, Iterator, Optional, Type
 from unittest import mock
 
 import pytest  # type: ignore
@@ -40,6 +41,37 @@ from declearn.utils import LOGGING_LEVEL_MAJOR
 MOCK_NETWK = mock.create_autospec(NetworkClient, instance=True)
 MOCK_NETWK.name = "client"
 MOCK_DATASET = mock.create_autospec(Dataset, instance=True)
+
+
+@contextlib.contextmanager
+def patch_class_constructor(
+    cls: Type[Any],
+    **kwargs: Any,
+) -> Iterator[mock.Mock]:
+    """Patch a class constructor (its '__new__' method).
+
+    Overload `unittest.mock.patch.object(cls, '__new__', **kwargs)`
+    to properly restore the initial `__new__` method's behavior when
+    it is the base `object.__new__` one.
+
+    This function is adapted from the following StackOverflow post:
+    https://stackoverflow.com/questions/65360692/python-patching-new-method
+
+    NOTE: when patching multiple classes, if class A inherits class B,
+    then B **must** be patched **before** A so that they are properly
+    reset to (replacements of) `object.__new__` at the end. Otherwise,
+    class B will retain a mocked `__new__` method, and not just in the
+    initial calling scope.
+    """
+    new = cls.__new__
+    try:
+        with mock.patch.object(cls, "__new__", **kwargs) as patch:
+            yield patch
+    finally:
+        if new is object.__new__:
+            cls.__new__ = lambda cls, *args, **kwargs: object.__new__(cls)
+        else:
+            cls.__new__ = new
 
 
 class TestFederatedClientInit:  # pylint: disable=too-many-public-methods
@@ -338,13 +370,13 @@ class TestFederatedClientInitialize:
         # Set up a client with that endpoint.
         client = FederatedClient(netwk=netwk, train_data=MOCK_DATASET)
         # Attempt running initialization, monitoring TrainingManager.
-        with mock.patch.object(TrainingManager, "__new__") as patched:
+        with patch_class_constructor(TrainingManager) as patch_tm:
             await client.initialize()
         # Assert that an InitReply was sent to the server.
         netwk.send_message.assert_called_once_with(messaging.InitReply())
         # Assert that a TrainingManager was instantiated and assigned.
-        patched.assert_called_once()
-        assert client.trainmanager is patched.return_value
+        patch_tm.assert_called_once()
+        assert client.trainmanager is patch_tm.return_value
 
     @pytest.mark.asyncio
     async def test_initialize_error_catching(self) -> None:
@@ -355,10 +387,12 @@ class TestFederatedClientInitialize:
         netwk.recv_message.return_value = self._setup_mock_init_request()
         # Set up a client with that endpoint.
         client = FederatedClient(netwk=netwk, train_data=MOCK_DATASET)
-        # Attempt running initialization, which is bound to fail due to
-        # mock inputs to TrainingManager having invalid types.
-        with pytest.raises(RuntimeError):
-            await client.initialize()
+        # Attempt running initialization, forcing TrainingManager init failure.
+        with patch_class_constructor(TrainingManager) as patch_tm:
+            patch_tm.side_effect = TypeError
+            with pytest.raises(RuntimeError):
+                await client.initialize()
+        patch_tm.assert_called_once()
         # Assert that an Error was sent to the server.
         netwk.send_message.assert_called_once()
         reply = netwk.send_message.call_args.args[0]
@@ -382,7 +416,7 @@ class TestFederatedClientInitialize:
         )
         client = FederatedClient(netwk=netwk, train_data=dataset)
         # Attempt running initialization, monitoring TrainingManager.
-        with mock.patch.object(TrainingManager, "__new__") as patched:
+        with patch_class_constructor(TrainingManager) as patched:
             await client.initialize()
         # Assert that two replies were sent to the server.
         assert netwk.send_message.call_count == 2
@@ -440,7 +474,7 @@ class TestFederatedClientInitialize:
             netwk=netwk, train_data=MOCK_DATASET, secagg=secagg
         )
         # Attempt running initialization, monitoring TrainingManager.
-        with mock.patch.object(TrainingManager, "__new__") as patched:
+        with patch_class_constructor(TrainingManager) as patched:
             await client.initialize()
         # Assert that an InitReply was sent to the server.
         netwk.send_message.assert_called_once_with(messaging.InitReply())
@@ -462,7 +496,7 @@ class TestFederatedClientInitialize:
         secagg.secagg_type = "mock-secagg-bis"
         client = FederatedClient(netwk=netwk, train_data=MOCK_DATASET)
         # Attempt running initialization, monitoring TrainingManager.
-        with mock.patch.object(TrainingManager, "__new__") as patched:
+        with patch_class_constructor(TrainingManager) as patched:
             with pytest.raises(RuntimeError):
                 await client.initialize()
         # Assert that an Error was sent to the server and TrainingManager
@@ -491,8 +525,8 @@ class TestFederatedClientInitialize:
         client = FederatedClient(netwk=netwk, train_data=MOCK_DATASET)
         # Attempt running initialization, patching/monitoring both
         # TrainingManager and its DP counterpart.
-        with mock.patch.object(TrainingManager, "__new__") as patch_tm:
-            with mock.patch.object(DPTrainingManager, "__new__") as patch_dp:
+        with patch_class_constructor(DPTrainingManager) as patch_dp:
+            with patch_class_constructor(TrainingManager) as patch_tm:
                 await client.initialize()
         # Assert that a single InitReply was then sent to the server.
         reply = netwk.send_message.call_args_list[1].args[0]
@@ -525,8 +559,8 @@ class TestFederatedClientInitialize:
         client = FederatedClient(netwk=netwk, train_data=MOCK_DATASET)
         # Attempt running initialization, patching/monitoring both
         # TrainingManager and its DP counterpart. Expect it to fail.
-        with mock.patch.object(TrainingManager, "__new__") as patch_tm:
-            with mock.patch.object(DPTrainingManager, "__new__") as patch_dp:
+        with patch_class_constructor(DPTrainingManager) as patch_dp:
+            with patch_class_constructor(TrainingManager) as patch_tm:
                 with pytest.raises(RuntimeError):
                     await client.initialize()
         # Assert that two messages were fetched, and an error was sent.
@@ -557,10 +591,9 @@ class TestFederatedClientInitialize:
         client = FederatedClient(netwk=netwk, train_data=MOCK_DATASET)
         # Attempt running initialization, patching TrainingManager and
         # having DPTrainingManager fail.
-        with mock.patch.object(TrainingManager, "__new__") as patch_tm:
-            with mock.patch.object(
-                DPTrainingManager, "__new__", side_effect=TypeError
-            ) as patch_dp:
+        with patch_class_constructor(DPTrainingManager) as patch_dp:
+            with patch_class_constructor(TrainingManager) as patch_tm:
+                patch_dp.side_effect = TypeError
                 with pytest.raises(RuntimeError):
                     await client.initialize()
         # Assert that TrainingManager was instantiated and DP one was called.
