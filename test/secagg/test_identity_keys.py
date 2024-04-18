@@ -253,6 +253,20 @@ class TestLoadEd25519PublicKey:
         with pytest.raises(TypeError):
             IdentityKeys.load_ed25519_public_key_from_file(filepath)
 
+    def test_load_ed25519_public_key_invalid_data(
+        self,
+        filepath: str,
+    ) -> None:
+        """Test that loading a malformed public key raises a ValueError."""
+        # Export the file twice to the same file, resulting in an invalid dump.
+        key = Ed448PrivateKey.generate().public_key()
+        self.dump_public_key(key, encoding="raw", path=filepath)
+        with open(filepath, "ab") as file:
+            file.write(key.public_bytes_raw())
+        # Verify that this raises a ValueError due to parsing failing.
+        with pytest.raises(ValueError):
+            IdentityKeys.load_ed25519_public_key_from_file(filepath)
+
 
 class TestIdentityKeys:
     """Unit tests for 'declearn.secagg.utils.IdentityKeys'."""
