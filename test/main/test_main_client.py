@@ -18,18 +18,22 @@
 """Unit tests for 'FederatedClient'."""
 
 import logging
+from typing import Optional
 from unittest import mock
 
 import pytest  # type: ignore
 
 from declearn import messaging
-from declearn.dataset import Dataset
+from declearn.dataset import Dataset, DataSpecs
 from declearn.communication import NetworkClientConfig
 from declearn.communication.api import NetworkClient
 from declearn.main import FederatedClient
+from declearn.main.privacy import DPTrainingManager
 from declearn.main.utils import Checkpointer, TrainingManager
+from declearn.metrics import MetricState
+from declearn.model.api import Model
+from declearn.secagg import messaging as secagg_messaging
 from declearn.secagg.api import SecaggConfigClient, SecaggSetupQuery
-from declearn.secagg.masking.messages import MaskingSecaggSetupQuery
 from declearn.utils import LOGGING_LEVEL_MAJOR
 
 
@@ -210,6 +214,14 @@ class TestFederatedClientInit:  # pylint: disable=too-many-public-methods
                 secagg=mock.MagicMock(),
             )
 
+    def test_secagg_invalid_dict(self) -> None:
+        """Test specifying 'secagg' as an invalid type."""
+        secagg = {"secagg_type": "mock", "id_keys": mock.MagicMock()}
+        with pytest.raises(TypeError):
+            FederatedClient(
+                netwk=MOCK_NETWK, train_data=MOCK_DATASET, secagg=secagg
+            )
+
     # Tests for the 'share_metrics' argument.
 
     def test_share_metrics(self) -> None:
@@ -222,6 +234,14 @@ class TestFederatedClientInit:  # pylint: disable=too-many-public-methods
             netwk=MOCK_NETWK, train_data=MOCK_DATASET, share_metrics=False
         )
         assert client.share_metrics is False
+
+    def test_share_metrics_disabled_with_secagg(self) -> None:
+        """Test that 'share_metrics=False' with SecAgg emits a warning."""
+        secagg = mock.create_autospec(SecaggConfigClient, instance=True)
+        with pytest.warns(UserWarning):
+            FederatedClient(
+                MOCK_NETWK, MOCK_DATASET, share_metrics=False, secagg=secagg
+            )
 
     # Tests for the 'logger' argument.
 
@@ -277,8 +297,535 @@ class TestFederatedClientInit:  # pylint: disable=too-many-public-methods
         assert client.logger.level is LOGGING_LEVEL_MAJOR
 
 
-class TestFederatedClient:
-    """Unit tests for some points of behavior of 'FederatedClient'."""
+class TestFederatedClientInitialize:
+    """Unit tests for 'FederatedClient.initialize'.
+
+    Theses tests emulate a large number of scenarios, notably focusing
+    on potential errors to verify the error catching and raising hooks.
+
+    They rely on mocks and patching rather than actual setup, which is
+    somewhat tedious when reviewing the tests, but enables pinpointing
+    error types and causes and avoids any costly setup to run tests.
+    """
+
+    @staticmethod
+    def _setup_mock_init_request(
+        secagg: Optional[str] = None,
+        dpsgd: bool = False,
+    ) -> messaging.SerializedMessage[messaging.InitRequest]:
+        """Return a mock serialized InitRequest."""
+        init_req = messaging.InitRequest(
+            model=mock.MagicMock(),
+            optim=mock.MagicMock(),
+            aggrg=mock.MagicMock(),
+            secagg=secagg,
+            dpsgd=dpsgd,
+        )
+        msg_init = mock.create_autospec(
+            messaging.SerializedMessage, instance=True
+        )
+        msg_init.message_cls = messaging.InitRequest
+        msg_init.deserialize.return_value = init_req
+        return msg_init
+
+    @pytest.mark.asyncio
+    async def test_initialize_simple(self) -> None:
+        """Test that initialization with a single request works as expected."""
+        # Set up amock network endpoint receiving an InitRequest.
+        netwk = mock.create_autospec(NetworkClient, instance=True)
+        netwk.name = "client"
+        netwk.recv_message.return_value = self._setup_mock_init_request()
+        # Set up a client with that endpoint.
+        client = FederatedClient(netwk=netwk, train_data=MOCK_DATASET)
+        # Attempt running initialization, monitoring TrainingManager.
+        with mock.patch.object(TrainingManager, "__new__") as patched:
+            await client.initialize()
+        # Assert that an InitReply was sent to the server.
+        netwk.send_message.assert_called_once_with(messaging.InitReply())
+        # Assert that a TrainingManager was instantiated and assigned.
+        patched.assert_called_once()
+        assert client.trainmanager is patched.return_value
+
+    @pytest.mark.asyncio
+    async def test_initialize_error_catching(self) -> None:
+        """Test that initialization error are properly handled."""
+        # Set up amock network endpoint receiving an InitRequest.
+        netwk = mock.create_autospec(NetworkClient, instance=True)
+        netwk.name = "client"
+        netwk.recv_message.return_value = self._setup_mock_init_request()
+        # Set up a client with that endpoint.
+        client = FederatedClient(netwk=netwk, train_data=MOCK_DATASET)
+        # Attempt running initialization, which is bound to fail due to
+        # mock inputs to TrainingManager having invalid types.
+        with pytest.raises(RuntimeError):
+            await client.initialize()
+        # Assert that an Error was sent to the server.
+        netwk.send_message.assert_called_once()
+        reply = netwk.send_message.call_args.args[0]
+        assert isinstance(reply, messaging.Error)
+
+    @pytest.mark.asyncio
+    async def test_initialize_with_metadata_query(self) -> None:
+        """Test that initialization with a MetadataQuery works as expected."""
+        # Set up a mock network receiving a MetadataQuery and an InitRequest.
+        netwk = mock.create_autospec(NetworkClient, instance=True)
+        netwk.name = "client"
+        msg_data = messaging.SerializedMessage.from_message_string(
+            messaging.MetadataQuery(fields=["n_samples"]).to_string()
+        )  # type: messaging.SerializedMessage[messaging.MetadataQuery]
+        msg_init = self._setup_mock_init_request()
+        netwk.recv_message.side_effect = [msg_data, msg_init]
+        # Set up a client with a mock dataset returning some arbitrary specs.
+        dataset = mock.create_autospec(Dataset, instance=True)
+        dataset.get_data_specs.return_value = DataSpecs(
+            n_samples=100, features_shape=(32,)
+        )
+        client = FederatedClient(netwk=netwk, train_data=dataset)
+        # Attempt running initialization, monitoring TrainingManager.
+        with mock.patch.object(TrainingManager, "__new__") as patched:
+            await client.initialize()
+        # Assert that two replies were sent to the server.
+        assert netwk.send_message.call_count == 2
+        # Assert that a MetadataReply was first sent to the server.
+        reply = netwk.send_message.call_args_list[0].args[0]
+        assert isinstance(reply, messaging.MetadataReply)
+        dataset.get_data_specs.assert_called_once()
+        assert reply.data_info == {"n_samples": 100}
+        # Assert that an InitReply was then sent to the server.
+        reply = netwk.send_message.call_args_list[1].args[0]
+        assert isinstance(reply, messaging.InitReply)
+        # Assert that a TrainingManager was instantiated and assigned.
+        patched.assert_called_once()
+        assert client.trainmanager is patched.return_value
+
+    @pytest.mark.asyncio
+    async def test_initialize_with_metadata_query_error(self) -> None:
+        """Test initialization with a malformed MetadataQuery."""
+        # Set up a mock network receiving an invalid MetadataQuery.
+        netwk = mock.create_autospec(NetworkClient, instance=True)
+        netwk.name = "client"
+        msg_data = messaging.SerializedMessage.from_message_string(
+            messaging.MetadataQuery(fields=["invalid"]).to_string()
+        )  # type: messaging.SerializedMessage[messaging.MetadataQuery]
+        netwk.recv_message.return_value = msg_data
+        # Set up a client with a mock dataset returning some arbitrary specs.
+        dataset = mock.create_autospec(Dataset, instance=True)
+        dataset.get_data_specs.return_value = DataSpecs(
+            n_samples=100, features_shape=(32,)
+        )
+        client = FederatedClient(netwk=netwk, train_data=dataset)
+        # Attempt running initialization, that is expected to fail.
+        with pytest.raises(RuntimeError):
+            await client.initialize()
+        # Assert that an Error was sent to the server.
+        netwk.send_message.assert_called_once()
+        reply = netwk.send_message.call_args.args[0]
+        assert isinstance(reply, messaging.Error)
+        # Assert that this happened after accessing data specs.
+        dataset.get_data_specs.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_initialize_with_secagg(self) -> None:
+        """Test that initialization with a single request works as expected."""
+        # Set up amock network endpoint receiving an InitRequest with SecAgg.
+        netwk = mock.create_autospec(NetworkClient, instance=True)
+        netwk.name = "client"
+        netwk.recv_message.return_value = self._setup_mock_init_request(
+            secagg="mock-secagg", dpsgd=False
+        )
+        # Set up a client with that endpoint and a matching mock secagg.
+        secagg = mock.create_autospec(SecaggConfigClient, instance=True)
+        secagg.secagg_type = "mock-secagg"
+        client = FederatedClient(
+            netwk=netwk, train_data=MOCK_DATASET, secagg=secagg
+        )
+        # Attempt running initialization, monitoring TrainingManager.
+        with mock.patch.object(TrainingManager, "__new__") as patched:
+            await client.initialize()
+        # Assert that an InitReply was sent to the server.
+        netwk.send_message.assert_called_once_with(messaging.InitReply())
+        # Assert that a TrainingManager was instantiated and assigned.
+        patched.assert_called_once()
+        assert client.trainmanager is patched.return_value
+
+    @pytest.mark.asyncio
+    async def test_initialize_with_secagg_mismatch(self) -> None:
+        """Test that an InitRequest with mismatching secagg raises an error."""
+        # Set up amock network endpoint receiving an InitRequest with SecAgg.
+        netwk = mock.create_autospec(NetworkClient, instance=True)
+        netwk.name = "client"
+        netwk.recv_message.return_value = self._setup_mock_init_request(
+            secagg="mock-secagg", dpsgd=False
+        )
+        # Set up a client with that endpoint but a distinct secagg type.
+        secagg = mock.create_autospec(SecaggConfigClient, instance=True)
+        secagg.secagg_type = "mock-secagg-bis"
+        client = FederatedClient(netwk=netwk, train_data=MOCK_DATASET)
+        # Attempt running initialization, monitoring TrainingManager.
+        with mock.patch.object(TrainingManager, "__new__") as patched:
+            with pytest.raises(RuntimeError):
+                await client.initialize()
+        # Assert that an Error was sent to the server and TrainingManager
+        # instantiation was not even attempted.
+        netwk.send_message.assert_called_once()
+        reply = netwk.send_message.call_args.args[0]
+        assert isinstance(reply, messaging.Error)
+        patched.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_initialize_with_dpsgd(self) -> None:
+        """Test that initialization with DP-SGD works properly."""
+        # Set up a mock network receiving an InitRequest and a PrivacyRequest.
+        netwk = mock.create_autospec(NetworkClient, instance=True)
+        netwk.name = "client"
+        msg_init = self._setup_mock_init_request(secagg=None, dpsgd=True)
+        msg_priv = mock.create_autospec(
+            messaging.SerializedMessage, instance=True
+        )
+        msg_priv.message_cls = messaging.PrivacyRequest
+        msg_priv.deserialize.return_value = dpconfig = mock.create_autospec(
+            messaging.PrivacyRequest, instance=True
+        )
+        netwk.recv_message.side_effect = [msg_init, msg_priv]
+        # Set up a client wrapping the former network endpoint.
+        client = FederatedClient(netwk=netwk, train_data=MOCK_DATASET)
+        # Attempt running initialization, patching/monitoring both
+        # TrainingManager and its DP counterpart.
+        with mock.patch.object(TrainingManager, "__new__") as patch_tm:
+            with mock.patch.object(DPTrainingManager, "__new__") as patch_dp:
+                await client.initialize()
+        # Assert that a single InitReply was then sent to the server.
+        reply = netwk.send_message.call_args_list[1].args[0]
+        assert isinstance(reply, messaging.InitReply)
+        # Assert that a DPTrainingManager was set up.
+        patch_tm.assert_called_once()
+        patch_dp.assert_called_once_with(
+            DPTrainingManager,
+            model=patch_tm.return_value.model,
+            optim=patch_tm.return_value.optim,
+            aggrg=patch_tm.return_value.aggrg,
+            train_data=patch_tm.return_value.train_data,
+            valid_data=patch_tm.return_value.valid_data,
+            metrics=patch_tm.return_value.metrics,
+            logger=patch_tm.return_value.logger,
+            verbose=patch_tm.return_value.verbose,
+        )
+        patch_dp.return_value.make_private.assert_called_once_with(dpconfig)
+        assert client.trainmanager is patch_dp.return_value
+
+    @pytest.mark.asyncio
+    async def test_initialize_with_dpsgd_error_wrong_message(self) -> None:
+        """Test error catching for DP-SGD setup with wrong second message."""
+        # Set up a mock network receiving a DP InitRequest but wrong follow-up.
+        netwk = mock.create_autospec(NetworkClient, instance=True)
+        netwk.name = "client"
+        msg_init = self._setup_mock_init_request(secagg=None, dpsgd=True)
+        netwk.recv_message.return_value = msg_init
+        # Set up a client wrapping the former network endpoint.
+        client = FederatedClient(netwk=netwk, train_data=MOCK_DATASET)
+        # Attempt running initialization, patching/monitoring both
+        # TrainingManager and its DP counterpart. Expect it to fail.
+        with mock.patch.object(TrainingManager, "__new__") as patch_tm:
+            with mock.patch.object(DPTrainingManager, "__new__") as patch_dp:
+                with pytest.raises(RuntimeError):
+                    await client.initialize()
+        # Assert that two messages were fetched, and an error was sent.
+        assert netwk.recv_message.call_count == 2
+        netwk.send_message.assert_called_once()
+        reply = netwk.send_message.call_args.args[0]
+        assert isinstance(reply, messaging.Error)
+        # Assert that the initial TrainingManager was set, but not the DP one.
+        patch_tm.assert_called_once()
+        patch_dp.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_initialize_with_dpsgd_error_setup(self) -> None:
+        """Test error catching for DP-SGD setup with client-side failure."""
+        # Set up a mock network receiving an InitRequest and a PrivacyRequest.
+        netwk = mock.create_autospec(NetworkClient, instance=True)
+        netwk.name = "client"
+        msg_init = self._setup_mock_init_request(secagg=None, dpsgd=True)
+        msg_priv = mock.create_autospec(
+            messaging.SerializedMessage, instance=True
+        )
+        msg_priv.message_cls = messaging.PrivacyRequest
+        msg_priv.deserialize.return_value = mock.create_autospec(
+            messaging.PrivacyRequest, instance=True
+        )
+        netwk.recv_message.side_effect = [msg_init, msg_priv]
+        # Set up a client wrapping the former network endpoint.
+        client = FederatedClient(netwk=netwk, train_data=MOCK_DATASET)
+        # Attempt running initialization, patching TrainingManager and
+        # having DPTrainingManager fail.
+        with mock.patch.object(TrainingManager, "__new__") as patch_tm:
+            with mock.patch.object(
+                DPTrainingManager, "__new__", side_effect=TypeError
+            ) as patch_dp:
+                with pytest.raises(RuntimeError):
+                    await client.initialize()
+        # Assert that TrainingManager was instantiated and DP one was called.
+        patch_tm.assert_called_once()
+        patch_dp.assert_called_once()
+        # Assert that both messages were fetched, and an error was sent.
+        assert netwk.recv_message.call_count == 2
+        netwk.send_message.assert_called_once()
+        reply = netwk.send_message.call_args.args[0]
+        assert isinstance(reply, messaging.Error)
+
+
+class TestFederatedClientSetupSecagg:
+    """Unit tests for 'FederatedClient.setup_secagg'."""
+
+    @pytest.mark.asyncio
+    async def test_setup_secagg(self) -> None:
+        """Test that 'setup_secagg' sets up an encrypter."""
+        # Set up a client with mock SecAgg controller.
+        secagg = mock.create_autospec(SecaggConfigClient, instance=True)
+        client = FederatedClient(
+            netwk=MOCK_NETWK, train_data=MOCK_DATASET, secagg=secagg
+        )
+        # Set up a mock serialized SecaggSetupQuery.
+        msg = mock.create_autospec(messaging.SerializedMessage, instance=True)
+        msg.message_cls = SecaggSetupQuery
+        # Run the routine and verify that the setup protocol was triggered.
+        await client.setup_secagg(msg)
+        secagg.setup_encrypter.assert_called_once_with(client.netwk, query=msg)
+
+    @pytest.mark.asyncio
+    async def test_setup_secagg_no_secagg(self) -> None:
+        """Test that 'setup_secagg' fails if no SecAgg is configured."""
+        # Set up a client with mock NetworkClient.
+        netwk = mock.create_autospec(NetworkClient, instance=True)
+        netwk.name = "client"
+        client = FederatedClient(netwk=netwk, train_data=MOCK_DATASET)
+        # Set up a mock serialized SecaggSetupQuery.
+        msg = mock.create_autospec(messaging.SerializedMessage, instance=True)
+        msg.message_cls = SecaggSetupQuery
+        # Run the routine and verify that an Error was sent to the server.
+        await client.setup_secagg(msg)
+        netwk.send_message.assert_called_once()
+        assert isinstance(netwk.send_message.call_args[0][0], messaging.Error)
+
+    @pytest.mark.asyncio
+    async def test_setup_secagg_error_catching(self) -> None:
+        """Test that SecAgg setup errors within 'setup_secagg' are caught."""
+        # Set up a client with mock NetworkClient and SecaggConfigClient.
+        netwk = mock.create_autospec(NetworkClient, instance=True)
+        netwk.name = "client"
+        secagg = mock.create_autospec(SecaggConfigClient, instance=True)
+        secagg.setup_encrypter.side_effect = ValueError
+        client = FederatedClient(
+            netwk=netwk, train_data=MOCK_DATASET, secagg=secagg
+        )
+        # Set up a mock serialized SecaggSetupQuery.
+        msg = mock.create_autospec(messaging.SerializedMessage, instance=True)
+        msg.message_cls = SecaggSetupQuery
+        # Run the routine and verify that the exception was caught.
+        # No message was sent because this is left up to the mocked subroutine.
+        await client.setup_secagg(msg)
+        secagg.setup_encrypter.assert_awaited_once_with(netwk=netwk, query=msg)
+        netwk.send_message.assert_not_called()
+
+
+class TestFederatedClientTrainingRound:
+    """Unit tests for 'FederatedClient.training_round'."""
+
+    @staticmethod
+    def _finalize_mock_train_manager(
+        train_manager: mock.Mock,
+    ) -> mock.Mock:
+        """Tweak a mock TrainingManager to enable using 'training_round'."""
+        train_manager.model = mock.create_autospec(Model, instance=True)
+        train_manager.training_round.return_value = mock.create_autospec(
+            messaging.TrainReply
+        )
+        return train_manager
+
+    @pytest.mark.asyncio
+    async def test_training_round(self) -> None:
+        """Test 'training_round' without SecAgg."""
+        # Set up a client with a mock NetworkClient and mock TrainingManager.
+        netwk = mock.create_autospec(NetworkClient, instance=True)
+        netwk.name = "client"
+        client = FederatedClient(netwk, train_data=MOCK_DATASET)
+        train_manager = mock.create_autospec(TrainingManager, instance=True)
+        client.trainmanager = self._finalize_mock_train_manager(train_manager)
+        # Call the 'training_round' routine and verify expected actions.
+        request = messaging.TrainRequest(
+            round_i=1, weights=None, aux_var={}, batches={"batch_size": 32}
+        )
+        await client.training_round(request)
+        train_manager.training_round.assert_called_once_with(request)
+        netwk.send_message.assert_called_once_with(
+            train_manager.training_round.return_value
+        )
+
+    @pytest.mark.asyncio
+    async def test_training_round_secagg(self) -> None:
+        """Test 'training_round' with SecAgg."""
+        # Set up a client with a mock NetworkClient and SecaggConfigClient.
+        netwk = mock.create_autospec(NetworkClient, instance=True)
+        netwk.name = "client"
+        secagg = mock.create_autospec(SecaggConfigClient, instance=True)
+        client = FederatedClient(netwk, train_data=MOCK_DATASET, secagg=secagg)
+        # Add a mock TrainingManager to it.
+        train_manager = mock.create_autospec(TrainingManager, instance=True)
+        client.trainmanager = self._finalize_mock_train_manager(train_manager)
+        # Call the SecAgg setup routine.
+        await client.setup_secagg(
+            mock.create_autospec(messaging.SerializedMessage)
+        )
+        # Call the 'training_round' routine and verify expected actions.
+        request = messaging.TrainRequest(
+            round_i=1, weights=None, aux_var={}, batches={"batch_size": 32}
+        )
+        with mock.patch.object(
+            secagg_messaging.SecaggTrainReply, "from_cleartext_message"
+        ) as patched:
+            await client.training_round(request)
+        train_manager.training_round.assert_called_once_with(request)
+        patched.assert_called_once_with(
+            cleartext=train_manager.training_round.return_value,
+            encrypter=secagg.setup_encrypter.return_value,
+        )
+        netwk.send_message.assert_called_once_with(patched.return_value)
+
+    @pytest.mark.asyncio
+    async def test_training_round_secagg_not_setup(self) -> None:
+        """Test 'training_round' error with configured, not-setup SecAgg."""
+        # Set up a client with a mock NetworkClient and SecaggConfigClient.
+        netwk = mock.create_autospec(NetworkClient, instance=True)
+        netwk.name = "client"
+        secagg = mock.create_autospec(SecaggConfigClient, instance=True)
+        client = FederatedClient(netwk, train_data=MOCK_DATASET, secagg=secagg)
+        # Add a mock TrainingManager to it.
+        train_manager = mock.create_autospec(TrainingManager, instance=True)
+        client.trainmanager = self._finalize_mock_train_manager(train_manager)
+        # Run the routine and verify that an Error message was sent.
+        request = messaging.TrainRequest(
+            round_i=1, weights=None, aux_var={}, batches={"batch_size": 32}
+        )
+        await client.training_round(request)
+        netwk.send_message.assert_called_once()
+        reply = netwk.send_message.call_args.args[0]
+        assert isinstance(reply, messaging.Error)
+        train_manager.training_round.assert_not_called()
+
+
+class TestFederatedClientEvaluationRound:
+    """Unit tests for 'FederatedClient.evaluation_round'."""
+
+    @staticmethod
+    def _finalize_mock_train_manager(
+        train_manager: mock.Mock,
+    ) -> mock.Mock:
+        """Tweak a mock TrainingManager to return an EvaluationReply."""
+        metric = mock.create_autospec(MetricState, instance=True)
+        reply = messaging.EvaluationReply(
+            loss=0.42, n_steps=42, t_spent=4.2, metrics={"metric": metric}
+        )
+        train_manager.evaluation_round.return_value = reply
+        return train_manager
+
+    @staticmethod
+    def _setup_evaluation_request() -> messaging.EvaluationRequest:
+        """Return an arbitrary EvaluationRequest message."""
+        return messaging.EvaluationRequest(
+            round_i=1,
+            weights=None,
+            batches={"batch_size": 32},
+            n_steps=None,
+            timeout=None,
+        )
+
+    @pytest.mark.asyncio
+    async def test_evaluation_round(self) -> None:
+        """Test 'evaluation_round' without SecAgg nor metrics removal."""
+        # Set up a client with a mock NetworkClient and mock TrainingManager.
+        netwk = mock.create_autospec(NetworkClient, instance=True)
+        netwk.name = "client"
+        client = FederatedClient(netwk, train_data=MOCK_DATASET)
+        train_manager = mock.create_autospec(TrainingManager, instance=True)
+        client.trainmanager = self._finalize_mock_train_manager(train_manager)
+        # Call the 'evaluation_round' routine and verify expected actions.
+        request = self._setup_evaluation_request()
+        await client.evaluation_round(request)
+        train_manager.evaluation_round.assert_called_once_with(request)
+        netwk.send_message.assert_called_once_with(
+            train_manager.evaluation_round.return_value
+        )
+
+    @pytest.mark.asyncio
+    async def test_evaluation_round_no_share_metrics(self) -> None:
+        """Test 'evaluation_round' with 'share_metrics=False'."""
+        # Set up a client with a mock NetworkClient and mock TrainingManager.
+        netwk = mock.create_autospec(NetworkClient, instance=True)
+        netwk.name = "client"
+        client = FederatedClient(
+            netwk, train_data=MOCK_DATASET, share_metrics=False
+        )
+        train_manager = mock.create_autospec(TrainingManager, instance=True)
+        client.trainmanager = self._finalize_mock_train_manager(train_manager)
+        # Call the 'evaluation_round' routine and verify expected actions.
+        request = self._setup_evaluation_request()
+        await client.evaluation_round(request)
+        train_manager.evaluation_round.assert_called_once_with(request)
+        netwk.send_message.assert_called_once_with(
+            train_manager.evaluation_round.return_value
+        )
+        # Verify that the return value's metrics have been cleared.
+        assert not train_manager.evaluation_round.return_value.metrics
+
+    @pytest.mark.asyncio
+    async def test_evaluation_round_secagg(self) -> None:
+        """Test 'evaluation_round' with SecAgg."""
+        # Set up a client with a mock NetworkClient and SecaggConfigClient.
+        netwk = mock.create_autospec(NetworkClient, instance=True)
+        netwk.name = "client"
+        secagg = mock.create_autospec(SecaggConfigClient, instance=True)
+        client = FederatedClient(netwk, train_data=MOCK_DATASET, secagg=secagg)
+        # Add a mock TrainingManager suitable to run evaluation rounds.
+        train_manager = mock.create_autospec(TrainingManager, instance=True)
+        client.trainmanager = self._finalize_mock_train_manager(train_manager)
+        # Call the SecAgg setup routine.
+        await client.setup_secagg(
+            mock.create_autospec(messaging.SerializedMessage)
+        )
+        # Call the 'evaluation_round' routine and verify expected actions.
+        request = self._setup_evaluation_request()
+        with mock.patch.object(
+            secagg_messaging.SecaggEvaluationReply, "from_cleartext_message"
+        ) as patched:
+            await client.evaluation_round(request)
+        train_manager.evaluation_round.assert_called_once_with(request)
+        patched.assert_called_once_with(
+            cleartext=train_manager.evaluation_round.return_value,
+            encrypter=secagg.setup_encrypter.return_value,
+        )
+        netwk.send_message.assert_called_once_with(patched.return_value)
+
+    @pytest.mark.asyncio
+    async def test_evaluation_round_secagg_not_setup(self) -> None:
+        """Test 'evaluation_round' error with configured, not-setup SecAgg."""
+        # Set up a client with a mock NetworkClient and SecaggConfigClient.
+        netwk = mock.create_autospec(NetworkClient, instance=True)
+        netwk.name = "client"
+        secagg = mock.create_autospec(SecaggConfigClient, instance=True)
+        client = FederatedClient(netwk, train_data=MOCK_DATASET, secagg=secagg)
+        # Add a mock TrainingManager suitable to run evaluation rounds.
+        train_manager = mock.create_autospec(TrainingManager, instance=True)
+        client.trainmanager = self._finalize_mock_train_manager(train_manager)
+        # Run the routine and verify that an Error message was sent.
+        request = self._setup_evaluation_request()
+        await client.evaluation_round(request)
+        netwk.send_message.assert_called_once()
+        reply = netwk.send_message.call_args.args[0]
+        assert isinstance(reply, messaging.Error)
+        train_manager.evaluation_round.assert_not_called()
+
+
+class TestFederatedClientMisc:
+    """Unit tests for miscellaneous 'FederatedClient' methods."""
 
     @pytest.mark.asyncio
     async def test_register_failure(self) -> None:
@@ -297,100 +844,29 @@ class TestFederatedClient:
         patched.assert_has_awaits([mock.call(60)] * 10)
 
     @pytest.mark.asyncio
-    async def test_initialize_failure_secagg_mismatch(self) -> None:
-        """Test that an InitRequest with mismatching secagg raises an error."""
-        # Set up a client with a mock network that will receive an InitRequest.
-        netwk = mock.create_autospec(NetworkClient, instance=True)
-        netwk.name = "client"
-        msg = mock.create_autospec(messaging.SerializedMessage, instance=True)
-        msg.message_cls = messaging.InitRequest
-        msg.deserialize.return_value = messaging.InitRequest(
-            model=mock.MagicMock(),
-            optim=mock.MagicMock(),
-            aggrg=mock.MagicMock(),
-            secagg="mock-secagg",
-        )
-        netwk.recv_message.return_value = msg
-        client = FederatedClient(netwk=netwk, train_data=MOCK_DATASET)
-        # Attempt running initialization, monitoring TrainingManager.
-        with mock.patch.object(TrainingManager, "__init__") as patched:
-            with pytest.raises(RuntimeError):
-                await client.initialize()
-        # Assert that an Error was sent to the server and TrainingManager
-        # instantiation was not even attempted.
-        netwk.send_message.assert_called_once()
-        assert isinstance(netwk.send_message.call_args[0][0], messaging.Error)
-        patched.assert_not_called()
-
-    @pytest.mark.asyncio
-    async def test_setup_secagg_no_secagg(self) -> None:
-        """Test that 'setup_secagg' fails if no SecAgg is configured."""
-        # Set up a client with mock NetworkClient.
+    async def test_cancel_training(self) -> None:
+        """Test that a CancelTraining message is properly handled."""
+        # Setup a client with a mock network client.
         netwk = mock.create_autospec(NetworkClient, instance=True)
         netwk.name = "client"
         client = FederatedClient(netwk=netwk, train_data=MOCK_DATASET)
-        # Test that a SecAgg setup query trigger an Error reply.
-        msg = messaging.SerializedMessage.from_message_string(
-            MaskingSecaggSetupQuery(bitsize=32, clipval=10.0).to_string()
-        )  # type: messaging.SerializedMessage[SecaggSetupQuery]
-        await client.setup_secagg(msg)
-        netwk.send_message.assert_called_once()
-        assert isinstance(netwk.send_message.call_args[0][0], messaging.Error)
+        # Have it process a CancelTraining message.
+        message = messaging.SerializedMessage.from_message_string(
+            messaging.CancelTraining(reason="mock-reason").to_string()
+        )  # type: messaging.SerializedMessage[messaging.CancelTraining]
+        with pytest.raises(RuntimeError, match=".*mock-reason"):
+            await client.handle_message(message)
 
     @pytest.mark.asyncio
-    async def test_setup_secagg_error_catching(self) -> None:
-        """Test that SecAgg setup errors within 'setup_secagg' are caught."""
-        # Set up a client with mock NetworkClient and SecaggConfigClient.
+    async def test_handle_message_error(self) -> None:
+        """Test that 'handle_message' raises a ValueError on invalid input."""
+        # Setup a client with a mock network client.
         netwk = mock.create_autospec(NetworkClient, instance=True)
         netwk.name = "client"
-        secagg = mock.create_autospec(SecaggConfigClient, instance=True)
-        client = FederatedClient(
-            netwk=netwk, train_data=MOCK_DATASET, secagg=secagg
-        )
-        secagg.setup_encrypter.side_effect = ValueError
-        # Test that the exception is caught.
-        msg = messaging.SerializedMessage.from_message_string(
-            MaskingSecaggSetupQuery(bitsize=32, clipval=10.0).to_string()
-        )  # type: messaging.SerializedMessage[SecaggSetupQuery]
-        await client.setup_secagg(msg)
-        secagg.setup_encrypter.assert_awaited_once_with(netwk=netwk, query=msg)
-        netwk.send_message.assert_not_called()
-
-    @pytest.mark.asyncio
-    async def test_share_metrics(self) -> None:
-        """Test that 'share_metrics' has expected effect on eval. replies."""
-
-        def setup(share_metrics: bool):
-            """Set up a FederatedClient with a mock TrainingManager."""
-            client = FederatedClient(
-                netwk=mock.create_autospec(NetworkClient, instance=True),
-                train_data=mock.create_autospec(Dataset, instance=True),
-                logger="mock-client-logger",
-                share_metrics=share_metrics,
-            )
-            manager = mock.create_autospec(TrainingManager, instance=True)
-            manager.evaluation_round.return_value = messaging.EvaluationReply(
-                loss=0.42,
-                n_steps=10,
-                t_spent=4.2,
-                metrics={"metrics": mock.MagicMock()},
-            )
-            client.trainmanager = manager
-            return client
-
-        # Run with 'share_metrics=True' and verify sent reply.
-        client = setup(share_metrics=True)
-        query = mock.create_autospec(messaging.TrainReply, instance=True)
-        await client.evaluation_round(query)
-        client.trainmanager.evaluation_round.assert_called_once_with(query)
-        reply = client.trainmanager.evaluation_round.return_value
-        client.netwk.send_message.assert_called_once_with(reply)
-
-        # Run with 'share_metrics=False' and verify sent reply.
-        client = setup(share_metrics=False)
-        query = mock.create_autospec(messaging.TrainReply, instance=True)
-        await client.evaluation_round(query)
-        client.trainmanager.evaluation_round.assert_called_once_with(query)
-        reply = client.trainmanager.evaluation_round.return_value
-        reply.metrics = {}
-        client.netwk.send_message.assert_called_once_with(reply)
+        client = FederatedClient(netwk=netwk, train_data=MOCK_DATASET)
+        # Have it process an Error message.
+        message = messaging.SerializedMessage.from_message_string(
+            messaging.Error(message="error-message").to_string()
+        )  # type: messaging.SerializedMessage[messaging.Error]
+        with pytest.raises(ValueError):
+            await client.handle_message(message)
