@@ -35,7 +35,7 @@ from declearn.messaging import (
     SerializedMessage,
 )
 from declearn.secagg.x3dh import run_x3dh_setup_client, run_x3dh_setup_server
-from declearn.secagg.x3dh.messages import X3DHResponses
+from declearn.secagg.x3dh.messages import X3DHRequests, X3DHResponses
 from declearn.test_utils import MockNetworkClient, MockNetworkServer
 
 
@@ -200,10 +200,40 @@ async def run_server_routine_sending_wrong_type(
         await netwk.broadcast_message(GenericMessage(action="stub", params={}))
 
 
-async def run_server_routine_raising_x3dh_error(
+async def run_server_routine_tampering_with_requests(
     n_clients: int,
 ) -> None:
-    """Run faulty server code, triggering X3DH failure."""
+    """Run faulty server code, triggering X3DH failure on requests handling."""
+
+    class TemperingNetworkServer(
+        MockNetworkServer,
+        register=False,  # type: ignore[call-arg]  # false-positive
+    ):
+        """Ad hoc NetworkServer subclass tempering with X3DH requests."""
+
+        async def send_messages(
+            self,
+            messages: Mapping[str, Message],
+            timeout: Optional[float] = None,
+        ) -> None:
+            # kwargs for readability; pylint: disable=arguments-differ
+            for msg in messages.values():
+                if isinstance(msg, X3DHRequests):
+                    msg.requests = [
+                        secrets.randbits(val.bit_length())
+                        for val in msg.requests
+                    ]
+            await super().send_messages(messages, timeout)
+
+    async with TemperingNetworkServer() as netwk:
+        await netwk.wait_for_clients(n_clients)
+        await run_x3dh_setup_server(netwk)
+
+
+async def run_server_routine_tampering_with_responses(
+    n_clients: int,
+) -> None:
+    """Run faulty server code, triggering X3DH failure on responses parsing."""
 
     class TemperingNetworkServer(
         MockNetworkServer,
@@ -233,7 +263,8 @@ async def run_server_routine_raising_x3dh_error(
 FAULTY_SERVER_ROUTINES = {
     "send_error": run_server_routine_sending_error,
     "wrong_type": run_server_routine_sending_wrong_type,
-    "x3dh_error": run_server_routine_raising_x3dh_error,
+    "x3dh_error_requests": run_server_routine_tampering_with_requests,
+    "x3dh_error_responses": run_server_routine_tampering_with_responses,
 }
 
 
@@ -257,10 +288,11 @@ async def test_x3dh_setup_routines_with_faulty_server(
         server_routine, *client_routines, return_exceptions=True
     )
     # Verify that expected exceptions were raised.
-    if fault == "x3dh_error":
+    if fault.startswith("x3dh_error"):
         assert isinstance(server_out, RuntimeError)
+        expected = KeyError if fault.endswith("responses") else ValueError
         assert all(
-            isinstance(exc, (KeyError, RuntimeError)) for exc in clients_exc
+            isinstance(exc, (expected, RuntimeError)) for exc in clients_exc
         )
     else:
         assert server_out is None
