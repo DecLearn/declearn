@@ -21,7 +21,8 @@ import asyncio
 import dataclasses
 import logging
 import os
-from typing import Any, Dict, Optional, Union
+import warnings
+from typing import Any, Dict, Optional, Tuple, Union
 
 import numpy as np
 
@@ -33,6 +34,10 @@ from declearn.communication.utils import (
 )
 from declearn.dataset import Dataset, load_dataset_from_json
 from declearn.main.utils import Checkpointer, TrainingManager
+from declearn.messaging import Message, SerializedMessage
+from declearn.secagg import parse_secagg_config_client
+from declearn.secagg.api import Encrypter, SecaggConfigClient, SecaggSetupQuery
+from declearn.secagg.messaging import SecaggEvaluationReply, SecaggTrainReply
 from declearn.utils import LOGGING_LEVEL_MAJOR, get_logger
 
 
@@ -52,6 +57,7 @@ class FederatedClient:
         train_data: Union[Dataset, str],
         valid_data: Optional[Union[Dataset, str]] = None,
         checkpoint: Union[Checkpointer, Dict[str, Any], str, None] = None,
+        secagg: Union[SecaggConfigClient, Dict[str, Any], None] = None,
         share_metrics: bool = True,
         logger: Union[logging.Logger, str, None] = None,
         verbose: bool = True,
@@ -77,6 +83,9 @@ class FederatedClient:
             used so as to save round-wise model, optimizer and metrics.
             If a single string is provided, treat it as the checkpoint
             folder path and use default values for other parameters.
+        secagg: SecaggConfigClient or dict or None, default=None
+            Optional SecAgg config and setup controller
+            or dict of kwargs to set one up.
         share_metrics: bool, default=True
             Whether to share evaluation metrics with the server,
             or save them locally and only send the model's loss.
@@ -94,24 +103,11 @@ class FederatedClient:
         """
         # arguments serve modularity; pylint: disable=too-many-arguments
         # Assign the wrapped NetworkClient.
-        replace_netwk_logger = False
-        if isinstance(netwk, str):
-            netwk = NetworkClientConfig.from_toml(netwk)
-        elif isinstance(netwk, dict):
-            netwk = NetworkClientConfig.from_params(**netwk)
-        if isinstance(netwk, NetworkClientConfig):
-            replace_netwk_logger = netwk.logger is None
-            netwk = netwk.build_client()
-        if not isinstance(netwk, NetworkClient):
-            raise TypeError(
-                "'netwk' should be a declearn.communication.api.NetworkClient,"
-                " or the valid configuration of one."
-            )
-        self.netwk = netwk
+        self.netwk, replace_netwk_logger = self._parse_netwk(netwk)
         # Assign the logger and optionally replace that of the network client.
         if not isinstance(logger, logging.Logger):
             logger = get_logger(
-                name=logger or f"{type(self).__name__}-{netwk.name}",
+                name=logger or f"{type(self).__name__}-{self.netwk.name}",
                 level=logging.INFO if verbose else LOGGING_LEVEL_MAJOR,
             )
         self.logger = logger
@@ -133,11 +129,68 @@ class FederatedClient:
         if checkpoint is not None:
             checkpoint = Checkpointer.from_specs(checkpoint)
         self.ckptr = checkpoint
+        # Assign the optional SecAgg config and declare an Encrypter slot.
+        self.secagg = self._parse_secagg(secagg)
+        self._encrypter = None  # type: Optional[Encrypter]
         # Record the metric-sharing and verbosity bool values.
         self.share_metrics = bool(share_metrics)
+        if (self.secagg is not None) and not self.share_metrics:
+            msg = (
+                "Disabling metrics' sharing with SecAgg enabled is likely"
+                "to cause errors, unless each and every client does so."
+            )
+            self.logger.warning(msg)
+            warnings.warn(msg, UserWarning, stacklevel=-1)
         self.verbose = bool(verbose)
         # Create a TrainingManager slot, populated at initialization phase.
         self.trainmanager = None  # type: Optional[TrainingManager]
+
+    @staticmethod
+    def _parse_netwk(netwk) -> Tuple[NetworkClient, bool]:
+        """Parse 'netwrk' instantiation argument.
+
+        Return both a 'NetworkClient' instance and a bool indicating
+        whether that instance's logger should be replaced with that
+        of the client (set up at a latter step).
+        """
+        # Case when a NetworkClient instance is provided: return.
+        if isinstance(netwk, NetworkClient):
+            return netwk, False
+        # Case when a NetworkClientConfig is expected: verify or parse.
+        if isinstance(netwk, NetworkClientConfig):
+            config = netwk
+        elif isinstance(netwk, str):
+            config = NetworkClientConfig.from_toml(netwk)
+        elif isinstance(netwk, dict):
+            replace_netwk_logger = netwk.get("logger", None) is None
+            config = NetworkClientConfig.from_params(**netwk)
+        else:
+            raise TypeError(
+                "'netwk' should be a 'NetworkClient' instance or the valid "
+                f"configuration of one, not '{type(netwk)}'"
+            )
+        # Instantiate from the (parsed) config.
+        replace_netwk_logger = config.logger is None
+        return config.build_client(), replace_netwk_logger
+
+    @staticmethod
+    def _parse_secagg(
+        secagg: Union[SecaggConfigClient, Dict[str, Any], None],
+    ) -> Optional[SecaggConfigClient]:
+        """Parse 'secagg' instantiation argument."""
+        if secagg is None:
+            return None
+        if isinstance(secagg, SecaggConfigClient):
+            return secagg
+        if isinstance(secagg, dict):
+            try:
+                return parse_secagg_config_client(**secagg)
+            except Exception as exc:
+                raise TypeError("Failed to parse 'secagg' inputs.") from exc
+        raise TypeError(
+            "'secagg' should be a 'SecaggConfigClient' instance or a dict "
+            f"of keyword arguments to set one up, not '{type(secagg)}'."
+        )
 
     def run(
         self,
@@ -175,13 +228,13 @@ class FederatedClient:
 
     async def handle_message(
         self,
-        message: messaging.SerializedMessage,
+        message: SerializedMessage,
     ) -> bool:
         """Handle an incoming message from the server.
 
         Parameters
         ----------
-        message: messaging.SerializedMessage
+        message: SerializedMessage
             Serialized message that needs triage and processing.
 
         Returns
@@ -194,6 +247,8 @@ class FederatedClient:
             await self.training_round(message.deserialize())
         elif issubclass(message.message_cls, messaging.EvaluationRequest):
             await self.evaluation_round(message.deserialize())
+        elif issubclass(message.message_cls, SecaggSetupQuery):
+            await self.setup_secagg(message)  # note: keep serialized
         elif issubclass(message.message_cls, messaging.StopTraining):
             await self.stop_training(message.deserialize())
             exit_loop = True
@@ -261,6 +316,16 @@ class FederatedClient:
         message = await verify_server_message_validity(
             self.netwk, received, expected=messaging.InitRequest
         )
+        # Verify that SecAgg type is coherent across peers.
+        secagg_type = None if self.secagg is None else self.secagg.secagg_type
+        if message.secagg != secagg_type:
+            error = (
+                "SecAgg configurgation mismatch: server set "
+                f"'{message.secagg}', client set '{secagg_type}'."
+            )
+            self.logger.error(error)
+            await self.netwk.send_message(messaging.Error(error))
+            raise RuntimeError(f"Initialization failed: {error}.")
         # Perform initialization, catching errors to report them to the server.
         try:
             self.trainmanager = TrainingManager(
@@ -373,6 +438,40 @@ class FederatedClient:
         )
         self.trainmanager.make_private(message)
 
+    async def setup_secagg(
+        self,
+        received: SerializedMessage[SecaggSetupQuery],
+    ) -> None:
+        """Participate in a SecAgg setup protocol.
+
+        Process a setup request from the server, run a method-specific
+        protocol (that may involve additional communications) and update
+        the held SecAgg `Encrypter` with the resulting one.
+
+        Parameters
+        ----------
+        received:
+            Serialized `SecaggSetupQuery` request received from the server,
+            the exact type of which depends on the SecAgg method being set.
+        """
+        # If no SecAgg setup controller was set, send an Error message.
+        if self.secagg is None:
+            error = (
+                "Received a SecAgg setup request, but SecAgg is not "
+                "configured to be used."
+            )
+            self.logger.error(error)
+            await self.netwk.send_message(messaging.Error(error))
+            return
+        # Otherwise, participate in the SecAgg setup protocol.
+        self.logger.info("Received a SecAgg setup request.")
+        try:
+            self._encrypter = await self.secagg.setup_encrypter(
+                netwk=self.netwk, query=received
+            )
+        except (KeyError, RuntimeError, ValueError) as exc:
+            self.logger.error("SecAgg setup failed: %s", repr(exc))
+
     async def training_round(
         self,
         message: messaging.TrainRequest,
@@ -389,8 +488,17 @@ class FederatedClient:
             Instructions from the server regarding the training round.
         """
         assert self.trainmanager is not None
+        # When SecAgg is to be used, verify that it was set up.
+        if self.secagg is not None and self._encrypter is None:
+            error = (
+                f"Refusing to participate in training round {message.round_i}"
+                "as SecAgg is configured to be used but was not set up."
+            )
+            self.logger.error(error)
+            await self.netwk.send_message(messaging.Error(error))
+            return
         # Run the training round.
-        reply = self.trainmanager.training_round(message)
+        reply = self.trainmanager.training_round(message)  # type: Message
         # Collect and optionally record batch-wise training losses.
         # Note: collection enables purging them from memory.
         losses = self.trainmanager.model.collect_training_losses()
@@ -400,6 +508,13 @@ class FederatedClient:
                 prefix="training_losses",
                 append=True,
                 timestamp=f"round_{message.round_i}",
+            )
+        # Optionally SecAgg-encrypt the reply.
+        if self._encrypter is not None and isinstance(
+            reply, messaging.TrainReply
+        ):
+            reply = SecaggTrainReply.from_cleartext_message(
+                cleartext=reply, encrypter=self._encrypter
             )
         # Send training results (or error message) to the server.
         await self.netwk.send_message(reply)
@@ -423,8 +538,18 @@ class FederatedClient:
             Instructions from the server regarding the evaluation round.
         """
         assert self.trainmanager is not None
+        # When SecAgg is to be used, verify that it was set up.
+        if self.secagg is not None and self._encrypter is None:
+            error = (
+                "Refusing to participate in evaluation round "
+                f"{message.round_i} as SecAgg is configured to be used "
+                "but was not set up."
+            )
+            self.logger.error(error)
+            await self.netwk.send_message(messaging.Error(error))
+            return
         # Run the evaluation round.
-        reply = self.trainmanager.evaluation_round(message)
+        reply = self.trainmanager.evaluation_round(message)  # type: Message
         # Post-process the results.
         if isinstance(reply, messaging.EvaluationReply):  # not an Error
             # Optionnally checkpoint the model, optimizer and local loss.
@@ -437,6 +562,11 @@ class FederatedClient:
             # Optionally prevent sharing metrics (save for the loss).
             if not self.share_metrics:
                 reply.metrics.clear()
+            # Optionally SecAgg-encrypt results.
+            if self._encrypter is not None:
+                reply = SecaggEvaluationReply.from_cleartext_message(
+                    cleartext=reply, encrypter=self._encrypter
+                )
         # Send evaluation results (or error message) to the server.
         await self.netwk.send_message(reply)
 

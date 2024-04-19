@@ -1,0 +1,168 @@
+# coding: utf-8
+
+# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# et Automatique)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Shamir Secret Sharing tools."""
+
+import secrets
+from typing import List, Optional, Tuple
+
+import gmpy2  # type: ignore
+
+
+__all__ = [
+    "DEFAULT_SHAMIR_PRIME",
+    "generate_secret_shares",
+    "recover_shared_secret",
+]
+
+
+DEFAULT_SHAMIR_PRIME = 2**127 - 1
+"""Default prime value used as modulus in Shamir Secret Sharing functions."""
+
+
+def generate_secret_shares(
+    secret: int,
+    shares: int,
+    thresh: Optional[int] = None,
+    xcoord: Optional[List[int]] = None,
+    mprime: int = DEFAULT_SHAMIR_PRIME,
+) -> List[Tuple[int, int]]:
+    """Generate secret shares using the Shamir (k, n) threshold scheme.
+
+    Use the counterpart `recover_shared_secret` function to recreate
+    `secret` from a subset of at least `thresh` output shares.
+
+    Parameters
+    ----------
+    secret:
+        Secret quantity that is to be shared across `shares` parties.
+    shares:
+        Number of parties across whom `secret` is to be shared.
+    thresh:
+        Minimum number of shares required to recover `secret`.
+        If `None` (default), `thresh = shares`.
+    xcoord:
+        Optional list of `shares` unique strictly positive integers,
+        to use as coordinates at which to generate the secret shares.
+        If `None` (default), `xcoord = list(range(1, shares + 1))`.
+    mprime:
+        Large prime number defining the finite field on which to work.
+        Must be larger than both `secret` and `shares`.
+
+    Returns
+    -------
+    secret_shares:
+        List of (coord, value) tuples that each constitute an indexed
+        share, the combination of which enables recovering the secret.
+
+    Raises
+    ------
+    TypeError
+        If any of the input arguments is of invalid type.
+    """
+    # Type-check and optionally fill-in input arguments.
+    secret, shares, thresh, xcoord, mprime = _type_check_shamir_parameters(
+        secret, shares, thresh, xcoord, mprime
+    )
+    # Generate a random polynom Q of order (k - 1).
+    poly_c = [gmpy2.mpz(secrets.randbelow(mprime)) for _ in range(thresh - 1)]
+    # Return shares, defined as (x_1, Q(x_1)), ..., (x_n, Q(x_n)).
+    ycoord = []  # type: List[int]
+    for x in xcoord:
+        y_val = secret + sum(
+            p * gmpy2.powmod(x, i, mprime)
+            for i, p in enumerate(poly_c, start=1)
+        )
+        ycoord.append(int(y_val % mprime))
+    return list(zip(xcoord, ycoord))
+
+
+def _type_check_shamir_parameters(
+    secret: int,
+    shares: int,
+    thresh: Optional[int] = None,
+    xcoord: Optional[List[int]] = None,
+    mprime: int = DEFAULT_SHAMIR_PRIME,
+) -> Tuple[int, int, int, List[int], int]:
+    """Type-check and optionally fill-in input argument values."""
+    # Type-check secret and shares.
+    if not isinstance(secret, int) and secret > 0:
+        raise TypeError("'secret' must be a positive int value.")
+    if not (isinstance(shares, int) and shares > 0):
+        raise TypeError("'shares' must be a positive int value.")
+    # Type-check or create thresh.
+    if thresh is None:
+        thresh = shares
+    elif not (isinstance(shares, int) and 0 < thresh <= shares):
+        raise TypeError("'thresh' must be an int in {1, ..., `shares` - 1}.")
+    # Type-check or create xcoord.
+    if isinstance(xcoord, (list, tuple)):
+        if len(set(xcoord)) != shares:
+            raise TypeError("'xcoord' must contain `shares` unique values.")
+        if not all(isinstance(x, int) and x > 0 for x in xcoord):
+            raise TypeError(
+                "'xcoord' must only contain strictly positive integers."
+            )
+    elif xcoord is not None:
+        raise TypeError(("'xcoord' must be a list or None."))
+    else:
+        xcoord = list(range(1, shares + 1))
+    # Type and value check mprime.
+    if not (isinstance(mprime, int) and gmpy2.is_prime(mprime)):
+        raise TypeError("'mprime' must be a prime integer")
+    if mprime <= max(secret, shares):
+        raise TypeError("'mprime' must be larger than 'secret' and 'shares'.")
+    # Return type-checked and altered values.
+    return secret, shares, thresh, xcoord, mprime
+
+
+def recover_shared_secret(
+    shares: List[Tuple[int, int]],
+    mprime: int = DEFAULT_SHAMIR_PRIME,
+) -> int:
+    """Recover a secret from shares generated by a Shamir (k, n) scheme.
+
+    Inputs are expected to have been generated using the counterpart
+    `generate_secret_shares` function. The output secret will only be
+    correct if a sufficient amount of shares are provided.
+
+    Parameters
+    ----------
+    shares:
+        List of (coord, value) indexed shares to the secret to be recovered.
+    mprime:
+        Large prime number defining the finite field on which to work.
+        Must be the same as that used when generating the secret shares.
+
+    Returns
+    -------
+    secret:
+        Secret recovered from the input shares. Note that if the provided
+        shares are incorrect, or if an unsufficient amount of shares was
+        provided, the output value will be incorrect.
+    """
+    xcoord, ycoord = list(zip(*shares))
+    total = gmpy2.mpz(0)
+    for j, y in enumerate(ycoord):
+        x_j = xcoord[j]
+        num = den = gmpy2.mpz(1)
+        for i, x_i in enumerate(xcoord):
+            if i != j:
+                num *= -x_i
+                den *= x_j - x_i
+        total += gmpy2.divm(num * y, den, mprime)
+    return int(total % mprime)

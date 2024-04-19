@@ -48,6 +48,8 @@ The package is organized into the following submodules:
     Model interfacing API and implementations.
 * [optimizer][declearn.optimizer]:
     Framework-agnostic optimizer and algorithmic plug-ins API and tools.
+* [secagg][declearn.secagg]:
+    Secure Aggregation API, methods and utils.
 * [typing][declearn.typing]:
     Type hinting utils, defined and exposed for code readability purposes.
 * [utils][declearn.utils]:
@@ -66,6 +68,7 @@ from . import (
     messaging,
     model,
     optimizer,
+    secagg,
     typing,
     utils,
     version,

@@ -21,7 +21,10 @@ import asyncio
 import copy
 import dataclasses
 import logging
-from typing import Any, Dict, List, Optional, Set, Tuple, Type, TypeVar, Union
+from typing import (
+    # fmt: off
+    Any, Dict, List, Mapping, Optional, Set, Tuple, Type, TypeVar, Union
+)
 
 import numpy as np
 
@@ -44,6 +47,13 @@ from declearn.metrics import MetricInputType, MetricSet
 from declearn.metrics._mean import MeanState
 from declearn.model.api import Model, Vector
 from declearn.optimizer.modules import AuxVar
+from declearn.secagg import parse_secagg_config_server
+from declearn.secagg.api import Decrypter, SecaggConfigServer
+from declearn.secagg.messaging import (
+    SecaggEvaluationReply,
+    SecaggMessage,
+    SecaggTrainReply,
+)
 from declearn.utils import deserialize_object, get_logger
 
 
@@ -66,6 +76,7 @@ class FederatedServer:
         netwk: Union[NetworkServer, NetworkServerConfig, Dict[str, Any], str],
         optim: Union[FLOptimConfig, str, Dict[str, Any]],
         metrics: Union[MetricSet, List[MetricInputType], None] = None,
+        secagg: Union[SecaggConfigServer, Dict[str, Any], None] = None,
         checkpoint: Union[Checkpointer, Dict[str, Any], str, None] = None,
         logger: Union[logging.Logger, str, None] = None,
     ) -> None:
@@ -91,6 +102,9 @@ class FederatedServer:
             to wrap into one, defining evaluation metrics to compute in
             addition to the model's loss.
             If None, only compute and report the model's loss.
+        secagg: SecaggConfigServer or dict or None, default=None
+            Optional SecAgg config and setup controller
+            or dict of kwargs to set one up.
         checkpoint: Checkpointer or dict or str or None, default=None
             Optional Checkpointer instance or instantiation dict to be
             used so as to save round-wise model, optimizer and metrics.
@@ -106,39 +120,11 @@ class FederatedServer:
             logger = get_logger(logger or type(self).__name__)
         self.logger = logger
         # Assign the wrapped Model.
-        if not isinstance(model, Model):
-            model = deserialize_object(model)  # type: ignore
-        if not isinstance(model, Model):
-            raise TypeError(
-                "'model' should be a declearn Model, opt. in serialized form."
-            )
-        self.model = model
+        self.model = self._parse_model(model)
         # Assign the wrapped NetworkServer.
-        if isinstance(netwk, str):
-            netwk = NetworkServerConfig.from_toml(netwk)
-        elif isinstance(netwk, dict):
-            netwk = NetworkServerConfig(**netwk)
-        if isinstance(netwk, NetworkServerConfig):
-            if netwk.logger is None:
-                netwk.logger = self.logger
-            netwk = netwk.build_server()
-        if not isinstance(netwk, NetworkServer):
-            raise TypeError(
-                "'netwk' should be a declearn.communication.api.NetworkServer,"
-                " or the valid configuration of one."
-            )
-        self.netwk = netwk
+        self.netwk = self._parse_netwk(netwk, logger=self.logger)
         # Assign the wrapped FLOptimConfig.
-        if isinstance(optim, str):
-            optim = FLOptimConfig.from_toml(optim)
-        elif isinstance(optim, dict):
-            optim = FLOptimConfig.from_params(**optim)
-        if not isinstance(optim, FLOptimConfig):
-            raise TypeError(
-                "'optim' should be a declearn.main.config.FLOptimConfig "
-                "or a dict of parameters or the path to a TOML file from "
-                "which to instantiate one."
-            )
+        optim = self._parse_optim(optim)
         self.aggrg = optim.aggregator
         self.optim = optim.server_opt
         self.c_opt = optim.client_opt
@@ -148,11 +134,102 @@ class FederatedServer:
         if checkpoint is not None:
             checkpoint = Checkpointer.from_specs(checkpoint)
         self.ckptr = checkpoint
+        # Assign the optional SecAgg config and declare a Decrypter slot.
+        self.secagg = self._parse_secagg(secagg)
+        self._decrypter = None  # type: Optional[Decrypter]
+        self._secagg_peers = set()  # type: Set[str]
         # Set up private attributes to record the loss values and best weights.
         self._loss = {}  # type: Dict[int, float]
         self._best = None  # type: Optional[Vector]
         # Set up a private attribute to prevent redundant weights sharing.
         self._clients_holding_latest_model = set()  # type: Set[str]
+
+    @staticmethod
+    def _parse_model(
+        model: Union[Model, str, Dict[str, Any]],
+    ) -> Model:
+        """Parse 'model' instantiation argument."""
+        if isinstance(model, Model):
+            return model
+        if isinstance(model, (str, dict)):
+            try:
+                output = deserialize_object(model)  # type: ignore[arg-type]
+            except Exception as exc:
+                raise TypeError(
+                    "'model' input deserialization failed."
+                ) from exc
+            if isinstance(output, Model):
+                return output
+            raise TypeError(
+                f"'model' input was deserialized into '{type(output)}', "
+                "whereas a declearn 'Model' instance was expected."
+            )
+        raise TypeError(
+            "'model' should be a declearn Model, optionally in serialized "
+            f"form, not '{type(model)}'"
+        )
+
+    @staticmethod
+    def _parse_netwk(
+        netwk: Union[NetworkServer, NetworkServerConfig, Dict[str, Any], str],
+        logger: logging.Logger,
+    ) -> NetworkServer:
+        """Parse 'netwk' instantiation argument."""
+        # Case when a NetworkServer instance is provided: return.
+        if isinstance(netwk, NetworkServer):
+            return netwk
+        # Case when a NetworkServerConfig is expected: verify or parse.
+        if isinstance(netwk, NetworkServerConfig):
+            config = netwk
+        elif isinstance(netwk, str):
+            config = NetworkServerConfig.from_toml(netwk)
+        elif isinstance(netwk, dict):
+            config = NetworkServerConfig(**netwk)
+        else:
+            raise TypeError(
+                "'netwk' should be a 'NetworkServer' instance or the valid "
+                f"configuration of one, not '{type(netwk)}'."
+            )
+        # Instantiate from the (parsed) config.
+        if config.logger is None:
+            config.logger = logger
+        return config.build_server()
+
+    @staticmethod
+    def _parse_optim(
+        optim: Union[FLOptimConfig, str, Dict[str, Any]],
+    ) -> FLOptimConfig:
+        """Parse 'optim' instantiation argument."""
+        if isinstance(optim, FLOptimConfig):
+            return optim
+        if isinstance(optim, str):
+            return FLOptimConfig.from_toml(optim)
+        if isinstance(optim, dict):
+            return FLOptimConfig.from_params(**optim)
+        raise TypeError(
+            "'optim' should be a declearn.main.config.FLOptimConfig "
+            "or a dict of parameters or the path to a TOML file from "
+            f"which to instantiate one, not '{type(optim)}'."
+        )
+
+    @staticmethod
+    def _parse_secagg(
+        secagg: Union[SecaggConfigServer, Dict[str, Any], None],
+    ) -> Optional[SecaggConfigServer]:
+        """Parse 'secagg' instantiation argument."""
+        if secagg is None:
+            return None
+        if isinstance(secagg, SecaggConfigServer):
+            return secagg
+        if isinstance(secagg, dict):
+            try:
+                return parse_secagg_config_server(**secagg)
+            except Exception as exc:
+                raise TypeError("Failed to parse 'secagg' inputs.") from exc
+        raise TypeError(
+            "'secagg' should be a 'SecaggConfigServer' instance or a dict "
+            f"of keyword arguments to set one up, not '{type(secagg)}'."
+        )
 
     def run(
         self,
@@ -259,6 +336,7 @@ class FederatedServer:
             aggrg=self.aggrg,
             metrics=self.metrics.get_config()["metrics"],
             dpsgd=config.privacy is not None,
+            secagg=None if self.secagg is None else self.secagg.secagg_type,
         )
         self.logger.info("Sending initialization requests to clients.")
         await self.netwk.broadcast_message(message)
@@ -407,6 +485,46 @@ class FederatedServer:
         )
         self.logger.info("Privacy requests were processed by clients.")
 
+    async def setup_secagg(
+        self,
+        clients: Optional[Set[str]] = None,
+    ) -> None:
+        """Run a setup protocol for SecAgg.
+
+        Parameters
+        ----------
+        clients:
+            Optional set of clients to restrict the setup to which.
+        """
+        self.logger.info("Setting up SecAgg afresh.")
+        assert self.secagg is not None
+        try:
+            self._decrypter = await self.secagg.setup_decrypter(
+                netwk=self.netwk, clients=clients
+            )
+        except RuntimeError as exc:
+            error = (
+                f"An exception was raised while setting up SecAgg: {repr(exc)}"
+            )
+            self.logger.error(error)
+            await self.netwk.broadcast_message(messaging.CancelTraining(error))
+            raise RuntimeError(error) from exc
+        self._secagg_peers = (
+            self.netwk.client_names if clients is None else clients
+        )
+
+    def _aggregate_secagg_replies(
+        self,
+        replies: Mapping[str, SecaggMessage[MessageT]],
+    ) -> MessageT:
+        """Secure-Aggregate (and decrypt) client-issued encrypted messages."""
+        assert self._decrypter is not None
+        encrypted = list(replies.values())
+        aggregate = encrypted[0]
+        for message in encrypted[1:]:
+            aggregate = aggregate.aggregate(message, decrypter=self._decrypter)
+        return aggregate.decrypt_wrapped_message(decrypter=self._decrypter)
+
     async def training_round(
         self,
         round_i: int,
@@ -422,13 +540,26 @@ class FederatedServer:
             TrainingConfig dataclass instance wrapping data-batching
             and computational effort constraints hyper-parameters.
         """
+        # Select participating clients. Run SecAgg setup when needed.
         self.logger.info("Initiating training round %s", round_i)
         clients = self._select_training_round_participants()
+        if self.secagg is not None and clients.difference(self._secagg_peers):
+            await self.setup_secagg(clients)
+        # Send training instructions and await results.
         await self._send_training_instructions(clients, round_i, train_cfg)
         self.logger.info("Awaiting clients' training results.")
-        results = await self._collect_results(
-            clients, messaging.TrainReply, "training"
-        )
+        if self._decrypter is None:
+            results = await self._collect_results(
+                clients, messaging.TrainReply, "training"
+            )
+        else:
+            secagg_results = await self._collect_results(
+                clients, SecaggTrainReply, "training"
+            )
+            results = {
+                "aggregated": self._aggregate_secagg_replies(secagg_results)
+            }
+        # Aggregate client-wise results and update the global model.
         self.logger.info("Conducting server-side optimization.")
         self._conduct_global_update(results)
 
@@ -538,14 +669,25 @@ class FederatedServer:
             EvaluateConfig dataclass instance wrapping data-batching
             and computational effort constraints hyper-parameters.
         """
-        # Send evaluation requests and collect clients' replies.
+        # Select participating clients. Run SecAgg setup when needed.
         self.logger.info("Initiating evaluation round %s", round_i)
         clients = self._select_evaluation_round_participants()
+        if self.secagg is not None and clients.difference(self._secagg_peers):
+            await self.setup_secagg(clients)
+        # Send evaluation requests and collect clients' replies.
         await self._send_evaluation_instructions(clients, round_i, valid_cfg)
         self.logger.info("Awaiting clients' evaluation results.")
-        results = await self._collect_results(
-            clients, messaging.EvaluationReply, "evaluation"
-        )
+        if self._decrypter is None:
+            results = await self._collect_results(
+                clients, messaging.EvaluationReply, "evaluation"
+            )
+        else:
+            secagg_results = await self._collect_results(
+                clients, SecaggEvaluationReply, "evaluation"
+            )
+            results = {
+                "aggregated": self._aggregate_secagg_replies(secagg_results)
+            }
         # Compute and report aggregated evaluation metrics.
         self.logger.info("Aggregating evaluation results.")
         loss, metrics = self._aggregate_evaluation_results(results)
@@ -557,7 +699,9 @@ class FederatedServer:
             )
         # Optionally checkpoint the model, optimizer and metrics.
         if self.ckptr:
-            self._checkpoint_after_evaluation(metrics, results)
+            self._checkpoint_after_evaluation(
+                metrics, results if len(results) > 1 else {}
+            )
         # Record the global loss, and update the kept "best" weights.
         self._loss[round_i] = loss
         if loss == min(self._loss.values()):
@@ -644,6 +788,7 @@ class FederatedServer:
         self.metrics.set_states(agg_states)
         metrics = self.metrics.get_result()
         loss = loss / dvsr
+        metrics.setdefault("loss", loss)
         return loss, metrics
 
     def _checkpoint_after_evaluation(
