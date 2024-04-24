@@ -18,10 +18,7 @@
 """TensorflowVector data arrays container."""
 
 import warnings
-from typing import (
-    # fmt: off
-    Any, Callable, Dict, List, Optional, Set, Tuple, Type, TypeVar, Union
-)
+from typing import Any, Callable, Dict, List, Set, Tuple, Type, TypeVar, Union
 
 # fmt: off
 import numpy as np
@@ -279,27 +276,8 @@ class TensorflowVector(Vector):
 
     def sum(
         self,
-        axis: Optional[int] = None,
-        keepdims: bool = False,
     ) -> Self:
-        if keepdims or (axis is not None):
-            if any(  # pragma: no cover
-                isinstance(x, tf.IndexedSlices) for x in self.coefs.values()
-            ):
-                warnings.warn(  # pragma: no cover
-                    "Calling `TensorflowVector.sum()` with non-default "
-                    "arguments and tf.IndexedSlices coefficients might "
-                    "result in unexpected outputs, due to the latter "
-                    "being converted to their dense counterpart.",
-                    category=RuntimeWarning,
-                )
-            warnings.warn(  # pragma: no cover
-                "The 'axis' and 'keepdims' arguments of 'TensorflowVector.sum'"
-                " have been deprecated as of declearn v2.3, and will be "
-                "removed in version 2.5 and/or 3.0.",
-                DeprecationWarning,
-            )
-        return self.apply_func(tf.reduce_sum, axis=axis, keepdims=keepdims)
+        return self.apply_func(tf.reduce_sum)
 
     def __pow__(
         self,
