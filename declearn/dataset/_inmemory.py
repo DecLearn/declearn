@@ -18,7 +18,8 @@
 """Dataset implementation to serve scikit-learn compatible in-memory data."""
 
 import os
-from typing import Any, Dict, Iterator, List, Optional, Set, Union
+import typing
+from typing import Any, Dict, Iterator, List, Optional, Set, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -35,6 +36,9 @@ from declearn.utils import json_dump, json_load, register_type
 __all__ = [
     "InMemoryDataset",
 ]
+
+
+DATA_ARRAY_TYPES = typing.get_args(DataArray)
 
 
 @register_type(group="Dataset")
@@ -84,90 +88,172 @@ class InMemoryDataset(Dataset):
         an instance that is either a numpy ndarray, a pandas
         DataFrame or a scipy spmatrix.
 
-        See the `load_data_array` function in dataset._utils for details
-        on supported file formats.
+        See the `load_data_array` function in `dataset.utils`
+        for details on supported file formats.
 
         Parameters
         ----------
-        data: data array or str
+        data:
             Main data array which contains input features (and possibly
             more), or path to a dump file from which it is to be loaded.
-        target: data array or str or None, default=None
-            Optional data array containing target labels (for supervised
-            learning), or path to a dump file from which to load it.
-            If `data` is a pandas DataFrame (or a path to a csv file),
-            `target` may be the name of a column to use as labels (and
-            thus not to use as input feature unless listed in `f_cols`).
-        s_wght: int or str or function or None, default=None
-            Optional data array containing sample weights, or path to a
-            dump file from which to load it.
-            If `data` is a pandas DataFrame (or a path to a csv file),
-            `s_wght` may be the name of a column to use as labels (and
-            thus not to use as input feature unless listed in `f_cols`).
-        f_cols: list[int] or list[str] or None, default=None
-            Optional list of columns in `data` to use as input features
-            (other columns will not be included in the first array of
-            the batches yielded by `self.generate_batches(...)`).
-        expose_classes: bool, default=False
-            Whether the dataset should be used for classification, in
-            which case the unique values of `target` are exposed under
-            `self.classes` and exported by `self.get_data_specs()`).
-        expose_data_type: bool, default=False
-            Whether the dataset should expose the data type , in
-            which case check if the type is unique and exposed it
-            under `self.data_type` and exported by `self.get_data_specs()`).
-        seed: int or None, default=None
-            Optional seed for the random number generator based on which
-            the dataset is (optionally) shuffled when generating batches.
+        target:
+            Optional target labels, as a data array, or as a path to a
+            dump file, or as the name of a `data` column.
+        s_wght:
+            Optional sample weights, as a data array, or as a path to a
+            dump file, or as the name of a `data` column.
+        f_cols:
+            Optional list of columns in `data` to use as input features.
+            These may be specified as column names or indices. If None,
+            use all non-target, non-sample-weights columns of `data`.
+
+        Other parameters
+        ----------------
+        expose_classes:
+            Whether to expose unique target values as part of data specs.
+            This should only be used for classification datasets.
+        expose_data_type:
+            Whether to expose features' dtype, which will be verified to
+            be unique, as part of data specs.
+        seed:
+            Optional seed for the random number generator used for all
+            randomness-based operations required to generate batches
+            (e.g. to shuffle the data or sample from it).
         """
         # arguments serve modularity; pylint: disable=too-many-arguments
-        self._data_path = None  # type: Optional[str]
-        self._trgt_path = None  # type: Optional[str]
         # Assign the main data array.
-        if isinstance(data, str):
-            self._data_path = data
-            data = load_data_array(data)
-        self.data = data
+        data_array, src_path = self._parse_data_argument(data)
+        self.data = data_array
+        self._data_path = src_path
         # Assign the optional input features list.
-        self.f_cols = f_cols
+        self.f_cols = self._parse_fcols_argument(f_cols, data=self.data)
         # Assign the (optional) target data array.
-        if isinstance(target, str):
-            self._trgt_path = target
-            if (
-                isinstance(self.data, pd.DataFrame)
-                and target in self.data.columns
-            ):
-                if self.f_cols is None:
-                    self.f_cols = list(self.data.columns)
-                if target in self.f_cols:
-                    self.f_cols.remove(target)  # type: ignore
-                target = self.data[target]
-            else:
-                target = load_data_array(target)
-                if (
-                    isinstance(target, pd.DataFrame)
-                    and len(target.columns) == 1
-                ):
-                    target = target.iloc[:, 0]
-        self.target = target
+        data_array, src_path = self._parse_array_or_column_argument(
+            value=target, data=self.data, name="target"
+        )
+        self.target = data_array
+        self._trgt_path = src_path
+        if self.f_cols and src_path and src_path in self.f_cols:
+            self.f_cols.remove(src_path)  # type: ignore[arg-type]
         # Assign the (optional) sample weights data array.
-        if isinstance(s_wght, str):
-            self._wght_path = s_wght
-            if isinstance(self.data, pd.DataFrame):
-                if s_wght in self.data.columns:
-                    if f_cols is None:
-                        self.f_cols = self.f_cols or list(self.data.columns)
-                        self.f_cols.remove(s_wght)  # type: ignore
-                    s_wght = self.data[s_wght]
-            else:
-                s_wght = load_data_array(s_wght)
-        self.weights = s_wght
-        # Assign the 'expose_classes' attribute.
+        data_array, src_path = self._parse_array_or_column_argument(
+            value=s_wght, data=self.data, name="s_wght"
+        )
+        self.weights = data_array
+        self._wght_path = src_path
+        if self.f_cols and src_path and src_path in self.f_cols:
+            self.f_cols.remove(src_path)  # type: ignore[arg-type]
+        # Assign the 'expose_classes' and 'expose_data_type' attributes.
         self.expose_classes = expose_classes
         self.expose_data_type = expose_data_type
         # Assign a random number generator.
         self.seed = seed
         self._rng = np.random.default_rng(seed)
+
+    @staticmethod
+    def _parse_data_argument(
+        data: Union[DataArray, str],
+    ) -> Tuple[DataArray, Optional[str]]:
+        """Parse 'data' instantiation argument.
+
+        Return the definitive 'data' array, and its source path if any.
+        """
+        # Case when an array is provided directly.
+        if isinstance(data, DATA_ARRAY_TYPES):
+            return data, None
+        # Case when an invalid type is provided.
+        if not isinstance(data, str):
+            raise TypeError(
+                f"'data' must be a data array or str, not '{type(data)}'."
+            )
+        # Case when a string is provided: treat it as a file path.
+        try:
+            array = load_data_array(data)
+        except Exception as exc:
+            raise ValueError(
+                "Error while trying to load main 'data' array from file."
+            ) from exc
+        return array, data
+
+    @staticmethod
+    def _parse_fcols_argument(
+        f_cols: Union[List[str], List[int], None],
+        data: DataArray,
+    ) -> Union[List[str], List[int], None]:
+        """Type and value-check 'f_cols' argument.
+
+        Return its definitive value or raise an exception.
+        """
+        # Case when 'f_cols' is None: optionally replace with list of names.
+        if f_cols is None:
+            if isinstance(data, pd.DataFrame):
+                return list(data.columns)
+            return f_cols
+        # Case when 'f_cols' has an invalid type.
+        if not isinstance(f_cols, (list, tuple, set)):
+            raise TypeError(
+                f"'f_cols' must be None or a list, nor '{type(f_cols)}'."
+            )
+        # Case when 'f_cols' is a list of str: verify and return it.
+        if all(isinstance(col, str) for col in f_cols):
+            if not isinstance(data, pd.DataFrame):
+                raise ValueError(
+                    "'f_cols' is a list of str but 'data' is not a DataFrame."
+                )
+            if set(f_cols).issubset(data.columns):
+                return f_cols.copy()
+            raise ValueError(
+                "Specified 'f_cols' is not a subset of 'data' columns."
+            )
+        # Case when 'f_cols' is a list of str: verify and return it.
+        if all(isinstance(col, int) for col in f_cols):
+            if max(f_cols) >= data.shape[1]:  # type: ignore
+                raise ValueError(
+                    "Invalid 'f_cols' indices given 'data' shape."
+                )
+            return f_cols.copy()
+        # Case when 'f_cols' has mixed or invalid internal types.
+        raise TypeError(
+            "'f_cols' should be a list of all-int or all-str values."
+        )
+
+    @staticmethod
+    def _parse_array_or_column_argument(
+        value: Union[DataArray, str, None],
+        data: DataArray,
+        name: str,
+    ) -> Tuple[DataArray, Optional[str]]:
+        """Parse input 'target' argument.
+
+        Return 'target' (optional data array) and its source 'path'
+        when relevant (optional string).
+        """
+        # Case of a data array or None value: return as-is.
+        if isinstance(value, DATA_ARRAY_TYPES) or value is None:
+            return value, None
+        # Case of an invalid type: raise.
+        if not isinstance(value, str):
+            raise TypeError(
+                f"'{name}' must be a data array or str, not '{type(value)}'."
+            )
+        # Case of a string matching a 'data' column name: return it.
+        if isinstance(data, pd.DataFrame) and value in data.columns:
+            return data[value], value
+        # Case of a string matching nothing.
+        if not os.path.isfile(value):
+            raise ValueError(
+                f"'{name}' does not match any 'data' column nor file path."
+            )
+        # Case of a string matching a filepath.
+        try:
+            array = load_data_array(value)
+        except Exception as exc:
+            raise ValueError(
+                f"Error while trying to load '{name}' data from file."
+            ) from exc
+        if isinstance(array, pd.DataFrame) and len(array.columns) == 1:
+            array = array.iloc[:, 0]
+        return array, value
 
     @property
     def feats(
