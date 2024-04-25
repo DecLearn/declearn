@@ -49,6 +49,13 @@ Dataset subclasses
     Abstract base class for Fairness-aware `Dataset` interfaces.
 * [FairnessInMemoryDataset][declearn.fairness.core.FairnessInMemoryDataset]:
     Fairness-aware `InMemoryDataset` subclass.
+
+
+Other utils
+-----------
+
+* [FairnessAccuracyComputer][declearn.fairness.core.FairnessAccuracyComputer]:
+    Utility dataset-handler to compute group-wise accuracy metrics.
 """
 
 from ._dataset import FairnessDataset
@@ -60,3 +67,4 @@ from ._functions import (
     EqualizedOddsFunction,
 )
 from ._inmemory import InMemoryDataset
+from ._accuracy import FairnessAccuracyComputer
