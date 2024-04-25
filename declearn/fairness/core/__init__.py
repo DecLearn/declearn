@@ -40,8 +40,18 @@ Concrete implementations of various fairness functions:
     Equality of Opportunity group-fairness function.
 * [EqualizedOddsFunction][declearn.fairness.core.EqualizedOddsFunction]:
     Equalized Odds group-fairness function.
+
+
+Dataset subclasses
+------------------
+
+* [FairnessDataset][declearn.fairness.core.FairnessDataset]:
+    Abstract base class for Fairness-aware `Dataset` interfaces.
+* [FairnessInMemoryDataset][declearn.fairness.core.FairnessInMemoryDataset]:
+    Fairness-aware `InMemoryDataset` subclass.
 """
 
+from ._dataset import FairnessDataset
 from ._fair_func import FairnessFunction, instantiate_fairness_function
 from ._functions import (
     AccuracyParityFunction,
@@ -49,3 +59,4 @@ from ._functions import (
     EqualityOfOpportunityFunction,
     EqualizedOddsFunction,
 )
+from ._inmemory import InMemoryDataset
