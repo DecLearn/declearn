@@ -16,3 +16,5 @@ This guide is structured this way:
     API, design principles and practical how-tos of the declearn Optimizer.
 - [Local Differential Privacy capabilities](./local_dp.md):<br/>
     Description of the local-DP features of declearn.
+- [Secure Aggregation capabilities](./secagg.md):<br/>
+    Description of the SecAgg features of declearn.
