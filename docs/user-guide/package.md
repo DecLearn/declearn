@@ -22,6 +22,8 @@ The package is organized into the following submodules:
   &emsp; Model interfacing API and implementations.
 - `optimizer`:<br/>
   &emsp; Framework-agnostic optimizer and algorithmic plug-ins API and tools.
+- `secagg`:<br/>
+  &emsp; Secure Aggregation API, methods and utils.
 - `typing`:<br/>
   &emsp; Type hinting utils, defined and exposed for code readability purposes.
 - `utils`:<br/>
@@ -197,6 +199,64 @@ You may learn more about our (non-abstract) `Optimizer` API by reading our
     - `declearn.dataset.tensorflow.TensorflowDataset`
     - `declearn.dataset.torch.TorchDataset`
 - Extend: use `declearn.utils.register_type(group="Dataset")`.
+
+### Secure Aggregation (SecAgg)
+
+#### `SecaggConfigClient`
+- Import: `declearn.secagg.api.SecaggConfigClient`
+- Object: Set up Secure Aggregation based on wrapped configuration parameters.
+- Usage: Set up an `Encrypter` (see below) instance based on parameters and a
+  server-emitted setup request, jointly with other clients.
+- Examples:
+    - `declearn.secagg.joye_libert.JoyeLibertSecaggConfigClient`
+    - `declearn.secagg.masking.MaskingSecaggConfigClient`
+- Extend:
+    - Simply inherit from `SecaggConfigClient` (registration is automated).
+    - To avoid it, use `class MySetup(SecaggConfigClient, register=False)`.
+
+#### `SecaggConfigServer`
+- Import: `declearn.secagg.api.SecaggConfigServer`
+- Object: Set up Secure Aggregation based on wrapped configuration parameters.
+- Usage: Set up a `Decrypter` (see below) instance based on parameters and in
+  interaction with (a subset of) clients.
+- Examples:
+    - `declearn.secagg.joye_libert.JoyeLibertSecaggConfigServer`
+    - `declearn.secagg.masking.MaskingSecaggConfigServer`
+- Extend:
+    - Simply inherit from `SecaggConfigServer` (registration is automated).
+    - To avoid it, use `class MySetup(SecaggConfigServer, register=False)`.
+
+#### `Encrypter`
+- Import: `declearn.secagg.api.Encrypter`
+- Object: Encrypt values that need secure aggregation.
+- Usage: Encrypt shared data, typically packed as a `Message` or `Aggregate`.
+- Examples:
+    - `declearn.secagg.joye_libert.JoyeLibertEncrypter`
+    - `declearn.secagg.masking.MaskingEncrypter`
+- Extend: there is no type-registration, simply implement a subclass.
+
+#### `Decrypter`
+- Import: `declearn.secagg.api.Decrypter`
+- Object: Decrypt aggregated values to finalize secure aggregation.
+- Usage: Decrypt shared data, typically packed as a `Message` or
+  `SecureAggregate`.
+- Examples:
+    - `declearn.secagg.joye_libert.JoyeLibertDecrypter`
+    - `declearn.secagg.masking.MaskingDecrypter`
+- Extend: there is no type-registration, simply implement a subclass.
+
+#### `SecureAggregate`
+- Import: `declearn.secagg.api.SecureAggregate`
+- Object: Wrap up encrypted data from an `Aggregate` (e.g. `ModelUpdates`,
+  `AuxVar` or `MetricState` instance) and enable their aggregation.
+- Usage: Used by `Encrypter` and `Decrypter` to wrap up encrypted data.
+- Examples:
+    - `declearn.secagg.joye_libert.JlsAggregate`
+    - `declearn.secagg.masking.MaskedAggregate`
+- Extend:
+    - Simply inherit from `SecureAggregate` (registration is automated,
+      and is about making the class JSON-serializable).
+    - To avoid it, use `class MyClass(SecureAggregate, register=False)`.
 
 ## Full API Reference
 
