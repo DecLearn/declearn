@@ -17,8 +17,7 @@
 
 """JaxNumpyVector data arrays container."""
 
-import warnings
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Type, Union
+from typing import Any, Callable, Dict, List, Set, Tuple, Type, Union
 
 import jax
 import jax.numpy as jnp
@@ -153,19 +152,9 @@ class JaxNumpyVector(Vector):
 
     def sum(
         self,
-        axis: Optional[int] = None,
-        keepdims: bool = False,
     ) -> Self:
-        if isinstance(axis, int) or keepdims:
-            warnings.warn(  # pragma: no cover
-                "The 'axis' and 'keepdims' arguments of 'JaxNumpyVector.sum' "
-                "have been deprecated as of declearn v2.3, and will be "
-                "removed in version 2.5 and/or 3.0.",
-                DeprecationWarning,
-            )
         coefs = {
-            key: jnp.array(jnp.sum(val, axis=axis, keepdims=keepdims))
-            for key, val in self.coefs.items()
+            key: jnp.array(jnp.sum(val)) for key, val in self.coefs.items()
         }
         return self.__class__(coefs)
 

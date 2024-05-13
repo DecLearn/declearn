@@ -43,6 +43,11 @@ MOCK_NETWK.name = "client"
 MOCK_DATASET = mock.create_autospec(Dataset, instance=True)
 
 
+def object_new(cls, *_, **__) -> Any:
+    """Wrapper for 'object.__new__' accepting/discarding *args and **kwargs."""
+    return object.__new__(cls)
+
+
 @contextlib.contextmanager
 def patch_class_constructor(
     cls: Type[Any],
@@ -69,7 +74,7 @@ def patch_class_constructor(
             yield patch
     finally:
         if new is object.__new__:
-            cls.__new__ = lambda cls, *args, **kwargs: object.__new__(cls)
+            cls.__new__ = object_new  # type: ignore[assignment]
         else:
             cls.__new__ = new
 

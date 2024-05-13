@@ -4,3 +4,4 @@
 - [Hands-on usage](./usage.md)
 - [Guide to the Optimizer API](./optimizer.md)
 - [Local Differential Privacy capabilities](./local_dp.md)
+- [Secure Aggregation capabilities](./secagg.md)

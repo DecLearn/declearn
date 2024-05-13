@@ -17,9 +17,11 @@
 
 """Utils to split a multi-category classification dataset into shards."""
 
-from typing import List, Literal, Optional, Tuple, Type, Union
+import functools
+from typing import Any, List, Literal, Optional, Tuple, Type, Union
 
 import numpy as np
+import scipy.stats  # type: ignore
 from scipy.sparse import csr_matrix, spmatrix  # type: ignore
 
 
@@ -31,9 +33,10 @@ __all__ = [
 def split_multi_classif_dataset(
     dataset: Tuple[Union[np.ndarray, spmatrix], np.ndarray],
     n_shards: int,
-    scheme: Literal["iid", "labels", "biased"],
+    scheme: Literal["iid", "labels", "dirichlet", "biased"],
     p_valid: float = 0.2,
     seed: Optional[int] = None,
+    **kwargs: Any,
 ) -> List[Tuple[Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray]]]:
     """Split a classification dataset into (opt. heterogeneous) shards.
 
@@ -42,6 +45,9 @@ def split_multi_classif_dataset(
     - If "iid", split the dataset through iid random sampling.
     - If "labels", split into shards that hold all samples associated
       with mutually-exclusive target classes.
+    - If "dirichlet", split the dataset through random sampling using
+      label-wise shard-assignment probabilities drawn from a symmetrical
+      Dirichlet distribution, parametrized by an `alpha` parameter.
     - If "biased", split the dataset through random sampling according
       to a shard-specific random labels distribution.
 
@@ -53,13 +59,17 @@ def split_multi_classif_dataset(
         be a scipy sparse matrix, that will temporarily be cast to CSR.
     n_shards: int
         Number of shards between which to split the dataset.
-    scheme: {"iid", "labels", "biased"}
+    scheme: {"iid", "labels", "dirichlet", "biased"}
         Splitting scheme to use. In all cases, shards contain mutually-
         exclusive samples and cover the full dataset. See details above.
     p_valid: float, default=0.2
         Share of each shard to turn into a validation subset.
     seed: int or None, default=None
         Optional seed to the RNG used for all sampling operations.
+    **kwargs:
+        Additional hyper-parameters specific to the split scheme.
+        Exhaustive list of possible values:
+            - `alpha: float = 0.5` for `scheme="dirichlet"`
 
     Returns
     -------
@@ -80,6 +90,10 @@ def split_multi_classif_dataset(
         func = split_iid
     elif scheme == "labels":
         func = split_labels
+    elif scheme == "dirichlet":
+        func = functools.partial(
+            split_dirichlet, alpha=kwargs.get("alpha", 0.5)
+        )
     elif scheme == "biased":
         func = split_biased
     else:
@@ -157,7 +171,14 @@ def split_biased(
     n_shards: int,
     rng: np.random.Generator,
 ) -> List[Tuple[np.ndarray, np.ndarray]]:
-    """Split a dataset into shards with heterogeneous label distributions."""
+    """Split a dataset into shards with heterogeneous label distributions.
+
+    Use a normal distribution to draw logits of labels distributions for
+    each and every node.
+
+    This approach is not based on the litterature. We advise end-users to
+    use a Dirichlet split instead, which is probably better-grounded.
+    """
     classes = np.unique(target)
     index = np.arange(len(target))
     s_len = len(target) // n_shards
@@ -176,6 +197,36 @@ def split_biased(
             shard = index
         split.append((inputs[shard], target[shard]))
     return split
+
+
+def split_dirichlet(
+    inputs: Union[np.ndarray, csr_matrix],
+    target: np.ndarray,
+    n_shards: int,
+    rng: np.random.Generator,
+    alpha: float = 0.5,
+) -> List[Tuple[np.ndarray, np.ndarray]]:
+    """Split a dataset into shards with heterogeneous label distributions.
+
+    Use a symmetrical multinomial Dirichlet(alpha) distribution to sample
+    the proportion of samples per label in each shard.
+
+    This approach has notably been used by Sturluson et al. (2021).
+    FedRAD: Federated Robust Adaptive Distillation. arXiv:2112.01405 [cs.LG]
+    """
+    classes = np.unique(target)
+    # Draw per-label proportion of samples to assign to each shard.
+    process = scipy.stats.dirichlet(alpha=[alpha] * n_shards)
+    c_probs = process.rvs(size=len(classes), random_state=rng)
+    # Randomly assign label-wise samples to shards based on these.
+    shard_i = [[] for _ in range(n_shards)]  # type: List[List[int]]
+    for lab_i, label in enumerate(classes):
+        index = np.where(target == label)[0]
+        s_idx = rng.choice(n_shards, size=len(index), p=c_probs[lab_i])
+        for i in range(n_shards):
+            shard_i[i].extend(index[s_idx == i])
+    # Gather the actual sample shards.
+    return [(inputs[index], target[index]) for index in shard_i]
 
 
 def train_valid_split(

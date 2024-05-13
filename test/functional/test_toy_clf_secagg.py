@@ -85,7 +85,7 @@ def generate_toy_dataset(
     # Cluster samples based on features and assign them to clients thereof.
     # Also split client-wise data: 80% for training and 20% for validation.
     kclust = sklearn.cluster.KMeans(
-        n_clusters=n_clients, init="random", random_state=SEED
+        n_clusters=n_clients, init="random", n_init="auto", random_state=SEED
     ).fit_predict(inputs)
     datasets = []  # type: List[Tuple[InMemoryDataset, InMemoryDataset]]
     for i in range(n_clients):

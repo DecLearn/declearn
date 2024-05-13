@@ -71,7 +71,10 @@ def _load_mnist_data(
     name = f"{name}-ubyte.gz"
     # Optionally download the gzipped file from the internet.
     if folder is None or not os.path.isfile(os.path.join(folder, name)):
-        data = _download_mnist_file(name, folder)
+        try:
+            data = _download_mnist_file(name, folder, lecun=True)
+        except RuntimeError:  # pragma: no cover
+            data = _download_mnist_file(name, folder, lecun=False)
         data = gzip.decompress(data)
     # Otherwise, read its contents from a local copy.
     else:
@@ -88,13 +91,20 @@ def _load_mnist_data(
     return (array / 255).astype(np.single) if images else array
 
 
-def _download_mnist_file(name: str, folder: Optional[str]) -> bytes:
+def _download_mnist_file(
+    name: str,
+    folder: Optional[str],
+    lecun: bool = True,
+) -> bytes:
     """Download a MNIST source file and opt. save it in a given folder."""
     # Download the file in memory.
     print(f"Downloading MNIST source file {name}.")
-    reply = requests.get(
-        f"http://yann.lecun.com/exdb/mnist/{name}", timeout=300
+    base_url = (
+        "http://yann.lecun.com/exdb"
+        if lecun
+        else "https://ossci-datasets.s3.amazonaws.com"
     )
+    reply = requests.get(f"{base_url}/mnist/{name}", timeout=300)
     try:
         reply.raise_for_status()
     except requests.HTTPError as exc:

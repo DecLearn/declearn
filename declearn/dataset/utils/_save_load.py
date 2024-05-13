@@ -22,19 +22,17 @@ import os
 from typing import Any, Union
 
 import numpy as np
-import pandas as pd  # type: ignore
+import pandas as pd
 from scipy.sparse import spmatrix  # type: ignore
 from sklearn.datasets import load_svmlight_file  # type: ignore
 
 from declearn.dataset.utils._sparse import sparse_from_file, sparse_to_file
+from declearn.typing import DataArray
 
 __all__ = [
     "load_data_array",
     "save_data_array",
 ]
-
-
-DataArray = Union[np.ndarray, pd.DataFrame, spmatrix]
 
 
 def load_data_array(

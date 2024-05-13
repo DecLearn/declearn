@@ -17,9 +17,21 @@
 
 """Haiku models interfacing tools.
 
-This submodule provides with a generic interface to wrap up
-any Haiku module instance that is to be trained
-through gradient descent.
+Haiku is a Google DeepMind library that provides with tools to build
+artificial neural networks backed by the JAX computation library. We
+selected it as a primary candidate to support using JAX-backed models,
+mostly because of its simplicity, that leaves apart some components
+that DecLearn already provides (such as optimization algorithms).
+
+In July 2023, Haiku development was announced to be stalled as far as
+new features are concerned, in favor of Flax, a concurrent Google project.
+
+DecLearn is planned to add support for Flax at some point (building on the
+existing Haiku-oriented code, notably as far as Jax NumPy is concerned).
+In the meanwhile, this submodule enables running code that operates using
+haiku, which probably does not cover a lot of use cases, but it bound to
+keep working at least for a while, until Google decides to drop maintenance
+altogether.
 
 This module exposes:
 * HaikuModel: Model subclass to wrap haiku.Model objects
