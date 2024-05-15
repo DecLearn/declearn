@@ -15,15 +15,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Processes and components for fairness-aware federated learning.
+"""Draft API for Fairness-aware Federated Learning algorithms."""
 
-This module implements the following submodules:
-
-* [api][declearn.fairness.api]:
-    API to set up and run fairness-aware federated learning algorithms.
-* [core][declearn.fairness.core]:
-    Core components and utils for fairness-aware (federated) machine learning.
-"""
-
-from . import core
-from . import api
+from ._api import (
+    FairnessAccuracy,
+    FairnessCounts,
+    FairnessControllerClient,
+    FairnessControllerServer,
+    FairnessGroups,
+    FairnessRoundQuery,
+    FairnessRoundReply,
+    FairnessSetupQuery,
+    SecaggFairnessAccuracy,
+    SecaggFairnessCounts,
+)
