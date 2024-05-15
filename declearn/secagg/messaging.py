@@ -19,7 +19,7 @@
 
 import abc
 import dataclasses
-from typing import Dict, Generic, TypeVar
+from typing import Dict, Generic, Mapping, TypeVar
 
 from typing_extensions import Self  # future: import from typing (py >=3.11)
 
@@ -33,6 +33,7 @@ __all__ = [
     "SecaggEvaluationReply",
     "SecaggMessage",
     "SecaggTrainReply",
+    "aggregate_secagg_messages",
 ]
 
 
@@ -66,7 +67,7 @@ class SecaggMessage(
 
         Parameters
         ----------
-        cleartext:
+        cleartext:1
             Message that needs encryption prior to sharing.
         encrypter:
             Controller to be used for message contents' encryption.
@@ -96,6 +97,33 @@ class SecaggMessage(
         decrypter: Decrypter,
     ) -> Self:
         """Aggregate two clients' SecaggMessage instances into one."""
+
+
+def aggregate_secagg_messages(
+    messages: Mapping[str, SecaggMessage[MessageT]],
+    decrypter: Decrypter,
+) -> MessageT:
+    """Secure-Aggregate (and decrypt) client-issued encrypted messages.
+
+    Parameters
+    ----------
+    messages:
+        Mapping of client-wise `SecaggMessage` instances, wrapping
+        similar messages that need secure aggregation.
+    decrypter:
+        Decryption controller to use when aggregating inputs.
+
+    Returns
+    -------
+    message:
+        Cleartext message resulting from the secure aggregation
+        of input `messages`.
+    """
+    encrypted = list(messages.values())
+    aggregate = encrypted[0]
+    for message in encrypted[1:]:
+        aggregate = aggregate.aggregate(message, decrypter=decrypter)
+    return aggregate.decrypt_wrapped_message(decrypter=decrypter)
 
 
 @dataclasses.dataclass

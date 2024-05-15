@@ -53,6 +53,7 @@ from declearn.secagg.messaging import (
     SecaggEvaluationReply,
     SecaggMessage,
     SecaggTrainReply,
+    aggregate_secagg_messages,
 )
 from declearn.utils import deserialize_object, get_logger
 
@@ -519,11 +520,7 @@ class FederatedServer:
     ) -> MessageT:
         """Secure-Aggregate (and decrypt) client-issued encrypted messages."""
         assert self._decrypter is not None
-        encrypted = list(replies.values())
-        aggregate = encrypted[0]
-        for message in encrypted[1:]:
-            aggregate = aggregate.aggregate(message, decrypter=self._decrypter)
-        return aggregate.decrypt_wrapped_message(decrypter=self._decrypter)
+        return aggregate_secagg_messages(replies, decrypter=self._decrypter)
 
     async def training_round(
         self,
