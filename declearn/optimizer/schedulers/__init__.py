@@ -1,0 +1,64 @@
+# coding: utf-8
+
+# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# et Automatique)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Time-based schedulers for learning rate or weight decay.
+
+This submodule provides with an extensible API and a number of
+standard concrete implementations for time-based scheduling of
+learning or weight decay rates throughout training.
+
+The rules implemented here are mostly designed to operate based
+on steps, but may also operate based on training rounds (a unit
+which may not be equivalent to an epoch, but is thought to be
+more appropriate for the federated learning setting).
+
+API-defining base class
+-----------------------
+* [Scheduler][declearn.optimizer.schedulers.Scheduler]:
+    Abstract base class for time-based learning rate schedulers.
+
+Basic decay rules
+-----------------
+* [ExponentialDecay][declearn.optimizer.schedulers.ExponentialDecay]:
+    Exponential decay scheduler.
+* [InverseScaling][declearn.optimizer.schedulers.InverseScaling]:
+    Inverse-scaling decay scheduler.
+* [LinearDecay][declearn.optimizer.schedulers.LinearDecay]:
+    Linear decay scheduler.
+* [PolynomialDecay][declearn.optimizer.schedulers.PolynomialDecay]:
+    Polynomial decay over rounds scheduler.
+* [RoundDecay][declearn.optimizer.schedulers.RoundDecay]:
+    Linear decay over rounds scheduler.
+* [StepDecay][declearn.optimizer.schedulers.StepDecay]:
+    Linear decay over multiple steps scheduler.
+
+Other schedulers
+----------------
+* [Warmup][declearn.optimizers.schedulers.Warmup]:
+    Scheduler (wrapper) setting up a linear warmup.
+"""
+
+from ._api import Scheduler
+from ._decay import (
+    ExponentialDecay,
+    InverseScaling,
+    LinearDecay,
+    PolynomialDecay,
+    RoundDecay,
+    StepDecay,
+)
+from ._warmup import Warmup
