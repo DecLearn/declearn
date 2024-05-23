@@ -32,6 +32,8 @@ Submodules providing with plug-in algorithms:
     Gradients-alteration algorithms, implemented as plug-in modules.
 * [regularizers][declearn.optimizer.regularizers]:
     Loss-regularization algorithms, implemented as plug-in modules.
+* [schedulers][declearn.optimizer.schedulers]:
+    Time-based schedulers for learning rate or weight decay.
 
 Utils to list available plug-ins:
 
@@ -39,9 +41,15 @@ Utils to list available plug-ins:
     Return a mapping of registered OptiModule subclasses.
 * [list_optim_regularizers][declearn.optimizer.list_optim_regularizers]:
     Return a mapping of registered Regularizer subclasses.
+* [list_rate_schedulers][declearn.optimizer.list_rate_schedulers]:
+    Return a mapping of registered Scheduler subclasses.
 """
 
 
 from . import modules, regularizers
 from ._base import Optimizer
-from ._utils import list_optim_modules, list_optim_regularizers
+from ._utils import (
+    list_optim_modules,
+    list_optim_regularizers,
+    list_rate_schedulers,
+)
