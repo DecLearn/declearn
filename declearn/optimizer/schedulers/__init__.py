@@ -46,6 +46,13 @@ Basic decay rules
 * [StepDecay][declearn.optimizer.schedulers.StepDecay]:
     Linear decay over multiple steps scheduler.
 
+Cyclic rate rules
+-----------------
+* [CyclicExpRange][declearn.optimizer.schedulers.CyclicExpRange]:
+    Cyclic Learning Rate (CLR) scheduling policy with exponential decay.
+* [CyclicTriangular][declearn.optimizer.schedulers.CyclicTriangular]:
+    Cyclic Learning Rate (CLR) scheduling policy with triangular cycle.
+
 Other schedulers
 ----------------
 * [Warmup][declearn.optimizers.schedulers.Warmup]:
@@ -53,6 +60,10 @@ Other schedulers
 """
 
 from ._api import Scheduler
+from ._cyclic import (
+    CyclicExpRange,
+    CyclicTriangular,
+)
 from ._decay import (
     ExponentialDecay,
     InverseScaling,
