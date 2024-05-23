@@ -28,6 +28,7 @@ from declearn.model.api import Model, Vector
 from declearn.optimizer import Optimizer
 from declearn.optimizer.modules import AuxVar, OptiModule
 from declearn.optimizer.regularizers import Regularizer
+from declearn.optimizer.schedulers import Scheduler
 from declearn.test_utils import assert_json_serializable_dict
 
 
@@ -168,10 +169,16 @@ class TestOptimizer:
         """Test, using mocks, that updates are computed with expected calls."""
         # Set up an Optimizer with mock attributes and run the computation.
         optim = Optimizer(
-            lrate=mock.MagicMock(),
-            w_decay=mock.MagicMock(),
-            regularizers=[mock.create_autospec(Regularizer) for _ in range(2)],
-            modules=[mock.create_autospec(OptiModule) for _ in range(2)],
+            lrate=mock.create_autospec(Scheduler, instance=True),
+            w_decay=mock.create_autospec(Scheduler, instance=True),
+            regularizers=[
+                mock.create_autospec(Regularizer, instance=True)
+                for _ in range(2)
+            ],
+            modules=[
+                mock.create_autospec(OptiModule, instance=True)
+                for _ in range(2)
+            ],
         )
         model = mock.create_autospec(Model, instance=True)
         grads = mock.create_autospec(Vector, instance=True)
