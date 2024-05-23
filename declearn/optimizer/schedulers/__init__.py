@@ -46,6 +46,19 @@ Basic decay rules
 * [StepDecay][declearn.optimizer.schedulers.StepDecay]:
     Linear decay over multiple steps scheduler.
 
+Cosine annealing rules
+----------------------
+* [CosineAnnealing][declearn.optimizer.schedulers.CosineAnnealing]:
+    Cosine Annealing scheduler over steps.
+* [CosineAnnealingRounds][declearn.optimizer.schedulers.CosineAnnealingRounds]:
+    Cosine Annealing scheduler over rounds.
+* [CosineAnnealingWarmRestarts]
+[declearn.optimizer.schedulers.CosineAnnealingWarmRestarts]:
+    Cosine Annealing with Warm Restarts scheduler over steps.
+* [CosineAnnealingWarmRestartsRounds]
+[declearn.optimizer.schedulers.CosineAnnealingWarmRestartsRounds]:
+    Cosine Annealing with Warm Restarts scheduler over rounds.
+
 Cyclic rate rules
 -----------------
 * [CyclicExpRange][declearn.optimizer.schedulers.CyclicExpRange]:
@@ -60,6 +73,12 @@ Other schedulers
 """
 
 from ._api import Scheduler
+from ._cosine import (
+    CosineAnnealing,
+    CosineAnnealingRounds,
+    CosineAnnealingWarmRestarts,
+    CosineAnnealingWarmRestartsRounds,
+)
 from ._cyclic import (
     CyclicExpRange,
     CyclicTriangular,
