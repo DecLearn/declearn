@@ -36,6 +36,8 @@ __all__ = [
 class ExponentialDecay(Scheduler):
     """Exponential decay scheduler."""
 
+    name = "exponential-decay"
+
     def __init__(
         self,
         base: float,
@@ -69,6 +71,8 @@ class ExponentialDecay(Scheduler):
 
 class InverseScaling(Scheduler):
     """Inverse-scaling decay scheduler."""
+
+    name = "inverse-scaling"
 
     def __init__(
         self,
@@ -106,6 +110,8 @@ class InverseScaling(Scheduler):
 class LinearDecay(Scheduler):
     """Linear decay scheduler."""
 
+    name = "linear-decay"
+
     def __init__(
         self,
         base: float,
@@ -141,6 +147,8 @@ class LinearDecay(Scheduler):
 
 class PolynomialDecay(Scheduler):
     """Polynomial decay over rounds scheduler."""
+
+    name = "polynomial-decay"
 
     def __init__(
         self,
@@ -188,6 +196,8 @@ class PolynomialDecay(Scheduler):
 class RoundDecay(Scheduler):
     """Linear decay over rounds scheduler."""
 
+    name = "round-decay"
+
     def __init__(
         self,
         base: float,
@@ -227,6 +237,8 @@ class RoundDecay(Scheduler):
 
 class StepDecay(Scheduler):
     """Linear step decay scheduler."""
+
+    name = "step-decay"
 
     def __init__(
         self,

@@ -18,13 +18,12 @@
 """API-defining abstract base class for time-based learning rate schedulers."""
 
 import abc
-from typing import Any, Dict, Tuple
+from typing import Any, ClassVar, Dict
 
 from typing_extensions import Self  # future: import from typing (py >=3.11)
 
 from declearn.utils import (
     access_registered,
-    access_registration_info,
     create_types_registry,
     register_type,
 )
@@ -42,6 +41,9 @@ class Scheduler(metaclass=abc.ABCMeta):
     rules for updating a learning rate (or a weight decay rate)
     along the steps of a stochastic gradient descent training.
     """
+
+    name: ClassVar[str]
+    """Name identifier of the class, unique across Scheduler classes."""
 
     def __init__(
         self,
@@ -63,7 +65,7 @@ class Scheduler(metaclass=abc.ABCMeta):
     ) -> None:
         """Automatically type-register subclasses."""
         if register:
-            register_type(cls, name=cls.__name__, group="Scheduler")
+            register_type(cls, name=cls.name, group="Scheduler")
 
     def get_next_rate(
         self,
@@ -139,37 +141,27 @@ class Scheduler(metaclass=abc.ABCMeta):
         """
         return cls(**config)
 
-    def get_specs(
-        self,
-    ) -> Tuple[str, Dict[str, Any]]:
-        """Return serializable specifications of this instance.
-
-        Returns
-        -------
-        specs:
-            `(name, config)` tuple specifying this instance.
-        """
-        r_name = access_registration_info(self.__class__, group="Scheduler")[0]
-        config = self.get_config()
-        return r_name, config
-
     @staticmethod
     def from_specs(
-        specs: Tuple[str, Dict[str, Any]],
+        name: str,
+        config: Dict[str, Any],
     ) -> "Scheduler":
         """Instantiate a Scheduler from specifications.
 
         Parameters
         ----------
-        specs:
-            `(name, config)` tuple specifying a Scheduler.
+        name: str
+            Name based on which the scheduler can be retrieved.
+            Available as a class attribute.
+        config: dict[str, any]
+            Configuration dict of the scheduler, that is to be
+            passed to its `from_config` class constructor.
 
         Returns
         -------
         scheduler:
-            `Scheduler` instance, the class and config of which match `specs`.
+            `Scheduler` instance that matches input specs.
         """
-        r_name, config = specs
-        cls = access_registered(r_name, group="Scheduler")
-        assert issubclass(cls, Scheduler)
+        cls = access_registered(name, group="Scheduler")
+        assert issubclass(cls, Scheduler)  # tested by access_registered
         return cls.from_config(config)

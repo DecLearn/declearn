@@ -38,6 +38,8 @@ class Warmup(Scheduler):
     warmup phase has been completed.
     """
 
+    name = "warmup"
+
     def __init__(
         self,
         base: Union[float, Scheduler],
@@ -78,7 +80,7 @@ class Warmup(Scheduler):
         config = super().get_config()
         config["warmup"] = self.warmup
         if self.wrapped is not None:
-            config["base"] = self.wrapped.get_specs()
+            config["base"] = (self.wrapped.name, self.wrapped.get_config())
         return config
 
     @classmethod
@@ -88,5 +90,5 @@ class Warmup(Scheduler):
     ) -> Self:
         if isinstance(config["base"], (tuple, list)):
             config = config.copy()
-            config["base"] = Scheduler.from_specs(config["base"])
+            config["base"] = Scheduler.from_specs(*config["base"])
         return super().from_config(config)

@@ -51,6 +51,8 @@ class CyclicTriangular(Scheduler):
         https://arxiv.org/abs/1506.01186v6
     """
 
+    name = "cyclic-triangular"
+
     def __init__(
         self,
         base: float,
@@ -126,6 +128,8 @@ class CyclicExpRange(Scheduler):
         Cyclical Learning Rates for Training Neural Networks.
         https://arxiv.org/abs/1506.01186v6
     """
+
+    name = "cyclic-exp-range"
 
     def __init__(
         self,

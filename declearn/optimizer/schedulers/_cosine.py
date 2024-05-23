@@ -38,6 +38,8 @@ class CosineAnnealing(Scheduler):
     in the scheduled rate decreasing with each and every step.
     """
 
+    name = "cosine-annealing"
+
     def __init__(
         self,
         base: float,
@@ -85,6 +87,8 @@ class CosineAnnealingRounds(Scheduler):
     This scheduler implements a cosine annealing that results
     in the scheduled rate decreasing at the start of each round.
     """
+
+    name = "cosine-annealing-rounds"
 
     def __init__(
         self,
@@ -149,6 +153,8 @@ class CosineAnnealingWarmRestarts(Scheduler):
         https://arxiv.org/abs/1608.03983v5
     """
 
+    name = "cosine-annealing-warm-restarts"
+
     def __init__(
         self,
         base: float,
@@ -212,6 +218,8 @@ class CosineAnnealingWarmRestartsRounds(CosineAnnealingWarmRestarts):
         SGDR: Stochastic Gradient Descent with Warm Restarts.
         https://arxiv.org/abs/1608.03983v5
     """
+
+    name = "cosine-annealing-warm-restarts-rounds"
 
     def __init__(
         self,
