@@ -93,12 +93,19 @@ class Optimizer:
     plugged-in-modules' variables and maps back received variables
     to them.
 
+    Finally, both the learning rate and weight decay rate may be
+    specified as a [declearn.optimizer.schedulers.Scheduler][]
+    instance, implementing a time-based rule to have the value
+    evolve throughout training.
+
     Attributes
     ----------
     lrate: float
-        Base learning rate applied to computed updates.
+        Base learning rate that will be applied next time updates
+        are computed from gradients. Read-only property.
     w_decay: float
-        Decoupled weight decay parameter.
+        Decoupled weight decay parameter that will be applied next
+        time updates are computed from gradients. Read-only property.
     modules: list[OptiModule]
         List of plug-in modules composed into the optimizer's
         gradients-to-updates computation algorithm.
