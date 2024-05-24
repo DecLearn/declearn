@@ -17,6 +17,7 @@
 
 """Warmup scheduler (wrapper)."""
 
+import abc
 from typing import Any, Dict, Optional, Union
 
 from typing_extensions import Self  # future: import from typing (py >=3.11)
@@ -25,11 +26,49 @@ from declearn.optimizer.schedulers._api import Scheduler
 
 __all__ = [
     "Warmup",
+    "WarmupRounds",
 ]
 
 
-class Warmup(Scheduler):
-    """Scheduler (wrapper) setting up a linear warmup.
+class WarmupScheduler(Scheduler, register=False, metaclass=abc.ABCMeta):
+    """ABC factoring some shared code for Warmup schedulers."""
+
+    def __init__(
+        self,
+        base: Union[float, Scheduler],
+        warmup: int,
+    ) -> None:
+        if isinstance(base, Scheduler):
+            self.base = base.base
+            self.wrapped = base  # type: Optional[Scheduler]
+        else:
+            self.base = float(base)
+            self.wrapped = None
+        super().__init__(self.base)
+        self.warmup = warmup
+
+    def get_config(
+        self,
+    ) -> Dict[str, Any]:
+        config = super().get_config()
+        config["warmup"] = self.warmup
+        if self.wrapped is not None:
+            config["base"] = (self.wrapped.name, self.wrapped.get_config())
+        return config
+
+    @classmethod
+    def from_config(
+        cls,
+        config: Dict[str, Any],
+    ) -> Self:
+        if isinstance(config["base"], (tuple, list)):
+            config = config.copy()
+            config["base"] = Scheduler.from_specs(*config["base"])
+        return super().from_config(config)
+
+
+class Warmup(WarmupScheduler):
+    """Scheduler (wrapper) setting up a linear warmup over steps.
 
     This class may either be used as a simple `Scheduler` that
     implements a linear warmup towards a constant rate, or as
@@ -55,6 +94,7 @@ class Warmup(Scheduler):
         warmup:
             Number of steps over which to carry the linear warmup.
         """
+        super().__init__(base=base, warmup=warmup)
         self._warmup_rounds = -1
 
     def compute_value(
@@ -77,20 +117,57 @@ class Warmup(Scheduler):
         # Keep track of the number of rounds fully devoted to warmup.
         if self.steps < self.warmup:
             self._warmup_rounds += 1
-        self,
-    ) -> Dict[str, Any]:
-        config = super().get_config()
-        config["warmup"] = self.warmup
-        if self.wrapped is not None:
-            config["base"] = (self.wrapped.name, self.wrapped.get_config())
-        return config
 
-    @classmethod
-    def from_config(
-        cls,
-        config: Dict[str, Any],
-    ) -> Self:
-        if isinstance(config["base"], (tuple, list)):
-            config = config.copy()
-            config["base"] = Scheduler.from_specs(*config["base"])
-        return super().from_config(config)
+
+class WarmupRounds(WarmupScheduler):
+    """Scheduler (wrapper) setting up a linear warmup over rounds.
+
+    This class may either be used as a simple `Scheduler` that
+    implements a linear warmup towards a constant rate, or as
+    a wrapper around another `Scheduler` instance that delays
+    calls to the wrapped rule until after the initial linear
+    warmup phase has been completed.
+    """
+
+    name = "warmup-rounds"
+
+    def __init__(
+        self,
+        base: Union[float, Scheduler],
+        warmup: int,
+    ) -> None:
+        """Instantiate the linear warmup scheduler.
+
+        Parameters
+        ----------
+        base:
+            Either a fixed base value or a wrapped scheduler to use
+            once the warmup period is over.
+        warmup:
+            Number of rounds over which to carry the linear warmup.
+        """
+        super().__init__(base=base, warmup=warmup)
+        self._warmup_steps = 0
+
+    def get_next_rate(
+        self,
+    ) -> float:
+        value = super().get_next_rate()
+        # Keep track of the number of steps passed during warmup rounds.
+        if self.rounds < self.warmup:
+            self._warmup_steps += 1
+        return value
+
+    def compute_value(
+        self,
+        step: int,
+        round_: int,
+    ) -> float:
+        if round_ < self.warmup:
+            return self.base * (round_ + 1) / self.warmup
+        if self.wrapped is None:
+            return self.base
+        return self.wrapped.compute_value(
+            step=step - self._warmup_steps,
+            round_=round_ - self.warmup,
+        )

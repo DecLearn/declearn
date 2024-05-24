@@ -39,6 +39,7 @@ from declearn.optimizer.schedulers import (
     StepDecay,
     Scheduler,
     Warmup,
+    WarmupRounds,
 )
 from declearn.test_utils import (
     assert_dict_equal,
@@ -59,9 +60,13 @@ SCHEDULERS = [
     RoundDecay(0.001, decay=0.5),
     StepDecay(0.001, decay=0.5, step_size=2),
     Warmup(0.001, warmup=100),
+    WarmupRounds(0.001, warmup=2),
 ]  # type: List[Scheduler]
 SCHEDULERS_DICT = {scheduler.name: scheduler for scheduler in SCHEDULERS}
 SCHEDULERS_DICT["warmup-decay"] = Warmup(LinearDecay(0.001, 0.1), warmup=100)
+SCHEDULERS_DICT["warmup-rounds-decay"] = WarmupRounds(
+    LinearDecay(0.001, 0.1), warmup=2
+)
 
 
 @pytest.fixture(name="scheduler")

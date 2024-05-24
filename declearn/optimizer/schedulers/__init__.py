@@ -66,10 +66,12 @@ Cyclic rate rules
 * [CyclicTriangular][declearn.optimizer.schedulers.CyclicTriangular]:
     Cyclic Learning Rate (CLR) scheduling policy with triangular cycle.
 
-Other schedulers
-----------------
+Warmup schedulers
+-----------------
 * [Warmup][declearn.optimizers.schedulers.Warmup]:
-    Scheduler (wrapper) setting up a linear warmup.
+    Scheduler (wrapper) setting up a linear warmup over steps.
+* [WarmupRounds][declearn.optimizers.schedulers.WarmupRounds]:
+    Scheduler (wrapper) setting up a linear warmup over rounds.
 """
 
 from ._api import Scheduler
@@ -91,4 +93,7 @@ from ._decay import (
     RoundDecay,
     StepDecay,
 )
-from ._warmup import Warmup
+from ._warmup import (
+    Warmup,
+    WarmupRounds,
+)
