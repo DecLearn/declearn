@@ -47,7 +47,7 @@ from declearn.test_utils import (
 
 SCHEDULERS = [
     CosineAnnealing(0.001, max_lr=0.01, n_steps=100),
-    CosineAnnealingRounds(0.001, max_lr=0.01, n_rounds=100),
+    CosineAnnealingRounds(0.001, max_lr=0.01, n_rounds=10),
     CosineAnnealingWarmRestarts(0.001, max_lr=0.01, period=100, t_mult=0.5),
     CosineAnnealingWarmRestartsRounds(0.001, max_lr=0.01, period=2),
     CyclicExpRange(0.001, max_lr=0.01, stepsize=30, decay=0.9),
@@ -90,10 +90,9 @@ class TestScheduler:
     ) -> None:
         """Test that 'compute_value' returns time-based float values."""
         # Compute values at various steps and rounds.
-        val_a = scheduler.compute_value(step=0)
-        val_b = scheduler.compute_value(step=100)
-        scheduler.on_round_start()
-        val_c = scheduler.compute_value(step=150)
+        val_a = scheduler.compute_value(step=0, round_=0)
+        val_b = scheduler.compute_value(step=1, round_=0)
+        val_c = scheduler.compute_value(step=2, round_=1)
         # Assert that all values are float and differ.
         assert isinstance(val_a, float)
         assert isinstance(val_b, float)
@@ -104,12 +103,28 @@ class TestScheduler:
         self,
         scheduler: Scheduler,
     ) -> None:
-        """Test that 'get_next_rate' properly increments 'step' counter."""
+        """Test that 'get_next_rate' properly increments 'steps' counter."""
+        scheduler.on_round_start()  # start round 0
         rate_0 = scheduler.get_next_rate()
         rate_1 = scheduler.get_next_rate()
-        assert rate_0 == scheduler.compute_value(step=0)
-        assert rate_1 == scheduler.compute_value(step=1)
-        assert scheduler.step == 2
+        assert scheduler.steps == 2
+        assert scheduler.rounds == 0
+        assert rate_0 == scheduler.compute_value(step=0, round_=0)
+        assert rate_1 == scheduler.compute_value(step=1, round_=0)
+
+    def test_on_round_start(
+        self,
+        scheduler: Scheduler,
+    ) -> None:
+        """Test that 'on_round_start' properly increments 'rounds' counter."""
+        scheduler.on_round_start()
+        rate_0 = scheduler.get_next_rate()
+        scheduler.on_round_start()
+        rate_1 = scheduler.get_next_rate()
+        assert scheduler.steps == 2
+        assert scheduler.rounds == 1
+        assert rate_0 == scheduler.compute_value(step=0, round_=0)
+        assert rate_1 == scheduler.compute_value(step=1, round_=1)
 
     def test_get_config(
         self,

@@ -55,26 +55,28 @@ class Warmup(Scheduler):
         warmup:
             Number of steps over which to carry the linear warmup.
         """
-        if isinstance(base, Scheduler):
-            self.base = base.base
-            self.wrapped = base  # type: Optional[Scheduler]
-        else:
-            self.base = float(base)
-            self.wrapped = None
-        super().__init__(self.base)
-        self.warmup = warmup
+        self._warmup_rounds = -1
 
     def compute_value(
         self,
         step: int,
+        round_: int,
     ) -> float:
         if step < self.warmup:
             return self.base * (step + 1) / self.warmup
         if self.wrapped is None:
             return self.base
-        return self.wrapped.compute_value(step - self.warmup)
+        return self.wrapped.compute_value(
+            step=step - self.warmup, round_=round_ - self._warmup_rounds
+        )
 
-    def get_config(
+    def on_round_start(
+        self,
+    ) -> None:
+        super().on_round_start()
+        # Keep track of the number of rounds fully devoted to warmup.
+        if self.steps < self.warmup:
+            self._warmup_rounds += 1
         self,
     ) -> Dict[str, Any]:
         config = super().get_config()

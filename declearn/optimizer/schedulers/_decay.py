@@ -58,6 +58,7 @@ class ExponentialDecay(Scheduler):
     def compute_value(
         self,
         step: int,
+        round_: int,
     ) -> float:
         return self.base * math.exp(-self.decay * step)
 
@@ -94,6 +95,7 @@ class InverseScaling(Scheduler):
     def compute_value(
         self,
         step: int,
+        round_: int,
     ) -> float:
         if not step:
             return self.base
@@ -132,6 +134,7 @@ class LinearDecay(Scheduler):
     def compute_value(
         self,
         step: int,
+        round_: int,
     ) -> float:
         if not step:
             return self.base
@@ -170,18 +173,13 @@ class PolynomialDecay(Scheduler):
         super().__init__(base)
         self.power = power
         self.n_rounds = n_rounds
-        self.rounds = 0
-
-    def on_round_start(
-        self,
-    ) -> None:
-        self.rounds += 1
 
     def compute_value(
         self,
         step: int,
+        round_: int,
     ) -> float:
-        decay = 1 - min(self.rounds / self.n_rounds, 1)
+        decay = 1 - min(round_ / self.n_rounds, 1)
         return self.base * (decay**self.power)
 
     def get_config(
@@ -214,18 +212,13 @@ class RoundDecay(Scheduler):
         """
         super().__init__(base)
         self.decay = decay
-        self.rounds = 0
-
-    def on_round_start(
-        self,
-    ) -> None:
-        self.rounds += 1
 
     def compute_value(
         self,
         step: int,
+        round_: int,
     ) -> float:
-        return self.base * (self.decay**self.rounds)
+        return self.base * (self.decay**round_)
 
     def get_config(
         self,
@@ -264,6 +257,7 @@ class StepDecay(Scheduler):
     def compute_value(
         self,
         step: int,
+        round_: int,
     ) -> float:
         step = step // self.step_size
         return self.base * (self.decay**step)

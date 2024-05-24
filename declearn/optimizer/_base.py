@@ -49,6 +49,7 @@ class ConstantScheduler(Scheduler, register=False):
     def compute_value(
         self,
         step: int,
+        round_: int,
     ) -> float:
         return self.base
 

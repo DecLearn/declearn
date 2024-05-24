@@ -66,6 +66,7 @@ class CosineAnnealing(Scheduler):
     def compute_value(
         self,
         step: int,
+        round_: int,
     ) -> float:
         if step > self.n_steps:
             return self.base
@@ -112,7 +113,6 @@ class CosineAnnealingRounds(Scheduler):
         super().__init__(base)
         self.max_lr = max_lr
         self.n_rounds = n_rounds
-        self.rounds = 0
         self._wrapped = CosineAnnealing(
             base=self.base, max_lr=self.max_lr, n_steps=self.n_rounds
         )
@@ -120,13 +120,9 @@ class CosineAnnealingRounds(Scheduler):
     def compute_value(
         self,
         step: int,
+        round_: int,
     ) -> float:
-        return self._wrapped.compute_value(step=round_)
-
-    def on_round_start(
-        self,
-    ) -> None:
-        self.rounds += 1
+        return self._wrapped.compute_value(step=round_, round_=0)
 
     def get_config(
         self,
@@ -188,10 +184,11 @@ class CosineAnnealingWarmRestarts(Scheduler):
     def compute_value(
         self,
         step: int,
+        round_: int,
     ) -> float:
         cycle, cstep = divmod(step, self.period)
         self._cosine_annealing.max_lr = self.max_lr * (self.t_mult**cycle)
-        return self._cosine_annealing.compute_value(step=cstep)
+        return self._cosine_annealing.compute_value(step=cstep, round_=0)
 
     def get_config(
         self,
@@ -244,15 +241,10 @@ class CosineAnnealingWarmRestartsRounds(CosineAnnealingWarmRestarts):
             a warm restart occurs.
         """
         super().__init__(base, max_lr=max_lr, period=period, t_mult=t_mult)
-        self._value = self.base
-
-    def on_round_start(
-        self,
-    ) -> None:
-        self.rounds += 1
 
     def compute_value(
         self,
         step: int,
+        round_: int,
     ) -> float:
-        return super().compute_value(step=self.rounds)
+        return super().compute_value(step=round_, round_=0)

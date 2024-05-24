@@ -84,6 +84,7 @@ class CyclicTriangular(Scheduler):
     def compute_value(
         self,
         step: int,
+        round_: int,
     ) -> float:
         # Compute the cycle and step-within-cycle indices.
         cycle, cstep = divmod(step, 2 * self.stepsize)
@@ -162,6 +163,7 @@ class CyclicExpRange(Scheduler):
     def compute_value(
         self,
         step: int,
+        round_: int,
     ) -> float:
         # Compute the decayed boundary values.
         decay = self.decay**step

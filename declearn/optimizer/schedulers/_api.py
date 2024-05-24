@@ -40,6 +40,16 @@ class Scheduler(metaclass=abc.ABCMeta):
     Subclasses are expected to implement a variety of time-based
     rules for updating a learning rate (or a weight decay rate)
     along the steps of a stochastic gradient descent training.
+
+    All `Scheduler` classes expose the following three attributes:
+
+    - `base`:
+        Value of the base learning rate, assigned at instantation.
+        Meaning may vary across subclasses.
+    - `steps`:
+        Counter of passed training steps. Incremented by `get_next_rate`.
+    - `rounds`:
+        Counter of passes training rounds. Incremented by `on_round_start`.
     """
 
     name: ClassVar[str]
@@ -57,7 +67,8 @@ class Scheduler(metaclass=abc.ABCMeta):
             Base value for the scheduled rate.
         """
         self.base = base
-        self.step = 0
+        self.steps = 0
+        self.rounds = -1
 
     def __init_subclass__(
         cls,
@@ -72,7 +83,7 @@ class Scheduler(metaclass=abc.ABCMeta):
     ) -> float:
         """Return the rate to apply at the next step.
 
-        Calling this method increments this instance's `step` counter,
+        Calling this method increments this instance's `steps` counter,
         and may update any algorithm-specific states.
 
         Returns
@@ -80,35 +91,45 @@ class Scheduler(metaclass=abc.ABCMeta):
         rate:
             Value of the next (learning or weight decay) rate.
         """
-        value = self.compute_value(self.step)
-        self.step += 1
+        value = self.compute_value(step=self.steps, round_=self.rounds)
+        self.steps += 1
         return value
 
     @abc.abstractmethod
     def compute_value(
         self,
         step: int,
+        round_: int,
     ) -> float:
-        """Compute the current value, notwithstanding possible warmup.
+        """Compute the scheduled value at a given step and round index.
 
-        Step counter increment is handled as part of `get_next_rate`.
+        This method may use any attributes from this instance, but
+        should **neither make use of nor have a side effect on steps
+        and rounds counters** attributes.
 
         Parameters
         ----------
         step:
             Index of the step at which to compute the value.
             This starts from 0 and increases across steps.
+        round_:
+            Index of the round at which to compute the value.
+            This starts from 0 and increases across rounds.
 
         Returns
         -------
         value:
-            Value that is to be returned as the next rate.
+            Scheduled value to use at the indicated time indices.
         """
 
     def on_round_start(
         self,
     ) -> None:
-        """Perform any required action at the start of a training round."""
+        """Perform any required action at the start of a training round.
+
+        By default, this increments the `rounds` rounds counter attribute.
+        """
+        self.rounds += 1
 
     def get_config(
         self,
