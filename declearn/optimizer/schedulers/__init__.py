@@ -33,18 +33,19 @@ API-defining base class
 
 Basic decay rules
 -----------------
+These decay schedulers may be parameterized to take either training
+steps or rounds as time unit.
+
 * [ExponentialDecay][declearn.optimizer.schedulers.ExponentialDecay]:
     Exponential decay scheduler.
 * [InverseScaling][declearn.optimizer.schedulers.InverseScaling]:
     Inverse-scaling decay scheduler.
 * [LinearDecay][declearn.optimizer.schedulers.LinearDecay]:
     Linear decay scheduler.
+* [PiecewiseDecay][declearn.optimizer.schedulers.PiecewiseDecay]:
+    Piecewise-constant exponential decay scheduler.
 * [PolynomialDecay][declearn.optimizer.schedulers.PolynomialDecay]:
-    Polynomial decay over rounds scheduler.
-* [RoundDecay][declearn.optimizer.schedulers.RoundDecay]:
-    Linear decay over rounds scheduler.
-* [StepDecay][declearn.optimizer.schedulers.StepDecay]:
-    Linear decay over multiple steps scheduler.
+    Polynomial decay scheduler.
 
 Cosine annealing rules
 ----------------------
@@ -89,9 +90,8 @@ from ._decay import (
     ExponentialDecay,
     InverseScaling,
     LinearDecay,
+    PiecewiseDecay,
     PolynomialDecay,
-    RoundDecay,
-    StepDecay,
 )
 from ._warmup import (
     Warmup,

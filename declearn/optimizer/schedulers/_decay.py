@@ -17,7 +17,7 @@
 
 """Standard time-based rate decay schedulers."""
 
-import math
+import abc
 from typing import Any, Dict
 
 
@@ -27,58 +27,47 @@ __all__ = [
     "ExponentialDecay",
     "InverseScaling",
     "LinearDecay",
+    "PiecewiseDecay",
     "PolynomialDecay",
-    "RoundDecay",
-    "StepDecay",
 ]
 
 
-class ExponentialDecay(Scheduler):
-    """Exponential decay scheduler."""
+class DecayScheduler(Scheduler, register=False, metaclass=abc.ABCMeta):
+    """ABC factoring some shared code for Decay schedulers."""
+
+    def __init__(
+        self,
+        base: float,
+        rate: float,
+        step_level: bool = True,
+    ) -> None:
+        super().__init__(base=base)
+        self.rate = rate
+        self.step_level = step_level
+
+    def get_config(
+        self,
+    ) -> Dict[str, Any]:
+        config = super().get_config()
+        config["rate"] = self.rate
+        config["step_level"] = self.step_level
+        return config
+
+
+class ExponentialDecay(DecayScheduler):
+    """Exponential decay scheduler.
+
+    This scheduler multiplies the base learning rate by a `rate`
+    factor after each training step or training round.
+    """
 
     name = "exponential-decay"
 
     def __init__(
         self,
         base: float,
-        decay: float,
-    ) -> None:
-        """Instantiate the scheduler.
-
-        Parameters
-        ----------
-        base:
-            Base value for the scheduled rate.
-        decay:
-            Factor of the exponential decay.
-        """
-        super().__init__(base)
-        self.decay = decay
-
-    def compute_value(
-        self,
-        step: int,
-        round_: int,
-    ) -> float:
-        return self.base * math.exp(-self.decay * step)
-
-    def get_config(
-        self,
-    ) -> Dict[str, Any]:
-        config = super().get_config()
-        config["decay"] = self.decay
-        return config
-
-
-class InverseScaling(Scheduler):
-    """Inverse-scaling decay scheduler."""
-
-    name = "inverse-scaling"
-
-    def __init__(
-        self,
-        base: float,
         rate: float,
+        step_level: bool = True,
     ) -> None:
         """Instantiate the scheduler.
 
@@ -87,37 +76,35 @@ class InverseScaling(Scheduler):
         base:
             Base value for the scheduled rate.
         rate:
-            Factor of the inverse-scaling decay.
+            Factor by which to multiply `base` after each unit.
+        step_level:
+            Whether to decay after each step rather than after each round.
         """
-        super().__init__(base)
-        self.rate = rate
+        super().__init__(base=base, rate=rate, step_level=step_level)
 
     def compute_value(
         self,
         step: int,
         round_: int,
     ) -> float:
-        if not step:
-            return self.base
-        return self.base / (step**self.rate)
-
-    def get_config(
-        self,
-    ) -> Dict[str, Any]:
-        config = super().get_config()
-        config["rate"] = self.rate
-        return config
+        index = step if self.step_level else round_
+        return self.base * self.rate**index
 
 
-class LinearDecay(Scheduler):
-    """Linear decay scheduler."""
+class InverseScaling(DecayScheduler):
+    """Inverse-scaling decay scheduler.
 
-    name = "linear-decay"
+    This scheduler scales the base learning rate by the step's or
+    round's index power the `rate` parameter.
+    """
+
+    name = "inverse-scaling"
 
     def __init__(
         self,
         base: float,
-        decay: float,
+        rate: float,
+        step_level: bool = True,
     ) -> None:
         """Instantiate the scheduler.
 
@@ -125,31 +112,70 @@ class LinearDecay(Scheduler):
         ----------
         base:
             Base value for the scheduled rate.
-        decay:
-            Factor of the linear decay.
+        rate:
+            Power at which to put the inverse-step-index factor
+            to scale the `base` value at a given step.
+        step_level:
+            Whether to decay after each step rather than after each round.
         """
-        super().__init__(base)
-        self.decay = decay
+        super().__init__(base=base, rate=rate, step_level=step_level)
 
     def compute_value(
         self,
         step: int,
         round_: int,
     ) -> float:
-        if not step:
-            return self.base
-        return self.base / (self.decay * step)
+        index = (step if self.step_level else round_) + 1
+        return self.base / (index**self.rate)
 
-    def get_config(
+
+class LinearDecay(DecayScheduler):
+    """Linear decay scheduler over steps.
+
+    This scheduler linearly decreases the base learning rate
+    at each step or round by substracting `decay * base` from it.
+    Once the learning rate becomes null, it remains constant.
+    """
+
+    name = "linear-decay"
+
+    def __init__(
         self,
-    ) -> Dict[str, Any]:
-        config = super().get_config()
-        config["decay"] = self.decay
-        return config
+        base: float,
+        rate: float,
+        step_level: bool = True,
+    ) -> None:
+        """Instantiate the scheduler.
+
+        Parameters
+        ----------
+        base:
+            Base value for the scheduled rate.
+        rate:
+            Value of the linear decay, _i.e._ share of `base` to substract
+            from it after each step or round.
+        step_level:
+            Whether to decay after each step rather than after each round.
+        """
+        super().__init__(base=base, rate=rate, step_level=step_level)
+
+    def compute_value(
+        self,
+        step: int,
+        round_: int,
+    ) -> float:
+        index = step if self.step_level else round_
+        scale = max(1 - self.rate * index, 0)
+        return self.base * scale
 
 
 class PolynomialDecay(Scheduler):
-    """Polynomial decay over rounds scheduler."""
+    """Polynomial decay scheduler.
+
+    This scheduler scales the base learning rate by the
+    share of remaining steps of rounds (given a `limit`)
+    power a given `power` order.
+    """
 
     name = "polynomial-decay"
 
@@ -157,7 +183,8 @@ class PolynomialDecay(Scheduler):
         self,
         base: float,
         power: int,
-        n_rounds: int,
+        limit: int,
+        step_level: bool = True,
     ) -> None:
         """Instantiate the scheduler.
 
@@ -167,77 +194,53 @@ class PolynomialDecay(Scheduler):
             Base value for the scheduled rate.
         power:
             Power of the polynomial decay function.
-        n_rounds:
-            Maximum number of training rounds, beyond which the rate is null.
+        limit:
+            Maximum number of training steps or rounds,
+            beyond which the rate is null.
+        step_level:
+            Whether to decay after each step rather than after each round.
+            This also conditions the interpretation of `limit`.
         """
-        super().__init__(base)
+        super().__init__(base=base)
         self.power = power
-        self.n_rounds = n_rounds
+        self.limit = limit
+        self.step_level = step_level
 
     def compute_value(
         self,
         step: int,
         round_: int,
     ) -> float:
-        decay = 1 - min(round_ / self.n_rounds, 1)
-        return self.base * (decay**self.power)
+        index = step if self.step_level else round_
+        rate = 1 - min(index / self.limit, 1)
+        return self.base * (rate**self.power)
 
     def get_config(
         self,
     ) -> Dict[str, Any]:
         config = super().get_config()
         config["power"] = self.power
-        config["n_rounds"] = self.n_rounds
+        config["limit"] = self.limit
+        config["step_level"] = self.step_level
         return config
 
 
-class RoundDecay(Scheduler):
-    """Linear decay over rounds scheduler."""
+class PiecewiseDecay(DecayScheduler):
+    """Piecewise-constant exponential decay scheduler.
 
-    name = "round-decay"
+    This scheduler implements exponential decay over training
+    steps or rounds, but increments the decay every `step_size`
+    steps or rounds.
+    """
+
+    name = "piecewise-decay"
 
     def __init__(
         self,
         base: float,
-        decay: float,
-    ) -> None:
-        """Instantiate the scheduler.
-
-        Parameters
-        ----------
-        base:
-            Base value for the scheduled rate.
-        decay:
-            Factor of the linear decay that is to happen at each round start.
-        """
-        super().__init__(base)
-        self.decay = decay
-
-    def compute_value(
-        self,
-        step: int,
-        round_: int,
-    ) -> float:
-        return self.base * (self.decay**round_)
-
-    def get_config(
-        self,
-    ) -> Dict[str, Any]:
-        config = super().get_config()
-        config["decay"] = self.decay
-        return config
-
-
-class StepDecay(Scheduler):
-    """Linear step decay scheduler."""
-
-    name = "step-decay"
-
-    def __init__(
-        self,
-        base: float,
-        decay: float,
+        rate: float,
         step_size: int,
+        step_level: bool = True,
     ) -> None:
         """Instantiate the scheduler.
 
@@ -245,13 +248,15 @@ class StepDecay(Scheduler):
         ----------
         base:
             Base value for the scheduled rate.
-        decay:
-            Factor of the linear decay.
+        rate:
+            Factor of the exponential decay
         step_size:
-            Number of steps to let go between each decay increment.
+            Number of steps or rounds to let go between each decay increment.
+        step_level:
+            Whether to decay after each step rather than after each round.
+            This also conditions the interpretation of `step_size`.
         """
-        super().__init__(base)
-        self.decay = decay
+        super().__init__(base=base, rate=rate, step_level=step_level)
         self.step_size = step_size
 
     def compute_value(
@@ -259,13 +264,12 @@ class StepDecay(Scheduler):
         step: int,
         round_: int,
     ) -> float:
-        step = step // self.step_size
-        return self.base * (self.decay**step)
+        index = (step if self.step_level else round_) // self.step_size
+        return self.base * (self.rate**index)
 
     def get_config(
         self,
     ) -> Dict[str, Any]:
         config = super().get_config()
-        config["decay"] = self.decay
         config["step_size"] = self.step_size
         return config
