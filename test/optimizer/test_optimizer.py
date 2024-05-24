@@ -18,7 +18,7 @@
 
 """Unit tests for `declearn.optimizer.Optimizer`."""
 
-from typing import Any, ClassVar, Dict, Tuple
+from typing import Any, Dict, Tuple
 from unittest import mock
 from uuid import uuid4
 
@@ -35,7 +35,7 @@ from declearn.test_utils import assert_json_serializable_dict
 class MockOptiModule(OptiModule):
     """Type-registered mock OptiModule subclass."""
 
-    name: ClassVar[str] = f"mock-{uuid4()}"
+    name = f"mock-{uuid4()}"
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__()
@@ -51,7 +51,7 @@ class MockOptiModule(OptiModule):
 class MockRegularizer(Regularizer):
     """Type-registered mock Regularizer subclass."""
 
-    name: ClassVar[str] = f"mock-{uuid4()}"
+    name = f"mock-{uuid4()}"
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__()
@@ -62,6 +62,19 @@ class MockRegularizer(Regularizer):
 
     def get_config(self) -> Dict[str, Any]:
         return self.kwargs
+
+
+class MockScheduler(Scheduler):
+    """Type-registered mock Scheduler subclass."""
+
+    name = f"mock-{uuid4()}"
+
+    def compute_value(
+        self,
+        step: int,
+        round_: int,
+    ) -> float:
+        return self.base
 
 
 class TestOptimizer:
@@ -78,6 +91,27 @@ class TestOptimizer:
         assert not optimizer.regularizers
         assert isinstance(optimizer.modules, list)
         assert not optimizer.modules
+
+    def test_init_with_lrate_scheduler_instance(self) -> None:
+        """Test `Optimizer` instantiation with a learning rate Scheduler."""
+        optimizer = Optimizer(lrate=MockScheduler(base=0.001))
+        assert optimizer.lrate == 0.001
+        assert optimizer.w_decay == 0.0
+
+    def test_init_with_decay_scheduler_instance(self) -> None:
+        """Test `Optimizer` instantiation with a weight decay Scheduler."""
+        optimizer = Optimizer(lrate=0.1, w_decay=MockScheduler(base=0.001))
+        assert optimizer.lrate == 0.1
+        assert optimizer.w_decay == 0.001
+
+    def test_init_with_scheduler_specs(self) -> None:
+        """Test `Optimizer` instantiation with Scheduler specs."""
+        optimizer = Optimizer(
+            lrate=(MockScheduler.name, {"base": 0.001}),
+            w_decay=(MockScheduler.name, {"base": 0.9}),
+        )
+        assert optimizer.lrate == 0.001
+        assert optimizer.w_decay == 0.9
 
     def test_init_with_plugin_instances(self) -> None:
         """Test `Optimizer` instantiation with plug-in instances."""
@@ -234,13 +268,18 @@ class TestOptimizer:
 
     def test_start_round(self) -> None:
         """Test, using mocks, that `Optimizer.start_round` works."""
+        lrate = mock.create_autospec(Scheduler, instance=True)
+        decay = mock.create_autospec(Scheduler, instance=True)
         optim = Optimizer(
-            lrate=0.001,
-            regularizers=[mock.create_autospec(Regularizer)],
+            lrate=lrate,
+            w_decay=decay,
+            regularizers=[mock.create_autospec(Regularizer, instance=True)],
         )
         assert optim.start_round() is None
         for reg in optim.regularizers:
             reg.on_round_start.assert_called_once()
+        lrate.on_round_start.assert_called_once()
+        decay.on_round_start.assert_called_once()
 
     def test_run_train_step(self) -> None:
         """Test, using mocks, that `Optimizer.run_train_step` works."""
