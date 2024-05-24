@@ -41,6 +41,8 @@ class Scheduler(metaclass=abc.ABCMeta):
     rules for updating a learning rate (or a weight decay rate)
     along the steps of a stochastic gradient descent training.
 
+    Attributes
+    ----------
     All `Scheduler` classes expose the following three attributes:
 
     - `base`:
@@ -50,6 +52,58 @@ class Scheduler(metaclass=abc.ABCMeta):
         Counter of passed training steps. Incremented by `get_next_rate`.
     - `rounds`:
         Counter of passes training rounds. Incremented by `on_round_start`.
+
+    Abstract
+    --------
+    The following attribute and method require to be overridden
+    by any non-abstract child class of `Scheduler`:
+
+    - name: str class attribute
+        Name identifier of the class (should be unique across existing
+        Scheduler classes). Also used for automatic types-registration
+        of the class (see `Inheritance` section below).
+    - compute_value(step: int, round_: int) -> float:
+        Compute the scheduled value at a given step and round index.
+        This should not have side effects, and is called by the main
+        `get_next_rate` method with current indices.
+
+    Extendable
+    ----------
+    The following methods may (and often should) be overloaded by subclasses:
+
+    - get_config() -> Dict[str, Any]:
+        Return a JSON-serializable config dict to this instance.
+        This should be overloaded to add algorithm-specific parameters.
+    - from_config(Dict[str, Any]) -> Self:
+        Instantiate from a config dict.
+        This may be overloaded if some config parameters require some
+        pre-processing before being input to the `__init__` method.
+
+    Overridable
+    -----------
+    The following methods may be overridden to implement side effects that
+    should occur in addition to incrementing `steps` or `rounds` counters.
+    For most algorithms, they can remain as-is; in all cases, super calls
+    should not be forgotten.
+
+    - get_next_rate() -> float:
+        Compute the rate at the current time, and increment `steps`.
+    - on_round_start() -> None:
+        Mark that a new training round starts, incrementing `rounds`.
+    - get_state() -> Dict[str, Any]:
+        Return a JSON-serializable dict of inner state variables.
+        This contains `steps` and `rounds` by default.
+    - set_state(Dict[str, Any]) -> None:
+        Assign inner state variables.
+        This expects `steps` and `rounds` by default.
+
+    Inheritance
+    -----------
+    When a subclass inheriting from `OptiModule` is declared, it is
+    automatically registered under the "OptiModule" group using its
+    class-attribute `name`. This can be prevented by adding `register=False`
+    to the inheritance specs (e.g. `class MyCls(OptiModule, register=False)`).
+    See `declearn.utils.register_type` for details on types registration.
     """
 
     name: ClassVar[str]
