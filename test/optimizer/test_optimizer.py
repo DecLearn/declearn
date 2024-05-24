@@ -318,19 +318,19 @@ class TestOptimizer:
     def test_get_state(self) -> None:
         """Test that `Optimizer.get_state` collects state variables."""
         # Set up an Optimizer with a mock stateful module.
-        module = mock.create_autospec(OptiModule)
+        module = mock.create_autospec(OptiModule, instance=True)
         optim = Optimizer(lrate=0.001, modules=[module])
         # Check that the states are properly collected.
         state = optim.get_state()
         assert isinstance(state, dict)
-        assert state.keys() == {"modules"}
+        assert state.keys() == {"modules", "lrate", "w_decay"}
         module.get_state.assert_called_once()
 
     def _setup_for_set_state(
         self,
     ) -> Tuple[OptiModule, Dict[str, Any], Optimizer]:
         """Shared setup for `set_state` unit tests."""
-        module = mock.create_autospec(OptiModule)
+        module = mock.create_autospec(OptiModule, instance=True)
         module.name = "mock-module"
         states = {"state": mock.Mock()}
         module.get_state.return_value = states
@@ -372,9 +372,13 @@ class TestOptimizer:
         Case when containing mislabeled states.
         """
         module, states, optim = self._setup_for_set_state()
-        new_state = mock.Mock()
+        bad_state = {
+            "modules": [("mislabeled", mock.Mock())],
+            "lrate": {"steps": 0, "rounds": 0},
+            "w_decay": {"steps": 0, "rounds": 0},
+        }
         with pytest.raises(KeyError):
-            optim.set_state({"modules": [("mislabeled", new_state)]})
+            optim.set_state(bad_state)
         module.get_state.assert_called_once()
         module.set_state.assert_called_once_with(states)  # reset
 
@@ -392,10 +396,13 @@ class TestOptimizer:
         optim.modules.append(mod_b)
         # Run the invalid `set_state` and test assertions.
         new_state = mock.Mock()
+        bad_state = {
+            "modules": [(mod_a.name, new_state), ("other", new_state)],
+            "lrate": {"steps": 0, "rounds": 0},
+            "w_decay": {"steps": 0, "rounds": 0},
+        }
         with pytest.raises(KeyError):
-            optim.set_state(
-                {"modules": [(mod_a.name, new_state), ("other", new_state)]}
-            )
+            optim.set_state(bad_state)
         mod_a.get_state.assert_called_once()
         mod_b.get_state.assert_called_once()
         mod_b.set_state.assert_called_once_with({})  # reset initial state
@@ -414,8 +421,13 @@ class TestOptimizer:
         # Make the module's `set_state` method fail no matter the inputs.
         module.set_state.side_effect = KeyError("Wrong input states.")
         # Run `test_set`: expect RuntimeError due to failure to reset.
+        new_state = {
+            "modules": [(module.name, {})],
+            "lrate": {"steps": 0, "rounds": 0},
+            "w_decay": {"steps": 0, "rounds": 0},
+        }
         with pytest.raises(RuntimeError):
-            optim.set_state({"modules": [(module.name, {})]})
+            optim.set_state(new_state)
             module.set_state.assert_has_calls(
                 # calls: assign new state, then reset due to the raised error
                 [mock.call({}), mock.call(states)]

@@ -133,6 +133,8 @@ class Optimizer:
         Return a mapping of registered OptiModule subclasses.
     - [declearn.optimizer.list_optim_regularizers][]:
         Return a mapping of registered Regularizer subclasses.
+    - [declearn.optimizer.list_rate_schedulers][]:
+        Return a mapping of registered Scheduler subclasses.
     """
 
     def __init__(
@@ -521,8 +523,10 @@ class Optimizer:
             JSON-serializable dict storing this optimizer's inner state
             variables (i.e. those from its modules).
         """
+        lrate = self._lrate_scheduler.get_state()
+        wrate = self._wrate_scheduler.get_state()
         modules = [(mod.name, mod.get_state()) for mod in self.modules]
-        return {"modules": modules}
+        return {"modules": modules, "lrate": lrate, "w_decay": wrate}
 
     def set_state(
         self,
@@ -553,8 +557,11 @@ class Optimizer:
             This should never happen and indicates a source code
             error in a wrapped module, or even in this class.
         """
-        if "modules" not in states:
-            raise KeyError("Optimizer input 'states' lack a 'modules' field.")
+        for key in ("lrate", "w_decay", "modules"):
+            if key not in states:
+                raise KeyError(
+                    f"Optimizer input 'states' lack a '{key}' field."
+                )
         if len(states["modules"]) != len(self.modules):
             raise KeyError("Optimizer 'states' do not match modules config.")
         initial = self.get_state()
@@ -579,6 +586,8 @@ class Optimizer:
         states: Dict[str, Any],
     ) -> None:
         """Backend to the `set_state` method, lacking exception-catching."""
+        self._lrate_scheduler.set_state(states["lrate"])
+        self._wrate_scheduler.set_state(states["w_decay"])
         for mod, (name, state) in zip(self.modules, states["modules"]):
             if mod.name != name:
                 raise KeyError(

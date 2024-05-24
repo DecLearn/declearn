@@ -95,7 +95,7 @@ class Warmup(WarmupScheduler):
             Number of steps over which to carry the linear warmup.
         """
         super().__init__(base=base, warmup=warmup)
-        self._warmup_rounds = -1
+        self.full_warmup_rounds = -1
 
     def compute_value(
         self,
@@ -107,7 +107,7 @@ class Warmup(WarmupScheduler):
         if self.wrapped is None:
             return self.base
         return self.wrapped.compute_value(
-            step=step - self.warmup, round_=round_ - self._warmup_rounds
+            step=step - self.warmup, round_=round_ - self.full_warmup_rounds
         )
 
     def on_round_start(
@@ -116,7 +116,26 @@ class Warmup(WarmupScheduler):
         super().on_round_start()
         # Keep track of the number of rounds fully devoted to warmup.
         if self.steps < self.warmup:
-            self._warmup_rounds += 1
+            self.full_warmup_rounds += 1
+
+    def get_state(
+        self,
+    ) -> Dict[str, Any]:
+        state = super().get_state()
+        state["full_warmup_rounds"] = self.full_warmup_rounds
+        return state
+
+    def set_state(
+        self,
+        state: Dict[str, Any],
+    ) -> None:
+        if "full_warmup_rounds" not in state:  # pragma: no cover
+            raise KeyError(
+                f"Missing state parameter for '{self.__class__}': "
+                "'full_warmup_rounds'."
+            )
+        super().set_state(state)
+        self.full_warmup_rounds = state["full_warmup_rounds"]
 
 
 class WarmupRounds(WarmupScheduler):
@@ -147,7 +166,7 @@ class WarmupRounds(WarmupScheduler):
             Number of rounds over which to carry the linear warmup.
         """
         super().__init__(base=base, warmup=warmup)
-        self._warmup_steps = 0
+        self.warmup_steps = 0
 
     def get_next_rate(
         self,
@@ -155,7 +174,7 @@ class WarmupRounds(WarmupScheduler):
         value = super().get_next_rate()
         # Keep track of the number of steps passed during warmup rounds.
         if self.rounds < self.warmup:
-            self._warmup_steps += 1
+            self.warmup_steps += 1
         return value
 
     def compute_value(
@@ -168,6 +187,24 @@ class WarmupRounds(WarmupScheduler):
         if self.wrapped is None:
             return self.base
         return self.wrapped.compute_value(
-            step=step - self._warmup_steps,
-            round_=round_ - self.warmup,
+            step=step - self.warmup_steps, round_=round_ - self.warmup
         )
+
+    def get_state(
+        self,
+    ) -> Dict[str, Any]:
+        state = super().get_state()
+        state["warmup_steps"] = self.warmup_steps
+        return state
+
+    def set_state(
+        self,
+        state: Dict[str, Any],
+    ) -> None:
+        if "warmup_steps" not in state:  # pragma: no cover
+            raise KeyError(
+                f"Missing state parameter for '{self.__class__}': "
+                "'warmup_steps'."
+            )
+        super().set_state(state)
+        self.warmup_steps = state["warmup_steps"]

@@ -186,3 +186,40 @@ class Scheduler(metaclass=abc.ABCMeta):
         cls = access_registered(name, group="Scheduler")
         assert issubclass(cls, Scheduler)  # tested by access_registered
         return cls.from_config(config)
+
+    def get_state(
+        self,
+    ) -> Dict[str, Any]:
+        """Return a JSON-serializable dict with this module's state(s).
+
+        The counterpart to this method is the `set_state` one.
+
+        Returns
+        -------
+        state: Dict[str, Any]
+            JSON-serializable dict storing this module's inner state
+            variables.
+        """
+        return {"steps": self.steps, "rounds": self.rounds}
+
+    def set_state(
+        self,
+        state: Dict[str, Any],
+    ) -> None:
+        """Load a state dict into an instantiated module.
+
+        The counterpart to this method is the `get_state` one.
+
+        Parameters
+        ----------
+        state: dict[str, any]
+            Dict storing values to assign to this module's inner
+            state variables.
+
+        Raises
+        ------
+        KeyError
+            If an expected state variable is missing from `state`.
+        """
+        self.steps = int(state["steps"])
+        self.rounds = int(state["rounds"])

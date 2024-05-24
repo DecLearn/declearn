@@ -161,6 +161,35 @@ class TestScheduler:
         conf_b = schedul_b.get_config()
         assert_dict_equal(config, conf_b)
 
+    def test_get_state(
+        self,
+        scheduler: Scheduler,
+    ) -> None:
+        """Test that 'get_state' returns a JSON-serializable dict."""
+        state = scheduler.get_state()
+        assert_json_serializable_dict(state)
+
+    def test_set_state(
+        self,
+        scheduler: Scheduler,
+    ) -> None:
+        """Test that 'set_state' works appropriately."""
+        # Get the state then rate at steps (0, round_=0) and (120, round_=2).
+        scheduler.on_round_start()
+        state_0 = scheduler.get_state()
+        rate_0 = scheduler.get_next_rate()
+        scheduler.on_round_start()
+        for _ in range(118):
+            scheduler.get_next_rate()
+        scheduler.on_round_start()
+        state_120 = scheduler.get_state()
+        rate_120 = scheduler.get_next_rate()
+        # Set state and test that rates are re-computed identically.
+        scheduler.set_state(state_0)
+        assert scheduler.get_next_rate() == rate_0
+        scheduler.set_state(state_120)
+        assert scheduler.get_next_rate() == rate_120
+
 
 def test_list_rate_schedulers():
     """Test that 'list_rate_schedulers' works properly."""
