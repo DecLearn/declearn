@@ -302,6 +302,12 @@ class SklearnSGDModel(Model):
             if loss not in REG_LOSSES:
                 raise ValueError(f"Invalid loss '{loss}' for SGDRegressor.")
             sk_cls = SGDRegressor
+        # Invalid input case.
+        else:  # pragma: no cover
+            raise ValueError(
+                "Invalid value for SklearnSGDModel 'kind': must be one of "
+                f"{'classifier', 'regressor'}, received '{kind}'."
+            )
         # Instantiate the sklearn model, wrap it up and return.
         model = sk_cls(
             loss=loss,

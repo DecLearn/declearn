@@ -47,6 +47,9 @@ Declearn provides with a unified entry-point to define SGD-based optimizers:
 - In addition, it enables setting up pipelines of plug-ins, that are applied
   sequentially to the input gradients so as to refine them prior to applying
   the learning rate scaling and adding the weight decay term.
+- Furthermore, the learning rate and weight decay factor may be made to
+  evolve throughout training using a time-based scheduler (that counts and
+  may use both training steps and rounds).
 
 There are two types of plug-ins to an `Optimizer`:
 
@@ -75,6 +78,17 @@ There are two types of plug-ins to an `Optimizer`:
       paired client-side and server-side modules in the federated context.
       These can be used to set up FL-specific algorithms such as Scaffold.
 
+To which can be added the learning and weight decay rate schedulers:
+
+- `declearn.optimizer.schedulers.Scheduler`:
+  - A `Scheduler` implements a time-based rule to have a float value evolve.
+  - It keeps track of and may use both the number of training steps and rounds
+    to compute the next scheduled value.
+  - Examples include various types of decays, cyclic rules, and linear warmup
+    (that may wrap another scheduler to make use of once warmup is over).
+  - You can list currently-available scheduleres (and their names) by calling
+    `declearn.optimizer.list_rate_schedulers()`.
+
 ### Practical use
 
 The syntax to set up an `Optimizer` instance is:
@@ -90,6 +104,11 @@ The syntax to set up an `Optimizer` instance is:
       (e.g. `("adam", {"beta_1": 0.9, "beta_2": 0.99})`)
     - a string providing only the plug-in's name, resulting in default
       hyper-parameter values to be used (e.g. `"adam"`)
+- Both `lrate` and `w_decay` may be input either as:
+    - a float value (denoting a constant value)
+    - a `Scheduler` instance
+    - a tuple with name and hyper-parameters for the desired `Scheduler` (e.g.
+      `("cosine-annealing", {"base": 0.01, "max_lr": 0.1, "n_steps": 100000})`)
 
 An `Optimizer` has a configuration and a state, that may be (de)serialized:
 
@@ -208,6 +227,37 @@ import declearn
 
 momentum = ("momentum", {"beta": 0.8, "nesterov": True})
 optim = declearn.optimizer.Optimizer(lrate=0.01, modules=[momentum])
+```
+
+### SGDR optimizer
+
+This sets up an optimizer that implements Stochastic Gradient Descent with
+Warm Restarts (SGDR), _i.e._ SGD with cosine annealing cycles of the learning
+rate.
+
+```python
+import declearn
+
+scheduler = declearn.optimizer.schedulers.CosineAnnealingWarmRestarts(
+    base=0.001,  # anneal towards 0.001 learning rate
+    max_lr=0.1,  # anneal from 0.1 at the first cycle
+    period=100,  # warm restart every 100 training steps
+    t_mult=0.5,  # halve max_lr at the end of each cycle
+    step_level=True,  # use step as time unit, not round (default)
+)
+optim = declearn.optimizer.Optimizer(lrate=scheduler)
+```
+
+This does exactly the same, with a different, just-as-valid syntax:
+
+```python
+import declearn
+
+config = (
+    "cosine-annealing-warm-restarts",
+    {"base": 0.001, "max_lr": 0.1, "period": 100, "t_mult": 0.5}
+)
+optim = declearn.optimizer.Optimizer(lrate=config)
 ```
 
 ### Complex optimizer (FedProx & AdamW with gradient clipping)
@@ -610,18 +660,6 @@ that we are aware of and considering adding in the future. If you want to
 contribute ideas, code or new topics to discuss, feel free to let us know,
 either by opening a GitHub or GitLab issue, or by sending us an e-mail!
 
-### Learning Rate Scheduling
-
-Learning rate scheduling is a common practice in machine and especially in deep
-learning. At the moment, Declearn does not (yet) provide a proper API to do so.
-We expect to implement proper scheduling tools in the future.
-
-A work-around that end-users may implement is to declare an `OptiModule`
-subclass that keeps track of the number of iterations, and scales input
-gradients based on it and on the desired scheduling formula. If that plug-in is
-placed last in your pipeline, it will operate right before the learning rate is
-applied, and therefore yield the desired adaptation to its value.
-
 ### Layer-wise Learning Rate
 
 In some applications, it may make sense to apply distinct learning rates to
@@ -634,6 +672,21 @@ A work-around that may be used, but requires tailoring to your application and
 model architecture, would be to implement a custom `OptiModule` that operates
 on the input gradients' `Vector.coefs` data array values, filtering them by
 name. This would neither be elegant nor practical, but would work.
+
+### Loss-based Learning Rate Scheduling
+
+Learning rate (and weight decay factor) scheduling was recently added to
+DecLearn (v2.6.0), via the `Scheduler` API. It is however restricted to
+time-based rules, that may build on training steps and/or training rounds
+indices to compute scheduled values. In some cases, it may be interesting
+to use schedulers that operate based on feedback from the training process
+(typically, adjusting the rate when the loss reaches a plateau). This is
+not yet possible but may be made available in the future.
+
+There is no simple workaround to that problem, save for using the available
+early stopping mechanism to detect plateaus, stop an ongoing experiment,
+and then manually relaunch it with a distinct base learning rate, but with
+reloaded starting model weights, optimizer states, etc.
 
 ## How-Tos
 

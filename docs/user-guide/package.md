@@ -126,6 +126,18 @@ You may learn more about our (non-abstract) `Optimizer` API by reading our
     - Define a `name` class attribute and decorate as a `dataclass`.
     - To avoid it, use `class MyAuxVar(AuxVar, register=False)`.
 
+#### `Scheduler`
+- Import: `declearn.optimizer.schedulers.Scheduler`
+- Object: Define time-based learning rate scheduling rules.
+- Usage: Plug into a `declearn.optimizer.Optimizer`.
+- Examples:
+    - `declearn.optimizer.schedulers.LinearDecay`
+    - `declearn.optimizer.schedulers.CosineAnnealingWithRestarts`
+    - `declearn.optimizer.schedulers.Warmup`
+- Extend:
+    - Simply inherit from `Scheduler` (registration is automated).
+    - To avoid it, use `class MyScheduler(Scheduler, register=False)`.
+
 ### Evaluation Metrics
 
 #### `Metric`

@@ -27,6 +27,7 @@ from typing_extensions import Self  # future: import from typing (py >=3.11)
 from declearn.model.api import Model, Vector
 from declearn.optimizer.modules import AuxVar, OptiModule
 from declearn.optimizer.regularizers import Regularizer
+from declearn.optimizer.schedulers import Scheduler
 from declearn.typing import Batch
 
 __all__ = [
@@ -35,6 +36,22 @@ __all__ = [
 
 
 T = TypeVar("T")
+
+
+class ConstantScheduler(Scheduler, register=False):
+    """Ad-hoc Scheduler subclass for constant values."""
+
+    def get_next_rate(
+        self,
+    ) -> float:
+        return self.base
+
+    def compute_value(
+        self,
+        step: int,
+        round_: int,
+    ) -> float:
+        return self.base
 
 
 class Optimizer:
@@ -76,12 +93,19 @@ class Optimizer:
     plugged-in-modules' variables and maps back received variables
     to them.
 
+    Finally, both the learning rate and weight decay rate may be
+    specified as a [declearn.optimizer.schedulers.Scheduler][]
+    instance, implementing a time-based rule to have the value
+    evolve throughout training.
+
     Attributes
     ----------
     lrate: float
-        Base learning rate applied to computed updates.
+        Base learning rate that will be applied next time updates
+        are computed from gradients. Read-only property.
     w_decay: float
-        Decoupled weight decay parameter.
+        Decoupled weight decay parameter that will be applied next
+        time updates are computed from gradients. Read-only property.
     modules: list[OptiModule]
         List of plug-in modules composed into the optimizer's
         gradients-to-updates computation algorithm.
@@ -116,12 +140,14 @@ class Optimizer:
         Return a mapping of registered OptiModule subclasses.
     - [declearn.optimizer.list_optim_regularizers][]:
         Return a mapping of registered Regularizer subclasses.
+    - [declearn.optimizer.list_rate_schedulers][]:
+        Return a mapping of registered Scheduler subclasses.
     """
 
     def __init__(
         self,
-        lrate: float,  # future: add scheduling tools
-        w_decay: float = 0.0,  # future: add scheduling tools
+        lrate: Union[float, Scheduler, Tuple[str, Dict[str, Any]]],
+        w_decay: Union[float, Scheduler, Tuple[str, Dict[str, Any]]] = 0.0,
         regularizers: Optional[
             Sequence[Union[Regularizer, str, Tuple[str, Dict[str, Any]]]]
         ] = None,
@@ -133,14 +159,17 @@ class Optimizer:
 
         Parameters
         ----------
-        lrate: float
+        lrate: float or Scheduler or specs
             Base learning rate (i.e. step size) applied to gradients-
             based updates upon applying them to a model's weights.
-        w_decay: float, default=0.
+            May be a constant value, or a `Scheduler` instance or specs.
+            See `declearn.optimizer.schedulers.Scheduler` for details.
+        w_decay: float or Scheduler or specs, default=0.
             Optional weight decay parameter, used to parameterize
             a decoupled weight decay regularization term (see [1])
             added to the updates right before the learning rate is
             applied and model weights are effectively updated.
+            May be a constant value, or a `Scheduler` instance or specs.
         regularizers: list[Regularizer or specs] or None, default=None
             Optional list of plug-in loss regularizers. Regularizers will
             be applied to gradients following this list's order, prior to
@@ -156,12 +185,19 @@ class Optimizer:
 
         Notes
         -----
-        `Regularizer` and `OptiModule` to be used by this optimizer,
-        specified using the `regularizers` and `modules` parameters,
-        may be passed as ready-for-use instances, or be instantiated
-        from specs, consisting either of a single string (the `name`
-        attribute of the class to build) or a tuple grouping this
-        name and a config dict (to specify some hyper-parameters).
+
+        * `Regularizer` and `OptiModule` to be used by this optimizer,
+          specified using the `regularizers` and `modules` parameters,
+          may be passed as ready-for-use instances, or be instantiated
+          from specs, consisting either of a single string (the `name`
+          attribute of the class to build) or a tuple grouping this
+          name and a config dict (to specify some hyper-parameters).
+        * `Scheduler` instances to be used by this optimizer to adjust
+          the `lrate` and/or `w_decay` parameters through time may be
+          passed as ready-for-use instances, or be instantiated from
+          specs, consisting of a tuple grouping a string (the `name`
+          attribute of the class to build) and and a config dict (with
+          the base value and algorithm-specific hyper-parameters).
 
         References
         ----------
@@ -169,8 +205,10 @@ class Optimizer:
             Decoupled Weight Decay Regularization.
             https://arxiv.org/abs/1711.05101
         """
-        self.lrate = lrate
-        self.w_decay = w_decay
+        self._lrate_scheduler = self._parse_scheduler(lrate)
+        self._wrate_scheduler = self._parse_scheduler(w_decay)
+        self._lrate = self._lrate_scheduler.get_next_rate()
+        self._wrate = self._wrate_scheduler.get_next_rate()
         self.regularizers = (
             []
             if regularizers is None
@@ -181,6 +219,39 @@ class Optimizer:
             if modules is None
             else self._parse_plugins(OptiModule, modules)  # type: ignore
         )  # type: List[OptiModule]
+
+    @property
+    def lrate(self) -> float:
+        """Current learning rate for this Optimizer."""
+        return self._lrate
+
+    @property
+    def w_decay(self) -> float:
+        """Current weight decay rate for this Optimizer."""
+        return self._wrate
+
+    def _update_rates(
+        self,
+    ) -> None:
+        """Update the learning and weight decay rates as scheduled."""
+        self._lrate = self._lrate_scheduler.get_next_rate()
+        self._wrate = self._wrate_scheduler.get_next_rate()
+
+    def _parse_scheduler(
+        self,
+        value: Union[float, Scheduler, Tuple[str, Dict[str, Any]]],
+    ) -> Scheduler:
+        if isinstance(value, float):
+            return ConstantScheduler(base=value)
+        if isinstance(value, Scheduler):
+            return value
+        if isinstance(value, (tuple, list)) and (len(value) == 2):
+            name, config = value
+            return Scheduler.from_specs(name, config)
+        raise TypeError(
+            f"Cannot instantiate a 'Scheduler' from {value}. "
+            "Required a float, 'Scheduler' or specs ((str, dict) tuple)."
+        )
 
     def _parse_plugins(
         self,
@@ -234,11 +305,22 @@ class Optimizer:
             JSON-serializable dict storing this optimizer's instantiation
             configuration.
         """
+
+        lrate = (
+            (self._lrate_scheduler.name, self._lrate_scheduler.get_config())
+            if not isinstance(self._lrate_scheduler, ConstantScheduler)
+            else self._lrate_scheduler.base
+        )
+        decay = (
+            (self._wrate_scheduler.name, self._wrate_scheduler.get_config())
+            if not isinstance(self._wrate_scheduler, ConstantScheduler)
+            else self._wrate_scheduler.base
+        )
         regulzr = [(reg.name, reg.get_config()) for reg in self.regularizers]
         modules = [(mod.name, mod.get_config()) for mod in self.modules]
         return {
-            "lrate": self.lrate,
-            "w_decay": self.w_decay,
+            "lrate": lrate,
+            "w_decay": decay,
             "regularizers": regulzr,
             "modules": modules,
         }
@@ -295,6 +377,7 @@ class Optimizer:
             weights = model.get_weights(trainable=True)
         # Run input gradients and weights through plug-in regularizers.
         if self.regularizers:
+            # false-positive; pylint: disable=possibly-used-before-assignment
             for regularizer in self.regularizers:
                 gradients = regularizer.run(gradients, weights)
         # Run input gradients through plug-in modules.
@@ -305,6 +388,8 @@ class Optimizer:
         # Optionally add the decoupled weight decay term.
         if self.w_decay:
             updates += self.w_decay * weights
+        # Update the learning and weight decay rates.
+        self._update_rates()
         # Return ready-to-apply model updates.
         return -1.0 * updates
 
@@ -374,8 +459,11 @@ class Optimizer:
 
         This method calls the `on_round_start` callback of each and every
         wrapped `Regularizer` which may be used to regulate some internal
-        state variables.
+        state variables, as well as that of the `Scheduler` objects that
+        regulate the evolution of the learning and weight decay rates.
         """
+        self._lrate_scheduler.on_round_start()
+        self._wrate_scheduler.on_round_start()
         for regularizer in self.regularizers:
             regularizer.on_round_start()
 
@@ -443,8 +531,10 @@ class Optimizer:
             JSON-serializable dict storing this optimizer's inner state
             variables (i.e. those from its modules).
         """
+        lrate = self._lrate_scheduler.get_state()
+        wrate = self._wrate_scheduler.get_state()
         modules = [(mod.name, mod.get_state()) for mod in self.modules]
-        return {"modules": modules}
+        return {"modules": modules, "lrate": lrate, "w_decay": wrate}
 
     def set_state(
         self,
@@ -475,8 +565,11 @@ class Optimizer:
             This should never happen and indicates a source code
             error in a wrapped module, or even in this class.
         """
-        if "modules" not in states:
-            raise KeyError("Optimizer input 'states' lack a 'modules' field.")
+        for key in ("lrate", "w_decay", "modules"):
+            if key not in states:
+                raise KeyError(
+                    f"Optimizer input 'states' lack a '{key}' field."
+                )
         if len(states["modules"]) != len(self.modules):
             raise KeyError("Optimizer 'states' do not match modules config.")
         initial = self.get_state()
@@ -501,6 +594,8 @@ class Optimizer:
         states: Dict[str, Any],
     ) -> None:
         """Backend to the `set_state` method, lacking exception-catching."""
+        self._lrate_scheduler.set_state(states["lrate"])
+        self._wrate_scheduler.set_state(states["w_decay"])
         for mod, (name, state) in zip(self.modules, states["modules"]):
             if mod.name != name:
                 raise KeyError(

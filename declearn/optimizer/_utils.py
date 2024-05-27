@@ -21,12 +21,14 @@ from typing import Dict, Type
 
 from declearn.optimizer.modules import OptiModule
 from declearn.optimizer.regularizers import Regularizer
+from declearn.optimizer.schedulers import Scheduler
 from declearn.utils import access_types_mapping
 
 
 __all__ = [
     "list_optim_modules",
     "list_optim_regularizers",
+    "list_rate_schedulers",
 ]
 
 
@@ -84,3 +86,29 @@ def list_optim_regularizers() -> Dict[str, Type[Regularizer]]:
         class constructors.
     """
     return access_types_mapping("Regularizer")
+
+
+def list_rate_schedulers() -> Dict[str, Type[Scheduler]]:
+    """Return a mapping of registered Scheduler subclasses.
+
+    This function aims at making it easy for end-users to list and access
+    all available Scheduler classes at any given time. The returned dict
+    uses unique identifier keys, which may be used to use the associated
+    scheduler within a [declearn.optimizer.Optimizer][] without going
+    through the fuss of importing and instantiating it manually.
+
+    Note that the mapping will include all declearn-provided schedulers,
+    but also registered schedulers provided by user or third-party code.
+
+    See also
+    --------
+    * [declearn.optimizer.schedulers.Scheduler][]:
+        API-defining abstract base class for the Scheduler classes.
+
+    Returns
+    -------
+    mapping:
+        Dictionary mapping unique str identifiers to `Scheduler`
+        class constructors.
+    """
+    return access_types_mapping("Scheduler")

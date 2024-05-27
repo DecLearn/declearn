@@ -18,7 +18,7 @@
 
 """Unit tests for `declearn.optimizer.Optimizer`."""
 
-from typing import Any, ClassVar, Dict, Tuple
+from typing import Any, Dict, Tuple
 from unittest import mock
 from uuid import uuid4
 
@@ -28,13 +28,14 @@ from declearn.model.api import Model, Vector
 from declearn.optimizer import Optimizer
 from declearn.optimizer.modules import AuxVar, OptiModule
 from declearn.optimizer.regularizers import Regularizer
+from declearn.optimizer.schedulers import Scheduler
 from declearn.test_utils import assert_json_serializable_dict
 
 
 class MockOptiModule(OptiModule):
     """Type-registered mock OptiModule subclass."""
 
-    name: ClassVar[str] = f"mock-{uuid4()}"
+    name = f"mock-{uuid4()}"
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__()
@@ -50,7 +51,7 @@ class MockOptiModule(OptiModule):
 class MockRegularizer(Regularizer):
     """Type-registered mock Regularizer subclass."""
 
-    name: ClassVar[str] = f"mock-{uuid4()}"
+    name = f"mock-{uuid4()}"
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__()
@@ -61,6 +62,19 @@ class MockRegularizer(Regularizer):
 
     def get_config(self) -> Dict[str, Any]:
         return self.kwargs
+
+
+class MockScheduler(Scheduler):
+    """Type-registered mock Scheduler subclass."""
+
+    name = f"mock-{uuid4()}"
+
+    def compute_value(
+        self,
+        step: int,
+        round_: int,
+    ) -> float:
+        return self.base
 
 
 class TestOptimizer:
@@ -77,6 +91,27 @@ class TestOptimizer:
         assert not optimizer.regularizers
         assert isinstance(optimizer.modules, list)
         assert not optimizer.modules
+
+    def test_init_with_lrate_scheduler_instance(self) -> None:
+        """Test `Optimizer` instantiation with a learning rate Scheduler."""
+        optimizer = Optimizer(lrate=MockScheduler(base=0.001))
+        assert optimizer.lrate == 0.001
+        assert optimizer.w_decay == 0.0
+
+    def test_init_with_decay_scheduler_instance(self) -> None:
+        """Test `Optimizer` instantiation with a weight decay Scheduler."""
+        optimizer = Optimizer(lrate=0.1, w_decay=MockScheduler(base=0.001))
+        assert optimizer.lrate == 0.1
+        assert optimizer.w_decay == 0.001
+
+    def test_init_with_scheduler_specs(self) -> None:
+        """Test `Optimizer` instantiation with Scheduler specs."""
+        optimizer = Optimizer(
+            lrate=(MockScheduler.name, {"base": 0.001}),
+            w_decay=(MockScheduler.name, {"base": 0.9}),
+        )
+        assert optimizer.lrate == 0.001
+        assert optimizer.w_decay == 0.9
 
     def test_init_with_plugin_instances(self) -> None:
         """Test `Optimizer` instantiation with plug-in instances."""
@@ -168,10 +203,16 @@ class TestOptimizer:
         """Test, using mocks, that updates are computed with expected calls."""
         # Set up an Optimizer with mock attributes and run the computation.
         optim = Optimizer(
-            lrate=mock.MagicMock(),
-            w_decay=mock.MagicMock(),
-            regularizers=[mock.create_autospec(Regularizer) for _ in range(2)],
-            modules=[mock.create_autospec(OptiModule) for _ in range(2)],
+            lrate=mock.create_autospec(Scheduler, instance=True),
+            w_decay=mock.create_autospec(Scheduler, instance=True),
+            regularizers=[
+                mock.create_autospec(Regularizer, instance=True)
+                for _ in range(2)
+            ],
+            modules=[
+                mock.create_autospec(OptiModule, instance=True)
+                for _ in range(2)
+            ],
         )
         model = mock.create_autospec(Model, instance=True)
         grads = mock.create_autospec(Vector, instance=True)
@@ -227,13 +268,18 @@ class TestOptimizer:
 
     def test_start_round(self) -> None:
         """Test, using mocks, that `Optimizer.start_round` works."""
+        lrate = mock.create_autospec(Scheduler, instance=True)
+        decay = mock.create_autospec(Scheduler, instance=True)
         optim = Optimizer(
-            lrate=0.001,
-            regularizers=[mock.create_autospec(Regularizer)],
+            lrate=lrate,
+            w_decay=decay,
+            regularizers=[mock.create_autospec(Regularizer, instance=True)],
         )
         assert optim.start_round() is None
         for reg in optim.regularizers:
             reg.on_round_start.assert_called_once()
+        lrate.on_round_start.assert_called_once()
+        decay.on_round_start.assert_called_once()
 
     def test_run_train_step(self) -> None:
         """Test, using mocks, that `Optimizer.run_train_step` works."""
@@ -272,19 +318,19 @@ class TestOptimizer:
     def test_get_state(self) -> None:
         """Test that `Optimizer.get_state` collects state variables."""
         # Set up an Optimizer with a mock stateful module.
-        module = mock.create_autospec(OptiModule)
+        module = mock.create_autospec(OptiModule, instance=True)
         optim = Optimizer(lrate=0.001, modules=[module])
         # Check that the states are properly collected.
         state = optim.get_state()
         assert isinstance(state, dict)
-        assert state.keys() == {"modules"}
+        assert state.keys() == {"modules", "lrate", "w_decay"}
         module.get_state.assert_called_once()
 
     def _setup_for_set_state(
         self,
     ) -> Tuple[OptiModule, Dict[str, Any], Optimizer]:
         """Shared setup for `set_state` unit tests."""
-        module = mock.create_autospec(OptiModule)
+        module = mock.create_autospec(OptiModule, instance=True)
         module.name = "mock-module"
         states = {"state": mock.Mock()}
         module.get_state.return_value = states
@@ -326,9 +372,13 @@ class TestOptimizer:
         Case when containing mislabeled states.
         """
         module, states, optim = self._setup_for_set_state()
-        new_state = mock.Mock()
+        bad_state = {
+            "modules": [("mislabeled", mock.Mock())],
+            "lrate": {"steps": 0, "rounds": 0},
+            "w_decay": {"steps": 0, "rounds": 0},
+        }
         with pytest.raises(KeyError):
-            optim.set_state({"modules": [("mislabeled", new_state)]})
+            optim.set_state(bad_state)
         module.get_state.assert_called_once()
         module.set_state.assert_called_once_with(states)  # reset
 
@@ -346,10 +396,13 @@ class TestOptimizer:
         optim.modules.append(mod_b)
         # Run the invalid `set_state` and test assertions.
         new_state = mock.Mock()
+        bad_state = {
+            "modules": [(mod_a.name, new_state), ("other", new_state)],
+            "lrate": {"steps": 0, "rounds": 0},
+            "w_decay": {"steps": 0, "rounds": 0},
+        }
         with pytest.raises(KeyError):
-            optim.set_state(
-                {"modules": [(mod_a.name, new_state), ("other", new_state)]}
-            )
+            optim.set_state(bad_state)
         mod_a.get_state.assert_called_once()
         mod_b.get_state.assert_called_once()
         mod_b.set_state.assert_called_once_with({})  # reset initial state
@@ -368,8 +421,13 @@ class TestOptimizer:
         # Make the module's `set_state` method fail no matter the inputs.
         module.set_state.side_effect = KeyError("Wrong input states.")
         # Run `test_set`: expect RuntimeError due to failure to reset.
+        new_state = {
+            "modules": [(module.name, {})],
+            "lrate": {"steps": 0, "rounds": 0},
+            "w_decay": {"steps": 0, "rounds": 0},
+        }
         with pytest.raises(RuntimeError):
-            optim.set_state({"modules": [(module.name, {})]})
+            optim.set_state(new_state)
             module.set_state.assert_has_calls(
                 # calls: assign new state, then reset due to the raised error
                 [mock.call({}), mock.call(states)]
