@@ -243,6 +243,7 @@ scheduler = declearn.optimizer.schedulers.CosineAnnealingWarmRestarts(
     max_lr=0.1,  # anneal from 0.1 at the first cycle
     period=100,  # warm restart every 100 training steps
     t_mult=0.5,  # halve max_lr at the end of each cycle
+    step_level=True,  # use step as time unit, not round (default)
 )
 optim = declearn.optimizer.Optimizer(lrate=scheduler)
 ```

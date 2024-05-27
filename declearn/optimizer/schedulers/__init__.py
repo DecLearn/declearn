@@ -36,6 +36,8 @@ Basic decay rules
 These decay schedulers may be parameterized to take either training
 steps or rounds as time unit.
 
+* [CosineAnnealing][declearn.optimizer.schedulers.CosineAnnealing]:
+    Cosine Annealing scheduler.
 * [ExponentialDecay][declearn.optimizer.schedulers.ExponentialDecay]:
     Exponential decay scheduler.
 * [InverseScaling][declearn.optimizer.schedulers.InverseScaling]:
@@ -47,21 +49,11 @@ steps or rounds as time unit.
 * [PolynomialDecay][declearn.optimizer.schedulers.PolynomialDecay]:
     Polynomial decay scheduler.
 
-Cosine annealing rules
-----------------------
-* [CosineAnnealing][declearn.optimizer.schedulers.CosineAnnealing]:
-    Cosine Annealing scheduler over steps.
-* [CosineAnnealingRounds][declearn.optimizer.schedulers.CosineAnnealingRounds]:
-    Cosine Annealing scheduler over rounds.
-* [CosineAnnealingWarmRestarts]
-[declearn.optimizer.schedulers.CosineAnnealingWarmRestarts]:
-    Cosine Annealing with Warm Restarts scheduler over steps.
-* [CosineAnnealingWarmRestartsRounds]
-[declearn.optimizer.schedulers.CosineAnnealingWarmRestartsRounds]:
-    Cosine Annealing with Warm Restarts scheduler over rounds.
-
 Cyclic rate rules
 -----------------
+* [CosineAnnealingWarmRestarts]
+[declearn.optimizer.schedulers.CosineAnnealingWarmRestarts]:
+    Cosine Annealing with Warm Restarts scheduler (aka SGDR).
 * [CyclicExpRange][declearn.optimizer.schedulers.CyclicExpRange]:
     Cyclic Learning Rate (CLR) scheduling policy with exponential decay.
 * [CyclicTriangular][declearn.optimizer.schedulers.CyclicTriangular]:
@@ -78,9 +70,7 @@ Warmup schedulers
 from ._api import Scheduler
 from ._cosine import (
     CosineAnnealing,
-    CosineAnnealingRounds,
     CosineAnnealingWarmRestarts,
-    CosineAnnealingWarmRestartsRounds,
 )
 from ._cyclic import (
     CyclicExpRange,

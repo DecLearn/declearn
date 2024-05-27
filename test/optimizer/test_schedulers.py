@@ -26,9 +26,7 @@ import pytest
 from declearn.optimizer import list_rate_schedulers
 from declearn.optimizer.schedulers import (
     CosineAnnealing,
-    CosineAnnealingRounds,
     CosineAnnealingWarmRestarts,
-    CosineAnnealingWarmRestartsRounds,
     CyclicExpRange,
     CyclicTriangular,
     ExponentialDecay,
@@ -46,10 +44,8 @@ from declearn.test_utils import (
 )
 
 SCHEDULERS = [
-    CosineAnnealing(0.001, max_lr=0.01, n_steps=100),
-    CosineAnnealingRounds(0.001, max_lr=0.01, n_rounds=10),
+    CosineAnnealing(0.001, max_lr=0.01, duration=10, step_level=False),
     CosineAnnealingWarmRestarts(0.001, max_lr=0.01, period=100, t_mult=0.5),
-    CosineAnnealingWarmRestartsRounds(0.001, max_lr=0.01, period=2),
     CyclicExpRange(0.001, max_lr=0.01, stepsize=30, decay=0.9),
     CyclicTriangular(0.001, max_lr=0.01, stepsize=30, decay=True),
     ExponentialDecay(0.001, rate=0.1),

@@ -25,17 +25,20 @@ from declearn.optimizer.schedulers._api import Scheduler
 
 __all__ = [
     "CosineAnnealing",
-    "CosineAnnealingRounds",
     "CosineAnnealingWarmRestarts",
-    "CosineAnnealingWarmRestartsRounds",
 ]
 
 
 class CosineAnnealing(Scheduler):
-    """Cosine Annealing scheduler over steps.
+    """Cosine Annealing scheduler.
 
     This scheduler implements a cosine annealing that results
-    in the scheduled rate decreasing with each and every step.
+    in the scheduled rate decreasing at each training step or
+    round until a given index, beyond which it is constant.
+
+    It can be considered as a specific kind of decay rule that
+    is parameterized to reach a given constant value after a
+    given duration.
     """
 
     name = "cosine-annealing"
@@ -44,7 +47,8 @@ class CosineAnnealing(Scheduler):
         self,
         base: float,
         max_lr: float,
-        n_steps: int,
+        duration: int,
+        step_level: bool = True,
     ) -> None:
         """Instantiate the cosine annealing scheduler.
 
@@ -54,23 +58,26 @@ class CosineAnnealing(Scheduler):
             Minimum learning rate towards which to decrease.
         max_lr:
             Maximum learning rate, from which to start.
-        n_steps:
-            Number of steps during which to carry the cosine
-            annealing. Beyond that, constantly use the `base`
-            value.
+        duration:
+            Number of steps or rounds during which to carry the cosine
+            annealing. Beyond that, constantly use the `base` value.
+        step_level:
+            Whether to decay after each step rather than after each round.
         """
         super().__init__(base)
         self.max_lr = max_lr
-        self.n_steps = n_steps
+        self.duration = duration
+        self.step_level = step_level
 
     def compute_value(
         self,
         step: int,
         round_: int,
     ) -> float:
-        if step > self.n_steps:
+        unit = step if self.step_level else round_
+        if unit >= self.duration:
             return self.base
-        cosine = 1 + math.cos(step / self.n_steps * math.pi)
+        cosine = 1 + math.cos(unit / self.duration * math.pi)
         return self.base + 0.5 * (self.max_lr - self.base) * cosine
 
     def get_config(
@@ -78,58 +85,8 @@ class CosineAnnealing(Scheduler):
     ) -> Dict[str, Any]:
         config = super().get_config()
         config["max_lr"] = self.max_lr
-        config["n_steps"] = self.n_steps
-        return config
-
-
-class CosineAnnealingRounds(Scheduler):
-    """Cosine Annealing scheduler over rounds.
-
-    This scheduler implements a cosine annealing that results
-    in the scheduled rate decreasing at the start of each round.
-    """
-
-    name = "cosine-annealing-rounds"
-
-    def __init__(
-        self,
-        base: float,
-        max_lr: float,
-        n_rounds: int,
-    ) -> None:
-        """Instantiate the cosine annealing scheduler.
-
-        Parameters
-        ----------
-        base:
-            Minimum learning rate towards which to decrease.
-        max_lr:
-            Maximum learning rate, from which to start.
-        n_rounds:
-            Number of rounds during which to carry the cosine
-            annealing. Beyond that, constantly use the `base`
-            value.
-        """
-        super().__init__(base)
-        self.max_lr = max_lr
-        self.n_rounds = n_rounds
-        self._wrapped = CosineAnnealing(
-            base=self.base, max_lr=self.max_lr, n_steps=self.n_rounds
-        )
-
-    def compute_value(
-        self,
-        step: int,
-        round_: int,
-    ) -> float:
-        return self._wrapped.compute_value(step=round_, round_=0)
-
-    def get_config(
-        self,
-    ) -> Dict[str, Any]:
-        config = super().get_config()
-        config["max_lr"] = self.max_lr
-        config["n_rounds"] = self.n_rounds
+        config["duration"] = self.duration
+        config["step_level"] = self.step_level
         return config
 
 
@@ -138,9 +95,9 @@ class CosineAnnealingWarmRestarts(Scheduler):
 
     This scheduler implements a cosine annealing with warm restarts,
     that results in the scheduled rate decreasing with each and every
-    step over fixed-length periods, at the end of which the rate is
-    reset to (a factor of) its initial value and a new annealing cycle
-    begins. This is based on the SGDR paper [1].
+    step or round over fixed-length periods, at the end of which the
+    rate is reset to (a factor of) its initial value and a new annealing
+    cycle begins. This is based on the SGDR paper [1].
 
     References
     ----------
@@ -157,6 +114,7 @@ class CosineAnnealingWarmRestarts(Scheduler):
         max_lr: float,
         period: int,
         t_mult: float = 1.0,
+        step_level: bool = True,
     ) -> None:
         """Instantiate the cosine annealing with warm restarts scheduler.
 
@@ -167,18 +125,25 @@ class CosineAnnealingWarmRestarts(Scheduler):
         max_lr:
             Maximum learning rate, from which to start.
         period:
-            Number of steps during which to carry the cosine
+            Number of steps or rounds during which to carry the cosine
             annealing between warm restarts.
         t_mult:
             Multiplier by which to scale `max_lr` every time
             a warm restart occurs.
+        step_level:
+            Whether to decay after each step rather than after each round.
         """
+        # arguments serve modularity; pylint: disable=too-many-arguments
         super().__init__(base)
         self.max_lr = max_lr
         self.period = period
         self.t_mult = t_mult
+        self.step_level = step_level
         self._cosine_annealing = CosineAnnealing(
-            base=self.base, max_lr=self.max_lr, n_steps=self.period
+            base=self.base,
+            max_lr=self.max_lr,
+            duration=self.period,
+            step_level=self.step_level,
         )
 
     def compute_value(
@@ -188,7 +153,7 @@ class CosineAnnealingWarmRestarts(Scheduler):
     ) -> float:
         cycle, cstep = divmod(step, self.period)
         self._cosine_annealing.max_lr = self.max_lr * (self.t_mult**cycle)
-        return self._cosine_annealing.compute_value(step=cstep, round_=0)
+        return self._cosine_annealing.compute_value(step=cstep, round_=round_)
 
     def get_config(
         self,
@@ -197,54 +162,5 @@ class CosineAnnealingWarmRestarts(Scheduler):
         config["max_lr"] = self.max_lr
         config["period"] = self.period
         config["t_mult"] = self.t_mult
+        config["step_level"] = self.step_level
         return config
-
-
-class CosineAnnealingWarmRestartsRounds(CosineAnnealingWarmRestarts):
-    """Cosine Annealing with Warm Restarts scheduler over rounds.
-
-    This scheduler implements a cosine annealing with warm restarts,
-    that results in the scheduled rate decreasing at the start of each
-    round over fixed-length periods, at the end of which the rate is
-    reset to (a factor of) its initial value and a new annealing cycle
-    begins. This is based on the SGDR paper [1].
-
-    References
-    ----------
-    [1] Loshchilov & Hutter (2016).
-        SGDR: Stochastic Gradient Descent with Warm Restarts.
-        https://arxiv.org/abs/1608.03983v5
-    """
-
-    name = "cosine-annealing-warm-restarts-rounds"
-
-    def __init__(
-        self,
-        base: float,
-        max_lr: float,
-        period: int,
-        t_mult: float = 1.0,
-    ) -> None:
-        """Instantiate the cosine annealing with warm restarts scheduler.
-
-        Parameters
-        ----------
-        base:
-            Minimum learning rate towards which to decrease.
-        max_lr:
-            Maximum learning rate, from which to start.
-        period:
-            Number of rounds during which to carry the cosine
-            annealing between warm restarts.
-        t_mult:
-            Multiplier by which to scale `max_lr` every time
-            a warm restart occurs.
-        """
-        super().__init__(base, max_lr=max_lr, period=period, t_mult=t_mult)
-
-    def compute_value(
-        self,
-        step: int,
-        round_: int,
-    ) -> float:
-        return super().compute_value(step=round_, round_=0)
