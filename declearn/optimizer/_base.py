@@ -377,6 +377,7 @@ class Optimizer:
             weights = model.get_weights(trainable=True)
         # Run input gradients and weights through plug-in regularizers.
         if self.regularizers:
+            # false-positive; pylint: disable=possibly-used-before-assignment
             for regularizer in self.regularizers:
                 gradients = regularizer.run(gradients, weights)
         # Run input gradients through plug-in modules.
