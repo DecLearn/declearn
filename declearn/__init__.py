@@ -50,6 +50,8 @@ The package is organized into the following submodules:
     Framework-agnostic optimizer and algorithmic plug-ins API and tools.
 * [secagg][declearn.secagg]:
     Secure Aggregation API, methods and utils.
+* [training][declearn.training]:
+    Model training and evaluation orchestration tools.
 * [typing][declearn.typing]:
     Type hinting utils, defined and exposed for code readability purposes.
 * [utils][declearn.utils]:
@@ -69,6 +71,7 @@ from . import (
     model,
     optimizer,
     secagg,
+    training,
     typing,
     utils,
     version,

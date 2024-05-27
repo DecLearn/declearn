@@ -25,10 +25,10 @@ import numpy
 from declearn.aggregator import Aggregator
 from declearn.communication import messaging
 from declearn.dataset import Dataset
-from declearn.main.utils import TrainingManager
 from declearn.metrics import Metric, MetricSet
 from declearn.model.api import Model, Vector
 from declearn.optimizer import Optimizer
+from declearn.training import TrainingManager
 
 
 MockArray = mock.create_autospec(numpy.ndarray)

@@ -31,10 +31,10 @@ from declearn.communication.utils import (
     verify_server_message_validity,
 )
 from declearn.fairness.core import FairnessDataset
-from declearn.main.utils import TrainingManager
 from declearn.messaging import Error, Message, SerializedMessage
 from declearn.secagg.api import Decrypter, Encrypter
 from declearn.secagg.messaging import SecaggMessage, aggregate_secagg_messages
+from declearn.training import TrainingManager
 
 __all__ = [
     "FairnessAccuracy",

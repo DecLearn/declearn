@@ -29,15 +29,16 @@ from declearn.dataset import Dataset, DataSpecs
 from declearn.communication import NetworkClientConfig
 from declearn.communication.api import NetworkClient
 from declearn.main import FederatedClient
-from declearn.main.utils import Checkpointer, TrainingManager
+from declearn.main.utils import Checkpointer
 from declearn.metrics import MetricState
 from declearn.model.api import Model
 from declearn.secagg import messaging as secagg_messaging
 from declearn.secagg.api import SecaggConfigClient, SecaggSetupQuery
+from declearn.training import TrainingManager
 from declearn.utils import LOGGING_LEVEL_MAJOR
 
 try:
-    from declearn.main.privacy import DPTrainingManager
+    from declearn.training.dp import DPTrainingManager
 except ModuleNotFoundError:
     DP_AVAILABLE = False
 else:

@@ -33,8 +33,9 @@ from declearn.communication.utils import (
     verify_server_message_validity,
 )
 from declearn.dataset import Dataset, load_dataset_from_json
-from declearn.main.utils import Checkpointer, TrainingManager
+from declearn.main.utils import Checkpointer
 from declearn.messaging import Message, SerializedMessage
+from declearn.training import TrainingManager
 from declearn.secagg import parse_secagg_config_client
 from declearn.secagg.api import Encrypter, SecaggConfigClient, SecaggSetupQuery
 from declearn.secagg.messaging import SecaggEvaluationReply, SecaggTrainReply
@@ -423,7 +424,7 @@ class FederatedClient:
         # fmt: off
         # lazy-import the DPTrainingManager, that involves some optional,
         # heavy-loadtime dependencies; pylint: disable=import-outside-toplevel
-        from declearn.main.privacy import DPTrainingManager
+        from declearn.training.dp import DPTrainingManager
 
         # pylint: enable=import-outside-toplevel
         self.trainmanager = DPTrainingManager(

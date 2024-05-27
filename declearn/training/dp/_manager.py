@@ -26,11 +26,11 @@ from opacus.accountants.utils import get_noise_multiplier  # type: ignore
 from declearn.aggregator import Aggregator
 from declearn.communication import messaging
 from declearn.dataset import Dataset
-from declearn.main.utils import TrainingManager
 from declearn.metrics import MetricInputType, MetricSet
 from declearn.model.api import Model
 from declearn.optimizer import Optimizer
 from declearn.optimizer.modules import GaussianNoiseModule
+from declearn.training import TrainingManager
 from declearn.typing import Batch
 
 
@@ -205,7 +205,7 @@ class DPTrainingManager(TrainingManager):
         epsilon = self.accountant.get_epsilon(delta=delta)
         return epsilon, delta
 
-    def _run_train_step(
+    def run_train_step(
         self,
         batch: Batch,
     ) -> None:

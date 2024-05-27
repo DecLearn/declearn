@@ -26,17 +26,20 @@ import tqdm
 from declearn.aggregator import Aggregator
 from declearn.communication import messaging
 from declearn.dataset import Dataset
-from declearn.main.utils._constraints import (
+from declearn.metrics import (
+    MeanMetric,
+    Metric,
+    MetricInputType,
+    MetricSet,
+    MetricState,
+)
+from declearn.model.api import Model
+from declearn.optimizer import Optimizer
+from declearn.training._constraints import (
     Constraint,
     ConstraintSet,
     TimeoutConstraint,
 )
-from declearn.metrics import (
-    # fmt: off
-    MeanMetric, Metric, MetricInputType, MetricSet, MetricState
-)
-from declearn.model.api import Model
-from declearn.optimizer import Optimizer
 from declearn.typing import Batch
 from declearn.utils import LOGGING_LEVEL_MAJOR, get_logger
 
@@ -260,7 +263,7 @@ class TrainingManager:
         while not (stop_training or epochs.saturated):
             for batch in self.train_data.generate_batches(**batch_cfg):
                 try:
-                    self._run_train_step(batch)
+                    self.run_train_step(batch)
                 except StopIteration as exc:
                     self.logger.warning("Interrupting training round: %s", exc)
                     stop_training = True
@@ -277,7 +280,7 @@ class TrainingManager:
         effort.update(constraints.get_values())
         return effort
 
-    def _run_train_step(
+    def run_train_step(
         self,
         batch: Batch,
     ) -> None:

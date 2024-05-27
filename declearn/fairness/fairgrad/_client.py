@@ -35,9 +35,9 @@ from declearn.fairness.fairgrad._messages import (
     FairgradSetupQuery,
     FairgradWeights,
 )
-from declearn.main.utils import TrainingManager
 from declearn.messaging import Error, SerializedMessage
 from declearn.secagg.api import Encrypter
+from declearn.training import TrainingManager
 
 __all__ = [
     "FairgradControllerClient",
