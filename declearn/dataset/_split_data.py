@@ -130,6 +130,8 @@ def _extract_column_by_index(
         csc = inputs.tocsc()  # sparse matrix with efficient column slicing
         idx = [i for i in range(inputs.shape[1]) if i != target]
         inputs = type(inputs)(csc[:, idx])
+    else:  # pragma: no cover
+        raise TypeError("Invalid type for 'inputs'.")
     return inputs, labels
 
 

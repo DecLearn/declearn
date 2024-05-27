@@ -127,6 +127,8 @@ class TorchTestCase(ModelTestCase):
             inputs = torch.randint(0, 100, (2, 32, 128), generator=rng)
         elif self.kind == "CNN":
             inputs = torch.randn((2, 32, 3, 64, 64), generator=rng)
+        else:
+            raise ValueError("Invalid model 'kind'.")
         labels = torch.randint(0, 2, (2, 32, 1), generator=rng)
         labels = labels.type(torch.float)
         dataset = torch.utils.data.TensorDataset(inputs, labels)

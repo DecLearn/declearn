@@ -97,6 +97,8 @@ class TensorflowTestCase(ModelTestCase):
             inputs = rng.uniform((2, 32, 128), 0, 100, tf.int32)
         elif self.kind == "CNN":
             inputs = rng.normal((2, 32, 64, 64, 3))
+        else:
+            raise ValueError("Invalid model 'kind'.")
         labels = rng.uniform((2, 32), 0, 2, tf.int32)
         dataset = tf.data.Dataset.from_tensor_slices((inputs, labels, None))
         return list(iter(dataset))
@@ -133,6 +135,8 @@ class TensorflowTestCase(ModelTestCase):
                 tf_keras.layers.Dense(1, activation="sigmoid"),
             ]
             shape = [None, 64, 64, 3]
+        else:
+            raise ValueError("Invalid model 'kind'.")
         tfmod = tf_keras.Sequential(stack)
         tfmod.build(shape)  # as model is built, no data_info is required
         return TensorflowModel(tfmod, loss="binary_crossentropy", metrics=None)
