@@ -74,6 +74,7 @@ try:
 except ModuleNotFoundError:
     pass
 else:
+    import tensorflow.keras as tf_keras  # type: ignore
     from declearn.dataset.tensorflow import TensorflowDataset
     from declearn.model.tensorflow import TensorflowModel, TensorflowVector
 # torch imports
@@ -136,9 +137,7 @@ def _get_model_numpy() -> Model:
 def _get_model_tflow() -> Model:
     """Return a linear model with MSE loss in TensorFlow, with zero weights."""
     tf.random.set_seed(SEED)  # set seed
-    tfmod = tf.keras.Sequential(  # pylint: disable=no-member
-        tf.keras.layers.Dense(units=1)  # pylint: disable=no-member
-    )
+    tfmod = tf_keras.Sequential([tf_keras.layers.Dense(units=1)])
     tfmod.build([None, 100])
     model = TensorflowModel(tfmod, loss="mean_squared_error")
     with tf.device("CPU"):
