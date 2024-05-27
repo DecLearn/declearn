@@ -144,6 +144,8 @@ class HaikuTestCase(ModelTestCase):
             inputs = rng.choice(100, size=(2, 32, 128))
         elif self.kind == "CNN":
             inputs = rng.normal(size=(2, 32, 64, 64, 3)).astype("float32")
+        else:
+            raise ValueError("Invalid model 'kind'.")
         labels = rng.choice(2, size=(2, 32))
         # Convert that data to jax-numpy and return it.
         with warnings.catch_warnings():  # jax.jit(device=...) is deprecated
@@ -164,6 +166,8 @@ class HaikuTestCase(ModelTestCase):
         elif self.kind == "RNN":
             shape = [128]
             model_fn = rnn_fn
+        else:
+            raise ValueError("Invalid model 'kind'.")
         model = HaikuModel(model_fn, loss_fn)
         model.initialize(
             {
