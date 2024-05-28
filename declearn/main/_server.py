@@ -31,6 +31,7 @@ import numpy as np
 from declearn import messaging
 from declearn.communication import NetworkServerConfig
 from declearn.communication.api import NetworkServer
+from declearn.fairness.api import FairnessControllerServer
 from declearn.main.config import (
     EvaluateConfig,
     FLOptimConfig,
@@ -78,6 +79,7 @@ class FederatedServer:
         optim: Union[FLOptimConfig, str, Dict[str, Any]],
         metrics: Union[MetricSet, List[MetricInputType], None] = None,
         secagg: Union[SecaggConfigServer, Dict[str, Any], None] = None,
+        fairness: Union[FairnessControllerServer, None] = None,
         checkpoint: Union[Checkpointer, Dict[str, Any], str, None] = None,
         logger: Union[logging.Logger, str, None] = None,
     ) -> None:
@@ -106,6 +108,8 @@ class FederatedServer:
         secagg: SecaggConfigServer or dict or None, default=None
             Optional SecAgg config and setup controller
             or dict of kwargs to set one up.
+        fairness: FairnessControllerServer of None, default=None
+            Optional Fairness-aware Federated Learning controller.
         checkpoint: Checkpointer or dict or str or None, default=None
             Optional Checkpointer instance or instantiation dict to be
             used so as to save round-wise model, optimizer and metrics.
@@ -139,6 +143,8 @@ class FederatedServer:
         self.secagg = self._parse_secagg(secagg)
         self._decrypter = None  # type: Optional[Decrypter]
         self._secagg_peers = set()  # type: Set[str]
+        # Assign the optional FairnessControllerServer.
+        self.fairness = fairness  # TODO: add proper parser and alternatives
         # Set up private attributes to record the loss values and best weights.
         self._loss = {}  # type: Dict[int, float]
         self._best = None  # type: Optional[Vector]
@@ -287,6 +293,7 @@ class FederatedServer:
             round_i = 0
             while True:
                 round_i += 1
+                # TODO: await self.fairness_round(round_i, config.fairness)
                 await self.training_round(round_i, config.training)
                 await self.evaluation_round(round_i, config.evaluate)
                 if not self._keep_training(round_i, config.rounds, early_stop):
@@ -338,6 +345,7 @@ class FederatedServer:
             metrics=self.metrics.get_config()["metrics"],
             dpsgd=config.privacy is not None,
             secagg=None if self.secagg is None else self.secagg.secagg_type,
+            fairness=self.fairness is not None,
         )
         self.logger.info("Sending initialization requests to clients.")
         await self.netwk.broadcast_message(message)
@@ -352,6 +360,11 @@ class FederatedServer:
         # If local differential privacy is configured, set it up.
         if config.privacy is not None:
             await self._initialize_dpsgd(config)
+        # If fairness-aware federated learning is configured, set it up.
+        if self.fairness is not None:
+            self.aggrg = await self.fairness.setup_fairness(
+                netwk=self.netwk, aggregator=self.aggrg, secagg=self._decrypter
+            )
         self.logger.info("Initialization was successful.")
 
     async def _require_and_process_data_info(
