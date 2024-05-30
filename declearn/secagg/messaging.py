@@ -19,18 +19,24 @@
 
 import abc
 import dataclasses
-from typing import Dict, Generic, Mapping, TypeVar
+from typing import Dict, Generic, List, Mapping, TypeVar
 
 from typing_extensions import Self  # future: import from typing (py >=3.11)
 
 from declearn.aggregator import ModelUpdates
-from declearn.messaging import EvaluationReply, Message, TrainReply
+from declearn.messaging import (
+    EvaluationReply,
+    FairnessReply,
+    Message,
+    TrainReply,
+)
 from declearn.metrics import MetricState
 from declearn.optimizer.modules import AuxVar
 from declearn.secagg.api import Decrypter, Encrypter, SecureAggregate
 
 __all__ = [
     "SecaggEvaluationReply",
+    "SecaggFairnessReply",
     "SecaggMessage",
     "SecaggTrainReply",
     "aggregate_secagg_messages",
@@ -256,3 +262,44 @@ class SecaggEvaluationReply(SecaggMessage[EvaluationReply]):
         return self.__class__(
             loss=loss, n_steps=n_steps, t_spent=t_spent, metrics=metrics
         )
+
+
+@dataclasses.dataclass
+class SecaggFairnessReply(SecaggMessage[FairnessReply]):
+    """SecAgg-wrapped 'FairnessReply' message."""
+
+    typekey = "secagg_fairness_reply"
+
+    values: List[int]
+
+    @classmethod
+    def from_cleartext_message(
+        cls,
+        cleartext: FairnessReply,
+        encrypter: Encrypter,
+    ) -> Self:
+        values = [encrypter.encrypt_float(value) for value in cleartext.values]
+        return cls(values=values)
+
+    def decrypt_wrapped_message(
+        self,
+        decrypter: Decrypter,
+    ) -> FairnessReply:
+        values = [decrypter.decrypt_float(value) for value in self.values]
+        return FairnessReply(values=values)
+
+    def aggregate(
+        self,
+        other: Self,
+        decrypter: Decrypter,
+    ) -> Self:
+        if len(self.values) != len(other.values):
+            raise ValueError(
+                "Cannot aggregate SecAgg-protected fairness values with "
+                "distinct shapes."
+            )
+        values = [
+            decrypter.sum_encrypted([v_a, v_b])
+            for v_a, v_b in zip(self.values, other.values)
+        ]
+        return self.__class__(values=values)

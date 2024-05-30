@@ -31,9 +31,9 @@ import numpy as np
 from declearn import messaging
 from declearn.communication import NetworkServerConfig
 from declearn.communication.api import NetworkServer
-from declearn.fairness.api import FairnessControllerServer
 from declearn.main.config import (
     EvaluateConfig,
+    FairnessConfig,
     FLOptimConfig,
     FLRunConfig,
     TrainingConfig,
@@ -48,14 +48,9 @@ from declearn.metrics import MetricInputType, MetricSet
 from declearn.metrics._mean import MeanState
 from declearn.model.api import Model, Vector
 from declearn.optimizer.modules import AuxVar
+from declearn.secagg import messaging as secagg_messaging
 from declearn.secagg import parse_secagg_config_server
 from declearn.secagg.api import Decrypter, SecaggConfigServer
-from declearn.secagg.messaging import (
-    SecaggEvaluationReply,
-    SecaggMessage,
-    SecaggTrainReply,
-    aggregate_secagg_messages,
-)
 from declearn.utils import deserialize_object, get_logger
 
 
@@ -79,7 +74,6 @@ class FederatedServer:
         optim: Union[FLOptimConfig, str, Dict[str, Any]],
         metrics: Union[MetricSet, List[MetricInputType], None] = None,
         secagg: Union[SecaggConfigServer, Dict[str, Any], None] = None,
-        fairness: Union[FairnessControllerServer, None] = None,
         checkpoint: Union[Checkpointer, Dict[str, Any], str, None] = None,
         logger: Union[logging.Logger, str, None] = None,
     ) -> None:
@@ -108,8 +102,6 @@ class FederatedServer:
         secagg: SecaggConfigServer or dict or None, default=None
             Optional SecAgg config and setup controller
             or dict of kwargs to set one up.
-        fairness: FairnessControllerServer of None, default=None
-            Optional Fairness-aware Federated Learning controller.
         checkpoint: Checkpointer or dict or str or None, default=None
             Optional Checkpointer instance or instantiation dict to be
             used so as to save round-wise model, optimizer and metrics.
@@ -133,6 +125,7 @@ class FederatedServer:
         self.aggrg = optim.aggregator
         self.optim = optim.server_opt
         self.c_opt = optim.client_opt
+        self.fairness = optim.fairness  # note: optional
         # Assign the wrapped MetricSet.
         self.metrics = MetricSet.from_specs(metrics)
         # Assign an optional checkpointer.
@@ -143,8 +136,6 @@ class FederatedServer:
         self.secagg = self._parse_secagg(secagg)
         self._decrypter = None  # type: Optional[Decrypter]
         self._secagg_peers = set()  # type: Set[str]
-        # Assign the optional FairnessControllerServer.
-        self.fairness = fairness  # TODO: add proper parser and alternatives
         # Set up private attributes to record the loss values and best weights.
         self._loss = {}  # type: Dict[int, float]
         self._best = None  # type: Optional[Vector]
@@ -277,7 +268,8 @@ class FederatedServer:
             specify the federated learning process, including clients
             registration, training and validation rounds' setup, plus
             optional elements: local differential-privacy parameters,
-            and/or an early-stopping criterion.
+            fairness evaluation parameters, and/or an early-stopping
+            criterion.
         """
         # Instantiate the early-stopping criterion, if any.
         early_stop = None  # type: Optional[EarlyStopping]
@@ -293,7 +285,8 @@ class FederatedServer:
             round_i = 0
             while True:
                 round_i += 1
-                # TODO: await self.fairness_round(round_i, config.fairness)
+                if self.fairness is not None:
+                    await self.fairness_round(round_i, config.fairness)
                 await self.training_round(round_i, config.training)
                 await self.evaluation_round(round_i, config.evaluate)
                 if not self._keep_training(round_i, config.rounds, early_stop):
@@ -529,11 +522,69 @@ class FederatedServer:
 
     def _aggregate_secagg_replies(
         self,
-        replies: Mapping[str, SecaggMessage[MessageT]],
+        replies: Mapping[str, secagg_messaging.SecaggMessage[MessageT]],
     ) -> MessageT:
         """Secure-Aggregate (and decrypt) client-issued encrypted messages."""
         assert self._decrypter is not None
-        return aggregate_secagg_messages(replies, decrypter=self._decrypter)
+        return secagg_messaging.aggregate_secagg_messages(
+            replies, decrypter=self._decrypter
+        )
+
+    async def fairness_round(
+        self,
+        round_i: int,
+        fairness_cfg: FairnessConfig,
+    ) -> None:
+        """Orchestrate a fairness round.
+
+        Parameters
+        ----------
+        round_i:
+            Index of the training round.
+        fairness_cfg:
+            FairnessConfig dataclass instance wrapping data-batching
+            and computational effort constraints hyper-parameters for
+            fairness evaluation.
+        """
+        assert self.fairness is not None
+        # Run SecAgg setup when needed.
+        self.logger.info("Initiating fairness-enforcing round %s", round_i)
+        clients = self.netwk.client_names  # FUTURE: enable sampling(?)
+        if self.secagg is not None and clients.difference(self._secagg_peers):
+            await self.setup_secagg(clients)
+        # Send a query to clients, including model weights when required.
+        query = messaging.FairnessQuery(
+            round_i=round_i,
+            batch_size=fairness_cfg.batch_size,
+            n_batch=fairness_cfg.n_batch,
+            thresh=fairness_cfg.thresh,
+            weights=None,
+        )
+        await self._send_request_with_optional_weights(query, clients)
+        # Await and (secure-)aggregate) results.
+        self.logger.info("Awaiting clients' fairness measures.")
+        if self._decrypter is None:
+            replies = await self._collect_results(
+                clients, messaging.FairnessReply, "fairness round"
+            )
+            if len(set(len(r.values) for r in replies.values())) != 1:
+                error = "Clients sent fairness values of different lengths."
+                self.logger.error(error)
+                await self.netwk.broadcast_message(messaging.Error(error))
+                raise RuntimeError(error)
+            values = [sum(c_values) for c_values in zip(*replies.values())]
+        else:
+            secagg_replies = await self._collect_results(
+                clients, secagg_messaging.SecaggFairnessReply, "fairness round"
+            )
+            values = self._aggregate_secagg_replies(secagg_replies).values
+        # Have the fairness controller process results.
+        await self.fairness.finalize_fairness_round(
+            round_i=round_i,
+            values=values,
+            netwk=self.netwk,
+            secagg=self._decrypter,
+        )
 
     async def training_round(
         self,
@@ -564,7 +615,7 @@ class FederatedServer:
             )
         else:
             secagg_results = await self._collect_results(
-                clients, SecaggTrainReply, "training"
+                clients, secagg_messaging.SecaggTrainReply, "training"
             )
             results = {
                 "aggregated": self._aggregate_secagg_replies(secagg_results)
@@ -609,7 +660,11 @@ class FederatedServer:
 
     async def _send_request_with_optional_weights(
         self,
-        msg_light: Union[messaging.TrainRequest, messaging.EvaluationRequest],
+        msg_light: Union[
+            messaging.TrainRequest,
+            messaging.EvaluationRequest,
+            messaging.FairnessQuery,
+        ],
         clients: Set[str],
     ) -> None:
         """Send a request to clients, sparingly adding model weights to it.
@@ -693,7 +748,7 @@ class FederatedServer:
             )
         else:
             secagg_results = await self._collect_results(
-                clients, SecaggEvaluationReply, "evaluation"
+                clients, secagg_messaging.SecaggEvaluationReply, "evaluation"
             )
             results = {
                 "aggregated": self._aggregate_secagg_replies(secagg_results)

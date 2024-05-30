@@ -18,7 +18,7 @@
 """API messages for fairness-aware federated learning setup and rounds."""
 
 import dataclasses
-from typing import Any, List, Optional, Tuple
+from typing import Any, List, Tuple
 
 from typing_extensions import Self  # future: import from typing (py >=3.11)
 
@@ -30,8 +30,6 @@ __all__ = [
     "FairnessAccuracy",
     "FairnessCounts",
     "FairnessGroups",
-    "FairnessRoundQuery",
-    "FairnessRoundReply",
     "SecaggFairnessAccuracy",
     "SecaggFairnessCounts",
 ]
@@ -168,46 +166,3 @@ class FairnessGroups(Message):
     ) -> Self:
         kwargs["groups"] = [tuple(group) for group in kwargs["groups"]]
         return super().from_kwargs(**kwargs)
-
-
-@dataclasses.dataclass
-class FairnessRoundQuery(Message):
-    """Base Message for server-emitted fairness-computation queries.
-
-    The base `FairnessRoundQuery` defines information that is used
-    when evaluating a model's accuracy and/or loss over group-wise
-    training samples.
-
-    Subclasses may be defined to add algorithm-specific information.
-
-    Fields
-    ------
-    batch_size:
-        Number of samples per batch when computing metrics.
-    n_batch:
-        Optional maximum number of batches to draw per group.
-        If None, use the entire wrapped dataset.
-    thresh:
-        Optional binarization threshold for binary classification
-        models' output scores. If None, use 0.5 by default, or 0.0
-        for `SklearnSGDModel` instances.
-        Unused for multinomial classifiers (argmax over scores).
-    """
-
-    batch_size: int = 32
-    n_batch: Optional[int] = None
-    thresh: Optional[float] = None
-
-    typekey = "fairness-round-query"
-
-
-@dataclasses.dataclass
-class FairnessRoundReply(Message):
-    """Base Message for client-emitted fairness-round end signal.
-
-    By default this message is empty, merely noticing that things
-    went well. Subclasses may be used to convey algorithm-specific
-    results or information.
-    """
-
-    typekey = "fairness-round-reply"

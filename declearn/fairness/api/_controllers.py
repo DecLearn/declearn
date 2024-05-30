@@ -32,13 +32,15 @@ from declearn.communication.utils import (
 from declearn.fairness.api._messages import (
     FairnessCounts,
     FairnessGroups,
-    FairnessRoundQuery,
     SecaggFairnessCounts,
 )
-from declearn.fairness.core import FairnessDataset
-from declearn.messaging import Error, Message, SerializedMessage
+from declearn.fairness.core import FairnessAccuracyComputer, FairnessDataset
+from declearn.messaging import Error, FairnessQuery, FairnessReply, Message
 from declearn.secagg.api import Decrypter, Encrypter
-from declearn.secagg.messaging import aggregate_secagg_messages
+from declearn.secagg.messaging import (
+    aggregate_secagg_messages,
+    SecaggFairnessReply,
+)
 from declearn.training import TrainingManager
 
 __all__ = [
@@ -170,12 +172,11 @@ class FairnessControllerClient(metaclass=abc.ABCMeta):
             or may not have been altered compared with the input one.
         """
 
-    @abc.abstractmethod
     async def fairness_round(
         self,
         netwk: NetworkClient,
+        query: FairnessQuery,
         manager: TrainingManager,
-        received: SerializedMessage[FairnessRoundQuery],
         secagg: Optional[Encrypter],
     ) -> None:
         """Participate in a round of actions to enforce fairness.
@@ -184,11 +185,93 @@ class FairnessControllerClient(metaclass=abc.ABCMeta):
         ----------
         netwk:
             NetworkClient endpoint instance, connected to a server.
+        query:
+            `FairnessQuery` message to participate in a fairness round.
         manager:
             TrainingManager instance holding the local model, optimizer, etc.
             This method may (and usually does) have side effects on this.
-        received:
-            Serialized query message to participated in a fairness round.
+        secagg:
+            Optional SecAgg encryption controller.
+        """
+        values = self.compute_fairness_measures(query, manager)
+        reply = FairnessReply(values=values)
+        if secagg is None:
+            await netwk.send_message(reply)
+        else:
+            await netwk.send_message(
+                SecaggFairnessReply.from_cleartext_message(reply, secagg)
+            )
+        await self.finalize_fairness_round(netwk, values, manager, secagg)
+
+    def compute_fairness_measures(
+        self,
+        query: FairnessQuery,
+        manager: TrainingManager,
+    ) -> List[float]:
+        """Compute fairness measures based on a received query.
+
+        By default, compute and return group-wise accuracy metrics,
+        weighted by group-wise sample counts. This may be modified
+        by algorithm-specific subclasses depending on algorithms'
+        needs.
+
+        Parameters
+        ----------
+        query:
+            `FairnessQuery` message with computational effort constraints,
+            and optionally model weights to assign before evaluation.
+        manager:
+            TrainingManager instance holding the model to evaluate and the
+            training dataset on which to do so.
+
+        Returns
+        -------
+        values:
+            Computed values, as a deterministic-length ordered list
+            of float values.
+        """
+        assert isinstance(manager.train_data, FairnessDataset)
+        if query.weights is not None:
+            manager.model.set_weights(query.weights, trainable=True)
+        # Compute group-wise accuracy metrics.
+        computer = FairnessAccuracyComputer(manager.train_data)
+        accuracy = computer.compute_groupwise_accuracy(
+            model=manager.model,
+            batch_size=query.batch_size,
+            n_batch=query.n_batch,
+            thresh=query.thresh,
+        )
+        # Scale computed accuracy metrics by sample counts.
+        accuracy = {
+            key: val * computer.counts[key] for key, val in accuracy.items()
+        }
+        # Gather ordered values (filling-in groups without samples).
+        return [accuracy.get(group, 0.0) for group in self.groups]
+
+    @abc.abstractmethod
+    async def finalize_fairness_round(
+        self,
+        netwk: NetworkClient,
+        values: List[float],
+        manager: TrainingManager,
+        secagg: Optional[Encrypter],
+    ) -> None:
+        """Take actions to enforce fairness.
+
+        This method is designed to be called after an initial query
+        has been received and responded to, resulting in computing
+        and sharing fairness(-related) metrics.
+
+        Parameters
+        ----------
+        netwk:
+            NetworkClient endpoint instance, connected to a server.
+        values:
+            List of locally-computed evaluation metrics, already shared
+            with the server for their (secure-)aggregation.
+        manager:
+            TrainingManager instance holding the local model, optimizer, etc.
+            This method may (and usually does) have side effects on this.
         secagg:
             Optional SecAgg encryption controller.
         """
@@ -367,19 +450,27 @@ class FairnessControllerServer(metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    async def fairness_round(
+    async def finalize_fairness_round(
         self,
         round_i: int,
+        values: List[float],
         netwk: NetworkServer,
         secagg: Optional[Decrypter],
     ) -> None:
         """Orchestrate a round of actions to enforce fairness.
+
+        This method is designed to be called after an initial query
+        has been sent and responded to by clients, resulting in the
+        federated computation of fairness(-related) metrics.
 
         Parameters
         ----------
         round_i:
             Index of the current round (reflecting that of an upcoming
             training round).
+        values:
+            Aggregated metrics resulting from the fairness evaluation
+            run by clients at this round.
         netwk:
             NetworkServer endpoint instance, to which clients are registered.
         secagg:

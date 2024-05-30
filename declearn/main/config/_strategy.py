@@ -19,10 +19,11 @@
 
 import dataclasses
 import functools
-from typing import Any, Dict, Union
+from typing import Any, Dict, Optional, Union
 
 
 from declearn.aggregator import Aggregator, AveragingAggregator
+from declearn.fairness.api import FairnessControllerServer
 from declearn.optimizer import Optimizer
 from declearn.utils import TomlConfig, access_registered, deserialize_object
 
@@ -59,6 +60,9 @@ class FLOptimConfig(TomlConfig):
     - aggregator: Aggregator, default=AverageAggregator()
         Client weights aggregator to be used by the server so as
         to conduct the round-wise aggregation of client udpates.
+    - fairness: Fairness or None, default=None
+        Optional `FairnessControllerServer` instance specifying
+        an algorithm to enforce fairness of the trained model.
 
     Notes
     -----
@@ -98,6 +102,7 @@ class FLOptimConfig(TomlConfig):
     aggregator: Aggregator = dataclasses.field(
         default_factory=AveragingAggregator
     )
+    fairness: Optional[FairnessControllerServer] = None
 
     @classmethod
     def parse_client_opt(

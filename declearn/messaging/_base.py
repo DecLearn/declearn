@@ -36,6 +36,8 @@ __all__ = [
     "Error",
     "EvaluationReply",
     "EvaluationRequest",
+    "FairnessQuery",
+    "FairnessReply",
     "GenericMessage",
     "InitRequest",
     "InitReply",
@@ -98,6 +100,44 @@ class EvaluationReply(Message):
         kwargs = super().to_kwargs()
         kwargs["metrics"] = self.metrics
         return kwargs
+
+
+@dataclasses.dataclass
+class FairnessQuery(Message):
+    """Base Message for server-emitted fairness-computation queries.
+
+    This message conveys hyper-parameters used when evaluating a model's
+    accuracy and/or loss over group-wise samples (from which fairness is
+    derived). Model weights may be attached.
+
+    Algorithm-specific information should be conveyed using ad-hoc
+    messages exchanged as part of fairness-enforcement routines.
+    """
+
+    typekey = "fairness-request"
+
+    round_i: int
+    batch_size: int = 32
+    n_batch: Optional[int] = None
+    thresh: Optional[float] = None
+    weights: Optional[Vector] = None
+
+
+@dataclasses.dataclass
+class FairnessReply(Message):
+    """Base Message for client-emitted fairness-computation results.
+
+    This message conveys results from the evaluation of a model's accuracy
+    and/or loss over group-wise samples (from which fairness is derived).
+
+    This information is generically stored as a list of `values`, the
+    mearning and structure of which is left up to algorithm-specific
+    controllers.
+    """
+
+    typekey = "fairness-reply"
+
+    values: List[float] = dataclasses.field(default_factory=list)
 
 
 @dataclasses.dataclass

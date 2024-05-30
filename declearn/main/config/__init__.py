@@ -33,6 +33,8 @@ The following dataclasses are articulated by `FLRunConfig`:
 
 * [EvaluateConfig][declearn.main.config.EvaluateConfig]:
     Hyper-parameters for an evaluation round.
+* [FairnessConfig][declearn.main.config.FairnessConfig]:
+    Dataclass wrapping parameters for fairness evaluation rounds.
 * [RegisterConfig][declearn.main.config.RegisterConfig]:
     Hyper-parameters for clients registration.
 * [TrainingConfig][declearn.main.config.TrainingConfig]:
@@ -41,6 +43,7 @@ The following dataclasses are articulated by `FLRunConfig`:
 
 from ._dataclasses import (
     EvaluateConfig,
+    FairnessConfig,
     PrivacyConfig,
     RegisterConfig,
     TrainingConfig,

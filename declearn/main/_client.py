@@ -36,7 +36,6 @@ from declearn.dataset import Dataset, load_dataset_from_json
 from declearn.fairness.api import (
     FairnessControllerClient,
     FairnessSetupQuery,
-    FairnessRoundQuery,
 )
 from declearn.main.utils import Checkpointer
 from declearn.messaging import Message, SerializedMessage
@@ -254,8 +253,8 @@ class FederatedClient:
             await self.training_round(message.deserialize())
         elif issubclass(message.message_cls, messaging.EvaluationRequest):
             await self.evaluation_round(message.deserialize())
-        elif issubclass(message.message_cls, FairnessRoundQuery):
-            await self.fairness_round(message)  # note: keep serialized
+        elif issubclass(message.message_cls, messaging.FairnessQuery):
+            await self.fairness_round(message.deserialize())
         elif issubclass(message.message_cls, SecaggSetupQuery):
             await self.setup_secagg(message)  # note: keep serialized
         elif issubclass(message.message_cls, messaging.StopTraining):
@@ -622,7 +621,7 @@ class FederatedClient:
 
     async def fairness_round(
         self,
-        received: SerializedMessage[FairnessRoundQuery],
+        query: messaging.FairnessQuery,
     ) -> None:
         """Handle a server request to run a fairness-related round.
 
@@ -633,8 +632,8 @@ class FederatedClient:
 
         Parameters
         ----------
-        received:
-            Serialized `FairnessRoundQuery` message from the server.
+        query:
+            `FairnessQuery` message from the server.
 
         Raises
         ------
@@ -645,9 +644,8 @@ class FederatedClient:
         # If no fairness controller was set up, raise a RuntimeError.
         if self.fairness is None:
             error = (
-                "Received a query to participate in a fairness round "
-                f"('{received.message_cls.__name__}'), but no fairness "
-                "controller was set up."
+                "Received a query to participate in a fairness round, "
+                "but no fairness controller was set up."
             )
             self.logger.critical(error)
             await self.netwk.send_message(messaging.Error(error))
@@ -655,8 +653,8 @@ class FederatedClient:
         # Otherwise, run the controller's routine.
         await self.fairness.fairness_round(
             netwk=self.netwk,
+            query=query,
             manager=self.trainmanager,
-            received=received,
             secagg=self._encrypter,
         )
 

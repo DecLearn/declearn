@@ -17,7 +17,7 @@
 
 """Client-side Fed-FairGrad controller."""
 
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 
 from declearn.communication.api import NetworkClient
@@ -27,7 +27,6 @@ from declearn.fairness.api import (
     FairnessRoundQuery,
     FairnessRoundReply,
     FairnessControllerClient,
-    FairnessSetupQuery,
     SecaggFairnessAccuracy,
 )
 from declearn.fairness.core import FairnessAccuracyComputer, FairnessDataset
@@ -60,8 +59,9 @@ class FairgradControllerClient(FairnessControllerClient):
     async def finalize_fairness_setup(
         self,
         netwk: NetworkClient,
-        query: FairnessSetupQuery,
         manager: TrainingManager,
+        secagg: Optional[Encrypter],
+        params: Dict[str, Any],
     ) -> TrainingManager:
         assert isinstance(manager.train_data, FairnessDataset)
         # Set up a controller to compute group-wise model accuracy.

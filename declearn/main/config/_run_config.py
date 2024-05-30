@@ -25,6 +25,7 @@ from typing_extensions import Self  # future: import from typing (py >=3.11)
 from declearn.main.utils import EarlyStopConfig
 from declearn.main.config._dataclasses import (
     EvaluateConfig,
+    FairnessConfig,
     PrivacyConfig,
     RegisterConfig,
     TrainingConfig,
@@ -66,6 +67,10 @@ class FLRunConfig(TomlConfig):
         and data-batching instructions.
     - evaluate: EvaluateConfig
         Parameters for validation rounds, similar to training ones.
+    - fairness: FairnessConfig or None
+        Parameters for fairness evaluation rounds.
+        Only used when an algorithm to enforce fairness is set up,
+        as part of the process's federated optimization configuration.
     - privacy: PrivacyConfig or None
         Optional parameters to set up local differential privacy,
         by having clients use the DP-SGD algorithm for training.
@@ -90,12 +95,15 @@ class FLRunConfig(TomlConfig):
       batch size will be used for evaluation as well.
     - If `privacy` is provided and the 'poisson' parameter is unspecified
       for `training`, it will be set to True by default rather than False.
+    - If `fairness` is not provided or lacks a 'batch_size' parameter,
+      that of evaluation (or, by extension, training) will be used.
     """
 
     rounds: int
     register: RegisterConfig
     training: TrainingConfig
     evaluate: EvaluateConfig
+    fairness: FairnessConfig
     privacy: Optional[PrivacyConfig] = None
     early_stop: Optional[EarlyStopConfig] = None  # type: ignore  # is a type
 
@@ -128,7 +136,7 @@ class FLRunConfig(TomlConfig):
         # If evaluation batch size is not set, use the same as training.
         # Note: if inputs have invalid formats, let the parent method fail.
         evaluate = kwargs.setdefault("evaluate", {})
-        if isinstance(evaluate, dict):
+        if isinstance(evaluate, dict) and ("batch_size" not in evaluate):
             training = kwargs.get("training")
             if isinstance(training, dict):
                 evaluate.setdefault("batch_size", training.get("batch_size"))
@@ -141,5 +149,14 @@ class FLRunConfig(TomlConfig):
             training = kwargs.get("training")
             if isinstance(training, dict):
                 training.setdefault("poisson", True)
+        # If fairness batch size is not set, use the same as evaluation.
+        # Note: if inputs have invalid formats, let the parent method fail.
+        fairness = kwargs.setdefault("fairness", {})
+        if isinstance(fairness, dict) and ("batch_size" not in fairness):
+            evaluate = kwargs.get("evaluate")
+            if isinstance(evaluate, dict):
+                fairness.setdefault("batch_size", evaluate.get("batch_size"))
+            elif isinstance(evaluate, EvaluateConfig):
+                fairness.setdefault("batch_size", evaluate.batch_size)
         # Delegate the rest of the work to the parent method.
         return super().from_params(**kwargs)

@@ -33,6 +33,8 @@ Base messages
 * [Error][declearn.messaging.Error]
 * [EvaluationReply][declearn.messaging.EvaluationReply]
 * [EvaluationRequest][declearn.messaging.EvaluationRequest]
+* [FairnessQuery][declearn.messaging.FairnessQuery]
+* [FairnessReply][declearn.messaging.FairnessReply]
 * [GenericMessage][declearn.messaging.GenericMessage]
 * [InitRequest][declearn.messaging.InitRequest]
 * [InitReply][declearn.messaging.InitReply]
@@ -55,6 +57,8 @@ from ._base import (
     Error,
     EvaluationReply,
     EvaluationRequest,
+    FairnessQuery,
+    FairnessReply,
     GenericMessage,
     InitRequest,
     InitReply,

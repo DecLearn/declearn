@@ -21,8 +21,6 @@ from ._messages import (
     FairnessAccuracy,
     FairnessCounts,
     FairnessGroups,
-    FairnessRoundQuery,
-    FairnessRoundReply,
     SecaggFairnessAccuracy,
     SecaggFairnessCounts,
 )
