@@ -33,16 +33,13 @@ from declearn.communication.utils import (
     verify_server_message_validity,
 )
 from declearn.dataset import Dataset, load_dataset_from_json
-from declearn.fairness.api import (
-    FairnessControllerClient,
-    FairnessSetupQuery,
-)
+from declearn.fairness.api import FairnessControllerClient
 from declearn.main.utils import Checkpointer
 from declearn.messaging import Message, SerializedMessage
 from declearn.training import TrainingManager
 from declearn.secagg import parse_secagg_config_client
 from declearn.secagg.api import Encrypter, SecaggConfigClient, SecaggSetupQuery
-from declearn.secagg.messaging import SecaggEvaluationReply, SecaggTrainReply
+from declearn.secagg import messaging as secagg_messaging
 from declearn.utils import LOGGING_LEVEL_MAJOR, get_logger
 
 
@@ -457,27 +454,18 @@ class FederatedClient:
         and should never be called in another context.
         """
         assert self.trainmanager is not None
-        # Parse the serialized FairnessSetupQuery.
-        try:
-            received = await self.netwk.recv_message()
-            query = await verify_server_message_validity(
-                netwk=self.netwk,
-                received=received,
-                expected=FairnessSetupQuery,  # type: ignore[type-abstract]
-            )
-        except Exception as exc:
-            error = "Failed to parse fairness setup query."
-            self.logger.critical(error)
-            await self.netwk.send_message(messaging.Error(error))
-            raise RuntimeError(error) from exc
+        # Await and deserialize a FairnessSetupQuery.
+        received = await self.netwk.recv_message()
+        query = await verify_server_message_validity(
+            self.netwk, received, expected=messaging.FairnessSetupQuery
+        )
         # Instantiate a FairnessControllerClient and run its setup routine.
         try:
-            self.fairness = query.instantiate_controller()
-            self.trainmanager = await self.fairness.setup_fairness(
-                netwk=self.netwk,
-                manager=self.trainmanager,
-                secagg=self._encrypter,
-                params=query.get_setup_params(),
+            self.fairness = FairnessControllerClient.from_setup_query(
+                query=query, manager=self.trainmanager
+            )
+            await self.fairness.setup_fairness(
+                netwk=self.netwk, secagg=self._encrypter
             )
         except Exception as exc:
             error = (
@@ -562,7 +550,7 @@ class FederatedClient:
         if self._encrypter is not None and isinstance(
             reply, messaging.TrainReply
         ):
-            reply = SecaggTrainReply.from_cleartext_message(
+            reply = secagg_messaging.SecaggTrainReply.from_cleartext_message(
                 cleartext=reply, encrypter=self._encrypter
             )
         # Send training results (or error message) to the server.
@@ -613,7 +601,8 @@ class FederatedClient:
                 reply.metrics.clear()
             # Optionally SecAgg-encrypt results.
             if self._encrypter is not None:
-                reply = SecaggEvaluationReply.from_cleartext_message(
+                msg_cls = secagg_messaging.SecaggEvaluationReply
+                reply = msg_cls.from_cleartext_message(
                     cleartext=reply, encrypter=self._encrypter
                 )
         # Send evaluation results (or error message) to the server.
@@ -651,12 +640,17 @@ class FederatedClient:
             await self.netwk.send_message(messaging.Error(error))
             raise RuntimeError(error)
         # Otherwise, run the controller's routine.
-        await self.fairness.fairness_round(
-            netwk=self.netwk,
-            query=query,
-            manager=self.trainmanager,
-            secagg=self._encrypter,
+        metrics = await self.fairness.fairness_round(
+            netwk=self.netwk, query=query, secagg=self._encrypter
         )
+        # Optionally save computed fairness metrics.
+        if self.ckptr is not None:
+            self.ckptr.save_metrics(
+                metrics=metrics,
+                prefix="fairness_metrics",
+                append=(query.round_i > 0),
+                timestamp=f"round_{query.round_i}",
+            )
 
     async def stop_training(
         self,

@@ -26,6 +26,7 @@ from typing_extensions import Self  # future: import from typing (py >=3.11)
 from declearn.aggregator import ModelUpdates
 from declearn.messaging import (
     EvaluationReply,
+    FairnessCounts,
     FairnessReply,
     Message,
     TrainReply,
@@ -36,6 +37,7 @@ from declearn.secagg.api import Decrypter, Encrypter, SecureAggregate
 
 __all__ = [
     "SecaggEvaluationReply",
+    "SecaggFairnessCounts",
     "SecaggFairnessReply",
     "SecaggMessage",
     "SecaggTrainReply",
@@ -262,6 +264,42 @@ class SecaggEvaluationReply(SecaggMessage[EvaluationReply]):
         return self.__class__(
             loss=loss, n_steps=n_steps, t_spent=t_spent, metrics=metrics
         )
+
+
+@dataclasses.dataclass
+class SecaggFairnessCounts(SecaggMessage[FairnessCounts]):
+    """SecAgg counterpart of the 'FairnessCounts' message class."""
+
+    counts: List[int]
+
+    typekey = "secagg-fairness-counts"
+
+    @classmethod
+    def from_cleartext_message(
+        cls,
+        cleartext: FairnessCounts,
+        encrypter: Encrypter,
+    ) -> Self:
+        counts = [encrypter.encrypt_uint(val) for val in cleartext.counts]
+        return cls(counts=counts)
+
+    def decrypt_wrapped_message(
+        self,
+        decrypter: Decrypter,
+    ) -> FairnessCounts:
+        counts = [decrypter.decrypt_uint(val) for val in self.counts]
+        return FairnessCounts(counts=counts)
+
+    def aggregate(
+        self,
+        other: Self,
+        decrypter: Decrypter,
+    ) -> Self:
+        counts = [
+            decrypter.sum_encrypted([v_a, v_b])
+            for v_a, v_b in zip(self.counts, other.counts)
+        ]
+        return self.__class__(counts=counts)
 
 
 @dataclasses.dataclass

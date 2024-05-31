@@ -17,15 +17,5 @@
 
 """Draft API for Fairness-aware Federated Learning algorithms."""
 
-from ._messages import (
-    FairnessAccuracy,
-    FairnessCounts,
-    FairnessGroups,
-    SecaggFairnessAccuracy,
-    SecaggFairnessCounts,
-)
-from ._controllers import (
-    FairnessControllerClient,
-    FairnessControllerServer,
-    FairnessSetupQuery,
-)
+from ._client import FairnessControllerClient
+from ._server import FairnessControllerServer

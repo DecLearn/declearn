@@ -1,0 +1,334 @@
+# coding: utf-8
+
+# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# et Automatique)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Client-side ABC for fairness-aware federated learning controllers."""
+
+import abc
+from typing import Any, ClassVar, Dict, List, Optional, Tuple, Union
+
+import numpy as np
+
+from declearn.communication.api import NetworkClient
+from declearn.communication.utils import verify_server_message_validity
+from declearn.fairness.core import FairnessAccuracyComputer, FairnessDataset
+from declearn.messaging import (
+    Error,
+    FairnessCounts,
+    FairnessGroups,
+    FairnessQuery,
+    FairnessReply,
+    FairnessSetupQuery,
+)
+from declearn.secagg.api import Encrypter
+from declearn.secagg.messaging import (
+    SecaggFairnessCounts,
+    SecaggFairnessReply,
+)
+from declearn.training import TrainingManager
+from declearn.utils import (
+    access_registered,
+    create_types_registry,
+    register_type,
+)
+
+__all__ = [
+    "FairnessControllerClient",
+]
+
+
+@create_types_registry(name="FairnessControllerClient")
+class FairnessControllerClient(metaclass=abc.ABCMeta):
+    """Abstract base class for client-side fairness controllers."""
+
+    algorithm: ClassVar[str]
+    """Name of the fairness-enforcing algorithm.
+
+    This name should be unique across 'FairnessControllerClient' classes,
+    and shared with a unique paired 'FairnessControllerServer'. It is used
+    for type-registration and to enable instantiating a client controller
+    based on server-emitted instructions in a federated setting.
+    """
+
+    def __init_subclass__(
+        cls,
+        register: bool = True,
+    ) -> None:
+        """Automatically type-register subclasses."""
+        if register:
+            register_type(cls, cls.algorithm, group="FairnessControllerClient")
+
+    def __init__(
+        self,
+        manager: TrainingManager,
+    ) -> None:
+        """Instantiate the client-side fairness controller.
+
+        Parameters
+        ----------
+        manager:
+            `TrainingManager` instance wrapping the model being trained
+            and its training dataset (that must be a `FairnessDataset`).
+        """
+        if not isinstance(manager.train_data, FairnessDataset):
+            raise TypeError(
+                "Cannot set up fairness without a 'FairnessDataset' "
+                "as training dataset."
+            )
+        self.manager = manager
+        self.computer = FairnessAccuracyComputer(manager.train_data)
+        self.groups = []  # type: List[Tuple[Any, ...]]
+
+    @staticmethod
+    def from_setup_query(
+        query: FairnessSetupQuery,
+        manager: TrainingManager,
+    ) -> "FairnessControllerClient":
+        """Instantiate a controller from a server-emitted query.
+
+        Parameters
+        ----------
+        query:
+            `FairnessSetupQuery` received from the server.
+        manager:
+            `TrainingManager` wrapping the model to train.
+
+        Returns
+        -------
+        controller:
+            `FairnessControllerClient` instance, the type and parameters
+            of which depend on the input `query`, that wraps `manager`.
+        """
+        try:
+            cls = access_registered(
+                name=query.algorithm, group="FairnessControllerClient"
+            )
+            assert issubclass(cls, FairnessControllerClient)
+        except Exception as exc:
+            raise ValueError(
+                "Failed to retrieve a 'FairnessControllerClient' class "
+                "matching the input 'FairnessSetupQuery' message."
+            ) from exc
+        return cls(manager=manager, **query.params)
+
+    async def setup_fairness(
+        self,
+        netwk: NetworkClient,
+        secagg: Optional[Encrypter],
+    ) -> None:
+        """Participate in a routine to initialize fairness-aware learning.
+
+        This routine has the following structure:
+
+        - Exchange with the server to agree on an ordered list of sensitive
+          groups defined by the interesection of 1+ sensitive attributes
+          and (opt.) a classification target label.
+        - Send (encrypted) group-wise training sample counts, that the server
+          is to (secure-)aggregate.
+        - Perform any additional actions specific to the algorithm in use.
+            - On the client side, optionally alter the `TrainingManager` used.
+            - On the server side, optionally alter the `Aggregator` used.
+
+        Parameters
+        ----------
+        netwk:
+            NetworkClient endpoint, registered to a server.
+        secagg:
+            Optional SecAgg encryption controller.
+        """
+        # Share sensitive groups definitions and received an ordered list.
+        self.groups = await self._exchange_sensitive_groups_list(netwk)
+        # Send group-wise sample counts for the server to (secure-)aggregate.
+        await self._send_sensitive_groups_counts(netwk, secagg)
+        # Run additional algorithm-specific setup steps.
+        await self.finalize_fairness_setup(netwk, secagg)
+
+    async def _exchange_sensitive_groups_list(
+        self,
+        netwk: NetworkClient,
+    ) -> List[Tuple[Any, ...]]:
+        """Exhange sensitive groups definitions and return a unified list."""
+        # Gather local sensitive groups and their sample counts.
+        counts = self.computer.counts
+        groups = list(counts)
+        # Share them and receive a unified, ordered list of groups.
+        await netwk.send_message(FairnessGroups(groups=groups))
+        received = await netwk.recv_message()
+        message = await verify_server_message_validity(
+            netwk, received, expected=FairnessGroups
+        )
+        return message.groups
+
+    async def _send_sensitive_groups_counts(
+        self,
+        netwk: NetworkClient,
+        secagg: Optional[Encrypter],
+    ) -> None:
+        """Send (opt. encrypted) group-wise sample counts to the server."""
+        counts = self.computer.counts
+        reply = FairnessCounts([counts.get(group, 0) for group in self.groups])
+        if secagg is None:
+            await netwk.send_message(reply)
+        else:
+            await netwk.send_message(
+                SecaggFairnessCounts.from_cleartext_message(reply, secagg)
+            )
+
+    @abc.abstractmethod
+    async def finalize_fairness_setup(
+        self,
+        netwk: NetworkClient,
+        secagg: Optional[Encrypter],
+    ) -> None:
+        """Finalize the fairness setup routine.
+
+        This method is called as part of `setup_fairness`, and should
+        be defined by concrete subclasses to implement setup behavior
+        once the initial echange of sensitive group definitions and
+        sample counts has been performed.
+
+        Parameters
+        ----------
+        netwk:
+            NetworkClient endpoint, registered to a server.
+        secagg:
+            Optional SecAgg encryption controller.
+        """
+
+    async def fairness_round(
+        self,
+        netwk: NetworkClient,
+        query: FairnessQuery,
+        secagg: Optional[Encrypter],
+    ) -> Dict[str, Union[float, np.ndarray]]:
+        """Participate in a round of actions to enforce fairness.
+
+        Parameters
+        ----------
+        netwk:
+            NetworkClient endpoint instance, connected to a server.
+        query:
+            `FairnessQuery` message to participate in a fairness round.
+        secagg:
+            Optional SecAgg encryption controller.
+
+        Returns
+        -------
+        metrics:
+            Computed local fairness(-related) metrics computed as part
+            of this routine, as a dict mapping scalar or numpy array
+            values with their name.
+        """
+        try:
+            values = await self._compute_and_share_fairness_measures(
+                netwk, query, secagg
+            )
+        except Exception as exc:
+            error = f"Error encountered in fairness round: {repr(exc)}"
+            self.manager.logger.error(error)
+            await netwk.send_message(Error(error))
+            raise RuntimeError(error) from exc
+        # Run additional algorithm-specific steps.
+        return await self.finalize_fairness_round(netwk, values, secagg)
+
+    async def _compute_and_share_fairness_measures(
+        self,
+        netwk: NetworkClient,
+        query: FairnessQuery,
+        secagg: Optional[Encrypter],
+    ) -> List[float]:
+        """Compute, share (encrypted) and return fairness measures."""
+        # Optionally update the wrapped model's weights.
+        if query.weights is not None:
+            self.manager.model.set_weights(query.weights, trainable=True)
+        # Compute, opt. encrypt and share fairness-related metrics.
+        values = self.compute_fairness_measures(
+            query.batch_size, query.n_batch, query.thresh
+        )
+        reply = FairnessReply(values=values)
+        if secagg is None:
+            await netwk.send_message(reply)
+        else:
+            await netwk.send_message(
+                SecaggFairnessReply.from_cleartext_message(reply, secagg)
+            )
+        # Return computed values.
+        return values
+
+    @abc.abstractmethod
+    def compute_fairness_measures(
+        self,
+        batch_size: int,
+        n_batch: Optional[int] = None,
+        thresh: Optional[float] = None,
+    ) -> List[float]:
+        """Compute fairness measures based on a received query.
+
+        By default, compute and return group-wise accuracy metrics,
+        weighted by group-wise sample counts. This may be modified
+        by algorithm-specific subclasses depending on algorithms'
+        needs.
+
+        Parameters
+        ----------
+        batch_size:
+            Number of samples per batch when computing predictions.
+        n_batch:
+            Optional maximum number of batches to draw per category.
+            If None, use the entire wrapped dataset.
+        thresh:
+            Optional binarization threshold for binary classification
+            models' output scores. If None, use 0.5 by default, or 0.0
+            for `SklearnSGDModel` instances.
+            Unused for multinomial classifiers (argmax over scores).
+
+        Returns
+        -------
+        values:
+            Computed values, as a deterministic-length ordered list
+            of float values.
+        """
+
+    @abc.abstractmethod
+    async def finalize_fairness_round(
+        self,
+        netwk: NetworkClient,
+        values: List[float],
+        secagg: Optional[Encrypter],
+    ) -> Dict[str, Union[float, np.ndarray]]:
+        """Take actions to enforce fairness.
+
+        This method is designed to be called after an initial query
+        has been received and responded to, resulting in computing
+        and sharing fairness(-related) metrics.
+
+        Parameters
+        ----------
+        netwk:
+            NetworkClient endpoint instance, connected to a server.
+        values:
+            List of locally-computed evaluation metrics, already shared
+            with the server for their (secure-)aggregation.
+        secagg:
+            Optional SecAgg encryption controller.
+
+        Returns
+        -------
+        metrics:
+            Computed local fairness(-related) metrics computed as part
+            of this routine, as a dict mapping scalar or numpy array
+            values with their name.
+        """

@@ -579,12 +579,20 @@ class FederatedServer:
             )
             values = self._aggregate_secagg_replies(secagg_replies).values
         # Have the fairness controller process results.
-        await self.fairness.finalize_fairness_round(
+        metrics = await self.fairness.finalize_fairness_round(
             round_i=round_i,
             values=values,
             netwk=self.netwk,
             secagg=self._decrypter,
         )
+        # Optionally save computed fairness metrics.
+        if self.ckptr is not None:
+            self.ckptr.save_metrics(
+                metrics=metrics,
+                prefix="fairness_metrics",
+                append=(query.round_i > 0),
+                timestamp=f"round_{query.round_i}",
+            )
 
     async def training_round(
         self,
