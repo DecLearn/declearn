@@ -50,17 +50,23 @@ Controllers
 [declearn.fairness.fairgrad.FairgradControllerServer]:
     Server-side controller to implement Fed-FairGrad.
 
+Backend
+-------
+* [FairgradWeightsController]
+[declearn.fairness.fairgrad.FairgradWeightsController]:
+    Controller to implement Faigrad optimization constraints.
+
 Messages
 --------
-* [FairgradSetupQuery][declearn.fairness.fairgrad.FairgradSetupQuery]:
-    Message for server-emitted Fed-FairGrad setup queries.
+* [FairgradOkay][declearn.fairness.fairgrad.FairgradOkay]:
+    Message for client-emitted signal that Fed-FairGrad update went fine.
 * [FairgradWeights][declearn.fairness.fairgrad.FairgradWeights]:
     Message for server-emitted (Fed-)FairGrad loss weights sharing.
 """
 
 from ._messages import (
-    FairgradSetupQuery,
+    FairgradOkay,
     FairgradWeights,
 )
 from ._client import FairgradControllerClient
-from ._server import FairgradControllerServer
+from ._server import FairgradControllerServer, FairgradWeightsController

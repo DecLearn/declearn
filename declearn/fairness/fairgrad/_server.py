@@ -18,32 +18,28 @@
 """Server-side Fed-FairGrad controller."""
 
 import warnings
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
 from declearn.aggregator import Aggregator, SumAggregator
 from declearn.communication.api import NetworkServer
 from declearn.communication.utils import verify_client_messages_validity
-from declearn.fairness.api import (
-    FairnessAccuracy,
-    FairnessRoundQuery,
-    FairnessRoundReply,
-    FairnessControllerServer,
-    FairnessSetupQuery,
-    SecaggFairnessAccuracy,
-)
+from declearn.fairness.api import FairnessControllerServer
 from declearn.fairness.core import instantiate_fairness_function
-from declearn.fairness.fairgrad._messages import (
-    FairgradSetupQuery,
-    FairgradWeights,
-)
+from declearn.fairness.fairgrad._messages import FairgradOkay, FairgradWeights
+from declearn.messaging import FairnessSetupQuery
 from declearn.secagg.api import Decrypter
-from declearn.secagg.messaging import aggregate_secagg_messages
+
+
+__all__ = [
+    "FairgradControllerServer",
+    "FairgradWeightsController",
+]
 
 
 class FairgradWeightsController:
-    """Fairness controller to implement Faigrad optimization constraints."""
+    """Controller to implement Faigrad optimization constraints."""
 
     # attrs serve readability; pylint: disable=too-many-instance-attributes
 
@@ -157,6 +153,8 @@ class FairgradWeightsController:
 class FairgradControllerServer(FairnessControllerServer):
     """Server-side controller to implement Fed-FairGrad."""
 
+    algorithm = "fedfairgrad"
+
     def __init__(
         self,
         f_type: str,
@@ -182,16 +180,17 @@ class FairgradControllerServer(FairnessControllerServer):
             This may be set to 0.0 to try and enforce absolute fairness.
         """
         super().__init__(f_type=f_type, f_args=f_args)
-        self.weights_controller = (
-            None
-        )  # type: Optional[FairgradWeightsController]
-        self._eta = eta
-        self._eps = eps
+        # Set up a temporary controller that will be replaced at setup time.
+        self.weights_controller = FairgradWeightsController(
+            counts={}, f_type="accuracy_parity", eta=eta, eps=eps
+        )
 
     def prepare_fairness_setup_query(
         self,
     ) -> FairnessSetupQuery:
-        return FairgradSetupQuery()
+        query = super().prepare_fairness_setup_query()
+        query.params.update({"f_type": self.f_type, "f_args": self.f_args})
+        return query
 
     async def finalize_fairness_setup(
         self,
@@ -203,8 +202,8 @@ class FairgradControllerServer(FairnessControllerServer):
         self.weights_controller = FairgradWeightsController(
             counts=dict(zip(self.groups, counts)),
             f_type=self.f_type,
-            eta=self._eta,
-            eps=self._eps,
+            eta=self.weights_controller.eta,
+            eps=self.weights_controller.eps,
             **self.f_args,
         )
         # Send initial loss weights to the clients.
@@ -228,50 +227,31 @@ class FairgradControllerServer(FairnessControllerServer):
         Await for clients to ping back that things went fine on their side.
         """
         netwk.logger.info("Sending FairGrad weights to clients.")
-        assert self.weights_controller is not None
         weights = self.weights_controller.get_current_weights(norm_nk=True)
         await netwk.broadcast_message(FairgradWeights(weights=weights))
         received = await netwk.wait_for_messages()
         await verify_client_messages_validity(
-            netwk, received, expected=FairnessRoundReply
+            netwk, received, expected=FairgradOkay
         )
 
-    async def fairness_round(
+    async def finalize_fairness_round(
         self,
+        round_i: int,
+        values: List[float],
         netwk: NetworkServer,
         secagg: Optional[Decrypter],
-    ) -> None:
-        assert self.weights_controller is not None
-        # Send a query to clients and await group-wise accuracy metrics.
-        await netwk.broadcast_message(
-            FairnessRoundQuery()  # TODO: receive a config and use it
-        )
-        received = await netwk.wait_for_messages()
-        # When SecAgg is not set, expect and aggregate cleartext values.
-        if secagg is None:
-            replies = await verify_client_messages_validity(
-                netwk, received, expected=FairnessAccuracy
-            )
-            accuracy = self._aggregate_cleartext_accuracy(replies)
-        # When SecAgg is set, expect and secure-aggregate encrypted values.
-        else:
-            sec_rep = await verify_client_messages_validity(
-                netwk, received, expected=SecaggFairnessAccuracy
-            )
-            accuracy = aggregate_secagg_messages(sec_rep, secagg).values
-        # Compute global fairness and update FairGrad loss weights.
-        self.weights_controller.update_weights_based_on_accuracy(
-            accuracy=dict(zip(self.groups, accuracy))
-        )
-        # Send back the updated weights to the clients.
+    ) -> Dict[str, Union[float, np.ndarray]]:
+        # Unpack group-wise accuracy metrics and update loss weights.
+        accuracy = dict(zip(self.groups, values))
+        self.weights_controller.update_weights_based_on_accuracy(accuracy)
+        # Send the updated weights to clients.
         await self._send_fairgrad_weights(netwk)
-
-    def _aggregate_cleartext_accuracy(
-        self,
-        messages: Dict[str, FairnessAccuracy],
-    ) -> List[float]:
-        """Sum group-wise accuracy metrics received from clients."""
-        accuracy = np.zeros(len(self.groups), dtype="float64")
-        for message in messages.values():
-            accuracy += np.asarray(message.values, dtype="float64")
-        return accuracy.tolist()
+        # Package and return accuracy and fairness metrics.
+        metrics = {
+            f"accuracy_{key}": val for key, val in accuracy.items()
+        }  # type: Dict[str, Union[float, np.ndarray]]
+        fairness = self.weights_controller.get_current_fairness()
+        metrics.update(
+            {f"{self.f_type}_{key}": val for key, val in fairness.items()}
+        )
+        return metrics

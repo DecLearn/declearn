@@ -17,24 +17,19 @@
 
 """Client-side Fed-FairGrad controller."""
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
+import numpy as np
 
 from declearn.communication.api import NetworkClient
 from declearn.communication.utils import verify_server_message_validity
-from declearn.fairness.api import (
-    FairnessAccuracy,
-    FairnessRoundQuery,
-    FairnessRoundReply,
-    FairnessControllerClient,
-    SecaggFairnessAccuracy,
+from declearn.fairness.api import FairnessControllerClient
+from declearn.fairness.core import (
+    FairnessDataset,
+    instantiate_fairness_function,
 )
-from declearn.fairness.core import FairnessAccuracyComputer, FairnessDataset
-from declearn.fairness.fairgrad._messages import (
-    FairgradSetupQuery,
-    FairgradWeights,
-)
-from declearn.messaging import Error, SerializedMessage
+from declearn.fairness.fairgrad._messages import FairgradOkay, FairgradWeights
+from declearn.messaging import Error
 from declearn.secagg.api import Encrypter
 from declearn.training import TrainingManager
 
@@ -46,98 +41,42 @@ __all__ = [
 class FairgradControllerClient(FairnessControllerClient):
     """Client-side controller to implement Fed-FairGrad."""
 
-    setup_query_cls = FairgradSetupQuery
+    algorithm = "fedfairgrad"
 
     def __init__(
         self,
+        manager: TrainingManager,
+        f_type: str,
+        f_args: Dict[str, Any],
     ) -> None:
-        super().__init__()
-        self._accuracy_computer = (
-            None
-        )  # type: Optional[FairnessAccuracyComputer]
+        """Instantiate the client-side fairness controller.
+
+        Parameters
+        ----------
+        manager:
+            `TrainingManager` instance wrapping the model being trained
+            and its training dataset (that must be a `FairnessDataset`).
+        f_type:
+            Name of the type of group-fairness function being optimized.
+        f_args:
+            Keyword arguments to the group-fairness function.
+        """
+        super().__init__(manager)
+        self.fairness_function = instantiate_fairness_function(
+            f_type=f_type, counts=self.computer.counts, **f_args
+        )
 
     async def finalize_fairness_setup(
         self,
         netwk: NetworkClient,
-        manager: TrainingManager,
         secagg: Optional[Encrypter],
-        params: Dict[str, Any],
-    ) -> TrainingManager:
-        assert isinstance(manager.train_data, FairnessDataset)
-        # Set up a controller to compute group-wise model accuracy.
-        self._accuracy_computer = FairnessAccuracyComputer(manager.train_data)
+    ) -> None:
         # Await initial loss weights from the server.
-        await self._update_fairgrad_weights(netwk, manager)
-        # Return the input TrainingManager.
-        return manager
-
-    async def fairness_round(
-        self,
-        netwk: NetworkClient,
-        manager: TrainingManager,
-        received: SerializedMessage[FairnessRoundQuery],
-        secagg: Optional[Encrypter],
-    ) -> None:
-        query = await verify_server_message_validity(
-            netwk, received, expected=FairnessRoundQuery
-        )
-        await self._compute_and_send_groupwise_accuracy(
-            netwk, manager, query, secagg
-        )
-        await self._update_fairgrad_weights(netwk, manager)
-
-    async def _compute_and_send_groupwise_accuracy(
-        self,
-        netwk: NetworkClient,
-        manager: TrainingManager,
-        query: FairnessRoundQuery,
-        secagg: Optional[Encrypter],
-    ) -> None:
-        # Compute the count-weighted group-wise accuracy, handling exceptions.
-        try:
-            accuracy = self._compute_groupwise_accuracy(manager, query)
-        except Exception as exc:  # pylint: disable=broad-except
-            manager.logger.error(
-                "Exception raised when computing group-wise accuracy: %s", exc
-            )
-            await netwk.send_message(Error(repr(exc)))
-            raise RuntimeError("Group accuracy computation failed.") from exc
-        # Send the computed metrics to the server, optionally encrypted.
-        manager.logger.info("Sending group-wise accuracy to the server.")
-        reply = FairnessAccuracy(accuracy)
-        if secagg is None:
-            await netwk.send_message(reply)
-        else:
-            await netwk.send_message(
-                SecaggFairnessAccuracy.from_cleartext_message(reply, secagg)
-            )
-
-    def _compute_groupwise_accuracy(
-        self,
-        manager: TrainingManager,
-        query: FairnessRoundQuery,
-    ) -> List[float]:
-        """Compute (counts-weighted) accuracy over sensitive groups."""
-        assert self._accuracy_computer is not None
-        # Compute group-wise accuracy scores.
-        accuracy = self._accuracy_computer.compute_groupwise_accuracy(
-            model=manager.model,
-            batch_size=query.batch_size,
-            n_batch=query.n_batch,
-            thresh=query.thresh,
-        )
-        # Multiply these scores by sample counts.
-        accuracy = {
-            key: val * self._accuracy_computer.counts[key]
-            for key, val in accuracy.items()
-        }
-        # Return shareable group-wise values, ordered and filled out.
-        return [accuracy.get(group, 0.0) for group in self.groups]
+        await self._update_fairgrad_weights(netwk)
 
     async def _update_fairgrad_weights(
         self,
         netwk: NetworkClient,
-        manager: TrainingManager,
     ) -> None:
         """Run a FairGrad-specific routine to update sensitive group weights.
 
@@ -158,17 +97,63 @@ class FairgradControllerClient(FairnessControllerClient):
         weights = dict(zip(self.groups, message.weights))
         # Set the received weights, handling and propagating exceptions if any.
         try:
-            assert isinstance(manager.train_data, FairnessDataset)
-            manager.train_data.set_sensitive_group_weights(
-                weights,
-                adjust_by_counts=True,
+            assert isinstance(self.manager.train_data, FairnessDataset)
+            self.manager.train_data.set_sensitive_group_weights(
+                weights, adjust_by_counts=True
             )
-        except (AssertionError, KeyError, TypeError) as exc:
-            manager.logger.error(
+        except Exception as exc:
+            self.manager.logger.error(
                 "Exception encountered when setting FairGrad weights: %s", exc
             )
             await netwk.send_message(Error(repr(exc)))
             raise RuntimeError("FairGrad weights update failed.") from exc
         # If things went well, ping the server back to indicate so.
-        manager.logger.info("Updated FairGrad weights.")
-        await netwk.send_message(FairnessRoundReply())
+        self.manager.logger.info("Updated FairGrad weights.")
+        await netwk.send_message(FairgradOkay())
+
+    def compute_fairness_measures(
+        self,
+        batch_size: int,
+        n_batch: Optional[int] = None,
+        thresh: Optional[float] = None,
+    ) -> List[float]:
+        # Compute group-wise accuracy scores.
+        accuracy = self.computer.compute_groupwise_accuracy(
+            model=self.manager.model,
+            batch_size=batch_size,
+            n_batch=n_batch,
+            thresh=thresh,
+        )
+        # Multiply these scores by sample counts.
+        accuracy = {
+            key: val * self.computer.counts[key]
+            for key, val in accuracy.items()
+        }
+        # Return shareable group-wise values, ordered and filled out.
+        return [accuracy.get(group, 0.0) for group in self.groups]
+
+    async def finalize_fairness_round(
+        self,
+        netwk: NetworkClient,
+        values: List[float],
+        secagg: Optional[Encrypter],
+    ) -> Dict[str, Union[float, np.ndarray]]:
+        # Await updated loss weights from the server.
+        await self._update_fairgrad_weights(netwk)
+        # Recover raw accuracy scores for groups with local samples.
+        accuracy = {
+            key: val / self.computer.counts[key]
+            for key, val in zip(self.groups, values)
+            if key in self.computer.counts
+        }
+        # Compute local fairness measures.
+        fairness = self.fairness_function.compute_from_group_accuracy(accuracy)
+        f_type = self.fairness_function.f_type
+        # Package and return accuracy and fairness metrics.
+        metrics = {
+            f"accuracy_{key}": val for key, val in accuracy.items()
+        }  # type: Dict[str, Union[float, np.ndarray]]
+        metrics.update(
+            {f"{f_type}_{key}": val for key, val in fairness.items()}
+        )
+        return metrics

@@ -21,25 +21,20 @@ import dataclasses
 from typing import List
 
 
-from declearn.fairness.api import FairnessSetupQuery
 from declearn.messaging import Message
 
 
 __all__ = [
-    "FairgradSetupQuery",
+    "FairgradOkay",
     "FairgradWeights",
 ]
 
 
 @dataclasses.dataclass
-class FairgradSetupQuery(FairnessSetupQuery):
-    """Message for server-emitted Fed-FairGrad setup queries.
+class FairgradOkay(Message):
+    """Message for client-emitted signal that Fed-FairGrad update went fine."""
 
-    This message is empty and merely signifies that Fed-FairGrad
-    should be set up by the client.
-    """
-
-    typekey = "fairgrad-setup"
+    typekey = "fairgrad-okay"
 
 
 @dataclasses.dataclass
