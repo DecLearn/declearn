@@ -23,10 +23,13 @@ This module implements the following submodules:
     API to set up and run fairness-aware federated learning algorithms.
 * [core][declearn.fairness.core]:
     Core components and utils for fairness-aware (federated) machine learning.
+* [fairbatch][declearn.fairness.fairbatch]:
+    Fed-FairBatch / FedB algorithm controllers and utils.
 * [fairgrad][declearn.fairness.fairgrad]:
     Fed-FairGrad algorithm controllers and utils.
 """
 
 from . import core
 from . import api
+from . import fairbatch
 from . import fairgrad
