@@ -254,19 +254,20 @@ class FairnessControllerClient(metaclass=abc.ABCMeta):
         # Optionally update the wrapped model's weights.
         if query.weights is not None:
             self.manager.model.set_weights(query.weights, trainable=True)
-        # Compute, opt. encrypt and share fairness-related metrics.
-        values = self.compute_fairness_measures(
+        # Compute some fairness-related values, split between two sets.
+        share_values, local_values = self.compute_fairness_measures(
             query.batch_size, query.n_batch, query.thresh
         )
-        reply = FairnessReply(values=values)
+        # Share the first set of values for their (secure-)aggregation.
+        reply = FairnessReply(values=share_values)
         if secagg is None:
             await netwk.send_message(reply)
         else:
             await netwk.send_message(
                 SecaggFairnessReply.from_cleartext_message(reply, secagg)
             )
-        # Return computed values.
-        return values
+        # Return the second set of values.
+        return local_values
 
     @abc.abstractmethod
     def compute_fairness_measures(
@@ -274,7 +275,7 @@ class FairnessControllerClient(metaclass=abc.ABCMeta):
         batch_size: int,
         n_batch: Optional[int] = None,
         thresh: Optional[float] = None,
-    ) -> List[float]:
+    ) -> Tuple[List[float], List[float]]:
         """Compute fairness measures based on a received query.
 
         By default, compute and return group-wise accuracy metrics,
@@ -297,9 +298,13 @@ class FairnessControllerClient(metaclass=abc.ABCMeta):
 
         Returns
         -------
-        values:
-            Computed values, as a deterministic-length ordered list
-            of float values.
+        share_values:
+            Values that are to be shared with the orchestrating server,
+            as a deterministic-length list of float values.
+        local_values:
+            Values that are to be used in local post-processing steps.
+            This may be a reference to `share_values`, but is typically
+            designed to contain unscaled measures to checkpoint.
         """
 
     @abc.abstractmethod
@@ -320,8 +325,10 @@ class FairnessControllerClient(metaclass=abc.ABCMeta):
         netwk:
             NetworkClient endpoint instance, connected to a server.
         values:
-            List of locally-computed evaluation metrics, already shared
-            with the server for their (secure-)aggregation.
+            List of locally-computed evaluation metrics.
+            This is the second set of `compute_fairness_measures` return
+            values; when this method is called, the first has already
+            been shared with the server for (secure-)aggregation.
         secagg:
             Optional SecAgg encryption controller.
 

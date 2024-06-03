@@ -17,7 +17,7 @@
 
 """Client-side Fed-FairBatch controller."""
 
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
@@ -126,7 +126,7 @@ class FairbatchControllerClient(FairnessControllerClient):
         batch_size: int,
         n_batch: Optional[int] = None,
         thresh: Optional[float] = None,
-    ) -> List[float]:
+    ) -> Tuple[List[float], List[float]]:
         # Compute group-wise accuracy scores and loss values.
         accuracy, loss = self.computer.compute_groupwise_accuracy_and_loss(
             model=self.manager.model,
@@ -134,18 +134,18 @@ class FairbatchControllerClient(FairnessControllerClient):
             n_batch=n_batch,
             thresh=thresh,
         )
-        # Multiply these values by sample counts.
-        accuracy = {
-            key: val * self.computer.counts[key]
-            for key, val in accuracy.items()
-        }
-        loss = {
-            key: val * self.computer.counts[key] for key, val in loss.items()
-        }
-        # Return shareable group-wise values, ordered and filled out.
-        return [accuracy.get(group, 0.0) for group in self.groups] + [
-            loss.get(group, 0.0) for group in self.groups
+        # Flatten local values for post-processing and checkpointing.
+        local_values = list(accuracy.values()) + list(loss.values())
+        # Scale local values by sample counts for their aggregation.
+        accuracy = self.computer.scale_metrics_by_sample_counts(accuracy)
+        loss = self.computer.scale_metrics_by_sample_counts(loss)
+        # Flatten shareable values, ordered and filled-out.
+        share_values = [
+            *[accuracy.get(group, 0.0) for group in self.groups],
+            *[loss.get(group, 0.0) for group in self.groups],
         ]
+        # Return both sets of values.
+        return share_values, local_values
 
     async def finalize_fairness_round(
         self,
@@ -156,16 +156,9 @@ class FairbatchControllerClient(FairnessControllerClient):
         # Await updated loss weights from the server.
         await self._update_fairbatch_sampling_probas(netwk)
         # Recover raw accuracy and loss values for groups with local samples.
-        accuracy = {
-            key: val / self.computer.counts[key]
-            for key, val in zip(self.groups, values[: len(self.groups)])
-            if key in self.computer.counts
-        }
-        loss = {
-            key: val / self.computer.counts[key]
-            for key, val in zip(self.groups, values[len(self.groups) :])
-            if key in self.computer.counts
-        }
+        groups = list(self.computer.g_data)
+        accuracy = dict(zip(groups, values[: len(groups)]))
+        loss = dict(zip(groups, values[len(groups) :]))
         # Compute local fairness measures.
         fairness = self.fairness_function.compute_from_group_accuracy(accuracy)
         f_type = self.fairness_function.f_type

@@ -310,3 +310,21 @@ class FairnessAccuracyComputer:
             g_losses[group] = float(results[ModelLoss.name])
         # Return the pair of dicts storing results.
         return accuracy, g_losses
+
+    def scale_metrics_by_sample_counts(
+        self,
+        metrics: Dict[Tuple[Any, ...], float],
+    ) -> Dict[Tuple[Any, ...], float]:
+        """Scale a dict of computed group-wise metrics by sample counts.
+
+        Parameters
+        ----------
+        metrics:
+            Pre-computed raw metrics, as a `{group_k: score_k}` dict.
+
+        Returns
+        -------
+        metrics:
+            Scaled matrics, as a `{group_k: n_k * score_k}` dict.
+        """
+        return {key: val * self.counts[key] for key, val in metrics.items()}

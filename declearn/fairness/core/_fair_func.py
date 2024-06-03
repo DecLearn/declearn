@@ -220,6 +220,7 @@ class FairnessFunction(metaclass=abc.ABCMeta):
             Values' interpretation depend on the implemented group-fairness
             definition, but overall the fairer the accuracy towards a group,
             the closer the metric is to zero.
+
         Raises
         ------
         KeyError

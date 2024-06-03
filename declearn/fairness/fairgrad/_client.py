@@ -17,7 +17,7 @@
 
 """Client-side Fed-FairGrad controller."""
 
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
@@ -116,7 +116,7 @@ class FairgradControllerClient(FairnessControllerClient):
         batch_size: int,
         n_batch: Optional[int] = None,
         thresh: Optional[float] = None,
-    ) -> List[float]:
+    ) -> Tuple[List[float], List[float]]:
         # Compute group-wise accuracy scores.
         accuracy = self.computer.compute_groupwise_accuracy(
             model=self.manager.model,
@@ -124,13 +124,14 @@ class FairgradControllerClient(FairnessControllerClient):
             n_batch=n_batch,
             thresh=thresh,
         )
-        # Multiply these scores by sample counts.
-        accuracy = {
-            key: val * self.computer.counts[key]
-            for key, val in accuracy.items()
-        }
-        # Return shareable group-wise values, ordered and filled out.
-        return [accuracy.get(group, 0.0) for group in self.groups]
+        # Flatten local values for post-processing and checkpointing.
+        local_values = list(accuracy.values())
+        # Scale local values by sample counts for their aggregation.
+        accuracy = self.computer.scale_metrics_by_sample_counts(accuracy)
+        # Flatten shareable values, ordered and filled-out.
+        share_values = [accuracy.get(group, 0.0) for group in self.groups]
+        # Return both sets of values.
+        return share_values, local_values
 
     async def finalize_fairness_round(
         self,
@@ -141,11 +142,7 @@ class FairgradControllerClient(FairnessControllerClient):
         # Await updated loss weights from the server.
         await self._update_fairgrad_weights(netwk)
         # Recover raw accuracy scores for groups with local samples.
-        accuracy = {
-            key: val / self.computer.counts[key]
-            for key, val in zip(self.groups, values)
-            if key in self.computer.counts
-        }
+        accuracy = dict(zip(self.computer.g_data, values))
         # Compute local fairness measures.
         fairness = self.fairness_function.compute_from_group_accuracy(accuracy)
         f_type = self.fairness_function.f_type
