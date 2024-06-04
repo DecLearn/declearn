@@ -65,11 +65,9 @@ Backend
 
 Messages
 --------
-* [FairbatchOkay][declearn.fairness.fairbatch.FairbatchOkay]:
-    Message for client signal that Fed-FairBatch/FedFB update went fine.
-* [FairbatchSamplingProbas]
-[declearn.fairness.fairbatch.FairbatchSamplingProbas]:
-    Message for server-emitted Fed-FairBatch/Fed-FB sampling probabilities.
+* [FairbatchOkay][declearn.fairness.fairbatch.FairbatchOkay]
+* [FairbatchSamplingProbas[
+[declearn.fairness.fairbatch.FairbatchSamplingProbas]
 """
 
 from ._messages import (

@@ -58,10 +58,8 @@ Backend
 
 Messages
 --------
-* [FairgradOkay][declearn.fairness.fairgrad.FairgradOkay]:
-    Message for client-emitted signal that Fed-FairGrad update went fine.
-* [FairgradWeights][declearn.fairness.fairgrad.FairgradWeights]:
-    Message for server-emitted (Fed-)FairGrad loss weights sharing.
+* [FairgradOkay][declearn.fairness.fairgrad.FairgradOkay]
+* [FairgradWeights][declearn.fairness.fairgrad.FairgradWeights]
 """
 
 from ._messages import (
