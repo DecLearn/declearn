@@ -25,6 +25,8 @@ This module implements the following submodules:
     Core components and utils for fairness-aware (federated) machine learning.
 * [fairbatch][declearn.fairness.fairbatch]:
     Fed-FairBatch / FedB algorithm controllers and utils.
+* [fairfed][declearn.fairness.fairfed]:
+    FairFed algorithm controllers and utils.
 * [fairgrad][declearn.fairness.fairgrad]:
     Fed-FairGrad algorithm controllers and utils.
 """
@@ -32,4 +34,5 @@ This module implements the following submodules:
 from . import core
 from . import api
 from . import fairbatch
+from . import fairfed
 from . import fairgrad
