@@ -21,6 +21,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
+from declearn.aggregator import SumAggregator
 from declearn.communication.api import NetworkClient
 from declearn.communication.utils import verify_server_message_validity
 from declearn.fairness.api import FairnessControllerClient
@@ -71,6 +72,9 @@ class FairgradControllerClient(FairnessControllerClient):
         netwk: NetworkClient,
         secagg: Optional[Encrypter],
     ) -> None:
+        # Force the use of a SumAggregator.
+        if not isinstance(self.manager.aggrg, SumAggregator):
+            self.manager.aggrg = SumAggregator()
         # Await initial loss weights from the server.
         await self._update_fairgrad_weights(netwk)
 

@@ -15,12 +15,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Client-side Fed-FairBatch controller."""
+"""Client-side Fed-FairBatch/FedFB controller."""
 
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
+from declearn.aggregator import SumAggregator
 from declearn.communication.api import NetworkClient
 from declearn.communication.utils import verify_server_message_validity
 from declearn.fairness.api import FairnessControllerClient
@@ -77,7 +78,9 @@ class FairbatchControllerClient(FairnessControllerClient):
         netwk: NetworkClient,
         secagg: Optional[Encrypter],
     ) -> None:
-        pass  # no action required beyond sharing group definitions and counts
+        # Force the use of a SumAggregator.
+        if not isinstance(self.manager.aggrg, SumAggregator):
+            self.manager.aggrg = SumAggregator()
 
     async def _update_fairbatch_sampling_probas(
         self,
