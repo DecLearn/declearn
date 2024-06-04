@@ -28,7 +28,6 @@ from declearn.communication.utils import verify_client_messages_validity
 from declearn.fairness.api import FairnessControllerServer
 from declearn.fairness.core import instantiate_fairness_function
 from declearn.fairness.fairgrad._messages import FairgradOkay, FairgradWeights
-from declearn.messaging import FairnessSetupQuery
 from declearn.secagg.api import Decrypter
 
 
@@ -184,13 +183,6 @@ class FairgradControllerServer(FairnessControllerServer):
         self.weights_controller = FairgradWeightsController(
             counts={}, f_type="accuracy_parity", eta=eta, eps=eps
         )
-
-    def prepare_fairness_setup_query(
-        self,
-    ) -> FairnessSetupQuery:
-        query = super().prepare_fairness_setup_query()
-        query.params.update({"f_type": self.f_type, "f_args": self.f_args})
-        return query
 
     async def finalize_fairness_setup(
         self,

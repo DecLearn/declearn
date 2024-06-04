@@ -145,7 +145,10 @@ class FairnessControllerServer(metaclass=abc.ABCMeta):
             `FairnessSetupQuery` instance to be sent to clients in order
             to trigger the Fairness setup protocol.
         """
-        return FairnessSetupQuery(algorithm=self.algorithm)
+        return FairnessSetupQuery(
+            algorithm=self.algorithm,
+            params={"f_type": self.f_type, "f_args": self.f_args},
+        )
 
     @staticmethod
     async def _exchange_sensitive_groups_list(

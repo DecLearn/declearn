@@ -32,7 +32,6 @@ from declearn.fairness.fairbatch._messages import (
     FairbatchSamplingProbas,
 )
 from declearn.fairness.fairbatch._sampling import setup_fairbatch_controller
-from declearn.messaging import FairnessSetupQuery
 from declearn.secagg.api import Decrypter
 
 
@@ -104,13 +103,6 @@ class FairbatchControllerServer(FairnessControllerServer):
         restores the original FairBatch formulas.
         """
         return self._setup_function is setup_fedfb_controller
-
-    def prepare_fairness_setup_query(
-        self,
-    ) -> FairnessSetupQuery:
-        query = super().prepare_fairness_setup_query()
-        query.params.update({"f_type": self.f_type, "f_args": self.f_args})
-        return query
 
     async def finalize_fairness_setup(
         self,
