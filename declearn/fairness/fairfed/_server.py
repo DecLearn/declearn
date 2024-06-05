@@ -25,8 +25,10 @@ import numpy as np
 from declearn.aggregator import Aggregator
 from declearn.communication.api import NetworkServer
 from declearn.communication.utils import verify_client_messages_validity
-from declearn.fairness.api import FairnessControllerServer
-from declearn.fairness.core import instantiate_fairness_function
+from declearn.fairness.api import (
+    FairnessControllerServer,
+    instantiate_fairness_function,
+)
 from declearn.fairness.fairfed._aggregator import FairfedAggregator
 from declearn.fairness.fairfed._function import FairfedFairnessFunction
 from declearn.fairness.fairfed._messages import (

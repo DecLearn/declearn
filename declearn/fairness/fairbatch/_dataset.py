@@ -22,7 +22,7 @@ from typing import Any, Dict, Iterator, List, Sequence, Tuple
 import numpy as np
 
 from declearn.dataset import Dataset, DataSpecs
-from declearn.fairness.core import FairnessDataset
+from declearn.fairness.api import FairnessDataset
 from declearn.typing import Batch
 
 __all__ = [

@@ -15,7 +15,43 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Draft API for Fairness-aware Federated Learning algorithms."""
+"""Abstract and base components for fairness-aware federated learning.
 
+Endpoint Controller ABCs
+------------------------
+
+* [FairnessControllerClient][declearn.fairness.api.FairnessControllerClient]:
+    Abstract base class for client-side fairness controllers.
+* [FairnessControllerServer][declearn.fairness.api.FairnessControllerServer]:
+    Abstract base class for server-side fairness controllers.
+
+Group-fairness functions
+------------------------
+API-defining ABC and generic constructor:
+
+* [FairnessFunction][declearn.fairness.api.FairnessFunction]:
+    Abstract base class for group-fairness functions.
+* [instantiate_fairness_function]\
+[declearn.fairness.api.instantiate_fairness_function]:
+    Instantiate a FairnessFunction from its specifications.
+
+Built-in concrete implementations may be found in [declearn.fairness.core][].
+
+Dataset subclass
+----------------
+
+* [FairnessDataset][declearn.fairness.api.FairnessDataset]:
+    Abstract base class for Fairness-aware `Dataset` interfaces.
+
+Backend
+-------
+
+* [FairnessAccuracyComputer][declearn.fairness.api.FairnessAccuracyComputer]:
+    Utility dataset-handler to compute group-wise accuracy metrics.
+"""
+
+from ._dataset import FairnessDataset
+from ._fair_func import FairnessFunction, instantiate_fairness_function
+from ._accuracy import FairnessAccuracyComputer
 from ._client import FairnessControllerClient
 from ._server import FairnessControllerServer

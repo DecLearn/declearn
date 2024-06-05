@@ -31,7 +31,6 @@ from declearn.messaging import (
     FairnessSetupQuery,
     SerializedMessage,
 )
-
 from declearn.secagg.api import Decrypter
 from declearn.secagg.messaging import (
     aggregate_secagg_messages,

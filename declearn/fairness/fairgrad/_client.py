@@ -24,8 +24,8 @@ import numpy as np
 from declearn.aggregator import SumAggregator
 from declearn.communication.api import NetworkClient
 from declearn.communication.utils import verify_server_message_validity
-from declearn.fairness.api import FairnessControllerClient
-from declearn.fairness.core import (
+from declearn.fairness.api import (
+    FairnessControllerClient,
     FairnessDataset,
     instantiate_fairness_function,
 )

@@ -21,7 +21,7 @@ from typing import Any, Dict, Optional, Tuple, Union
 
 import numpy as np
 
-from declearn.fairness.core._dataset import FairnessDataset
+from declearn.fairness.api._dataset import FairnessDataset
 from declearn.metrics import MeanMetric, MetricSet
 from declearn.model.api import Model
 from declearn.model.sklearn import SklearnSGDModel

@@ -21,7 +21,7 @@ import warnings
 from typing import Any, Dict, Optional, Tuple
 
 
-from declearn.fairness.core import FairnessFunction
+from declearn.fairness.api import FairnessFunction
 
 
 class FairfedFairnessFunction:

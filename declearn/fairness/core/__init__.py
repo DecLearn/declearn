@@ -15,19 +15,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Core components and utils for fairness-aware (federated) machine learning.
+"""Built-in concrete components for fairness-aware federated learning.
+
+Dataset subclass
+----------------
+
+* [FairnessInMemoryDataset][declearn.fairness.core.FairnessInMemoryDataset]:
+    Fairness-aware `InMemoryDataset` subclass.
+
 
 Group-fairness functions
 ------------------------
-
-API-defining ABC and generic constructor:
-
-* [FairnessFunction][declearn.fairness.core.FairnessFunction]:
-    Abstract base class for group-fairness functions.
-* [instantiate_fairness_function]\
-[declearn.fairness.core.instantiate_fairness_function]:
-    Instantiate a FairnessFunction from its specifications.
-
 Concrete implementations of various fairness functions:
 
 * [AccuracyParityFunction][declearn.fairness.core.AccuracyParityFunction]:
@@ -41,30 +39,13 @@ Concrete implementations of various fairness functions:
 * [EqualizedOddsFunction][declearn.fairness.core.EqualizedOddsFunction]:
     Equalized Odds group-fairness function.
 
-
-Dataset subclasses
-------------------
-
-* [FairnessDataset][declearn.fairness.core.FairnessDataset]:
-    Abstract base class for Fairness-aware `Dataset` interfaces.
-* [FairnessInMemoryDataset][declearn.fairness.core.FairnessInMemoryDataset]:
-    Fairness-aware `InMemoryDataset` subclass.
-
-
-Other utils
------------
-
-* [FairnessAccuracyComputer][declearn.fairness.core.FairnessAccuracyComputer]:
-    Utility dataset-handler to compute group-wise accuracy metrics.
+Abstraction and generic constructor may be found in [declearn.fairness.api][].
 """
 
-from ._dataset import FairnessDataset
-from ._fair_func import FairnessFunction, instantiate_fairness_function
 from ._functions import (
     AccuracyParityFunction,
     DemographicParityFunction,
     EqualityOfOpportunityFunction,
     EqualizedOddsFunction,
 )
-from ._inmemory import InMemoryDataset
-from ._accuracy import FairnessAccuracyComputer
+from ._inmemory import FairnessInMemoryDataset

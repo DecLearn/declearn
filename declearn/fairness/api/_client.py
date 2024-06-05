@@ -24,7 +24,8 @@ import numpy as np
 
 from declearn.communication.api import NetworkClient
 from declearn.communication.utils import verify_server_message_validity
-from declearn.fairness.core import FairnessAccuracyComputer, FairnessDataset
+from declearn.fairness.api._accuracy import FairnessAccuracyComputer
+from declearn.fairness.api._dataset import FairnessDataset
 from declearn.messaging import (
     Error,
     FairnessCounts,

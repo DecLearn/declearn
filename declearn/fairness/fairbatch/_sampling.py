@@ -21,7 +21,7 @@ import abc
 from typing import Any, ClassVar, Dict, List, Literal, Tuple
 
 
-from declearn.fairness.core import instantiate_fairness_function
+from declearn.fairness.api import instantiate_fairness_function
 
 
 __all__ = [

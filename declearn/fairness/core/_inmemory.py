@@ -26,7 +26,7 @@ import scipy.sparse  # type: ignore
 
 from declearn.dataset import InMemoryDataset
 from declearn.dataset.utils import load_data_array
-from declearn.fairness.core._dataset import FairnessDataset
+from declearn.fairness.api import FairnessDataset
 from declearn.typing import DataArray
 
 

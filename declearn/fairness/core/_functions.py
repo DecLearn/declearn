@@ -21,7 +21,7 @@ from typing import Any, Dict, List, Tuple, Union
 
 import numpy as np
 
-from declearn.fairness.core._fair_func import FairnessFunction
+from declearn.fairness.api import FairnessFunction
 
 __all__ = (
     "AccuracyParityFunction",
