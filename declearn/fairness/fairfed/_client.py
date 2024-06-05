@@ -114,6 +114,7 @@ class FairfedControllerClient(FairnessControllerClient):
         thresh: Optional[float] = None,
     ) -> Tuple[List[float], List[float]]:
         # Compute group-wise accuracy and fairness scores.
+        # pylint: disable=duplicate-code
         accuracy = self.computer.compute_groupwise_accuracy(
             model=self.manager.model,
             batch_size=batch_size,
@@ -123,6 +124,7 @@ class FairfedControllerClient(FairnessControllerClient):
         fairness = self.fairfed_func.compute_group_fairness_from_accuracy(
             accuracy, federated=False
         )
+        # pylint: enable=duplicate-code
         # Flatten local values for post-processing and checkpointing.
         local_values = list(accuracy.values()) + list(fairness.values())
         # Scale accuracy values by sample counts for their aggregation.

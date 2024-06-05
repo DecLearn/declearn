@@ -162,6 +162,7 @@ class FedFBDemographicParity(FairbatchDemographicParity):
         losses: Dict[Tuple[Any, ...], float],
     ) -> None:
         # NOTE: losses' aggregation does not defer from parent class.
+        # pylint: disable=duplicate-code
         # Recover sum-aggregated losses for each sensitive group.
         # Obtain {k: n_k * Sum(loss for all samples in group k)}.
         labeled_losses = {
@@ -175,6 +176,7 @@ class FedFBDemographicParity(FairbatchDemographicParity):
         labeled_losses["1_0"] /= self.states["n_attr_0"]
         labeled_losses["1_1"] /= self.states["n_attr_1"]
         # NOTE: this is where things differ from parent class.
+        # pylint: enable=duplicate-code
         # Compute an overall fairness value based on all losses.
         f_val = (
             -labeled_losses["0_0"]
@@ -206,9 +208,9 @@ def setup_fedfb_controller(
 ) -> FairbatchSamplingController:
     """Instantiate a FedFB sampling probabilities controller.
 
-    This is a drop-in replacement for `setup_fedfairbatch_controller`
-    that implemented update rules matching the Fed-FB algorithm(s) as
-    introduced in [1].
+    This is a drop-in replacement for `setup_fairbatch_controller`
+    that implemented update rules matching the Fed-FB algorithm(s)
+    as introduced in [1].
 
     Parameters
     ----------
@@ -243,6 +245,7 @@ def setup_fedfb_controller(
         Improving Fairness via Federated Learning.
         https://arxiv.org/abs/2110.15545
     """
+    # known duplicate of fairbatch setup; pylint: disable=duplicate-code
     controller_types = {
         "demographic_parity": FedFBDemographicParity,
         "equality_of_opportunity": FedFBEqualityOpportunity,

@@ -644,6 +644,7 @@ class FederatedClient:
             netwk=self.netwk, query=query, secagg=self._encrypter
         )
         # Optionally save computed fairness metrics.
+        # similar to server code; pylint: disable=duplicate-code
         if self.ckptr is not None:
             self.ckptr.save_metrics(
                 metrics=metrics,
