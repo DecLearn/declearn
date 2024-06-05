@@ -29,8 +29,9 @@ This algorithm was originally designed for settings where a binary
 classifier is trained over data with a single binary sensitive
 attribute, with the authors showcasing their generic formulas over
 a limited set of group fairness definitions. DecLearn expands it to
-a broader case, enabling the use of arbitraty fairness definitions
+a broader case, enabling the use of arbitrary fairness definitions
 over data that may have non-binary and/or many sensitive attributes.
+A 'strict' mode is made available to stick to the original paper.
 
 Additionally, the algorithm's authors suggest combining it with other
 mechanisms that aim at enforcing model fairness during local training
@@ -51,6 +52,8 @@ Backend
 -------
 * [FairfedAggregator][declearn.fairness.fairfed.FairfedAggregator]:
     Fairfed-specific Aggregator using arbitrary averaging weights.
+* [FairfedFairnessFunction][declearn.fairness.fairfed.FairfedFairnessFunction]:
+    FairFed-specific fairness function wrapper.
 
 Messages
 --------
@@ -69,5 +72,6 @@ from ._messages import (
     SecaggFairfedDelta,
 )
 from ._aggregator import FairfedAggregator
+from ._function import FairfedFairnessFunction
 from ._client import FairfedControllerClient
 from ._server import FairfedControllerServer

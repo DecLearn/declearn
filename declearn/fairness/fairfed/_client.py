@@ -26,6 +26,7 @@ from declearn.communication.utils import verify_server_message_validity
 from declearn.fairness.api import FairnessControllerClient
 from declearn.fairness.core import instantiate_fairness_function
 from declearn.fairness.fairfed._aggregator import FairfedAggregator
+from declearn.fairness.fairfed._function import FairfedFairnessFunction
 from declearn.fairness.fairfed._messages import (
     FairfedDelta,
     FairfedDeltavg,
@@ -52,6 +53,7 @@ class FairfedControllerClient(FairnessControllerClient):
         f_type: str,
         f_args: Dict[str, Any],
         beta: float,
+        strict: bool = True,
     ) -> None:
         """Instantiate the client-side fairness controller.
 
@@ -67,12 +69,30 @@ class FairfedControllerClient(FairnessControllerClient):
         beta:
             Hyper-parameter controlling the magnitude of averaging weights'
             updates across rounds.
+        strict:
+            Whether to stick strictly to the FairFed paper's setting
+            and explicit formulas, or to use a broader adaptation of
+            FairFed to more diverse settings.
         """
+        # arguments serve modularity; pylint: disable=too-many-arguments
         super().__init__(manager)
         self.beta = beta
-        self.fairness_function = instantiate_fairness_function(
+        self._key_groups = (
+            ((0, 0), (0, 1)) if strict else None
+        )  # type: Optional[Tuple[Tuple[Any, ...], Tuple[Any, ...]]]
+        fairness_function = instantiate_fairness_function(
             f_type=f_type, counts=self.computer.counts, **f_args
         )
+        self.fairfed_func = FairfedFairnessFunction(
+            fairness_function, strict=strict
+        )
+
+    @property
+    def strict(
+        self,
+    ) -> bool:
+        """Whether this controller strictly sticks to the FairFed paper."""
+        return self.fairfed_func.strict
 
     async def finalize_fairness_setup(
         self,
@@ -98,7 +118,9 @@ class FairfedControllerClient(FairnessControllerClient):
             n_batch=n_batch,
             thresh=thresh,
         )
-        fairness = self.fairness_function.compute_from_group_accuracy(accuracy)
+        fairness = self.fairfed_func.compute_group_fairness_from_accuracy(
+            accuracy, federated=False
+        )
         # Flatten local values for post-processing and checkpointing.
         local_values = list(accuracy.values()) + list(fairness.values())
         # Scale accuracy values by sample counts for their aggregation.
@@ -124,7 +146,7 @@ class FairfedControllerClient(FairnessControllerClient):
             netwk, received, expected=FairfedFairness
         )
         # Compute the absolute difference between local and global fairness.
-        fair_avg = sum(abs(x) for x in fairness.values()) / len(groups)
+        fair_avg = self.fairfed_func.compute_synthetic_fairness_value(fairness)
         my_delta = FairfedDelta(abs(fair_avg - fair_glb.fairness))
         # Share it with the server for its (secure-)aggregation across clients.
         if secagg is None:
@@ -150,7 +172,7 @@ class FairfedControllerClient(FairnessControllerClient):
         metrics = {
             f"accuracy_{key}": val for key, val in accuracy.items()
         }  # type: Dict[str, Union[float, np.ndarray]]
-        f_type = self.fairness_function.f_type
+        f_type = self.fairfed_func.f_type
         metrics.update(
             {f"{f_type}_{key}": val for key, val in fairness.items()}
         )

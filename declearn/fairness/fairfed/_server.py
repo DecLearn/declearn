@@ -28,6 +28,7 @@ from declearn.communication.utils import verify_client_messages_validity
 from declearn.fairness.api import FairnessControllerServer
 from declearn.fairness.core import instantiate_fairness_function
 from declearn.fairness.fairfed._aggregator import FairfedAggregator
+from declearn.fairness.fairfed._function import FairfedFairnessFunction
 from declearn.fairness.fairfed._messages import (
     FairfedDelta,
     FairfedDeltavg,
@@ -35,6 +36,7 @@ from declearn.fairness.fairfed._messages import (
     FairfedOkay,
     SecaggFairfedDelta,
 )
+from declearn.messaging import FairnessSetupQuery
 from declearn.secagg.api import Decrypter
 from declearn.secagg.messaging import aggregate_secagg_messages
 
@@ -54,6 +56,7 @@ class FairfedControllerServer(FairnessControllerServer):
         f_type: str,
         f_args: Optional[Dict[str, Any]] = None,
         beta: float = 1.0,
+        strict: bool = True,
     ) -> None:
         """Instantiate the server-side Fed-FairGrad controller.
 
@@ -66,13 +69,35 @@ class FairfedControllerServer(FairnessControllerServer):
         beta:
             Hyper-parameter controlling the magnitude of updates
             to clients' averaging weights updates.
+        strict:
+            Whether to stick strictly to the FairFed paper's setting
+            and explicit formulas, or to use a broader adaptation of
+            FairFed to more diverse settings.
         """
         super().__init__(f_type=f_type, f_args=f_args)
         self.beta = beta
         # Set up a temporary fairness function, replaced at setup time.
-        self.fairness_func = instantiate_fairness_function(
+        fairfed_func = instantiate_fairness_function(
             "accuracy_parity", counts={}
         )
+        self.fairfed_func = FairfedFairnessFunction(
+            wrapped=fairfed_func, strict=strict
+        )
+
+    @property
+    def strict(
+        self,
+    ) -> bool:
+        """Whether this controller strictly sticks to the FairFed paper."""
+        return self.fairfed_func.strict
+
+    def prepare_fairness_setup_query(
+        self,
+    ) -> FairnessSetupQuery:
+        query = super().prepare_fairness_setup_query()
+        query.params["beta"] = self.beta
+        query.params["strict"] = self.strict
+        return query
 
     async def finalize_fairness_setup(
         self,
@@ -81,8 +106,11 @@ class FairfedControllerServer(FairnessControllerServer):
         aggregator: Aggregator,
     ) -> Aggregator:
         # Set up a fairness function.
-        self.fairness_func = instantiate_fairness_function(
+        fairfed_func = instantiate_fairness_function(
             self.f_type, counts=dict(zip(self.groups, counts)), **self.f_args
+        )
+        self.fairfed_func = FairfedFairnessFunction(
+            wrapped=fairfed_func, strict=self.fairfed_func.strict
         )
         # Force the use of a FairFed-specific averaging aggregator.
         warnings.warn(
@@ -100,11 +128,11 @@ class FairfedControllerServer(FairnessControllerServer):
     ) -> Dict[str, Union[float, np.ndarray]]:
         # Unpack group-wise accuracy values and compute fairness.
         accuracy = dict(zip(self.groups, values))
-        fairness = self.fairness_func.compute_from_federated_group_accuracy(
-            accuracy
+        fairness = self.fairfed_func.compute_group_fairness_from_accuracy(
+            accuracy, federated=True
         )
         # Share the absolute mean fairness with clients.
-        fair_avg = sum(abs(x) for x in fairness.values()) / len(fairness)
+        fair_avg = self.fairfed_func.compute_synthetic_fairness_value(fairness)
         await netwk.broadcast_message(FairfedFairness(fairness=fair_avg))
         # Await and (secure-)aggregate clients' absolute fairness difference.
         received = await netwk.wait_for_messages()
