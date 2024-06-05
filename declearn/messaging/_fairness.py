@@ -22,7 +22,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from typing_extensions import Self  # future: import from typing (py >=3.11)
 
-from declearn.messaging import Message
+from declearn.messaging._api import Message
 from declearn.model.api import Vector
 
 __all__ = [
