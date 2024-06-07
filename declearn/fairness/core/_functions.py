@@ -328,7 +328,7 @@ class EqualityOfOpportunityFunction(EqualizedOddsFunction):
         else:
             raise TypeError("'target' should be an int or list of ints.")
         # Verify that 'target' is a subset of target labels.
-        targets = set(int(group[0]) for group in self._counts)
+        targets = set(int(group[0]) for group in counts)
         if not self._target.issubset(targets):
             raise ValueError(
                 "'target' should be a subset of target label values present "
