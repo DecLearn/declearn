@@ -454,6 +454,10 @@ class FederatedClient:
         and should never be called in another context.
         """
         assert self.trainmanager is not None
+        # When SecAgg is to be used, setup controllers first.
+        if self.secagg is not None:
+            received = await self.netwk.recv_message()
+            await self.setup_secagg(received)
         # Await and deserialize a FairnessSetupQuery.
         received = await self.netwk.recv_message()
         query = await verify_server_message_validity(

@@ -355,6 +355,10 @@ class FederatedServer:
             await self._initialize_dpsgd(config)
         # If fairness-aware federated learning is configured, set it up.
         if self.fairness is not None:
+            # When SecAgg is to be used, setup controllers first.
+            if self.secagg is not None:
+                await self.setup_secagg()
+            # Call the setup routine of the held fairness controller.
             self.aggrg = await self.fairness.setup_fairness(
                 netwk=self.netwk, aggregator=self.aggrg, secagg=self._decrypter
             )
