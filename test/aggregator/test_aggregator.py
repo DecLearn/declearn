@@ -17,7 +17,6 @@
 
 """Unit tests for the 'Aggregator' subclasses."""
 
-import typing
 from typing import Dict, Type
 
 import pytest
@@ -29,12 +28,13 @@ from declearn.test_utils import (
     GradientsTestCase,
     assert_dict_equal,
     assert_json_serializable_dict,
+    list_available_frameworks,
 )
 from declearn.utils import set_device_policy
 
 
 AGGREGATOR_CLASSES = list_aggregators()
-VECTOR_FRAMEWORKS = typing.get_args(FrameworkType)
+VECTOR_FRAMEWORKS = list_available_frameworks()
 
 
 @pytest.fixture(name="updates")
