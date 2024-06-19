@@ -187,8 +187,9 @@ class HaikuTestCase(ModelTestCase):
         """Raise if a vector is backed on the wrong type of device."""
         name = f"{self.device}:0"
         assert all(
-            f"{arr.device().platform}:{arr.device().id}" == name
+            f"{device.platform}:{device.id}" == name
             for arr in vector.coefs.values()
+            for device in arr.devices()
         )
 
     def get_trainable_criterion(
@@ -306,4 +307,6 @@ class TestHaikuModel(ModelTestSuite):
         params = jax.tree_util.tree_leaves(getattr(model, "_params"))
         device = f"{test_case.device}:0"
         for arr in params:
-            assert f"{arr.device().platform}:{arr.device().id}" == device
+            assert len(arr.devices()) == 1
+            arr_dev = list(arr.devices())[0]
+            assert f"{arr_dev.platform}:{arr_dev.id}" == device

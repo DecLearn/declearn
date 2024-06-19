@@ -39,6 +39,18 @@ __all__ = [
 jax.config.update("jax_enable_x64", True)  # enable float64 support
 
 
+def get_array_device(array: jax.Array) -> jax.Device:
+    """Return the Device on which the input array is placed."""
+    devices = array.devices()
+    if len(devices) > 1:  # pragma: no cover
+        raise RuntimeError(
+            f"A jax Array is placed on multiple devices: '{devices}'. "
+            "This is unsupported by DecLearn as of now. Please report "
+            "this bug to the development team."
+        )
+    return list(devices)[0]
+
+
 @register_vector_type(
     jax.Array,
     jaxlib.xla_extension.ArrayImpl,  # pylint: disable=c-extension-no-member
@@ -113,7 +125,7 @@ class JaxNumpyVector(Vector):
         # Ensure 'other' JaxNumpyVector shares this vector's device placement.
         if isinstance(other, JaxNumpyVector):
             coefs = {
-                key: jax.device_put(val, self.coefs[key].device())
+                key: jax.device_put(val, get_array_device(self.coefs[key]))
                 for key, val in other.coefs.items()
             }
             other = JaxNumpyVector(coefs)
@@ -124,7 +136,7 @@ class JaxNumpyVector(Vector):
         valid = valid and (self.coefs.keys() == other.coefs.keys())
         return valid and all(
             jnp.array_equal(
-                val, jax.device_put(other.coefs[key], val.device())
+                val, jax.device_put(other.coefs[key], get_array_device(val))
             )
             for key, val in self.coefs.items()
         )

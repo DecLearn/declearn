@@ -69,7 +69,8 @@ grpc = [
 haiku = [
     "dm-haiku >= 0.0.9, <= 0.0.11 ; python_version > '3.8'",
     "dm-haiku >= 0.0.9, <= 0.0.10 ; python_version == '3.8'",
-    "jax[cpu] ~= 0.4.1",  # NOTE: GPU support must be manually installed
+    # NOTE: GPU support for jax must be manually installed, e.g. as jax[cuda12]
+    "jax[cpu] ~= 0.4.1",
 ]
 tensorflow = [
     "tensorflow ~= 2.11",
