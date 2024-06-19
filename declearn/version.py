@@ -17,5 +17,5 @@
 
 """DecLearn version information, as hard-coded constants."""
 
-VERSION = "2.5.0"
+VERSION = "2.5.1"
 """Version information of the installed DecLearn package."""
