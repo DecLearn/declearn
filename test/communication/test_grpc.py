@@ -31,9 +31,13 @@ import asyncio
 import uuid
 from typing import AsyncIterator, Dict, Iterator
 
-import grpc  # type: ignore
 import pytest
 import pytest_asyncio
+
+try:
+    import grpc  # type: ignore
+except ModuleNotFoundError:
+    pytest.skip("GRPC is unavailable", allow_module_level=True)
 
 from declearn.communication.api.backend.actions import Ping
 from declearn.communication.grpc._server import load_pem_file

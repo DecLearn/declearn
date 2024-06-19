@@ -67,7 +67,6 @@ from declearn.utils import set_device_policy
 
 # optional frameworks' dependencies pylint: disable=ungrouped-imports
 # pylint: disable=duplicate-code
-# false-positives; pylint: disable=no-member
 
 # tensorflow imports
 try:
@@ -104,7 +103,8 @@ else:
         return (y_pred - y_true) ** 2
 
 
-# pylint: disable=duplicate-code
+# pylint: enable=duplicate-code, ungrouped-imports
+
 
 SEED = 0
 R2_THRESHOLD = 0.9999
@@ -124,7 +124,7 @@ def get_model(framework: FrameworkType) -> Model:
     raise ValueError(f"Unrecognised model framework: '{framework}'.")
 
 
-def _get_model_numpy() -> SklearnSGDModel:
+def _get_model_numpy() -> Model:
     """Return a linear model with MSE loss in Sklearn, with zero weights."""
     np.random.seed(SEED)  # set seed
     model = SklearnSGDModel.from_parameters(
@@ -133,10 +133,12 @@ def _get_model_numpy() -> SklearnSGDModel:
     return model
 
 
-def _get_model_tflow() -> TensorflowModel:
+def _get_model_tflow() -> Model:
     """Return a linear model with MSE loss in TensorFlow, with zero weights."""
     tf.random.set_seed(SEED)  # set seed
-    tfmod = tf.keras.Sequential(tf.keras.layers.Dense(units=1))
+    tfmod = tf.keras.Sequential(  # pylint: disable=no-member
+        tf.keras.layers.Dense(units=1)  # pylint: disable=no-member
+    )
     tfmod.build([None, 100])
     model = TensorflowModel(tfmod, loss="mean_squared_error")
     with tf.device("CPU"):
@@ -148,7 +150,7 @@ def _get_model_tflow() -> TensorflowModel:
     return model
 
 
-def _get_model_torch() -> TorchModel:
+def _get_model_torch() -> Model:
     """Return a linear model with MSE loss in Torch, with zero weights."""
     torch.manual_seed(SEED)  # set seed
     torchmod = torch.nn.Sequential(
@@ -164,7 +166,7 @@ def _get_model_torch() -> TorchModel:
     return model
 
 
-def _get_model_haiku() -> HaikuModel:
+def _get_model_haiku() -> Model:
     """Return a linear model with MSE loss in Haiku, with zero weights."""
     model = HaikuModel(haiku_model_fn, loss=haiku_loss_fn)
     model.initialize({"data_type": "float32", "features_shape": (100,)})
@@ -425,6 +427,9 @@ async def async_run_client(
     )
     client = FederatedClient(netwk, train, valid)
     await client.async_run()
+
+
+# similar structure in other functional tests; pylint: disable=duplicate-code
 
 
 @pytest.mark.asyncio
