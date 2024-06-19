@@ -29,13 +29,19 @@ from declearn.dataset import Dataset, DataSpecs
 from declearn.communication import NetworkClientConfig
 from declearn.communication.api import NetworkClient
 from declearn.main import FederatedClient
-from declearn.main.privacy import DPTrainingManager
 from declearn.main.utils import Checkpointer, TrainingManager
 from declearn.metrics import MetricState
 from declearn.model.api import Model
 from declearn.secagg import messaging as secagg_messaging
 from declearn.secagg.api import SecaggConfigClient, SecaggSetupQuery
 from declearn.utils import LOGGING_LEVEL_MAJOR
+
+try:
+    from declearn.main.privacy import DPTrainingManager
+except ModuleNotFoundError:
+    DP_AVAILABLE = False
+else:
+    DP_AVAILABLE = True
 
 
 MOCK_NETWK = mock.create_autospec(NetworkClient, instance=True)
@@ -514,6 +520,8 @@ class TestFederatedClientInitialize:
     @pytest.mark.asyncio
     async def test_initialize_with_dpsgd(self) -> None:
         """Test that initialization with DP-SGD works properly."""
+        if not DP_AVAILABLE:
+            pytest.skip(reason="Unavailable DP features (missing Opacus).")
         # Set up a mock network receiving an InitRequest and a PrivacyRequest.
         netwk = mock.create_autospec(NetworkClient, instance=True)
         netwk.name = "client"
@@ -555,6 +563,8 @@ class TestFederatedClientInitialize:
     @pytest.mark.asyncio
     async def test_initialize_with_dpsgd_error_wrong_message(self) -> None:
         """Test error catching for DP-SGD setup with wrong second message."""
+        if not DP_AVAILABLE:
+            pytest.skip(reason="Unavailable DP features (missing Opacus).")
         # Set up a mock network receiving a DP InitRequest but wrong follow-up.
         netwk = mock.create_autospec(NetworkClient, instance=True)
         netwk.name = "client"
@@ -580,6 +590,8 @@ class TestFederatedClientInitialize:
     @pytest.mark.asyncio
     async def test_initialize_with_dpsgd_error_setup(self) -> None:
         """Test error catching for DP-SGD setup with client-side failure."""
+        if not DP_AVAILABLE:
+            pytest.skip(reason="Unavailable DP features (missing Opacus).")
         # Set up a mock network receiving an InitRequest and a PrivacyRequest.
         netwk = mock.create_autospec(NetworkClient, instance=True)
         netwk.name = "client"
