@@ -21,8 +21,12 @@ import os
 from typing import Any, Optional
 
 import pytest
-from opacus.accountants import RDPAccountant  # type: ignore
-from opacus.accountants.utils import get_noise_multiplier  # type: ignore
+
+try:
+    from opacus.accountants import RDPAccountant  # type: ignore
+    from opacus.accountants.utils import get_noise_multiplier  # type: ignore
+except ModuleNotFoundError:
+    pytest.skip("Opacus is unavailable", allow_module_level=True)
 
 from declearn.communication import messaging
 from declearn.dataset import DataSpecs
