@@ -454,15 +454,21 @@ class FederatedClient:
         and should never be called in another context.
         """
         assert self.trainmanager is not None
-        # When SecAgg is to be used, setup controllers first.
-        if self.secagg is not None:
+        # Optionally setup SecAgg; await a FairnessSetupQuery.
+        try:
+            # When SecAgg is to be used, setup controllers first.
+            if self.secagg is not None:
+                received = await self.netwk.recv_message()
+                await self.setup_secagg(received)
+            # Await and deserialize a FairnessSetupQuery.
             received = await self.netwk.recv_message()
-            await self.setup_secagg(received)
-        # Await and deserialize a FairnessSetupQuery.
-        received = await self.netwk.recv_message()
-        query = await verify_server_message_validity(
-            self.netwk, received, expected=messaging.FairnessSetupQuery
-        )
+            query = await verify_server_message_validity(
+                self.netwk, received, expected=messaging.FairnessSetupQuery
+            )
+        except Exception as exc:
+            error = f"Fairness initialization failed: {repr(exc)}."
+            self.logger.critical(error)
+            raise RuntimeError(error) from exc
         # Instantiate a FairnessControllerClient and run its setup routine.
         try:
             self.fairness = FairnessControllerClient.from_setup_query(
@@ -643,6 +649,16 @@ class FederatedClient:
             self.logger.critical(error)
             await self.netwk.send_message(messaging.Error(error))
             raise RuntimeError(error)
+        # When SecAgg is to be used, verify that it was set up.
+        if self.secagg is not None and self._encrypter is None:
+            error = (
+                "Refusing to participate in fairness-related round "
+                f"{query.round_i} as SecAgg is configured to be used "
+                "but was not set up."
+            )
+            self.logger.error(error)
+            await self.netwk.send_message(messaging.Error(error))
+            return
         # Otherwise, run the controller's routine.
         metrics = await self.fairness.fairness_round(
             netwk=self.netwk, query=query, secagg=self._encrypter
