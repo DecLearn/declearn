@@ -34,6 +34,8 @@ Algorithms submodules
     FairFed algorithm controllers and utils.
 * [fairgrad][declearn.fairness.fairgrad]:
     Fed-FairGrad algorithm controllers and utils.
+* [monitor][declearn.fairness.monitor]:
+    Fairness-monitoring controllers, that leave training unaltered.
 """
 
 from . import api
@@ -41,3 +43,4 @@ from . import core
 from . import fairbatch
 from . import fairfed
 from . import fairgrad
+from . import monitor
