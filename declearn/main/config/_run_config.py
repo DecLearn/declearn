@@ -107,6 +107,8 @@ class FLRunConfig(TomlConfig):
     privacy: Optional[PrivacyConfig] = None
     early_stop: Optional[EarlyStopConfig] = None  # type: ignore  # is a type
 
+    autofill_fields = {"evaluate", "fairness"}
+
     @classmethod
     def parse_register(
         cls,
