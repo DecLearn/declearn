@@ -27,7 +27,6 @@ from declearn.communication.utils import verify_server_message_validity
 from declearn.fairness.api import (
     FairnessControllerClient,
     FairnessDataset,
-    instantiate_fairness_function,
 )
 from declearn.fairness.fairbatch._dataset import FairbatchDataset
 from declearn.fairness.fairbatch._messages import (
@@ -54,24 +53,9 @@ class FairbatchControllerClient(FairnessControllerClient):
         f_type: str,
         f_args: Dict[str, Any],
     ) -> None:
-        """Instantiate the client-side fairness controller.
-
-        Parameters
-        ----------
-        manager:
-            `TrainingManager` instance wrapping the model being trained
-            and its training dataset (that must be a `FairnessDataset`).
-        f_type:
-            Name of the type of group-fairness function being optimized.
-        f_args:
-            Keyword arguments to the group-fairness function.
-        """
-        super().__init__(manager)
+        super().__init__(manager=manager, f_type=f_type, f_args=f_args)
         assert isinstance(self.manager.train_data, FairnessDataset)
         self.manager.train_data = FairbatchDataset(self.manager.train_data)
-        self.fairness_function = instantiate_fairness_function(
-            f_type=f_type, counts=self.computer.counts, **f_args
-        )
 
     async def finalize_fairness_setup(
         self,

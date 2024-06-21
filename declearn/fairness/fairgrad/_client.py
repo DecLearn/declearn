@@ -17,7 +17,7 @@
 
 """Client-side Fed-FairGrad controller."""
 
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
@@ -27,12 +27,10 @@ from declearn.communication.utils import verify_server_message_validity
 from declearn.fairness.api import (
     FairnessControllerClient,
     FairnessDataset,
-    instantiate_fairness_function,
 )
 from declearn.fairness.fairgrad._messages import FairgradOkay, FairgradWeights
 from declearn.messaging import Error
 from declearn.secagg.api import Encrypter
-from declearn.training import TrainingManager
 
 __all__ = [
     "FairgradControllerClient",
@@ -43,29 +41,6 @@ class FairgradControllerClient(FairnessControllerClient):
     """Client-side controller to implement Fed-FairGrad."""
 
     algorithm = "fedfairgrad"
-
-    def __init__(
-        self,
-        manager: TrainingManager,
-        f_type: str,
-        f_args: Dict[str, Any],
-    ) -> None:
-        """Instantiate the client-side fairness controller.
-
-        Parameters
-        ----------
-        manager:
-            `TrainingManager` instance wrapping the model being trained
-            and its training dataset (that must be a `FairnessDataset`).
-        f_type:
-            Name of the type of group-fairness function being optimized.
-        f_args:
-            Keyword arguments to the group-fairness function.
-        """
-        super().__init__(manager)
-        self.fairness_function = instantiate_fairness_function(
-            f_type=f_type, counts=self.computer.counts, **f_args
-        )
 
     async def finalize_fairness_setup(
         self,

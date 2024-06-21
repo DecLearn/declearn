@@ -23,10 +23,7 @@ import numpy as np
 
 from declearn.communication.api import NetworkClient
 from declearn.communication.utils import verify_server_message_validity
-from declearn.fairness.api import (
-    FairnessControllerClient,
-    instantiate_fairness_function,
-)
+from declearn.fairness.api import FairnessControllerClient
 from declearn.fairness.fairfed._aggregator import FairfedAggregator
 from declearn.fairness.fairfed._function import FairfedFairnessFunction
 from declearn.fairness.fairfed._messages import (
@@ -77,16 +74,13 @@ class FairfedControllerClient(FairnessControllerClient):
             FairFed to more diverse settings.
         """
         # arguments serve modularity; pylint: disable=too-many-arguments
-        super().__init__(manager)
+        super().__init__(manager=manager, f_type=f_type, f_args=f_args)
         self.beta = beta
         self._key_groups = (
             ((0, 0), (0, 1)) if strict else None
         )  # type: Optional[Tuple[Tuple[Any, ...], Tuple[Any, ...]]]
-        fairness_function = instantiate_fairness_function(
-            f_type=f_type, counts=self.computer.counts, **f_args
-        )
         self.fairfed_func = FairfedFairnessFunction(
-            fairness_function, strict=strict
+            self.fairness_function, strict=strict
         )
 
     @property

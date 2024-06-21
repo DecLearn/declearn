@@ -26,6 +26,7 @@ from declearn.communication.api import NetworkClient
 from declearn.communication.utils import verify_server_message_validity
 from declearn.fairness.api._accuracy import FairnessAccuracyComputer
 from declearn.fairness.api._dataset import FairnessDataset
+from declearn.fairness.api._fair_func import instantiate_fairness_function
 from declearn.messaging import (
     Error,
     FairnessCounts,
@@ -75,6 +76,8 @@ class FairnessControllerClient(metaclass=abc.ABCMeta):
     def __init__(
         self,
         manager: TrainingManager,
+        f_type: str,
+        f_args: Dict[str, Any],
     ) -> None:
         """Instantiate the client-side fairness controller.
 
@@ -83,6 +86,10 @@ class FairnessControllerClient(metaclass=abc.ABCMeta):
         manager:
             `TrainingManager` instance wrapping the model being trained
             and its training dataset (that must be a `FairnessDataset`).
+        f_type:
+            Name of the type of group-fairness function being optimized.
+        f_args:
+            Keyword arguments to the group-fairness function.
         """
         if not isinstance(manager.train_data, FairnessDataset):
             raise TypeError(
@@ -91,6 +98,9 @@ class FairnessControllerClient(metaclass=abc.ABCMeta):
             )
         self.manager = manager
         self.computer = FairnessAccuracyComputer(manager.train_data)
+        self.fairness_function = instantiate_fairness_function(
+            f_type=f_type, counts=self.computer.counts, **f_args
+        )
         self.groups = []  # type: List[Tuple[Any, ...]]
 
     @staticmethod
