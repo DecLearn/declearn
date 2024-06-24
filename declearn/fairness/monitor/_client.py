@@ -17,7 +17,7 @@
 
 """Client-side controller to monitor fairness without altering training."""
 
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, Optional, Tuple, Union
 
 import numpy as np
 
@@ -42,44 +42,14 @@ class FairnessMonitorClient(FairnessControllerClient):
     ) -> None:
         pass
 
-    def compute_fairness_measures(
-        self,
-        batch_size: int,
-        n_batch: Optional[int] = None,
-        thresh: Optional[float] = None,
-    ) -> Tuple[List[float], List[float]]:
-        # Compute group-wise accuracy scores.
-        accuracy = self.computer.compute_groupwise_accuracy(
-            model=self.manager.model,
-            batch_size=batch_size,
-            n_batch=n_batch,
-            thresh=thresh,
-        )
-        # Flatten local values for post-processing and checkpointing.
-        local_values = list(accuracy.values())
-        # Scale local values by sample counts for their aggregation.
-        accuracy = self.computer.scale_metrics_by_sample_counts(accuracy)
-        # Flatten shareable values, ordered and filled-out.
-        share_values = [accuracy.get(group, 0.0) for group in self.groups]
-        # Return both sets of values.
-        return share_values, local_values
-
     async def finalize_fairness_round(
         self,
         netwk: NetworkClient,
-        values: List[float],
+        values: Dict[str, Dict[Tuple[Any, ...], float]],
         secagg: Optional[Encrypter],
     ) -> Dict[str, Union[float, np.ndarray]]:
-        # Recover raw accuracy scores for groups with local samples.
-        accuracy = dict(zip(self.computer.g_data, values))
-        # Compute local fairness measures.
-        fairness = self.fairness_function.compute_from_group_accuracy(accuracy)
-        f_type = self.fairness_function.f_type
-        # Package and return accuracy and fairness metrics.
-        metrics = {
-            f"accuracy_{key}": val for key, val in accuracy.items()
-        }  # type: Dict[str, Union[float, np.ndarray]]
-        metrics.update(
-            {f"{f_type}_{key}": val for key, val in fairness.items()}
-        )
-        return metrics
+        return {
+            f"{metric}_{group}": value
+            for metric, m_dict in values.items()
+            for group, value in m_dict.items()
+        }

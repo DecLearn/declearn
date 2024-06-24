@@ -34,6 +34,7 @@ from declearn.fairness.fairbatch._messages import (
     FairbatchOkay,
 )
 from declearn.messaging import Error
+from declearn.metrics import MeanMetric
 from declearn.secagg.api import Encrypter
 from declearn.training import TrainingManager
 
@@ -108,53 +109,26 @@ class FairbatchControllerClient(FairnessControllerClient):
         self.manager.logger.info("Updated FairBatch sampling probabilities.")
         await netwk.send_message(FairbatchOkay())
 
-    def compute_fairness_measures(
+    def setup_fairness_metrics(
         self,
-        batch_size: int,
-        n_batch: Optional[int] = None,
         thresh: Optional[float] = None,
-    ) -> Tuple[List[float], List[float]]:
-        # Compute group-wise accuracy scores and loss values.
-        accuracy, loss = self.computer.compute_groupwise_accuracy_and_loss(
-            model=self.manager.model,
-            batch_size=batch_size,
-            n_batch=n_batch,
-            thresh=thresh,
-        )
-        # Flatten local values for post-processing and checkpointing.
-        local_values = list(accuracy.values()) + list(loss.values())
-        # Scale local values by sample counts for their aggregation.
-        accuracy = self.computer.scale_metrics_by_sample_counts(accuracy)
-        loss = self.computer.scale_metrics_by_sample_counts(loss)
-        # Flatten shareable values, ordered and filled-out.
-        share_values = [
-            *[accuracy.get(group, 0.0) for group in self.groups],
-            *[loss.get(group, 0.0) for group in self.groups],
-        ]
-        # Return both sets of values.
-        return share_values, local_values
+    ) -> List[MeanMetric]:
+        loss = self.computer.setup_loss_metric(model=self.manager.model)
+        metrics = super().setup_fairness_metrics()
+        metrics.append(loss)
+        return metrics
 
     async def finalize_fairness_round(
         self,
         netwk: NetworkClient,
-        values: List[float],
+        values: Dict[str, Dict[Tuple[Any, ...], float]],
         secagg: Optional[Encrypter],
     ) -> Dict[str, Union[float, np.ndarray]]:
         # Await updated loss weights from the server.
         await self._update_fairbatch_sampling_probas(netwk)
-        # Recover raw accuracy and loss values for groups with local samples.
-        groups = list(self.computer.g_data)
-        accuracy = dict(zip(groups, values[: len(groups)]))
-        loss = dict(zip(groups, values[len(groups) :]))
-        # Compute local fairness measures.
-        fairness = self.fairness_function.compute_from_group_accuracy(accuracy)
-        f_type = self.fairness_function.f_type
-        # Package and return accuracy and fairness metrics.
-        metrics = {
-            f"accuracy_{key}": val for key, val in accuracy.items()
-        }  # type: Dict[str, Union[float, np.ndarray]]
-        metrics.update({f"loss_{key}": val for key, val in loss.items()})
-        metrics.update(
-            {f"{f_type}_{key}": val for key, val in fairness.items()}
-        )
-        return metrics
+        # Return group-wise local accuracy, model loss and fairness scores.
+        return {
+            f"{metric}_{group}": value
+            for metric, m_dict in values.items()
+            for group, value in m_dict.items()
+        }

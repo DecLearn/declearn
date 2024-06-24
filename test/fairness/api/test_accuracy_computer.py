@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Unit tests for 'declearn.fairness.api.FairnessAccuracyComputer'."""
+"""Unit tests for 'declearn.fairness.api.FairnessMetricsComputer'."""
 
 from typing import Optional
 from unittest import mock
@@ -23,7 +23,7 @@ from unittest import mock
 import pytest
 
 from declearn.dataset import Dataset
-from declearn.fairness.api import FairnessAccuracyComputer, FairnessDataset
+from declearn.fairness.api import FairnessMetricsComputer, FairnessDataset
 from declearn.metrics import MetricSet
 from declearn.model.api import Model
 
@@ -47,8 +47,8 @@ def dataset_fixture() -> FairnessDataset:
     return dataset
 
 
-class TestFairnessAccuracyComputer:
-    """Unit tests for 'declearn.fairness.api.FairnessAccuracyComputer'."""
+class TestFairnessMetricsComputer:
+    """Unit tests for 'declearn.fairness.api.FairnessMetricsComputer'."""
 
     @pytest.mark.parametrize("n_batch", [None, 4, 12])
     def test_compute_metrics_over_sensitive_groups(
@@ -58,7 +58,7 @@ class TestFairnessAccuracyComputer:
     ) -> None:
         """Test the 'compute_metrics_over_sensitive_groups' method."""
         # Set up mock objects and run (mocked) computations.
-        computer = FairnessAccuracyComputer(dataset)
+        computer = FairnessMetricsComputer(dataset)
         metrics = mock.create_autospec(MetricSet, instance=True)
         model = mock.create_autospec(Model, instance=True)
         mock_pred = (mock.MagicMock(), mock.MagicMock(), None)

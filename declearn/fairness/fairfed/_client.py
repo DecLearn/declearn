@@ -17,7 +17,7 @@
 
 """Client-side FairFed controller."""
 
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, Optional, Tuple, Union
 
 import numpy as np
 
@@ -101,43 +101,12 @@ class FairfedControllerClient(FairnessControllerClient):
             n_samples=sum(self.computer.counts.values())
         )
 
-    def compute_fairness_measures(
-        self,
-        batch_size: int,
-        n_batch: Optional[int] = None,
-        thresh: Optional[float] = None,
-    ) -> Tuple[List[float], List[float]]:
-        # Compute group-wise accuracy and fairness scores.
-        # pylint: disable=duplicate-code
-        accuracy = self.computer.compute_groupwise_accuracy(
-            model=self.manager.model,
-            batch_size=batch_size,
-            n_batch=n_batch,
-            thresh=thresh,
-        )
-        fairness = self.fairfed_func.compute_group_fairness_from_accuracy(
-            accuracy, federated=False
-        )
-        # pylint: enable=duplicate-code
-        # Flatten local values for post-processing and checkpointing.
-        local_values = list(accuracy.values()) + list(fairness.values())
-        # Scale accuracy values by sample counts for their aggregation.
-        accuracy = self.computer.scale_metrics_by_sample_counts(accuracy)
-        # Flatten shareable values, ordered and filled-out.
-        share_values = [accuracy.get(group, 0.0) for group in self.groups]
-        # Return both sets of values.
-        return share_values, local_values
-
     async def finalize_fairness_round(
         self,
         netwk: NetworkClient,
-        values: List[float],
+        values: Dict[str, Dict[Tuple[Any, ...], float]],
         secagg: Optional[Encrypter],
     ) -> Dict[str, Union[float, np.ndarray]]:
-        # Recover local accuracy and fairness values.
-        groups = list(self.computer.g_data)
-        accuracy = dict(zip(groups, values[: len(groups)]))
-        fairness = dict(zip(groups, values[len(groups) :]))
         # Await absolute mean fairness across all clients.
         received = await netwk.recv_message()
         fair_glb = await verify_server_message_validity(
@@ -166,15 +135,14 @@ class FairfedControllerClient(FairnessControllerClient):
         )
         # Signal the server that things went well.
         await netwk.send_message(FairfedOkay())
-        # Package and return accuracy, fairness and fairfed metrics.
+        # Flatten group-wise local accuracy and fairness scores.
         metrics = {
-            f"accuracy_{key}": val for key, val in accuracy.items()
+            f"{metric}_{group}": value
+            for metric, m_dict in values.items()
+            for group, value in m_dict.items()
         }  # type: Dict[str, Union[float, np.ndarray]]
-        f_type = self.fairfed_func.f_type
-        metrics.update(
-            {f"{f_type}_{key}": val for key, val in fairness.items()}
-        )
-        metrics[f"{f_type}_mean_abs"] = fair_avg
+        # Add FairFed-specific metrics, then return.
+        metrics["fairfed_value"] = fair_avg
         metrics["fairfed_delta"] = my_delta.delta
         metrics["fairfed_deltavg"] = deltavg.deltavg
         return metrics

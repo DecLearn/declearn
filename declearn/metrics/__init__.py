@@ -40,6 +40,12 @@ Utils
 
 Classification metrics
 ----------------------
+* [Accuracy][declearn.metrics.Accuracy]:
+    Single-label classification accuracy.
+    Identified name: "accuracy".
+* [BinaryRocAUC][declearn.metrics.BinaryRocAUC]:
+    Receiver Operator Curve and its Area Under the Curve for binary classif.
+    Identifier name: "binary-roc".
 * [BinaryAccuracyPrecisionRecall]\
 [declearn.metrics.BinaryAccuracyPrecisionRecall]:
     Accuracy, precision, recall and confusion matrix for binary classif.
@@ -48,9 +54,6 @@ Classification metrics
 [declearn.metrics.MulticlassAccuracyPrecisionRecall]:
     Accuracy, precision, recall and confusion matrix for multiclass classif.
     Identifier name: "multi-classif".
-* [BinaryRocAUC][declearn.metrics.BinaryRocAUC]:
-    Receiver Operator Curve and its Area Under the Curve for binary classif.
-    Identifier name: "binary-roc".
 
 Regression metrics
 ------------------
@@ -71,7 +74,12 @@ from ._classif import (
     BinaryAccuracyPrecisionRecall,
     MulticlassAccuracyPrecisionRecall,
 )
-from ._mean import MeanMetric, MeanAbsoluteError, MeanSquaredError
+from ._mean import (
+    Accuracy,
+    MeanMetric,
+    MeanAbsoluteError,
+    MeanSquaredError,
+)
 from ._roc_auc import BinaryRocAUC
 from ._rsquared import RSquared
 from ._wrapper import MetricInputType, MetricSet

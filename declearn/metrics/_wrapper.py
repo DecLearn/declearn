@@ -18,7 +18,7 @@
 """Wrapper for an ensemble of Metric objects."""
 
 import warnings
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 from typing_extensions import Self  # future: import from typing (py >=3.11)
@@ -52,7 +52,7 @@ class MetricSet:
 
     def __init__(
         self,
-        metrics: List[MetricInputType],
+        metrics: Sequence[MetricInputType],
     ) -> None:
         """Instantiate the grouped ensemble of Metric instances.
 

@@ -46,12 +46,12 @@ Dataset subclass
 Backend
 -------
 
-* [FairnessAccuracyComputer][declearn.fairness.api.FairnessAccuracyComputer]:
-    Utility dataset-handler to compute group-wise accuracy metrics.
+* [FairnessMetricsComputer][declearn.fairness.api.FairnessMetricsComputer]:
+    Utility dataset-handler to compute group-wise evaluation metrics.
 """
 
 from ._dataset import FairnessDataset
 from ._fair_func import FairnessFunction, instantiate_fairness_function
-from ._accuracy import FairnessAccuracyComputer
+from ._metrics import FairnessMetricsComputer
 from ._client import FairnessControllerClient
 from ._server import FairnessControllerServer

@@ -24,7 +24,6 @@ import numpy as np
 
 from declearn.communication.api import NetworkClient
 from declearn.communication.utils import verify_server_message_validity
-from declearn.fairness.api._accuracy import FairnessAccuracyComputer
 from declearn.fairness.api._dataset import FairnessDataset
 from declearn.fairness.api._fair_func import instantiate_fairness_function
 from declearn.messaging import (
@@ -35,6 +34,8 @@ from declearn.messaging import (
     FairnessReply,
     FairnessSetupQuery,
 )
+from declearn.fairness.api._metrics import FairnessMetricsComputer
+from declearn.metrics import MeanMetric
 from declearn.secagg.api import Encrypter
 from declearn.secagg.messaging import (
     SecaggFairnessCounts,
@@ -97,7 +98,7 @@ class FairnessControllerClient(metaclass=abc.ABCMeta):
                 "as training dataset."
             )
         self.manager = manager
-        self.computer = FairnessAccuracyComputer(manager.train_data)
+        self.computer = FairnessMetricsComputer(manager.train_data)
         self.fairness_function = instantiate_fairness_function(
             f_type=f_type, counts=self.computer.counts, **f_args
         )
@@ -239,9 +240,8 @@ class FairnessControllerClient(metaclass=abc.ABCMeta):
         Returns
         -------
         metrics:
-            Computed local fairness(-related) metrics computed as part
-            of this routine, as a dict mapping scalar or numpy array
-            values with their name.
+            Fairness(-related) metrics computed as part of this routine,
+            as a `{name: value}` dict with scalar or numpy array values.
         """
         try:
             values = await self._compute_and_share_fairness_measures(
@@ -260,7 +260,7 @@ class FairnessControllerClient(metaclass=abc.ABCMeta):
         netwk: NetworkClient,
         query: FairnessQuery,
         secagg: Optional[Encrypter],
-    ) -> List[float]:
+    ) -> Dict[str, Dict[Tuple[Any, ...], float]]:
         """Compute, share (encrypted) and return fairness measures."""
         # Optionally update the wrapped model's weights.
         if query.weights is not None:
@@ -280,13 +280,12 @@ class FairnessControllerClient(metaclass=abc.ABCMeta):
         # Return the second set of values.
         return local_values
 
-    @abc.abstractmethod
     def compute_fairness_measures(
         self,
         batch_size: int,
         n_batch: Optional[int] = None,
         thresh: Optional[float] = None,
-    ) -> Tuple[List[float], List[float]]:
+    ) -> Tuple[List[float], Dict[str, Dict[Tuple[Any, ...], float]]]:
         """Compute fairness measures based on a received query.
 
         By default, compute and return group-wise accuracy metrics,
@@ -313,16 +312,69 @@ class FairnessControllerClient(metaclass=abc.ABCMeta):
             Values that are to be shared with the orchestrating server,
             as a deterministic-length list of float values.
         local_values:
-            Values that are to be used in local post-processing steps.
-            This may be a reference to `share_values`, but is typically
-            designed to contain unscaled measures to checkpoint.
+            Values that are to be used in local post-processing steps,
+            as a nested dictionary of group-wise metrics.
         """
+        # Compute group-wise metrics.
+        metrics = self.setup_fairness_metrics(thresh=thresh)
+        local_values = self.computer.compute_groupwise_metrics(
+            metrics=metrics,
+            model=self.manager.model,
+            batch_size=batch_size,
+            n_batch=n_batch,
+        )
+        # Gather sample-counts-scaled values to share with the server.
+        scaled_values = {
+            key: self.computer.scale_metrics_by_sample_counts(val)
+            for key, val in local_values.items()
+        }
+        share_values = [
+            scaled_values[key].get(group, 0.0)
+            for key in sorted(scaled_values)
+            for group in self.groups
+        ]
+        # Compute group-wise local fairness measures.
+        if "accuracy" in local_values:
+            fairness = self.fairness_function.compute_from_group_accuracy(
+                local_values["accuracy"]
+            )
+            local_values[self.fairness_function.f_type] = fairness
+        # Return both shareable and local values.
+        return share_values, local_values
+
+    def setup_fairness_metrics(
+        self,
+        thresh: Optional[float] = None,
+    ) -> List[MeanMetric]:
+        """Setup metrics to compute group-wise and share with the server.
+
+        By default, this method returns an accuracy-computation method.
+        It may be overloaded to compute additional metrics depending on
+        the needs of the fairness-enforcing algorithm being implemented.
+
+        Parameters
+        ----------
+        thresh:
+            Optional binarization threshold for binary classification
+            models' output scores. Used to setup accuracy computations.
+
+        Returns
+        -------
+        metrics:
+            List of `MeanMetric` instances, that each compute a unique
+            scalar float metric (per sensitive group) and have distinct
+            names.
+        """
+        accuracy = self.computer.setup_accuracy_metric(
+            self.manager.model, thresh=thresh
+        )
+        return [accuracy]
 
     @abc.abstractmethod
     async def finalize_fairness_round(
         self,
         netwk: NetworkClient,
-        values: List[float],
+        values: Dict[str, Dict[Tuple[Any, ...], float]],
         secagg: Optional[Encrypter],
     ) -> Dict[str, Union[float, np.ndarray]]:
         """Take actions to enforce fairness.
@@ -336,7 +388,7 @@ class FairnessControllerClient(metaclass=abc.ABCMeta):
         netwk:
             NetworkClient endpoint instance, connected to a server.
         values:
-            List of locally-computed evaluation metrics.
+            Nested dict of locally-computed group-wise metrics.
             This is the second set of `compute_fairness_measures` return
             values; when this method is called, the first has already
             been shared with the server for (secure-)aggregation.
@@ -346,7 +398,6 @@ class FairnessControllerClient(metaclass=abc.ABCMeta):
         Returns
         -------
         metrics:
-            Computed local fairness(-related) metrics computed as part
-            of this routine, as a dict mapping scalar or numpy array
-            values with their name.
+            Computed fairness(-related) metrics to checkpoint, as a
+            `{name: value}` dict with scalar or numpy array values.
         """
