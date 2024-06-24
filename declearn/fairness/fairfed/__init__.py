@@ -52,8 +52,8 @@ Backend
 -------
 * [FairfedAggregator][declearn.fairness.fairfed.FairfedAggregator]:
     Fairfed-specific Aggregator using arbitrary averaging weights.
-* [FairfedFairnessFunction][declearn.fairness.fairfed.FairfedFairnessFunction]:
-    FairFed-specific fairness function wrapper.
+* [FairfedValueComputer][declearn.fairness.fairfed.FairfedValueComputer]:
+    Fairfed-specific synthetic fairness value computer.
 
 Messages
 --------
@@ -72,6 +72,6 @@ from ._messages import (
     SecaggFairfedDelta,
 )
 from ._aggregator import FairfedAggregator
-from ._function import FairfedFairnessFunction
+from ._fairfed import FairfedValueComputer
 from ._client import FairfedControllerClient
 from ._server import FairfedControllerServer
