@@ -47,7 +47,7 @@ class FairbatchDataset(FairnessDataset):
         """
         self.base = base
         # Assign a dictionary with sampling probability for each group.
-        self.groups = self.get_sensitive_group_definitions()
+        self.groups = self.base.get_sensitive_group_definitions()
         self._counts = self.base.get_sensitive_group_counts()
         self._sampling_probas = {
             group: 1.0 / len(self.groups) for group in self.groups

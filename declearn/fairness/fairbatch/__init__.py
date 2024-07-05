@@ -53,6 +53,8 @@ Controllers
 
 Backend
 -------
+* [FairbatchDataset][declearn.fairness.fairbatch.FairbatchDataset]:
+    FairBatch-specific FairnessDataset subclass and wrapper.
 * [FairbatchSamplingController]
 [declearn.fairness.fairbatch.FairbatchSamplingController]:
     ABC to compute and update Fairbatch sampling probabilities.
@@ -79,5 +81,6 @@ from ._sampling import (
     setup_fairbatch_controller,
 )
 from ._fedfb import setup_fedfb_controller
+from ._dataset import FairbatchDataset
 from ._client import FairbatchControllerClient
 from ._server import FairbatchControllerServer

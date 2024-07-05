@@ -66,6 +66,8 @@ class FairbatchControllerClient(FairnessControllerClient):
         # Force the use of a SumAggregator.
         if not isinstance(self.manager.aggrg, SumAggregator):
             self.manager.aggrg = SumAggregator()
+        # Receive and assign initial sampling probabilities.
+        await self._update_fairbatch_sampling_probas(netwk)
 
     async def _update_fairbatch_sampling_probas(
         self,
