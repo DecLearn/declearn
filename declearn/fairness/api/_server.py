@@ -26,8 +26,10 @@ from declearn.aggregator import Aggregator
 from declearn.communication.api import NetworkServer
 from declearn.communication.utils import verify_client_messages_validity
 from declearn.messaging import (
+    Error,
     FairnessCounts,
     FairnessGroups,
+    FairnessReply,
     FairnessSetupQuery,
     SerializedMessage,
 )
@@ -35,6 +37,7 @@ from declearn.secagg.api import Decrypter
 from declearn.secagg.messaging import (
     aggregate_secagg_messages,
     SecaggFairnessCounts,
+    SecaggFairnessReply,
 )
 from declearn.utils import create_types_registry, register_type
 
@@ -67,7 +70,7 @@ class FairnessControllerServer(metaclass=abc.ABCMeta):
     def __init__(
         self,
         f_type: str,
-        f_args: Optional[Dict[str, Any]],
+        f_args: Optional[Dict[str, Any]] = None,
     ) -> None:
         """Instantiate the server-side fairness controller.
 
@@ -81,6 +84,8 @@ class FairnessControllerServer(metaclass=abc.ABCMeta):
         self.f_type = f_type
         self.f_args = f_args or {}
         self.groups = []  # type: List[Tuple[Any, ...]]
+
+    # Fairness Setup methods.
 
     async def setup_fairness(
         self,
@@ -126,12 +131,14 @@ class FairnessControllerServer(metaclass=abc.ABCMeta):
         # Send a setup query to all clients.
         query = self.prepare_fairness_setup_query()
         await netwk.broadcast_message(query)
-        # Receive, aggregate, assign and send back sensitive group definitions.
-        self.groups = await self._exchange_sensitive_groups_list(netwk)
-        # Receive, (secure-)aggregate and return group-wise sample counts.
-        counts = await self._aggregate_sensitive_groups_counts(netwk, secagg)
+        # Agree on a list of sensitive groups and aggregate sample counts.
+        counts = await self.exchange_sensitive_groups_list_and_counts(
+            netwk, secagg
+        )
         # Run additional algorithm-specific setup steps.
-        return await self.finalize_fairness_setup(netwk, counts, aggregator)
+        return await self.finalize_fairness_setup(
+            netwk, secagg, counts, aggregator
+        )
 
     def prepare_fairness_setup_query(
         self,
@@ -148,6 +155,40 @@ class FairnessControllerServer(metaclass=abc.ABCMeta):
             algorithm=self.algorithm,
             params={"f_type": self.f_type, "f_args": self.f_args},
         )
+
+    async def exchange_sensitive_groups_list_and_counts(
+        self,
+        netwk: NetworkServer,
+        secagg: Optional[Decrypter],
+    ) -> List[int]:
+        """Agree on a list of sensitive groups and aggregate sample counts.
+
+        This method performs the following routine:
+
+        - Await `FairnessGroups` messages from clients with group definitions.
+        - Assign a sorted list of sensitive groups as `groups` attribute.
+        - Share that list with clients.
+        - Await possibly-encrypted group-wise sample counts from clients.
+        - (Secure-)Aggregate these sample counts and return them.
+
+        Parameters
+        ----------
+        netwk:
+            `NetworkServer` endpoint, through which a fairness setup query
+            was previously sent to all clients.
+        secagg:
+            Optional SecAgg decryption controller.
+
+        Returns
+        -------
+        counts:
+            List of group-wise total sample count across clients,
+            sorted based on the newly-assigned `self.groups`.
+        """
+        # Receive, aggregate, assign and send back sensitive group definitions.
+        self.groups = await self._exchange_sensitive_groups_list(netwk)
+        # Receive, (secure-)aggregate and return group-wise sample counts.
+        return await self._aggregate_sensitive_groups_counts(netwk, secagg)
 
     @staticmethod
     async def _exchange_sensitive_groups_list(
@@ -213,6 +254,7 @@ class FairnessControllerServer(metaclass=abc.ABCMeta):
     async def finalize_fairness_setup(
         self,
         netwk: NetworkServer,
+        secagg: Optional[Decrypter],
         counts: List[int],
         aggregator: Aggregator,
     ) -> Aggregator:
@@ -238,13 +280,90 @@ class FairnessControllerServer(metaclass=abc.ABCMeta):
             or may not have been altered compared with the input one.
         """
 
+    # Fairness Round methods.
+
+    async def run_fairness_round(
+        self,
+        netwk: NetworkServer,
+        secagg: Optional[Decrypter],
+    ) -> Dict[str, Union[float, np.ndarray]]:
+        """Secure-aggregate and post-process fairness measures.
+
+        This method is to be run **after** having sent a `FairnessQuery`
+        to clients. It consists in receiving, (secure-)aggregating and
+        post-processing measures that clients produce as a reply to that
+        query. This may involve further algorithm-specific communications.
+
+        Parameters
+        ----------
+        netwk:
+            NetworkServer endpoint instance, to which clients are registered.
+        secagg:
+            Optional SecAgg decryption controller.
+
+        Returns
+        -------
+        metrics:
+            Fairness(-related) metrics computed as part of this routine,
+            as a dict mapping scalar or numpy array values with their name.
+        """
+        values = await self.receive_and_aggregate_fairness_measures(
+            netwk, secagg
+        )
+        return await self.finalize_fairness_round(netwk, secagg, values)
+
+    async def receive_and_aggregate_fairness_measures(
+        self,
+        netwk: NetworkServer,
+        secagg: Optional[Decrypter],
+    ) -> List[float]:
+        """Await and (secure-)aggregate client-wise fairness-related metrics.
+
+        This method is designed to be called after sending a `FairnessQuery`
+        to clients, and returns values that are yet to be parsed and used by
+        the algorithm-dependent `finalize_fairness_round` method.
+
+        Parameters
+        ----------
+        netwk:
+            NetworkServer endpoint instance, to which clients are registered.
+        secagg:
+            Optional SecAgg decryption controller.
+
+        Returns
+        -------
+        metrics:
+            List of sum-aggregated fairness-related metrics (as floats).
+            By default, these are group-wise accuracy values; this may
+            however be changed or expanded by algorithm-specific classes.
+        """
+        received = await netwk.wait_for_messages()
+        # Case when expecting cleartext values.
+        if secagg is None:
+            replies = await verify_client_messages_validity(
+                netwk, received, expected=FairnessReply
+            )
+            if len(set(len(r.values) for r in replies.values())) != 1:
+                error = "Clients sent fairness values of different lengths."
+                await netwk.broadcast_message(Error(error))
+                raise RuntimeError(error)
+            return [
+                sum(rval)
+                for rval in zip(*[reply.values for reply in replies.values()])
+            ]
+        # Case when expecting encrypted values.
+        secagg_replies = await verify_client_messages_validity(
+            netwk, received, expected=SecaggFairnessReply
+        )
+        agg_reply = aggregate_secagg_messages(secagg_replies, decrypter=secagg)
+        return agg_reply.values
+
     @abc.abstractmethod
     async def finalize_fairness_round(
         self,
-        round_i: int,
-        values: List[float],
         netwk: NetworkServer,
         secagg: Optional[Decrypter],
+        values: List[float],
     ) -> Dict[str, Union[float, np.ndarray]]:
         """Orchestrate a round of actions to enforce fairness.
 
@@ -254,21 +373,17 @@ class FairnessControllerServer(metaclass=abc.ABCMeta):
 
         Parameters
         ----------
-        round_i:
-            Index of the current round (reflecting that of an upcoming
-            training round).
-        values:
-            Aggregated metrics resulting from the fairness evaluation
-            run by clients at this round.
         netwk:
             NetworkServer endpoint instance, to which clients are registered.
         secagg:
             Optional SecAgg decryption controller.
+        values:
+            Aggregated metrics resulting from the fairness evaluation
+            run by clients at this round.
 
         Returns
         -------
         metrics:
-            Computed local fairness(-related) metrics computed as part
-            of this routine, as a dict mapping scalar or numpy array
-            values with their name.
+            Fairness(-related) metrics computed as part of this routine,
+            as a dict mapping scalar or numpy array values with their name.
         """

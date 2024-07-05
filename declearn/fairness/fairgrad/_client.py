@@ -69,7 +69,7 @@ class FairgradControllerClient(FairnessControllerClient):
             If the weights' update fails.
         """
         # Receive aggregated sensitive weights.
-        received = await netwk.check_message()
+        received = await netwk.recv_message()
         message = await verify_server_message_validity(
             netwk, received, expected=FairgradWeights
         )
@@ -93,8 +93,8 @@ class FairgradControllerClient(FairnessControllerClient):
     async def finalize_fairness_round(
         self,
         netwk: NetworkClient,
-        values: Dict[str, Dict[Tuple[Any, ...], float]],
         secagg: Optional[Encrypter],
+        values: Dict[str, Dict[Tuple[Any, ...], float]],
     ) -> Dict[str, Union[float, np.ndarray]]:
         # Await updated loss weights from the server.
         await self._update_fairgrad_weights(netwk)

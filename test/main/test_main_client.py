@@ -1067,13 +1067,13 @@ class TestFederatedClientFairnessRound:
         # Call the 'fairness_round' routine and verify expected actions.
         request = messaging.FairnessQuery(round_i=1)
         await client.fairness_round(request)
-        fairness.fairness_round.assert_awaited_once_with(
+        fairness.run_fairness_round.assert_awaited_once_with(
             netwk=netwk, query=request, secagg=None
         )
         # Verify that when a checkpointer is set, it is used.
         if ckpt:
             client.ckptr.save_metrics.assert_called_once_with(  # type: ignore
-                metrics=fairness.fairness_round.return_value,
+                metrics=fairness.run_fairness_round.return_value,
                 prefix="fairness_metrics",
                 append=True,
                 timestamp="round_1",
@@ -1102,7 +1102,7 @@ class TestFederatedClientFairnessRound:
         # Call the 'fairness_round' routine and verify expected actions.
         request = messaging.FairnessQuery(round_i=1)
         await client.fairness_round(request)
-        fairness.fairness_round.assert_awaited_once_with(
+        fairness.run_fairness_round.assert_awaited_once_with(
             netwk=netwk,
             query=request,
             secagg=secagg.setup_encrypter.return_value,
@@ -1149,7 +1149,7 @@ class TestFederatedClientFairnessRound:
         netwk.send_message.assert_called_once()
         reply = netwk.send_message.call_args.args[0]
         assert isinstance(reply, messaging.Error)
-        fairness.fairness_round.assert_not_called()
+        fairness.run_fairness_round.assert_not_called()
 
 
 class TestFederatedClientMisc:

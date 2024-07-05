@@ -106,8 +106,8 @@ class FairfedControllerClient(FairnessControllerClient):
     async def finalize_fairness_round(
         self,
         netwk: NetworkClient,
-        values: Dict[str, Dict[Tuple[Any, ...], float]],
         secagg: Optional[Encrypter],
+        values: Dict[str, Dict[Tuple[Any, ...], float]],
     ) -> Dict[str, Union[float, np.ndarray]]:
         # Await absolute mean fairness across all clients.
         received = await netwk.recv_message()

@@ -42,7 +42,7 @@ class FairnessMonitorServer(FairnessControllerServer):
     def __init__(
         self,
         f_type: str,
-        f_args: Optional[Dict[str, Any]],
+        f_args: Optional[Dict[str, Any]] = None,
     ) -> None:
         super().__init__(f_type, f_args)
         # Assign a temporary fairness functions, replaced at setup time.
@@ -53,6 +53,7 @@ class FairnessMonitorServer(FairnessControllerServer):
     async def finalize_fairness_setup(
         self,
         netwk: NetworkServer,
+        secagg: Optional[Decrypter],
         counts: List[int],
         aggregator: Aggregator,
     ) -> Aggregator:
@@ -65,10 +66,9 @@ class FairnessMonitorServer(FairnessControllerServer):
 
     async def finalize_fairness_round(
         self,
-        round_i: int,
-        values: List[float],
         netwk: NetworkServer,
         secagg: Optional[Decrypter],
+        values: List[float],
     ) -> Dict[str, Union[float, np.ndarray]]:
         # Unpack group-wise accuracy metrics and compute fairness ones.
         accuracy = dict(zip(self.groups, values))

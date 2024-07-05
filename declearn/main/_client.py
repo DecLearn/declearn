@@ -660,7 +660,7 @@ class FederatedClient:
             await self.netwk.send_message(messaging.Error(error))
             return
         # Otherwise, run the controller's routine.
-        metrics = await self.fairness.fairness_round(
+        metrics = await self.fairness.run_fairness_round(
             netwk=self.netwk, query=query, secagg=self._encrypter
         )
         # Optionally save computed fairness metrics.

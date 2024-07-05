@@ -189,6 +189,7 @@ class FairgradControllerServer(FairnessControllerServer):
     async def finalize_fairness_setup(
         self,
         netwk: NetworkServer,
+        secagg: Optional[Decrypter],
         counts: List[int],
         aggregator: Aggregator,
     ) -> Aggregator:
@@ -230,10 +231,9 @@ class FairgradControllerServer(FairnessControllerServer):
 
     async def finalize_fairness_round(
         self,
-        round_i: int,
-        values: List[float],
         netwk: NetworkServer,
         secagg: Optional[Decrypter],
+        values: List[float],
     ) -> Dict[str, Union[float, np.ndarray]]:
         # Unpack group-wise accuracy metrics and update loss weights.
         accuracy = dict(zip(self.groups, values))

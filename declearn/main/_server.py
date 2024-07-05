@@ -565,27 +565,8 @@ class FederatedServer:
             weights=None,
         )
         await self._send_request_with_optional_weights(query, clients)
-        # Await and (secure-)aggregate) results.
-        self.logger.info("Awaiting clients' fairness measures.")
-        if self._decrypter is None:
-            replies = await self._collect_results(
-                clients, messaging.FairnessReply, "fairness round"
-            )
-            if len(set(len(r.values) for r in replies.values())) != 1:
-                error = "Clients sent fairness values of different lengths."
-                self.logger.error(error)
-                await self.netwk.broadcast_message(messaging.Error(error))
-                raise RuntimeError(error)
-            values = [sum(c_values) for c_values in zip(*replies.values())]
-        else:
-            secagg_replies = await self._collect_results(
-                clients, secagg_messaging.SecaggFairnessReply, "fairness round"
-            )
-            values = self._aggregate_secagg_replies(secagg_replies).values
-        # Have the fairness controller process results.
-        metrics = await self.fairness.finalize_fairness_round(
-            round_i=round_i,
-            values=values,
+        # Await, (secure-)aggregate and process fairness measures.
+        metrics = await self.fairness.run_fairness_round(
             netwk=self.netwk,
             secagg=self._decrypter,
         )

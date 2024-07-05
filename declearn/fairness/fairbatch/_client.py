@@ -84,7 +84,7 @@ class FairbatchControllerClient(FairnessControllerClient):
             If the sampling pobabilities' update fails.
         """
         # Receive aggregated sensitive weights.
-        received = await netwk.check_message()
+        received = await netwk.recv_message()
         message = await verify_server_message_validity(
             netwk, received, expected=FairbatchSamplingProbas
         )
@@ -114,15 +114,15 @@ class FairbatchControllerClient(FairnessControllerClient):
         thresh: Optional[float] = None,
     ) -> List[MeanMetric]:
         loss = self.computer.setup_loss_metric(model=self.manager.model)
-        metrics = super().setup_fairness_metrics()
+        metrics = super().setup_fairness_metrics(thresh=thresh)
         metrics.append(loss)
         return metrics
 
     async def finalize_fairness_round(
         self,
         netwk: NetworkClient,
-        values: Dict[str, Dict[Tuple[Any, ...], float]],
         secagg: Optional[Encrypter],
+        values: Dict[str, Dict[Tuple[Any, ...], float]],
     ) -> Dict[str, Union[float, np.ndarray]]:
         # Await updated loss weights from the server.
         await self._update_fairbatch_sampling_probas(netwk)

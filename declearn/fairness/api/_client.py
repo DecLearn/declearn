@@ -161,12 +161,36 @@ class FairnessControllerClient(metaclass=abc.ABCMeta):
         secagg:
             Optional SecAgg encryption controller.
         """
+        # Agree on a list of sensitive groups and share local sample counts.
+        await self.exchange_sensitive_groups_list_and_counts(netwk, secagg)
+        # Run additional algorithm-specific setup steps.
+        await self.finalize_fairness_setup(netwk, secagg)
+
+    async def exchange_sensitive_groups_list_and_counts(
+        self,
+        netwk: NetworkClient,
+        secagg: Optional[Encrypter],
+    ) -> None:
+        """Agree on a list of sensitive groups and share local sample counts.
+
+        This method performs the following routine:
+
+        - Send the list of local sensitive group definitions to the server.
+        - Await a unified list of sensitive groups in return.
+        - Assign the received list as `groups` attribute.
+        - Send (optionally-encrypted) group-wise sample counts to the server.
+
+        Parameters
+        ----------
+        netwk:
+            `NetworkClient` endpoint, connected to a server.
+        secagg:
+            Optional SecAgg encryption controller.
+        """
         # Share sensitive groups definitions and received an ordered list.
         self.groups = await self._exchange_sensitive_groups_list(netwk)
         # Send group-wise sample counts for the server to (secure-)aggregate.
         await self._send_sensitive_groups_counts(netwk, secagg)
-        # Run additional algorithm-specific setup steps.
-        await self.finalize_fairness_setup(netwk, secagg)
 
     async def _exchange_sensitive_groups_list(
         self,
@@ -220,7 +244,7 @@ class FairnessControllerClient(metaclass=abc.ABCMeta):
             Optional SecAgg encryption controller.
         """
 
-    async def fairness_round(
+    async def run_fairness_round(
         self,
         netwk: NetworkClient,
         query: FairnessQuery,
@@ -253,7 +277,7 @@ class FairnessControllerClient(metaclass=abc.ABCMeta):
             await netwk.send_message(Error(error))
             raise RuntimeError(error) from exc
         # Run additional algorithm-specific steps.
-        return await self.finalize_fairness_round(netwk, values, secagg)
+        return await self.finalize_fairness_round(netwk, secagg, values)
 
     async def _compute_and_share_fairness_measures(
         self,
@@ -374,8 +398,8 @@ class FairnessControllerClient(metaclass=abc.ABCMeta):
     async def finalize_fairness_round(
         self,
         netwk: NetworkClient,
-        values: Dict[str, Dict[Tuple[Any, ...], float]],
         secagg: Optional[Encrypter],
+        values: Dict[str, Dict[Tuple[Any, ...], float]],
     ) -> Dict[str, Union[float, np.ndarray]]:
         """Take actions to enforce fairness.
 
@@ -387,13 +411,13 @@ class FairnessControllerClient(metaclass=abc.ABCMeta):
         ----------
         netwk:
             NetworkClient endpoint instance, connected to a server.
+        secagg:
+            Optional SecAgg encryption controller.
         values:
             Nested dict of locally-computed group-wise metrics.
             This is the second set of `compute_fairness_measures` return
             values; when this method is called, the first has already
             been shared with the server for (secure-)aggregation.
-        secagg:
-            Optional SecAgg encryption controller.
 
         Returns
         -------
