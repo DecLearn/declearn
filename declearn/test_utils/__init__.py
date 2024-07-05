@@ -38,7 +38,12 @@ from ._assertions import (
 from ._convert import to_numpy
 from ._gen_ssl import generate_ssl_certificates
 from ._imports import make_importable
-from ._network import MockNetworkClient, MockNetworkServer
+from ._network import (
+    MockNetworkClient,
+    MockNetworkServer,
+    setup_mock_network_endpoints,
+)
+from ._secagg import build_secagg_controllers
 from ._vectors import (
     FrameworkType,
     GradientsTestCase,

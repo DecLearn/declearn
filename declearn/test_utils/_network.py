@@ -18,9 +18,13 @@
 """Fake network communication endpoints relying on shared memory objects."""
 
 import asyncio
+import contextlib
 import logging
 import uuid
-from typing import Dict, Mapping, Optional, Set, TypeVar, Union
+from typing import (
+    # fmt: off
+    AsyncIterator, Dict, List, Mapping, Optional, Set, Tuple, TypeVar, Union
+)
 
 
 from declearn.communication.api import NetworkClient, NetworkServer
@@ -31,6 +35,7 @@ from declearn.messaging import Message, SerializedMessage
 __all__ = [
     "MockNetworkClient",
     "MockNetworkServer",
+    "setup_mock_network_endpoints",
 ]
 
 
@@ -179,3 +184,47 @@ class MockNetworkClient(NetworkClient, register=False):
     ) -> SerializedMessage:
         # Force the use of a timeout, to prevent tests from being stuck.
         return await super().recv_message(timeout=timeout or 5)
+
+
+@contextlib.asynccontextmanager
+async def setup_mock_network_endpoints(
+    n_peers: int,
+    port: int = 8765,
+) -> AsyncIterator[Tuple[MockNetworkServer, List[MockNetworkClient]]]:
+    """Instantiate, start and register mock network communication endpoints.
+
+    This is an async context manager, that returns network endpoints,
+    and ensures they are all properly closed upon leaving the context.
+
+    Parameters
+    ----------
+    n_peers:
+        Number of client endpoints to instantiate.
+    port:
+        Mock port number to use.
+
+    Returns
+    -------
+    server:
+        `MockNetworkServer` instance to which clients are registered.
+    clients:
+        List of `MockNetworkClient` instances, registered to the server.
+    """
+    # Instantiate the endpoints.
+    server = MockNetworkServer(port=port)
+    clients = [
+        MockNetworkClient(f"mock://localhost:{port}", name=f"client_{i}")
+        for i in range(n_peers)
+    ]
+    async with contextlib.AsyncExitStack() as stack:
+        # Start the endpoints and ensure they will be properly closed.
+        await stack.enter_async_context(server)  # type: ignore
+        for client in clients:
+            await stack.enter_async_context(client)  # type: ignore
+        # Register the clients with the server.
+        await asyncio.gather(
+            server.wait_for_clients(n_peers),
+            *[client.register() for client in clients],
+        )
+        # Yield the started, registered endpoints.
+        yield server, clients
