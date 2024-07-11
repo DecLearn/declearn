@@ -86,6 +86,18 @@ class FairnessControllerTestSuite:
         """Instantiate and return a server-side fairness controller."""
         return self.server_cls(f_type="accuracy_parity")
 
+    def setup_mock_training_manager(
+        self,
+        idx: int,
+    ) -> mock.MagicMock:
+        """Setup and return a mock TrainingManager for a given client."""
+        manager = mock.create_autospec(TrainingManager, instance=True)
+        manager.aggrg = mock.create_autospec(Aggregator, instance=True)
+        manager.logger = mock.create_autospec(logging.Logger, instance=True)
+        manager.model = mock.create_autospec(Model, instance=True)
+        manager.train_data = build_mock_dataset(idx)
+        return manager
+
     def test_setup_client_from_setup_query(
         self,
     ) -> None:
@@ -93,10 +105,7 @@ class FairnessControllerTestSuite:
         server = self.setup_server_controller()
         query = server.prepare_fairness_setup_query()
         assert isinstance(query, FairnessSetupQuery)
-        manager = mock.create_autospec(TrainingManager, instance=True)
-        manager.train_data = mock.create_autospec(
-            FairnessDataset, instance=True
-        )
+        manager = self.setup_mock_training_manager(idx=0)
         client = FairnessControllerClient.from_setup_query(query, manager)
         assert isinstance(client, self.client_cls)
         assert client.manager is manager
@@ -111,18 +120,6 @@ class FairnessControllerTestSuite:
         manager = self.setup_mock_training_manager(idx)
         query = server.prepare_fairness_setup_query()
         return FairnessControllerClient.from_setup_query(query, manager)
-
-    def setup_mock_training_manager(
-        self,
-        idx: int,
-    ) -> mock.MagicMock:
-        """Setup and return a mock TrainingManager for a given client."""
-        manager = mock.create_autospec(TrainingManager, instance=True)
-        manager.aggrg = mock.create_autospec(Aggregator, instance=True)
-        manager.logger = mock.create_autospec(logging.Logger, instance=True)
-        manager.model = mock.create_autospec(Model, instance=True)
-        manager.train_data = build_mock_dataset(idx)
-        return manager
 
     def setup_fairness_controllers_and_secagg(
         self,
