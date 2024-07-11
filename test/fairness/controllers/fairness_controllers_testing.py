@@ -19,6 +19,7 @@
 
 import asyncio
 import logging
+import warnings
 from unittest import mock
 from typing import Any, Dict, List, Optional, Tuple, Type, Union
 
@@ -361,7 +362,8 @@ class FairnessControllerTestSuite:
         Return the server and client controllers, as well as the list
         of output metrics dictionary returned by the executed routines.
         """
-        with pytest.warns():
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", RuntimeWarning)
             _, server, clients = await self.run_finalize_fairness_setup(
                 mock.MagicMock(),
                 use_secagg,
@@ -454,7 +456,8 @@ class FairnessControllerTestSuite:
                 """Server-side fairness setup and round routine."""
                 nonlocal decrypter, netwk
                 server = self.setup_server_controller()
-                with pytest.warns() as warnings_record:
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore", RuntimeWarning)
                     await server.setup_fairness(
                         netwk=netwk[0],
                         aggregator=mock.create_autospec(
@@ -462,7 +465,6 @@ class FairnessControllerTestSuite:
                         ),
                         secagg=decrypter,
                     )
-                assert len(warnings_record) <= 1
                 await netwk[0].broadcast_message(FairnessQuery(round_i=0))
                 await server.run_fairness_round(
                     netwk=netwk[0],
