@@ -90,7 +90,7 @@ class FairfedControllerServer(FairnessControllerServer):
         # Set up an uninitialized FairFed value computer.
         if target is None:
             target = int(self.f_args.get("target", 1))
-        self._fairfed = FairfedValueComputer(
+        self.fairfed_computer = FairfedValueComputer(
             f_type=self.f_type, strict=strict, target=target
         )
 
@@ -99,7 +99,7 @@ class FairfedControllerServer(FairnessControllerServer):
         self,
     ) -> bool:
         """Whether this controller strictly sticks to the FairFed paper."""
-        return self._fairfed.strict
+        return self.fairfed_computer.strict
 
     def prepare_fairness_setup_query(
         self,
@@ -107,7 +107,7 @@ class FairfedControllerServer(FairnessControllerServer):
         query = super().prepare_fairness_setup_query()
         query.params["beta"] = self.beta
         query.params["strict"] = self.strict
-        query.params["target"] = self._fairfed.target
+        query.params["target"] = self.fairfed_computer.target
         return query
 
     async def finalize_fairness_setup(
@@ -121,7 +121,7 @@ class FairfedControllerServer(FairnessControllerServer):
         self._fairness = instantiate_fairness_function(
             self.f_type, counts=dict(zip(self.groups, counts)), **self.f_args
         )
-        self._fairfed.initialize(groups=self.groups)
+        self.fairfed_computer.initialize(groups=self.groups)
         # Force the use of a FairFed-specific averaging aggregator.
         warnings.warn(
             "Overriding Aggregator choice due to the use of FairFed.",
@@ -141,7 +141,9 @@ class FairfedControllerServer(FairnessControllerServer):
             accuracy
         )
         # Share the absolute mean fairness with clients.
-        fair_avg = self._fairfed.compute_synthetic_fairness_value(fairness)
+        fair_avg = self.fairfed_computer.compute_synthetic_fairness_value(
+            fairness
+        )
         await netwk.broadcast_message(FairfedFairness(fairness=fair_avg))
         # Await and (secure-)aggregate clients' absolute fairness difference.
         received = await netwk.wait_for_messages()

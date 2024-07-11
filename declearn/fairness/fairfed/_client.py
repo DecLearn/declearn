@@ -80,17 +80,17 @@ class FairfedControllerClient(FairnessControllerClient):
         # arguments serve modularity; pylint: disable=too-many-arguments
         super().__init__(manager=manager, f_type=f_type, f_args=f_args)
         self.beta = beta
-        self._fairfed = FairfedValueComputer(
+        self.fairfed_computer = FairfedValueComputer(
             f_type=self.fairness_function.f_type, strict=strict, target=target
         )
-        self._fairfed.initialize(groups=self.fairness_function.groups)
+        self.fairfed_computer.initialize(groups=self.fairness_function.groups)
 
     @property
     def strict(
         self,
     ) -> bool:
         """Whether this function strictly sticks to the FairFed paper."""
-        return self._fairfed.strict
+        return self.fairfed_computer.strict
 
     async def finalize_fairness_setup(
         self,
@@ -115,8 +115,8 @@ class FairfedControllerClient(FairnessControllerClient):
             netwk, received, expected=FairfedFairness
         )
         # Compute the absolute difference between local and global fairness.
-        fair_avg = self._fairfed.compute_synthetic_fairness_value(
-            values["fairness"]
+        fair_avg = self.fairfed_computer.compute_synthetic_fairness_value(
+            values[self.fairness_function.f_type]
         )
         my_delta = FairfedDelta(abs(fair_avg - fair_glb.fairness))
         # Share it with the server for its (secure-)aggregation across clients.
