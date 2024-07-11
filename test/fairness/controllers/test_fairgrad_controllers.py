@@ -18,15 +18,21 @@
 """Unit tests for Fed-FairGrad controllers."""
 
 import os
+from typing import List
 from unittest import mock
 
 import pytest
 
 from declearn.aggregator import Aggregator, SumAggregator
-from declearn.fairness.api import FairnessDataset
+from declearn.fairness.api import (
+    FairnessDataset,
+    FairnessControllerClient,
+    FairnessControllerServer,
+)
 from declearn.fairness.fairgrad import (
     FairgradControllerClient,
     FairgradControllerServer,
+    FairgradWeightsController,
 )
 from declearn.test_utils import make_importable
 
@@ -59,7 +65,15 @@ class TestFairgradControllers(FairnessControllerTestSuite):
             isinstance(client.manager.aggrg, SumAggregator)
             for client in clients
         )
-        # Verify that FairGrad weights were shared and applied.
+        # Verify that FairgradWeights were shared and applied.
+        self.verify_fairgrad_weights_coherence(server, clients)
+
+    def verify_fairgrad_weights_coherence(
+        self,
+        server: FairnessControllerServer,
+        clients: List[FairnessControllerClient],
+    ) -> None:
+        """Verify that FairGrad weights were shared to clients and applied."""
         assert isinstance(server, FairgradControllerServer)
         weights = server.weights_controller.get_current_weights(norm_nk=True)
         expectw = dict(zip(server.groups, weights))
@@ -67,6 +81,25 @@ class TestFairgradControllers(FairnessControllerTestSuite):
             mock_dst = client.manager.train_data
             assert isinstance(mock_dst, FairnessDataset)
             assert isinstance(mock_dst, mock.NonCallableMagicMock)
-            mock_dst.set_sensitive_group_weights.assert_called_once_with(
+            mock_dst.set_sensitive_group_weights.assert_called_with(
                 weights=expectw, adjust_by_counts=True
             )
+
+    @pytest.mark.parametrize(
+        "use_secagg", [False, True], ids=["clrtxt", "secagg"]
+    )
+    @pytest.mark.asyncio
+    async def test_finalize_fairness_round(
+        self,
+        use_secagg: bool,
+    ) -> None:
+        with mock.patch.object(
+            FairgradWeightsController,
+            "update_weights_based_on_accuracy",
+        ) as patch_update_weights:
+            server, clients, metrics = await self.run_finalize_fairness_round(
+                use_secagg
+            )
+        self.verify_fairness_round_metrics(metrics)
+        patch_update_weights.assert_called_once()
+        self.verify_fairgrad_weights_coherence(server, clients)

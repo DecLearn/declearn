@@ -20,7 +20,7 @@
 import asyncio
 import logging
 from unittest import mock
-from typing import List, Optional, Tuple, Type, Union
+from typing import Any, Dict, List, Optional, Tuple, Type, Union
 
 import numpy as np
 import pytest
@@ -94,8 +94,8 @@ class FairnessControllerTestSuite:
         query = server.prepare_fairness_setup_query()
         assert isinstance(query, FairnessSetupQuery)
         manager = mock.create_autospec(TrainingManager, instance=True)
-        manager.train_data = (
-            mock.create_autospec(FairnessDataset, instance=True)
+        manager.train_data = mock.create_autospec(
+            FairnessDataset, instance=True
         )
         client = FairnessControllerClient.from_setup_query(query, manager)
         assert isinstance(client, self.client_cls)
@@ -301,8 +301,8 @@ class FairnessControllerTestSuite:
         replies = {
             f"client_{idx}": FairnessReply(
                 [
-                    group_values.get(group, 0.0) * CLIENT_COUNTS[idx].get(group, 0.0)
-                    for group_values in self.mock_client_metrics[idx].values()
+                    g_val.get(group, 0.0) * CLIENT_COUNTS[idx].get(group, 0.0)
+                    for g_val in self.mock_client_metrics[idx].values()
                     for group in list(TOTAL_COUNTS)
                 ]
             )
@@ -339,6 +339,99 @@ class FairnessControllerTestSuite:
         "use_secagg", [False, True], ids=["clrtxt", "secagg"]
     )
     @pytest.mark.asyncio
+    async def test_finalize_fairness_round(
+        self,
+        use_secagg: bool,
+    ) -> None:
+        """Test that 'finalize_fairness_round' works properly.
+
+        This test should be overridden by subclasses to perform
+        algorithm-specific verification.
+        """
+        _, _, metrics = await self.run_finalize_fairness_round(use_secagg)
+        self.verify_fairness_round_metrics(metrics)
+
+    async def run_finalize_fairness_round(
+        self,
+        use_secagg: bool,
+    ) -> Tuple[
+        FairnessControllerServer,
+        List[FairnessControllerClient],
+        List[Dict[str, Union[float, np.ndarray]]],
+    ]:
+        """Run 'finalize_fairness_round' after mocking previous steps.
+
+        Return the server and client controllers, as well as the list
+        of output metrics dictionary returned by the executed routines.
+        """
+        with pytest.warns():
+            _, server, clients = await self.run_finalize_fairness_setup(
+                mock.MagicMock(),
+                use_secagg,
+            )
+        # Run mock client computations and compute expected aggregate.
+        share_vals = []  # type: List[List[float]]
+        local_vals = []  # type: List[Dict[str, Dict[Tuple[Any, ...], float]]]
+        for idx, client in enumerate(clients):
+            with mock.patch.object(
+                client.computer,
+                "compute_groupwise_metrics",
+                return_value=self.mock_client_metrics[idx].copy(),
+            ):
+                client_values = client.compute_fairness_measures(32)
+                share_vals.append(client_values[0])
+                local_vals.append(client_values[1])
+        server_values = [float(sum(values)) for values in zip(*share_vals)]
+        # Setup optional SecAgg and mock network communication endpoints.
+        # Run the tested method.
+        n_peers = len(clients)
+        decrypter, encrypters = (
+            build_secagg_controllers(n_peers)
+            if use_secagg
+            else (None, [None] * n_peers)  # type: ignore
+        )
+        async with setup_mock_network_endpoints(n_peers) as netwk:
+            metrics = await asyncio.gather(
+                server.finalize_fairness_round(
+                    netwk=netwk[0],
+                    secagg=decrypter,
+                    values=server_values,
+                ),
+                *[
+                    client.finalize_fairness_round(
+                        netwk=netwk[1][idx],
+                        secagg=encrypters[idx],
+                        values=local_vals[idx],
+                    )
+                    for idx, client in enumerate(clients)
+                ],
+            )
+        return server, clients, metrics
+
+    def verify_fairness_round_metrics(
+        self,
+        metrics: List[Dict[str, Union[float, np.ndarray]]],
+    ) -> None:
+        """Verify that metrics output by fairness rounds match expectations.
+
+        Input `metrics` contain the server-side metrics followed by each and
+        every client-side ones, all formatted as dictionaries.
+        """
+        # Verify that all output metrics are dict with proper inner types.
+        for m_dict in metrics:
+            assert isinstance(m_dict, dict)
+            assert all(isinstance(key, str) for key in m_dict)
+            assert all(
+                isinstance(val, (float, np.ndarray)) for val in m_dict.values()
+            )
+        # Verify that client dictionaries have the same keys.
+        keys = list(metrics[1].keys())
+        assert all(set(m_dict).issubset(keys) for m_dict in metrics[2:])
+
+    @pytest.mark.parametrize(
+        "use_secagg", [False, True], ids=["clrtxt", "secagg"]
+    )
+    @pytest.mark.asyncio
     async def test_fairness_end2end(
         self,
         use_secagg: bool,
@@ -354,8 +447,8 @@ class FairnessControllerTestSuite:
         decrypter = None  # type: Optional[Decrypter]
         encrypters = [None] * n_peers  # type: List[Optional[Encrypter]]
         if use_secagg:
-            decrypter, encrypters = (
-                build_secagg_controllers(n_peers)  # type: ignore
+            decrypter, encrypters = build_secagg_controllers(  # type: ignore
+                n_peers
             )
         # Run end-to-end routines using mock communication endpoints.
         async with setup_mock_network_endpoints(n_peers=n_peers) as netwk:
