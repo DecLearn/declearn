@@ -75,6 +75,7 @@ class FairfedAggregator(Aggregator, register=False):
         updates: Vector,
         n_steps: int,
     ) -> ModelUpdates:
+        updates = updates * self._weight
         return ModelUpdates(updates=updates, weights=self._weight)
 
     def finalize_updates(
