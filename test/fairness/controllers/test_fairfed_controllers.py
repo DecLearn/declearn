@@ -156,3 +156,33 @@ class TestFairfedControllers(FairnessControllerTestSuite):
         assert server["fairfed_deltavg"] == (
             sum(client["fairfed_delta"] for client in clients) / len(clients)
         )
+
+    @pytest.mark.parametrize(
+        "strict", [True, False], ids=["strict", "extended"]
+    )
+    def test_init_params(
+        self,
+        strict: bool,
+    ) -> None:
+        """Test that instantiation parameters are properly passed."""
+        rng = np.random.default_rng()
+        beta = abs(rng.normal())
+        target = int(rng.choice(2))
+        controller = FairfedControllerServer(
+            f_type="demographic_parity",
+            beta=beta,
+            strict=strict,
+            target=target,
+        )
+        assert controller.beta == beta
+        assert controller.fairfed_computer.f_type == "demographic_parity"
+        assert controller.strict is strict
+        assert controller.fairfed_computer.strict is strict
+        assert controller.fairfed_computer.target is target
+        # Verify that parameters are transmitted to clients.
+        client = self.setup_client_controller_from_server(controller, idx=0)
+        assert isinstance(client, FairfedControllerClient)
+        assert client.beta == controller.beta
+        assert client.fairfed_computer.f_type == "demographic_parity"
+        assert client.strict is strict
+        assert client.fairfed_computer.strict is strict

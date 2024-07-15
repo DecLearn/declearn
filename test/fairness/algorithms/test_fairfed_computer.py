@@ -74,6 +74,22 @@ class TestFairfedValueComputer:
                 warnings.simplefilter("ignore", RuntimeWarning)
                 computer.identify_key_groups(GROUPS_EXTEND.copy())
 
+    @pytest.mark.parametrize("f_type", F_TYPES)
+    def test_identify_key_groups_hybrid_exception(
+        self,
+        f_type: str,
+    ) -> None:
+        """Test 'identify_key_groups' exception raising with 'hybrid' groups.
+
+        'Hybrid' groups are groups that seemingly arise from a categorical
+        target that does not cross all sensitive attribute modalities.
+        """
+        computer = FairfedValueComputer(f_type, strict=True, target=1)
+        with pytest.raises(KeyError):
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", RuntimeWarning)
+                computer.identify_key_groups([(0, 0), (0, 1), (1, 0), (2, 1)])
+
     @pytest.mark.parametrize("binary", [True, False], ids=["binary", "extend"])
     @pytest.mark.parametrize("strict", [True, False], ids=["strict", "free"])
     @pytest.mark.parametrize("f_type", F_TYPES[1:])  # avoid warning on AccPar

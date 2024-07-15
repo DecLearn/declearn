@@ -72,3 +72,16 @@ class TestFairfedAggregator:
         updates.__mul__.assert_called_once_with(expectw)
         assert model_updates.updates is updates.__mul__.return_value
         assert model_updates.weights == expectw
+
+    def test_finalize_updates(self) -> None:
+        """Test that 'finalize_updates' works as expected."""
+        # Set up a FairFed aggregator and initialize it.
+        n_samples = 100
+        aggregator = FairfedAggregator(beta=0.1)
+        aggregator.initialize_local_weight(n_samples=n_samples)
+        # Prepare, then finalize updates.
+        updates = mock.create_autospec(Vector, instance=True)
+        output = aggregator.finalize_updates(
+            aggregator.prepare_for_sharing(updates, n_steps=mock.MagicMock())
+        )
+        assert output == (updates * n_samples / n_samples)

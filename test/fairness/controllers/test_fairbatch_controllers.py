@@ -17,6 +17,7 @@
 
 """Unit tests for Fed-FairBatch controllers."""
 
+import asyncio
 import os
 from typing import List
 from unittest import mock
@@ -24,6 +25,7 @@ from unittest import mock
 import pytest
 
 from declearn.aggregator import Aggregator, SumAggregator
+from declearn.communication.utils import ErrorMessageException
 from declearn.fairness.api import (
     FairnessControllerClient,
     FairnessControllerServer,
@@ -34,7 +36,7 @@ from declearn.fairness.fairbatch import (
     FairbatchDataset,
     FairbatchSamplingController,
 )
-from declearn.test_utils import make_importable
+from declearn.test_utils import make_importable, setup_mock_network_endpoints
 
 with make_importable(os.path.dirname(os.path.abspath(__file__))):
     from fairness_controllers_testing import (
@@ -125,18 +127,20 @@ class TestFairbatchControllers(FairnessControllerTestSuite):
         with mock.patch(
             "declearn.fairness.fairbatch._server.setup_fairbatch_controller"
         ) as patch_setup_fairbatch:
-            FairbatchControllerServer(
+            controller = FairbatchControllerServer(
                 f_type="demographic_parity",
                 fedfb=False,
             )
+            assert not controller.fedfb
             patch_setup_fairbatch.assert_called_once()
         with mock.patch(
             "declearn.fairness.fairbatch._server.setup_fedfb_controller"
         ) as patch_setup_fedfb:
-            FairbatchControllerServer(
+            controller = FairbatchControllerServer(
                 f_type="demographic_parity",
                 fedfb=True,
             )
+            assert controller.fedfb
             patch_setup_fedfb.assert_called_once()
 
     def test_init_alpha_param(self) -> None:
@@ -146,3 +150,50 @@ class TestFairbatchControllers(FairnessControllerTestSuite):
             f_type="demographic_parity", alpha=alpha
         )
         assert server.sampling_controller.alpha is alpha
+
+    @pytest.mark.asyncio
+    async def test_finalize_fairness_setup_error(
+        self,
+    ) -> None:
+        """Test that FairBatch probas update error-catching works properly."""
+        n_peers = len(CLIENT_COUNTS)
+        # Instantiate the fairness controllers.
+        server = self.setup_server_controller()
+        clients = [
+            self.setup_client_controller_from_server(server, idx)
+            for idx in range(n_peers)
+        ]
+        # Assign expected group definitions and counts.
+        server.groups = sorted(list(TOTAL_COUNTS))
+        for client in clients:
+            client.groups = server.groups.copy()
+        counts = [TOTAL_COUNTS[group] for group in server.groups]
+        # Run setup coroutines, using mock network endpoints.
+        aggregator = mock.create_autospec(SumAggregator, instance=True)
+        async with setup_mock_network_endpoints(n_peers) as network:
+            coro_server = server.finalize_fairness_setup(
+                netwk=network[0],
+                secagg=None,
+                counts=counts,
+                aggregator=aggregator,
+            )
+            coro_clients = [
+                client.finalize_fairness_setup(
+                    netwk=network[1][idx],
+                    secagg=None,
+                )
+                for idx, client in enumerate(clients)
+            ]
+            # Have the sampling probabilities' assignment fail.
+            with mock.patch.object(
+                FairbatchDataset,
+                "set_sampling_probabilities",
+                side_effect=Exception,
+            ) as patch_set_sampling_probabilities:
+                exc_server, *exc_clients = await asyncio.gather(
+                    coro_server, *coro_clients, return_exceptions=True
+                )
+        # Assert that expected exceptions were raised.
+        assert isinstance(exc_server, ErrorMessageException)
+        assert all(isinstance(exc, RuntimeError) for exc in exc_clients)
+        assert patch_set_sampling_probabilities.call_count == n_peers

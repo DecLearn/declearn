@@ -17,6 +17,7 @@
 
 """Unit tests for Fed-FairGrad controllers."""
 
+import asyncio
 import os
 from typing import List
 from unittest import mock
@@ -24,6 +25,7 @@ from unittest import mock
 import pytest
 
 from declearn.aggregator import Aggregator, SumAggregator
+from declearn.communication.utils import ErrorMessageException
 from declearn.fairness.api import (
     FairnessDataset,
     FairnessControllerClient,
@@ -34,10 +36,14 @@ from declearn.fairness.fairgrad import (
     FairgradControllerServer,
     FairgradWeightsController,
 )
-from declearn.test_utils import make_importable
+from declearn.test_utils import make_importable, setup_mock_network_endpoints
 
 with make_importable(os.path.dirname(os.path.abspath(__file__))):
-    from fairness_controllers_testing import FairnessControllerTestSuite
+    from fairness_controllers_testing import (
+        CLIENT_COUNTS,
+        TOTAL_COUNTS,
+        FairnessControllerTestSuite,
+    )
 
 
 class TestFairgradControllers(FairnessControllerTestSuite):
@@ -103,3 +109,47 @@ class TestFairgradControllers(FairnessControllerTestSuite):
         self.verify_fairness_round_metrics(metrics)
         patch_update_weights.assert_called_once()
         self.verify_fairgrad_weights_coherence(server, clients)
+
+    @pytest.mark.asyncio
+    async def test_finalize_fairness_setup_error(
+        self,
+    ) -> None:
+        """Test that FairGrad weights setup error-catching works properly."""
+        n_peers = len(CLIENT_COUNTS)
+        # Instantiate the fairness controllers.
+        server = self.setup_server_controller()
+        clients = [
+            self.setup_client_controller_from_server(server, idx)
+            for idx in range(n_peers)
+        ]
+        # Assign expected group definitions and counts.
+        # Have client datasets fail upon receiving sensitive group weights.
+        server.groups = sorted(list(TOTAL_COUNTS))
+        for client in clients:
+            client.groups = server.groups.copy()
+            mock_dst = client.manager.train_data
+            assert isinstance(mock_dst, mock.NonCallableMagicMock)
+            mock_dst.set_sensitive_group_weights.side_effect = Exception
+        counts = [TOTAL_COUNTS[group] for group in server.groups]
+        # Run setup coroutines, using mock network endpoints.
+        aggregator = mock.create_autospec(SumAggregator, instance=True)
+        async with setup_mock_network_endpoints(n_peers) as network:
+            coro_server = server.finalize_fairness_setup(
+                netwk=network[0],
+                secagg=None,
+                counts=counts,
+                aggregator=aggregator,
+            )
+            coro_clients = [
+                client.finalize_fairness_setup(
+                    netwk=network[1][idx],
+                    secagg=None,
+                )
+                for idx, client in enumerate(clients)
+            ]
+            exc_server, *exc_clients = await asyncio.gather(
+                coro_server, *coro_clients, return_exceptions=True
+            )
+        # Assert that expected exceptions were raised.
+        assert isinstance(exc_server, ErrorMessageException)
+        assert all(isinstance(exc, RuntimeError) for exc in exc_clients)
