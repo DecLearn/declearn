@@ -31,7 +31,51 @@ __all__ = [
 
 
 class FairbatchDataset(FairnessDataset):
-    """FairBatch-specific FairnessDataset subclass and wrapper."""
+    """FairBatch-specific FairnessDataset subclass and wrapper.
+
+    FairBatch is an algorithm to enforce group fairness when learning
+    a classifier, initially designed for the centralized setting, and
+    extendable to the federated one. It mostly relies on changing the
+    way training data batches are drawn: instead of drawing uniformly
+    from the full dataset, FairBatch introduces sampling probabilities
+    attached to the sensitive groups, that are updated throughout time
+    to reflect the model's current fairness levels.
+
+    This class is both a subclass to `FairnessDataset` and a wrapper
+    that is designed to hold such a dataset. It implements a couple
+    of algorithm-specific methods to set or get group-wise sampling
+    probabilities, and transparently introduces the FairBatch logic
+    into the API-defined `generate_batches` method.
+
+    This implementation is based both on the original FairBatch paper
+    and on the reference implementation by the paper's authors. Hence,
+    instead of effectively assigning drawing probabilities to samples
+    based on their sensitive group, batches are in fact drawn as the
+    concatenation of fixed-size sub-batches, drawn from data subsets
+    defined by samples' sensitive group.
+
+    As in the reference implementation:
+
+    - ouptut batches always have the same number of samples - this is
+      true even when using `drop_remainder=False`, that merely adds a
+      batch to the sequence of generated batches;
+    - the number of batches to yield is computed based on the total
+      number of samples and full abtch size;
+    - when a subset is exhausted, it is drawn from anew; hence, samples
+      may be seen multiple time in a single "epoch" depending on the
+      groups' number of samples and sampling probabilities;
+    - in the extreme case when a subset is smaller than the number of
+      samples that should be drawn from it for any batch, samples may
+      even be included multiple times in the same batch.
+
+    In the federated setting, clients may not hold samples to each and
+    every sensitive group. In this implementation, when a client has no
+    samples for a given group, it adjusts the sampling probabilities of
+    all groups for which they have samples. In other words, sampling
+    probabilities are adjusted so that the total batch size is the same
+    across clients, in spite of some clients possibly not having samples
+    for some groups.
+    """
 
     def __init__(
         self,
@@ -141,14 +185,11 @@ class FairbatchDataset(FairnessDataset):
         poisson: bool = False,
     ) -> Iterator[Batch]:
         # inherited signature; pylint: disable=too-many-arguments
-        # NOTE: we could add support for those, but let's start simple.
-        if not drop_remainder:
-            raise ValueError(
-                f"'{self.__class__.__name__}.generate_batches' does not "
-                "support argument value 'drop_remainder=False'."
-            )
         # Compute the number of batches to yield.
-        nb_batches = sum(self._counts.values()) // batch_size
+        nb_samples = sum(self._counts.values())
+        nb_batches = nb_samples // batch_size
+        if (not drop_remainder) and (nb_samples % batch_size):
+            nb_batches += 1
         # Compute the group-wise number of samples per batch.
         # NOTE: this number may be reduced if there are too few samples.
         group_batch_size = {
