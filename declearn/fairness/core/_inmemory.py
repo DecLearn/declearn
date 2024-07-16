@@ -36,7 +36,18 @@ __all__ = [
 
 
 class FairnessInMemoryDataset(FairnessDataset, InMemoryDataset):
-    """Fairness-aware InMemoryDataset subclass."""
+    """Fairness-aware InMemoryDataset subclass.
+
+    This class extends `declearn.dataset.InMemoryDataset` to
+    enable its use in fairness-aware federated learning. New
+    parameters are added to its `__init__`: `s_attr` as well
+    as `sensitive_target`, that are used to define sensitive
+    groups among the held dataset. Additionally, API methods
+    from `declearn.fairness.api.FairnessDataset` are defined,
+    enabling to access sensitive groups' metadata and samples
+    as well as to change sample weights based on the group to
+    which samples belong.
+    """
 
     def __init__(
         self,

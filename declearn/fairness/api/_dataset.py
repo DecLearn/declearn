@@ -30,7 +30,14 @@ __all__ = [
 
 
 class FairnessDataset(Dataset, metaclass=ABCMeta):
-    """Abstract base class for Fairness-aware Dataset interfaces."""
+    """Abstract base class for Fairness-aware Dataset interfaces.
+
+    This `declearn.dataset.Dataset` abstract subclass adds API methods
+    related to group fairness to the base dataset API. These revolve
+    around accessing sensitive group definitions, sample counts and
+    dataset subset. They further add the possibility to modify samples'
+    weights based on the sensitive group to which they belong.
+    """
 
     @abstractmethod
     def get_sensitive_group_definitions(

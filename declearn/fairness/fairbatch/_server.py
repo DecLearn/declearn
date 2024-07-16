@@ -43,6 +43,24 @@ __all__ = [
 class FairbatchControllerServer(FairnessControllerServer):
     """Server-side controller to implement Fed-FairBatch or FedFB.
 
+    FairBatch [1] is a group-fairness-enforcing algorithm that relies
+    on a specific form of loss reweighting mediated via the batching
+    of samples for SGD steps. Namely, in FairBatch, batches are drawn
+    by concatenating group-wise sub-batches, the size of which is the
+    byproduct of the desired total batch size and group-wise sampling
+    probabilities, with the latter being updated throughout training
+    based on the measured fairness of the current model.
+
+    This controller implements an adaptation of FairBatch for federated
+    learning, that is limited to the setting of the original paper, i.e.
+    a binary classification task on data that have a single and binary
+    sensitive attribute.
+
+    The `fedfb` instantiation parameter controls whether formulas from
+    the original paper should be used for computing and updating group
+    sampling probabilities (the default), or be replaced with variants
+    introduced in the FedFB algorithm from paper [2].
+
     References
     ----------
     - [1]

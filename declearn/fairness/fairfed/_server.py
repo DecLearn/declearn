@@ -49,7 +49,35 @@ __all__ = [
 
 
 class FairfedControllerServer(FairnessControllerServer):
-    """Server-side controller to implement FairFed."""
+    """Server-side controller to implement FairFed.
+
+    FairFed [1] is an algorithm that aims at enforcing fairness in
+    a federated learning setting by altering the aggregation rule
+    for client-wise model updates. It conducts a weighted averaging
+    of these updates that is based on discrepancy metrics between
+    global and client-wise fairness measures.
+
+    This algorithm was originally designed for settings where a binary
+    classifier is trained over data with a single binary sensitive
+    attribute, with the authors showcasing their generic formulas over
+    a limited set of group fairness definitions. DecLearn expands it to
+    a broader case, enabling the use of arbitrary fairness definitions
+    over data that may have non-binary and/or many sensitive attributes.
+    A 'strict' mode is made available to stick to the original paper,
+    that is turned on by default and can be disabled at instantiation.
+
+    It is worth noting that the authors of FairFed suggest combining it
+    with other mechanisms that aim at enforcing local model fairness; at
+    the moment, this is not implemented in DecLearn, unless a custom and
+    specific `Model` subclass is implemented by end-users to do so.
+
+    References
+    ----------
+    - [1]
+        Eszzeldin et al. (2021).
+        FairFed: Enabling Group Fairness in Federated Learning
+        https://arxiv.org/abs/2110.00857
+    """
 
     algorithm = "fairfed"
 

@@ -152,7 +152,29 @@ class FairgradWeightsController:
 
 
 class FairgradControllerServer(FairnessControllerServer):
-    """Server-side controller to implement Fed-FairGrad."""
+    """Server-side controller to implement Fed-FairGrad.
+
+    FairGrad [1] is an algorithm to learn a model under group-fairness
+    constraints, that relies on reweighting its training loss based on
+    the current group-wise fairness levels of the model.
+
+    This controller, together with its client-side counterpart, implements
+    a straightforward adaptation of FairGrad to the federated learning
+    setting, where the fairness level of the model is computed robustly
+    and federatively at the start of each training round, and kept as-is
+    for all local training steps within that round.
+
+    This algorithm may be applied using any group-fairness definition,
+    with any number of sensitive attributes and, thereof, groups that
+    is compatible with the chosen definition.
+
+    References
+    ----------
+    - [1]
+        Maheshwari & Perrot (2023).
+        FairGrad: Fairness Aware Gradient Descent.
+        https://openreview.net/forum?id=0f8tU3QwWD
+    """
 
     algorithm = "fedfairgrad"
 

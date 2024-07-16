@@ -19,15 +19,15 @@
 
 Introduction
 ------------
-This module provides with an implementation of Fed-FairGrad, a work-
-in-progress algorithm that aims at adapting the FairGrad algorithm
-(introduced by Maheshwari and Perrot (2022)) to the federated setting.
+This module provides with an implementation of Fed-FairGrad,
+a yet-to-be-published algorithm that adapts the FairGrad [1]
+algorithm to the federated learning setting.
 
-FairGrad formulates an optimization problem that aims at maximizing a
-group-fairness function while minimizing the overall loss of a model.
-Its solving relies on introducing sensitive-group-wise weights, that
-are updated throughout the training based on estimates of the current
-model's fairness on the training data.
+FairGrad aims at minimizing the training loss of a model under
+group-fairness constraints, with an optional epsilon tolerance.
+It relies on reweighting the loss using weights that are based
+on sensitive groups, and are updated throughout training based
+on estimates of the current fairness of the trained model.
 
 Fed-FairGrad formulates the same problem, and adjusts client-wise
 weights based on the repartition of group-wise data across clients.
@@ -60,6 +60,14 @@ Messages
 --------
 * [FairgradOkay][declearn.fairness.fairgrad.FairgradOkay]
 * [FairgradWeights][declearn.fairness.fairgrad.FairgradWeights]
+
+
+References
+----------
+- [1]
+    Maheshwari & Perrot (2023).
+    FairGrad: Fairness Aware Gradient Descent.
+    https://openreview.net/forum?id=0f8tU3QwWD
 """
 
 from ._messages import (

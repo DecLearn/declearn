@@ -55,7 +55,59 @@ __all__ = [
 
 @create_types_registry(name="FairnessControllerClient")
 class FairnessControllerClient(metaclass=abc.ABCMeta):
-    """Abstract base class for client-side fairness controllers."""
+    """Abstract base class for client-side fairness controllers.
+
+    Usage
+    -----
+    A `FairnessControllerClient` (subclass) instance has two main
+    routines that are to be called as part of a federated learning
+    process, in addition to a static method from the base API class:
+
+    - `from_setup_query`:
+        This is a static method that can be called generically from
+        the base `FairnessControllerClient` type to instantiate a
+        controller from a server-emitted `FairnessSetupQuery`.
+    - `setup_fairness`:
+        This routine is to be called only once, after instantiating
+        from a `FairnessSetupQuery`. It triggers the following process:
+            - Run a basic routine to exchange sensitive group definitions
+              and associated (encrypted) sample counts.
+            - Perform any additional algorithm-specific setup actions.
+    - `run_fairness_round`:
+        This routine is to be called once per round, before the next
+        training round occurs, upon receiving a `FairnessQuery` from
+        the server. It triggers the following process:
+            - Run a basic routine to compute fairness-related metrics
+              and send (some of) their (encrypted) values to the server.
+            - Perform any additonal algorithm-specific round actions.
+
+    Inheritance
+    -----------
+    Algorithm-specific subclasses should define the following abstract
+    attribute and methods:
+
+    - `algorithm`:
+        Abstract string class attribute. Name under which this controller
+        and its server-side counterpart classes are registered.
+    - `finalize_fairness_setup`:
+        Method implementing any algorithm-specific setup actions.
+    - `finalize_fairness_round`:
+        Method implementing any algorithm-specific round actions.
+
+    Additionally, they may overload or override the following method:
+
+    - `setup_fairness_metrics`:
+        Method that defines metrics being computed as part of fairness
+        rounds. By default, group-wise accuracy values are computed and
+        shared with the server, and the local fairness is computed from
+        them (but not sent to the server).
+
+    By default, subclasses are type-registered under their `algorithm`
+    name and "FairnessControllerClient" group upon declaration. This can
+    be prevented by passing `register=False` to the inheritance parameters
+    (e.g. `class Cls(FairnessControllerClient, register=False)`).
+    See `declearn.utils.register_type` for details on types registration.
+    """
 
     algorithm: ClassVar[str]
     """Name of the fairness-enforcing algorithm.

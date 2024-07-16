@@ -35,7 +35,17 @@ __all__ = [
 
 
 class FairnessMonitorServer(FairnessControllerServer):
-    """Server-side controller to monitor fairness without altering training."""
+    """Server-side controller to monitor fairness without altering training.
+
+    This controller, together with its client-side counterpart,
+    does not alter the training procedure of the model, but adds
+    computation and communication steps to measure its fairness
+    level at the start of each and every training round.
+
+    It is compatible with any group-fairness definition implemented
+    in DecLearn, and any number of sensitive groups compatible with
+    the chosen definition.
+    """
 
     algorithm = "monitor"
 

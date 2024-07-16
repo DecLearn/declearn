@@ -48,7 +48,50 @@ __all__ = [
 
 @create_types_registry(name="FairnessControllerServer")
 class FairnessControllerServer(metaclass=abc.ABCMeta):
-    """Abstract base class for server-side fairness controllers."""
+    """Abstract base class for server-side fairness controllers.
+
+    Usage
+    -----
+    A `FairnessControllerServer` (subclass) instance has two main
+    routines that are to be called as part of a federated learning
+    process:
+
+    - `setup_fairness`:
+        This routine is to be called only once, during the setup of the
+        overall federated learning task. It triggers the following process:
+            - Send a `FairnessSetupQuery` to clients so that they
+              instantiate a counterpart `FairnessControllerClient`.
+            - Run a basic routine to exchange sensitive group definitions
+              and (secure-)aggregate associated sample counts.
+            - Perform any additional algorithm-specific setup actions.
+
+    - `run_fairness_round`:
+        This routine is to be called once per round, before the next
+        training round occurs. A `FairnessQuery` should be sent to
+        clients prior to calling it. It triggers the following process:
+            - Run a basic routine to receive and (secure-)aggregate
+              metrics computed by clients that relate to fairness.
+            - Perform any additonal algorithm-specific round actions.
+
+    Inheritance
+    -----------
+    Algorithm-specific subclasses should define the following abstract
+    attribute and methods:
+
+    - `algorithm`:
+        Abstract string class attribute. Name under which this controller
+        and its client-side counterpart classes are registered.
+    - `finalize_fairness_setup`:
+        Method implementing any algorithm-specific setup actions.
+    - `finalize_fairness_round`:
+        Method implementing any algorithm-specific round actions.
+
+    By default, subclasses are type-registered under their `algorithm`
+    name and "FairnessControllerServer" group upon declaration. This can
+    be prevented by passing `register=False` to the inheritance parameters
+    (e.g. `class Cls(FairnessControllerServer, register=False)`).
+    See `declearn.utils.register_type` for details on types registration.
+    """
 
     algorithm: ClassVar[str]
     """Name of the fairness-enforcing algorithm.

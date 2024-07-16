@@ -19,11 +19,12 @@
 
 Introduction
 ------------
-This module provides with an implementation of FairFed, an algorithm
-introduced by Ezzeldin et al. (2021), that weights client-wise model
-updates' averaging based on differences between the global and local
-fairness of the (prior version of the) shared model, using somewhat
-ad hoc discrepancy metrics to summarize fairness as scalar values.
+This module provides with an implementation of FairFed [1], an
+algorithm that aims at enforcing fairness in a federated learning
+setting by weighting client-wise model updates' averaging based on
+differences between the global and local fairness of the (prior
+version of the) shared model, using somewhat ad hoc discrepancy
+metrics to summarize fairness as scalar values.
 
 This algorithm was originally designed for settings where a binary
 classifier is trained over data with a single binary sensitive
@@ -62,6 +63,13 @@ Messages
 * [FairfedFairness][declearn.fairness.fairfed.FairfedFairness]
 * [FairfedOkay][declearn.fairness.fairfed.FairfedOkay]
 * [SecaggFairfedDelta][declearn.fairness.fairfed.SecaggFairfedDelta]
+
+References
+----------
+- [1]
+    Eszzeldin et al. (2021).
+    FairFed: Enabling Group Fairness in Federated Learning
+    https://arxiv.org/abs/2110.00857
 """
 
 from ._messages import (
