@@ -38,6 +38,8 @@ The package is organized into the following submodules:
     Tools to write and extend shareable metadata fields specifications.
 * [dataset][declearn.dataset]:
     Data interfacing API and implementations.
+* [fairness][declearn.fairness]:
+    Processes and components for fairness-aware federated learning.
 * [main][declearn.main]:
     Main classes implementing a Federated Learning process.
 * [messaging][declearn.messaging]:
@@ -65,6 +67,7 @@ from . import (
     communication,
     data_info,
     dataset,
+    fairness,
     main,
     metrics,
     messaging,
