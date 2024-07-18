@@ -32,6 +32,7 @@ from declearn.fairness.core import (
     DemographicParityFunction,
     EqualityOfOpportunityFunction,
     EqualizedOddsFunction,
+    list_fairness_functions,
 )
 from declearn.test_utils import assert_dict_equal
 
@@ -297,3 +298,20 @@ class TestEqualityOfOpportunity(TestEqualizedOddsFunction):
                 counts=self.counts,
                 target="wrong-type",  # type: ignore
             )
+
+
+def test_list_fairness_functions() -> None:
+    """Test 'declearn.fairness.core.list_fairness_functions'."""
+    mapping = list_fairness_functions()
+    assert isinstance(mapping, dict)
+    assert all(
+        isinstance(key, str) and issubclass(val, FairnessFunction)
+        for key, val in mapping.items()
+    )
+    for cls in (
+        AccuracyParityFunction,
+        DemographicParityFunction,
+        EqualityOfOpportunityFunction,
+        EqualizedOddsFunction,
+    ):
+        assert mapping.get(cls.f_type) is cls  # type: ignore

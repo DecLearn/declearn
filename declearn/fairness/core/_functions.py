@@ -17,18 +17,45 @@
 
 """Concrete implementations of various group-fairness functions."""
 
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Dict, List, Tuple, Type, Union
 
 import numpy as np
 
 from declearn.fairness.api import FairnessFunction
+from declearn.utils import access_types_mapping
 
 __all__ = (
     "AccuracyParityFunction",
     "DemographicParityFunction",
     "EqualityOfOpportunityFunction",
     "EqualizedOddsFunction",
+    "list_fairness_functions",
 )
+
+
+def list_fairness_functions() -> Dict[str, Type[FairnessFunction]]:
+    """Return a mapping of registered FairnessFunction subclasses.
+
+    This function aims at making it easy for end-users to list and access
+    all available FairnessFunction classes at any given time. The returned
+    dict uses unique identifier keys, which may be used to use the associated
+    function within a [declearn.fairness.api.FairnessControllerServer][].
+
+    Note that the mapping will include all declearn-provided functions,
+    but also registered functions provided by user or third-party code.
+
+    See also
+    --------
+    * [declearn.fairness.api.FairnessFunction][]:
+        API-defining abstract base class for the FairnessFunction classes.
+
+    Returns
+    -------
+    mapping:
+        Dictionary mapping unique str identifiers to `FairnessFunction`
+        class constructors.
+    """
+    return access_types_mapping("FairnessFunction")
 
 
 class AccuracyParityFunction(FairnessFunction):
@@ -120,7 +147,7 @@ class DemographicParityFunction(FairnessFunction):
     evaluated classifier.
 
     In other words, Demographic Parity is achieved when the probability to
-    predict any given label is indenpendent from the sensitive attribute(s)
+    predict any given label is independent from the sensitive attribute(s)
     (regardless of whether that label is accurate or not).
 
     Formula

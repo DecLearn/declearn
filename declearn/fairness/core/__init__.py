@@ -40,6 +40,11 @@ Concrete implementations of various fairness functions:
     Equalized Odds group-fairness function.
 
 Abstraction and generic constructor may be found in [declearn.fairness.api][].
+An additional util may be used to list available functions, either declared
+here or by third-party and end-user code:
+
+* [list_fairness_functions][declearn.fairness.core.list_fairness_functions]:
+    Return a mapping of registered FairnessFunction subclasses.
 """
 
 from ._functions import (
@@ -47,5 +52,6 @@ from ._functions import (
     DemographicParityFunction,
     EqualityOfOpportunityFunction,
     EqualizedOddsFunction,
+    list_fairness_functions,
 )
 from ._inmemory import FairnessInMemoryDataset

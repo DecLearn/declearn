@@ -88,7 +88,7 @@ References
     Improving Fairness via Federated Learning.
     https://arxiv.org/abs/2110.15545
 - [4]
-    Eszzeldin et al. (2021).
+    Ezzeldin et al. (2021).
     FairFed: Enabling Group Fairness in Federated Learning
     https://arxiv.org/abs/2110.00857
 """
