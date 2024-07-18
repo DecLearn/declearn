@@ -18,3 +18,5 @@ This guide is structured this way:
     Description of the local-DP features of declearn.
 - [Secure Aggregation capabilities](./secagg.md):<br/>
     Description of the SecAgg features of declearn.
+- [Fairness capabilities](./fairness.md):<br/>
+    Description of the fairness-aware federated learning features of declearn.
