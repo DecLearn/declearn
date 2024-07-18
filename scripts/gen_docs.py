@@ -165,7 +165,11 @@ def _generate_private_submodules_content_doc(
 ) -> Dict[str, str]:
     """Create files for public contents from a module's private submodules."""
     pub_obj = {}
-    for key, obj in module.members.items():
+    if module.exports is None:
+        members = module.members
+    else:
+        members = {str(k): module.members[str(k)] for k in module.exports}
+    for key, obj in members.items():
         if obj.is_module or obj.module.name in pub_mod or key.startswith("_"):
             continue
         if not (obj.docstring or obj.is_class or obj.is_function):
