@@ -52,10 +52,10 @@ More details may be found in the documentation of `FairbatchDataset`
 Controllers
 -----------
 * [FairbatchControllerClient]
-[declearn.fairness.fairbatch.FairgradControllerClient]:
+[declearn.fairness.fairbatch.FairbatchControllerClient]:
     Client-side controller to implement Fed-FairBatch or FedFB.
 * [FairbatchControllerServer]
-[declearn.fairness.fairbatch.FairgradControllerServer]:
+[declearn.fairness.fairbatch.FairbatchControllerServer]:
     Server-side controller to implement Fed-FairBatch or FedFB.
 
 Backend
