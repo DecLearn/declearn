@@ -346,15 +346,15 @@ class FederatedClient:
         except Exception as exc:
             await self.netwk.send_message(messaging.Error(repr(exc)))
             raise RuntimeError("Initialization failed.") from exc
+        # Send back an empty message to indicate that things went fine.
+        self.logger.info("Notifying the server that initialization went fine.")
+        await self.netwk.send_message(messaging.InitReply())
         # If instructed to do so, run additional steps to set up DP-SGD.
         if message.dpsgd:
             await self._initialize_dpsgd()
         # If instructed to do so, run additional steps to enforce fairness.
         if message.fairness:
             await self._initialize_fairness()
-        # Send back an empty message to indicate that all went fine.
-        self.logger.info("Notifying the server that initialization went fine.")
-        await self.netwk.send_message(messaging.InitReply())
         # Optionally checkpoint the received model and optimizer.
         if self.ckptr:
             self.ckptr.checkpoint(
@@ -396,7 +396,7 @@ class FederatedClient:
             )
         except Exception as exc:
             raise RuntimeError("DP-SGD initialization failed.") from exc
-        self.logger.info("Received a request to set up DP-SGD.")
+        self.logger.info("Received DP-SGD setup instructions.")
         try:
             self.make_private(message)
         except Exception as exc:  # pylint: disable=broad-except
@@ -469,6 +469,7 @@ class FederatedClient:
             error = f"Fairness initialization failed: {repr(exc)}."
             self.logger.critical(error)
             raise RuntimeError(error) from exc
+        self.logger.info("Received fairness setup instructions.")
         # Instantiate a FairnessControllerClient and run its setup routine.
         try:
             self.fairness = FairnessControllerClient.from_setup_query(

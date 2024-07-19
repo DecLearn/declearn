@@ -559,12 +559,12 @@ class TestFederatedClientInitialize:
         with patch_class_constructor(DPTrainingManager) as patch_dp:
             with patch_class_constructor(TrainingManager) as patch_tm:
                 await client.initialize()
-        # Assert that a PrivacyReply and InitReply were sent to the server.
+        # Assert that an InitReply and a PrivacyReply were sent to the server.
         assert netwk.send_message.call_count == 2
         reply = netwk.send_message.call_args_list[0].args[0]
-        assert isinstance(reply, messaging.PrivacyReply)
-        reply = netwk.send_message.call_args_list[1].args[0]
         assert isinstance(reply, messaging.InitReply)
+        reply = netwk.send_message.call_args_list[1].args[0]
+        assert isinstance(reply, messaging.PrivacyReply)
         # Assert that a DPTrainingManager was set up.
         patch_tm.assert_called_once()
         patch_dp.assert_called_once_with(
@@ -599,10 +599,13 @@ class TestFederatedClientInitialize:
             with patch_class_constructor(TrainingManager) as patch_tm:
                 with pytest.raises(RuntimeError):
                     await client.initialize()
-        # Assert that two messages were fetched, and an error was sent.
+        # Assert that two messages were fetched, that first step went well
+        # (resulting in an InitReply) and then an Error was sent.
         assert netwk.recv_message.call_count == 2
-        netwk.send_message.assert_called_once()
-        reply = netwk.send_message.call_args.args[0]
+        assert netwk.send_message.call_count == 2
+        reply = netwk.send_message.call_args_list[0].args[0]
+        assert isinstance(reply, messaging.InitReply)
+        reply = netwk.send_message.call_args_list[1].args[0]
         assert isinstance(reply, messaging.Error)
         # Assert that the initial TrainingManager was set, but not the DP one.
         patch_tm.assert_called_once()
@@ -631,10 +634,13 @@ class TestFederatedClientInitialize:
         # Assert that TrainingManager was instantiated and DP one was called.
         patch_tm.assert_called_once()
         patch_dp.assert_called_once()
-        # Assert that both messages were fetched, and an error was sent.
+        # Assert that both messages were fetched, and an error was sent
+        # after the DP-SGD setup failed.
         assert netwk.recv_message.call_count == 2
-        netwk.send_message.assert_called_once()
-        reply = netwk.send_message.call_args.args[0]
+        assert netwk.send_message.call_count == 2
+        reply = netwk.send_message.call_args_list[0].args[0]
+        assert isinstance(reply, messaging.InitReply)
+        reply = netwk.send_message.call_args_list[1].args[0]
         assert isinstance(reply, messaging.Error)
 
     def _setup_fairness_setup_query(
@@ -752,10 +758,13 @@ class TestFederatedClientInitialize:
         ) as patch_fcc:
             with pytest.raises(RuntimeError):
                 await client.initialize()
-        # Assert that two messages were fetched, and an error was sent.
+        # Assert that two messages were fetched, the first one answere with
+        # an InitReply, the second with an Error.
         assert netwk.recv_message.call_count == 2
-        netwk.send_message.assert_called_once()
-        reply = netwk.send_message.call_args.args[0]
+        assert netwk.send_message.call_count == 2
+        reply = netwk.send_message.call_args_list[0].args[0]
+        assert isinstance(reply, messaging.InitReply)
+        reply = netwk.send_message.call_args_list[1].args[0]
         assert isinstance(reply, messaging.Error)
         # Assert that no fairness controller was set.
         patch_fcc.assert_not_called()
@@ -782,10 +791,13 @@ class TestFederatedClientInitialize:
         # Assert that setup was called (hence causing the exception).
         patch_fcc.assert_called_once()
         assert client.fairness is None
-        # Assert that both messages were fetched, and an error was sent.
+        # Assert that both messages were fetched, and an error was sent
+        # after the fairness setup failed.
         assert netwk.recv_message.call_count == 2
-        netwk.send_message.assert_called_once()
-        reply = netwk.send_message.call_args.args[0]
+        assert netwk.send_message.call_count == 2
+        reply = netwk.send_message.call_args_list[0].args[0]
+        assert isinstance(reply, messaging.InitReply)
+        reply = netwk.send_message.call_args_list[1].args[0]
         assert isinstance(reply, messaging.Error)
 
 
