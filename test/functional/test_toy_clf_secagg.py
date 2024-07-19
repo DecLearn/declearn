@@ -27,6 +27,7 @@ import asyncio
 import json
 import os
 import tempfile
+import warnings
 from typing import List, Optional, Tuple, Union
 
 import pytest
@@ -147,7 +148,9 @@ async def async_run_server(
         register={"min_clients": n_clients, "timeout": 2},
         training={"n_epoch": 1, "batch_size": 1, "drop_remainder": False},
     )
-    await server.async_run(config)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", RuntimeWarning)
+        await server.async_run(config)
 
 
 async def async_run_client(
@@ -168,6 +171,18 @@ async def async_run_client(
         verbose=False,
     )
     await client.async_run()
+
+
+def setup_masking_idkeys(
+    secagg: bool,
+    n_clients: int,
+) -> Union[List[IdentityKeys], List[None]]:
+    """Setup identity keys for SecAgg, or a list of None values."""
+    if not secagg:
+        return [None for _ in range(n_clients)]
+    prv_keys = [Ed25519PrivateKey.generate() for _ in range(n_clients)]
+    pub_keys = [key.public_key() for key in prv_keys]
+    return [IdentityKeys(key, trusted=pub_keys) for key in prv_keys]
 
 
 async def run_declearn_experiment(
@@ -197,14 +212,7 @@ async def run_declearn_experiment(
     """
     # Set up the toy dataset(s) and optional identity keys (for SecAgg).
     n_clients = len(datasets)
-    if secagg:
-        prv_keys = [Ed25519PrivateKey.generate() for _ in range(n_clients)]
-        pub_keys = [key.public_key() for key in prv_keys]
-        id_keys = [
-            IdentityKeys(key, trusted=pub_keys) for key in prv_keys
-        ]  # type: Union[List[IdentityKeys], List[None]]
-    else:
-        id_keys = [None for _ in range(n_clients)]
+    id_keys = setup_masking_idkeys(secagg=secagg, n_clients=n_clients)
     with tempfile.TemporaryDirectory() as folder:
         # Set up the server and client coroutines.
         coro_server = async_run_server(folder, scaffold, secagg, n_clients)
