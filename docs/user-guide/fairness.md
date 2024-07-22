@@ -26,8 +26,9 @@ of both the causes and consequences of unfairness in machine learning.
 Group Fairness is one of the main families of approaches to defining fairness
 in machine learning. It applies to classification problems, and to data that
 can be divided into non-overlapping subsets, designated as sensitive groups,
-based on the intersection of one or more categorical attributes (designated
-as sensitive attributes) and (usually, but not always) the target label.
+defined by the intersected values of one or more categorical attributes
+(designated as sensitive attributes) and (usually, but not always) the target
+label.
 
 For instance, when learning a classifier over a human population, sensitive
 attributes may include gender, ethnicity, age groups, etc. Defining relevant
@@ -133,17 +134,29 @@ As of version 2.6.0, DecLearn provides with the following algorithms, that
 can each impose restrictions as to the supported group-fairness definition
 and/or number of sensitive groups:
 
-- **Fed-FairGrad**, an adaptation of FairGrad (Maheshwari & Perrot, 2023)
-  to the federated learning setting.
-- **Fed-FairBatch**, a custom adaptation of FairBatch (Roh et al., 2020)
-  to the federated learning setting.
+- [**Fed-FairGrad**][declearn.fairness.fairgrad], an adaptation of FairGrad
+  (Maheshwari & Perrot, 2023) to the federated learning setting.<br/>
+  This algorithm reweighs the training loss based on the current fairness
+  levels of the model, so that advantaged groups contribute less than
+  disadvantaged ones, and may even contribute negatively (effectively trading
+  accuracy off in favor of fairness).
+- [**Fed-FairBatch**][declearn.fairness.fairbatch], a custom adaptation of
+  FairBatch (Roh et al., 2020) to the federated learning setting.<br/>
+  This algorithm alters the way training data batches are drawn, enforcing
+  sampling probabilities that are based on the current fairness levels of the
+  model, so that advantaged groups are under-represented and disadvantaged
+  groups are over-represented relatively to raw group-wise sample counts.
 - **FedFB** (Zeng et al., 2022), an arXiv-published alternative adaptation
   of FairBatch that is similar to Fed-FairBatch but introduces further
   formula changes with respect to the original FairBatch.
-- **FairFed** (Ezzeldin et al., 2021), an algorithm designed for federated
-  learning, with the caveat that authors designed it to be combined
-  with local fairness-enforcing algorithms, something that is not yet
-  available in DecLearn.
+- [**FairFed**][declearn.fairness.fairfed] (Ezzeldin et al., 2021), an
+  algorithm designed for federated learning, with the caveat that authors
+  designed it to be combined with local fairness-enforcing algorithms,
+  something that is not yet effortlessly-available in DecLearn.<br/>
+  This algorithm modifies the aggregation rule based on the discrepancy
+  between client-wise fairness levels, so that clients for which the model
+  is more unfair weigh more in the overall model updates than clients for
+  which the model is fairer.
 
 ### Shared algorithm structure
 
@@ -166,7 +179,7 @@ varying computation and communication costs depending on the algorithm.
       have access to the network communication endpoints and optional secure
       aggregation controllers. On the server side, the `Aggregator` may be
       changed (with a warning). On the client side, side effects may occur
-      on the held `TrainingManager`.
+      on the `TrainingManager` (hence altering future training rounds).
 
 - The **fairness round**, that is designed to occur prior to training rounds
   (and implemented as such as part of `FederatedServer`). During that phase:
@@ -181,7 +194,7 @@ varying computation and communication costs depending on the algorithm.
     - Any algorithm-specific additional steps occur. For this, the controllers
       have access to the network communication endpoints and optional secure
       aggregation controllers. On the client side, side effects may occur on
-      the held `TrainingManager`.
+      the `TrainingManager` (hence altering future training rounds).
     - On both sides, computed metrics are returned, so that they can be
       checkpointed as part of the overall federated learning process.
 
