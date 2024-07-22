@@ -99,6 +99,16 @@ class FairnessControllerTestSuite:
         manager.train_data = build_mock_dataset(idx)
         return manager
 
+    def test_setup_server_from_specs(
+        self,
+    ) -> None:
+        """Test instantiating a server-side controller 'from_specs'."""
+        server = self.server_cls.from_specs(
+            algorithm=self.server_cls.algorithm,
+            f_type="demographic_parity",
+        )
+        assert isinstance(server, self.server_cls)
+
     def test_setup_client_from_setup_query(
         self,
     ) -> None:

@@ -110,7 +110,14 @@ class FLOptimConfig(TomlConfig):
         field: dataclasses.Field,  # future: dataclasses.Field[Optimizer]
         inputs: Union[float, Dict[str, Any], Optimizer],
     ) -> Optimizer:
-        """Field-specific parser to instantiate the client-side Optimizer."""
+        """Field-specific parser to instantiate the client-side Optimizer.
+
+        This method supports specifying `client_opt`:
+
+        - as a float, parsed as the learning rate to a basic SGD optimzier
+        - as a dict, parsed a serialized Optimizer configuration
+        - as an `Optimizer` instance (requiring no parsing)
+        """
         return cls._parse_optimizer(field, inputs)
 
     @classmethod
@@ -119,7 +126,15 @@ class FLOptimConfig(TomlConfig):
         field: dataclasses.Field,  # future: dataclasses.Field[Optimizer]
         inputs: Union[float, Dict[str, Any], Optimizer, None],
     ) -> Optimizer:
-        """Field-specific parser to instantiate the server-side Optimizer."""
+        """Field-specific parser to instantiate the server-side Optimizer.
+
+        This method supports specifying `server_opt`:
+
+        - as None (or missing kwarg), resulting in a basic `Optimizer(1.0)`
+        - as a float, parsed as the learning rate to a basic SGD optimzier
+        - as a dict, parsed a serialized Optimizer configuration
+        - as an `Optimizer` instance (requiring no parsing)
+        """
         return cls._parse_optimizer(field, inputs)
 
     @classmethod
@@ -155,6 +170,7 @@ class FLOptimConfig(TomlConfig):
             - (opt.) config: dict specifying kwargs for the constructor
             - any other field will be added to the `config` kwargs dict
         - as None (or missing kwarg), using default AveragingAggregator()
+        - as an `Aggregator` instance (requiring no parsing)
         """
         # Case when using the default value: delegate to the default parser.
         if inputs is None:
@@ -193,3 +209,35 @@ class FLOptimConfig(TomlConfig):
             return obj
         # Otherwise, raise a TypeError as inputs are unsupported.
         raise TypeError("Unsupported inputs type for field 'aggregator'.")
+
+    @classmethod
+    def parse_fairness(
+        cls,
+        field: dataclasses.Field,  # future: dataclasses.Field[<type>]
+        inputs: Union[Dict[str, Any], FairnessControllerServer, None],
+    ) -> FairnessControllerServer:
+        """Field-specific parser to instantiate a FairnessControllerServer.
+
+        This method supports specifying `fairness`:
+
+        - as None (or missing kwarg), using no fairness controller
+        - as a dict, parsed a FairnessControllerServer specifications:
+            - algorithm: str used to retrieve a registered type
+            - f_type: str used to define a group fairness function
+            - (opt.) f_args: dict to parametrize the fairness function
+            - any other field will be added to the `config` kwargs dict
+        - as a `FairnessControllerServer` instance (requiring no parsing)
+        """
+        if inputs is None:
+            return cls.default_parser(field, inputs)
+        if isinstance(inputs, FairnessControllerServer):
+            return inputs
+        if isinstance(inputs, dict):
+            for key in ("algorithm", "f_type"):
+                if key not in inputs:
+                    raise TypeError(
+                        "Wrong format for FairnessControllerServer "
+                        f"configuration: missing '{key}' field."
+                    )
+            return FairnessControllerServer.from_specs(**inputs)
+        raise TypeError("Unsupported inputs type for field 'fairness.")

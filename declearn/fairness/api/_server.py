@@ -39,7 +39,11 @@ from declearn.secagg.messaging import (
     SecaggFairnessCounts,
     SecaggFairnessReply,
 )
-from declearn.utils import create_types_registry, register_type
+from declearn.utils import (
+    access_registered,
+    create_types_registry,
+    register_type,
+)
 
 __all__ = [
     "FairnessControllerServer",
@@ -430,3 +434,46 @@ class FairnessControllerServer(metaclass=abc.ABCMeta):
             Fairness(-related) metrics computed as part of this routine,
             as a dict mapping scalar or numpy array values with their name.
         """
+
+    @staticmethod
+    def from_specs(
+        algorithm: str,
+        f_type: str,
+        f_args: Optional[Dict[str, Any]] = None,
+        **kwargs: Any,
+    ) -> "FairnessControllerServer":
+        """Instantiate a 'FairnessControllerServer' from its specifications.
+
+        Parameters
+        ----------
+        algorithm:
+            Name of the algorithm associated with the target controller class.
+        f_type:
+            Name of the fairness function to evaluate and optimize.
+        f_args:
+            Optional dict of keyword arguments to the fairness function.
+        **kwargs:
+            Any additional algorithm-specific instantiation keyword argument.
+
+        Returns
+        -------
+        controller:
+            `FairnessControllerServer` instance matching input specifications.
+
+        Raises
+        ------
+        KeyError
+            If `algorithm` does not match any registered
+            `FairnessControllerServer` type.
+        """
+        try:
+            cls = access_registered(
+                name=algorithm, group="FairnessControllerServer"
+            )
+        except Exception as exc:
+            raise KeyError(
+                "Failed to retrieve fairness controller with algorithm name "
+                f"'{algorithm}'."
+            ) from exc
+        assert issubclass(cls, FairnessControllerServer)
+        return cls(f_type=f_type, f_args=f_args, **kwargs)
