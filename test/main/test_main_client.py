@@ -1087,7 +1087,7 @@ class TestFederatedClientFairnessRound:
             client.ckptr.save_metrics.assert_called_once_with(  # type: ignore
                 metrics=fairness.run_fairness_round.return_value,
                 prefix="fairness_metrics",
-                append=True,
+                append=False,  # first round, hence file creation or overwrite
                 timestamp="round_1",
             )
 
