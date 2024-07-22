@@ -221,13 +221,11 @@ async def run_declearn_experiment(
             for i, (train, valid) in enumerate(datasets)
         ]
         # Run the coroutines concurrently using asyncio.
-        outputs = await asyncio.gather(
+        output = await asyncio.gather(
             coro_server, *coro_clients, return_exceptions=True
         )
         # Assert that no exceptions occurred during the process.
-        errors = "\n".join(
-            repr(exc) for exc in outputs if isinstance(exc, Exception)
-        )
+        errors = "\n".join(repr(e) for e in output if isinstance(e, Exception))
         assert not errors, f"The FL process failed:\n{errors}"
         # Assert that the experiment ran properly.
         with open(

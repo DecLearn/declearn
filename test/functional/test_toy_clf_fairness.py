@@ -117,6 +117,7 @@ async def server_routine(
     n_clients: int = 3,
 ) -> None:
     """Run the FL routine of the server."""
+    # similar to SecAgg functional test; pylint: disable=duplicate-code
     model = SklearnSGDModel.from_parameters(
         kind="classifier",
         loss="log_loss",
@@ -221,9 +222,7 @@ async def test_toy_classif_fairness(
         coro_server, *coro_clients, return_exceptions=True
     )
     # Assert that no exceptions occurred during the process.
-    errors = "\n".join(
-        repr(exc) for exc in outputs if isinstance(exc, Exception)
-    )
+    errors = "\n".join(repr(e) for e in outputs if isinstance(e, Exception))
     assert not errors, f"The FL process failed:\n{errors}"
     # Load and parse utility and fairness metrics at the final round.
     u_metrics = pd.read_csv(os.path.join(tmp_path, "metrics.csv"))

@@ -149,7 +149,7 @@ class OptiModuleTestSuite(PluginTestBase):
     ) -> None:
         # For Noise-addition mechanisms, seed the (unsafe) RNG.
         if issubclass(cls, NoiseModule):
-            cls = functools.partial(
+            cls = functools.partial(  # type: ignore[misc]
                 cls, safe_mode=False, seed=0
             )  # type: ignore  # partial wraps the __init__ method
         # Run the unit test.

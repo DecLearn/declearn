@@ -49,6 +49,8 @@ with make_importable(os.path.dirname(os.path.abspath(__file__))):
 class TestFairbatchControllers(FairnessControllerTestSuite):
     """Unit tests for Fed-FairBatch / FedFB controllers."""
 
+    # similar code to FairGrad and parent code; pylint: disable=duplicate-code
+
     server_cls = FairbatchControllerServer
     client_cls = FairbatchControllerClient
 
@@ -169,13 +171,12 @@ class TestFairbatchControllers(FairnessControllerTestSuite):
             client.groups = server.groups.copy()
         counts = [TOTAL_COUNTS[group] for group in server.groups]
         # Run setup coroutines, using mock network endpoints.
-        aggregator = mock.create_autospec(SumAggregator, instance=True)
         async with setup_mock_network_endpoints(n_peers) as network:
             coro_server = server.finalize_fairness_setup(
                 netwk=network[0],
                 secagg=None,
                 counts=counts,
-                aggregator=aggregator,
+                aggregator=mock.create_autospec(SumAggregator, instance=True),
             )
             coro_clients = [
                 client.finalize_fairness_setup(

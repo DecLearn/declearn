@@ -132,13 +132,12 @@ class TestFairgradControllers(FairnessControllerTestSuite):
             mock_dst.set_sensitive_group_weights.side_effect = Exception
         counts = [TOTAL_COUNTS[group] for group in server.groups]
         # Run setup coroutines, using mock network endpoints.
-        aggregator = mock.create_autospec(SumAggregator, instance=True)
         async with setup_mock_network_endpoints(n_peers) as network:
             coro_server = server.finalize_fairness_setup(
                 netwk=network[0],
                 secagg=None,
                 counts=counts,
-                aggregator=aggregator,
+                aggregator=mock.create_autospec(SumAggregator, instance=True),
             )
             coro_clients = [
                 client.finalize_fairness_setup(

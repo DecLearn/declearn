@@ -72,9 +72,8 @@ class TestFairnessInMemoryDatasetInit:
         dst = FairnessInMemoryDataset(
             dataset, s_attr=s_attr, target="col_y", sensitive_target=True
         )
-        expected = pd.concat(
-            [pd.DataFrame(dataset["col_y"].rename("target")), s_attr],
-            axis=1,
+        expected = pd.DataFrame(
+            {"target": dataset["col_y"], "col_s": s_attr["col_s"]}
         ).apply(tuple, axis=1)
         assert isinstance(dst.sensitive, pd.Series)
         assert (dst.sensitive == expected).all()
