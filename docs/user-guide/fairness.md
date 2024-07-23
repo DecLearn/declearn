@@ -335,7 +335,7 @@ as follows:
 from declearn.fairness.monitor import FairnessMonitorServer
 
 fairness = FairnessMonitorServer(
-  f_type="demographic_parity",  # choose any fairness definition
+    f_type="demographic_parity",  # choose any fairness definition
 )
 
 optim = FLOptimConfig.from_params(
@@ -353,10 +353,24 @@ controller. For instance, to use Fed-FairGrad:
 from declearn.fairness.fairgrad import FairgradControllerServer
 
 fairness = FairgradControllerServer(
-  f_type="demographic_parity",  # choose any fairness definition
-  eta=0.1,  # adjust this based on the SGD learning rate and empirical tuning
-  eps=0.0,  # change this to configure epsilon-fairness
+    f_type="demographic_parity",  # choose any fairness definition
+    eta=0.1,  # adjust this based on the SGD learning rate and empirical tuning
+    eps=0.0,  # change this to configure epsilon-fairness
 )
+```
+
+Equivalently, the choice of fairness controller class and parameters may be
+specified using a configuration dict (that may be parsed from a TOML file):
+
+```python
+fairness = {
+    # mandatory parmaeters:
+    "algorithm": "fairgrad",         # name of the algorithm
+    "f_type": "demographic_parity",  # name of the group-fairness definition
+    # optional, algorithm-dependent hyper-parameters:
+    "eta": 0.1,
+    "eps": 0.0,
+}
 ```
 
 Notes:
