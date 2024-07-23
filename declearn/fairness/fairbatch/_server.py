@@ -73,7 +73,7 @@ class FairbatchControllerServer(FairnessControllerServer):
         https://arxiv.org/abs/2110.15545
     """
 
-    algorithm = "fedfairbatch"
+    algorithm = "fairbatch"
 
     def __init__(
         self,

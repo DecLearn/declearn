@@ -40,7 +40,7 @@ __all__ = [
 class FairgradControllerClient(FairnessControllerClient):
     """Client-side controller to implement Fed-FairGrad."""
 
-    algorithm = "fedfairgrad"
+    algorithm = "fairgrad"
 
     async def finalize_fairness_setup(
         self,

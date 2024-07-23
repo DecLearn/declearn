@@ -190,7 +190,7 @@ class TestFLOptimConfig:
         """Test parsing 'fairness' from a dict."""
         field = FIELDS["fairness"]
         config = {
-            "algorithm": "fedfairgrad",
+            "algorithm": "fairgrad",
             "f_type": "demographic_parity",
             "eta": 0.1,
             "eps": 0.0,
@@ -204,7 +204,7 @@ class TestFLOptimConfig:
     def test_parse_fairness_dict_error(self) -> None:
         """Test parsing 'fairness' from an invalid dict."""
         field = FIELDS["fairness"]
-        config = {"algorithm": "fedfairgrad"}  # missing f_type choice
+        config = {"algorithm": "fairgrad"}  # missing f_type choice
         with pytest.raises(TypeError):
             FLOptimConfig.parse_fairness(field, config)
 
@@ -230,7 +230,7 @@ class TestFLOptimConfig:
             lrate = 1.0
             modules = [["adam", {beta_1=0.8, beta_2=0.9}]]
         [optim.fairness]
-            algorithm = "fedfairgrad"
+            algorithm = "fairgrad"
             f_type = "equalized_odds"
             eta = 0.1
             eps = 0.0

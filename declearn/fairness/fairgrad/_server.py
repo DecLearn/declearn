@@ -176,7 +176,7 @@ class FairgradControllerServer(FairnessControllerServer):
         https://openreview.net/forum?id=0f8tU3QwWD
     """
 
-    algorithm = "fedfairgrad"
+    algorithm = "fairgrad"
 
     def __init__(
         self,

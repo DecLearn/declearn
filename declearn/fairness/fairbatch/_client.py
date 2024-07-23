@@ -46,7 +46,7 @@ __all__ = [
 class FairbatchControllerClient(FairnessControllerClient):
     """Client-side controller to implement Fed-FairBatch or FedFB."""
 
-    algorithm = "fedfairbatch"
+    algorithm = "fairbatch"
 
     def __init__(
         self,

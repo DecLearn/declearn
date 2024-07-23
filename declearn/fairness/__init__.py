@@ -72,6 +72,9 @@ Algorithms submodules
 * [monitor][declearn.fairness.monitor]:
     Fairness-monitoring controllers, that leave training unaltered.
 
+Note that the controllers implemented under these submodules
+are type-registered under the submodule's name.
+
 References
 ----------
 
