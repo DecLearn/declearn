@@ -38,6 +38,8 @@ The package is organized into the following submodules:
     Tools to write and extend shareable metadata fields specifications.
 * [dataset][declearn.dataset]:
     Data interfacing API and implementations.
+* [fairness][declearn.fairness]:
+    Processes and components for fairness-aware federated learning.
 * [main][declearn.main]:
     Main classes implementing a Federated Learning process.
 * [messaging][declearn.messaging]:
@@ -50,6 +52,8 @@ The package is organized into the following submodules:
     Framework-agnostic optimizer and algorithmic plug-ins API and tools.
 * [secagg][declearn.secagg]:
     Secure Aggregation API, methods and utils.
+* [training][declearn.training]:
+    Model training and evaluation orchestration tools.
 * [typing][declearn.typing]:
     Type hinting utils, defined and exposed for code readability purposes.
 * [utils][declearn.utils]:
@@ -63,12 +67,14 @@ from . import (
     communication,
     data_info,
     dataset,
+    fairness,
     main,
     metrics,
     messaging,
     model,
     optimizer,
     secagg,
+    training,
     typing,
     utils,
     version,

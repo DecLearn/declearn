@@ -44,6 +44,14 @@ Base messages
 * [TrainReply][declearn.messaging.TrainReply]
 * [TrainRequest][declearn.messaging.TrainRequest]
 
+Fairness algorithms messages
+----------------------------
+
+* [FairnessCounts][declearn.messaging.FairnessCounts]
+* [FairnessGroups][declearn.messaging.FairnessGroups]
+* [FairnessQuery][declearn.messaging.FairnessQuery]
+* [FairnessReply][declearn.messaging.FairnessReply]
+* [FairnessSetupQuery][declearn.messaging.FairnessSetupQuery]
 """
 
 from ._api import (
@@ -65,4 +73,11 @@ from ._base import (
     StopTraining,
     TrainReply,
     TrainRequest,
+)
+from ._fairness import (
+    FairnessCounts,
+    FairnessGroups,
+    FairnessQuery,
+    FairnessReply,
+    FairnessSetupQuery,
 )

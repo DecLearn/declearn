@@ -30,18 +30,17 @@ This module also implements the following submodules, used by the former:
     Server-side dataclasses that specify a FL process's parameter.
     The main classes implemented here are `FLRunConfig` and `FLOptimConfig`,
     that implement parameters' parsing from python objets or from TOML files.
-* [privacy][declearn.main.privacy]:
-    Differentially-Private training routine utils.
-    The main class implemented here is `DPTrainingManager` that implements
-    client-side DP-SGD training. This module is to be manually imported or
-    lazy-imported by `FederatedClient`, and may trigger warnings or errors
-    in the absence of the 'opacus' third-party dependency.
 * [utils][declearn.main.utils]:
     Various utils to the FL process.
     The main class of interest for end-users is `TrainingManager`, that
     implements client-side training and evaluation routines, and may
     therefore be leveraged in a non-FL setting or to implement other
     FL process routines than the centralized one defined here.
+
+Finally, the [privacy][declearn.main.privacy] submodule is DEPRECATED as of
+DecLearn 2.6 and will be removed in DecLearn 2.8. It was moved and renamed
+to [declearn.training.dp][]. It can still be manually imported under its
+deprecated name (containing re-exports of moved contents).
 """
 
 from . import utils

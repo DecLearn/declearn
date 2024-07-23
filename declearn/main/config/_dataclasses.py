@@ -22,6 +22,7 @@ from typing import Any, Dict, Optional, Tuple
 
 __all__ = [
     "EvaluateConfig",
+    "FairnessConfig",
     "PrivacyConfig",
     "RegisterConfig",
     "TrainingConfig",
@@ -223,3 +224,30 @@ class PrivacyConfig:
         accountants = ("rdp", "gdp", "prv")
         if self.accountant not in accountants:
             raise TypeError(f"'accountant' should be one of {accountants}")
+
+
+@dataclasses.dataclass
+class FairnessConfig:
+    """Dataclass wrapping parameters for fairness evaluation rounds.
+
+    The parameters wrapped by this class are those of
+    `declearn.fairness.core.FairnessAccuracyComputer`
+    metrics-computation methods.
+
+    Attributes
+    ----------
+    batch_size: int
+        Number of samples per processed data batch.
+    n_batch: int or None, default=None
+        Optional maximum number of batches to draw.
+        If None, use the entire training dataset.
+    thresh: float or None, default=None
+        Optional binarization threshold for binary classification
+        models' output scores. If None, use 0.5 by default, or 0.0
+        for `SklearnSGDModel` instances.
+        Unused for multinomial classifiers (argmax over scores).
+    """
+
+    batch_size: int = 32
+    n_batch: Optional[int] = None
+    thresh: Optional[float] = None

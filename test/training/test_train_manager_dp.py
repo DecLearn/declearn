@@ -30,8 +30,8 @@ except ModuleNotFoundError:
 
 from declearn.communication import messaging
 from declearn.dataset import DataSpecs
-from declearn.main.privacy import DPTrainingManager
 from declearn.optimizer.modules import GaussianNoiseModule
+from declearn.training.dp import DPTrainingManager
 from declearn.test_utils import make_importable
 
 with make_importable(os.path.dirname(__file__)):

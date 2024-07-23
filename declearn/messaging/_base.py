@@ -122,6 +122,7 @@ class InitRequest(Message):
     metrics: List[MetricInputType] = dataclasses.field(default_factory=list)
     dpsgd: bool = False
     secagg: Optional[str] = None
+    fairness: bool = False
 
     def to_kwargs(self) -> Dict[str, Any]:
         data = {}  # type: Dict[str, Any]
@@ -131,6 +132,7 @@ class InitRequest(Message):
         data["metrics"] = self.metrics
         data["dpsgd"] = self.dpsgd
         data["secagg"] = self.secagg
+        data["fairness"] = self.fairness
         return data
 
     @classmethod

@@ -33,11 +33,13 @@ from declearn.communication.utils import (
     verify_server_message_validity,
 )
 from declearn.dataset import Dataset, load_dataset_from_json
-from declearn.main.utils import Checkpointer, TrainingManager
+from declearn.fairness.api import FairnessControllerClient
+from declearn.main.utils import Checkpointer
 from declearn.messaging import Message, SerializedMessage
+from declearn.training import TrainingManager
 from declearn.secagg import parse_secagg_config_client
 from declearn.secagg.api import Encrypter, SecaggConfigClient, SecaggSetupQuery
-from declearn.secagg.messaging import SecaggEvaluationReply, SecaggTrainReply
+from declearn.secagg import messaging as secagg_messaging
 from declearn.utils import LOGGING_LEVEL_MAJOR, get_logger
 
 
@@ -142,8 +144,9 @@ class FederatedClient:
             self.logger.warning(msg)
             warnings.warn(msg, UserWarning, stacklevel=-1)
         self.verbose = bool(verbose)
-        # Create a TrainingManager slot, populated at initialization phase.
+        # Create slots that are (opt.) populated during initialization.
         self.trainmanager = None  # type: Optional[TrainingManager]
+        self.fairness = None  # type: Optional[FairnessControllerClient]
 
     @staticmethod
     def _parse_netwk(netwk) -> Tuple[NetworkClient, bool]:
@@ -247,6 +250,8 @@ class FederatedClient:
             await self.training_round(message.deserialize())
         elif issubclass(message.message_cls, messaging.EvaluationRequest):
             await self.evaluation_round(message.deserialize())
+        elif issubclass(message.message_cls, messaging.FairnessQuery):
+            await self.fairness_round(message.deserialize())
         elif issubclass(message.message_cls, SecaggSetupQuery):
             await self.setup_secagg(message)  # note: keep serialized
         elif issubclass(message.message_cls, messaging.StopTraining):
@@ -341,12 +346,15 @@ class FederatedClient:
         except Exception as exc:
             await self.netwk.send_message(messaging.Error(repr(exc)))
             raise RuntimeError("Initialization failed.") from exc
+        # Send back an empty message to indicate that things went fine.
+        self.logger.info("Notifying the server that initialization went fine.")
+        await self.netwk.send_message(messaging.InitReply())
         # If instructed to do so, run additional steps to set up DP-SGD.
         if message.dpsgd:
             await self._initialize_dpsgd()
-        # Send back an empty message to indicate that all went fine.
-        self.logger.info("Notifying the server that initialization went fine.")
-        await self.netwk.send_message(messaging.InitReply())
+        # If instructed to do so, run additional steps to enforce fairness.
+        if message.fairness:
+            await self._initialize_fairness()
         # Optionally checkpoint the received model and optimizer.
         if self.ckptr:
             self.ckptr.checkpoint(
@@ -388,7 +396,7 @@ class FederatedClient:
             )
         except Exception as exc:
             raise RuntimeError("DP-SGD initialization failed.") from exc
-        self.logger.info("Received a request to set up DP-SGD.")
+        self.logger.info("Received DP-SGD setup instructions.")
         try:
             self.make_private(message)
         except Exception as exc:  # pylint: disable=broad-except
@@ -423,8 +431,7 @@ class FederatedClient:
         # fmt: off
         # lazy-import the DPTrainingManager, that involves some optional,
         # heavy-loadtime dependencies; pylint: disable=import-outside-toplevel
-        from declearn.main.privacy import DPTrainingManager
-
+        from declearn.training.dp import DPTrainingManager
         # pylint: enable=import-outside-toplevel
         self.trainmanager = DPTrainingManager(
             model=self.trainmanager.model,
@@ -437,6 +444,47 @@ class FederatedClient:
             verbose=self.trainmanager.verbose,
         )
         self.trainmanager.make_private(message)
+
+    async def _initialize_fairness(
+        self,
+    ) -> None:
+        """Set up a fairness-enforcing algorithm as part of initialization.
+
+        This method is optionally called in the context of `initialize`
+        and should never be called in another context.
+        """
+        assert self.trainmanager is not None
+        # Optionally setup SecAgg; await a FairnessSetupQuery.
+        try:
+            # When SecAgg is to be used, setup controllers first.
+            if self.secagg is not None:
+                received = await self.netwk.recv_message()
+                await self.setup_secagg(received)
+            # Await and deserialize a FairnessSetupQuery.
+            received = await self.netwk.recv_message()
+            query = await verify_server_message_validity(
+                self.netwk, received, expected=messaging.FairnessSetupQuery
+            )
+        except Exception as exc:
+            error = f"Fairness initialization failed: {repr(exc)}."
+            self.logger.critical(error)
+            raise RuntimeError(error) from exc
+        self.logger.info("Received fairness setup instructions.")
+        # Instantiate a FairnessControllerClient and run its setup routine.
+        try:
+            self.fairness = FairnessControllerClient.from_setup_query(
+                query=query, manager=self.trainmanager
+            )
+            await self.fairness.setup_fairness(
+                netwk=self.netwk, secagg=self._encrypter
+            )
+        except Exception as exc:
+            error = (
+                f"Fairness-aware federated learning setup failed: {repr(exc)}."
+            )
+            self.logger.critical(error)
+            await self.netwk.send_message(messaging.Error(error))
+            raise RuntimeError(error) from exc
 
     async def setup_secagg(
         self,
@@ -513,7 +561,7 @@ class FederatedClient:
         if self._encrypter is not None and isinstance(
             reply, messaging.TrainReply
         ):
-            reply = SecaggTrainReply.from_cleartext_message(
+            reply = secagg_messaging.SecaggTrainReply.from_cleartext_message(
                 cleartext=reply, encrypter=self._encrypter
             )
         # Send training results (or error message) to the server.
@@ -564,11 +612,67 @@ class FederatedClient:
                 reply.metrics.clear()
             # Optionally SecAgg-encrypt results.
             if self._encrypter is not None:
-                reply = SecaggEvaluationReply.from_cleartext_message(
+                msg_cls = secagg_messaging.SecaggEvaluationReply
+                reply = msg_cls.from_cleartext_message(
                     cleartext=reply, encrypter=self._encrypter
                 )
         # Send evaluation results (or error message) to the server.
         await self.netwk.send_message(reply)
+
+    async def fairness_round(
+        self,
+        query: messaging.FairnessQuery,
+    ) -> None:
+        """Handle a server request to run a fairness-related round.
+
+        The nature of the round depends on the fairness-aware learning
+        algorithm that was optionally set up during the initialization
+        phase. In case no such algorithm was set up, this method will
+        raise a process-crashing exception.
+
+        Parameters
+        ----------
+        query:
+            `FairnessQuery` message from the server.
+
+        Raises
+        ------
+        RuntimeError
+            If no fairness controller was set up for this instance.
+        """
+        assert self.trainmanager is not None
+        # If no fairness controller was set up, raise a RuntimeError.
+        if self.fairness is None:
+            error = (
+                "Received a query to participate in a fairness round, "
+                "but no fairness controller was set up."
+            )
+            self.logger.critical(error)
+            await self.netwk.send_message(messaging.Error(error))
+            raise RuntimeError(error)
+        # When SecAgg is to be used, verify that it was set up.
+        if self.secagg is not None and self._encrypter is None:
+            error = (
+                "Refusing to participate in fairness-related round "
+                f"{query.round_i} as SecAgg is configured to be used "
+                "but was not set up."
+            )
+            self.logger.error(error)
+            await self.netwk.send_message(messaging.Error(error))
+            return
+        # Otherwise, run the controller's routine.
+        metrics = await self.fairness.run_fairness_round(
+            netwk=self.netwk, query=query, secagg=self._encrypter
+        )
+        # Optionally save computed fairness metrics.
+        # similar to server code; pylint: disable=duplicate-code
+        if self.ckptr is not None:
+            self.ckptr.save_metrics(
+                metrics=metrics,
+                prefix="fairness_metrics",
+                append=bool(query.round_i),
+                timestamp=f"round_{query.round_i}",
+            )
 
     async def stop_training(
         self,

@@ -61,9 +61,9 @@ Cyclic rate rules
 
 Warmup schedulers
 -----------------
-* [Warmup][declearn.optimizers.schedulers.Warmup]:
+* [Warmup][declearn.optimizer.schedulers.Warmup]:
     Scheduler (wrapper) setting up a linear warmup over steps.
-* [WarmupRounds][declearn.optimizers.schedulers.WarmupRounds]:
+* [WarmupRounds][declearn.optimizer.schedulers.WarmupRounds]:
     Scheduler (wrapper) setting up a linear warmup over rounds.
 """
 

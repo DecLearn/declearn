@@ -27,6 +27,7 @@ from declearn.metrics._api import Metric, MetricState
 from declearn.metrics._utils import squeeze_into_identical_shapes
 
 __all__ = [
+    "Accuracy",
     "MeanMetric",
     "MeanAbsoluteError",
     "MeanSquaredError",
@@ -176,3 +177,40 @@ class MeanSquaredError(MeanMetric):
         while errors.ndim > 1:
             errors = errors.sum(axis=-1)
         return errors
+
+
+class Accuracy(MeanMetric, register=False):
+    """Metric container to compute classification accuracy iteratively.
+
+    This metric applies to a single-label classification model,
+    and computes the (opt. weighted) mean sample-wise accuracy.
+    It requires true labels to be formatted as sample-wise scalar
+    values (as opposed to one-hot encoded values).
+
+    Computed metric is the following:
+
+    * accuracy: float
+        Mean accuracy, averaged across samples.
+    """
+
+    name = "accuracy"
+
+    def __init__(
+        self,
+        thresh: float,
+    ) -> None:
+        super().__init__()
+        self.thresh = thresh
+
+    def metric_func(
+        self,
+        y_true: np.ndarray,
+        y_pred: np.ndarray,
+    ) -> np.ndarray:
+        y_pred = (
+            y_pred > self.thresh
+            if (y_pred.ndim == 1) or (y_pred.shape[1] == 1)
+            else y_pred.max(axis=1)
+        )
+        y_true, y_pred = squeeze_into_identical_shapes(y_true, y_pred)
+        return y_pred == y_true

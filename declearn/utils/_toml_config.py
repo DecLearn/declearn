@@ -27,7 +27,7 @@ try:
 except ModuleNotFoundError:
     import tomli as tomllib
 
-from typing import Any, Dict, Optional, Type, TypeVar, Union
+from typing import Any, ClassVar, Dict, Optional, Set, Type, TypeVar, Union
 
 from typing_extensions import Self  # future: import from typing (py >=3.11)
 
@@ -176,6 +176,14 @@ class TomlConfig:
         Instantiate by parsing a TOML configuration file.
     from_params:
         Instantiate by parsing inputs dicts (or objects).
+    """
+
+    autofill_fields: ClassVar[Set[str]] = set()
+    """Class attribute listing names of auto-fill fields.
+
+    The listed fields do not have a formal default value, but one is
+    dynamically created upon parsing other fields. As a consequence,
+    they may safely been ignored in TOML files or input dict params.
     """
 
     @classmethod
@@ -334,8 +342,8 @@ class TomlConfig:
             hyper-parameters making up for the FL "run" configuration.
         warn_user: bool, default=True
             Boolean indicating whether to raise a warning when some
-            fields are unused. Useful for cases where unused fields are
-            expected, e.g. in declearn-quickrun mode.
+            fields are unused. Useful for cases where unused fields
+            are expected, e.g. in declearn-quickrun mode.
         use_section: optional(str), default=None
             If not None, points to a specific section of the TOML that
             should be used, rather than the whole file. Useful to parse
@@ -381,10 +389,11 @@ class TomlConfig:
             elif (
                 field.default is dataclasses.MISSING
                 and field.default_factory is dataclasses.MISSING
+                and field.name not in cls.autofill_fields
             ):
                 raise RuntimeError(
-                    "Missing required section in the TOML configuration "
-                    f"file: '{field.name}'."
+                    "Missing section in the TOML configuration file: "
+                    f"'{field.name}'.",
                 )
         # Warn about remaining (unused) config sections.
         if warn_user:

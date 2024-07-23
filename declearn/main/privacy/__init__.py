@@ -15,10 +15,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Submodule implementing Differential-Privacy-oriented tools.
+"""DEPRECATED Submodule implementing Differential-Privacy-oriented tools.
 
-* [DPTrainingManager][declearn.main.privacy.DPTrainingManager]:
+This module was moved to `declearn.training.dp` as of DecLearn 2.6, and is
+only re-exported for retro-compatibility. It will be removed in DecLearn 2.8.
+
+* [DPTrainingManager][declearn.training.dp.DPTrainingManager]:
     TrainingManager subclass implementing Differential Privacy mechanisms.
 """
 
-from ._dp_trainer import DPTrainingManager
+# pragma: no cover
+
+import warnings
+
+from declearn.training.dp import DPTrainingManager
+
+warnings.warn(
+    "'declearn.main.privacy' was moved to `declearn.training.dp` and is only "
+    "re-exported for retro-compatibility. It will be removed in DecLearn 2.8.",
+    DeprecationWarning,
+)
+
+__all__ = ["DPTrainingManager"]

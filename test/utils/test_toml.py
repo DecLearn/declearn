@@ -381,3 +381,56 @@ class TestTomlConfigNested:
         }["demo_a"]
         with pytest.raises(TypeError):
             ComplexTomlConfig.default_parser(field, path_bad)
+
+
+@dataclasses.dataclass
+class AutofillTomlConfig(TomlConfig):
+    """Demonstration TomlConfig subclass with an autofill field."""
+
+    base: int
+    auto: int
+
+    autofill_fields = {"auto"}
+
+    @classmethod
+    def from_params(
+        cls,
+        **kwargs: Any,
+    ) -> Self:
+        if "base" in kwargs:
+            kwargs.setdefault("auto", kwargs["base"])
+        return super().from_params(**kwargs)
+
+
+class TestTomlAutofill:
+    """Unit tests for a 'TomlConfig' subclass with an auto-fill field."""
+
+    def test_from_params_exhaustive(self) -> None:
+        """Test parsing kwargs with exhaustive values."""
+        config = AutofillTomlConfig.from_params(base=0, auto=1)
+        assert config.base == 0  # false-positive; pylint: disable=no-member
+        assert config.auto == 1  # false-positive; pylint: disable=no-member
+
+    def test_from_params_autofill(self) -> None:
+        """Test parsing kwargs without the auto-filled value."""
+        config = AutofillTomlConfig.from_params(base=0)
+        assert config.base == 0  # false-positive; pylint: disable=no-member
+        assert config.auto == 0  # false-positive; pylint: disable=no-member
+
+    def test_from_toml_exhaustive(self, tmp_path: str) -> None:
+        """Test parsing a TOML file with exhaustive values."""
+        path = os.path.join(tmp_path, "config.toml")
+        with open(path, "w", encoding="utf-8") as file:
+            file.write("base = 0\nauto = 1")
+        config = AutofillTomlConfig.from_toml(path)
+        assert config.base == 0  # false-positive; pylint: disable=no-member
+        assert config.auto == 1  # false-positive; pylint: disable=no-member
+
+    def test_from_toml_autofill(self, tmp_path: str) -> None:
+        """Test parsing a TOML file without the auto-filled value."""
+        path = os.path.join(tmp_path, "config.toml")
+        with open(path, "w", encoding="utf-8") as file:
+            file.write("base = 0")
+        config = AutofillTomlConfig.from_toml(path)
+        assert config.base == 0  # false-positive; pylint: disable=no-member
+        assert config.auto == 0  # false-positive; pylint: disable=no-member

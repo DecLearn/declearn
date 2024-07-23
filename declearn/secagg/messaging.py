@@ -19,20 +19,29 @@
 
 import abc
 import dataclasses
-from typing import Dict, Generic, TypeVar
+from typing import Dict, Generic, List, Mapping, TypeVar
 
 from typing_extensions import Self  # future: import from typing (py >=3.11)
 
 from declearn.aggregator import ModelUpdates
-from declearn.messaging import EvaluationReply, Message, TrainReply
+from declearn.messaging import (
+    EvaluationReply,
+    FairnessCounts,
+    FairnessReply,
+    Message,
+    TrainReply,
+)
 from declearn.metrics import MetricState
 from declearn.optimizer.modules import AuxVar
 from declearn.secagg.api import Decrypter, Encrypter, SecureAggregate
 
 __all__ = [
     "SecaggEvaluationReply",
+    "SecaggFairnessCounts",
+    "SecaggFairnessReply",
     "SecaggMessage",
     "SecaggTrainReply",
+    "aggregate_secagg_messages",
 ]
 
 
@@ -66,7 +75,7 @@ class SecaggMessage(
 
         Parameters
         ----------
-        cleartext:
+        cleartext:1
             Message that needs encryption prior to sharing.
         encrypter:
             Controller to be used for message contents' encryption.
@@ -96,6 +105,33 @@ class SecaggMessage(
         decrypter: Decrypter,
     ) -> Self:
         """Aggregate two clients' SecaggMessage instances into one."""
+
+
+def aggregate_secagg_messages(
+    messages: Mapping[str, SecaggMessage[MessageT]],
+    decrypter: Decrypter,
+) -> MessageT:
+    """Secure-Aggregate (and decrypt) client-issued encrypted messages.
+
+    Parameters
+    ----------
+    messages:
+        Mapping of client-wise `SecaggMessage` instances, wrapping
+        similar messages that need secure aggregation.
+    decrypter:
+        Decryption controller to use when aggregating inputs.
+
+    Returns
+    -------
+    message:
+        Cleartext message resulting from the secure aggregation
+        of input `messages`.
+    """
+    encrypted = list(messages.values())
+    aggregate = encrypted[0]
+    for message in encrypted[1:]:
+        aggregate = aggregate.aggregate(message, decrypter=decrypter)
+    return aggregate.decrypt_wrapped_message(decrypter=decrypter)
 
 
 @dataclasses.dataclass
@@ -228,3 +264,80 @@ class SecaggEvaluationReply(SecaggMessage[EvaluationReply]):
         return self.__class__(
             loss=loss, n_steps=n_steps, t_spent=t_spent, metrics=metrics
         )
+
+
+@dataclasses.dataclass
+class SecaggFairnessCounts(SecaggMessage[FairnessCounts]):
+    """SecAgg counterpart of the 'FairnessCounts' message class."""
+
+    counts: List[int]
+
+    typekey = "secagg-fairness-counts"
+
+    @classmethod
+    def from_cleartext_message(
+        cls,
+        cleartext: FairnessCounts,
+        encrypter: Encrypter,
+    ) -> Self:
+        counts = [encrypter.encrypt_uint(val) for val in cleartext.counts]
+        return cls(counts=counts)
+
+    def decrypt_wrapped_message(
+        self,
+        decrypter: Decrypter,
+    ) -> FairnessCounts:
+        counts = [decrypter.decrypt_uint(val) for val in self.counts]
+        return FairnessCounts(counts=counts)
+
+    def aggregate(
+        self,
+        other: Self,
+        decrypter: Decrypter,
+    ) -> Self:
+        counts = [
+            decrypter.sum_encrypted([v_a, v_b])
+            for v_a, v_b in zip(self.counts, other.counts)
+        ]
+        return self.__class__(counts=counts)
+
+
+@dataclasses.dataclass
+class SecaggFairnessReply(SecaggMessage[FairnessReply]):
+    """SecAgg-wrapped 'FairnessReply' message."""
+
+    typekey = "secagg_fairness_reply"
+
+    values: List[int]
+
+    @classmethod
+    def from_cleartext_message(
+        cls,
+        cleartext: FairnessReply,
+        encrypter: Encrypter,
+    ) -> Self:
+        values = [encrypter.encrypt_float(value) for value in cleartext.values]
+        return cls(values=values)
+
+    def decrypt_wrapped_message(
+        self,
+        decrypter: Decrypter,
+    ) -> FairnessReply:
+        values = [decrypter.decrypt_float(value) for value in self.values]
+        return FairnessReply(values=values)
+
+    def aggregate(
+        self,
+        other: Self,
+        decrypter: Decrypter,
+    ) -> Self:
+        if len(self.values) != len(other.values):
+            raise ValueError(
+                "Cannot aggregate SecAgg-protected fairness values with "
+                "distinct shapes."
+            )
+        values = [
+            decrypter.sum_encrypted([v_a, v_b])
+            for v_a, v_b in zip(self.values, other.values)
+        ]
+        return self.__class__(values=values)

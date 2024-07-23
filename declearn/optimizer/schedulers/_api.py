@@ -99,10 +99,10 @@ class Scheduler(metaclass=abc.ABCMeta):
 
     Inheritance
     -----------
-    When a subclass inheriting from `OptiModule` is declared, it is
-    automatically registered under the "OptiModule" group using its
+    When a subclass inheriting from `Scheduler` is declared, it is
+    automatically registered under the "Scheduler" group using its
     class-attribute `name`. This can be prevented by adding `register=False`
-    to the inheritance specs (e.g. `class MyCls(OptiModule, register=False)`).
+    to the inheritance specs (e.g. `class MyCls(Scheduler, register=False)`).
     See `declearn.utils.register_type` for details on types registration.
     """
 

@@ -170,6 +170,18 @@ async def async_run_client(
     await client.async_run()
 
 
+def setup_masking_idkeys(
+    secagg: bool,
+    n_clients: int,
+) -> Union[List[IdentityKeys], List[None]]:
+    """Setup identity keys for SecAgg, or a list of None values."""
+    if not secagg:
+        return [None for _ in range(n_clients)]
+    prv_keys = [Ed25519PrivateKey.generate() for _ in range(n_clients)]
+    pub_keys = [key.public_key() for key in prv_keys]
+    return [IdentityKeys(key, trusted=pub_keys) for key in prv_keys]
+
+
 async def run_declearn_experiment(
     scaffold: bool,
     secagg: bool,
@@ -197,14 +209,7 @@ async def run_declearn_experiment(
     """
     # Set up the toy dataset(s) and optional identity keys (for SecAgg).
     n_clients = len(datasets)
-    if secagg:
-        prv_keys = [Ed25519PrivateKey.generate() for _ in range(n_clients)]
-        pub_keys = [key.public_key() for key in prv_keys]
-        id_keys = [
-            IdentityKeys(key, trusted=pub_keys) for key in prv_keys
-        ]  # type: Union[List[IdentityKeys], List[None]]
-    else:
-        id_keys = [None for _ in range(n_clients)]
+    id_keys = setup_masking_idkeys(secagg=secagg, n_clients=n_clients)
     with tempfile.TemporaryDirectory() as folder:
         # Set up the server and client coroutines.
         coro_server = async_run_server(folder, scaffold, secagg, n_clients)
@@ -213,13 +218,11 @@ async def run_declearn_experiment(
             for i, (train, valid) in enumerate(datasets)
         ]
         # Run the coroutines concurrently using asyncio.
-        outputs = await asyncio.gather(
+        output = await asyncio.gather(
             coro_server, *coro_clients, return_exceptions=True
         )
         # Assert that no exceptions occurred during the process.
-        errors = "\n".join(
-            repr(exc) for exc in outputs if isinstance(exc, Exception)
-        )
+        errors = "\n".join(repr(e) for e in output if isinstance(e, Exception))
         assert not errors, f"The FL process failed:\n{errors}"
         # Assert that the experiment ran properly.
         with open(
