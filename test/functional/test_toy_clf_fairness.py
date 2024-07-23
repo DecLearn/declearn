@@ -207,10 +207,12 @@ async def test_toy_classif_fairness(
 
     Set up a toy dataset for fairness-aware federated learning.
     Use a given algorithm, with a given group-fairness definition.
-    Optionally use SecAgg.
+    Run training for 5 rounds. Optionally use SecAgg.
 
-    Verify that after training for 10 rounds, the learned model achieves
-    some accuracy and has become fairer that after 5 rounds.
+    When using mere monitoring, verify that hardcoded accuracy
+    and (un)fairness levels, taken as a baseline, are achieved.
+    When using another algorithm, verify that is achieves some
+    degraded accuracy, and better fairness than the baseline.
     """
     # Set up the toy dataset and optional identity keys for SecAgg.
     datasets = generate_toy_dataset(n_clients=3)
@@ -238,8 +240,8 @@ async def test_toy_classif_fairness(
     # Note that FairFed is bound to match the FedAvg baseline due to the
     # split across clients being uniform.
     expected_fairness = {
-        "demographic_parity": 0.02,
-        "equalized_odds": 0.11,
+        "demographic_parity": 0.025,
+        "equalized_odds": 0.142,
     }
     if fairness.algorithm == "monitor":
         assert accuracy >= 0.76

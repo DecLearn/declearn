@@ -284,13 +284,17 @@ class FederatedServer:
             # Iteratively run training and evaluation rounds.
             round_i = 0
             while True:
+                # Run (opt.) fairness; training; evaluation.
+                await self.fairness_round(round_i, config.fairness)
                 round_i += 1
-                if self.fairness is not None:
-                    await self.fairness_round(round_i, config.fairness)
                 await self.training_round(round_i, config.training)
                 await self.evaluation_round(round_i, config.evaluate)
+                # Decide whether to keep training for at least one round.
                 if not self._keep_training(round_i, config.rounds, early_stop):
                     break
+            # When checkpointing, evaluate the last model's fairness.
+            if self.ckptr is not None:
+                await self.fairness_round(round_i, config.fairness)
             # Interrupt training when time comes.
             self.logger.info("Stopping training.")
             await self.stop_training(round_i)
@@ -544,13 +548,14 @@ class FederatedServer:
         Parameters
         ----------
         round_i:
-            Index of the training round.
+            Index of the latest training round (start at 0).
         fairness_cfg:
             FairnessConfig dataclass instance wrapping data-batching
             and computational effort constraints hyper-parameters for
             fairness evaluation.
         """
-        assert self.fairness is not None
+        if self.fairness is None:
+            return
         # Run SecAgg setup when needed.
         self.logger.info("Initiating fairness-enforcing round %s", round_i)
         clients = self.netwk.client_names  # FUTURE: enable sampling(?)
@@ -575,7 +580,7 @@ class FederatedServer:
             self.ckptr.save_metrics(
                 metrics=metrics,
                 prefix="fairness_metrics",
-                append=(query.round_i > 1),
+                append=bool(query.round_i),
                 timestamp=f"round_{query.round_i}",
             )
 

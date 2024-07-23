@@ -1077,7 +1077,7 @@ class TestFederatedClientFairnessRound:
         if ckpt:
             client.ckptr = mock.create_autospec(Checkpointer, instance=True)
         # Call the 'fairness_round' routine and verify expected actions.
-        request = messaging.FairnessQuery(round_i=1)
+        request = messaging.FairnessQuery(round_i=0)
         await client.fairness_round(request)
         fairness.run_fairness_round.assert_awaited_once_with(
             netwk=netwk, query=request, secagg=None
@@ -1088,7 +1088,7 @@ class TestFederatedClientFairnessRound:
                 metrics=fairness.run_fairness_round.return_value,
                 prefix="fairness_metrics",
                 append=False,  # first round, hence file creation or overwrite
-                timestamp="round_1",
+                timestamp="round_0",
             )
 
     @pytest.mark.asyncio

@@ -670,7 +670,7 @@ class FederatedClient:
             self.ckptr.save_metrics(
                 metrics=metrics,
                 prefix="fairness_metrics",
-                append=(query.round_i > 1),
+                append=bool(query.round_i),
                 timestamp=f"round_{query.round_i}",
             )
 
