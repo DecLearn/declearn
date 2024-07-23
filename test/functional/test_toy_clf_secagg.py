@@ -27,7 +27,6 @@ import asyncio
 import json
 import os
 import tempfile
-import warnings
 from typing import List, Optional, Tuple, Union
 
 import pytest
@@ -148,9 +147,7 @@ async def async_run_server(
         register={"min_clients": n_clients, "timeout": 2},
         training={"n_epoch": 1, "batch_size": 1, "drop_remainder": False},
     )
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", RuntimeWarning)
-        await server.async_run(config)
+    await server.async_run(config)
 
 
 async def async_run_client(

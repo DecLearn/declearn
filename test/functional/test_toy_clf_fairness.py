@@ -24,6 +24,7 @@
 
 import asyncio
 import os
+import warnings
 from typing import List, Optional, Tuple
 
 import numpy as np
@@ -148,7 +149,9 @@ async def server_routine(
         training={"n_epoch": 1, "batch_size": 10},
         fairness={"batch_size": 50},
     )
-    await server.async_run(config)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", RuntimeWarning)
+        await server.async_run(config)
 
 
 async def client_routine(
