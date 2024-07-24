@@ -32,7 +32,9 @@ details on this example and on how to run it, please refer to its own
     used by clients to derive local step-wise updates from model gradients.
   - Similarly, parameterize an `Optimizer` to be used by the server to
     (optionally) refine the aggregated model updates before applying them.
-  - Wrap these three objects into a `declearn.main.config.FLOptimConfig`,
+  - Optionally, parametrize a `FairnessControllerServer`, defining an
+    algorithm to enforce fairness constraints to the model being trained.
+  - Wrap these objects into a `declearn.main.config.FLOptimConfig`,
     possibly using its `from_config` method to specify the former three
     components via configuration dicts rather than actual instances.
   - Alternatively, write up a TOML configuration file that specifies these
@@ -56,6 +58,9 @@ details on this example and on how to run it, please refer to its own
       defines metrics to be computed by clients on their validation data.
     - Optionally provide the path to a folder where to write output files
       (model checkpoints and global loss history).
+    - Optionally parameterize and provide with a `SecaggConfigServer` or its
+      configuration, to set up and use secure aggregation for all quantities
+      that support it (model weights, metrics and metadata).
   - Instantiate a `declearn.main.config.FLRunConfig` to specify the process:
     - Maximum number of training and evaluation rounds to run.
     - Registration parameters: exact or min/max number of clients to have
@@ -63,11 +68,16 @@ details on this example and on how to run it, please refer to its own
     - Training parameters: data-batching parameters and effort constraints
       (number of local epochs and/or steps to take, and optional timeout).
     - Evaluation parameters: data-batching parameters and effort constraints
-      (optional maximum number of steps (<=1 epoch) and optional timeout).
+      (optional maximum number of steps (<=1 epoch) and optional timeout);
+      optional frequency (to only evaluate after every N training rounds).
     - Early-stopping parameters (optionally): patience, tolerance, etc. as
       to the global model loss's evolution throughout rounds.
     - Local Differential-Privacy parameters (optionally): (epsilon, delta)
       budget, type of accountant, clipping norm threshold, RNG parameters.
+    - Fairness evaluation parameters (optionally): computational constraints
+      and optionally frequency of fairness rounds; only used if fairness is
+      set up in the `FLOptimConfig`, and automatically/dynamically-filled if
+      left untouched.
   - Alternatively, write up a TOML configuration file that specifies all of
     the former hyper-parameters.
   - Call the server's `run` method, passing it the former config object,
@@ -113,6 +123,9 @@ details on this example and on how to run it, please refer to its own
       concerns.
     - Optionally provide the path to a folder where to write output files
       (model checkpoints and local loss history).
+    - Optionally parameterize and provide with a `SecaggConfigClient` or its
+      configuration, to set up and use secure aggregation for all quantities
+      that support it (model weights, metrics and metadata).
   - Call the client's `run` method and let the magic happen.
 
 ## Logging
