@@ -147,6 +147,7 @@ async def server_routine(
         rounds=5,
         register={"min_clients": n_clients, "timeout": 2},
         training={"n_epoch": 1, "batch_size": 10},
+        evaluate={"frequency": 5},  # only evaluate the last model
         fairness={"batch_size": 50},
     )
     with warnings.catch_warnings():
