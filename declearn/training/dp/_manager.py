@@ -23,8 +23,8 @@ from typing import List, Optional, Tuple, Union
 from opacus.accountants import IAccountant, create_accountant  # type: ignore
 from opacus.accountants.utils import get_noise_multiplier  # type: ignore
 
+from declearn import messaging
 from declearn.aggregator import Aggregator
-from declearn.communication import messaging
 from declearn.dataset import Dataset
 from declearn.metrics import MetricInputType, MetricSet
 from declearn.model.api import Model

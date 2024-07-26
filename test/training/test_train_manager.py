@@ -22,8 +22,8 @@ from typing import Any, Iterator, Optional
 
 import numpy
 
+from declearn import messaging
 from declearn.aggregator import Aggregator
-from declearn.communication import messaging
 from declearn.dataset import Dataset
 from declearn.metrics import Metric, MetricSet
 from declearn.model.api import Model, Vector
