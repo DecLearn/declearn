@@ -139,17 +139,6 @@ class TestFederatedClientInit:  # pylint: disable=too-many-public-methods
         client = FederatedClient(netwk=MOCK_NETWK, train_data=dataset)
         assert client.train_data is dataset
 
-    def test_train_data_str(self) -> None:
-        """Test specifying 'train_data' as a file path."""
-        path = "mock_path_to_dataset.json"
-        with mock.patch(
-            "declearn.main._client.load_dataset_from_json",
-            return_value=mock.create_autospec(Dataset, instance=True),
-        ) as patched:
-            client = FederatedClient(netwk=MOCK_NETWK, train_data=path)
-        patched.assert_called_once_with(path)
-        assert client.train_data is patched.return_value
-
     def test_train_data_invalid(self) -> None:
         """Test specifying 'train_data' as an invalid type."""
         with pytest.raises(TypeError):
@@ -171,19 +160,6 @@ class TestFederatedClientInit:  # pylint: disable=too-many-public-methods
             netwk=MOCK_NETWK, train_data=MOCK_DATASET, valid_data=dataset
         )
         assert client.valid_data is dataset
-
-    def test_valid_data_str(self) -> None:
-        """Test specifying 'valid_data' as a file path."""
-        path = "mock_path_to_dataset.json"
-        with mock.patch(
-            "declearn.main._client.load_dataset_from_json",
-            return_value=mock.create_autospec(Dataset, instance=True),
-        ) as patched:
-            client = FederatedClient(
-                netwk=MOCK_NETWK, train_data=MOCK_DATASET, valid_data=path
-            )
-        patched.assert_called_once_with(path)
-        assert client.valid_data is patched.return_value
 
     def test_valid_data_invalid(self) -> None:
         """Test specifying 'valid_data' as an invalid type."""

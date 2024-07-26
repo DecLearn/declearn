@@ -19,7 +19,6 @@
 
 import abc
 import dataclasses
-import warnings
 from typing import Any, ClassVar, Dict, Generic, Type, TypeVar, Union
 
 from typing_extensions import Self  # future: import from typing (py >=3.11)
@@ -184,48 +183,6 @@ class Aggregator(Generic[ModelUpdatesT], metaclass=abc.ABCMeta):
     ) -> Self:
         """Instantiate an Aggregator from its configuration dict."""
         return cls(**config)
-
-    def aggregate(
-        self,
-        updates: Dict[str, Vector[T]],
-        n_steps: Dict[str, int],  # revise: abstract~generalize kwargs use
-    ) -> Vector[T]:
-        """DEPRECATED - Aggregate input vectors into a single one.
-
-        Parameters
-        ----------
-        updates: dict[str, Vector]
-            Client-wise updates, as a dictionary with clients' names as
-            string keys and updates as Vector values.
-        n_steps: dict[str, int]
-            Client-wise number of local training steps performed during
-            the training round having produced the updates.
-
-        Returns
-        -------
-        gradients: Vector
-            Aggregated updates, as a Vector - treated as gradients by
-            the server-side optimizer.
-
-        Raises
-        ------
-        TypeError
-            If the input `updates` are an empty dict.
-        """
-        warnings.warn(
-            "'Aggregator.aggregate' was deprecated in DecLearn v2.4 in favor "
-            "of new API methods. It will be removed in DecLearn v2.6 and/or "
-            "v3.0.",
-            DeprecationWarning,
-        )
-        if not updates:
-            raise TypeError("'Aggregator.aggregate' received an empty dict.")
-        partials = [
-            self.prepare_for_sharing(updates[client], n_steps[client])
-            for client in updates
-        ]
-        aggregated = sum(partials[1:], start=partials[0])
-        return self.finalize_updates(aggregated)
 
 
 def list_aggregators() -> Dict[str, Type[Aggregator]]:

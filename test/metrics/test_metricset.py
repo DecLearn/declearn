@@ -18,7 +18,7 @@
 """Unit tests for `declearn.metrics.MetricSet`."""
 
 from unittest import mock
-from typing import Dict, Tuple
+from typing import Tuple
 
 import numpy as np
 import pytest
@@ -128,18 +128,6 @@ class TestMetricSet:
         mse.set_states.assert_called_once_with(  # type: ignore  # mock
             states["mse"]
         )
-
-    def test_agg_states(self) -> None:
-        """Test that deprecated `MetricSet.agg_states` works as expected."""
-        mae, mse, metrics = get_mock_metricset()
-        states = {
-            "mae": mae.get_states(),
-            "mse": mse.get_states(),
-        }  # type: Dict[str, MetricState]
-        with pytest.warns(DeprecationWarning):
-            metrics.agg_states(states)
-        mae.agg_states.assert_called_once_with(states["mae"])  # type: ignore
-        mse.agg_states.assert_called_once_with(states["mse"])  # type: ignore
 
     def test_get_config(self) -> None:
         """Test that `MetricSet.get_config` works as expected."""

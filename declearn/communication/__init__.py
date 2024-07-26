@@ -28,7 +28,6 @@ This module contains the following core submodules:
 * [utils][declearn.communication.utils]:
     Utils related to network communication endpoints' setup and usage.
 
-
 It re-exports publicly from `utils` the following elements:
 
 * [build_client][declearn.communication.build_client]:
@@ -52,10 +51,6 @@ the associated third-party dependencies are available:
 * [websockets][declearn.communication.websockets]:
     WebSockets-based network communication endpoints.
     Requires the `websockets` third-party package.
-
-Additionnally, for retro-compatibility purposes, it exports the DEPRECATED
-[messaging][declearn.communication.messaging] submodule, that should no
-longer be used, as its contents were re-dispatched elsewhere in DecLearn.
 """
 
 # Messaging API and base tools:
@@ -79,6 +74,3 @@ try:
     from . import websockets
 except ImportError:  # pragma: no cover
     _INSTALLABLE_BACKENDS["websockets"] = ("websockets",)
-
-# DEPRECATED submodule, kept for retro-compatibility until 2.6 and/or 3.0.
-from . import messaging

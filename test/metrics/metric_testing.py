@@ -177,32 +177,6 @@ class MetricTestSuite:
         expect = test_case.agg_scores
         assert_dict_equal(metric.get_result(), expect, np_tolerance=self.tol)
 
-    def test_legacy_agg_states(self, test_case: MetricTestCase) -> None:
-        """Test that the deprecated `agg_states` method works as expected."""
-        # Set up and update two identical metrics.
-        metric = test_case.metric
-        metbis = deepcopy(test_case.metric)
-        metric.update(**test_case.inputs)
-        metbis.update(**test_case.inputs)
-        # Aggregate the second into the first. Verify that they now differ.
-        assert_dict_equal(
-            metric.get_states().to_dict(), metbis.get_states().to_dict()
-        )
-        with pytest.warns(DeprecationWarning):
-            metbis.agg_states(metric.get_states())
-        assert_dict_equal(
-            metric.get_states().to_dict(), test_case.states.to_dict()
-        )
-        with pytest.raises(AssertionError):  # assert not equal
-            assert_dict_equal(
-                metric.get_states().to_dict(), metbis.get_states().to_dict()
-            )
-        # Verify the correctness of the aggregated states and scores.
-        states = test_case.agg_states
-        scores = test_case.agg_scores
-        assert_dict_equal(metbis.get_states().to_dict(), states.to_dict())
-        assert_dict_equal(metbis.get_result(), scores, np_tolerance=self.tol)
-
     def test_update_with_squeezable_inputs(
         self, test_case: MetricTestCase
     ) -> None:

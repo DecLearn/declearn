@@ -143,31 +143,3 @@ class TestAggregator:
         result = aggregator.finalize_updates(output)
         expect = aggregator.finalize_updates(updates_a + updates_b)
         assert result == expect
-
-    # DEPRECATED: the following tests cover deprecated methods
-
-    @pytest.mark.parametrize("framework", VECTOR_FRAMEWORKS)
-    def test_aggregate(
-        self,
-        agg_cls: Type[Aggregator],
-        updates: Dict[str, Vector],
-    ) -> None:
-        """Test that the legacy (deprecated) 'aggregate' method still works."""
-        agg = agg_cls()
-        n_steps = {key: 10 for key in updates}
-        with pytest.warns(DeprecationWarning):
-            outputs = agg.aggregate(updates, n_steps)
-        ref_vec = list(updates.values())[0]
-        assert isinstance(outputs, type(ref_vec))
-        assert outputs.shapes() == ref_vec.shapes()
-        assert outputs.dtypes() == ref_vec.dtypes()
-
-    def test_aggregate_empty(
-        self,
-        agg_cls: Type[Aggregator],
-    ) -> None:
-        """Test that 'aggregate' raises the expected error on empty inputs."""
-        agg = agg_cls()
-        with pytest.warns(DeprecationWarning):
-            with pytest.raises(TypeError):
-                agg.aggregate(updates={}, n_steps={})
