@@ -9,9 +9,7 @@ requires = [
 [project]
 name = "declearn"
 version = "2.6.0"
-description = """
-DecLearn - a modular and extensible framework for Federated Learning.
-"""
+description = "A modular and extensible framework for Federated Learning."
 readme = "README.md"
 requires-python = ">=3.8"
 license = {file = "LICENSE"}
