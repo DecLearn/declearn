@@ -8,6 +8,7 @@ requires = [
 
 [project]
 name = "declearn"
+version = "2.6.0"
 description = """
 DecLearn - a modular and extensible framework for Federated Learning.
 """
