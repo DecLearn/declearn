@@ -139,8 +139,8 @@ ignore-patterns = ["(.*_pb2.*py$)"]
 [tool.pylint.format]
 max-line-length = 79
 
-[tool.setuptools]
-packages = ["declearn"]
+[tool.setuptools.packages.find]
+include = ["declearn", "declearn.*"]
 
 [tool.setuptools.package-data]
 declearn = ["py.typed"]
