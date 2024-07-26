@@ -15,15 +15,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Declearn - a python package for private decentralized learning.
+"""DecLearn - a modular and extensible framework for Federated Learning.
 
-Declearn is a modular framework to set up and run federated learning
+DecLearn is a modular framework to set up and run federated learning
 processes. It is being developed by the MAGNET team of INRIA Lille,
 with the aim of providing users with a modular and extensible framework
 to implement federated learning algorithms and apply them to real-world
 (or simulated) data using any common machine learning framework.
 
-Declearn provides with abstractions that enable algorithms to be written
+DecLearn provides with abstractions that enable algorithms to be written
 agnostic to the actual computation framework as well as with workable
 interfaces that cover some of the most popular frameworks, such as
 Scikit-Learn, TensorFlow and PyTorch.

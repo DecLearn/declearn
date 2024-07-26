@@ -32,7 +32,7 @@ from declearn.communication.utils import (
     NetworkClientConfig,
     verify_server_message_validity,
 )
-from declearn.dataset import Dataset, load_dataset_from_json
+from declearn.dataset import Dataset
 from declearn.fairness.api import FairnessControllerClient
 from declearn.main.utils import Checkpointer
 from declearn.messaging import Message, SerializedMessage
@@ -116,16 +116,12 @@ class FederatedClient:
         if replace_netwk_logger:
             self.netwk.logger = self.logger
         # Assign the wrapped training dataset.
-        if isinstance(train_data, str):
-            train_data = load_dataset_from_json(train_data)
         if not isinstance(train_data, Dataset):
-            raise TypeError("'train_data' should be a Dataset or path to one.")
+            raise TypeError("'train_data' should be a Dataset.")
         self.train_data = train_data
         # Assign the wrapped validation dataset (if any).
-        if isinstance(valid_data, str):
-            valid_data = load_dataset_from_json(valid_data)
         if not (valid_data is None or isinstance(valid_data, Dataset)):
-            raise TypeError("'valid_data' should be a Dataset or path to one.")
+            raise TypeError("'valid_data' should be a Dataset.")
         self.valid_data = valid_data
         # Assign an optional checkpointer.
         if checkpoint is not None:

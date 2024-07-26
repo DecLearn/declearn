@@ -18,7 +18,6 @@
 """Gradient Masked Averaging aggregation class."""
 
 import dataclasses
-import warnings
 from typing import Any, Dict, Optional, Tuple
 
 from typing_extensions import Self  # future: import from typing (py >=3.11)
@@ -99,7 +98,6 @@ class GradientMaskedAveraging(Aggregator[GMAModelUpdates]):
         self,
         threshold: float = 1.0,
         steps_weighted: bool = True,
-        client_weights: Optional[Dict[str, float]] = None,
     ) -> None:
         """Instantiate a gradient masked averaging aggregator.
 
@@ -111,20 +109,9 @@ class GradientMaskedAveraging(Aggregator[GMAModelUpdates]):
         steps_weighted: bool, default=True
             Whether to weight updates based on the number of optimization
             steps taken by the clients (relative to one another).
-        client_weights: dict[str, float] or None, default=None
-            Optional dict of client-wise base weights to use.
-            If None, homogeneous base weights are used.
-
-        Notes
-        -----
-        * One may specify `client_weights` and use `steps_weighted=True`.
-          In that case, the product of the client's base weight and their
-          number of training steps taken will be used (and unit-normed).
-        * One may use incomplete `client_weights`. In that case, unknown-
-          clients' base weights will be set to 1.
         """
         self.threshold = threshold
-        self._avg = AveragingAggregator(steps_weighted, client_weights)
+        self._avg = AveragingAggregator(steps_weighted)
 
     def get_config(
         self,
@@ -162,24 +149,3 @@ class GradientMaskedAveraging(Aggregator[GMAModelUpdates]):
         scores = (1 - clip) * scores + clip  # s = 1 if s > t else s
         # Correct outputs' magnitude and return them.
         return values * scores
-
-    def compute_client_weights(  # pragma: no cover
-        self,
-        updates: Dict[str, Vector],
-        n_steps: Dict[str, int],
-    ) -> Dict[str, float]:
-        """Compute weights to use when averaging a given set of updates.
-
-        This method is DEPRECATED as of DecLearn v2.4.
-        It will be removed in DecLearn 2.6 and/or 3.0.
-        """
-        # pylint: disable=duplicate-code
-        warnings.warn(
-            f"'{self.__class__.__name__}.compute_client_weights' was"
-            " deprecated in DecLearn v2.4. It will be removed in DecLearn"
-            " v2.6 and/or v3.0.",
-            DeprecationWarning,
-        )
-        with warnings.catch_warnings():
-            warnings.simplefilter(action="ignore", category=DeprecationWarning)
-            return self._avg.compute_client_weights(updates, n_steps)

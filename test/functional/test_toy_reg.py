@@ -411,6 +411,7 @@ async def async_run_server(
             "batch_size": b_size,
             "drop_remainder": False,
         },
+        evaluate={"frequency": 10},  # only evaluate the last model
     )
     await server.async_run(config)
 

@@ -127,12 +127,20 @@ class TrainingConfig:
 class EvaluateConfig(TrainingConfig):
     """Dataclass wrapping parameters for an evaluation round.
 
+    Exclusive attributes
+    --------------------
+    frequency: int
+        Number of training rounds to run between evaluation ones.
+        By default, run an evaluation round after each training one.
+
     Please refer to the parent class `TrainingConfig` for details
-    on the wrapped parameters / attribute. Note that `n_epoch` is
-    dropped when this config is turned into an EvaluationRequest
-    message.
+    on the other wrapped parameters / attributes.
+
+    Note that `n_epoch` is dropped when this config is turned into
+    an EvaluationRequest message.
     """
 
+    frequency: int = 1
     drop_remainder: bool = False
 
     @property
@@ -238,6 +246,9 @@ class FairnessConfig:
     ----------
     batch_size: int
         Number of samples per processed data batch.
+    frequency: int
+        Number of training rounds to run between fairness ones.
+        By default, run a fairness round before each training one.
     n_batch: int or None, default=None
         Optional maximum number of batches to draw.
         If None, use the entire training dataset.
@@ -249,5 +260,6 @@ class FairnessConfig:
     """
 
     batch_size: int = 32
+    frequency: int = 1
     n_batch: Optional[int] = None
     thresh: Optional[float] = None

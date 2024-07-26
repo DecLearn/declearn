@@ -29,8 +29,6 @@ API tools
     Abstract base class defining an API to access training or testing data.
 * [DataSpec][declearn.dataset.DataSpecs]:
     Dataclass to wrap a dataset's metadata.
-* [load_dataset_from_json][declearn.dataset.load_dataset_from_json]
-    DEPRECATED Utility function to parse a JSON into a dataset object.
 
 Dataset subclasses
 ------------------
@@ -67,6 +65,6 @@ Utility entry-point
 
 from . import utils
 from . import examples
-from ._base import Dataset, DataSpecs, load_dataset_from_json
+from ._base import Dataset, DataSpecs
 from ._inmemory import InMemoryDataset
 from ._split_data import split_data

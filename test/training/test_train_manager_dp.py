@@ -28,7 +28,7 @@ try:
 except ModuleNotFoundError:
     pytest.skip("Opacus is unavailable", allow_module_level=True)
 
-from declearn.communication import messaging
+from declearn import messaging
 from declearn.dataset import DataSpecs
 from declearn.optimizer.modules import GaussianNoiseModule
 from declearn.training.dp import DPTrainingManager

@@ -12,6 +12,8 @@ The package is organized into the following submodules:
   &emsp; Tools to write and extend shareable metadata fields specifications.
 - `dataset`:<br/>
   &emsp; Data interfacing API and implementations.
+- `fairness`:<br/>
+  Processes and components for fairness-aware federated learning.
 - `main`:<br/>
   &emsp; Main classes implementing a Federated Learning process.
 - `messaging`:<br/>
@@ -24,6 +26,8 @@ The package is organized into the following submodules:
   &emsp; Framework-agnostic optimizer and algorithmic plug-ins API and tools.
 - `secagg`:<br/>
   &emsp; Secure Aggregation API, methods and utils.
+- `training`:<br/>
+  Model training and evaluation orchestration tools.
 - `typing`:<br/>
   &emsp; Type hinting utils, defined and exposed for code readability purposes.
 - `utils`:<br/>
@@ -269,6 +273,44 @@ You may learn more about our (non-abstract) `Optimizer` API by reading our
     - Simply inherit from `SecureAggregate` (registration is automated,
       and is about making the class JSON-serializable).
     - To avoid it, use `class MyClass(SecureAggregate, register=False)`.
+
+### Fairness
+
+#### `FairnessFunction`
+- Import: `declearn.fairness.api.FairnessFunction`
+- Object: Define a group-fairness criterion.
+- Usage: Compute fairness levels of a model based on group-wise accuracy.
+- Examples:
+  - `declearn.fairness.core.DemographicParityFunction`
+  - `declearn.fairness.core.EqualizedOddsFunction`
+- Extend:
+  - Simply inherit from `FairnessFunction` (registration is automated).
+  - To avoid it, use `class MyClass(FairnessFunction, register=False)`.
+
+#### `FairnessControllerServer`
+- Import: `declearn.fairness.api.FairnessControllerServer`
+- Object: Define server-side routines to monitor and enforce fairness.
+- Usage: modify the federated optimization algorithm; orchestrate fairness
+  rounds to measure the trained model's fairness level and adjust training
+  based on it.
+- Examples:
+  - `declearn.fairness.fairgrad.FairgradControllerServer`
+  - `declearn.fairness.fairbatch.FairbatchControllerServer`
+- Extend:
+  - Simply inherit from `FairnessControllerServer` (registration is automated).
+  - To avoid it, use `class MyClass(FairnessControllerServer, register=False)`.
+
+#### `FairnessControllerClient`
+- Import: `declearn.fairness.api.FairnessControllerClient`
+- Object: Define client-side routines to monitor and enforce fairness.
+- Usage: modify the federated optimization algorithm; measure a model's
+  local fairness level; adjust training based on server-emitted values.
+- Examples:
+  - `declearn.fairness.fairgrad.FairgradControllerClient`
+  - `declearn.fairness.fairbatch.FairbatchControllerClient`
+- Extend:
+  - Simply inherit from `FairnessControllerClient` (registration is automated).
+  - To avoid it, use `class MyClass(FairnessControllerClient, register=False)`.
 
 ## Full API Reference
 

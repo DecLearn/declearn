@@ -18,7 +18,6 @@
 """Iterative and federative evaluation metrics base class."""
 
 import abc
-import warnings
 from copy import deepcopy
 from typing import Any, ClassVar, Dict, Generic, Optional, Type, TypeVar, Union
 
@@ -247,46 +246,6 @@ class Metric(Generic[MetricStateT], metaclass=abc.ABCMeta):
                 f"'{self.state_cls}' inputs, got '{type(states)}'."
             )
         self._states = deepcopy(states)  # type: ignore
-
-    def agg_states(
-        self,
-        states: MetricStateT,
-    ) -> None:
-        """Aggregate provided state variables into self ones.
-
-        This method is DEPRECATED as of DecLearn v2.4, in favor of
-        merely aggregating `MetricState` instances, using either
-        their `aggregate` method or the overloaded `+` operator.
-        It will be removed in DecLearn 2.6 and/or 3.0.
-
-        This method is designed to aggregate results from multiple
-        similar metrics objects into a single one before computing
-        its results.
-
-        Parameters
-        ----------
-        states:
-            `MetricState` emitted by another instance of this class
-            via its `get_states` method.
-
-        Raises
-        ------
-        TypeError
-            If `states` is of improper type.
-        """
-        warnings.warn(
-            "'Metric.agg_states' was deprecated in DecLearn v2.4, in favor "
-            "of aggregating 'MetricState' instances directly, and setting "
-            "final aggregated states using 'Metric.set_state'. It will be "
-            "removed in DecLearn 2.6 and/or 3.0.",
-            DeprecationWarning,
-        )
-        if not isinstance(states, self.state_cls):
-            raise TypeError(
-                f"'{self.__class__.__name__}.set_states' expected "
-                f"'{self.state_cls}' inputs, got '{type(states)}'."
-            )
-        self.set_states(self._states + states)
 
     def __init_subclass__(
         cls,

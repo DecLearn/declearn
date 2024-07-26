@@ -23,8 +23,8 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import numpy as np
 import tqdm
 
+from declearn import messaging
 from declearn.aggregator import Aggregator
-from declearn.communication import messaging
 from declearn.dataset import Dataset
 from declearn.metrics import (
     MeanMetric,

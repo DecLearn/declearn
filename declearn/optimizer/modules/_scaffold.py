@@ -35,7 +35,7 @@ References
 import dataclasses
 import uuid
 import warnings
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, Optional, Set, Tuple, Union
 
 from declearn.model.api import Vector
 from declearn.optimizer.modules._api import AuxVar, OptiModule
@@ -386,25 +386,10 @@ class ScaffoldServerModule(OptiModule[ScaffoldAuxVar]):
 
     def __init__(
         self,
-        clients: Optional[List[str]] = None,
     ) -> None:
-        """Instantiate the server-side SCAFFOLD gradients-correction module.
-
-        Parameters
-        ----------
-        clients:
-            DEPRECATED and unused starting with declearn 2.4.
-            Optional list of known clients' id strings.
-        """
+        """Instantiate the server-side SCAFFOLD gradients-correction module."""
         self.s_state = 0.0  # type: Union[Vector, float]
         self.clients = set()  # type: Set[str]
-        if clients:  # pragma: no cover
-            warnings.warn(
-                "ScaffoldServerModule's 'clients' argument has been deprecated"
-                " as of declearn v2.4, and no longer has any effect. It will"
-                " be removed in declearn 2.6 and/or 3.0.",
-                DeprecationWarning,
-            )
 
     def run(
         self,

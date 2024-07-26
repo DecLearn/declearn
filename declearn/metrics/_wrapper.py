@@ -17,7 +17,6 @@
 
 """Wrapper for an ensemble of Metric objects."""
 
-import warnings
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
@@ -214,49 +213,6 @@ class MetricSet:
         for metric in self.metrics:
             if metric.name in states:
                 metric.set_states(states[metric.name])
-
-    def agg_states(
-        self,
-        states: Dict[str, MetricState],
-    ) -> None:
-        """Aggregate provided state variables into self ones.
-
-        This method is DEPRECATED as of DecLearn v2.4, in favor of
-        merely aggregating `MetricState` instances, using either
-        their `aggregate` method or the overloaded `+` operator.
-        It will be removed in DecLearn 2.6 and/or 3.0.
-
-        This method is designed to aggregate results from multiple
-        similar metrics objects into a single one before computing
-        its results.
-
-        Parameters
-        ----------
-        states: dict[str, float or numpy.ndarray]
-            Dict of states emitted by another instance of this class
-            via its `get_states` method.
-
-        Raises
-        ------
-        KeyError
-            If any state variable is missing from `states`.
-        TypeError
-            If any state variable is of improper type.
-        ValueError
-            If any array state variable is of improper shape.
-        """
-        warnings.warn(
-            "'MetricSet.agg_states' was deprecated in DecLearn v2.4, in favor "
-            "of aggregating 'MetricState' instances directly, and setting "
-            "final aggregated states using 'MetricSet.set_state'. It will be "
-            "removed in DecLearn 2.6 and/or 3.0.",
-            DeprecationWarning,
-        )
-        with warnings.catch_warnings():
-            warnings.simplefilter(action="ignore", category=DeprecationWarning)
-            for metric in self.metrics:
-                if metric.name in states:
-                    metric.agg_states(states[metric.name])
 
     def get_config(
         self,

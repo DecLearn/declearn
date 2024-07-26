@@ -15,13 +15,17 @@ exposed here.
     - the server may collect targetted metadata from clients when required
     - the server sets up the model, optimizers, aggregator and metrics
     - all clients receive instructions to set up these objects as well
+    - additional setup phases optionally occur to set up advanced features
+      (secure aggregation, differential privacy and/or group fairness)
 - Iteratively:
+    - (optionally) perform a fairness-related round
     - perform a training round
-    - perform an evaluation round
+    - (optionally) perform an evaluation round
     - decide whether to continue, based on the number of
       rounds taken or on the evolution of the global loss
 - Finally:
-    - restore the model weights that yielded the lowest global loss
+    - (optionally) evaluate the last model, if it was not already done
+    - restore the model weights that yielded the lowest global validation loss
     - notify clients that training is over, so they can disconnect
       and run their final routine (e.g. save the "best" model)
     - optionally checkpoint the "best" model
@@ -65,6 +69,8 @@ for dataset information (typically, features shape and/or dtype).
     - send specs to the clients so that they set up local counterpart objects
 - Client:
     - instantiate the model, optimizer, aggregator and metrics based on specs
+    - verify that (optional) secure aggregation algorithm choice is coherent
+      with that of the server
 - messaging: (InitRequest <-> InitReply)
 
 #### (Optional) Local differential privacy setup
@@ -79,15 +85,84 @@ indicates to clients that it is to happen, as a secondary substep.
     - adjust the training process to use sample-wise gradient clipping and
       add gaussian noise to gradients, implementing the DP-SGD algorithm
     - set up a privacy accountant to monitor the use of the privacy budget
-- messaging: (PrivacyRequest <-> GenericMessage)
+- messaging: (PrivacyRequest <-> PrivacyReply)
+
+#### (Optional) Fairness-aware federated learning setup
+
+This step is optional; a flag in the InitRequest at a previous step
+indicates to clients that it is to happen, as a secondary substep.
+
+See our [guide on Fairness](./fairness.md) for further details on
+what (group) fairness is and how it is implemented in DecLearn.
+
+When Secure Aggregation is to be used, it is also set up as a first step
+to this routine, ensuring exchanged values are protected when possible.
+
+- Server:
+    - send hyper-parameters to set up a controller for fairness-aware
+      federated learning
+- Client:
+    - set up a controller based on the server-emitted query
+    - send back sensitive group definitions
+- messaging: (FairnessSetupQuery <-> FairnessGroups)
+- Server:
+    - define a sorted list of sensitive group definitions across clients
+      and share it with clients
+    - await associated sample counts from clients and (secure-)aggregate them
+- Client:
+    - await group definitions and send back group-wise sample counts
+- messaging: (FairnessGroups <-> FairnessCounts)
+- Server & Client: run algorithm-specific additional setup steps, that
+  may have side effects on the training data, model, optimizer and/or
+  aggregator; further communication may occur.
+
+### (Optional) Secure Aggregation setup
+
+When configured to be used, Secure Aggregation may be set up any number of
+times during the process, as fresh controllers will be required each and
+every time the participating clients to a round differs from those chosen
+at the previous round.
+
+By default however, all clients participate to each and every round, so
+that a single setup will occur early in the overall FL process.
+
+See our [guide on Secure Aggregation](./secagg.md) for further details on
+what secure aggregation is and how it is implemented in DecLearn.
+
+- Server:
+  - send an algorithm-specific SecaggSetupQuery message to selected clients
+  - trigger an algorithm-dependent setup routine
+- Client:
+  - parse the query and execute the associated setup routine
+- Server & Client: perform algorithm-dependent computations and communication;
+  eventually, instantiate and assign respective encryption and decryption
+  controllers.
+- messaging: (SecaggSetupQuery <-> (algorithm-dependent Message))
+
+### (Optional) Fairness round
+
+This round only occurs when a fairness controller was set up, and may be
+configured to be periodically skipped.
+If fairness is set up, the first fairness round will always occur.
+If checkpointing is set up on the server side, the last model will undergo
+a fairness round, to evaluate its fairness prior to ending the FL process.
+
+- Server:
+    - send a query to clients, including computational effort constraints,
+      and current shared model weights (when not already held by clients)
+- Client:
+    - compute metrics that account for the fairness of the current model
+- messaging: (FairnessQuery <-> FairnessReply)
+- Server & Client: take any algorithm-specific additional actions to alter
+  training based on the exchanged values; further, communication may happen.
 
 ### Training round
 
 - Server:
     - select clients that are to participate
     - send data-batching and effort constraints parameters
-    - send shared model trainable weights and (opt. client-specific) optimizer
-      auxiliary variables
+    - send current shared model trainable weights (to clients that do not
+      already hold them) and optimizer auxiliary variables (if any)
 - Client:
     - update model weights and optimizer auxiliary variables
     - perform training steps based on effort constraints
@@ -101,7 +176,11 @@ indicates to clients that it is to happen, as a secondary substep.
     - run global updates through the server's optimizer to modify and finally
       apply them
 
-### Evaluation round
+### (Optional) Evaluation round
+
+This round may be configured to be periodically skipped.
+If checkpointing is set up on the server side, the last model will always be
+evaluated prior to ending the FL process.
 
 - Server:
     - select clients that are to participate

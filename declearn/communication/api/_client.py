@@ -339,20 +339,3 @@ class NetworkClient(metaclass=abc.ABCMeta):
         )
         self.logger.critical(error)
         raise TypeError(error)
-
-    async def check_message(
-        self,
-        timeout: Optional[float] = None,
-    ) -> SerializedMessage:
-        """Await a message from the server, with optional timeout.
-
-        This method is DEPRECATED in favor of the `recv_message` one.
-        It acts as an alias and will be removed in v2.6 and/or v3.0.
-        """
-        warnings.warn(
-            "'NetworkServer.check_message' was renamed as 'recv_message' "
-            "in DecLearn 2.4. It now acts as an alias, but will be removed "
-            "in version 2.6 and/or 3.0.",
-            DeprecationWarning,
-        )
-        return await self.recv_message(timeout)

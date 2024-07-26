@@ -143,9 +143,10 @@ async def async_run_server(
     )
     # Set up hyper-parameters and run training.
     config = FLRunConfig.from_params(
-        rounds=10,
+        rounds=8,
         register={"min_clients": n_clients, "timeout": 2},
         training={"n_epoch": 1, "batch_size": 1, "drop_remainder": False},
+        evaluate={"frequency": 8},  # only evaluate the last model
     )
     await server.async_run(config)
 
