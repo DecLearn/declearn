@@ -219,7 +219,7 @@ class MulticlassAccuracyPrecisionRecall(Metric[ClassifConfmat]):
                 "f-score": 2 * diag / (pred + true),
             }
         # Convert NaNs resulting from zero-division to zero.
-        scores = {k: np.nan_to_num(v, copy=False) for k, v in scores.items()}
+        scores = {k: np.nan_to_num(v) for k, v in scores.items()}
         # Add a copy of the confusion matrix and return.
         scores["confusion"] = confmat.copy()
         return scores

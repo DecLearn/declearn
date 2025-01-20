@@ -167,9 +167,9 @@ class TorchModel(Model):
     ) -> Self:
         """Instantiate a TorchModel from a configuration dict."""
         with io.BytesIO(bytes.fromhex(config["model"])) as buffer:
-            model = torch.load(buffer)
+            model = torch.load(buffer, weights_only=False)
         with io.BytesIO(bytes.fromhex(config["loss"])) as buffer:
-            loss = torch.load(buffer)
+            loss = torch.load(buffer, weights_only=False)
         if config.get("compile", False) and hasattr(torch, "compile"):
             model = torch.compile(model)
         return cls(model=model, loss=loss)

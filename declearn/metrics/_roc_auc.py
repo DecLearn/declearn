@@ -291,8 +291,8 @@ class BinaryRocAUC(Metric[AurocState]):
         fneg = self._states.fneg[::-1]
         # Compute true- and false-positive rates and derive AUC.
         with np.errstate(invalid="ignore"):
-            tpr = np.nan_to_num(tpos / (tpos + fneg), copy=False)
-            fpr = np.nan_to_num(fpos / (fpos + tneg), copy=False)
+            tpr = np.nan_to_num(tpos / (tpos + fneg))
+            fpr = np.nan_to_num(fpos / (fpos + tneg))
         auc = sklearn.metrics.auc(fpr, tpr)
         return {
             "tpr": tpr,
