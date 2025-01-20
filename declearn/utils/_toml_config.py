@@ -139,7 +139,7 @@ def _instantiate_field(
     origin = typing.get_origin(field.type)
     # Case of a raw type.
     if origin is None:
-        return _instantiate(field.type)
+        return _instantiate(field.type)  # type: ignore  # update when py >=3.9
     # Case of a union of types (including optional).
     if origin is Union:
         for cls in typing.get_args(field.type):
@@ -284,7 +284,9 @@ class TomlConfig:
             Instantiated object that matches the field's specifications.
         """
         # Case of valid inputs: return them as-is (including valid None).
-        if _isinstance_generic(inputs, field.type):  # see function's notes
+        if _isinstance_generic(
+            inputs, field.type    # type: ignore  # update when py >=3.9
+        ):  # see function's notes
             return inputs
         # Case of None inputs: return default value if any, else raise.
         if inputs is None:
