@@ -9,6 +9,7 @@ __pycache__
 .tox/
 # Configuration files.
 .vscode
+.idea/
 # Coverage files
 .coverage
 .coverage*
