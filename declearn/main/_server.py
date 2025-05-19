@@ -291,21 +291,23 @@ class FederatedServer:
             # Iteratively run training and evaluation rounds.
             round_i = 0
             while True:
-                await self.fairness_round(round_i, config.fairness)
+                clients_train = self._select_training_round_participants()
+                clients_evaluate = self._select_evaluation_round_participants()
+                await self.fairness_round(round_i, config.fairness, clients_train)
                 round_i += 1
-                await self.training_round(round_i, config.training)
-                await self.evaluation_round(round_i, config.evaluate)
+                await self.training_round(round_i, config.training, clients_train)
+                await self.evaluation_round(round_i, config.evaluate, clients_evaluate)
                 # Decide whether to keep training for at least one round.
                 if not self._keep_training(round_i, config.rounds, early_stop):
                     break
-            # When checkpointing, force evaluating the last model.
+            # When checkpointing, force evaluating the last model on all clients.
             if self.ckptr is not None:
                 if round_i % config.evaluate.frequency:
                     await self.evaluation_round(
-                        round_i, config.evaluate, force_run=True
+                        round_i, config.evaluate, self.netwk.client_names, force_run=True  # TODO: check which clients to use
                     )
                 await self.fairness_round(
-                    round_i, config.fairness, force_run=True
+                    round_i, config.fairness, self.netwk.client_names, force_run=True  # TODO: check which clients to use
                 )
             # Interrupt training when time comes.
             self.logger.info("Stopping training.")
@@ -554,6 +556,7 @@ class FederatedServer:
         self,
         round_i: int,
         fairness_cfg: FairnessConfig,
+        clients: Set[str],
         force_run: bool = False,
     ) -> None:
         """Orchestrate a fairness round, when configured to do so.
@@ -569,6 +572,8 @@ class FederatedServer:
             FairnessConfig dataclass instance wrapping data-batching
             and computational effort constraints hyper-parameters for
             fairness evaluation.
+        clients:
+            Set of clients taking part to this fairness round.
         force_run:
             Whether to disregard `fairness_cfg.frequency` and run the
             round (provided a fairness controller is setup).
@@ -580,7 +585,6 @@ class FederatedServer:
             return
         # Run SecAgg setup when needed.
         self.logger.info("Initiating fairness-enforcing round %s", round_i)
-        clients = self.netwk.client_names  # FUTURE: enable sampling(?)
         if self.secagg is not None and clients.difference(self._secagg_peers):
             await self.setup_secagg(clients)
         # Send a query to clients, including model weights when required.
@@ -610,6 +614,7 @@ class FederatedServer:
         self,
         round_i: int,
         train_cfg: TrainingConfig,
+        clients: Set[str],
     ) -> None:
         """Orchestrate a training round.
 
@@ -620,10 +625,11 @@ class FederatedServer:
         train_cfg: TrainingConfig
             TrainingConfig dataclass instance wrapping data-batching
             and computational effort constraints hyper-parameters.
+        clients:
+            Set of clients taking part to this training round.
         """
         # Select participating clients. Run SecAgg setup when needed.
         self.logger.info("Initiating training round %s", round_i)
-        clients = self._select_training_round_participants()
         if self.secagg is not None and clients.difference(self._secagg_peers):
             await self.setup_secagg(clients)
         # Send training instructions and await results.
@@ -743,6 +749,7 @@ class FederatedServer:
         self,
         round_i: int,
         valid_cfg: EvaluateConfig,
+        clients: Set[str],
         force_run: bool = False,
     ) -> None:
         """Orchestrate an evaluation round, when configured to do so.
@@ -757,13 +764,14 @@ class FederatedServer:
         valid_cfg: EvaluateConfig
             EvaluateConfig dataclass instance wrapping data-batching
             and computational effort constraints hyper-parameters.
+        clients:
+            Set of clients used for evaluation during the round.
         """
         # Early exit when the evaluation round is to be skipped.
         if (round_i % valid_cfg.frequency) and not force_run:
             return
         # Select participating clients. Run SecAgg setup when needed.
         self.logger.info("Initiating evaluation round %s", round_i)
-        clients = self._select_evaluation_round_participants()
         if self.secagg is not None and clients.difference(self._secagg_peers):
             await self.setup_secagg(clients)
         # Send evaluation requests and collect clients' replies.
