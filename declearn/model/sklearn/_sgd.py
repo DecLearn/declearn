@@ -30,6 +30,7 @@ import sklearn  # type: ignore
 from numpy.typing import ArrayLike
 from scipy.sparse import spmatrix  # type: ignore
 from sklearn.linear_model import SGDClassifier, SGDRegressor  # type: ignore
+from sklearn._loss.loss import HalfSquaredError, HuberLoss, HalfBinomialLoss
 from typing_extensions import Self  # future: import from typing (py >=3.11)
 
 from declearn.data_info import aggregate_data_info
@@ -493,25 +494,74 @@ class SklearnSGDModel(Model):
     def _setup_loss_fn(
         self,
     ) -> Callable[[np.ndarray, np.ndarray], np.ndarray]:
-        """Return a function to compute point-wise loss for a given batch."""
-        # fmt: off
-        # Instantiate a loss function from the wrapped model's specs.
-        loss_cls, *args = self._model.loss_functions[self._model.loss]
-        if self._model.loss in (
-            "huber", "epsilon_insensitive", "squared_epsilon_insensitive"
-        ):
-            args = (self._model.epsilon,)
-        loss_smp = loss_cls(*args).py_loss
-        # Wrap it to support batched inputs.
-        def loss_1d(y_true: np.ndarray, y_pred: np.ndarray) -> np.ndarray:
-            return np.array([loss_smp(*smp) for smp in zip(y_pred, y_true)])
+        """Return a function to compute point-wise loss for a given batch.
+
+        Warning : this method use sklearn SGDRegressor / SGDClassifier internal mechanisms (and not public API) to
+            instantiate losses (i.e. using Cython loss classes in the process). Those mechanisms have
+            already changed in the past, breaking some stuff, so it can happen again in the future
+        """
+        # Losses in the following conditions need to be retrieved explicitly (cannot use a "py_loss" of the loss Cython class)
+        if self._model.loss == "squared_error":
+
+            def loss_1d(y_true: np.ndarray, y_pred: np.ndarray) -> np.ndarray:
+                return HalfSquaredError().loss(
+                    y_true=y_true, raw_prediction=y_pred
+                )
+
+        elif self._model.loss == "huber":
+
+            def loss_1d(y_true: np.ndarray, y_pred: np.ndarray) -> np.ndarray:
+                return HuberLoss(delta=self._model.epsilon).loss(
+                    y_true=y_true, raw_prediction=y_pred
+                )
+
+        elif self._model.loss == "log_loss":
+
+            def loss_1d(y_true: np.ndarray, y_pred: np.ndarray) -> np.ndarray:
+                return HalfBinomialLoss().loss(
+                    y_true=y_true, raw_prediction=y_pred
+                )
+
+        # Other losses can be retrieved via "loss_functions" dict and should implement a "py_loss" attribute
+        else:
+            # fmt: off
+            # Instantiate a loss function from the wrapped model's specs.
+            loss_cls, *args = self._model.loss_functions[self._model.loss]
+            if self._model.loss in (
+                "huber", "epsilon_insensitive", "squared_epsilon_insensitive"
+            ):
+                args = (self._model.epsilon,)
+
+            loss_obj = loss_cls(*args)
+            # Check that loss class has attribute "py_loss"
+            if not hasattr(loss_obj, "py_loss"):
+                raise NotImplementedError(
+                    f"Loss {self._model.loss} not supported : corresponding py_loss function does not exist"
+                )
+            loss_smp = loss_obj.py_loss
+            # Wrap it to support batched inputs.
+            def loss_1d(y_true: np.ndarray, y_pred: np.ndarray) -> np.ndarray:
+                return np.array([loss_smp(*smp) for smp in zip(y_pred, y_true)])
+
         # For multiclass classifiers, further wrap to support 2d predictions.
         if len(getattr(self._model, "classes_", [])) > 2:
+
+            def to_float_contig(arr: np.ndarray) -> np.ndarray:
+                """Convert array to float64 and C-contiguous layout"""
+                return np.ascontiguousarray(arr, dtype=np.float64)
+
             def loss_fn(y_true: np.ndarray, y_pred: np.ndarray) -> np.ndarray:
-                return np.sum([
-                    loss_1d(y_true == val, y_pred[:, i])
-                    for i, val in enumerate(self._model.classes_)
-                ], axis=0)
+                return np.sum(
+                    [
+                        loss_1d(
+                            to_float_contig(y_true == class_val),
+                            to_float_contig(y_pred[:, i]),
+                        )
+                        for i, class_val in enumerate(self._model.classes_)
+                    ],
+                    axis=0,
+                )
+
         else:
             loss_fn = loss_1d
         return loss_fn

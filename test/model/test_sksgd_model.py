@@ -18,7 +18,7 @@
 """Unit tests for SklearnSGDModel."""
 
 import os
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional  # noqa: F401
 
 import numpy as np
 import pytest
@@ -26,6 +26,7 @@ from scipy.sparse import csr_matrix  # type: ignore
 from sklearn.linear_model import SGDClassifier, SGDRegressor  # type: ignore
 
 from declearn.model.sklearn import NumpyVector, SklearnSGDModel
+from declearn.model.sklearn._sgd import LossesLiteral
 from declearn.test_utils import make_importable
 from declearn.typing import Batch
 
@@ -57,11 +58,13 @@ class SklearnSGDTestCase(ModelTestCase):
         n_classes: Optional[int],
         s_weights: bool,
         as_sparse: bool,
+        loss: LossesLiteral,
     ) -> None:
         """Specify the desired model and type of input data."""
         self.n_classes = n_classes
         self.s_weights = s_weights
         self.as_sparse = as_sparse
+        self.loss = loss
 
     @property
     def dataset(
@@ -89,7 +92,10 @@ class SklearnSGDTestCase(ModelTestCase):
         self,
     ) -> SklearnSGDModel:
         """Suited toy binary-classification model."""
-        skmod = (SGDClassifier if self.n_classes else SGDRegressor)()
+        if self.n_classes is None:
+            skmod = SGDRegressor(loss=self.loss)
+        else:
+            skmod = SGDClassifier(loss=self.loss)
         model = SklearnSGDModel(skmod, dtype="float32")
         data_info = {"features_shape": (8,)}  # type: Dict[str, Any]
         if self.n_classes:
@@ -106,17 +112,77 @@ class SklearnSGDTestCase(ModelTestCase):
 
 @pytest.fixture(name="test_case")
 def fixture_test_case(
-    n_classes: Optional[int],
     s_weights: bool,
     as_sparse: bool,
+    loss_cfg: dict,
 ) -> SklearnSGDTestCase:
     """Fixture to access a SklearnSGDTestCase."""
-    return SklearnSGDTestCase(n_classes, s_weights, as_sparse)
+    return SklearnSGDTestCase(
+        loss_cfg["n_classes"], s_weights, as_sparse, loss_cfg["loss"]
+    )
+
+
+REG_LOSSES = (
+    "squared_error",
+    "huber",
+    "epsilon_insensitive",
+    "squared_epsilon_insensitive",
+)
+
+CLS_LOSSES = (
+    "hinge",
+    "log_loss",
+    "modified_huber",
+    "squared_hinge",
+    "perceptron",
+    "squared_error",
+    "huber",
+    "epsilon_insensitive",
+    "squared_epsilon_insensitive",
+)
+
+
+NCLASSES_TO_ID = {
+    None: "Reg",
+    2: "Bin",
+    5: "Clf",
+}
+
+LOSS_TO_ID = {
+    "hinge": "Hinge",
+    "log_loss": "Log",
+    "modified_huber": "MdfHbr",
+    "squared_hinge": "SqrHinge",
+    "perceptron": "Prcpt",
+    "squared_error": "Squared",
+    "huber": "Huber",
+    "epsilon_insensitive": "EpsIns",
+    "squared_epsilon_insensitive": "SqrEpsIns",
+}
+
+LOSS_CONFIGS = (
+    [
+        {"n_classes": None, "loss": loss}
+        for loss in REG_LOSSES  # regression configs
+    ]
+    + [
+        {"n_classes": 2, "loss": loss}
+        for loss in CLS_LOSSES  # bin. classification configs
+    ]
+    + [
+        {"n_classes": 5, "loss": loss}
+        for loss in CLS_LOSSES  # multi-class classification configs
+    ]
+)
 
 
 @pytest.mark.parametrize("as_sparse", [False, True], ids=["", "Sparse"])
 @pytest.mark.parametrize("s_weights", [False, True], ids=["", "SmpWgt"])
-@pytest.mark.parametrize("n_classes", [None, 2, 5], ids=["Reg", "Bin", "Clf"])
+@pytest.mark.parametrize(
+    "loss_cfg",
+    LOSS_CONFIGS,
+    ids=lambda c: f"{NCLASSES_TO_ID[c['n_classes']]}_{LOSS_TO_ID[c['loss']]}",
+)
 class TestSklearnSGDModel(ModelTestSuite):
     """Unit tests for declearn.model.sklearn.SklearnSGDModel."""
 
