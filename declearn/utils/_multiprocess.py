@@ -72,7 +72,7 @@ def run_as_processes(
     # Wrap routines into named processes and set up exceptions catching.
     queue = (
         mp.Manager().Queue()
-    )  # type: Queue  # Queue[Tuple[str, Union[Any, RuntimeError]]] (py >=3.9)
+    )  # type: Queue[Tuple[str, Union[Any, RuntimeError]]]
     processes, names = prepare_routine_processes(routines, queue)
     # Run the processes concurrently.
     run_processes(processes, auto_stop)
@@ -92,7 +92,7 @@ def prepare_routine_processes(
             Tuple[Callable[..., Any], Tuple[Any, ...], Dict[str, Any]],
         ]
     ],
-    queue: Queue,  # Queue[Tuple[str, Union[Any, RuntimeError]]] (py >=3.9)
+    queue: Queue[Tuple[str, Union[Any, RuntimeError]]],
 ) -> Tuple[List[mp.Process], List[str]]:
     """Wrap up routines into named unstarted processes.
 
@@ -195,7 +195,7 @@ def parse_routine_specification(
 
 def add_exception_catching(
     func: Callable[..., Any],
-    queue: Queue,  # Queue[Tuple[str, Union[Any, RuntimeError]]] (py >=3.9)
+    queue: Queue[Tuple[str, Union[Any, RuntimeError]]],
     name: str,
 ) -> Callable[..., Any]:
     """Wrap a function to catch exceptions and put them in a Queue."""

@@ -107,9 +107,9 @@ def _parse_float(src: str) -> Optional[float]:
 
 
 def _instantiate_field(
-    field: dataclasses.Field,  # future: dataclasses.Field[T] (Py >=3.9)
+    field: dataclasses.Field[T],
     **kwargs: Any,
-) -> Any:  # future: T
+) -> T:
     """Instantiate a dataclass field from input args and kwargs.
 
     This function is meant to enable building dataclass object fields,
@@ -134,7 +134,7 @@ def _instantiate_field(
     origin = typing.get_origin(field.type)
     # Case of a raw type.
     if origin is None:
-        return _instantiate(field.type)  # type: ignore  # update when py >=3.9
+        return _instantiate(field.type)  # type: ignore
     # Case of a union of types (including optional).
     if origin is Union:
         for cls in typing.get_args(field.type):
@@ -243,7 +243,7 @@ class TomlConfig:
     @classmethod
     def default_parser(
         cls,
-        field: dataclasses.Field,  # future: dataclasses.Field[T] (Py >=3.9)
+        field: dataclasses.Field[T],
         inputs: Union[str, Dict[str, Any], T, None],
     ) -> Any:
         """Default method to instantiate a field from python inputs.
@@ -280,7 +280,7 @@ class TomlConfig:
         """
         # Case of valid inputs: return them as-is (including valid None).
         if _isinstance_generic(
-            inputs, field.type  # type: ignore  # update when py >=3.9
+            inputs, field.type  # type: ignore
         ):  # see function's notes
             return inputs
         # Case of None inputs: return default value if any, else raise.

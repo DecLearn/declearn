@@ -205,6 +205,6 @@ def _parameters_to_fields(
             field.default_factory = dict
         # Append parsed information to the fields list.
         fields.append(
-            (fname, ftype, field)  # type: ignore  # update when py >=3.9
+            (fname, ftype, field)
         )
     return fields

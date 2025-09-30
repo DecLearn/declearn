@@ -110,7 +110,7 @@ class FLRunConfig(TomlConfig):
     @classmethod
     def parse_register(
         cls,
-        field: dataclasses.Field,  # future: dataclasses.Field[RegisterConfig]
+        field: dataclasses.Field[RegisterConfig],
         inputs: Any,
     ) -> RegisterConfig:
         """Field-specific parser to instantiate a RegisterConfig.

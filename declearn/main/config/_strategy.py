@@ -107,7 +107,7 @@ class FLOptimConfig(TomlConfig):
     @classmethod
     def parse_client_opt(
         cls,
-        field: dataclasses.Field,  # future: dataclasses.Field[Optimizer]
+        field: dataclasses.Field[Optimizer],
         inputs: Union[float, Dict[str, Any], Optimizer],
     ) -> Optimizer:
         """Field-specific parser to instantiate the client-side Optimizer.
@@ -123,7 +123,7 @@ class FLOptimConfig(TomlConfig):
     @classmethod
     def parse_server_opt(
         cls,
-        field: dataclasses.Field,  # future: dataclasses.Field[Optimizer]
+        field: dataclasses.Field[Optimizer],
         inputs: Union[float, Dict[str, Any], Optimizer, None],
     ) -> Optimizer:
         """Field-specific parser to instantiate the server-side Optimizer.
@@ -140,7 +140,7 @@ class FLOptimConfig(TomlConfig):
     @classmethod
     def _parse_optimizer(
         cls,
-        field: dataclasses.Field,  # future: dataclasses.Field[Optimizer]
+        field: dataclasses.Field[Optimizer],
         inputs: Union[float, Dict[str, Any], Optimizer, None],
     ) -> Optimizer:
         """Field-specific parser to instantiate an Optimizer."""
@@ -156,7 +156,7 @@ class FLOptimConfig(TomlConfig):
     @classmethod
     def parse_aggregator(
         cls,
-        field: dataclasses.Field,  # future: dataclasses.Field[Aggregator]
+        field: dataclasses.Field[Aggregator],
         inputs: Union[str, Dict[str, Any], Aggregator, None],
     ) -> Aggregator:
         """Field-specific parser to instantiate an Aggregator.
@@ -213,7 +213,7 @@ class FLOptimConfig(TomlConfig):
     @classmethod
     def parse_fairness(
         cls,
-        field: dataclasses.Field,  # future: dataclasses.Field[<type>]
+        field: dataclasses.Field[FairnessControllerServer],
         inputs: Union[Dict[str, Any], FairnessControllerServer, None],
     ) -> FairnessControllerServer:
         """Field-specific parser to instantiate a FairnessControllerServer.
