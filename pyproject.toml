@@ -104,6 +104,17 @@ tests = [
     "pytest-cov ~= 4.0",
 ]
 
+[dependency-groups]
+# precise dev dependencies, useful for uv
+dev = [
+    "black ~= 24.0",
+    "mypy ~= 1.0",
+    "pylint ~= 3.0",
+    "pytest ~= 7.4",
+    "pytest-asyncio ~= 0.20",
+    "pytest-cov ~= 4.0",
+]
+
 [project.urls]
 homepage = "https://magnet.gitlabpages.inria.fr/docs"
 repository = "https://gitlab.inria.fr/magnet/declearn/declearn2.git"
@@ -144,6 +155,9 @@ include = ["declearn", "declearn.*"]
 
 [tool.setuptools.package-data]
 declearn = ["py.typed"]
+
+[tool.pytest.ini_options]
+pythonpath = "."
 
 [project.scripts]
 declearn-quickrun = "declearn.quickrun._run:main"

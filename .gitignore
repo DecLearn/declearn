@@ -13,6 +13,9 @@ __pycache__
 .coverage
 htmlcov
 coverage.xml
+# Virtual environment files
+.venv/
+venv/
 # Data files generated under examples.
 examples/*/*.csv
 examples/*/*.pem
