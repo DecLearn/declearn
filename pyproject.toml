@@ -159,6 +159,15 @@ declearn = ["py.typed"]
 [tool.pytest.ini_options]
 pythonpath = "."
 
+[tool.uv] # FIXME remove when torch1 dropped
+conflicts = [
+    [
+        { extra = "torch1" },
+        { extra = "torch2" },
+    ]
+]
+
+
 [project.scripts]
 declearn-quickrun = "declearn.quickrun._run:main"
 declearn-split = "declearn.dataset._split_data:main"
