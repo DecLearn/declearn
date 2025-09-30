@@ -11,14 +11,16 @@ name = "declearn"
 version = "2.6.0"
 description = "A modular and extensible framework for Federated Learning."
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.11"
 license = {file = "LICENSE"}
 authors = [
     {name = "Paul Andrey", email = "paul.andrey@inria.fr"},
     {name = "Nathan Bigaud", email = "nathan.bigaud@inria.fr"},
+    {name = "Simon Decomble", email = "simon.decomble@inria.fr"},
 ]
 maintainers = [
     {name = "Paul Andrey", email = "paul.andrey@inria.fr"},
+    {name = "Simon Decomble", email = "simon.decomble@inria.fr"},
 ]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
@@ -26,10 +28,9 @@ classifiers = [
     "License :: OSI Approved :: Apache Software License",
     "Operating System :: Unix",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Topic :: Scientific/Engineering :: Mathematics",
     "Typing :: Typed",
@@ -40,18 +41,16 @@ dependencies = [
     "gmpy2 ~= 2.1",
     "pandas >= 1.2, < 3.0",
     "requests ~= 2.18",
-    "scikit-learn ~= 1.1",
-    "tomli ~= 2.0 ; python_version < '3.11'",
+    "scikit-learn ~= 1.6",
     "tqdm ~= 4.62",
     "typing_extensions ~= 4.0",
 ]
 
 [project.optional-dependencies]
 all = [  # all non-tests extra dependencies
-    "dm-haiku >= 0.0.9, <= 0.0.11 ; python_version > '3.8'",
-    "dm-haiku >= 0.0.9, <= 0.0.10 ; python_version == '3.8'",
+    "dm-haiku >= 0.0.9, <= 0.0.11",
     "grpcio >= 1.45",
-    "jax[cpu] ~= 0.4.1",
+    "jax[cpu] ~= 0.4.1, < 0.4.35",
     "opacus ~= 1.4",
     "protobuf >= 3.19",
     "tensorflow ~= 2.11",
@@ -67,21 +66,14 @@ grpc = [
     "protobuf >= 3.19",
 ]
 haiku = [
-    "dm-haiku >= 0.0.9, <= 0.0.11 ; python_version > '3.8'",
-    "dm-haiku >= 0.0.9, <= 0.0.10 ; python_version == '3.8'",
+    "dm-haiku >= 0.0.9, <= 0.0.11",
     # NOTE: GPU support for jax must be manually installed, e.g. as jax[cuda12]
     "jax[cpu] ~= 0.4.1",
 ]
 tensorflow = [
     "tensorflow ~= 2.11",
 ]
-torch = [  # generic requirements for Torch
-    "torch >= 1.13, < 3.0",
-]
-torch1 = [  # Torch 1.13 (latest pre-2.0 version)
-    "torch ~= 1.13.0",
-]
-torch2 = [  # Torch 2.X version
+torch = [
     "torch ~= 2.0",
 ]
 websockets = [
@@ -158,15 +150,6 @@ declearn = ["py.typed"]
 
 [tool.pytest.ini_options]
 pythonpath = "."
-
-[tool.uv] # FIXME remove when torch1 dropped
-conflicts = [
-    [
-        { extra = "torch1" },
-        { extra = "torch2" },
-    ]
-]
-
 
 [project.scripts]
 declearn-quickrun = "declearn.quickrun._run:main"
