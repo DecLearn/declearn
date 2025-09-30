@@ -345,12 +345,6 @@ class TorchModel(Model):
             Function to efficiently compute and return sample-wise gradients
             wrt trainable model parameters based on a batch of inputs, with
             opt. clipping based on a maximum l2-norm value `clip`.
-
-        Note
-        ----
-        The underlying backend code depends on your Torch version, so as to
-        enable optimizing operations using either `functorch` for torch 1.1X
-        or `torch.func` for torch 2.X.
         """
         # NOTE: torch.func is not compatible with torch.compile yet
         return build_samplewise_grads_fn(
