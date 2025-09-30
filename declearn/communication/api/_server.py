@@ -23,10 +23,8 @@ import logging
 import types
 from typing import (
     # fmt: off
-    Any, ClassVar, Dict, List, Mapping, Optional, Set, Type, Tuple, Union
+    Any, ClassVar, Dict, List, Mapping, Optional, Set, Type, Tuple, Union, Self
 )
-
-from typing_extensions import Self  # future: import from typing (py >=3.11)
 
 from declearn.communication.api.backend import MessagesHandler
 from declearn.messaging import Message, SerializedMessage

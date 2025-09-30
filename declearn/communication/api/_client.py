@@ -22,9 +22,7 @@ import asyncio
 import logging
 import types
 import warnings
-from typing import Any, ClassVar, Dict, Optional, Type, Union
-
-from typing_extensions import Self  # future: import from typing (py >=3.11)
+from typing import Any, ClassVar, Dict, Optional, Type, Union, Self
 
 from declearn.communication.api.backend import flags
 from declearn.communication.api.backend.actions import (

@@ -21,10 +21,8 @@ import abc
 import copy
 from typing import (
     # fmt: off
-    Any, Dict, Generic, List, Optional, Tuple, Type, TypeVar, Union
+    Any, Dict, Generic, List, Optional, Tuple, Type, TypeVar, Union, Self
 )
-
-from typing_extensions import Self  # future: import from typing (py >=3.11)
 
 from declearn.model.api import VectorSpec
 from declearn.utils import (

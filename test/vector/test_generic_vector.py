@@ -18,11 +18,10 @@
 """Unit tests on 'declearn.model.api.Vector', using an ad-hoc subclass."""
 
 import uuid
-from typing import Any, List, Tuple, Union
+from typing import Any, List, Tuple, Union, Self
 
 import numpy as np
 import pytest
-from typing_extensions import Self
 
 from declearn.model.api import Vector, VectorSpec, register_vector_type
 

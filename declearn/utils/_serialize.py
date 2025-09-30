@@ -18,9 +18,7 @@
 """Generic tools to (de-)serialize custom declearn objects to and from JSON."""
 
 import dataclasses
-from typing import Any, Dict, Optional, Type, TypedDict, Union
-
-from typing_extensions import Self  # future: import from typing (Py>=3.11)
+from typing import Any, Dict, Optional, Type, TypedDict, Union, Self
 
 from declearn.typing import SupportsConfig
 from declearn.utils._json import json_dump, json_load

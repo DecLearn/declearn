@@ -18,12 +18,11 @@
 """Iterative and federative ROC AUC evaluation metrics."""
 
 import dataclasses
-from typing import Any, Dict, Optional, Tuple, Type, Union
+from typing import Any, Dict, Optional, Tuple, Type, Union, Self
 
 import numpy as np
 import sklearn  # type: ignore
 import sklearn.metrics  # type: ignore
-from typing_extensions import Self  # future: import from typing (py>= 3.11)
 
 from declearn.metrics._api import Metric, MetricState
 

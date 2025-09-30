@@ -19,7 +19,7 @@
 
 import dataclasses
 
-from typing_extensions import Self  # future: import from typing (py>=3.11)
+from typing import Self
 
 from declearn.messaging import Message
 from declearn.secagg.api import Decrypter, Encrypter

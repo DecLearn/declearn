@@ -18,9 +18,7 @@
 """Messages for the default Federated Learning process of DecLearn."""
 
 import dataclasses
-from typing import Any, Dict, List, Optional, Tuple
-
-from typing_extensions import Self  # future: import from typing (py >=3.11)
+from typing import Any, Dict, List, Optional, Tuple, Self
 
 from declearn.aggregator import Aggregator, ModelUpdates
 from declearn.messaging._api import Message

@@ -24,10 +24,8 @@ from abc import ABCMeta, abstractmethod
 from typing import (
     # fmt: off
     Any, Callable, Dict, Generic, List, Optional,
-    Set, Tuple, Type, TypeVar, Union
+    Set, Tuple, Type, TypeVar, Union, Self
 )
-
-from typing_extensions import Self  # future: import from typing (Py>=3.11)
 
 from declearn.utils import (
     access_registered,

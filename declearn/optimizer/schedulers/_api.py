@@ -18,9 +18,7 @@
 """API-defining abstract base class for time-based learning rate schedulers."""
 
 import abc
-from typing import Any, ClassVar, Dict
-
-from typing_extensions import Self  # future: import from typing (py >=3.11)
+from typing import Any, ClassVar, Dict, Self
 
 from declearn.utils import (
     access_registered,

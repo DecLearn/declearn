@@ -18,9 +18,7 @@
 """TOML-parsable container for Federated Learning "run" configurations."""
 
 import dataclasses
-from typing import Any, Optional
-
-from typing_extensions import Self  # future: import from typing (py >=3.11)
+from typing import Any, Optional, Self
 
 from declearn.main.utils import EarlyStopConfig
 from declearn.main.config._dataclasses import (

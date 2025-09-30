@@ -21,7 +21,7 @@ import typing
 import warnings
 from typing import (
     # fmt: off
-    Any, Callable, Dict, Literal, Optional, Set, Tuple, Type, Union
+    Any, Callable, Dict, Literal, Optional, Set, Tuple, Type, Union, Self
 )
 
 import numpy as np
@@ -31,7 +31,6 @@ from numpy.typing import ArrayLike
 from scipy.sparse import spmatrix  # type: ignore
 from sklearn.linear_model import SGDClassifier, SGDRegressor  # type: ignore
 from sklearn._loss.loss import HalfSquaredError, HuberLoss, HalfBinomialLoss
-from typing_extensions import Self  # future: import from typing (py >=3.11)
 
 from declearn.data_info import aggregate_data_info
 from declearn.model.api import Model

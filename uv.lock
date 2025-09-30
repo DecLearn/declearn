@@ -426,7 +426,6 @@ dependencies = [
     { name = "requests" },
     { name = "scikit-learn" },
     { name = "tqdm" },
-    { name = "typing-extensions" },
 ]
 
 [package.optional-dependencies]
@@ -518,7 +517,6 @@ requires-dist = [
     { name = "torch", marker = "extra == 'all'", specifier = ">=1.13,<3.0" },
     { name = "torch", marker = "extra == 'torch'", specifier = "~=2.0" },
     { name = "tqdm", specifier = "~=4.62" },
-    { name = "typing-extensions", specifier = "~=4.0" },
     { name = "websockets", marker = "extra == 'all'", specifier = ">=10.1,<13.0" },
     { name = "websockets", marker = "extra == 'websockets'", specifier = ">=10.1,<13.0" },
 ]

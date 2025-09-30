@@ -19,9 +19,7 @@
 
 import abc
 import dataclasses
-from typing import Any, ClassVar, Dict, Generic, Optional, Type, TypeVar
-
-from typing_extensions import Self  # future: import from typing (py >=3.11)
+from typing import Any, ClassVar, Dict, Generic, Optional, Type, TypeVar, Self
 
 from declearn.model.api import Vector
 from declearn.utils import (

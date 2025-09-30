@@ -19,10 +19,9 @@
 
 import abc
 from copy import deepcopy
-from typing import Any, ClassVar, Dict, Generic, Optional, Type, TypeVar, Union
+from typing import Any, ClassVar, Dict, Generic, Optional, Type, TypeVar, Union, Self
 
 import numpy as np
-from typing_extensions import Self  # future: import from typing (py >=3.11)
 
 from declearn.utils import (
     Aggregate,

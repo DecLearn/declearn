@@ -19,10 +19,8 @@
 
 from typing import (
     # fmt: off
-    Any, Dict, List, Optional, Sequence, Tuple, Type, TypeVar, Union
+    Any, Dict, List, Optional, Sequence, Tuple, Type, TypeVar, Union, Self
 )
-
-from typing_extensions import Self  # future: import from typing (py >=3.11)
 
 from declearn.model.api import Model, Vector
 from declearn.optimizer.modules import AuxVar, OptiModule

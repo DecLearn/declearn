@@ -18,7 +18,7 @@
 """TensorflowVector data arrays container."""
 
 import warnings
-from typing import Any, Callable, Dict, List, Set, Tuple, Type, TypeVar, Union
+from typing import Any, Callable, Dict, List, Set, Tuple, Type, TypeVar, Union, Self
 
 # fmt: off
 import numpy as np
@@ -26,9 +26,8 @@ import tensorflow as tf  # type: ignore
 # false-positive; pylint: disable=no-name-in-module
 from tensorflow.python.framework.ops import EagerTensor  # type: ignore
 # pylint: enable=no-name-in-module
-from typing_extensions import Self  # future: import from typing (Py>=3.11)
-# fmt: on
 
+# fmt: on
 from declearn.model.api import Vector, VectorSpec, register_vector_type
 from declearn.model.sklearn import NumpyVector
 from declearn.model.tensorflow.utils import (

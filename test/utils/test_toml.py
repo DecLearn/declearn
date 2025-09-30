@@ -20,10 +20,9 @@
 import dataclasses
 import os
 import warnings
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union, Self
 
 import pytest
-from typing_extensions import Self
 
 from declearn.utils import TomlConfig
 

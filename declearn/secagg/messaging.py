@@ -19,9 +19,7 @@
 
 import abc
 import dataclasses
-from typing import Dict, Generic, List, Mapping, TypeVar
-
-from typing_extensions import Self  # future: import from typing (py >=3.11)
+from typing import Dict, Generic, List, Mapping, TypeVar, Self
 
 from declearn.aggregator import ModelUpdates
 from declearn.messaging import (

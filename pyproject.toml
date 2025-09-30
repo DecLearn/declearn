@@ -43,7 +43,6 @@ dependencies = [
     "requests ~= 2.18",
     "scikit-learn ~= 1.6",
     "tqdm ~= 4.62",
-    "typing_extensions ~= 4.0",
 ]
 
 [project.optional-dependencies]

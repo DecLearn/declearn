@@ -20,9 +20,7 @@
 import dataclasses
 import json
 from abc import ABCMeta
-from typing import Any, ClassVar, Dict, Generic, Type, TypeVar
-
-from typing_extensions import Self  # future: import from typing (py >=3.11)
+from typing import Any, ClassVar, Dict, Generic, Type, TypeVar, Self
 
 from declearn.utils import (
     access_registered,

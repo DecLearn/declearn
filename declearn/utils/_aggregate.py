@@ -19,9 +19,7 @@
 
 import abc
 import dataclasses
-from typing import Any, ClassVar, Dict, Optional, Tuple
-
-from typing_extensions import Self  # future: import from typing (py >=3.11)
+from typing import Any, ClassVar, Dict, Optional, Tuple, Self
 
 from declearn.utils._json import add_json_support
 from declearn.utils._register import create_types_registry, register_type

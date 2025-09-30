@@ -22,14 +22,13 @@ import inspect
 import io
 import warnings
 from random import SystemRandom
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union, Self
 
 import haiku as hk
 import jax
 import jax.numpy as jnp
 import joblib  # type: ignore
 import numpy as np
-from typing_extensions import Self
 
 from declearn.data_info import aggregate_data_info
 from declearn.model._utils import raise_on_stringsets_mismatch

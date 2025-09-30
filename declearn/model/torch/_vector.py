@@ -17,11 +17,10 @@
 
 """TorchVector data arrays container."""
 
-from typing import Any, Callable, Dict, List, Set, Tuple, Type, Union
+from typing import Any, Callable, Dict, List, Set, Tuple, Type, Union, Self
 
 import numpy as np
 import torch
-from typing_extensions import Self  # future: import from typing (Py>=3.11)
 
 from declearn.model.api import Vector, VectorSpec, register_vector_type
 from declearn.model.sklearn import NumpyVector

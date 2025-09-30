@@ -18,9 +18,7 @@
 """Gradient Masked Averaging aggregation class."""
 
 import dataclasses
-from typing import Any, Dict, Optional, Tuple
-
-from typing_extensions import Self  # future: import from typing (py >=3.11)
+from typing import Any, Dict, Optional, Tuple, Self
 
 from declearn.aggregator._api import Aggregator, ModelUpdates
 from declearn.aggregator._avg import AveragingAggregator

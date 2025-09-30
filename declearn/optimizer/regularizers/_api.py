@@ -18,9 +18,7 @@
 """Base API for loss regularization optimizer plug-ins."""
 
 from abc import ABCMeta, abstractmethod
-from typing import Any, ClassVar, Dict, TypeVar
-
-from typing_extensions import Self  # future: import from typing (py >=3.11)
+from typing import Any, ClassVar, Dict, TypeVar, Self
 
 from declearn.model.api import Vector
 from declearn.utils import (

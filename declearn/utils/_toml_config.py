@@ -22,14 +22,9 @@ import os
 import typing
 import warnings
 
-try:
-    import tomllib  # type: ignore
-except ModuleNotFoundError:
-    import tomli as tomllib
+import tomllib  # type: ignore
 
-from typing import Any, ClassVar, Dict, Optional, Set, Type, TypeVar, Union
-
-from typing_extensions import Self  # future: import from typing (py >=3.11)
+from typing import Any, ClassVar, Dict, Optional, Set, Type, TypeVar, Union, Self
 
 __all__ = [
     "TomlConfig",

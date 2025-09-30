@@ -20,11 +20,10 @@
 import io
 import functools
 import warnings
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple, Self
 
 import numpy as np
 import torch
-from typing_extensions import Self  # future: import from typing (py >=3.11)
 
 from declearn.model._utils import raise_on_stringsets_mismatch
 from declearn.model.api import Model

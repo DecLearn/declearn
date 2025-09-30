@@ -17,13 +17,12 @@
 
 """JaxNumpyVector data arrays container."""
 
-from typing import Any, Callable, Dict, List, Set, Tuple, Type, Union
+from typing import Any, Callable, Dict, List, Set, Tuple, Type, Union, Self
 
 import jax
 import jax.numpy as jnp
 import jaxlib
 import numpy as np
-from typing_extensions import Self  # future: import from typing (Py>=3.11)
 
 from declearn.model.api import Vector, VectorSpec, register_vector_type
 from declearn.model.haiku.utils import select_device

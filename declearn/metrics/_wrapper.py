@@ -17,10 +17,9 @@
 
 """Wrapper for an ensemble of Metric objects."""
 
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union, Self
 
 import numpy as np
-from typing_extensions import Self  # future: import from typing (py >=3.11)
 
 from declearn.metrics._api import Metric, MetricState
 
