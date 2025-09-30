@@ -209,9 +209,8 @@ def add_exception_catching(
         except Exception as exc:  # pylint: disable=broad-exception-caught
             err = RuntimeError(
                 f"Exception of type {type(exc)} occurred:\n"
-                + "".join(traceback.format_exception(type(exc), exc, tb=None))
-                # TODO future below
-            )  # future: `traceback.format_exception(exc)` (py >=3.10) 
+                + "".join(traceback.format_exception(exc))
+            )
             queue.put((name, err))
             sys.exit(1)
         else:
