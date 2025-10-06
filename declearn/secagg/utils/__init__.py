@@ -40,12 +40,17 @@ Quantization utils
 Miscellaneous utils
 -------------------
 
+* [get_numpy_float_dtype][declearn.secagg.utils.get_numpy_float_dtype]:
+    Return the smallest-size numpy float dtype for a given values range.
 * [get_numpy_uint_dtype][declearn.secagg.utils.get_numpy_uint_dtype]:
     Return the smallest-size numpy uint dtype for a given integer range.
 """
 
 from ._ed25519 import IdentityKeys
-from ._numpy import get_numpy_uint_dtype
+from ._numpy import (
+    get_numpy_float_dtype,
+    get_numpy_uint_dtype,
+)
 from ._prime import (
     generate_random_biprime,
     generate_random_prime,
