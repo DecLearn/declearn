@@ -242,7 +242,9 @@ class Quantizer:
             else self._float_dtype
         )
         clipped = values.clip(
-            min=-self.val_range, max=self.val_range, dtype=float_dtype,
+            min=-self.val_range,
+            max=self.val_range,
+            dtype=float_dtype,
         )
         outputs = np.round((clipped + self.val_range) / self._step_size)
         with warnings.catch_warnings():
