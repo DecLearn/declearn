@@ -23,6 +23,7 @@ import numpy as np
 
 
 __all__ = [
+    "get_numpy_float_dtype",
     "get_numpy_uint_dtype",
 ]
 
@@ -64,4 +65,42 @@ def get_numpy_uint_dtype(
     raise ValueError(
         "Cannot quantize values through numpy onto a domain that goes "
         f"beyond the {dtype.name} limit (int_range >= 2**{limit})."
+    )
+
+
+@functools.lru_cache
+def get_numpy_float_dtype(
+    val_range: float,
+) -> np.dtype:
+    """Return the smallest-size numpy float dtype for a given float range.
+
+    Parameters
+    ----------
+    val_range:
+        Absolute value defining a range of floating numbers.
+
+    Returns
+    -------
+    dtype:
+        Smallest numpy float dtype that fits the values range.
+
+    Raises
+    ------
+    ValueError
+        If `val_range` is too large to fit within a numpy float dtype.
+    """
+    # Gather the list of numpy uint types and their bitsize limit.
+    float_types = [
+        (np.dtype(dtype), float(np.finfo(dtype).max))
+        for dtype in np.floating.__subclasses__()
+    ]
+    # Find the smallest bitsize that can store the target domain values.
+    for dtype, limit in sorted(float_types, key=lambda x: x[1]):
+        if val_range <= limit:
+            return dtype
+    # If None, raise a ValueError.
+    dtype, limit = float_types[-1]
+    raise ValueError(
+        "Cannot quantize values through numpy onto a domain that goes "
+        f"beyond the {dtype.name} limit (val_range >= {limit})."
     )

@@ -23,7 +23,10 @@ from typing import List
 
 import numpy as np
 
-from declearn.secagg.utils._numpy import get_numpy_uint_dtype
+from declearn.secagg.utils._numpy import (
+    get_numpy_float_dtype,
+    get_numpy_uint_dtype,
+)
 
 __all__ = [
     "Quantizer",
@@ -88,6 +91,15 @@ class Quantizer:
         return 2 * self.val_range / self.int_range
 
     @functools.cached_property
+    def _float_dtype(self) -> np.dtype:
+        """Select the appropriate float dtype for numpy, if any.
+
+        Raise a ValueError if `self.val_range` goes beyond the numpy
+        float limit, resulting in much slower pure-python operations.
+        """
+        return get_numpy_float_dtype(2 * self.val_range)
+
+    @functools.cached_property
     def _uint_dtype(self) -> np.dtype:
         """Select the appropriate uint dtype for numpy, if any.
 
@@ -105,6 +117,8 @@ class Quantizer:
           numpy counterparts to speed up computations by vectorization.
         """
         try:
+            # 1st access triggers checks; pylint: disable=pointless-statement
+            self._float_dtype
             self._uint_dtype
         except ValueError:
             return False
@@ -201,7 +215,8 @@ class Quantizer:
         """Quantize a numpy array onto the target finite integer field.
 
         This method may only be called if `self.int_range <= 2**64 - 1`,
-        as numpy does not support integers above unsigned 64-bit ones.
+        as numpy does not support integers above unsigned 64-bit ones,
+        and if `self.val_range` is lower than the maximum for float128.
 
         Parameters
         ----------
@@ -217,16 +232,24 @@ class Quantizer:
         ------
         ValueError
             If `self.int_range` goes above the maximum size for numpy
-            unsigned integer.
+            unsigned integer, or `self.float_range` goes above that
+            for numpy floats.
         """
-        dtype = self._uint_dtype
-        clipped = values.clip(min=-self.val_range, max=self.val_range)
+        uint_dtype = self._uint_dtype
+        float_dtype = (
+            max(values.dtype, self._float_dtype)
+            if values.dtype.kind == "f"
+            else self._float_dtype
+        )
+        clipped = values.clip(
+            min=-self.val_range,
+            max=self.val_range,
+            dtype=float_dtype,
+        )
         outputs = np.round((clipped + self.val_range) / self._step_size)
         with warnings.catch_warnings():
             warnings.simplefilter(action="ignore")
-            outputs = np.where(
-                outputs < self.int_range, outputs.astype(dtype), self.int_range
-            )
+            outputs = outputs.clip(max=self.int_range).astype(uint_dtype)
         return outputs
 
     def unquantize_array(

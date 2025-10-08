@@ -445,7 +445,7 @@ class SklearnSGDModel(Model):
             raise TypeError(
                 f"Invalid data type for 'SklearnSGDModel': '{type(array)}'."
             )
-        return array.astype(self._dtype, copy=False)  # type: ignore
+        return array.astype(self._dtype)  # type: ignore
 
     def _compute_sample_gradient(
         self,
