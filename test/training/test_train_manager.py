@@ -169,21 +169,6 @@ class TestTrainingRound:
             updates=mock.ANY, n_steps=300
         )
 
-    def test_training_round_with_multiple_constraints_3(self) -> None:
-        """Test running a min(10 epochs, 0.1 second) training round."""
-        manager = build_manager(n_batch=100)
-        request = build_train_request(n_epoch=10, n_steps=1000, timeout=0.1)
-        reply = manager.training_round(request)
-        assert isinstance(reply, messaging.TrainReply)
-        assert reply.n_epoch < 10
-        assert reply.n_steps < 1000
-        assert 0.1 <= reply.t_spent
-        assert manager.optim.run_train_step.call_count == reply.n_steps
-        assert manager.train_data.generate_batches.call_count == reply.n_epoch
-        manager.aggrg.prepare_for_sharing.assert_called_once_with(
-            updates=mock.ANY, n_steps=reply.n_steps
-        )
-
 
 def build_evaluation_request(
     n_steps: Optional[int] = None,

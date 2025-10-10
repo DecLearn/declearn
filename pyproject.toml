@@ -8,7 +8,7 @@ requires = [
 
 [project]
 name = "declearn"
-version = "2.6.0"
+version = "2.6.1"
 description = "A modular and extensible framework for Federated Learning."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -42,6 +42,8 @@ dependencies = [
     "pandas >= 1.2, < 3.0",
     "requests ~= 2.18",
     "scikit-learn ~= 1.6",
+    "scikit-learn ~= 1.0, < 1.6",
+    "tomli ~= 2.0 ; python_version < '3.11'",
     "tqdm ~= 4.62",
 ]
 
@@ -49,10 +51,10 @@ dependencies = [
 all = [  # all non-tests extra dependencies
     "dm-haiku >= 0.0.9, <= 0.0.11",
     "grpcio >= 1.45",
-    "jax[cpu] ~= 0.4.1, < 0.4.35",
+    "jax[cpu] ~= 0.4.1, < 0.4.36",
     "opacus ~= 1.4",
     "protobuf >= 3.19",
-    "tensorflow ~= 2.11",
+    "tensorflow ~= 2.11, < 2.20",
     "torch >= 1.13, < 3.0",
     "websockets >= 10.1, < 13.0",
 ]
@@ -67,7 +69,7 @@ grpc = [
 haiku = [
     "dm-haiku >= 0.0.9, <= 0.0.11",
     # NOTE: GPU support for jax must be manually installed, e.g. as jax[cuda12]
-    "jax[cpu] ~= 0.4.1",
+    "jax[cpu] ~= 0.4.1, < 0.4.36",
 ]
 tensorflow = [
     "tensorflow ~= 2.11",
