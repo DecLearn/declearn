@@ -42,7 +42,6 @@ dependencies = [
     "pandas >= 1.2, < 3.0",
     "requests ~= 2.18",
     "scikit-learn ~= 1.6",
-    "scikit-learn ~= 1.0, < 1.6",
     "tomli ~= 2.0 ; python_version < '3.11'",
     "tqdm ~= 4.62",
 ]
