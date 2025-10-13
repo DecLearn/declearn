@@ -101,7 +101,7 @@ def generate_api_docs():
 
 
 def generate_module_docs(
-    module: griffe.dataclasses.Module,
+    module: griffe.Module,
     docdir: str,
     root: bool = False,
 ) -> str:
@@ -114,7 +114,7 @@ def generate_module_docs(
 
 
 def _generate_public_module_file_docs(
-    module: griffe.dataclasses.Module,
+    module: griffe.Module,
     docdir: str,
 ) -> str:
     """Create a markdown file for a public single-file module."""
@@ -125,7 +125,7 @@ def _generate_public_module_file_docs(
 
 
 def _generate_public_module_folder_docs(
-    module: griffe.dataclasses.Module,
+    module: griffe.Module,
     docdir: str,
     root: bool = False,
 ) -> str:
@@ -144,14 +144,14 @@ def _generate_public_module_folder_docs(
 
 
 def _generate_public_submodules_doc(
-    module: griffe.dataclasses.Module,
+    module: griffe.Module,
     docdir: str,
 ) -> Dict[str, str]:
     """Create files for public submodules of a base module."""
     pub_mod = {}
     for key, mod in module.modules.items():
         if not key.startswith("_"):
-            if isinstance(mod, griffe.dataclasses.Alias):
+            if isinstance(mod, griffe.Alias):
                 key = f"{key} (alias re-export)"
                 mod = mod.target
             pub_mod[key] = generate_module_docs(mod, docdir)
@@ -159,7 +159,7 @@ def _generate_public_submodules_doc(
 
 
 def _generate_private_submodules_content_doc(
-    module: griffe.dataclasses.Module,
+    module: griffe.Module,
     docdir: str,
     pub_mod: Dict[str, str],
 ) -> Dict[str, str]:
@@ -182,7 +182,7 @@ def _generate_private_submodules_content_doc(
 
 
 def _generate_overview_file(
-    module: griffe.dataclasses.Module,
+    module: griffe.Module,
     docdir: str,
 ) -> None:
     """Write up an overview file based on a module's '__init__.py'."""
@@ -192,7 +192,7 @@ def _generate_overview_file(
 
 
 def _generate_literate_nav_summary(
-    module: griffe.dataclasses.Module,
+    module: griffe.Module,
     docdir: str,
     pub_obj: Dict[str, str],
     pub_mod: Dict[str, str],
