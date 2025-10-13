@@ -97,7 +97,7 @@ Declearn distributed under the Apache-2.0 license. All code files should
 therefore contain the following mention, which also applies to the present
 README file:
 ```
-Copyright 2023 Inria (Institut National de la Recherche en Informatique
+Copyright 2025 Inria (Institut National de Recherche en Informatique
 et Automatique)
 
 Licensed under the Apache License, Version 2.0 (the "License");
