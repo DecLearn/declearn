@@ -81,6 +81,7 @@ websockets = [
 ]
 # docs-building dependencies
 docs = [
+    "griffe ~= 1.0",
     "mkdocstrings[python] ~= 0.8",
     "mkdocs-autorefs ~= 0.4",
     "mkdocs-literate-nav ~= 0.4",
