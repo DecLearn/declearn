@@ -15,7 +15,9 @@ htmlcov
 coverage.xml
 # Virtual environment files
 .venv/
+.venv*/
 venv/
+venv*/
 # Data files generated under examples.
 examples/*/*.csv
 examples/*/*.pem
