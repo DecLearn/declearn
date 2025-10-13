@@ -52,7 +52,7 @@ class FederatedClient:
     """Client-side Federated Learning orchestrating class."""
 
     # one-too-many attribute; pylint: disable=too-many-instance-attributes
-
+    # pylint: disable-next=too-many-positional-arguments
     def __init__(
         self,
         netwk: Union[NetworkClient, NetworkClientConfig, Dict[str, Any], str],

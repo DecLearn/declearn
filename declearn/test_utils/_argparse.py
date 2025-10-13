@@ -80,6 +80,7 @@ def setup_client_argparse(
     return parser
 
 
+# pylint: disable-next=too-many-positional-arguments
 def setup_server_argparse(
     usage: Optional[str] = None,
     default_host: str = "localhost",

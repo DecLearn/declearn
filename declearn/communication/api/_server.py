@@ -88,6 +88,7 @@ class NetworkServer(metaclass=abc.ABCMeta):
         if register:
             register_type(cls, cls.protocol, group="NetworkServer")
 
+    # pylint: disable-next=too-many-positional-arguments
     def __init__(
         self,
         host: str,

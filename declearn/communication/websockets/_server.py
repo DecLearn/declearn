@@ -43,6 +43,7 @@ class WebsocketsServer(NetworkServer):
 
     protocol = "websockets"
 
+    # pylint: disable-next=too-many-positional-arguments
     def __init__(
         self,
         host: str = "localhost",

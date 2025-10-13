@@ -176,6 +176,7 @@ class FairbatchDataset(FairnessDataset):
             key: val / total for key, val in probas.items()
         }
 
+    # pylint: disable-next=too-many-positional-arguments
     def generate_batches(
         self,
         batch_size: int,
@@ -225,6 +226,7 @@ class FairbatchDataset(FairnessDataset):
         )
         return x_dat, y_dat, w_dat
 
+    # pylint: disable-next=too-many-positional-arguments
     def _generate_sensitive_group_batches(
         self,
         group: Tuple[Any, ...],
@@ -281,6 +283,7 @@ class FairbatchDataset(FairnessDataset):
                 for _ in range(nb_batches):
                     yield full
 
+    # pylint: disable-next=too-many-positional-arguments
     def _generate_batches(
         self,
         dataset: Dataset,

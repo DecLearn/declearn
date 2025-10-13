@@ -71,6 +71,7 @@ class GrpcServer(NetworkServer):
 
     protocol = "grpc"
 
+    # pylint: disable-next=too-many-positional-arguments
     def __init__(
         self,
         host: str = "localhost",

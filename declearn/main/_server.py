@@ -66,7 +66,7 @@ class FederatedServer:
     """Server-side Federated Learning orchestrating class."""
 
     # one-too-many attribute; pylint: disable=too-many-instance-attributes
-
+    # pylint: disable-next=too-many-positional-arguments
     def __init__(
         self,
         model: Union[Model, str, Dict[str, Any]],

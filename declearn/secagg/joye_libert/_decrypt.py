@@ -58,6 +58,7 @@ class JoyeLibertDecrypter(Decrypter):
 
     secure_aggregate_cls = JLSAggregate
 
+    # pylint: disable-next=too-many-positional-arguments
     def __init__(
         self,
         pub_key: int,

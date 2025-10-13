@@ -89,6 +89,7 @@ def get_checkpoint(folder: str, expe_config: ExperimentConfig) -> str:
     return checkpoint
 
 
+# pylint: disable-next=too-many-positional-arguments
 async def run_server(
     folder: str,
     network: NetworkServerConfig,

@@ -220,6 +220,7 @@ class SklearnSGDModel(Model):
             self._model.coef_ = np.zeros((feat,), dtype=self._dtype)
             self._model.intercept_ = np.zeros((1,), dtype=self._dtype)
 
+    # pylint: disable=too-many-positional-arguments
     @classmethod
     def from_parameters(
         cls,
@@ -495,11 +496,14 @@ class SklearnSGDModel(Model):
     ) -> Callable[[np.ndarray, np.ndarray], np.ndarray]:
         """Return a function to compute point-wise loss for a given batch.
 
-        Warning : this method use sklearn SGDRegressor / SGDClassifier internal mechanisms (and not public API) to
-            instantiate losses (i.e. using Cython loss classes in the process). Those mechanisms have
-            already changed in the past, breaking some stuff, so it can happen again in the future
+        Warning : this method use sklearn SGDRegressor / SGDClassifier internal
+        mechanisms (and not public API) to instantiate losses (i.e.
+        using Cython loss classes in the process). Those mechanisms have
+        already changed in the past, breaking some stuff, so it can happen
+        again in the future
         """
-        # Losses in the following conditions need to be retrieved explicitly (cannot use a "py_loss" of the loss Cython class)
+        # Losses in the following conditions need to be retrieved explicitly
+        # (cannot use a "py_loss" of the loss Cython class)
         if self._model.loss == "squared_error":
 
             def loss_1d(y_true: np.ndarray, y_pred: np.ndarray) -> np.ndarray:
@@ -521,7 +525,8 @@ class SklearnSGDModel(Model):
                     y_true=y_true, raw_prediction=y_pred
                 )
 
-        # Other losses can be retrieved via "loss_functions" dict and should implement a "py_loss" attribute
+        # Other losses can be retrieved via "loss_functions" dict and
+        # should implement a "py_loss" attribute
         else:
             # fmt: off
             # Instantiate a loss function from the wrapped model's specs.
@@ -535,12 +540,15 @@ class SklearnSGDModel(Model):
             # Check that loss class has attribute "py_loss"
             if not hasattr(loss_obj, "py_loss"):
                 raise NotImplementedError(
-                    f"Loss {self._model.loss} not supported : corresponding py_loss function does not exist"
+                    f"Loss {self._model.loss} not supported : "
+                    "corresponding py_loss function does not exist"
                 )
             loss_smp = loss_obj.py_loss
             # Wrap it to support batched inputs.
             def loss_1d(y_true: np.ndarray, y_pred: np.ndarray) -> np.ndarray:
-                return np.array([loss_smp(*smp) for smp in zip(y_pred, y_true)])
+                return np.array(
+                    [loss_smp(*smp) for smp in zip(y_pred, y_true)]
+                )
 
         # For multiclass classifiers, further wrap to support 2d predictions.
         if len(getattr(self._model, "classes_", [])) > 2:

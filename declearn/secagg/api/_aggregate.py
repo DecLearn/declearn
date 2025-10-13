@@ -91,6 +91,7 @@ class SecureAggregate(Generic[AggregateT], metaclass=abc.ABCMeta):
             aggregated into this instance.
         """
         # backend class; pylint: disable=too-many-arguments
+        # pylint: disable=too-many-positional-arguments
         self.encrypted = encrypted
         self.enc_specs = enc_specs
         self.cleartext = cleartext or {}

@@ -40,6 +40,7 @@ AggregateT = TypeVar("AggregateT", bound=Aggregate)
 class JLSAggregate(SecureAggregate[AggregateT]):
     """'Aggregate'-like container for Joye-Libert encrypted values."""
 
+    # pylint: disable-next=too-many-positional-arguments
     def __init__(
         self,
         encrypted: List[int],

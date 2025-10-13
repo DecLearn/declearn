@@ -204,7 +204,5 @@ def _parameters_to_fields(
             ftype = Dict[str, ftype]  # type: ignore
             field.default_factory = dict
         # Append parsed information to the fields list.
-        fields.append(
-            (fname, ftype, field)
-        )
+        fields.append((fname, ftype, field))
     return fields

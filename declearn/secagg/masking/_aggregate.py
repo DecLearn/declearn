@@ -32,6 +32,7 @@ AggregateT = TypeVar("AggregateT", bound=Aggregate)
 class MaskedAggregate(SecureAggregate[AggregateT]):
     """'Aggregate'-like container for mask-encrypted 'Aggregate' objects."""
 
+    # pylint: disable-next=too-many-positional-arguments
     def __init__(
         self,
         encrypted: List[int],

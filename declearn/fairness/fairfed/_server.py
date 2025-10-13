@@ -81,6 +81,7 @@ class FairfedControllerServer(FairnessControllerServer):
 
     algorithm = "fairfed"
 
+    # pylint: disable-next=too-many-positional-arguments
     def __init__(
         self,
         f_type: str,

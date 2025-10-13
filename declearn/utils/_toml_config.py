@@ -24,7 +24,17 @@ import warnings
 
 import tomllib  # type: ignore
 
-from typing import Any, ClassVar, Dict, Optional, Set, Type, TypeVar, Union, Self
+from typing import (
+    Any,
+    ClassVar,
+    Dict,
+    Optional,
+    Set,
+    Type,
+    TypeVar,
+    Union,
+    Self,
+)
 
 __all__ = [
     "TomlConfig",

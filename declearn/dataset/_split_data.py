@@ -135,6 +135,7 @@ def _extract_column_by_index(
     return inputs, labels
 
 
+# pylint: disable-next=too-many-positional-arguments
 def split_data(
     folder: str = ".",
     data_file: Optional[str] = None,

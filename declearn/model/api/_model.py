@@ -18,7 +18,17 @@
 """Model abstraction API."""
 
 from abc import ABCMeta, abstractmethod
-from typing import Any, Dict, Generic, List, Optional, Set, Tuple, TypeVar, Self
+from typing import (
+    Any,
+    Dict,
+    Generic,
+    List,
+    Optional,
+    Set,
+    Tuple,
+    TypeVar,
+    Self,
+)
 
 import numpy as np
 

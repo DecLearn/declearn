@@ -63,6 +63,7 @@ class Dataset(metaclass=abc.ABCMeta):
     ) -> DataSpecs:
         """Return a DataSpecs object describing this dataset."""
 
+    # pylint: disable=too-many-positional-arguments
     @abc.abstractmethod
     def generate_batches(  # pylint: disable=too-many-arguments
         self,

@@ -108,6 +108,7 @@ class CosineAnnealingWarmRestarts(Scheduler):
 
     name = "cosine-annealing-warm-restarts"
 
+    # pylint: disable-next=too-many-positional-arguments
     def __init__(
         self,
         base: float,

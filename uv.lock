@@ -454,6 +454,7 @@ all = [
     { name = "websockets" },
 ]
 docs = [
+    { name = "griffe" },
     { name = "mkdocs-autorefs" },
     { name = "mkdocs-literate-nav" },
     { name = "mkdocs-material" },
@@ -507,6 +508,7 @@ requires-dist = [
     { name = "dm-haiku", marker = "extra == 'haiku'", specifier = ">=0.0.9,<=0.0.11" },
     { name = "fire", specifier = "~=0.4" },
     { name = "gmpy2", specifier = "~=2.1" },
+    { name = "griffe", marker = "extra == 'docs'", specifier = "~=1.0" },
     { name = "grpcio", marker = "extra == 'all'", specifier = ">=1.45" },
     { name = "grpcio", marker = "extra == 'grpc'", specifier = ">=1.45" },
     { name = "jax", extras = ["cpu"], marker = "extra == 'all'", specifier = "~=0.4.1,<0.4.36" },

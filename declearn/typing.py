@@ -18,14 +18,12 @@
 """Type hinting utils, defined and exposed for code readability purposes."""
 
 from abc import ABCMeta, abstractmethod
-from typing import Any, Dict, List, Optional, Protocol, Tuple, Union
+from typing import Any, Dict, List, Optional, Protocol, Self, Tuple, Union
 
 import numpy as np
 import pandas as pd
 from numpy.typing import ArrayLike
 from scipy.sparse import spmatrix  # type: ignore
-from typing import Self
-
 
 __all__ = [
     "Batch",

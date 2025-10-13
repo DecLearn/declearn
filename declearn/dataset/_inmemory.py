@@ -70,7 +70,7 @@ class InMemoryDataset(Dataset):
 
     # attributes serve clarity; pylint: disable=too-many-instance-attributes
     # arguments serve modularity; pylint: disable=too-many-arguments
-
+    # pylint: disable-next=too-many-positional-arguments
     def __init__(
         self,
         data: Union[DataArray, str],
@@ -411,6 +411,7 @@ class InMemoryDataset(Dataset):
             data_type=self.data_type,
         )
 
+    # pylint: disable-next=too-many-positional-arguments
     def generate_batches(
         self,
         batch_size: int,

@@ -42,6 +42,7 @@ class WebsocketsClient(NetworkClient):
 
     protocol: ClassVar[str] = "websockets"
 
+    # pylint: disable-next=too-many-positional-arguments
     def __init__(
         self,
         server_uri: str,

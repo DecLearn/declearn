@@ -65,6 +65,7 @@ class DPTrainingManager(TrainingManager):
         https://arxiv.org/abs/1607.00133
     """
 
+    # pylint: disable-next=too-many-positional-arguments
     def __init__(
         self,
         model: Model,
@@ -130,6 +131,7 @@ class DPTrainingManager(TrainingManager):
         self.sclip_norm = message.sclip_norm
         self._dp_budget = message.budget
 
+    # pylint: disable=too-many-positional-arguments
     def _fit_noise_multiplier(
         self,
         budget: Tuple[float, float],

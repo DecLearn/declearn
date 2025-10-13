@@ -18,7 +18,18 @@
 """TensorflowVector data arrays container."""
 
 import warnings
-from typing import Any, Callable, Dict, List, Set, Tuple, Type, TypeVar, Union, Self
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Set,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+    Self,
+)
 
 # fmt: off
 import numpy as np

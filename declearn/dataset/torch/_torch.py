@@ -137,6 +137,7 @@ class TorchDataset(Dataset):
                 specs.update(user_specs)
         return DataSpecs(**specs)
 
+    # pylint: disable-next=too-many-positional-arguments
     def generate_batches(
         self,
         batch_size: int,

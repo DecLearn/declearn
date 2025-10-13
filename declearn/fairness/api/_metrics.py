@@ -132,6 +132,7 @@ class FairnessMetricsComputer:
                 output[metric.name][group] = float(values[metric.name])
         return output
 
+    # pylint: disable-next=too-many-positional-arguments
     def compute_metrics_over_sensitive_group(
         self,
         group: Tuple[Any, ...],

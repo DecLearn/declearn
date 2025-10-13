@@ -50,6 +50,7 @@ class MockNetworkServer(NetworkServer, register=False):
 
     protocol = "mock"
 
+    # pylint: disable-next=too-many-positional-arguments
     def __init__(
         self,
         host: str = "localhost",

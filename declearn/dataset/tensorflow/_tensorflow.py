@@ -111,6 +111,7 @@ class TensorflowDataset(Dataset):
             data_type=self._dspecs.data_type,
         )
 
+    # pylint: disable-next=too-many-positional-arguments
     def generate_batches(
         self,
         batch_size: int,

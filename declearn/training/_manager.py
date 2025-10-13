@@ -52,7 +52,7 @@ class TrainingManager:
     """Class wrapping the logic for local training and evaluation rounds."""
 
     # one too-many attribute; pylint: disable=too-many-instance-attributes
-
+    # pylint: disable-next=too-many-positional-arguments
     def __init__(
         self,
         model: Model,

@@ -19,7 +19,17 @@
 
 import abc
 from copy import deepcopy
-from typing import Any, ClassVar, Dict, Generic, Optional, Type, TypeVar, Union, Self
+from typing import (
+    Any,
+    ClassVar,
+    Dict,
+    Generic,
+    Optional,
+    Type,
+    TypeVar,
+    Union,
+    Self,
+)
 
 import numpy as np
 

@@ -33,6 +33,7 @@ __all__ = [
 ]
 
 
+# pylint: disable-next=too-many-positional-arguments
 def generate_ssl_certificates(
     folder: str = ".",
     c_name: str = "localhost",
@@ -279,6 +280,7 @@ def gen_ssl_csr(
     return sv_csrq, sv_pkey
 
 
+# pylint: disable-next=too-many-positional-arguments
 def gen_ssl_cert(
     folder: str,
     sv_csrq: str,
