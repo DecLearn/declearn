@@ -23,7 +23,6 @@ import numpy as np
 
 from declearn.utils._json import add_json_support
 
-
 __all__ = [
     "deserialize_numpy",
     "serialize_numpy",

@@ -17,8 +17,8 @@
 
 """Unit tests for `declearn.metrics.MetricSet`."""
 
-from unittest import mock
 from typing import Tuple
+from unittest import mock
 
 import numpy as np
 import pytest

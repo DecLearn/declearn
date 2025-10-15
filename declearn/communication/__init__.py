@@ -54,8 +54,7 @@ the associated third-party dependencies are available:
 """
 
 # Messaging API and base tools:
-from . import api
-from . import utils
+from . import api, utils
 from .utils import (
     _INSTALLABLE_BACKENDS,
     NetworkClientConfig,

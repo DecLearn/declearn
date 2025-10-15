@@ -20,7 +20,6 @@
 import dataclasses
 from typing import Dict
 
-
 from declearn.messaging import Message
 from declearn.secagg.api import SecaggSetupQuery
 

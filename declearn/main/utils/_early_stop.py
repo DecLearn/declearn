@@ -19,9 +19,7 @@
 
 from typing import Optional
 
-
 from declearn.utils import dataclass_from_init
-
 
 __all__ = [
     "EarlyStopping",

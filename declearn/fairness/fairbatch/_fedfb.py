@@ -23,12 +23,11 @@ import numpy as np
 
 from declearn.fairness.fairbatch._sampling import (
     FairbatchDemographicParity,
-    FairbatchEqualizedOdds,
     FairbatchEqualityOpportunity,
+    FairbatchEqualizedOdds,
     FairbatchSamplingController,
     assign_sensitive_group_labels,
 )
-
 
 __all__ = [
     "setup_fedfb_controller",

@@ -24,10 +24,10 @@ from typing import (
     Generic,
     List,
     Optional,
+    Self,
     Set,
     Tuple,
     TypeVar,
-    Self,
 )
 
 import numpy as np
@@ -35,7 +35,6 @@ import numpy as np
 from declearn.model.api._vector import Vector
 from declearn.typing import Batch
 from declearn.utils import DevicePolicy, create_types_registry
-
 
 __all__ = [
     "Model",

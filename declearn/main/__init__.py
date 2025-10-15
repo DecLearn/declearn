@@ -43,7 +43,6 @@ to [declearn.training.dp][]. It can still be manually imported under its
 deprecated name (containing re-exports of moved contents).
 """
 
-from . import utils
-from . import config
+from . import config, utils
 from ._client import FederatedClient
 from ._server import FederatedServer

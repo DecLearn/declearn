@@ -34,7 +34,6 @@ from declearn.model.sklearn import SklearnSGDModel
 from declearn.optimizer import Optimizer
 from declearn.utils import json_load
 
-
 # Fixtures and utils
 
 

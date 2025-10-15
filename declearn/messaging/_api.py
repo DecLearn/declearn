@@ -20,16 +20,15 @@
 import dataclasses
 import json
 from abc import ABCMeta
-from typing import Any, ClassVar, Dict, Generic, Type, TypeVar, Self
+from typing import Any, ClassVar, Dict, Generic, Self, Type, TypeVar
 
 from declearn.utils import (
     access_registered,
     create_types_registry,
-    register_type,
     json_pack,
     json_unpack,
+    register_type,
 )
-
 
 __all__ = [
     "Message",

@@ -19,21 +19,19 @@
 
 import dataclasses
 import os
+import tomllib  # type: ignore
 import typing
 import warnings
-
-import tomllib  # type: ignore
-
 from typing import (
     Any,
     ClassVar,
     Dict,
     Optional,
+    Self,
     Set,
     Type,
     TypeVar,
     Union,
-    Self,
 )
 
 __all__ = [

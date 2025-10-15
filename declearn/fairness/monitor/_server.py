@@ -22,12 +22,12 @@ from typing import Any, Dict, List, Optional, Union
 import numpy as np
 
 from declearn.aggregator import Aggregator
-from declearn.secagg.api import Decrypter
 from declearn.communication.api import NetworkServer
 from declearn.fairness.api import (
     FairnessControllerServer,
     instantiate_fairness_function,
 )
+from declearn.secagg.api import Decrypter
 
 __all__ = [
     "FairnessMonitorServer",

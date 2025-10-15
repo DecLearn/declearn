@@ -21,10 +21,19 @@ import dataclasses
 import operator
 import warnings
 from abc import ABCMeta, abstractmethod
-from typing import (
-    # fmt: off
-    Any, Callable, Dict, Generic, List, Optional,
-    Set, Tuple, Type, TypeVar, Union, Self
+from typing import (  # fmt: off
+    Any,
+    Callable,
+    Dict,
+    Generic,
+    List,
+    Optional,
+    Self,
+    Set,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
 )
 
 from declearn.utils import (

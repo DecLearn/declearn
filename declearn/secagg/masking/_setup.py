@@ -20,7 +20,6 @@
 import dataclasses
 from typing import Dict, List, Optional, Set, Tuple
 
-
 from declearn.communication.api import NetworkClient, NetworkServer
 from declearn.communication.utils import (
     verify_client_messages_validity,

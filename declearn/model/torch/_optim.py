@@ -18,17 +18,16 @@
 """Hacky OptiModule subclass enabling the use of a torch.nn.Optimizer."""
 
 import importlib
-from typing import Any, Dict, List, Optional, Union, Tuple, Type, Self
+from typing import Any, Dict, List, Optional, Self, Tuple, Type, Union
 
 import numpy as np
 import torch
 
 from declearn.model.api import Vector
-from declearn.model.torch.utils import select_device
 from declearn.model.torch._vector import TorchVector
+from declearn.model.torch.utils import select_device
 from declearn.optimizer.modules import OptiModule
 from declearn.utils import get_device_policy
-
 
 __all__ = [
     "TorchOptiModule",

@@ -31,5 +31,5 @@ backend or to be used in conjunction with it:
     Custom collate function that implements variable-lenght inputs' padding.
 """
 
-from ._utils import PoissonSampler, collate_with_padding
 from ._torch import TorchDataset
+from ._utils import PoissonSampler, collate_with_padding

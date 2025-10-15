@@ -20,9 +20,7 @@
 from abc import ABCMeta, abstractmethod
 from typing import Any, Dict, List, Tuple
 
-
 from declearn.dataset import Dataset
-
 
 __all__ = [
     "FairnessDataset",

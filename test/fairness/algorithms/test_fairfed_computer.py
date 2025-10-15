@@ -24,7 +24,6 @@ import pytest
 
 from declearn.fairness.fairfed import FairfedValueComputer
 
-
 GROUPS_BINARY = [
     (target, s_attr) for target in (0, 1) for s_attr in (0, 1)
 ]  # type: List[Tuple[Any, ...]]

@@ -17,9 +17,17 @@
 
 """Base class to define gradient-descent-based optimizers."""
 
-from typing import (
-    # fmt: off
-    Any, Dict, List, Optional, Sequence, Tuple, Type, TypeVar, Union, Self
+from typing import (  # fmt: off
+    Any,
+    Dict,
+    List,
+    Optional,
+    Self,
+    Sequence,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
 )
 
 from declearn.model.api import Model, Vector

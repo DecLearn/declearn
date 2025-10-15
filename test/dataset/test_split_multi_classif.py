@@ -26,7 +26,6 @@ from scipy.stats import chi2_contingency  # type: ignore
 
 from declearn.dataset.utils import split_multi_classif_dataset
 
-
 Array = Union[np.ndarray, spmatrix]
 
 

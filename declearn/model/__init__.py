@@ -67,8 +67,7 @@ The optional-dependency-based submodules that may be manually imported are:
         Vector for torch Tensor objects.
 """
 
-from . import api
-from . import sklearn
+from . import api, sklearn
 
 OPTIONAL_MODULES = [
     "haiku",

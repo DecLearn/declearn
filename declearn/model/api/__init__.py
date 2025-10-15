@@ -29,5 +29,5 @@ This submodules exports the building blocks of the Model and Vector APIs:
     Decorate a Vector subclass to make it buildable with `Vector.build`.
 """
 
-from ._vector import Vector, VectorSpec, register_vector_type
 from ._model import Model
+from ._vector import Vector, VectorSpec, register_vector_type

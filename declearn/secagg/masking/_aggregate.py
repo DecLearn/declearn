@@ -17,7 +17,7 @@
 
 """Secure Aggregation Controller using Joye-Libert homomorphic summation."""
 
-from typing import Any, Dict, List, Optional, Type, TypeVar, Self
+from typing import Any, Dict, List, Optional, Self, Type, TypeVar
 
 from declearn.secagg.api import EncryptedSpecs, SecureAggregate
 from declearn.utils import Aggregate

@@ -50,8 +50,8 @@ Backend
     Utility dataset-handler to compute group-wise evaluation metrics.
 """
 
+from ._client import FairnessControllerClient
 from ._dataset import FairnessDataset
 from ._fair_func import FairnessFunction, instantiate_fairness_function
 from ._metrics import FairnessMetricsComputer
-from ._client import FairnessControllerClient
 from ._server import FairnessControllerServer

@@ -19,7 +19,7 @@
 
 import abc
 import dataclasses
-from typing import Dict, Generic, List, Mapping, TypeVar, Self
+from typing import Dict, Generic, List, Mapping, Self, TypeVar
 
 from declearn.aggregator import ModelUpdates
 from declearn.messaging import (

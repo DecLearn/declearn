@@ -20,11 +20,11 @@
 import asyncio
 import logging
 import ssl
-from typing import Any, Dict, Optional, Union, ClassVar
+from typing import Any, ClassVar, Dict, Optional, Union
 
 import websockets as ws
 from websockets.client import WebSocketClientProtocol
-from websockets.exceptions import ConnectionClosedOK, ConnectionClosedError
+from websockets.exceptions import ConnectionClosedError, ConnectionClosedOK
 
 from declearn.communication.api import NetworkClient
 from declearn.communication.websockets._tools import (

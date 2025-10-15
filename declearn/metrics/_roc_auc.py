@@ -18,7 +18,7 @@
 """Iterative and federative ROC AUC evaluation metrics."""
 
 import dataclasses
-from typing import Any, Dict, Optional, Tuple, Type, Union, Self
+from typing import Any, Dict, Optional, Self, Tuple, Type, Union
 
 import numpy as np
 import sklearn  # type: ignore

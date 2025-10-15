@@ -17,17 +17,17 @@
 
 """JaxNumpyVector data arrays container."""
 
-from typing import Any, Callable, Dict, List, Set, Tuple, Type, Union, Self
+from typing import Any, Callable, Dict, List, Self, Set, Tuple, Type, Union
 
 import jax
 import jax.numpy as jnp
 import jaxlib
 import numpy as np
 
+from declearn.model._utils import flatten_numpy_arrays, unflatten_numpy_arrays
 from declearn.model.api import Vector, VectorSpec, register_vector_type
 from declearn.model.haiku.utils import select_device
 from declearn.model.sklearn import NumpyVector
-from declearn.model._utils import flatten_numpy_arrays, unflatten_numpy_arrays
 from declearn.utils import get_device_policy
 
 __all__ = [

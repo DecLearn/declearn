@@ -19,7 +19,6 @@
 
 from unittest import mock
 
-
 from declearn.fairness.fairfed import FairfedAggregator
 from declearn.model.api import Vector
 

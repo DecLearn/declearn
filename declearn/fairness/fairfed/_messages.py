@@ -18,13 +18,11 @@
 """FairFed specific messages."""
 
 import dataclasses
-
 from typing import Self
 
 from declearn.messaging import Message
 from declearn.secagg.api import Decrypter, Encrypter
 from declearn.secagg.messaging import SecaggMessage
-
 
 __all__ = [
     "FairfedDelta",

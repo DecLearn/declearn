@@ -19,13 +19,12 @@
 
 import operator
 from abc import ABCMeta, abstractmethod
-from typing import Any, Callable, Dict, ClassVar, Generic, Type, TypeVar
+from typing import Any, Callable, ClassVar, Dict, Generic, Type, TypeVar
 
 import numpy as np
 
 from declearn.model.api import Vector, VectorSpec
 from declearn.test_utils import assert_json_serializable_dict, to_numpy
-
 
 __all__ = [
     "VectorFactory",

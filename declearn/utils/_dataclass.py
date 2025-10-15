@@ -26,8 +26,17 @@ as to eventually call a given function or build a given object.
 import dataclasses
 import inspect
 from typing import (
-    Any, Callable, Dict, List, Optional, Protocol, Tuple, Type, TypeVar
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Protocol,
+    Tuple,
+    Type,
+    TypeVar,
 )
+
 # fmt: on
 
 

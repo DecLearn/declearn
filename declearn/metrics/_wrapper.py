@@ -17,7 +17,7 @@
 
 """Wrapper for an ensemble of Metric objects."""
 
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union, Self
+from typing import Any, Dict, List, Optional, Self, Sequence, Tuple, Union
 
 import numpy as np
 

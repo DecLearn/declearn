@@ -32,7 +32,6 @@ from declearn.fairness.api import (
 from declearn.fairness.fairgrad._messages import FairgradOkay, FairgradWeights
 from declearn.secagg.api import Decrypter
 
-
 __all__ = [
     "FairgradControllerServer",
     "FairgradWeightsController",

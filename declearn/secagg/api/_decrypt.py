@@ -18,11 +18,11 @@
 """Abstract base class for decryption controllers for SecAgg."""
 
 import abc
-from typing import Any, ClassVar, Dict, List, Union, Type, TypeVar
+from typing import Any, ClassVar, Dict, List, Type, TypeVar, Union
 
 import numpy as np
-from declearn.model.api import Vector, VectorSpec
 
+from declearn.model.api import Vector, VectorSpec
 from declearn.secagg.api._aggregate import ArraySpec, SecureAggregate
 from declearn.secagg.utils import Quantizer
 from declearn.utils import Aggregate

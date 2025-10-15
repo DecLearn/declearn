@@ -20,7 +20,7 @@
 import json
 import os
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Union, Self
+from typing import Any, Dict, List, Optional, Self, Union
 
 import numpy as np
 import pandas as pd

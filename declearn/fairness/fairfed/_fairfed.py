@@ -20,7 +20,6 @@
 import warnings
 from typing import Any, Dict, List, Optional, Tuple
 
-
 __all__ = [
     "FairfedValueComputer",
 ]

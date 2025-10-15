@@ -26,7 +26,6 @@ import pytest
 from declearn.dataset import split_data
 from declearn.quickrun import quickrun
 
-
 MODEL_CODE = """
 from declearn.model.sklearn import SklearnSGDModel
 

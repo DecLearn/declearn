@@ -27,7 +27,6 @@ from declearn.dataset.torch._utils import PoissonSampler
 from declearn.typing import Batch
 from declearn.utils import register_type
 
-
 __all__ = [
     "TorchDataset",
 ]

@@ -20,8 +20,8 @@
 import logging
 import math
 import os
-from unittest import mock
 from typing import Dict, List, Optional, Type
+from unittest import mock
 
 import pytest  # type: ignore
 
@@ -31,15 +31,14 @@ from declearn.communication.api import NetworkServer
 from declearn.fairness.api import FairnessControllerServer
 from declearn.main import FederatedServer
 from declearn.main.config import (
-    FLOptimConfig,
-    FLRunConfig,
     EvaluateConfig,
     FairnessConfig,
+    FLOptimConfig,
+    FLRunConfig,
     RegisterConfig,
     TrainingConfig,
 )
 from declearn.main.utils import Checkpointer
-from declearn.metrics import MetricSet
 from declearn.messaging import (
     EvaluationReply,
     EvaluationRequest,
@@ -53,9 +52,10 @@ from declearn.messaging import (
     PrivacyRequest,
     SerializedMessage,
     StopTraining,
-    TrainRequest,
     TrainReply,
+    TrainRequest,
 )
+from declearn.metrics import MetricSet
 from declearn.model.api import Model
 from declearn.model.sklearn import SklearnSGDModel
 from declearn.optimizer import Optimizer
@@ -65,7 +65,6 @@ from declearn.secagg.messaging import (
     SecaggTrainReply,
 )
 from declearn.utils import serialize_object
-
 
 MOCK_MODEL = mock.create_autospec(Model, instance=True)
 MOCK_NETWK = mock.create_autospec(NetworkServer, instance=True)

@@ -26,6 +26,7 @@ from declearn.communication.api import NetworkClient
 from declearn.communication.utils import verify_server_message_validity
 from declearn.fairness.api._dataset import FairnessDataset
 from declearn.fairness.api._fair_func import instantiate_fairness_function
+from declearn.fairness.api._metrics import FairnessMetricsComputer
 from declearn.messaging import (
     Error,
     FairnessCounts,
@@ -34,7 +35,6 @@ from declearn.messaging import (
     FairnessReply,
     FairnessSetupQuery,
 )
-from declearn.fairness.api._metrics import FairnessMetricsComputer
 from declearn.metrics import MeanMetric
 from declearn.secagg.api import Encrypter
 from declearn.secagg.messaging import (

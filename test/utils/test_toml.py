@@ -20,7 +20,7 @@
 import dataclasses
 import os
 import warnings
-from typing import Any, Dict, List, Optional, Tuple, Union, Self
+from typing import Any, Dict, List, Optional, Self, Tuple, Union
 
 import pytest
 

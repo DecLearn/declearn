@@ -20,7 +20,6 @@
 import argparse
 from typing import Optional
 
-
 __all__ = [
     "setup_client_argparse",
     "setup_server_argparse",

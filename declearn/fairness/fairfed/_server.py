@@ -42,7 +42,6 @@ from declearn.messaging import FairnessSetupQuery
 from declearn.secagg.api import Decrypter
 from declearn.secagg.messaging import aggregate_secagg_messages
 
-
 __all__ = [
     "FairfedControllerServer",
 ]

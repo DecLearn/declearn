@@ -23,20 +23,22 @@ from typing import (
     Callable,
     Dict,
     List,
+    Self,
     Set,
     Tuple,
     Type,
     TypeVar,
     Union,
-    Self,
 )
 
 # fmt: off
 import numpy as np
 import tensorflow as tf  # type: ignore
+
 # false-positive; pylint: disable=no-name-in-module
 from tensorflow.python.framework.ops import EagerTensor  # type: ignore
-# pylint: enable=no-name-in-module
+
+from declearn.model._utils import flatten_numpy_arrays, unflatten_numpy_arrays
 
 # fmt: on
 from declearn.model.api import Vector, VectorSpec, register_vector_type
@@ -46,8 +48,9 @@ from declearn.model.tensorflow.utils import (
     preserve_tensor_device,
     select_device,
 )
-from declearn.model._utils import flatten_numpy_arrays, unflatten_numpy_arrays
 from declearn.utils import get_device_policy
+
+# pylint: enable=no-name-in-module
 
 
 __all__ = [

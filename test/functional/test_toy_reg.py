@@ -75,6 +75,7 @@ except ModuleNotFoundError:
     pass
 else:
     import tensorflow.keras as tf_keras  # type: ignore
+
     from declearn.dataset.tensorflow import TensorflowDataset
     from declearn.model.tensorflow import TensorflowModel, TensorflowVector
 # torch imports

@@ -21,7 +21,6 @@ import logging
 import os
 from typing import Optional
 
-
 __all__ = [
     "get_logger",
     "LOGGING_LEVEL_MAJOR",

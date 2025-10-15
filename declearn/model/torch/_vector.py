@@ -17,17 +17,16 @@
 
 """TorchVector data arrays container."""
 
-from typing import Any, Callable, Dict, List, Set, Tuple, Type, Union, Self
+from typing import Any, Callable, Dict, List, Self, Set, Tuple, Type, Union
 
 import numpy as np
 import torch
 
+from declearn.model._utils import flatten_numpy_arrays, unflatten_numpy_arrays
 from declearn.model.api import Vector, VectorSpec, register_vector_type
 from declearn.model.sklearn import NumpyVector
 from declearn.model.torch.utils import select_device
-from declearn.model._utils import flatten_numpy_arrays, unflatten_numpy_arrays
 from declearn.utils import get_device_policy
-
 
 __all__ = [
     "TorchVector",

@@ -34,7 +34,6 @@ from declearn.fairness.fairbatch._messages import (
 from declearn.fairness.fairbatch._sampling import setup_fairbatch_controller
 from declearn.secagg.api import Decrypter
 
-
 __all__ = [
     "FairbatchControllerServer",
 ]

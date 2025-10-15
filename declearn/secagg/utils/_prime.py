@@ -21,7 +21,6 @@ import secrets
 
 import gmpy2  # type: ignore
 
-
 __all__ = [
     "generate_random_biprime",
     "generate_random_prime",

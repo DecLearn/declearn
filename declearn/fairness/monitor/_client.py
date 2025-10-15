@@ -21,9 +21,9 @@ from typing import Any, Dict, Optional, Tuple, Union
 
 import numpy as np
 
-from declearn.secagg.api import Encrypter
 from declearn.communication.api import NetworkClient
 from declearn.fairness.api import FairnessControllerClient
+from declearn.secagg.api import Encrypter
 
 __all__ = [
     "FairnessMonitorClient",

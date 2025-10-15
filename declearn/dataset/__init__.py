@@ -63,8 +63,7 @@ Utility entry-point
     together with declearn.
 """
 
-from . import utils
-from . import examples
+from . import examples, utils
 from ._base import Dataset, DataSpecs
 from ._inmemory import InMemoryDataset
 from ._split_data import split_data

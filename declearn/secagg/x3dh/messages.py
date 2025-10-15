@@ -20,7 +20,6 @@
 import dataclasses
 from typing import List
 
-
 from declearn.messaging import Message
 
 __all__ = [

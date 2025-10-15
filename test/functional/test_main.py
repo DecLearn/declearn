@@ -31,11 +31,10 @@ from declearn.communication import (
 )
 from declearn.communication.api import NetworkClient, NetworkServer
 from declearn.dataset import InMemoryDataset
+from declearn.main import FederatedClient, FederatedServer
 from declearn.model.api import Model
 from declearn.model.sklearn import SklearnSGDModel
-from declearn.main import FederatedClient, FederatedServer
-from declearn.utils import run_as_processes
-from declearn.utils import set_device_policy
+from declearn.utils import run_as_processes, set_device_policy
 
 # Select the subset of tests to run, based on framework availability.
 # Note: TensorFlow and Torch (-related) imports are delayed due to this.
@@ -48,6 +47,7 @@ except ModuleNotFoundError:
 else:
     # pylint: disable=import-error,no-name-in-module
     import tensorflow.keras as tf_keras  # type: ignore
+
     from declearn.model.tensorflow import TensorflowModel
 try:
     import torch

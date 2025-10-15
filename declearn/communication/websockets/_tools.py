@@ -22,7 +22,6 @@ from typing import Union
 
 from websockets.legacy.protocol import WebSocketCommonProtocol
 
-
 __all__ = [
     "StreamRefusedError",
     "receive_websockets_message",

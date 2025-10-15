@@ -24,7 +24,6 @@ import numpy as np
 import scipy.stats  # type: ignore
 from scipy.sparse import csr_matrix, spmatrix  # type: ignore
 
-
 __all__ = [
     "split_multi_classif_dataset",
 ]

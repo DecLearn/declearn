@@ -18,7 +18,7 @@
 """Warmup scheduler (wrapper)."""
 
 import abc
-from typing import Any, Dict, Optional, Union, Self
+from typing import Any, Dict, Optional, Self, Union
 
 from declearn.optimizer.schedulers._api import Scheduler
 

@@ -35,9 +35,9 @@ from declearn.messaging import (
 )
 from declearn.secagg.api import Decrypter
 from declearn.secagg.messaging import (
-    aggregate_secagg_messages,
     SecaggFairnessCounts,
     SecaggFairnessReply,
+    aggregate_secagg_messages,
 )
 from declearn.utils import (
     access_registered,

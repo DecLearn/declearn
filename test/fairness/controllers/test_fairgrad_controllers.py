@@ -27,9 +27,9 @@ import pytest
 from declearn.aggregator import Aggregator, SumAggregator
 from declearn.communication.utils import ErrorMessageException
 from declearn.fairness.api import (
-    FairnessDataset,
     FairnessControllerClient,
     FairnessControllerServer,
+    FairnessDataset,
 )
 from declearn.fairness.fairgrad import (
     FairgradControllerClient,

@@ -18,13 +18,13 @@
 """Function to parse and/or wrap a keras loss for use with declearn."""
 
 import inspect
-
 from typing import Any, Callable, Dict, Optional, Union
 
 # fmt: off
 # pylint: disable=import-error,no-name-in-module
 import tensorflow as tf  # type: ignore
 import tensorflow.keras as tf_keras  # type: ignore
+
 # pylint: enable=import-error,no-name-in-module
 # fmt: on
 

@@ -34,6 +34,6 @@ mainly aims at providing tools used in the backend of the former objects.
 """
 
 from . import utils
-from ._vector import TorchVector
-from ._optim import TorchOptiModule
 from ._model import TorchModel
+from ._optim import TorchOptiModule
+from ._vector import TorchVector

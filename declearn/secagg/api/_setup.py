@@ -21,7 +21,6 @@ import abc
 import dataclasses
 from typing import ClassVar, Generic, Optional, Set, TypeVar
 
-
 from declearn.communication.api import NetworkClient, NetworkServer
 from declearn.messaging import Message, SerializedMessage
 from declearn.secagg.api._decrypt import Decrypter

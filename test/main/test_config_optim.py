@@ -30,7 +30,6 @@ from declearn.main.config import FLOptimConfig
 from declearn.optimizer import Optimizer
 from declearn.optimizer.modules import AdamModule
 
-
 FIELDS = {field.name: field for field in dataclasses.fields(FLOptimConfig)}
 
 

@@ -27,7 +27,6 @@ This private submodule defines:
 import dataclasses
 from typing import Optional
 
-
 __all__ = [
     "DevicePolicy",
     "get_device_policy",

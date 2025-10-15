@@ -90,6 +90,9 @@ References
     https://arxiv.org/abs/2110.15545
 """
 
+from ._client import FairbatchControllerClient
+from ._dataset import FairbatchDataset
+from ._fedfb import setup_fedfb_controller
 from ._messages import (
     FairbatchOkay,
     FairbatchSamplingProbas,
@@ -98,7 +101,4 @@ from ._sampling import (
     FairbatchSamplingController,
     setup_fairbatch_controller,
 )
-from ._fedfb import setup_fedfb_controller
-from ._dataset import FairbatchDataset
-from ._client import FairbatchControllerClient
 from ._server import FairbatchControllerServer

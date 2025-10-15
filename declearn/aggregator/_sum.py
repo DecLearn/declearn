@@ -21,7 +21,6 @@
 from declearn.aggregator._api import Aggregator, ModelUpdates
 from declearn.model.api import Vector
 
-
 __all__ = [
     "SumAggregator",
 ]

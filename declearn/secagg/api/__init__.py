@@ -46,8 +46,8 @@ Type-hint aliases
 """
 
 from ._aggregate import ArraySpec, EncryptedSpecs, SecureAggregate
-from ._encrypt import Encrypter
 from ._decrypt import Decrypter
+from ._encrypt import Encrypter
 from ._setup import (
     SecaggConfigClient,
     SecaggConfigServer,

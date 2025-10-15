@@ -21,7 +21,6 @@
 import secrets
 from typing import List, Tuple
 
-
 from declearn.secagg.masking import MaskingDecrypter, MaskingEncrypter
 
 __all__ = [

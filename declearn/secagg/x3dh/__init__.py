@@ -45,5 +45,5 @@ References
 """
 
 from . import messages
-from ._x3dh import X3DHManager
 from ._setup import run_x3dh_setup_client, run_x3dh_setup_server
+from ._x3dh import X3DHManager

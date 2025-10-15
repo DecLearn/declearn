@@ -32,7 +32,6 @@ from declearn.test_utils import (
 )
 from declearn.utils import set_device_policy
 
-
 AGGREGATOR_CLASSES = list_aggregators()
 VECTOR_FRAMEWORKS = list_available_frameworks()
 

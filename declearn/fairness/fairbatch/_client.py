@@ -30,8 +30,8 @@ from declearn.fairness.api import (
 )
 from declearn.fairness.fairbatch._dataset import FairbatchDataset
 from declearn.fairness.fairbatch._messages import (
-    FairbatchSamplingProbas,
     FairbatchOkay,
+    FairbatchSamplingProbas,
 )
 from declearn.messaging import Error
 from declearn.metrics import MeanMetric

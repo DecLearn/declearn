@@ -17,10 +17,10 @@
 
 """Model subclass to wrap PyTorch models."""
 
-import io
 import functools
+import io
 import warnings
-from typing import Any, Dict, List, Optional, Set, Tuple, Self
+from typing import Any, Dict, List, Optional, Self, Set, Tuple
 
 import numpy as np
 import torch

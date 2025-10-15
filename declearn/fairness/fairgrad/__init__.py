@@ -70,9 +70,9 @@ References
     https://openreview.net/forum?id=0f8tU3QwWD
 """
 
+from ._client import FairgradControllerClient
 from ._messages import (
     FairgradOkay,
     FairgradWeights,
 )
-from ._client import FairgradControllerClient
 from ._server import FairgradControllerServer, FairgradWeightsController

@@ -33,7 +33,6 @@ from declearn.optimizer.modules import GaussianNoiseModule
 from declearn.training import TrainingManager
 from declearn.typing import Batch
 
-
 __all__ = [
     "DPTrainingManager",
 ]

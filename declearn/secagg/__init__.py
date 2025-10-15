@@ -82,13 +82,7 @@ Utility functions
     Parse input arguments into a `SecaggConfigServer` instance.
 """
 
-from . import utils
-from . import api
-from . import shamir
-from . import x3dh
-from . import joye_libert
-from . import masking
-from . import messaging
+from . import api, joye_libert, masking, messaging, shamir, utils, x3dh
 from ._setup import (
     list_available_secagg_types,
     parse_secagg_config_client,

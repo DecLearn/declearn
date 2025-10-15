@@ -70,15 +70,15 @@ Scaffold is implemented as a pair of complementary modules:
     AuxVar subclass for Scaffold modules.
 """
 
-from ._api import (
-    AuxVar,
-    OptiModule,
-)
 from ._adaptive import (
     AdaGradModule,
     AdamModule,
     RMSPropModule,
     YogiModule,
+)
+from ._api import (
+    AuxVar,
+    OptiModule,
 )
 from ._clipping import (
     L2Clipping,

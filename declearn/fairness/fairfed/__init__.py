@@ -72,6 +72,9 @@ References
     https://arxiv.org/abs/2110.00857
 """
 
+from ._aggregator import FairfedAggregator
+from ._client import FairfedControllerClient
+from ._fairfed import FairfedValueComputer
 from ._messages import (
     FairfedDelta,
     FairfedDeltavg,
@@ -79,7 +82,4 @@ from ._messages import (
     FairfedOkay,
     SecaggFairfedDelta,
 )
-from ._aggregator import FairfedAggregator
-from ._fairfed import FairfedValueComputer
-from ._client import FairfedControllerClient
 from ._server import FairfedControllerServer

@@ -21,15 +21,23 @@ import abc
 import asyncio
 import logging
 import types
-from typing import (
-    # fmt: off
-    Any, ClassVar, Dict, List, Mapping, Optional, Set, Type, Tuple, Union, Self
+from typing import (  # fmt: off
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Mapping,
+    Optional,
+    Self,
+    Set,
+    Tuple,
+    Type,
+    Union,
 )
 
 from declearn.communication.api.backend import MessagesHandler
 from declearn.messaging import Message, SerializedMessage
 from declearn.utils import create_types_registry, get_logger, register_type
-
 
 __all__ = [
     "NetworkServer",

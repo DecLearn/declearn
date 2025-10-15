@@ -22,13 +22,12 @@ import asyncio
 import logging
 import types
 import warnings
-from typing import Any, ClassVar, Dict, Optional, Type, Union, Self
+from typing import Any, ClassVar, Dict, Optional, Self, Type, Union
 
 from declearn.communication.api.backend import flags
-from declearn.communication.api.backend.actions import (
+from declearn.communication.api.backend.actions import (  # Drop,  # FUTURE: implement a method to drop politely
     Accept,
     ActionMessage,
-    # Drop,  # FUTURE: implement a method to drop politely
     Join,
     Ping,
     Recv,

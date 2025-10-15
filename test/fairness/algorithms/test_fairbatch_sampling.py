@@ -27,7 +27,6 @@ from declearn.fairness.fairbatch import (
     setup_fedfb_controller,
 )
 
-
 ALPHA = 0.05
 COUNTS = {(0, 0): 30, (0, 1): 15, (1, 0): 35, (1, 1): 20}
 F_TYPES = [

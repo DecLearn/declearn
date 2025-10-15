@@ -25,9 +25,9 @@ from unittest import mock
 import pytest  # type: ignore
 
 from declearn import messaging
-from declearn.dataset import Dataset, DataSpecs
 from declearn.communication import NetworkClientConfig
 from declearn.communication.api import NetworkClient
+from declearn.dataset import Dataset, DataSpecs
 from declearn.fairness.api import FairnessControllerClient
 from declearn.main import FederatedClient
 from declearn.main.utils import Checkpointer

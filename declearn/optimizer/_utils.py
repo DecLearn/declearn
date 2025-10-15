@@ -24,7 +24,6 @@ from declearn.optimizer.regularizers import Regularizer
 from declearn.optimizer.schedulers import Scheduler
 from declearn.utils import access_types_mapping
 
-
 __all__ = [
     "list_optim_modules",
     "list_optim_regularizers",

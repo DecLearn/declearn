@@ -23,7 +23,6 @@ from typing import Dict, List, Optional
 
 from declearn.quickrun._config import DataSourceConfig
 
-
 __all__ = [
     "parse_data_folder",
 ]

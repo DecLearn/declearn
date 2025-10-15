@@ -51,7 +51,6 @@ from declearn.communication import (
 )
 from declearn.communication.api import NetworkClient, NetworkServer
 
-
 ### 1. Test that connections can be properly set up.
 
 

@@ -22,20 +22,20 @@ import json
 
 import pytest
 
+from declearn.communication.api.backend import flags
 from declearn.communication.api.backend.actions import (
     Accept,
     ActionMessage,
     Drop,
     Join,
-    LegacyReject,
     LegacyMessageError,
+    LegacyReject,
     Ping,
     Recv,
     Reject,
     Send,
     parse_action_from_string,
 )
-from declearn.communication.api.backend import flags
 
 
 def assert_action_is_serializable(

@@ -39,7 +39,6 @@ from declearn.secagg.x3dh.messages import (
     X3DHTrigger,
 )
 
-
 __all__ = [
     "run_x3dh_setup_client",
     "run_x3dh_setup_server",

@@ -34,6 +34,6 @@ mainly aims at providing tools used in the backend of the former objects.
 """
 
 from . import utils
-from ._vector import TensorflowVector
-from ._optim import TensorflowOptiModule
 from ._model import TensorflowModel
+from ._optim import TensorflowOptiModule
+from ._vector import TensorflowVector

@@ -20,8 +20,8 @@
 import asyncio
 import logging
 import warnings
-from unittest import mock
 from typing import Any, Dict, List, Optional, Tuple, Type, Union
+from unittest import mock
 
 import numpy as np
 import pytest
@@ -50,7 +50,6 @@ from declearn.test_utils import (
     setup_mock_network_endpoints,
 )
 from declearn.training import TrainingManager
-
 
 # Define arbitrary group definitions and sample counts.
 CLIENT_COUNTS = [

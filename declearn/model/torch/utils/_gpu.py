@@ -22,7 +22,6 @@ from typing import Any, Optional
 
 import torch
 
-
 __all__ = [
     "AutoDeviceModule",
     "select_device",

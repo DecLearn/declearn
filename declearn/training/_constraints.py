@@ -20,7 +20,6 @@
 import time
 from typing import Dict, Optional
 
-
 __all__ = [
     "Constraint",
     "ConstraintSet",

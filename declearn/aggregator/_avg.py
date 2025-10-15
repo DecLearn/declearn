@@ -19,7 +19,6 @@
 
 from typing import Any, Dict
 
-
 from declearn.aggregator._api import Aggregator, ModelUpdates
 from declearn.model.api import Vector
 

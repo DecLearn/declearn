@@ -21,9 +21,17 @@ import asyncio
 import copy
 import dataclasses
 import logging
-from typing import (
-    # fmt: off
-    Any, Dict, List, Mapping, Optional, Set, Tuple, Type, TypeVar, Union
+from typing import (  # fmt: off
+    Any,
+    Dict,
+    List,
+    Mapping,
+    Optional,
+    Set,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
 )
 
 import numpy as np
@@ -52,7 +60,6 @@ from declearn.secagg import messaging as secagg_messaging
 from declearn.secagg import parse_secagg_config_server
 from declearn.secagg.api import Decrypter, SecaggConfigServer
 from declearn.utils import deserialize_object, get_logger
-
 
 __all__ = [
     "FederatedServer",

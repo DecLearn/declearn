@@ -24,6 +24,7 @@ from unittest import mock
 
 import pytest
 
+from declearn.communication.api.backend import MessagesHandler, flags
 from declearn.communication.api.backend.actions import (
     Accept,
     Drop,
@@ -34,7 +35,6 @@ from declearn.communication.api.backend.actions import (
     Reject,
     Send,
 )
-from declearn.communication.api.backend import MessagesHandler, flags
 from declearn.version import VERSION
 
 

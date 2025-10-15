@@ -46,7 +46,6 @@ from declearn.dataset.utils import (
     split_multi_classif_dataset,
 )
 
-
 __all__ = [
     "split_data",
 ]

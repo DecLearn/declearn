@@ -30,7 +30,6 @@ from scipy import stats  # type: ignore
 from declearn.optimizer.modules import GaussianNoiseModule, NoiseModule
 from declearn.test_utils import FrameworkType, GradientsTestCase
 
-
 NOISETYPES = NoiseModule.__subclasses__()
 
 

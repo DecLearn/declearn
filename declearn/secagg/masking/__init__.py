@@ -74,10 +74,10 @@ References
     https://www.signal.org/docs/specifications/x3dh/
 """
 
-from ._aggregate import MaskedAggregate
-from ._encrypt import MaskingEncrypter
-from ._decrypt import MaskingDecrypter
 from . import messages
+from ._aggregate import MaskedAggregate
+from ._decrypt import MaskingDecrypter
+from ._encrypt import MaskingEncrypter
 from ._setup import (
     MaskingSecaggConfigClient,
     MaskingSecaggConfigServer,

@@ -40,8 +40,8 @@ except ModuleNotFoundError:
     pytest.skip("GRPC is unavailable", allow_module_level=True)
 
 from declearn.communication.api.backend.actions import Ping
-from declearn.communication.grpc._server import load_pem_file
 from declearn.communication.grpc import GrpcClient, GrpcServer
+from declearn.communication.grpc._server import load_pem_file
 from declearn.communication.grpc.protobufs import message_pb2
 from declearn.communication.grpc.protobufs.message_pb2_grpc import (
     MessageBoardServicer,

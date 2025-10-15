@@ -18,7 +18,7 @@
 """Messages for fairness-aware federated learning setup and rounds."""
 
 import dataclasses
-from typing import Any, Dict, List, Optional, Tuple, Self
+from typing import Any, Dict, List, Optional, Self, Tuple
 
 from declearn.messaging._api import Message
 from declearn.model.api import Vector

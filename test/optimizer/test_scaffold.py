@@ -20,6 +20,7 @@
 from unittest import mock
 
 import pytest
+
 from declearn.model.api import Vector
 from declearn.optimizer.modules import (
     AuxVar,

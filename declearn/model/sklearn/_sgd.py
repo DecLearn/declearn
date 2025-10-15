@@ -19,9 +19,17 @@
 
 import typing
 import warnings
-from typing import (
-    # fmt: off
-    Any, Callable, Dict, Literal, Optional, Set, Tuple, Type, Union, Self
+from typing import (  # fmt: off
+    Any,
+    Callable,
+    Dict,
+    Literal,
+    Optional,
+    Self,
+    Set,
+    Tuple,
+    Type,
+    Union,
 )
 
 import numpy as np
@@ -29,8 +37,8 @@ import pandas as pd
 import sklearn  # type: ignore
 from numpy.typing import ArrayLike
 from scipy.sparse import spmatrix  # type: ignore
+from sklearn._loss.loss import HalfBinomialLoss, HalfSquaredError, HuberLoss
 from sklearn.linear_model import SGDClassifier, SGDRegressor  # type: ignore
-from sklearn._loss.loss import HalfSquaredError, HuberLoss, HalfBinomialLoss
 
 from declearn.data_info import aggregate_data_info
 from declearn.model.api import Model

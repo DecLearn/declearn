@@ -22,7 +22,6 @@ from typing import List, Optional, Tuple
 
 import gmpy2  # type: ignore
 
-
 __all__ = [
     "DEFAULT_SHAMIR_PRIME",
     "generate_secret_shares",

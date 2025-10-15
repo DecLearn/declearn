@@ -24,7 +24,6 @@ from typing import Any, Callable, TypeVar
 import numpy as np
 import tensorflow as tf  # type: ignore
 
-
 __all__ = [
     "add_indexed_slices_support",
 ]

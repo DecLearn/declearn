@@ -20,7 +20,6 @@
 import dataclasses
 from typing import Any, Optional, Self
 
-from declearn.main.utils import EarlyStopConfig
 from declearn.main.config._dataclasses import (
     EvaluateConfig,
     FairnessConfig,
@@ -28,8 +27,8 @@ from declearn.main.config._dataclasses import (
     RegisterConfig,
     TrainingConfig,
 )
+from declearn.main.utils import EarlyStopConfig
 from declearn.utils import TomlConfig
-
 
 __all__ = [
     "FLRunConfig",

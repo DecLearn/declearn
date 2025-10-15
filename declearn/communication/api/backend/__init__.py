@@ -42,6 +42,5 @@ Submodules exposing truly-backend bricks
     Communication flags used by the declearn communication backend.
 """
 
-from . import actions
-from . import flags
+from . import actions, flags
 from ._handler import MessagesHandler

@@ -21,16 +21,21 @@ import asyncio
 import contextlib
 import logging
 import uuid
-from typing import (
-    # fmt: off
-    AsyncIterator, Dict, List, Mapping, Optional, Set, Tuple, TypeVar, Union
+from typing import (  # fmt: off
+    AsyncIterator,
+    Dict,
+    List,
+    Mapping,
+    Optional,
+    Set,
+    Tuple,
+    TypeVar,
+    Union,
 )
-
 
 from declearn.communication.api import NetworkClient, NetworkServer
 from declearn.communication.api.backend import MessagesHandler
 from declearn.messaging import Message, SerializedMessage
-
 
 __all__ = [
     "MockNetworkClient",

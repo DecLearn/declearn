@@ -18,7 +18,7 @@
 """Unit tests for `declearn.metrics.BinaryRocAUC`."""
 
 import os
-from typing import Dict, Literal, Union, Tuple
+from typing import Dict, Literal, Tuple, Union
 
 import numpy as np
 import pytest

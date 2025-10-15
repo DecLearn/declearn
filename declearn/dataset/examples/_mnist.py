@@ -24,7 +24,6 @@ from typing import Optional, Tuple
 import numpy as np
 import requests
 
-
 __all__ = [
     "load_mnist",
 ]

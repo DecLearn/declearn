@@ -28,7 +28,6 @@ from scipy.sparse import coo_matrix  # type: ignore
 from declearn.dataset import InMemoryDataset
 from declearn.fairness.core import FairnessInMemoryDataset
 
-
 SEED = 0
 
 

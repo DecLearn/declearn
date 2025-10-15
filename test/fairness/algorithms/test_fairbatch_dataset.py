@@ -27,7 +27,6 @@ from declearn.fairness.api import FairnessDataset
 from declearn.fairness.core import FairnessInMemoryDataset
 from declearn.fairness.fairbatch import FairbatchDataset
 
-
 COUNTS = {(0, 0): 30, (0, 1): 15, (1, 0): 35, (1, 1): 20}
 
 

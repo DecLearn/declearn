@@ -21,12 +21,10 @@ import dataclasses
 import functools
 from typing import Any, Dict, Optional, Union
 
-
 from declearn.aggregator import Aggregator, AveragingAggregator
 from declearn.fairness.api import FairnessControllerServer
 from declearn.optimizer import Optimizer
 from declearn.utils import TomlConfig, access_registered, deserialize_object
-
 
 __all__ = [
     "FLOptimConfig",

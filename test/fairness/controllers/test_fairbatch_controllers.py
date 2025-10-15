@@ -40,9 +40,9 @@ from declearn.test_utils import make_importable, setup_mock_network_endpoints
 
 with make_importable(os.path.dirname(os.path.abspath(__file__))):
     from fairness_controllers_testing import (
-        FairnessControllerTestSuite,
         CLIENT_COUNTS,
         TOTAL_COUNTS,
+        FairnessControllerTestSuite,
     )
 
 

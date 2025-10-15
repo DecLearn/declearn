@@ -34,9 +34,9 @@ import os
 
 from scipy.sparse import (  # type: ignore
     bsr_matrix,
+    coo_matrix,
     csc_matrix,
     csr_matrix,
-    coo_matrix,
     dia_matrix,
     dok_matrix,
     lil_matrix,

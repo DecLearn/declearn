@@ -17,8 +17,8 @@
 
 """Unit tests for `declearn.main.utils.TrainingManager`."""
 
-from unittest import mock
 from typing import Any, Iterator, Optional
+from unittest import mock
 
 import numpy
 
@@ -29,7 +29,6 @@ from declearn.metrics import Metric, MetricSet
 from declearn.model.api import Model, Vector
 from declearn.optimizer import Optimizer
 from declearn.training import TrainingManager
-
 
 MockArray = mock.create_autospec(numpy.ndarray)
 MockVector = mock.create_autospec(Vector)

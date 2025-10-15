@@ -19,9 +19,17 @@
 
 import abc
 import copy
-from typing import (
-    # fmt: off
-    Any, Dict, Generic, List, Optional, Tuple, Type, TypeVar, Union, Self
+from typing import (  # fmt: off
+    Any,
+    Dict,
+    Generic,
+    List,
+    Optional,
+    Self,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
 )
 
 from declearn.model.api import VectorSpec

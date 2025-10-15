@@ -17,13 +17,12 @@
 
 """NumpyVector data arrays container."""
 
-from typing import Any, Callable, Dict, List, Tuple, Union, Self
+from typing import Any, Callable, Dict, List, Self, Tuple, Union
 
 import numpy as np
 
-from declearn.model.api._vector import Vector, VectorSpec, register_vector_type
 from declearn.model._utils import flatten_numpy_arrays, unflatten_numpy_arrays
-
+from declearn.model.api._vector import Vector, VectorSpec, register_vector_type
 
 __all__ = [
     "NumpyVector",

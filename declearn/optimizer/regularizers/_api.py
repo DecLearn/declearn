@@ -18,7 +18,7 @@
 """Base API for loss regularization optimizer plug-ins."""
 
 from abc import ABCMeta, abstractmethod
-from typing import Any, ClassVar, Dict, TypeVar, Self
+from typing import Any, ClassVar, Dict, Self, TypeVar
 
 from declearn.model.api import Vector
 from declearn.utils import (

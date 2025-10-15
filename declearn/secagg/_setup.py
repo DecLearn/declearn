@@ -19,7 +19,6 @@
 
 from typing import Any, Dict, Tuple, Type, Union
 
-
 from declearn.secagg.api import SecaggConfigClient, SecaggConfigServer
 from declearn.secagg.utils import IdentityKeys
 from declearn.utils import access_registered, access_types_mapping

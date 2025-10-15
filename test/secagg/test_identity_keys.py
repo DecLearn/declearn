@@ -37,7 +37,6 @@ from cryptography.hazmat.primitives.asymmetric.types import (
 
 from declearn.secagg.utils import IdentityKeys
 
-
 PRIVATE_ENCODING = {
     "ssh": cryptography_serialization.Encoding.PEM,
     "pem": cryptography_serialization.Encoding.PEM,

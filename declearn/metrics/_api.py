@@ -25,10 +25,10 @@ from typing import (
     Dict,
     Generic,
     Optional,
+    Self,
     Type,
     TypeVar,
     Union,
-    Self,
 )
 
 import numpy as np

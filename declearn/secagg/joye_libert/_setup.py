@@ -33,9 +33,9 @@ from declearn.communication.utils import (
 )
 from declearn.messaging import Error, Message, SerializedMessage
 from declearn.secagg.api import SecaggConfigClient, SecaggConfigServer
-from declearn.secagg.joye_libert._primitives import DEFAULT_BIPRIME
 from declearn.secagg.joye_libert._decrypt import JoyeLibertDecrypter
 from declearn.secagg.joye_libert._encrypt import JoyeLibertEncrypter
+from declearn.secagg.joye_libert._primitives import DEFAULT_BIPRIME
 from declearn.secagg.joye_libert.messages import (
     JoyeLibertPeerInfo,
     JoyeLibertPublicShare,

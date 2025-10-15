@@ -18,13 +18,15 @@
 """Model subclass to wrap TensorFlow models."""
 
 from copy import deepcopy
-from typing import Any, Dict, Iterable, List, Optional, Set, Tuple, Union, Self
+from typing import Any, Dict, Iterable, List, Optional, Self, Set, Tuple, Union
 
 import numpy as np
+
 # fmt: off
 # pylint: disable=import-error,no-name-in-module
 import tensorflow as tf  # type: ignore
 import tensorflow.keras as tf_keras  # type: ignore
+
 # pylint: enable=import-error,no-name-in-module
 # fmt: on
 from numpy.typing import ArrayLike

@@ -29,7 +29,6 @@ from declearn.dataset.utils import load_data_array
 from declearn.fairness.api import FairnessDataset
 from declearn.typing import DataArray
 
-
 __all__ = [
     "FairnessInMemoryDataset",
 ]

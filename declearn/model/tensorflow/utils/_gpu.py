@@ -25,6 +25,7 @@ from typing import Any, Callable, Optional, Union
 # pylint: disable=import-error,no-name-in-module
 import tensorflow as tf  # type: ignore
 import tensorflow.keras as tf_keras  # type: ignore
+
 # pylint: enable=import-error,no-name-in-module
 # fmt: on
 

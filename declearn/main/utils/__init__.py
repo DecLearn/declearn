@@ -78,4 +78,4 @@ from declearn.training._constraints import (
 
 from ._checkpoint import Checkpointer
 from ._data_info import AggregationError, aggregate_clients_data_info
-from ._early_stop import EarlyStopping, EarlyStopConfig
+from ._early_stop import EarlyStopConfig, EarlyStopping

@@ -23,8 +23,8 @@ import pytest
 
 from declearn.secagg.joye_libert import (
     DEFAULT_BIPRIME,
-    encrypt,
     decrypt_sum,
+    encrypt,
     sum_encrypted,
 )
 

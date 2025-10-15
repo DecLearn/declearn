@@ -22,7 +22,7 @@ import inspect
 import io
 import warnings
 from random import SystemRandom
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union, Self
+from typing import Any, Callable, Dict, List, Optional, Self, Set, Tuple, Union
 
 import haiku as hk
 import jax

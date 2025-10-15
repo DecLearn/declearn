@@ -19,7 +19,6 @@
 
 from typing import List, TypeVar
 
-
 from declearn.secagg.api import Decrypter, SecureAggregate
 from declearn.secagg.joye_libert._aggregate import JLSAggregate
 from declearn.secagg.joye_libert._primitives import (

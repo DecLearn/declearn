@@ -31,7 +31,6 @@ from declearn.secagg.api._aggregate import (
 from declearn.secagg.utils import Quantizer
 from declearn.utils import Aggregate
 
-
 __all__ = [
     "Encrypter",
 ]

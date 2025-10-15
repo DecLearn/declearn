@@ -23,8 +23,8 @@ import ssl
 from typing import Optional, Union
 
 import websockets as ws
+from websockets.exceptions import ConnectionClosedError, ConnectionClosedOK
 from websockets.server import WebSocketServer, WebSocketServerProtocol
-from websockets.exceptions import ConnectionClosedOK, ConnectionClosedError
 
 from declearn.communication.api import NetworkServer
 from declearn.communication.websockets._tools import (

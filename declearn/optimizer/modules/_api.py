@@ -19,7 +19,7 @@
 
 import abc
 import dataclasses
-from typing import Any, ClassVar, Dict, Generic, Optional, Type, TypeVar, Self
+from typing import Any, ClassVar, Dict, Generic, Optional, Self, Type, TypeVar
 
 from declearn.model.api import Vector
 from declearn.utils import (

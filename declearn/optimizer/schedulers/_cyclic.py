@@ -19,7 +19,6 @@
 
 from typing import Any, Dict
 
-
 from declearn.optimizer.schedulers._api import Scheduler
 
 __all__ = [

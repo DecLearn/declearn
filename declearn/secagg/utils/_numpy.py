@@ -21,7 +21,6 @@ import functools
 
 import numpy as np
 
-
 __all__ = [
     "get_numpy_float_dtype",
     "get_numpy_uint_dtype",

@@ -19,10 +19,8 @@
 
 from typing import Dict, Type, TypeVar
 
-
 from declearn.communication.api import NetworkClient, NetworkServer
 from declearn.messaging import Error, Message, SerializedMessage
-
 
 __all__ = [
     "ErrorMessageException",

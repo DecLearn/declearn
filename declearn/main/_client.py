@@ -36,12 +36,11 @@ from declearn.dataset import Dataset
 from declearn.fairness.api import FairnessControllerClient
 from declearn.main.utils import Checkpointer
 from declearn.messaging import Message, SerializedMessage
-from declearn.training import TrainingManager
+from declearn.secagg import messaging as secagg_messaging
 from declearn.secagg import parse_secagg_config_client
 from declearn.secagg.api import Encrypter, SecaggConfigClient, SecaggSetupQuery
-from declearn.secagg import messaging as secagg_messaging
+from declearn.training import TrainingManager
 from declearn.utils import LOGGING_LEVEL_MAJOR, get_logger
-
 
 __all__ = [
     "FederatedClient",
@@ -428,6 +427,7 @@ class FederatedClient:
         # lazy-import the DPTrainingManager, that involves some optional,
         # heavy-loadtime dependencies; pylint: disable=import-outside-toplevel
         from declearn.training.dp import DPTrainingManager
+
         # pylint: enable=import-outside-toplevel
         self.trainmanager = DPTrainingManager(
             model=self.trainmanager.model,

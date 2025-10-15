@@ -18,7 +18,7 @@
 """Messages for the default Federated Learning process of DecLearn."""
 
 import dataclasses
-from typing import Any, Dict, List, Optional, Tuple, Self
+from typing import Any, Dict, List, Optional, Self, Tuple
 
 from declearn.aggregator import Aggregator, ModelUpdates
 from declearn.messaging._api import Message
@@ -27,7 +27,6 @@ from declearn.model.api import Model, Vector
 from declearn.optimizer import Optimizer
 from declearn.optimizer.modules import AuxVar
 from declearn.utils import deserialize_object, serialize_object
-
 
 __all__ = [
     "CancelTraining",

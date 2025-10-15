@@ -26,7 +26,6 @@ import pytest
 import scipy.sparse  # type: ignore
 import sklearn.datasets  # type: ignore
 
-
 from declearn.dataset import InMemoryDataset
 from declearn.dataset.utils import save_data_array
 from declearn.test_utils import make_importable

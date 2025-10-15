@@ -20,7 +20,6 @@
 import math
 from typing import List, TypeVar
 
-
 from declearn.secagg.api import Decrypter, SecureAggregate
 from declearn.secagg.masking._aggregate import MaskedAggregate
 from declearn.utils import Aggregate

@@ -22,7 +22,6 @@ import json
 import warnings
 from typing import Any, Callable, Dict, Optional, Type, TypedDict
 
-
 __all__ = [
     "add_json_support",
     "json_dump",

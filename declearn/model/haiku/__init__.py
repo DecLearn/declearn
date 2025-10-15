@@ -39,5 +39,5 @@ This module exposes:
 """
 
 from . import utils
-from ._vector import JaxNumpyVector
 from ._model import HaikuModel
+from ._vector import JaxNumpyVector

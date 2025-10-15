@@ -37,7 +37,6 @@ import dataclasses
 import json
 from typing import Optional
 
-
 from declearn.version import VERSION
 
 __all__ = [

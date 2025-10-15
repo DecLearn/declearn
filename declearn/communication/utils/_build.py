@@ -20,7 +20,6 @@
 import logging
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-
 from declearn.communication.api import NetworkClient, NetworkServer
 from declearn.utils import (
     TomlConfig,
@@ -28,7 +27,6 @@ from declearn.utils import (
     access_types_mapping,
     dataclass_from_func,
 )
-
 
 __all__ = [
     "NetworkClientConfig",

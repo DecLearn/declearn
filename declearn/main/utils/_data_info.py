@@ -17,11 +17,9 @@
 
 """Dependency functions for a FL server to process 'data_info'."""
 
-from typing import Any, Dict, Set, NoReturn
-
+from typing import Any, Dict, NoReturn, Set
 
 from declearn.data_info import aggregate_data_info
-
 
 __all__ = [
     "AggregationError",

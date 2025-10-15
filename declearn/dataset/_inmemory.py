@@ -19,7 +19,7 @@
 
 import os
 import typing
-from typing import Any, Dict, Iterator, List, Optional, Set, Tuple, Union, Self
+from typing import Any, Dict, Iterator, List, Optional, Self, Set, Tuple, Union
 
 import numpy as np
 import pandas as pd

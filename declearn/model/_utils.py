@@ -21,7 +21,6 @@ from typing import List, Set, Tuple
 
 import numpy as np
 
-
 __all__ = [
     "flatten_numpy_arrays",
     "raise_on_stringsets_mismatch",

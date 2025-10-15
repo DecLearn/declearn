@@ -20,7 +20,6 @@
 import functools
 from typing import Dict, Optional, Tuple, Type
 
-
 __all__ = [
     "access_registered",
     "access_registration_info",

@@ -19,9 +19,15 @@
 
 import dataclasses
 import warnings
-from typing import (
-    # fmt: off
-    Callable, Iterator, List, Literal, Optional, Set, Tuple, Union
+from typing import (  # fmt: off
+    Callable,
+    Iterator,
+    List,
+    Literal,
+    Optional,
+    Set,
+    Tuple,
+    Union,
 )
 
 import numpy as np
@@ -30,7 +36,6 @@ import tensorflow as tf  # type: ignore
 from declearn.dataset._base import Dataset, DataSpecs
 from declearn.typing import Batch
 from declearn.utils import register_type
-
 
 __all__ = [
     "TensorflowDataset",

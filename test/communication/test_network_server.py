@@ -34,7 +34,6 @@ from declearn.communication.api.backend import MessagesHandler, actions, flags
 from declearn.utils import access_types_mapping, get_logger
 from declearn.version import VERSION
 
-
 SERVER_CLASSES = access_types_mapping("NetworkServer")
 
 

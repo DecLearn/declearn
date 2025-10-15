@@ -26,7 +26,6 @@ from declearn.metrics import Accuracy, MeanMetric, MetricSet
 from declearn.model.api import Model
 from declearn.model.sklearn import SklearnSGDModel
 
-
 __all__ = [
     "FairnessMetricsComputer",
 ]

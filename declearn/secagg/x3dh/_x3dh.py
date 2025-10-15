@@ -35,7 +35,6 @@ from cryptography.hazmat.primitives.asymmetric.x25519 import (
 from cryptography.hazmat.primitives.ciphers import aead as cryptography_aead
 from cryptography.hazmat.primitives.kdf import hkdf as cryptography_hkdf
 
-
 __all__ = [
     "X3DHManager",
 ]

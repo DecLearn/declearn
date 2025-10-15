@@ -76,8 +76,8 @@ from ._classif import (
 )
 from ._mean import (
     Accuracy,
-    MeanMetric,
     MeanAbsoluteError,
+    MeanMetric,
     MeanSquaredError,
 )
 from ._roc_auc import BinaryRocAUC
