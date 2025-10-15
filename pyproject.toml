@@ -145,6 +145,10 @@ repository = "https://gitlab.inria.fr/magnet/declearn/declearn2.git"
 line-length = 79
 extend-exclude = "(.*_pb2.*py$)"  # exclude auto-generated protobuf code files
 
+[tool.isort]
+profile = "black"
+line_length = 79
+
 [tool.coverage.run]
 # enable coverage collection within multiprocessing
 concurrency = ["multiprocessing"]
