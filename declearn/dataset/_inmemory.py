@@ -229,7 +229,7 @@ class InMemoryDataset(Dataset):
         """
         # Case of a data array or None value: return as-is.
         if isinstance(value, DATA_ARRAY_TYPES) or value is None:
-            return value, None # type: ignore
+            return value, None  # type: ignore
         # Case of an invalid type: raise.
         if not isinstance(value, str):
             raise TypeError(
@@ -280,7 +280,7 @@ class InMemoryDataset(Dataset):
         if isinstance(self.target, np.ndarray):
             return set(np.unique(self.target).tolist())
         if isinstance(self.target, spmatrix):
-            return set(np.unique(self.target.tocsr().data).tolist()) # type: ignore
+            return set(np.unique(self.target.tocsr().data).tolist())  # type: ignore
         raise TypeError(  # pragma: no cover
             f"Invalid 'target' attribute type: '{type(self.target)}'."
         )
@@ -299,7 +299,7 @@ class InMemoryDataset(Dataset):
                 )
             return list(dtypes)[0]
         if isinstance(self.feats, (pd.Series, np.ndarray, spmatrix)):
-            return str(self.feats.dtype) # type: ignore
+            return str(self.feats.dtype)  # type: ignore
         raise TypeError(  # pragma: no cover
             f"Invalid 'data' attribute type: '{type(self.target)}'."
         )
@@ -600,8 +600,8 @@ class InMemoryDataset(Dataset):
         else:
             # Ensure slicing compatibility for pandas structures.
             if isinstance(data, (pd.DataFrame, pd.Series)):
-                data = data.values # type: ignore
+                data = data.values  # type: ignore
             # Iteratively yield slices of the data array.
             for idx in range(0, len(order), batch_size):
                 end = idx + batch_size
-                yield data[order[idx:end]] # type: ignore
+                yield data[order[idx:end]]  # type: ignore

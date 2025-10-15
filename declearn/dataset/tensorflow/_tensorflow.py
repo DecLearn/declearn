@@ -275,7 +275,7 @@ def parse_and_validate_tensorflow_dataset(
     # Gather cardinality and need for y and/or w elements' filling.
     info.n_padding = 3 - len(spec)
     if int(tf.version.VERSION.split(".", 2)[1]) >= 13:
-        info.n_samples = int(dataset.cardinality().numpy()) # type: ignore
+        info.n_samples = int(dataset.cardinality().numpy())  # type: ignore
         if info.n_samples == tf.data.UNKNOWN_CARDINALITY:
             info.n_samples = 0  # force evaluating via next logic branch
     if not info.n_samples:
@@ -343,11 +343,11 @@ def get_stack_function(
 ) -> Callable[[Union[List[None], List[tf.Tensor]]], Optional[tf.Tensor]]:
     """Return a function to stack sample-wise atomic elements."""
     if batch_mode == "default":
-        return _stack_default # type: ignore
+        return _stack_default  # type: ignore
     if batch_mode == "padded":
-        return _stack_padded # type: ignore
+        return _stack_padded  # type: ignore
     if batch_mode == "ragged":
-        return _stack_ragged # type: ignore
+        return _stack_ragged  # type: ignore
     raise TypeError(
         "Invalid value for 'batch_mode': should be one of "
         f"{{'default', 'padded', 'ragged'}}, not '{batch_mode}'."

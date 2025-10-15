@@ -218,7 +218,7 @@ class TensorflowVector(Vector):
         if isinstance(tensor, tf.IndexedSlices):
             val = cls._pack_tensor(tensor.values)
             ind = cls._pack_tensor(tensor.indices)
-            shp = cls._pack_tensor(tensor.dense_shape) # type: ignore
+            shp = cls._pack_tensor(tensor.dense_shape)  # type: ignore
             return ["slices", val, ind, shp]
         return np.array(tensor.numpy())
 
@@ -232,7 +232,7 @@ class TensorflowVector(Vector):
             val = cls._unpack_tensor(data[1])
             ind = cls._unpack_tensor(data[2])
             shp = cls._unpack_tensor(data[3])
-            return tf.IndexedSlices(val, ind, shp) # type: ignore
+            return tf.IndexedSlices(val, ind, shp)  # type: ignore
         try:
             return tf.convert_to_tensor(data)
         except TypeError as exc:  # pragma: no cover
@@ -372,5 +372,5 @@ class TensorflowVector(Vector):
                     )
                 # Otherwise, merely convert arrays to tensors.
                 else:
-                    tf_dat[name] = tf.convert_to_tensor(array) # type: ignore
-        return cls(tf_dat) # type: ignore
+                    tf_dat[name] = tf.convert_to_tensor(array)  # type: ignore
+        return cls(tf_dat)  # type: ignore

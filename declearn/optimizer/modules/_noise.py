@@ -160,7 +160,7 @@ class GaussianNoiseModule(NoiseModule):
         if isinstance(self._rng, SystemRandom):
             value = [self._rng.random() for _ in range(np.prod(shape))]
             array = np.array(value).reshape(shape).astype(dtype)
-            return scipy.stats.norm.ppf(array, scale=self.std) # type: ignore
+            return scipy.stats.norm.ppf(array, scale=self.std)  # type: ignore
         # Case when using numpy RNG, that provides with gaussian sampling.
         if isinstance(self._rng, np.random.Generator):
             # false-positive; pylint: disable=no-member

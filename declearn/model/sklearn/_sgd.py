@@ -37,7 +37,11 @@ import pandas as pd
 import sklearn  # type: ignore
 from numpy.typing import ArrayLike
 from scipy.sparse import spmatrix  # type: ignore
-from sklearn._loss.loss import HalfBinomialLoss, HalfSquaredError, HuberLoss # type: ignore
+from sklearn._loss.loss import (  # type: ignore
+    HalfBinomialLoss,
+    HalfSquaredError,
+    HuberLoss,
+)
 from sklearn.linear_model import SGDClassifier, SGDRegressor  # type: ignore
 
 from declearn.data_info import aggregate_data_info
@@ -401,7 +405,7 @@ class SklearnSGDModel(Model):
         x_data, y_data, s_wght = self._unpack_batch(batch)
         # Iteratively compute sample-wise gradients.
         grad = [
-            self._compute_sample_gradient(x, y) for x, y in zip(x_data, y_data) # type: ignore
+            self._compute_sample_gradient(x, y) for x, y in zip(x_data, y_data)  # type: ignore
         ]
         # Optionally clip sample-wise gradients based on their L2 norm.
         if max_norm:
@@ -411,7 +415,7 @@ class SklearnSGDModel(Model):
                     arr *= min(max_norm / norm, 1)
         # Optionally re-weight gradients based on sample weights.
         if s_wght is not None:
-            grad = [g * w for g, w in zip(grad, s_wght)] # type: ignore
+            grad = [g * w for g, w in zip(grad, s_wght)]  # type: ignore
         # Compute and record the loss value on the entire batch.
         loss = self.loss_function(
             y_data, self._predict(x_data)  # type: ignore

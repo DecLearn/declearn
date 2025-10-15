@@ -142,7 +142,7 @@ class GrpcServer(NetworkServer):
         """Start the gRPC server."""
         self._server = self._setup_server()
         self.logger.info("Server is now starting...")
-        await self._server.start() # type: ignore
+        await self._server.start()  # type: ignore
 
     def _setup_server(
         self,
@@ -157,14 +157,14 @@ class GrpcServer(NetworkServer):
         )
         servicer = GrpcServicer(self.handler)
         add_MessageBoardServicer_to_server(servicer, server)
-        return server # type: ignore
+        return server  # type: ignore
 
     async def stop(
         self,
     ) -> None:
         """Stop the gRPC server and purge information about clients."""
         if self._server is not None:
-            await self._server.stop(grace=None) # type: ignore
+            await self._server.stop(grace=None)  # type: ignore
             self._server = None
         await self.handler.purge()
 

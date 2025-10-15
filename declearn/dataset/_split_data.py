@@ -89,12 +89,12 @@ def load_data(
         if os.path.isfile(target):
             labels = load_data_array(target)
             if isinstance(labels, spmatrix):
-                labels = labels.toarray() # type: ignore
+                labels = labels.toarray()  # type: ignore
             elif isinstance(labels, pd.DataFrame):
                 labels = labels.values
         # Case when 'target' is the name of a column in a csv file.
         elif isinstance(inputs, pd.DataFrame) and target in inputs:
-            labels = inputs.pop(target).values # type: ignore
+            labels = inputs.pop(target).values  # type: ignore
             inputs = inputs.values
         else:
             raise ValueError(
@@ -103,10 +103,10 @@ def load_data(
             )
     elif isinstance(target, int):
         # Case when 'target' is the index of a data column.
-        inputs, labels = _extract_column_by_index(inputs, target) # type: ignore
+        inputs, labels = _extract_column_by_index(inputs, target)  # type: ignore
     else:
         raise TypeError("Invalid type for 'target': should be str or int.")
-    return inputs, labels # type: ignore
+    return inputs, labels  # type: ignore
 
 
 def _extract_column_by_index(
@@ -126,13 +126,13 @@ def _extract_column_by_index(
         inputs = np.delete(inputs, target, axis=1)
     elif isinstance(inputs, spmatrix):
         labels = inputs.getcol(target).toarray().ravel()
-        csc = inputs.tocsc() # type: ignore
+        csc = inputs.tocsc()  # type: ignore
         # csc: sparse matrix with efficient column slicing
         idx = [i for i in range(inputs.shape[1]) if i != target]
-        inputs = type(inputs)(csc[:, idx]) # type: ignore
+        inputs = type(inputs)(csc[:, idx])  # type: ignore
     else:  # pragma: no cover
         raise TypeError("Invalid type for 'inputs'.")
-    return inputs, labels # type: ignore
+    return inputs, labels  # type: ignore
 
 
 # pylint: disable-next=too-many-positional-arguments

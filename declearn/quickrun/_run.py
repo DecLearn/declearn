@@ -139,12 +139,12 @@ async def run_client(
             handler.setLevel(LOGGING_LEVEL_MAJOR)
     # Wrap train and validation data as Dataset objects.
     train = InMemoryDataset(
-        paths.get("train_data"), # type: ignore
+        paths.get("train_data"),  # type: ignore
         target=paths.get("train_target"),
         expose_classes=True,
     )
     valid = InMemoryDataset(
-        paths.get("valid_data"), # type: ignore
+        paths.get("valid_data"),  # type: ignore
         target=paths.get("valid_target"),
     )
     client = FederatedClient(
