@@ -205,10 +205,10 @@ class VectorSelfOpTests:
     ) -> None:
         """Test that the sum-reduce operator of a Vector works properly."""
         vector = factory.make_vector(seed=0)
-        expect = {
+        expect: Dict[str, np.ndarray] = {
             key: np.sum(to_numpy(val, factory.framework))
             for key, val in vector.coefs.items()
-        }  # type: Dict[str, np.ndarray]
+        }
         result = vector.sum()
         factory.assert_equal(expect, result)
 

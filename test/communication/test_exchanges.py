@@ -253,10 +253,10 @@ class TestNetworkExchanges:
     ) -> None:
         """Test that the server can send individual messages to clients."""
         server, clients = agents
-        messages = {
+        messages: Dict[str, messaging.Message] = {
             name: messaging.GenericMessage(action="test", params={"idx": idx})
             for idx, name in enumerate(server.client_names)
-        }  # type: Dict[str, messaging.Message]
+        }
         send = server.send_messages(messages)
         recv = [client.recv_message(timeout=1) for client in clients]
         _, *replies = await asyncio.gather(send, *recv)

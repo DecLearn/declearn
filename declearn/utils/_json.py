@@ -17,6 +17,8 @@
 
 """Tools to add support for non-standard types' JSON-(de)serialization."""
 
+from __future__ import annotations
+
 import dataclasses
 import json
 import warnings
@@ -31,8 +33,8 @@ __all__ = [
 ]
 
 
-JSON_PACK = {}  # type:  Dict[Type[Any], SerializeSpec]
-JSON_UNPACK = {}  # type:  Dict[str, SerializeSpec]
+JSON_PACK: Dict[Type[Any], SerializeSpec] = {}
+JSON_UNPACK: Dict[str, SerializeSpec] = {}
 
 JsonPack = TypedDict("JsonPack", {"__type__": str, "dump": Any})
 

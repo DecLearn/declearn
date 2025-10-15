@@ -378,8 +378,8 @@ class FairnessControllerTestSuite:
                 use_secagg,
             )
         # Run mock client computations and compute expected aggregate.
-        share_vals = []  # type: List[List[float]]
-        local_vals = []  # type: List[Dict[str, Dict[Tuple[Any, ...], float]]]
+        share_vals: List[List[float]] = []
+        local_vals: List[Dict[str, Dict[Tuple[Any, ...], float]]] = []
         for idx, client in enumerate(clients):
             with mock.patch.object(
                 client.computer,
@@ -452,8 +452,8 @@ class FairnessControllerTestSuite:
         """
         # Instantiate the fairness and optional secagg controllers.
         n_peers = len(CLIENT_COUNTS)
-        decrypter = None  # type: Optional[Decrypter]
-        encrypters = [None] * n_peers  # type: List[Optional[Encrypter]]
+        decrypter: Optional[Decrypter] = None
+        encrypters: List[Optional[Encrypter]] = [None] * n_peers
         if use_secagg:
             decrypter, encrypters = build_secagg_controllers(  # type: ignore
                 n_peers

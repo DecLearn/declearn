@@ -141,13 +141,13 @@ class FederatedServer:
         self.ckptr = checkpoint
         # Assign the optional SecAgg config and declare a Decrypter slot.
         self.secagg = self._parse_secagg(secagg)
-        self._decrypter = None  # type: Optional[Decrypter]
-        self._secagg_peers = set()  # type: Set[str]
+        self._decrypter: Optional[Decrypter] = None
+        self._secagg_peers: Set[str] = set()
         # Set up private attributes to record the loss values and best weights.
-        self._losses = []  # type: List[float]
-        self._best = None  # type: Optional[Vector]
+        self._losses: List[float] = []
+        self._best: Optional[Vector] = None
         # Set up a private attribute to prevent redundant weights sharing.
-        self._clients_holding_latest_model = set()  # type: Set[str]
+        self._clients_holding_latest_model: Set[str] = set()
 
     @staticmethod
     def _parse_model(
@@ -279,7 +279,7 @@ class FederatedServer:
             criterion.
         """
         # Instantiate the early-stopping criterion, if any.
-        early_stop = None  # type: Optional[EarlyStopping]
+        early_stop: Optional[EarlyStopping] = None
         if config.early_stop is not None:
             early_stop = config.early_stop.instantiate()
         # Start the communications server and run the FL process.
@@ -453,8 +453,8 @@ class FederatedServer:
         """
         # Await clients' responses and type-check them.
         replies = await self.netwk.wait_for_messages(clients)
-        results = {}  # type: Dict[str, MessageT]
-        errors = {}  # type: Dict[str, str]
+        results: Dict[str, MessageT] = {}
+        errors: Dict[str, str] = {}
         for client, reply in replies.items():
             if issubclass(reply.message_cls, msgtype):
                 results[client] = reply.deserialize()
@@ -467,10 +467,10 @@ class FederatedServer:
         # future: modularize errors-handling behaviour
         if errors:
             err_msg = f"{context} failed for another client."
-            messages = {
+            messages: Dict[str, messaging.Message] = {
                 client: messaging.CancelTraining(errors.get(client, err_msg))
                 for client in self.netwk.client_names
-            }  # type: Dict[str, messaging.Message]
+            }
             await self.netwk.send_messages(messages)
             err_msg = f"{context} failed for {len(errors)} clients:" + "".join(
                 f"\n    {client}: {error}" for client, error in errors.items()
@@ -495,13 +495,13 @@ class FederatedServer:
         """
         self.logger.info("Sending privacy requests to all clients.")
         assert config.privacy is not None  # else this method is not called
-        params = {
+        params: Dict[str, Any] = {
             "rounds": config.rounds,
             "batches": config.training.batch_cfg,
             "n_epoch": config.training.n_epoch,
             "n_steps": config.training.n_steps,
             **dataclasses.asdict(config.privacy),
-        }  # type: Dict[str, Any]
+        }
         message = messaging.PrivacyRequest(**params)
         await self.netwk.broadcast_message(message)
         self.logger.info("Waiting for clients' responses.")
@@ -727,7 +727,7 @@ class FederatedServer:
             Client-wise TrainReply message sent after a training round.
         """
         # Unpack, aggregate and finally process optimizer auxiliary variables.
-        aux_var = {}  # type: Dict[str, AuxVar]
+        aux_var: Dict[str, AuxVar] = {}
         for msg in results.values():
             for key, aux in msg.aux_var.items():
                 aux_var[key] = aux_var.get(key, 0) + aux

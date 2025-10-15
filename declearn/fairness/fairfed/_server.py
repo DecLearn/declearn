@@ -192,9 +192,9 @@ class FairfedControllerServer(FairnessControllerServer):
             netwk, received, expected=FairfedOkay
         )
         # Package and return accuracy, fairness and computed average metrics.
-        metrics = {
+        metrics: Dict[str, Union[float, np.ndarray]] = {
             f"accuracy_{key}": val for key, val in accuracy.items()
-        }  # type: Dict[str, Union[float, np.ndarray]]
+        }
         metrics.update(
             {f"{self.f_type}_{key}": val for key, val in fairness.items()}
         )

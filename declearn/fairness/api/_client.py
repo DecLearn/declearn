@@ -154,7 +154,7 @@ class FairnessControllerClient(metaclass=abc.ABCMeta):
         self.fairness_function = instantiate_fairness_function(
             f_type=f_type, counts=self.computer.counts, **f_args
         )
-        self.groups = []  # type: List[Tuple[Any, ...]]
+        self.groups: List[Tuple[Any, ...]] = []
 
     @staticmethod
     def from_setup_query(

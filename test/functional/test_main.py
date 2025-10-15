@@ -142,7 +142,7 @@ class DeclearnTestCase:
         ]
         if self.kind == "Reg":
             stack.append(torch.nn.Linear(8, 1))
-            loss = torch.nn.MSELoss()  # type: torch.nn.Module
+            loss: torch.nn.Module = torch.nn.MSELoss()
         elif self.kind == "Bin":
             stack.append(torch.nn.Linear(8, 1))
             stack.append(torch.nn.Sigmoid())
@@ -309,7 +309,7 @@ def test_declearn(
     if not fulltest:
         if (kind != "Reg") or (strategy == "FedAvg"):
             pytest.skip("skip scenario (no --fulltest option)")
-    protocol = "websockets"  # type: Literal["grpc", "websockets"]
+    protocol: Literal["grpc", "websockets"] = "websockets"
     if "websockets" not in list_available_protocols():
         if "grpc" not in list_available_protocols():
             pytest.fail("Both 'grpc' and 'websockets' are unavailable.")

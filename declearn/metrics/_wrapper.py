@@ -71,7 +71,7 @@ class MetricSet:
             If multiple metrics are of the same final type.
         """
         # REVISE: store metrics into a Dict and adjust labels when needed
-        self.metrics = []  # type: List[Metric]
+        self.metrics: List[Metric] = []
         for metric in metrics:
             if isinstance(metric, str):
                 metric = Metric.from_specs(metric)

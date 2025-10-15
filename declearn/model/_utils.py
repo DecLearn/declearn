@@ -106,7 +106,7 @@ def unflatten_numpy_arrays(
         List of numpy arrays storing the input values, enforcing the
         input specs as to shapes and dtypes.
     """
-    arrays = []  # type: List[np.ndarray]
+    arrays: List[np.ndarray] = []
     start = 0
     for shape, dtype in zip(shapes, dtypes):
         end = start + int(np.prod(shape))

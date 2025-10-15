@@ -66,9 +66,9 @@ class PluginTestBase:
     def test_rebuild_from_specs(self, cls: Type[Plugin]) -> None:
         """Test that a plug-in can be rebuilt using `from_specs`."""
         plugin = cls()
-        base = (
+        base: Type[Union[OptiModule, Regularizer]] = (
             OptiModule if isinstance(plugin, OptiModule) else Regularizer
-        )  # type: Type[Union[OptiModule, Regularizer]]
+        )
         name = plugin.name
         config = plugin.get_config()
         self.assert_equivalent(plugin, base.from_specs(name, config))
@@ -112,7 +112,7 @@ class PluginTestBase:
               If no framework was correctly run, fail this test.
         """
         # Collect outputs from a newly-created plugin for each framework.
-        results = []  # type: List[NumpyVector]
+        results: List[NumpyVector] = []
         for fwk in list_available_frameworks():
             f_case = GradientsTestCase(fwk)  # type: ignore
             plugin = cls()

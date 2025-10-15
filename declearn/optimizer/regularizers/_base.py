@@ -64,7 +64,7 @@ class FedProxRegularizer(Regularizer):
         alpha: float = 0.01,
     ) -> None:
         super().__init__(alpha)
-        self.ref_wgt = None  # type: Optional[Vector]
+        self.ref_wgt: Optional[Vector] = None
 
     def on_round_start(
         self,

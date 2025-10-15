@@ -47,7 +47,7 @@ def build_secagg_controllers(
     """
     n_pairs = int(n_peers * (n_peers - 1) / 2)
     s_keys = [secrets.randbits(32) for _ in range(n_pairs)]
-    clients = []  # type: List[MaskingEncrypter]
+    clients: List[MaskingEncrypter] = []
     starts = [n_peers - i - 1 for i in range(n_peers)]
     starts = [sum(starts[:i]) for i in range(n_peers)]
     for idx in range(n_peers):

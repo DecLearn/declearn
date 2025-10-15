@@ -157,7 +157,7 @@ class ConstraintSet:
             If multiple constraints have the same name, suffixes
             will be appended in order to disambiguate them.
         """
-        values = {}  # type: Dict[str, float]
+        values: Dict[str, float] = {}
         for constraint in self.constraints:
             name = constraint.name
             idx = 0

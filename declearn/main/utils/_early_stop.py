@@ -62,7 +62,7 @@ class EarlyStopping:
         self.patience = patience
         self.decrease = decrease
         self.relative = relative
-        self._best_metric = None  # type: Optional[float]
+        self._best_metric: Optional[float] = None
         self._n_iter_stuck = 0
 
     def reset(

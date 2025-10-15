@@ -76,9 +76,9 @@ class FairfedValueComputer:
         self.f_type = f_type
         self.strict = strict
         self.target = target
-        self._key_groups = (
+        self._key_groups: Optional[Tuple[Tuple[Any, ...], Tuple[Any, ...]]] = (
             None
-        )  # type: Optional[Tuple[Tuple[Any, ...], Tuple[Any, ...]]]
+        )
 
     def initialize(
         self,

@@ -118,9 +118,9 @@ def generate_private_key(
         key_size=key_size,
     )
     if password is None:
-        encryption_algorithm = (
-            crypto_serialization.NoEncryption()
-        )  # type: crypto_serialization.KeySerializationEncryption
+        encryption_algorithm: (
+            crypto_serialization.KeySerializationEncryption
+        ) = crypto_serialization.NoEncryption()
     else:
         encryption_algorithm = crypto_serialization.BestAvailableEncryption(
             password.encode("utf-8")

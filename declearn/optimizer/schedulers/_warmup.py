@@ -38,7 +38,7 @@ class WarmupScheduler(Scheduler, register=False, metaclass=abc.ABCMeta):
     ) -> None:
         if isinstance(base, Scheduler):
             self.base = base.base
-            self.wrapped = base  # type: Optional[Scheduler]
+            self.wrapped: Optional[Scheduler] = base
         else:
             self.base = float(base)
             self.wrapped = None

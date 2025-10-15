@@ -128,7 +128,7 @@ class FederatedClient:
         self.ckptr = checkpoint
         # Assign the optional SecAgg config and declare an Encrypter slot.
         self.secagg = self._parse_secagg(secagg)
-        self._encrypter = None  # type: Optional[Encrypter]
+        self._encrypter: Optional[Encrypter] = None
         # Record the metric-sharing and verbosity bool values.
         self.share_metrics = bool(share_metrics)
         if (self.secagg is not None) and not self.share_metrics:
@@ -140,8 +140,8 @@ class FederatedClient:
             warnings.warn(msg, UserWarning, stacklevel=-1)
         self.verbose = bool(verbose)
         # Create slots that are (opt.) populated during initialization.
-        self.trainmanager = None  # type: Optional[TrainingManager]
-        self.fairness = None  # type: Optional[FairnessControllerClient]
+        self.trainmanager: Optional[TrainingManager] = None
+        self.fairness: Optional[FairnessControllerClient] = None
 
     @staticmethod
     def _parse_netwk(netwk) -> Tuple[NetworkClient, bool]:
@@ -542,7 +542,7 @@ class FederatedClient:
             await self.netwk.send_message(messaging.Error(error))
             return
         # Run the training round.
-        reply = self.trainmanager.training_round(message)  # type: Message
+        reply: Message = self.trainmanager.training_round(message)
         # Collect and optionally record batch-wise training losses.
         # Note: collection enables purging them from memory.
         losses = self.trainmanager.model.collect_training_losses()
@@ -593,7 +593,7 @@ class FederatedClient:
             await self.netwk.send_message(messaging.Error(error))
             return
         # Run the evaluation round.
-        reply = self.trainmanager.evaluation_round(message)  # type: Message
+        reply: Message = self.trainmanager.evaluation_round(message)
         # Post-process the results.
         if isinstance(reply, messaging.EvaluationReply):  # not an Error
             # Optionnally checkpoint the model, optimizer and local loss.

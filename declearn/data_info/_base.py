@@ -118,7 +118,7 @@ class DataInfoField(metaclass=ABCMeta):
             )
 
 
-DATA_INFO_FIELDS = {}  # type: Dict[str, Type[DataInfoField]]
+DATA_INFO_FIELDS: Dict[str, Type[DataInfoField]] = {}
 
 
 def register_data_info_field(
@@ -193,7 +193,7 @@ def aggregate_data_info(
             )
         fields = required_fields
     # Gather and spec-based-aggregate individual values.
-    data_info = {}  # type: Dict[str, Any]
+    data_info: Dict[str, Any] = {}
     for field in fields:
         values = [info[field] for info in clients_data_info]
         spec = DATA_INFO_FIELDS.get(field)

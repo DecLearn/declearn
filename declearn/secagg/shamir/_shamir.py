@@ -80,7 +80,7 @@ def generate_secret_shares(
     # Generate a random polynom Q of order (k - 1).
     poly_c = [gmpy2.mpz(secrets.randbelow(mprime)) for _ in range(thresh - 1)]
     # Return shares, defined as (x_1, Q(x_1)), ..., (x_n, Q(x_n)).
-    ycoord = []  # type: List[int]
+    ycoord: List[int] = []
     for x in xcoord:
         y_val = secret + sum(
             p * gmpy2.powmod(x, i, mprime)

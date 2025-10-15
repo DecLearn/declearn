@@ -93,7 +93,7 @@ class ScaffoldAuxVar(AuxVar):
     def to_dict(
         self,
     ) -> Dict[str, Any]:
-        output = {}  # type: Dict[str, Any]
+        output: Dict[str, Any] = {}
         if self.state is not None:
             output["state"] = self.state
         if self.delta is not None:
@@ -180,10 +180,10 @@ class ScaffoldClientModule(OptiModule[ScaffoldAuxVar]):
     ) -> None:
         """Instantiate the client-side SCAFFOLD gradients-correction module."""
         self.uuid = str(uuid.uuid4())
-        self.state = 0.0  # type: Union[Vector, float]
-        self.delta = 0.0  # type: Union[Vector, float]
-        self.sglob = 0.0  # type: Union[Vector, float]
-        self._grads = 0.0  # type: Union[Vector, float]
+        self.state: Union[Vector, float] = 0.0
+        self.delta: Union[Vector, float] = 0.0
+        self.sglob: Union[Vector, float] = 0.0
+        self._grads: Union[Vector, float] = 0.0
         self._steps = 0
 
     def run(
@@ -388,8 +388,8 @@ class ScaffoldServerModule(OptiModule[ScaffoldAuxVar]):
         self,
     ) -> None:
         """Instantiate the server-side SCAFFOLD gradients-correction module."""
-        self.s_state = 0.0  # type: Union[Vector, float]
-        self.clients = set()  # type: Set[str]
+        self.s_state: Union[Vector, float] = 0.0
+        self.clients: Set[str] = set()
 
     def run(
         self,

@@ -17,6 +17,8 @@
 
 """Generic types-registration system backing some (de)serialization utils."""
 
+from __future__ import annotations
+
 import functools
 from typing import Dict, Optional, Tuple, Type
 
@@ -29,7 +31,7 @@ __all__ = [
 ]
 
 
-REGISTRIES = {}  # type: Dict[str, TypesRegistry]
+REGISTRIES: Dict[str, TypesRegistry] = {}
 
 
 class TypesRegistry:
@@ -47,7 +49,7 @@ class TypesRegistry:
         """
         self.name = name
         self.base = base
-        self._reg = {}  # type: Dict[str, Type]
+        self._reg: Dict[str, Type] = {}
 
     def get_mapping(self) -> Dict[str, Type]:
         """Return a copy of the mapping managed by this TypesRegistry.

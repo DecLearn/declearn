@@ -304,7 +304,7 @@ def test_declearn_baseline(
     )
     # Iteratively train the model and evaluate it between rounds.
     r_sq = RSquared()
-    scores = []  # type: List[float]
+    scores: List[float] = []
     for _ in range(rounds):
         for batch in dst_train.generate_batches(
             batch_size=b_size, drop_remainder=False
@@ -350,7 +350,7 @@ def prep_client_datasets(
         n_valid=clients * n_valid,
     )
     # Wrap up the data into client-wise pairs of dataset.
-    out = []  # type: List[Tuple[Dataset, Dataset]]
+    out: List[Tuple[Dataset, Dataset]] = []
     for idx in range(clients):
         # Gather the client's training dataset.
         srt = n_train * idx

@@ -81,7 +81,7 @@ async def verify_client_messages_validity(
     # Iterate over received messages to identify any unexpected 'Error' ones
     # or unexpected-type message.
     wrong_types = ""
-    unexp_errors = {}  # type: Dict[str, str]
+    unexp_errors: Dict[str, str] = {}
     for client, srm in received.items():
         if issubclass(srm.message_cls, expected):
             pass

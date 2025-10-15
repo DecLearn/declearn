@@ -47,7 +47,7 @@ __all__ = [
 MessageT = TypeVar("MessageT", bound=Message)
 
 
-HANDLERS = {}  # type: Dict[str, MessagesHandler]
+HANDLERS: Dict[str, MessagesHandler] = {}
 
 
 class MockNetworkServer(NetworkServer, register=False):

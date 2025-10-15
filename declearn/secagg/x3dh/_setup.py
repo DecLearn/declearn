@@ -219,7 +219,7 @@ class X3DHServerRound:  # pylint: disable=too-few-public-methods
         n_req = (n_cli * (n_cli - 1)) // 2
         direction = self.rng.uniform(size=n_req) < 0.5
         # Format results as a dict: for each client, those they will request.
-        requests = {name: [] for name in clients}  # type: Dict[str, List[str]]
+        requests: Dict[str, List[str]] = {name: [] for name in clients}
         idx = 0
         for cdx, cli_a in enumerate(clients[:-1], start=1):
             for cli_b in clients[cdx:]:

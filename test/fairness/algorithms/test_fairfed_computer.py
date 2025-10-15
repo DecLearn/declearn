@@ -24,12 +24,12 @@ import pytest
 
 from declearn.fairness.fairfed import FairfedValueComputer
 
-GROUPS_BINARY = [
+GROUPS_BINARY: List[Tuple[Any, ...]] = [
     (target, s_attr) for target in (0, 1) for s_attr in (0, 1)
-]  # type: List[Tuple[Any, ...]]
-GROUPS_EXTEND = [
+]
+GROUPS_EXTEND: List[Tuple[Any, ...]] = [
     (tgt, s_a, s_b) for tgt in (0, 1, 2) for s_a in (0, 1) for s_b in (1, 2)
-]  # type: List[Tuple[Any, ...]]
+]
 F_TYPES = [
     "accuracy_parity",
     "demographic_parity",

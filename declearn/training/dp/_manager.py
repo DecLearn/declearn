@@ -88,10 +88,10 @@ class DPTrainingManager(TrainingManager):
             verbose=verbose,
         )
         # Add DP-related fields: accountant, clipping norm and budget.
-        self.accountant = None  # type: Optional[IAccountant]
-        self.sclip_norm = None  # type: Optional[float]
+        self.accountant: Optional[IAccountant] = None
+        self.sclip_norm: Optional[float] = None
         self._dp_budget = (0.0, 0.0)
-        self._dp_states = None  # type: Optional[Tuple[float, float]]
+        self._dp_states: Optional[Tuple[float, float]] = None
 
     def make_private(
         self,
@@ -246,7 +246,7 @@ class DPTrainingManager(TrainingManager):
         # When using differential privacy, store accountant-required values.
         if self.accountant is not None:
             n_smp = self.train_data.get_data_specs().n_samples
-            srate = message.batches["batch_size"] / n_smp  # type: float
+            srate: float = message.batches["batch_size"] / n_smp
             noise = self.get_noise_multiplier()
             if noise is None:
                 raise RuntimeError(

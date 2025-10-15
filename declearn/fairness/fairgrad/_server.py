@@ -262,9 +262,9 @@ class FairgradControllerServer(FairnessControllerServer):
         # Send the updated weights to clients.
         await self._send_fairgrad_weights(netwk)
         # Package and return accuracy and fairness metrics.
-        metrics = {
+        metrics: Dict[str, Union[float, np.ndarray]] = {
             f"accuracy_{key}": val for key, val in accuracy.items()
-        }  # type: Dict[str, Union[float, np.ndarray]]
+        }
         fairness = self.weights_controller.get_current_fairness()
         metrics.update(
             {f"{self.f_type}_{key}": val for key, val in fairness.items()}

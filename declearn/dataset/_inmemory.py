@@ -350,7 +350,7 @@ class InMemoryDataset(Dataset):
         """
         path = os.path.abspath(path)
         folder = os.path.dirname(path)
-        info = {}  # type: Dict[str, Any]
+        info: Dict[str, Any] = {}
         info["type"] = "InMemoryDataset"  # NOTE: for backward compatibility
         # Optionally create data dumps. Record data dumps' paths.
         # fmt: off

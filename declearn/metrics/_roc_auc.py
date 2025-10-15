@@ -261,7 +261,7 @@ class BinaryRocAUC(Metric[AurocState]):
     ) -> AurocState:
         if self.bound is None:
             bounds = (0.0, 1.0)
-            aggcls = AurocStateUnbound  # type: Type[AurocState]
+            aggcls: Type[AurocState] = AurocStateUnbound
         else:
             bounds = self.bound
             aggcls = AurocState
@@ -313,7 +313,7 @@ class BinaryRocAUC(Metric[AurocState]):
                 min(y_pred.min(), thresh[0]),
                 max(y_pred.max(), thresh[-1]),
             )
-            aggcls = AurocStateUnbound  # type: Type[AurocState]
+            aggcls: Type[AurocState] = AurocStateUnbound
         else:
             aggcls = AurocState
         # Adjust inputs' shape if needed.

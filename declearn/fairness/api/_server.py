@@ -130,7 +130,7 @@ class FairnessControllerServer(metaclass=abc.ABCMeta):
         """
         self.f_type = f_type
         self.f_args = f_args or {}
-        self.groups = []  # type: List[Tuple[Any, ...]]
+        self.groups: List[Tuple[Any, ...]] = []
 
     # Fairness Setup methods.
 

@@ -109,7 +109,7 @@ class TorchDataset(Dataset):
         self.collate_fn = collate_fn
         # Assign a random number generator.
         self.seed = seed
-        self.gen = None  # type: Optional[torch.Generator]
+        self.gen: Optional[torch.Generator] = None
         if self.seed is not None:
             # pylint: disable=no-member
             self.gen = torch.Generator().manual_seed(self.seed)
@@ -128,7 +128,7 @@ class TorchDataset(Dataset):
         self,
     ) -> DataSpecs:
         """Return a DataSpecs object describing this dataset."""
-        specs = {"n_samples": self._get_length()}  # type: Dict[str, Any]
+        specs: Dict[str, Any] = {"n_samples": self._get_length()}
         if hasattr(self.dataset, "get_data_specs"):
             user_specs = self.dataset.get_data_specs()
             if isinstance(user_specs, dict):
@@ -183,18 +183,20 @@ class TorchDataset(Dataset):
         # arguments serve modularity; pylint: disable=too-many-arguments
         if poisson:
             n_samples = self._get_length()
-            batch_sampler = PoissonSampler(
+            batch_sampler: torch.utils.data.Sampler = PoissonSampler(
                 num_samples=n_samples,
                 sample_rate=batch_size / n_samples,
                 generator=self.gen,
-            )  # type: torch.utils.data.Sampler
+            )
         else:
             if shuffle:
-                sampler = torch.utils.data.RandomSampler(
-                    data_source=self.dataset,  # type: ignore  # sized Dataset
-                    replacement=replacement,
-                    generator=self.gen,
-                )  # type: torch.utils.data.Sampler
+                sampler: torch.utils.data.Sampler = (
+                    torch.utils.data.RandomSampler(
+                        data_source=self.dataset,  # type: ignore  # sized Dataset
+                        replacement=replacement,
+                        generator=self.gen,
+                    )
+                )
             else:
                 sampler = torch.utils.data.SequentialSampler(
                     data_source=self.dataset  # type: ignore  # sized Dataset

@@ -227,10 +227,10 @@ class TestCheckpointer:
         that the `append` parameter and its backend work properly.
         """
         # Setup for this multi-part test.
-        metrics = {
+        metrics: Dict[str, Union[float, np.ndarray]] = {
             "foo": 42.0,
             "bar": np.array([0, 1]),
-        }  # type: Dict[str, Union[float, np.ndarray]]
+        }
         checkpointer = Checkpointer(tmp_path)
         csv_path = os.path.join(tmp_path, "metrics.csv")
         json_path = os.path.join(tmp_path, "metrics.json")
@@ -385,10 +385,10 @@ class TestCheckpointer:
     def test_load_metrics(self, tmp_path: str) -> None:
         """Test that `Checkpointer.load_metrics` works properly."""
         # Setup things by saving a couple of sets of metrics.
-        metrics = {
+        metrics: Dict[str, Union[float, np.ndarray]] = {
             "foo": 42.0,
             "bar": np.array([0, 1]),
-        }  # type: Dict[str, Union[float, np.ndarray]]
+        }
         checkpointer = Checkpointer(tmp_path)
         time_0 = checkpointer.save_metrics(metrics, append=False)
         time_1 = checkpointer.save_metrics(metrics, append=True)
@@ -409,10 +409,10 @@ class TestCheckpointer:
     def test_load_scalar_metrics(self, tmp_path: str) -> None:
         """Test that `Checkpointer.load_scalar_metrics` works properly."""
         # Setup things by saving a couple of sets of metrics.
-        metrics = {
+        metrics: Dict[str, Union[float, np.ndarray]] = {
             "foo": 42.0,
             "bar": np.array([0, 1]),
-        }  # type: Dict[str, Union[float, np.ndarray]]
+        }
         checkpointer = Checkpointer(tmp_path)
         time_0 = checkpointer.save_metrics(metrics, append=False)
         time_1 = checkpointer.save_metrics(metrics, append=True)

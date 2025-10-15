@@ -66,7 +66,7 @@ def parse_data_folder(
     data_folder = get_data_folder_path(data_config.data_folder, folder)
     # Identify clients' data folders.
     client_names = list_client_names(data_folder, data_config.client_names)
-    clients = {c: {} for c in client_names}  # type: Dict[str, Dict[str, str]]
+    clients: Dict[str, Dict[str, str]] = {c: {} for c in client_names}
     # Set up a mapping between expected files and their naming.
     data_items = [
         "train_data",

@@ -76,7 +76,7 @@ class WebsocketsClient(NetworkClient):
         # arguments serve modularity; pylint: disable=too-many-arguments
         super().__init__(server_uri, name, certificate, logger)
         self.headers = headers
-        self._socket = None  # type: Optional[WebSocketClientProtocol]
+        self._socket: Optional[WebSocketClientProtocol] = None
 
     @staticmethod
     def _setup_ssl_context(

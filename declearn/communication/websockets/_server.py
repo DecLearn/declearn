@@ -84,7 +84,7 @@ class WebsocketsServer(NetworkServer):
         super().__init__(
             host, port, certificate, private_key, password, heartbeat, logger
         )
-        self._server = None  # type: Optional[WebSocketServer]
+        self._server: Optional[WebSocketServer] = None
 
     @property
     def uri(self) -> str:

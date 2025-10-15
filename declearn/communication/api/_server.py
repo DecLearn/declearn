@@ -376,8 +376,8 @@ class NetworkServer(metaclass=abc.ABCMeta):
             self.handler.recv_message(client, timeout) for client in clients
         ]
         received = await asyncio.gather(*routines, return_exceptions=True)
-        messages = {}  # type: Dict[str, SerializedMessage]
-        timeouts = []  # type: List[str]
+        messages: Dict[str, SerializedMessage] = {}
+        timeouts: List[str] = []
         for client, output in zip(clients, received):
             if isinstance(output, asyncio.TimeoutError):
                 timeouts.append(client)

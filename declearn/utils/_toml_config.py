@@ -228,7 +228,7 @@ class TomlConfig:
             In case some keyword arguments are unused due to the lack of a
             corresponding dataclass field.
         """
-        fields = {}  # type: Dict[str, Any]
+        fields: Dict[str, Any] = {}
         # Look up expected kwargs and parse them.
         for field in dataclasses.fields(cls):
             parser = getattr(cls, f"parse_{field.name}", cls.default_parser)
@@ -385,7 +385,7 @@ class TomlConfig:
             except KeyError as exc:
                 if not section_fail_ok:
                     raise KeyError("Specified section not found") from exc
-        params = {}  # type: Dict[str, Any]
+        params: Dict[str, Any] = {}
         for field in dataclasses.fields(cls):
             # Case when the section is provided: set it up for parsing.
             if field.name in config:

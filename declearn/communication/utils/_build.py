@@ -38,7 +38,7 @@ __all__ = [
 ]
 
 
-_INSTALLABLE_BACKENDS = {}  # type: Dict[str, Tuple[str, ...]]
+_INSTALLABLE_BACKENDS: Dict[str, Tuple[str, ...]] = {}
 
 
 def raise_if_installable(

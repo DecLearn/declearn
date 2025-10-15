@@ -261,7 +261,7 @@ class TestHaikuModel(ModelTestSuite):
         criterion_type: str,
     ) -> None:
         """Check that `get_weights` behaves properly with frozen weights."""
-        model = test_case.model  # type: HaikuModel
+        model: HaikuModel = test_case.model
         criterion = test_case.get_trainable_criterion(criterion_type)
         model.set_trainable_weights(criterion)  # freeze some weights
         w_all = model.get_weights()

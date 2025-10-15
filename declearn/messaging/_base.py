@@ -122,7 +122,7 @@ class InitRequest(Message):
     fairness: bool = False
 
     def to_kwargs(self) -> Dict[str, Any]:
-        data = {}  # type: Dict[str, Any]
+        data: Dict[str, Any] = {}
         data["model"] = serialize_object(self.model, group="Model").to_dict()
         data["optim"] = self.optim.get_config()
         data["aggrg"] = serialize_object(self.aggrg, "Aggregator").to_dict()

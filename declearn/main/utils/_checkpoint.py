@@ -376,7 +376,7 @@ class Checkpointer:
             files, as well as the values appended to the metrics files.
         """
         timestamp = datetime.now().strftime("%y-%m-%d_%H-%M-%S")
-        remove = []  # type: List[str]
+        remove: List[str] = []
         if model:
             self.save_model(
                 model, config=first_call, state=True, timestamp=timestamp

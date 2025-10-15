@@ -127,9 +127,10 @@ class SecaggSetupTestCase(metaclass=abc.ABCMeta):
         ]
         server_routine = self.run_server_routine(n_clients, **server_kwargs)
         # Run the routines concurrently and gather resulting objects.
-        decrypter, *encrypters = await (  # type: ignore[assignment]
+        result: Tuple[Decrypter, List[Encrypter]] = await (  # type: ignore[assignment]
             asyncio.gather(server_routine, *client_routines)
-        )  # type: Tuple[Decrypter, List[Encrypter]]
+        )
+        decrypter, *encrypters = result
         # Verify that the resulring objects have proper types and parameters.
         kwargs = {**server_kwargs, **client_kwargs, "n_clients": n_clients}
         self.assert_decrypter_validity(decrypter, **kwargs)

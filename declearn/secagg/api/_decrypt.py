@@ -227,7 +227,7 @@ class Decrypter(metaclass=abc.ABCMeta):
             )
         # Iteratively decrypt and recover encrypted fields.
         srt = end = 0
-        fields = {}  # type: Dict[str, Any]
+        fields: Dict[str, Any] = {}
         for name, size, specs in value.enc_specs:
             end += size
             fields[name] = self._decrypt_value(value.encrypted[srt:end], specs)

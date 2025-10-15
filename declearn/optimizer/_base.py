@@ -215,16 +215,16 @@ class Optimizer:
         self._wrate_scheduler = self._parse_scheduler(w_decay)
         self._lrate = self._lrate_scheduler.get_next_rate()
         self._wrate = self._wrate_scheduler.get_next_rate()
-        self.regularizers = (
+        self.regularizers: List[Regularizer] = (
             []
             if regularizers is None
             else self._parse_plugins(Regularizer, regularizers)  # type: ignore
-        )  # type: List[Regularizer]
-        self.modules = (
+        )
+        self.modules: List[OptiModule] = (
             []
             if modules is None
             else self._parse_plugins(OptiModule, modules)  # type: ignore
-        )  # type: List[OptiModule]
+        )
 
     @property
     def lrate(self) -> float:
@@ -411,7 +411,7 @@ class Optimizer:
             to `module.name` keys for each and every module plugged
             in this optimizer that produces auxiliary variables.
         """
-        aux_var = {}  # type: Dict[str, AuxVar]
+        aux_var: Dict[str, AuxVar] = {}
         for module in self.modules:
             auxv = module.collect_aux_var()
             if auxv is not None:

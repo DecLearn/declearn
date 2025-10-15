@@ -18,7 +18,7 @@
 """Unit tests for SklearnSGDModel."""
 
 import os
-from typing import Any, Dict, List, Optional  # noqa: F401
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 import pytest
@@ -97,7 +97,7 @@ class SklearnSGDTestCase(ModelTestCase):
         else:
             skmod = SGDClassifier(loss=self.loss)
         model = SklearnSGDModel(skmod, dtype="float32")
-        data_info = {"features_shape": (8,)}  # type: Dict[str, Any]
+        data_info: Dict[str, Any] = {"features_shape": (8,)}
         if self.n_classes:
             data_info["classes"] = np.arange(self.n_classes)
         model.initialize(data_info)

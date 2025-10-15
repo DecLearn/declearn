@@ -132,8 +132,8 @@ class MaskingSecaggConfigClient(
         one in a pseudo-random way that is symmetric across peer pairs.
         """
         this_key = self.id_keys.prv_key.public_key().public_bytes_raw()
-        pos_masks_seeds = []  # type: List[int]
-        neg_masks_seeds = []  # type: List[int]
+        pos_masks_seeds: List[int] = []
+        neg_masks_seeds: List[int] = []
         for peer_key, peer_secret in secret_peer_keys.items():
             seed = int.from_bytes(peer_secret, "big")
             if (seed + (this_key < peer_key)) % 2:

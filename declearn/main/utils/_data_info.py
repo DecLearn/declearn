@@ -119,7 +119,7 @@ def _raise_on_missing_fields(
     Return None if no missing field was encountered.
     """
     # Identify missing fields.
-    errors = {}  # type: Dict[str, str]
+    errors: Dict[str, str] = {}
     for client, data_info in clients_data_info.items():
         missing = required_fields.difference(data_info.keys())
         if missing:
@@ -168,7 +168,7 @@ def _raise_on_invalid_fields(
     Return None if no client-due value error was encountered.
     """
     # Identify missing fields.
-    errors = {}  # type: Dict[str, str]
+    errors: Dict[str, str] = {}
     for client, data_info in clients_data_info.items():
         try:
             aggregate_data_info([data_info], required_fields)

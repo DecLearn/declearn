@@ -90,7 +90,7 @@ def _test_case_1d() -> Tuple[
         "y_pred": np.array([4, 8, 6, 8]) / 10,
     }
     # pylint: enable=duplicate-code
-    states = {
+    states: Dict[str, Union[float, np.ndarray]] = {
         "tpos": np.array(
             [2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 1.0, 1.0, 0.0, 0.0]
         ),
@@ -106,8 +106,8 @@ def _test_case_1d() -> Tuple[
         "thresh": np.array(
             [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
         ),
-    }  # type: Dict[str, Union[float, np.ndarray]]
-    scores = {
+    }
+    scores: Dict[str, Union[float, np.ndarray]] = {
         "tpr": np.array(
             [0.0, 0.0, 0.5, 0.5, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
         ),
@@ -118,7 +118,7 @@ def _test_case_1d() -> Tuple[
             [1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.0]
         ),
         "roc_auc": 0.625,
-    }  # type: Dict[str, Union[float, np.ndarray]]
+    }
     return inputs, states, scores
 
 
@@ -147,7 +147,7 @@ def _test_case_2d() -> Tuple[
         ),
     }
     # pylint: enable=duplicate-code
-    states = {
+    states: Dict[str, Union[float, np.ndarray]] = {
         "tpos": np.array(
             [6.0, 6.0, 6.0, 6.0, 6.0, 4.0, 4.0, 3.0, 3.0, 2.0, 0.0]
         ),
@@ -163,8 +163,8 @@ def _test_case_2d() -> Tuple[
         "thresh": np.array(
             [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
         ),
-    }  # type: Dict[str, Union[float, np.ndarray]]
-    scores = {
+    }
+    scores: Dict[str, Union[float, np.ndarray]] = {
         "tpr": np.array(
             [0.0, 1 / 3, 0.5, 0.5, 2 / 3, 2 / 3, 1.0, 1.0, 1.0, 1.0, 1.0]
         ),
@@ -175,7 +175,7 @@ def _test_case_2d() -> Tuple[
             [1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.0]
         ),
         "roc_auc": 0.9305555555555556,
-    }  # type: Dict[str, Union[float, np.ndarray]]
+    }
     return inputs, states, scores
 
 

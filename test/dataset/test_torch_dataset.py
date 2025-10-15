@@ -156,10 +156,10 @@ class TestTorchDataset(DatasetTestSuite):
         toolbox: TorchDatasetTestToolbox,
     ) -> None:
         """Test the default 'collate_to_batch' with single-tensor x samples."""
-        samples = [
+        samples: List[Union[torch.Tensor, List[torch.Tensor]]] = [
             torch.Tensor([1, 2]),
             torch.Tensor([3, 4]),
-        ]  # type: List[Union[torch.Tensor, List[torch.Tensor]]]
+        ]
         expected_output = (
             torch.Tensor([[1, 2], [3, 4]]),
             None,
@@ -174,10 +174,10 @@ class TestTorchDataset(DatasetTestSuite):
         toolbox: TorchDatasetTestToolbox,
     ) -> None:
         """Test the default 'collate_to_batch' with (x,) samples."""
-        samples = [
+        samples: List[Tuple[Union[torch.Tensor, List[torch.Tensor]], ...]] = [
             (torch.Tensor([1, 2]),),
             (torch.Tensor([3, 4]),),
-        ]  # type: List[Tuple[Union[torch.Tensor, List[torch.Tensor]], ...]]
+        ]
         expected_output = (
             torch.Tensor([[1, 2], [3, 4]]),
             None,
@@ -192,10 +192,10 @@ class TestTorchDataset(DatasetTestSuite):
         toolbox: TorchDatasetTestToolbox,
     ) -> None:
         """Test the default 'collate_to_batch' with (x, y) samples."""
-        samples = [
+        samples: List[Tuple[Union[torch.Tensor, List[torch.Tensor]], ...]] = [
             (torch.Tensor([1, 2]), torch.Tensor([0.0])),
             (torch.Tensor([3, 4]), torch.Tensor([1.0])),
-        ]  # type: List[Tuple[Union[torch.Tensor, List[torch.Tensor]], ...]]
+        ]
         expected_output = (
             torch.Tensor([[1, 2], [3, 4]]),
             torch.Tensor([[0.0], [1.0]]),
@@ -210,10 +210,10 @@ class TestTorchDataset(DatasetTestSuite):
         toolbox: TorchDatasetTestToolbox,
     ) -> None:
         """Test the default 'collate_to_batch' with ([x1, x2], y) samples."""
-        samples = [
+        samples: List[Tuple[Union[torch.Tensor, List[torch.Tensor]], ...]] = [
             ([torch.Tensor([1, 2]), torch.Tensor([3, 4])], torch.Tensor([0])),
             ([torch.Tensor([5, 6]), torch.Tensor([7, 8])], torch.Tensor([1])),
-        ]  # type: List[Tuple[Union[torch.Tensor, List[torch.Tensor]], ...]]
+        ]
         expected_output = (
             [torch.Tensor([[1, 2], [5, 6]]), torch.Tensor([[3, 4], [7, 8]])],
             torch.Tensor([[0], [1]]),
@@ -228,10 +228,10 @@ class TestTorchDataset(DatasetTestSuite):
         toolbox: TorchDatasetTestToolbox,
     ) -> None:
         """Test the default 'collate_to_batch' with [x1, x2] samples."""
-        samples = [
+        samples: List[Union[torch.Tensor, List[torch.Tensor]]] = [
             [torch.Tensor([1, 2]), torch.Tensor([3, 4])],
             [torch.Tensor([5, 6]), torch.Tensor([7, 8])],
-        ]  # type: List[Union[torch.Tensor, List[torch.Tensor]]]
+        ]
         expected_output = (
             [torch.Tensor([[1, 2], [5, 6]]), torch.Tensor([[3, 4], [7, 8]])],
             None,

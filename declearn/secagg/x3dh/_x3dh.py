@@ -83,9 +83,9 @@ class X3DHManager:
         self.id_key = prv_key
         self.sp_key = X25519PrivateKey.generate()
         self.trusted = {key.public_bytes_raw() for key in trusted}
-        self._pre_rq = None  # type: Optional[bytes]
-        self._otkeys = {}  # type: Dict[bytes, X25519PrivateKey]
-        self.secrets = {}  # type: Dict[bytes, bytes]
+        self._pre_rq: Optional[bytes] = None
+        self._otkeys: Dict[bytes, X25519PrivateKey] = {}
+        self.secrets: Dict[bytes, bytes] = {}
 
     def _create_prerequest(
         self,

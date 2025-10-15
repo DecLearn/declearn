@@ -70,9 +70,7 @@ def run_as_processes(
         indicates that the process was interrupted while running.
     """
     # Wrap routines into named processes and set up exceptions catching.
-    queue = (
-        mp.Manager().Queue()
-    )  # type: Queue[Tuple[str, Union[Any, RuntimeError]]]
+    queue: Queue[Tuple[str, Union[Any, RuntimeError]]] = mp.Manager().Queue()
     processes, names = prepare_routine_processes(routines, queue)
     # Run the processes concurrently.
     run_processes(processes, auto_stop)
@@ -116,9 +114,9 @@ def prepare_routine_processes(
     names:
         List of names identifying the processes (used for results collection).
     """
-    names = []  # type: List[str]
-    count = {}  # type: Dict[str, int]
-    processes = []  # type: List[mp.Process]
+    names: List[str] = []
+    count: Dict[str, int] = {}
+    processes: List[mp.Process] = []
     for routine in routines:
         func, args, kwargs = parse_routine_specification(routine)
         name = func.__name__

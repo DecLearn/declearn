@@ -88,7 +88,7 @@ class MomentumModule(OptiModule):
             raise ValueError("'beta' value should be in [0, 1[.")
         self.beta = beta
         self.nesterov = nesterov
-        self.velocity = 0.0  # type: Union[Vector, float]
+        self.velocity: Union[Vector, float] = 0.0
 
     def get_config(
         self,
@@ -152,7 +152,7 @@ class EWMAModule(OptiModule):
         if not 0 <= beta < 1:
             raise ValueError("'beta' value should be in [0, 1[.")
         self.beta = beta
-        self.state = 0.0  # type: Union[Vector, float]
+        self.state: Union[Vector, float] = 0.0
 
     def get_config(
         self,

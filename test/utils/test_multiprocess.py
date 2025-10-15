@@ -50,7 +50,7 @@ class TestRunAsProcesses:
 
     def test_unproper_specs_wrong_routine_type(self) -> None:
         """Test that a TypeError is raised on an unproper input type."""
-        routine = {}  # type: Dict[Any, Any]
+        routine: Dict[Any, Any] = {}
         with pytest.raises(TypeError):
             run_as_processes(routine)  # type: ignore  # deliberate mistype
 
@@ -62,7 +62,7 @@ class TestRunAsProcesses:
 
     def test_unproper_specs_wrong_function_type(self) -> None:
         """Test that a TypeError is raised on an unproper input type."""
-        routine = (None, tuple())  # type: Tuple[None, Tuple]
+        routine: Tuple[None, Tuple] = (None, tuple())
         with pytest.raises(TypeError):
             run_as_processes(routine)  # type: ignore  # deliberate mistype
 

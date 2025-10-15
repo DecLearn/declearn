@@ -51,9 +51,9 @@ class MessagesHandler:
         self.logger = logger
         self.heartbeat = heartbeat
         # Set up containers for client identifiers and pending messages.
-        self.registered_clients = {}  # type: Dict[Any, str]
-        self.outgoing_messages = {}  # type: Dict[str, str]
-        self.incoming_messages = {}  # type: Dict[str, str]
+        self.registered_clients: Dict[Any, str] = {}
+        self.outgoing_messages: Dict[str, str] = {}
+        self.incoming_messages: Dict[str, str] = {}
         # Mark client-registration as unopened.
         self.registration_status = flags.REGISTRATION_UNSTARTED
 

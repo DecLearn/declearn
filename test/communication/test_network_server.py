@@ -241,10 +241,10 @@ class TestNetworkServerSend:
         Mock the message-sending backend, that has dedicated tests.
         """
         handler = server.handler = mock.create_autospec(server.handler)
-        messages = {
+        messages: Dict[str, messaging.Message] = {
             str(i): messaging.GenericMessage(action="test", params={"idx": i})
             for i in range(3)
-        }  # type: Dict[str, messaging.Message]
+        }
         await server.send_messages(messages)
         assert handler.send_message.await_count == 3
         handler.send_message.assert_has_awaits(
@@ -260,10 +260,10 @@ class TestNetworkServerSend:
         """Test 'send_messages' error-raising, mocking the backend."""
         handler = server.handler = mock.create_autospec(server.handler)
         handler.send_message.side_effect = RuntimeError
-        messages = {
+        messages: Dict[str, messaging.Message] = {
             str(i): messaging.GenericMessage(action="test", params={"idx": i})
             for i in range(3)
-        }  # type: Dict[str, messaging.Message]
+        }
         with pytest.raises(RuntimeError):
             await server.send_messages(messages)
 
@@ -304,9 +304,10 @@ class TestNetworkServerSend:
         send = server.send_message(msg, client="mock.0", timeout=1)
         recv = server.handler.handle_message(req, 1)
         # Check that both routines time out.
-        excpt, reply = await asyncio.gather(
-            send, recv, return_exceptions=True
-        )  # type: Tuple[asyncio.TimeoutError, messaging.Error]
+        excpt_reply: Tuple[asyncio.TimeoutError, messaging.Error] = (
+            await asyncio.gather(send, recv, return_exceptions=True)
+        )
+        excpt, reply = excpt_reply
         assert isinstance(excpt, asyncio.TimeoutError)
         assert isinstance(reply, actions.Reject)
         assert reply.flag == flags.CHECK_MESSAGE_TIMEOUT

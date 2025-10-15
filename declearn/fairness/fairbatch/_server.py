@@ -179,9 +179,9 @@ class FairbatchControllerServer(FairnessControllerServer):
         self.sampling_controller.update_from_federated_losses(loss)
         await self._send_fairbatch_probas(netwk)
         # Package and return accuracy, loss and fairness metrics.
-        metrics = {
+        metrics: Dict[str, Union[float, np.ndarray]] = {
             f"accuracy_{key}": val for key, val in accuracy.items()
-        }  # type: Dict[str, Union[float, np.ndarray]]
+        }
         metrics.update({f"loss_{key}": val for key, val in loss.items()})
         f_func = self.sampling_controller.f_func
         fairness = f_func.compute_from_federated_group_accuracy(accuracy)

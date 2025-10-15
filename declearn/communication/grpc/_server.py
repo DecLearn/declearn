@@ -115,7 +115,7 @@ class GrpcServer(NetworkServer):
         super().__init__(
             host, port, certificate, private_key, password, heartbeat, logger
         )
-        self._server = None  # type: Optional[grpc.Server]
+        self._server: Optional[grpc.Server] = None
 
     @property
     def uri(self) -> str:

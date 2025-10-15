@@ -183,9 +183,9 @@ class SklearnSGDModel(Model):
             if isinstance(model, SGDClassifier)
             else self._model.predict
         )
-        self._loss_fn = (
-            None
-        )  # type: Optional[Callable[[np.ndarray, np.ndarray], np.ndarray]]
+        self._loss_fn: Optional[
+            Callable[[np.ndarray, np.ndarray], np.ndarray]
+        ] = None
 
     @property
     def device_policy(
@@ -337,7 +337,7 @@ class SklearnSGDModel(Model):
         self,
     ) -> Dict[str, Any]:
         is_clf = isinstance(self._model, SGDClassifier)
-        data_info = None  # type: Optional[Dict[str, Any]]
+        data_info: Optional[Dict[str, Any]] = None
         if hasattr(self._model, "coef_"):
             data_info = {
                 "features_shape": (self._model.coef_.shape[-1],),

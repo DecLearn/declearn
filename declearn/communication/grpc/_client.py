@@ -66,8 +66,8 @@ class GrpcClient(NetworkClient):
             `declearn.utils.get_logger`. If None, use `type(self)-name`.
         """
         super().__init__(server_uri, name, certificate, logger)
-        self._channel = None  # type: Optional[grpc.Channel]
-        self._service = None  # type: Optional[MessageBoardStub]
+        self._channel: Optional[grpc.Channel] = None
+        self._service: Optional[MessageBoardStub] = None
 
     @staticmethod
     def _setup_ssl_context(
