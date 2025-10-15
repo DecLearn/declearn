@@ -116,7 +116,7 @@ def split_multi_classif_dataset(
     # Optionally convert back sparse inputs, then return.
     if sp_type is not None:
         shards = [
-            ((sp_type(xt), yt), (sp_type(xv), yv))
+            ((sp_type(xt), yt), (sp_type(xv), yv)) # type: ignore
             for (xt, yt), (xv, yv) in shards
         ]
     return shards
@@ -225,7 +225,7 @@ def split_dirichlet(
         for i in range(n_shards):
             shard_i[i].extend(index[s_idx == i])
     # Gather the actual sample shards.
-    return [(inputs[index], target[index]) for index in shard_i]
+    return [(inputs[index], target[index]) for index in shard_i] # type: ignore
 
 
 def train_valid_split(

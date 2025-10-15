@@ -149,7 +149,7 @@ class FairnessInMemoryDataset(FairnessDataset, InMemoryDataset):
         """
         # Gather (and/or validate) sensitive data as a data array.
         s_data = self._parse_sensitive_data(sensitive)
-        if len(s_data) != len(self.data):
+        if len(s_data) != len(self.data): # type: ignore
             raise ValueError(
                 "The passed 'sensitive' data was parsed into a DataFrame with"
                 " a number of records that does not match the base data."
@@ -206,7 +206,7 @@ class FairnessInMemoryDataset(FairnessDataset, InMemoryDataset):
         if isinstance(sensitive, np.ndarray):
             return pd.DataFrame(sensitive)
         if isinstance(sensitive, scipy.sparse.spmatrix):
-            return pd.DataFrame(sensitive.toarray())
+            return pd.DataFrame(sensitive.toarray()) # type: ignore
         raise TypeError(
             "'sensitive' should be a numpy array, scipy matrix, pandas"
             " DataFrame, path to such a structure's file dump, or list"
@@ -228,8 +228,8 @@ class FairnessInMemoryDataset(FairnessDataset, InMemoryDataset):
         group: Tuple[Any, ...],
     ) -> InMemoryDataset:
         mask = self.sensitive == group
-        inputs = self.feats[mask]
-        target = None if self.target is None else self.target[mask]
+        inputs = self.feats[mask] # type: ignore
+        target = None if self.target is None else self.target[mask] # type: ignore
         s_wght = (
             None
             if self._smp_wght is None

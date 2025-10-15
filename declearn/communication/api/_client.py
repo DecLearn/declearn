@@ -25,7 +25,7 @@ import warnings
 from typing import Any, ClassVar, Dict, Optional, Self, Type, Union
 
 from declearn.communication.api.backend import flags
-from declearn.communication.api.backend.actions import (  # Drop,  # FUTURE: implement a method to drop politely
+from declearn.communication.api.backend.actions import (  
     Accept,
     ActionMessage,
     Join,
@@ -35,6 +35,7 @@ from declearn.communication.api.backend.actions import (  # Drop,  # FUTURE: imp
     Send,
     parse_action_from_string,
 )
+# Drop,  # FUTURE: implement a method to drop politely
 from declearn.messaging import Message, SerializedMessage
 from declearn.utils import create_types_registry, get_logger, register_type
 from declearn.version import VERSION

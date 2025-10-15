@@ -48,8 +48,8 @@ class LossFunction(tf_keras.losses.Loss):
         reduction: str = tf_keras.losses.Reduction.NONE,
         name: Optional[str] = None,
     ) -> None:
-        super().__init__(reduction=reduction, name=name)
-        self.loss_fn = tf_keras.losses.deserialize(loss_fn)
+        super().__init__(reduction=reduction, name=name) # type: ignore
+        self.loss_fn = tf_keras.losses.deserialize(loss_fn) # type: ignore
 
     def call(
         self,
@@ -89,7 +89,7 @@ def build_keras_loss(
     """
     # Case when 'loss' is already a Loss object.
     if isinstance(loss, tf_keras.losses.Loss):
-        loss.reduction = reduction
+        loss.reduction = reduction # type: ignore
     # Case when 'loss' is a string: deserialize and/or wrap into a Loss object.
     elif isinstance(loss, str):
         loss = get_keras_loss_from_string(name=loss, reduction=reduction)
@@ -119,7 +119,7 @@ def get_keras_loss_from_string(
     """
     loss = tf_keras.losses.deserialize(name)
     if isinstance(loss, tf_keras.losses.Loss):
-        loss.reduction = reduction
+        loss.reduction = reduction # type: ignore
         return loss
     if inspect.isfunction(loss):
         try:

@@ -95,10 +95,10 @@ def sparse_to_file(
     if os.path.splitext(path)[1] != ".sparse":
         path += ".sparse"
     # Identify the type of sparse matrix, and convert it to lil.
-    name = SPARSE_TYPES.get(type(matrix))
+    name = SPARSE_TYPES.get(type(matrix)) # type: ignore
     if name is None:
         raise TypeError(f"Unsupported sparse matrix type: '{type(matrix)}'.")
-    lil = matrix.tolil()
+    lil = matrix.tolil() # type: ignore
     # Record key metadata required to rebuild the matrix.
     meta = {
         "stype": name,
