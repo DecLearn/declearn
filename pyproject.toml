@@ -135,6 +135,16 @@ dev = [
     "pytest ~= 7.4",
     "pytest-asyncio ~= 0.20",
     "pytest-cov ~= 4.0",
+
+    # python stubs for mypy (when using uv, it is easier to install them explicitly, rather than via mypy)
+    "pandas-stubs",
+    "scipy-stubs",
+    "types-grpcio",
+    "types-protobuf",
+    "types-pytz",
+    "types-requests",
+    "types-tensorflow",
+    "types-tqdm",
 ]
 
 [project.urls]

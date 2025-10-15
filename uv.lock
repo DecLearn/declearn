@@ -516,10 +516,18 @@ dev = [
     { name = "mkdocs-material" },
     { name = "mkdocstrings", extra = ["python"] },
     { name = "mypy" },
+    { name = "pandas-stubs" },
     { name = "pylint" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
+    { name = "scipy-stubs" },
+    { name = "types-grpcio" },
+    { name = "types-protobuf" },
+    { name = "types-pytz" },
+    { name = "types-requests" },
+    { name = "types-tensorflow" },
+    { name = "types-tqdm" },
 ]
 
 [package.metadata]
@@ -536,8 +544,8 @@ requires-dist = [
     { name = "griffe", marker = "extra == 'docs'", specifier = "~=1.0" },
     { name = "grpcio", marker = "extra == 'all'", specifier = ">=1.45" },
     { name = "grpcio", marker = "extra == 'grpc'", specifier = ">=1.45" },
-    { name = "isort", marker = "extra == 'dev'", specifier = ">=6.0.1" },
-    { name = "isort", marker = "extra == 'tests'", specifier = ">=6.0.1" },
+    { name = "isort", marker = "extra == 'dev'", specifier = "~=6.0.1" },
+    { name = "isort", marker = "extra == 'tests'", specifier = "~=6.0.1" },
     { name = "jax", extras = ["cpu"], marker = "extra == 'all'", specifier = "~=0.4.1,<0.4.36" },
     { name = "jax", extras = ["cpu"], marker = "extra == 'haiku'", specifier = "~=0.4.1,<0.4.36" },
     { name = "mkdocs-autorefs", marker = "extra == 'dev'", specifier = "~=0.4" },
@@ -587,10 +595,18 @@ dev = [
     { name = "mkdocs-material", specifier = "~=9.1" },
     { name = "mkdocstrings", extras = ["python"], specifier = "~=0.8" },
     { name = "mypy", specifier = "~=1.0" },
+    { name = "pandas-stubs" },
     { name = "pylint", specifier = "~=3.0" },
     { name = "pytest", specifier = "~=7.4" },
     { name = "pytest-asyncio", specifier = "~=0.20" },
     { name = "pytest-cov", specifier = "~=4.0" },
+    { name = "scipy-stubs" },
+    { name = "types-grpcio" },
+    { name = "types-protobuf" },
+    { name = "types-pytz" },
+    { name = "types-requests" },
+    { name = "types-tensorflow" },
+    { name = "types-tqdm" },
 ]
 
 [[package]]
@@ -1467,6 +1483,18 @@ wheels = [
 ]
 
 [[package]]
+name = "numpy-typing-compat"
+version = "20250818.2.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/06/02/e25d13a282c5d8d4267f60a215a551f19b2f38fd8f9102eeb4f1adc4f0e4/numpy_typing_compat-20250818.2.1.tar.gz", hash = "sha256:7626eda39e42b513d44285a70e1a9f07f13d3b658cc4d4d83671dc134b232de0", size = 4998 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a3/a9/ee447a635ae3688e905b44387dec0faedd20716ddf64ccfceb9586443d31/numpy_typing_compat-20250818.2.1-py3-none-any.whl", hash = "sha256:36e073e82f93a1754526f71f8fc7896fa209e0eb19a6e278a74456ab198e2bda", size = 6311 },
+]
+
+[[package]]
 name = "nvidia-cublas-cu12"
 version = "12.8.4.1"
 source = { registry = "https://pypi.org/simple" }
@@ -1710,6 +1738,24 @@ wheels = [
 ]
 
 [[package]]
+name = "optype"
+version = "0.14.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "typing-extensions", marker = "python_full_version < '3.13'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/94/ca/d3a2abcf12cc8c18ccac1178ef87ab50a235bf386d2401341776fdad18aa/optype-0.14.0.tar.gz", hash = "sha256:925cf060b7d1337647f880401f6094321e7d8e837533b8e159b9a92afa3157c6", size = 100880 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/84/a6/11b0eb65eeafa87260d36858b69ec4e0072d09e37ea6714280960030bc93/optype-0.14.0-py3-none-any.whl", hash = "sha256:50d02edafd04edf2e5e27d6249760a51b2198adb9f6ffd778030b3d2806b026b", size = 89465 },
+]
+
+[package.optional-dependencies]
+numpy = [
+    { name = "numpy" },
+    { name = "numpy-typing-compat" },
+]
+
+[[package]]
 name = "orbax-checkpoint"
 version = "0.11.5"
 source = { registry = "https://pypi.org/simple" }
@@ -1802,6 +1848,19 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/a4/1e/1bac1a839d12e6a82ec6cb40cda2edde64a2013a66963293696bbf31fbbb/pandas-2.3.3-cp314-cp314t-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:2e3ebdb170b5ef78f19bfb71b0dc5dc58775032361fa188e814959b74d726dd5", size = 12121582 },
     { url = "https://files.pythonhosted.org/packages/44/91/483de934193e12a3b1d6ae7c8645d083ff88dec75f46e827562f1e4b4da6/pandas-2.3.3-cp314-cp314t-musllinux_1_2_aarch64.whl", hash = "sha256:d051c0e065b94b7a3cea50eb1ec32e912cd96dba41647eb24104b6c6c14c5788", size = 12699963 },
     { url = "https://files.pythonhosted.org/packages/70/44/5191d2e4026f86a2a109053e194d3ba7a31a2d10a9c2348368c63ed4e85a/pandas-2.3.3-cp314-cp314t-musllinux_1_2_x86_64.whl", hash = "sha256:3869faf4bd07b3b66a9f462417d0ca3a9df29a9f6abd5d0d0dbab15dac7abe87", size = 13202175 },
+]
+
+[[package]]
+name = "pandas-stubs"
+version = "2.3.2.250926"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+    { name = "types-pytz" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/1b/3b/32be58a125db39d0b5f62cc93795f32b5bb2915bd5c4a46f0e35171985e2/pandas_stubs-2.3.2.250926.tar.gz", hash = "sha256:c64b9932760ceefb96a3222b953e6a251321a9832a28548be6506df473a66406", size = 102147 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/40/96/1e4a035eaf4dce9610aac6e43026d0c6baa05773daf6d21e635a4fe19e21/pandas_stubs-2.3.2.250926-py3-none-any.whl", hash = "sha256:81121818453dcfe00f45c852f4dceee043640b813830f6e7bd084a4ef7ff7270", size = 159995 },
 ]
 
 [[package]]
@@ -2170,6 +2229,18 @@ wheels = [
 ]
 
 [[package]]
+name = "scipy-stubs"
+version = "1.16.2.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "optype", extra = ["numpy"] },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/6b/47/b165711b36a1afb8d5f408393487586e07f8bdb86f829b5b904c1ddd091f/scipy_stubs-1.16.2.3.tar.gz", hash = "sha256:b1afd21442699b8bdd399508187bddcedc6c29a34b188fd603396cb6754c2a91", size = 355436 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/29/9f/3d8f613d0c3be9348cb0c351328249b7a2428f13329447ec6f395628d7b0/scipy_stubs-1.16.2.3-py3-none-any.whl", hash = "sha256:05e93238bdaedb7fa1afedf9c3a2337f94fec3d8c33fb2d403c933e1bcc7412e", size = 556848 },
+]
+
+[[package]]
 name = "setuptools"
 version = "80.9.0"
 source = { registry = "https://pypi.org/simple" }
@@ -2525,6 +2596,71 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/d0/66/b1eb52839f563623d185f0927eb3530ee4d5ffe9d377cdaf5346b306689e/triton-3.4.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:31c1d84a5c0ec2c0f8e8a072d7fd150cab84a9c239eaddc6706c081bfae4eb04", size = 155560068 },
     { url = "https://files.pythonhosted.org/packages/30/7b/0a685684ed5322d2af0bddefed7906674f67974aa88b0fae6e82e3b766f6/triton-3.4.0-cp313-cp313-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:00be2964616f4c619193cb0d1b29a99bd4b001d7dc333816073f92cf2a8ccdeb", size = 155569223 },
     { url = "https://files.pythonhosted.org/packages/20/63/8cb444ad5cdb25d999b7d647abac25af0ee37d292afc009940c05b82dda0/triton-3.4.0-cp313-cp313t-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:7936b18a3499ed62059414d7df563e6c163c5e16c3773678a3ee3d417865035d", size = 155659780 },
+]
+
+[[package]]
+name = "types-grpcio"
+version = "1.0.0.20251009"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/de/93/78aa083216853c667c9412df4ef8284b2a68c6bcd2aef833f970b311f3c1/types_grpcio-1.0.0.20251009.tar.gz", hash = "sha256:a8f615ea7a47b31f10da028ab5258d4f1611fbd70719ca450fc0ab3fb9c62b63", size = 14479 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d4/93/66d28f41b16bb4e6b611bd608ef28dffc740facec93250b30cf83138da21/types_grpcio-1.0.0.20251009-py3-none-any.whl", hash = "sha256:112ac4312a5b0a273a4c414f7f2c7668f342990d9c6ab0f647391c36331f95ed", size = 15208 },
+]
+
+[[package]]
+name = "types-protobuf"
+version = "6.32.1.20250918"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/69/5a/bd06c2dbb77ebd4ea764473c9c4c014c7ba94432192cb965a274f8544b9d/types_protobuf-6.32.1.20250918.tar.gz", hash = "sha256:44ce0ae98475909ca72379946ab61a4435eec2a41090821e713c17e8faf5b88f", size = 63780 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/37/5a/8d93d4f4af5dc3dd62aa4f020deae746b34b1d94fb5bee1f776c6b7e9d6c/types_protobuf-6.32.1.20250918-py3-none-any.whl", hash = "sha256:22ba6133d142d11cc34d3788ad6dead2732368ebb0406eaa7790ea6ae46c8d0b", size = 77885 },
+]
+
+[[package]]
+name = "types-pytz"
+version = "2025.2.0.20250809"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/07/e2/c774f754de26848f53f05defff5bb21dd9375a059d1ba5b5ea943cf8206e/types_pytz-2025.2.0.20250809.tar.gz", hash = "sha256:222e32e6a29bb28871f8834e8785e3801f2dc4441c715cd2082b271eecbe21e5", size = 10876 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/db/d0/91c24fe54e565f2344d7a6821e6c6bb099841ef09007ea6321a0bac0f808/types_pytz-2025.2.0.20250809-py3-none-any.whl", hash = "sha256:4f55ed1b43e925cf851a756fe1707e0f5deeb1976e15bf844bcaa025e8fbd0db", size = 10095 },
+]
+
+[[package]]
+name = "types-requests"
+version = "2.32.4.20250913"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "urllib3" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/36/27/489922f4505975b11de2b5ad07b4fe1dca0bca9be81a703f26c5f3acfce5/types_requests-2.32.4.20250913.tar.gz", hash = "sha256:abd6d4f9ce3a9383f269775a9835a4c24e5cd6b9f647d64f88aa4613c33def5d", size = 23113 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/2a/20/9a227ea57c1285986c4cf78400d0a91615d25b24e257fd9e2969606bdfae/types_requests-2.32.4.20250913-py3-none-any.whl", hash = "sha256:78c9c1fffebbe0fa487a418e0fa5252017e9c60d1a2da394077f1780f655d7e1", size = 20658 },
+]
+
+[[package]]
+name = "types-tensorflow"
+version = "2.18.0.20251008"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+    { name = "types-protobuf" },
+    { name = "types-requests" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/0d/0a/13bde03fb5a23faaadcca2d6914f865e444334133902310ea05e6ade780c/types_tensorflow-2.18.0.20251008.tar.gz", hash = "sha256:8db03d4dd391a362e2ea796ffdbccb03c082127606d4d852edb7ed9504745933", size = 257550 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/66/cc/e50e49db621b0cf03c1f3d10be47389de41a02dc9924c3a83a9c1a55bf28/types_tensorflow-2.18.0.20251008-py3-none-any.whl", hash = "sha256:d6b0dd4d81ac6d9c5af803ebcc8ce0f65c5850c063e8b9789dc828898944b5f4", size = 329023 },
+]
+
+[[package]]
+name = "types-tqdm"
+version = "4.67.0.20250809"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "types-requests" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/fb/d0/cf498fc630d9fdaf2428b93e60b0e67b08008fec22b78716b8323cf644dc/types_tqdm-4.67.0.20250809.tar.gz", hash = "sha256:02bf7ab91256080b9c4c63f9f11b519c27baaf52718e5fdab9e9606da168d500", size = 17200 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/3f/13/3ff0781445d7c12730befce0fddbbc7a76e56eb0e7029446f2853238360a/types_tqdm-4.67.0.20250809-py3-none-any.whl", hash = "sha256:1a73053b31fcabf3c1f3e2a9d5ecdba0f301bde47a418cd0e0bdf774827c5c57", size = 24020 },
 ]
 
 [[package]]
