@@ -36,7 +36,9 @@ __all__ = [
 JSON_PACK: Dict[Type[Any], SerializeSpec] = {}
 JSON_UNPACK: Dict[str, SerializeSpec] = {}
 
-JsonPack = TypedDict("JsonPack", {"__type__": str, "dump": Any})
+JsonPack = TypedDict(  # pylint: disable=invalid-name
+    "JsonPack", {"__type__": str, "dump": Any}
+)
 
 
 @dataclasses.dataclass

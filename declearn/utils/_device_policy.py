@@ -76,7 +76,9 @@ class DevicePolicy:
             )
 
 
-DEVICE_POLICY = DevicePolicy(gpu=True, idx=None)
+DEVICE_POLICY = DevicePolicy(  # pylint: disable=[invalid-name]
+    gpu=True, idx=None
+)
 
 
 def get_device_policy() -> DevicePolicy:

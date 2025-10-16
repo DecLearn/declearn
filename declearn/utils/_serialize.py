@@ -34,7 +34,7 @@ __all__ = [
 ]
 
 
-ObjectConfigDict = TypedDict(
+ObjectConfigDict = TypedDict(  # pylint: disable=invalid-name
     "ObjectConfigDict",
     {"name": str, "group": Optional[str], "config": Dict[str, Any]},
 )
