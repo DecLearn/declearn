@@ -108,7 +108,7 @@ def test_serialize_unregistered() -> None:
 
 
 def test_serialize_registered(
-    registered_class: Tuple[Type[MockClass], str]
+    registered_class: Tuple[Type[MockClass], str],
 ) -> None:
     """Unit tests for `serialize_object` with a registered type."""
     cls, group = registered_class
