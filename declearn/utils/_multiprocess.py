@@ -135,7 +135,7 @@ def parse_routine_specification(
         Tuple[Callable[..., Any], Tuple[Any, ...]],
         Tuple[Callable[..., Any], Dict[str, Any]],
         Tuple[Callable[..., Any], Tuple[Any, ...], Dict[str, Any]],
-    ]
+    ],
 ) -> Tuple[Callable[..., Any], Tuple[Any, ...], Dict[str, Any]]:
     """Type-check and unpack a given routine specification.
 
