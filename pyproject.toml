@@ -53,7 +53,7 @@ all = [  # all non-dev extra dependencies
     "jax[cpu] ~= 0.4.1, < 0.4.36",
     "opacus ~= 1.4",
     "protobuf >= 3.19",
-    "tensorflow ~= 2.11, < 2.20",
+    "tensorflow ~= 2.12, < 2.20",
     "torch >= 1.13, < 3.0",
     "websockets >= 10.1, < 13.0",
 ]
@@ -71,7 +71,7 @@ haiku = [
     "jax[cpu] ~= 0.4.1, < 0.4.36",
 ]
 tensorflow = [
-    "tensorflow ~= 2.11",
+    "tensorflow ~= 2.12, < 2.20",
 ]
 torch = [
     "torch ~= 2.0",
