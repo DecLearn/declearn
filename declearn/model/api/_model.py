@@ -71,7 +71,7 @@ class Model(Generic[VectorT], metaclass=ABCMeta):
         """Instantiate a Model interface wrapping a 'model' object."""
         self._model = model
         # Declare a private list where to record batch-wise training losses.
-        self._loss_history = []  # type: List[float]
+        self._loss_history: List[float] = []
 
     def get_wrapped_model(self) -> Any:
         """Getter to access the wrapped framework-specific model object.

@@ -105,9 +105,9 @@ class HaikuModel(Model):
         policy = get_device_policy()
         self._device = select_device(gpu=policy.gpu, idx=policy.idx)
         # Create model state attributes.
-        self._params = {}  # type: hk.Params
-        self._pnames = []  # type: List[str]
-        self._trainable = []  # type: List[str]
+        self._params: hk.Params = {}
+        self._pnames: List[str] = []
+        self._trainable: List[str] = []
         # Initialize the PRNG.
         if seed is None:
             seed = int(SystemRandom().random() * 10e6)
@@ -116,7 +116,7 @@ class HaikuModel(Model):
         )
         # Initialized and data_info utils
         self._initialized = False
-        self.data_info = {}  # type: Dict[str, Any]
+        self.data_info: Dict[str, Any] = {}
 
     @property
     def device_policy(
@@ -322,9 +322,7 @@ class HaikuModel(Model):
         else:
             self._trainable = []  # reset if needed
             if inspect.isfunction(criterion):
-                include_fn = (
-                    criterion
-                )  # type: Callable[[str, str, jax.Array], bool]
+                include_fn: Callable[[str, str, jax.Array], bool] = criterion
             elif isinstance(criterion, dict):
                 include_fn = self._build_include_fn(criterion)
             else:

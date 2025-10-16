@@ -17,6 +17,8 @@
 
 """Vector abstraction API."""
 
+from __future__ import annotations
+
 import dataclasses
 import operator
 import warnings
@@ -51,7 +53,7 @@ __all__ = [
 ]
 
 
-VECTOR_TYPES = {}  # type: Dict[Type[Any], Type[Vector]]
+VECTOR_TYPES: Dict[Type[Any], Type[Vector]] = {}
 """Private constant holding registered Vector types."""
 
 

@@ -121,7 +121,7 @@ class TensorflowOptiModule(OptiModule):
         with tf.device(self._device):
             self.optim = self.optim.from_config(config)
         # Create a container for artificial, zero-valued variables.
-        self._vars = {}  # type: Dict[str, tf.Variable]
+        self._vars: Dict[str, tf.Variable] = {}
 
     def run(
         self,

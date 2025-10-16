@@ -63,7 +63,7 @@ class LossFunction(tf_keras.losses.Loss):
         self,
     ) -> Dict[str, Any]:
         # inherited docstring; pylint: disable=missing-docstring
-        config = super().get_config()  # type: Dict[str, Any]
+        config: Dict[str, Any] = super().get_config()
         config["loss_fn"] = tf_keras.losses.serialize(self.loss_fn)
         return config
 

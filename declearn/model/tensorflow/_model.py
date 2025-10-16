@@ -156,7 +156,7 @@ class TensorflowModel(Model):
     def get_config(
         self,
     ) -> Dict[str, Any]:
-        config = tf_keras.layers.serialize(self._model)  # type: Dict[str, Any]
+        config: Dict[str, Any] = tf_keras.layers.serialize(self._model)
         kwargs = deepcopy(self._kwargs)
         loss = tf_keras.losses.serialize(kwargs.pop("loss"))
         return {"model": config, "loss": loss, "kwargs": kwargs}
@@ -329,7 +329,7 @@ class TensorflowModel(Model):
         s_wght: tf.Tensor,
     ) -> List[tf.Tensor]:
         """Clip sample-wise gradients then batch-average them."""
-        outp = []  # type: List[tf.Tensor]
+        outp: List[tf.Tensor] = []
         for grad in gradients:
             dims = list(range(1, grad.shape.rank))
             grad = tf.clip_by_norm(grad, max_norm, axes=dims)

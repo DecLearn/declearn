@@ -114,7 +114,7 @@ class FairnessInMemoryDataset(FairnessDataset, InMemoryDataset):
             seed=seed,
         )
         # Pre-emptively declare attributes to deal with fairness balancing.
-        self.sensitive: pd.Series[Any] = pd.Series()
+        self.sensitive: pd.Series = pd.Series()
         self._smp_wght: DataArray = self.weights
         # Actually set up sensitive groups based on specific parameters.
         self._set_sensitive_data(sensitive=s_attr, use_label=sensitive_target)
@@ -229,7 +229,11 @@ class FairnessInMemoryDataset(FairnessDataset, InMemoryDataset):
     ) -> InMemoryDataset:
         mask = self.sensitive == group
         inputs = self.feats[mask]  # type: ignore
-        target = None if self.target is None else self.target[mask]  # type: ignore
+        target = (
+            None
+            if (self.target is None)
+            else self.target[mask]  # type: ignore
+        )
         s_wght = (
             None
             if self._smp_wght is None

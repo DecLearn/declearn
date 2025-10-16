@@ -83,7 +83,9 @@ def apply_func_to_tensor_or_slices(
     if slice_inp and isinstance(other, tf.IndexedSlices):
         if _same_indexedslices_shape(first, other):
             values = tf_op(first.values, other.values)
-            return tf.IndexedSlices(values, first.indices, first.dense_shape)  # type: ignore
+            return tf.IndexedSlices(
+                values, first.indices, first.dense_shape
+            )  # type: ignore
         raise TypeError(
             f"Cannot apply function {tf_op.__name__} to two IndexedSlices "
             "structures with different shapes or indices."
@@ -98,7 +100,9 @@ def apply_func_to_tensor_or_slices(
                     "a full-rank array or tensor results in densifying it.",
                     RuntimeWarning,
                 )
-                return tf_op(tf.convert_to_tensor(first), other)  # type: ignore
+                return tf_op(
+                    tf.convert_to_tensor(first), other
+                )  # type: ignore
         # Generic case (including mis-shaped tensor, to raise an error).
         try:
             values = tf_op(first.values, other)
@@ -107,7 +111,9 @@ def apply_func_to_tensor_or_slices(
                 f"Failed to apply function {tf_op.__name__} to combine a "
                 f"{type(other)} object into an IndexedSlices tensor: {exc}."
             ) from exc
-        return tf.IndexedSlices(values, first.indices, first.dense_shape)  # type: ignore
+        return tf.IndexedSlices(
+            values, first.indices, first.dense_shape
+        )  # type: ignore
     # All other cases (including right-hand slices that will be converted).
     return tf_op(first, other)  # type: ignore
 

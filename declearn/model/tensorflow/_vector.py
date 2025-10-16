@@ -323,7 +323,7 @@ class TensorflowVector(Vector):
         self,
     ) -> Tuple[List[float], VectorSpec]:
         v_spec = self.get_vector_specs()
-        arrays = []  # type: List[np.ndarray]
+        arrays: List[np.ndarray] = []
         for name in v_spec.names:
             if isinstance(self.coefs[name], tf.IndexedSlices):
                 warnings.warn(

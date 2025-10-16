@@ -280,7 +280,9 @@ class InMemoryDataset(Dataset):
         if isinstance(self.target, np.ndarray):
             return set(np.unique(self.target).tolist())
         if isinstance(self.target, spmatrix):
-            return set(np.unique(self.target.tocsr().data).tolist())  # type: ignore
+            return set(
+                np.unique(self.target.tocsr().data).tolist()  # type: ignore
+            )
         raise TypeError(  # pragma: no cover
             f"Invalid 'target' attribute type: '{type(self.target)}'."
         )

@@ -405,7 +405,8 @@ class SklearnSGDModel(Model):
         x_data, y_data, s_wght = self._unpack_batch(batch)
         # Iteratively compute sample-wise gradients.
         grad = [
-            self._compute_sample_gradient(x, y) for x, y in zip(x_data, y_data)  # type: ignore
+            self._compute_sample_gradient(x, y)
+            for x, y in zip(x_data, y_data)  # type: ignore
         ]
         # Optionally clip sample-wise gradients based on their L2 norm.
         if max_norm:

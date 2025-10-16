@@ -192,7 +192,8 @@ class TorchDataset(Dataset):
             if shuffle:
                 sampler: torch.utils.data.Sampler = (
                     torch.utils.data.RandomSampler(
-                        data_source=self.dataset,  # type: ignore  # sized Dataset
+                        data_source=self.dataset,  # type: ignore
+                        # sized Dataset
                         replacement=replacement,
                         generator=self.gen,
                     )

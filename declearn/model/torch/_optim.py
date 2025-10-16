@@ -106,8 +106,8 @@ class TorchOptiModule(OptiModule):
         self.optim_cls = self._validate_optim_cls(optim_cls, validate)
         self.kwargs = kwargs
         self.kwargs["lr"] = 1.0
-        self._params = {}  # type: Dict[str, torch.nn.Parameter]
-        self._optim = None  # type: Optional[torch.optim.Optimizer]
+        self._params: Dict[str, torch.nn.Parameter] = {}
+        self._optim: Optional[torch.optim.Optimizer] = None
 
     def _validate_optim_cls(
         self,
@@ -268,7 +268,7 @@ class TorchOptiModule(OptiModule):
         sdict = (
             {"state": {}} if self._optim is None else self._optim.state_dict()
         )
-        state = []  # type: List[Tuple[int, Dict[str, Any]]]
+        state: List[Tuple[int, Dict[str, Any]]] = []
         for key, group in sdict["state"].items():
             gval = {
                 k: v.cpu().numpy().copy() if isinstance(v, torch.Tensor) else v

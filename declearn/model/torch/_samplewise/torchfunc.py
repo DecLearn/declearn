@@ -76,8 +76,8 @@ def get_params(
     model: torch.nn.Module,
 ) -> Tuple[Dict[str, torch.nn.Parameter], Dict[str, torch.nn.Parameter]]:
     """Return a model's parameters, split between trainable and frozen ones."""
-    params = {}  # type: Dict[str, torch.nn.Parameter]
-    frozen = {}  # type: Dict[str, torch.nn.Parameter]
+    params: Dict[str, torch.nn.Parameter] = {}
+    frozen: Dict[str, torch.nn.Parameter] = {}
     for name, param in model.named_parameters():
         (params if param.requires_grad else frozen)[name] = param
     return params, frozen

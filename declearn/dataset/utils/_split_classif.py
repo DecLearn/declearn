@@ -225,7 +225,9 @@ def split_dirichlet(
         for i in range(n_shards):
             shard_i[i].extend(index[s_idx == i])
     # Gather the actual sample shards.
-    return [(inputs[index], target[index]) for index in shard_i]  # type: ignore
+    return [
+        (inputs[index], target[index]) for index in shard_i  # type: ignore
+    ]
 
 
 def train_valid_split(
