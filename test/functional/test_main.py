@@ -74,6 +74,7 @@ class DeclearnTestCase:
         rounds: int = 5,
     ) -> None:
         # arguments provide modularity; pylint: disable=too-many-arguments
+        # pylint: disable=too-many-positional-arguments
         self.kind = kind
         self.framework = framework
         self.strategy = strategy
@@ -268,6 +269,7 @@ def run_test_case(
 ) -> None:
     """Run a given test case, using processes to isolate server and clients."""
     # arguments provide modularity; pylint: disable=too-many-arguments
+    # pylint: disable=too-many-positional-arguments
     # Set up a test case object.
     # fmt: off
     test_case = DeclearnTestCase(

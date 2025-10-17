@@ -279,7 +279,7 @@ class FairnessControllerServer(metaclass=abc.ABCMeta):
         replies = await verify_client_messages_validity(
             netwk, received, expected=FairnessCounts
         )
-        counts = np.zeros(n_groups, dtype="uint64")
+        counts: np.ndarray = np.zeros(n_groups, dtype="uint64")
         for message in replies.values():
             counts = counts + np.asarray(message.counts, dtype="uint64")
         return counts.tolist()

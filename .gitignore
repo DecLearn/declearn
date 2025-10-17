@@ -11,6 +11,7 @@ __pycache__
 .vscode
 # Coverage files
 .coverage
+.coverage*
 htmlcov
 coverage.xml
 # Virtual environment files

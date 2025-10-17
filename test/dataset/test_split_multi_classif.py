@@ -88,7 +88,7 @@ class TestSplitMultiClassifDataset:
         assert isinstance(y_train, np.ndarray)
         assert isinstance(y_valid, np.ndarray)
         # Assert that array shapes match expectations.
-        assert x_train.ndim == x_valid.ndim == 2
+        assert x_train.ndim == x_valid.ndim == 2  # type: ignore
         assert x_train.shape[0] == y_train.shape[0]
         assert x_valid.shape[0] == y_valid.shape[0]
         assert x_train.shape[1] == x_valid.shape[1] == n_feats

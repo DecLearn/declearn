@@ -42,6 +42,8 @@ from declearn.utils import set_device_policy
 with make_importable(os.path.dirname(__file__)):
     from model_testing import ModelTestCase, ModelTestSuite
 
+# mypy: ignore-errors
+
 
 class TensorflowTestCase(ModelTestCase):
     """Tensorflow Keras test-case-provider fixture.

@@ -230,7 +230,7 @@ class TensorflowDataset(Dataset):
         if replacement:
             dataset = dataset.repeat(count=None)
         return dataset.shuffle(
-            seed=self.rng.integers(2**63),
+            seed=int(self.rng.integers(2**63)),
             buffer_size=self.buffer_size or batch_size * 10,
         )
 

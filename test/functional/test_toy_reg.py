@@ -172,7 +172,8 @@ def _get_model_haiku() -> Model:
     model.initialize({"data_type": "float32", "features_shape": (100,)})
     zeros_like = jax.jit(jax.numpy.zeros_like, backend="cpu")
     zeros = {
-        key: zeros_like(val) for key, val in model.get_weights().coefs.items()
+        key: zeros_like(val)  # pylint: disable=not-callable
+        for key, val in model.get_weights().coefs.items()
     }
     model.set_weights(JaxNumpyVector(zeros))
     return model
@@ -383,6 +384,7 @@ async def async_run_server(
 ) -> None:
     """Routine to run a FL server, called by `run_declearn_experiment`."""
     # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-positional-arguments
     # Set up the FederatedServer.
     model = get_model(framework)
     netwk = NetworkServerConfig.from_params(

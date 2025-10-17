@@ -77,7 +77,7 @@ def flatten_numpy_arrays(
         List of float values made from concatenating, flattening
         and converting input numpy arrays to python float values.
     """
-    return [
+    return [  # type: ignore
         value
         for array in arrays
         for value in array.ravel().astype(float).tolist()

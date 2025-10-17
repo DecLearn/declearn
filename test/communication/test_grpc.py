@@ -83,7 +83,7 @@ class FakeMessageBoard(MessageBoardServicer):
 
 
 @pytest_asyncio.fixture(name="insecure_grpc_server")
-async def insecure_grpc_server_fixture() -> AsyncIterator[grpc.Server]:
+async def insecure_grpc_server_fixture() -> AsyncIterator[grpc.aio.Server]:
     """Create, start and return a grpc Server with unsecured communications."""
     server = grpc.aio.server()
     mboard = FakeMessageBoard()
@@ -97,7 +97,7 @@ async def insecure_grpc_server_fixture() -> AsyncIterator[grpc.Server]:
 @pytest_asyncio.fixture(name="secure_grpc_server")
 async def secure_grpc_server_fixture(
     ssl_cert: Dict[str, str],
-) -> AsyncIterator[grpc.Server]:
+) -> AsyncIterator[grpc.aio.Server]:
     """Create, start and return a grpc Server with secured communications."""
     server = grpc.aio.server()
     mboard = FakeMessageBoard()

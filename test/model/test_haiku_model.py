@@ -151,7 +151,13 @@ class HaikuTestCase(ModelTestCase):
         with warnings.catch_warnings():  # jax.jit(device=...) is deprecated
             warnings.simplefilter("ignore", DeprecationWarning)
             convert = jax.jit(jnp.asarray, backend=self.device)
-            batches = list(zip(convert(inputs), convert(labels), [None, None]))
+            batches = list(
+                zip(
+                    convert(inputs),  # pylint: disable=not-callable
+                    convert(labels),  # pylint: disable=not-callable
+                    [None, None],
+                )
+            )
         return batches  # type: ignore
 
     @property
