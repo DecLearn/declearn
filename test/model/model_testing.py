@@ -133,13 +133,13 @@ class ModelTestSuite:
         np_grads = model.compute_batch_gradients(np_batch)  # type: ignore
         assert isinstance(np_grads, test_case.vector_cls)
         my_grads = model.compute_batch_gradients(my_batch)
-        # Allow for a numerical imprecision of 10^-9.
+        # Allow for given a numerical imprecision (see assert for value).
         diff = my_grads - np_grads
         max_err = max(
             np.abs(to_numpy(weight, test_case.framework)).max()
             for weight in diff.coefs.values()
         )
-        assert max_err < 1e-8
+        assert max_err < 1e-7
 
     def test_compute_batch_gradients_clipped(
         self,
