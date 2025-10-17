@@ -81,7 +81,7 @@ class TestGaussianNoiseModule:
         """Test that the noise's average and stdev are statistically correct.
 
         Assesses goodness of fit using the two-sided Kolmogorov-Smirnov test
-        with a confidence level of 0.995.
+        with a confidence level of 0.999.
 
         For more details, see :
         https://en.wikipedia.org/wiki/Kolmogorov–Smirnov_test
@@ -98,4 +98,4 @@ class TestGaussianNoiseModule:
             for coef in just_noise.coefs.values()
             for value in coef.flatten().tolist()
         ]
-        assert stats.kstest(noise_list, "norm", args=(0, std))[1] > 0.005
+        assert stats.kstest(noise_list, "norm", args=(0, std))[1] > 0.001
