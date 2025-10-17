@@ -18,7 +18,7 @@
 """Unit tests for `declearn.metrics.BinaryAccuracyPrecisionRecall`."""
 
 import os
-from typing import Dict, Literal, Tuple, Union
+from typing import Any, Dict, Literal, Tuple, Union
 
 import numpy as np
 import pytest
@@ -51,7 +51,7 @@ def test_case_fixture(
     ]
     scores["confusion"] = np.array(confmt)
     # Compute expected values of aggregated states and scores.
-    agg_states = {key: 2 * val for key, val in states.items()}
+    agg_states: Dict[str, Any] = {key: 2 * val for key, val in states.items()}
     agg_scores = scores.copy()
     agg_scores["confusion"] = 2 * scores["confusion"]
     # Wrap it all up into a MetricTestCase container.

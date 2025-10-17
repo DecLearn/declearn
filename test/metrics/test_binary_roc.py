@@ -18,7 +18,7 @@
 """Unit tests for `declearn.metrics.BinaryRocAUC`."""
 
 import os
-from typing import Dict, Literal, Tuple, Union
+from typing import Any, Dict, Literal, Tuple, Union
 
 import numpy as np
 import pytest
@@ -67,7 +67,7 @@ def test_case_fixture(
     elif scale != 0.1:
         raise ValueError("Unsupported 'scale' testing parameter.")
     # Compute expected aggregated states and scores.
-    agg_states = {key: 2 * val for key, val in states.items()}
+    agg_states: Dict[str, Any] = {key: 2 * val for key, val in states.items()}
     agg_states["thresh"] = states["thresh"]
     agg_scores = scores.copy()
     # Instantiate a BinaryRocAUC and return a MetricTestCase.
