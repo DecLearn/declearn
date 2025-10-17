@@ -31,6 +31,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Topic :: Scientific/Engineering :: Mathematics",
     "Typing :: Typed",
@@ -42,7 +43,6 @@ dependencies = [
     "pandas >= 1.2, < 3.0",
     "requests ~= 2.18",
     "scikit-learn ~= 1.6",
-    "tomli ~= 2.0 ; python_version < '3.11'",
     "tqdm ~= 4.62",
 ]
 
