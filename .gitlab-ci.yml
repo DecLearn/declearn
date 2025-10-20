@@ -31,7 +31,7 @@ variables:
 
 # Shared configuration elements between all jobs.
 default:
-  image: "tensorflow/tensorflow:2.19.0-gpu"
+  image: python:3.11
   tags:
     - magnet
     - gpu
