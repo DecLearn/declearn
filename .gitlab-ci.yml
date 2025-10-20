@@ -82,9 +82,9 @@ clean-tox-cache-full:
   # Set up a virtual environment, with latest pip and tox installed.
   before_script:
     - apt-get update
-    - apt-get install -y python3 python3-pip python3-venv
-    - python3 -c 'print("test")'
-    - python3 -m venv venv
+    - apt-get install -y python3 python3-pip
+    - pip install virtualenv
+    - virtualenv venv
     - source venv/bin/activate
     - pip install -U pip
     - pip install -U tox
