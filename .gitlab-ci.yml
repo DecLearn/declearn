@@ -28,6 +28,7 @@ variables:
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.pip"
   TOX_CACHE_DIR: "$CI_PROJECT_DIR/.tox"
   GIT_CLEAN_FLAGS: -ffdx -e .pip -e .tox -e venv
+  DEBIAN_FRONTEND: noninteractive
 
 # Shared configuration elements between all jobs.
 default:
