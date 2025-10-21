@@ -95,9 +95,9 @@ tests = [
     "isort~=7.0",
     "mypy ~= 1.0",
     "pylint ~= 4.0",
-    "pytest ~= 7.4",
-    "pytest-asyncio ~= 0.20",
-    "pytest-cov ~= 4.0",
+    "pytest ~= 8.4",
+    "pytest-asyncio ~= 1.2",
+    "pytest-cov ~= 7.0",
 ]
 
 # all dev dependencies : lint, test, doc, build
@@ -112,9 +112,9 @@ dev = [
     "mkdocs-material ~= 9.1",
     "mypy ~= 1.0",
     "pylint ~= 4.0",
-    "pytest ~= 7.4",
-    "pytest-asyncio ~= 0.20",
-    "pytest-cov ~= 4.0",
+    "pytest ~= 8.4",
+    "pytest-asyncio ~= 1.2",
+    "pytest-cov ~= 7.0",
     "pre-commit>=4.3.0",
 ]
 
@@ -133,9 +133,9 @@ dev = [
     "mkdocs-material ~= 9.1",
     "mypy ~= 1.0",
     "pylint ~= 4.0",
-    "pytest ~= 7.4",
-    "pytest-asyncio ~= 0.20",
-    "pytest-cov ~= 4.0",
+    "pytest ~= 8.4",
+    "pytest-asyncio ~= 1.2",
+    "pytest-cov ~= 7.0",
     "pre-commit>=4.3.0",
     # python stubs for mypy (when using uv, it is easier to install them explicitly, rather than via mypy)
     "pandas-stubs",
