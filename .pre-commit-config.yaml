@@ -1,12 +1,4 @@
 repos:
-  - repo: https://github.com/psf/black
-    rev: 25.9.0
-    hooks:
-    - id: black
-      name: black
-      files: ^(declearn/|test/) # only apply on declearn/ and test/
-      exclude: .*_pb2.*py$ # ignore auto-generated protobuf code files
-
   - repo: https://github.com/pycqa/isort
     rev: 7.0.0
     hooks:
@@ -14,3 +6,11 @@ repos:
       name: isort (python)
       files: ^(declearn/|test/)
       exclude: .*_pb2.*py$
+      
+  - repo: https://github.com/psf/black
+    rev: 25.9.0
+    hooks:
+    - id: black
+      name: black
+      files: ^(declearn/|test/) # only apply on declearn/ and test/
+      exclude: .*_pb2.*py$ # ignore auto-generated protobuf code files
