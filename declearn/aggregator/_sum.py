@@ -17,7 +17,6 @@
 
 """Sum-aggregation Aggregator subclass."""
 
-
 from declearn.aggregator._api import Aggregator, ModelUpdates
 from declearn.model.api import Vector
 

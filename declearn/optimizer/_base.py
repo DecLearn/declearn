@@ -221,9 +221,7 @@ class Optimizer:
             else self._parse_plugins(Regularizer, regularizers)  # type: ignore
         )
         self.modules: List[OptiModule] = (
-            []
-            if modules is None
-            else self._parse_plugins(OptiModule, modules)  # type: ignore
+            [] if modules is None else self._parse_plugins(OptiModule, modules)  # type: ignore
         )
 
     @property

@@ -45,7 +45,6 @@ Utils to list available plug-ins:
     Return a mapping of registered Scheduler subclasses.
 """
 
-
 from . import modules, regularizers
 from ._base import Optimizer
 from ._utils import (

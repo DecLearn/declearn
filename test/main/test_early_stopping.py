@@ -17,7 +17,6 @@
 
 """Unit tests for 'declearn.main.utils.EarlyStopping'."""
 
-
 from declearn.main.utils import EarlyStopping
 
 

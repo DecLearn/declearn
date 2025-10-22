@@ -268,6 +268,7 @@ class TensorflowModel(Model):
         batch: Batch,
     ) -> Tuple[tf.Tensor, Optional[tf.Tensor], Optional[tf.Tensor]]:
         """Unpack and enforce Tensor conversion to an input data batch."""
+
         # fmt: off
         # Define an array-to-tensor conversion routine.
         def convert(data: Optional[ArrayLike]) -> Optional[tf.Tensor]:

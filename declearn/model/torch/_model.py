@@ -268,6 +268,7 @@ class TorchModel(Model):
         List[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor]
     ]:
         """Unpack and enforce Tensor conversion to an input data batch."""
+
         # fmt: off
         # Define an array-to-tensor conversion routine.
         def convert(data: Any) -> Optional[torch.Tensor]:
@@ -320,9 +321,7 @@ class TorchModel(Model):
             s_wght=(s_wght is not None),
         )
         with torch.no_grad():
-            grads, loss = grads_fn(
-                inputs, y_true, s_wght, clip=clip
-            )  # type: ignore
+            grads, loss = grads_fn(inputs, y_true, s_wght, clip=clip)  # type: ignore
             self._loss_history.append(float(loss.cpu().numpy().mean()))
         return TorchVector(grads)
 

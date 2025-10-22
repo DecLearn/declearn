@@ -222,7 +222,7 @@ exclude = [
     "node_modules",
     "site-packages",
     "venv",
-    "(.*_pb2.*py$)" # auto-generated protobuf code files
+    "*_pb2*py" # auto-generated protobuf code files
 ]
 
 # Same as Black.

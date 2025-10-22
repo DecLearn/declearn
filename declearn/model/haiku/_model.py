@@ -384,17 +384,13 @@ class HaikuModel(Model):
         rng = next(self._rng_gen)
         # Compute batch-averaged gradients, opt. clipped on a per-sample basis.
         if max_norm:
-            grads, loss = (
-                self._clipped_grads_and_loss_fn(  # pylint: disable=[not-callable, line-too-long]
-                    train_params, fixed_params, rng, inputs, max_norm
-                )
+            grads, loss = self._clipped_grads_and_loss_fn(  # pylint: disable=[not-callable, line-too-long]
+                train_params, fixed_params, rng, inputs, max_norm
             )
             grads = [value.mean(0) for value in grads]
         else:
-            loss, grads_tree = (
-                self._loss_and_grads_fn(  # pylint: disable=[not-callable, line-too-long]
-                    train_params, fixed_params, rng, inputs
-                )
+            loss, grads_tree = self._loss_and_grads_fn(  # pylint: disable=[not-callable, line-too-long]
+                train_params, fixed_params, rng, inputs
             )
             grads = jax.tree_util.tree_leaves(grads_tree)
         # Record the batch-averaged loss value.

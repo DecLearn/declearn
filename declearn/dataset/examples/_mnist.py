@@ -81,9 +81,10 @@ def _load_mnist_data(
             data = file.read()
     # Read and parse the source data into a numpy array.
     if images:
-        shape, off = [
-            int(data[i : i + 4].hex(), 16) for i in range(4, 16, 4)
-        ], 16
+        shape, off = (
+            [int(data[i : i + 4].hex(), 16) for i in range(4, 16, 4)],
+            16,
+        )
     else:
         shape, off = [int(data[4:8].hex(), 16)], 8
     array = np.frombuffer(bytearray(data[off:]), dtype="uint8").reshape(shape)

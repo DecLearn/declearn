@@ -230,14 +230,10 @@ class FairnessInMemoryDataset(FairnessDataset, InMemoryDataset):
         mask = self.sensitive == group
         inputs = self.feats[mask]  # type: ignore
         target = (
-            None
-            if (self.target is None)
-            else self.target[mask]  # type: ignore
+            None if (self.target is None) else self.target[mask]  # type: ignore
         )
         s_wght = (
-            None
-            if self._smp_wght is None
-            else self._smp_wght[mask]  # type: ignore
+            None if self._smp_wght is None else self._smp_wght[mask]  # type: ignore
         )
         return InMemoryDataset(
             data=inputs,

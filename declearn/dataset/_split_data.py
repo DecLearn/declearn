@@ -104,7 +104,8 @@ def load_data(
     elif isinstance(target, int):
         # Case when 'target' is the index of a data column.
         inputs, labels = _extract_column_by_index(
-            inputs, target  # type: ignore
+            inputs,  # type: ignore
+            target,
         )
     else:
         raise TypeError("Invalid type for 'target': should be str or int.")

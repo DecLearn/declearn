@@ -198,7 +198,10 @@ class TestParseDataFolder:
         client_names = ["client-1", "client-2"]
         file_names = [
             # fmt: off
-            "train_data", "train_target", "valid_data", "valid_target"
+            "train_data",
+            "train_target",
+            "valid_data",
+            "valid_target",
         ]
         self.setup_data_folder(data_folder, client_names, file_names)
         # Write up the expected outputs.
@@ -228,7 +231,10 @@ class TestParseDataFolder:
         client_names = ["client-1", "client-2"]
         base_names = [
             # fmt: off
-            "train_data", "train_target", "valid_data", "valid_target"
+            "train_data",
+            "train_target",
+            "valid_data",
+            "valid_target",
         ]
         file_names = ["x_train", "y_train", "x_valid", "y_valid"]
         self.setup_data_folder(data_folder, client_names, file_names)
@@ -267,8 +273,11 @@ class TestParseDataFolder:
         client_names = ["client-1", "client-2"]
         file_names = [
             # fmt: off
-            "train_data", "train_target", "valid_data", "valid_target",
-            "train_data.bis"  # duplicated name prefix
+            "train_data",
+            "train_target",
+            "valid_data",
+            "valid_target",
+            "train_data.bis",  # duplicated name prefix
         ]
         self.setup_data_folder(data_folder, client_names, file_names)
         # Verify that the expected exception is raised.

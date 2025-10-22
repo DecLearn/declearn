@@ -17,7 +17,6 @@
 
 """Unit tests for 'declearn.data_info.DataTypeField'."""
 
-
 import numpy as np
 import pytest
 

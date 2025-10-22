@@ -419,7 +419,8 @@ class SklearnSGDModel(Model):
             grad = [g * w for g, w in zip(grad, s_wght)]  # type: ignore
         # Compute and record the loss value on the entire batch.
         loss = self.loss_function(
-            y_data, self._predict(x_data)  # type: ignore
+            y_data,  # type: ignore
+            self._predict(x_data),
         )
         self._loss_history.append(float(loss.mean()))
         # Batch-average the gradients and return them.

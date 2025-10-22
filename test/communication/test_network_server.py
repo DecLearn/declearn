@@ -304,9 +304,9 @@ class TestNetworkServerSend:
         send = server.send_message(msg, client="mock.0", timeout=1)
         recv = server.handler.handle_message(req, 1)
         # Check that both routines time out.
-        excpt_reply: Tuple[asyncio.TimeoutError, messaging.Error] = (
-            await asyncio.gather(send, recv, return_exceptions=True)
-        )
+        excpt_reply: Tuple[
+            asyncio.TimeoutError, messaging.Error
+        ] = await asyncio.gather(send, recv, return_exceptions=True)
         excpt, reply = excpt_reply
         assert isinstance(excpt, asyncio.TimeoutError)
         assert isinstance(reply, actions.Reject)

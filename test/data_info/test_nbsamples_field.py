@@ -17,7 +17,6 @@
 
 """Unit tests for 'declearn.data_info.NbSamplesField'."""
 
-
 import pytest
 
 from declearn.data_info import NbSamplesField

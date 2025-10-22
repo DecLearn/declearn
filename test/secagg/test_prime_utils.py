@@ -17,7 +17,6 @@
 
 """Unit tests for random prime number generation utils."""
 
-
 import gmpy2  # type: ignore
 import pytest
 

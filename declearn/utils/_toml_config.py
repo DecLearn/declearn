@@ -288,7 +288,8 @@ class TomlConfig:
         """
         # Case of valid inputs: return them as-is (including valid None).
         if _isinstance_generic(
-            inputs, field.type  # type: ignore
+            inputs,
+            field.type,  # type: ignore
         ):  # see function's notes
             return inputs
         # Case of None inputs: return default value if any, else raise.

@@ -77,7 +77,9 @@ def generate_toy_dataset(
         (
             FairnessInMemoryDataset(
                 # fmt: off
-                data=x_train[:, :-1], s_attr=x_train[:, -1:], target=y_train,
+                data=x_train[:, :-1],
+                s_attr=x_train[:, -1:],
+                target=y_train,
                 expose_classes=True,
             ),
             FairnessInMemoryDataset(

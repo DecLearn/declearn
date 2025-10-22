@@ -62,9 +62,11 @@ class TestFairgradControllers(FairnessControllerTestSuite):
     ) -> None:
         aggregator = mock.create_autospec(Aggregator, instance=True)
         with pytest.warns(RuntimeWarning, match="SumAggregator"):
-            agg_final, server, clients = (
-                await self.run_finalize_fairness_setup(aggregator, use_secagg)
-            )
+            (
+                agg_final,
+                server,
+                clients,
+            ) = await self.run_finalize_fairness_setup(aggregator, use_secagg)
         # Verify that aggregators were replaced with a SumAggregator.
         assert isinstance(agg_final, SumAggregator)
         assert all(

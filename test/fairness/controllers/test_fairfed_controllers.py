@@ -65,10 +65,12 @@ class TestFairfedControllers(FairnessControllerTestSuite):
                 FairfedAggregator, "initialize_local_weight"
             ) as patch_initialize_aggregator:
                 with pytest.warns(RuntimeWarning, match="Aggregator"):
-                    agg_final, server, clients = (
-                        await self.run_finalize_fairness_setup(
-                            aggregator, use_secagg
-                        )
+                    (
+                        agg_final,
+                        server,
+                        clients,
+                    ) = await self.run_finalize_fairness_setup(
+                        aggregator, use_secagg
                     )
         # Verify that aggregators were replaced with a FairfedAggregator.
         assert isinstance(agg_final, FairfedAggregator)

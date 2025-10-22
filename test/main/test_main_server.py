@@ -255,11 +255,12 @@ class TestFederatedServerInit:  # pylint: disable=too-many-public-methods
         """
         metrics = ["binary-classif", "binary-roc"]
         with mock.patch.object(MetricSet, "from_specs") as patched:
+            # fmt: off
             server = FederatedServer(
-                # fmt: off
                 MOCK_MODEL, MOCK_NETWK, MOCK_OPTIM,
                 metrics=metrics  # type: ignore[arg-type]
             )
+            # fmt: on
         patched.assert_called_once_with(metrics)
         assert server.metrics is patched.return_value
 
