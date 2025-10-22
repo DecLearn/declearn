@@ -130,10 +130,10 @@ See our [guide on Secure Aggregation](./secagg.md) for further details on
 what secure aggregation is and how it is implemented in DecLearn.
 
 - Server:
-  - send an algorithm-specific SecaggSetupQuery message to selected clients
-  - trigger an algorithm-dependent setup routine
+    - send an algorithm-specific SecaggSetupQuery message to selected clients
+    - trigger an algorithm-dependent setup routine
 - Client:
-  - parse the query and execute the associated setup routine
+    - parse the query and execute the associated setup routine
 - Server & Client: perform algorithm-dependent computations and communication;
   eventually, instantiate and assign respective encryption and decryption
   controllers.

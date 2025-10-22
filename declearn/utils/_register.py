@@ -143,7 +143,7 @@ def create_types_registry(
 ) -> Type:
     """Create a TypesRegistry backing generic (de)serialization utils.
 
-    Note: this function may either be used to create a registy with
+    Note: this function may either be used to create a registry with
           an existing type as base through functional syntax, or be
           placed as a decorator for class-defining code
 

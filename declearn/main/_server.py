@@ -697,7 +697,7 @@ class FederatedServer:
         msg_light:
             Message to send, with a 'weights' field left to None.
         clients:
-            Name of the clients to whom the message is adressed.
+            Name of the clients to whom the message is addressed.
         """
         # Identify clients that do not already hold latest model weights.
         needs_weights = clients.difference(self._clients_holding_latest_model)

@@ -1,7 +1,7 @@
 # Quickstart
 
 **Here's where to start if you want to quickly understand what `declearn`
-does**. This tutorial exepects a basic understanding of
+does**. This tutorial expects a basic understanding of
 [federated learning](https://en.wikipedia.org/wiki/Federated_learning).
 
 We show different ways to use `declearn` on a well-known example, the
@@ -108,7 +108,7 @@ model = declearn.model.sklearn.SklearnSGDModel.from_parameters(
     kind="classifier", loss="log_loss", penalty="l1"
 )
 netwk = declearn.communication.NetworkServerConfig(
-    protocol="websockets", host="127.0.0.1"", port=8888,
+    protocol="websockets", host="127.0.0.1", port=8888,
     certificate="path/to/certificate.pem",
     private_key="path/to/private_key.pem"
 )
@@ -134,7 +134,7 @@ import declearn
 
 netwk = declearn.communication.NetworkClientConfig(
     protocol="websockets",
-    server_uri="127.0.0.1":8888",
+    server_uri="127.0.0.1:8888",
     name="client_name",
     certificate="path/to/root_ca.pem"
 )
@@ -161,14 +161,14 @@ and a model file:
 * A folder with your data, split by client.
   In the MNIST example: `examples/mnist_quickrun/data_iid`
   (after running `declearn-split --folder "examples/mnist_quickrun"`).
-* A pyhon model file, to declare your model wrapped in a `declearn` object.
+* A Python model file, to declare your model wrapped in a `declearn` object.
   In the MNIST example: `examples/mnist_quickrun/model.py`.
 
 #### The TOML file
 
 TOML is a minimal, human-readable configuration file format.
 We use is to store all the configurations of an FL experiment.
-The TOML is parsed by python as dictionnary with each `[header]`
+The TOML is parsed by python as dictionary with each `[header]`
 as a key. For more details, see the [TOML doc](https://toml.io/en/)
 
 This file is your main entry point to everything else.
@@ -179,13 +179,13 @@ declearn-quickrun --config <path_to_toml_file>
 ```
 
 The TOML file has six sections, some of which are optional. Note that the order
-does not matter, and that we give illustrative, not necessarily functionnal
+does not matter, and that we give illustrative, not necessarily functional
 examples.
 
 **`[network]`: Network configuration** used by both client and server,
 most notably the port, host, and ssl certificates. An example:
 
-``` python
+```toml
 [network]
     protocol = "websockets" # Protocol used, to keep things simple use websocket
     host = "127.0.0.1" # Address used, works as is on most set ups
@@ -201,7 +201,7 @@ server.
 **`[data]`: Where to find your data**. This is particularly useful if you have
 split your data yourself, using custom names for files and folders. An example:
 
-```python
+```toml
 [data]
     data_folder = "./custom/data_custom" # Your main data folder
     client_names = ["client_a", "client_b", "client_c"] # The names of your client folders
@@ -238,7 +238,7 @@ and the client optimizer (iii). An example:
 This section is parsed as the fields of a `FLOptimConfig` dataclass. Check its
 [documentation][declearn.main.config.FLOptimConfig] to see more details on
 these three sub-sections. For more details on available fields within those
-subsections, you can naviguate inside the documentation of the
+subsections, you can navigate inside the documentation of the
 [`Aggregator`][declearn.aggregator.Aggregator] and
 [`Optimizer`][declearn.optimizer.Optimizer] classes.
 
@@ -246,7 +246,7 @@ subsections, you can naviguate inside the documentation of the
 includes the number of rounds as well as the registration, training, and
 evaluation parameters. An example:
 
-```python
+```toml
 [run]
     rounds = 10 # Number of overall training rounds
 
@@ -267,12 +267,12 @@ evaluation parameters. An example:
 This section is parsed as the fields of a `FLRunConfig` dataclass. Check its
 [documentation][declearn.main.config.FLOptimConfig] to see more details on the
 sub-sections. For more details on available fields within those subsections,
-you can naviguate inside the documentation of `FLRunConfig` to the relevant
+you can navigate inside the documentation of `FLRunConfig` to the relevant
 dataclass, for instance [`TrainingConfig`][declearn.main.config.TrainingConfig].
 
 **`[model]`: Optional section**, where to find the model. An example:
 
-```python
+```toml
 [model]
 # The location to a model file
 model_file = "./custom/model_custom.py"
@@ -286,7 +286,7 @@ This section is parsed as the fields of a `ModelConfig` dataclass. Check its
 **`[experiment]`: Optional section**, what to report during the experiment and
 where to report it. An example:
 
-```python
+```toml
 [experiment]
 metrics = [
     # Multi-label Accuracy, Precision, Recall and F1-Score.
@@ -305,7 +305,7 @@ Your data, in a standard tabular format, split by client. Within each client
 folder, we expect four files : training data and labels, validation data and
 labels.
 
-If your data is not already split by client, we are developping an experimental
+If your data is not already split by client, we are developing an experimental
 data splitting utility. It currently has a limited scope, only dealing
 with classification tasks, excluding multi-label. You can call it using
 `declearn-split --folder <path_to_original_data>`. For more details, refer to
