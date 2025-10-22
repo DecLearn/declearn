@@ -118,7 +118,7 @@ class TorchModel(Model):
         self._raw_model = self._model
         if hasattr(torch, "compile") and hasattr(model, "_orig_mod"):
             self._raw_model = AutoDeviceModule(
-                module=getattr(model, "_orig_mod"),
+                module=model._orig_mod,
                 device=self._model.device,
             )
 
@@ -145,7 +145,8 @@ class TorchModel(Model):
         self,
     ) -> Dict[str, Any]:
         warnings.warn(
-            "PyTorch JSON serialization relies on pickle, which may be unsafe."
+            "PyTorch JSON serialization relies on pickle, which may be unsafe.",
+            stacklevel=2,
         )
         with io.BytesIO() as buffer:
             torch.save(self._raw_model.module, buffer)

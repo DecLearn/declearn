@@ -295,7 +295,7 @@ class SecaggFairnessCounts(SecaggMessage[FairnessCounts]):
     ) -> Self:
         counts = [
             decrypter.sum_encrypted([v_a, v_b])
-            for v_a, v_b in zip(self.counts, other.counts)
+            for v_a, v_b in zip(self.counts, other.counts, strict=False)
         ]
         return self.__class__(counts=counts)
 
@@ -336,6 +336,6 @@ class SecaggFairnessReply(SecaggMessage[FairnessReply]):
             )
         values = [
             decrypter.sum_encrypted([v_a, v_b])
-            for v_a, v_b in zip(self.values, other.values)
+            for v_a, v_b in zip(self.values, other.values, strict=False)
         ]
         return self.__class__(values=values)

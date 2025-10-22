@@ -230,16 +230,15 @@ class FairbatchEqualizedOdds(FairbatchSamplingController):
                 self.states["lambda_1"] = max(
                     self.states["lambda_1"] - self.alpha, 0
                 )
-        else:
-            if diff_loss_tgt_1 > 0:
-                self.states["lambda_2"] = min(
-                    self.states["lambda_2"] + self.alpha,
-                    self.states["p_trgt_1"],
-                )
-            elif diff_loss_tgt_1 < 0:
-                self.states["lambda_2"] = max(
-                    self.states["lambda_2"] - self.alpha, 0
-                )
+        elif diff_loss_tgt_1 > 0:
+            self.states["lambda_2"] = min(
+                self.states["lambda_2"] + self.alpha,
+                self.states["p_trgt_1"],
+            )
+        elif diff_loss_tgt_1 < 0:
+            self.states["lambda_2"] = max(
+                self.states["lambda_2"] - self.alpha, 0
+            )
 
 
 class FairbatchDemographicParity(FairbatchSamplingController):
@@ -306,16 +305,15 @@ class FairbatchDemographicParity(FairbatchSamplingController):
                     self.states["lambda_1"] + self.alpha,
                     self.states["p_attr_0"],
                 )
-        else:
-            if diff_loss_tgt_1 > 0:
-                self.states["lambda_2"] = min(
-                    self.states["lambda_2"] + self.alpha,
-                    self.states["p_attr_1"],
-                )
-            elif diff_loss_tgt_1 < 0:
-                self.states["lambda_2"] = max(
-                    self.states["lambda_2"] - self.alpha, 0
-                )
+        elif diff_loss_tgt_1 > 0:
+            self.states["lambda_2"] = min(
+                self.states["lambda_2"] + self.alpha,
+                self.states["p_attr_1"],
+            )
+        elif diff_loss_tgt_1 < 0:
+            self.states["lambda_2"] = max(
+                self.states["lambda_2"] - self.alpha, 0
+            )
 
 
 def assign_sensitive_group_labels(

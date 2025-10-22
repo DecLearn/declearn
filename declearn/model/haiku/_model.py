@@ -166,7 +166,8 @@ class HaikuModel(Model):
     ) -> Dict[str, Any]:
         warnings.warn(
             "Our custom Haiku serialization relies on pickle,"
-            "which may be unsafe."
+            "which may be unsafe.",
+            stacklevel=2,
         )
         with io.BytesIO() as buffer:
             joblib.dump(self._model_fn, buffer)
@@ -378,7 +379,7 @@ class HaikuModel(Model):
         # Unpack input batch and prepare model parameters.
         inputs = self._unpack_batch(batch)
         train_params, fixed_params = hk.data_structures.partition(
-            predicate=lambda l, w, _: f"{l}:{w}" in self._trainable,
+            predicate=lambda l, w, _: f"{l}:{w}" in self._trainable,  # noqa
             structure=self._params,
         )
         rng = next(self._rng_gen)
@@ -396,7 +397,7 @@ class HaikuModel(Model):
         # Record the batch-averaged loss value.
         self._loss_history.append(float(np.array(loss).mean()))
         # Return the gradients, flattened into a JaxNumpyVector container.
-        return JaxNumpyVector(dict(zip(self._trainable, grads)))
+        return JaxNumpyVector(dict(zip(self._trainable, grads, strict=False)))
 
     @functools.cached_property
     def _loss_and_grads_fn(

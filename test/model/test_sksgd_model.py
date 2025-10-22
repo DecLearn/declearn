@@ -82,9 +82,9 @@ class SklearnSGDTestCase(ModelTestCase):
         if self.s_weights:
             s_wght = np.exp(rng.normal(size=(2, 32)).astype("float32"))
             s_wght /= s_wght.sum(axis=1, keepdims=True) * 32
-            batches = list(zip(inputs, labels, s_wght))
+            batches = list(zip(inputs, labels, s_wght, strict=False))
         else:
-            batches = list(zip(inputs, labels, [None, None]))
+            batches = list(zip(inputs, labels, [None, None], strict=False))
         return batches
 
     @property

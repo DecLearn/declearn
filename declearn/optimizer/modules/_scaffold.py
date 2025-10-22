@@ -225,6 +225,7 @@ class ScaffoldClientModule(OptiModule[ScaffoldAuxVar]):
                 "that was not run. The local state update was skipped, "
                 "and empty auxiliary variables are emitted.",
                 RuntimeWarning,
+                stacklevel=2,
             )
             return None
         # Compute the updated local state and assign it.

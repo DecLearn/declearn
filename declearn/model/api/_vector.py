@@ -507,6 +507,7 @@ class Vector(Generic[T], metaclass=ABCMeta):
             warnings.warn(
                 "Accessing specs of an unregistered Vector subclass.",
                 UserWarning,
+                stacklevel=2,
             )
         return VectorSpec(
             names=list(self.coefs),

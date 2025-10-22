@@ -294,7 +294,7 @@ class TestIdentityKeys:
         TestLoadEd25519PrivateKey.dump_private_key(
             prv_key, "raw", encrypted=False, path=os.path.join(tmp_path, "prv")
         )
-        for key, path in zip(trusted, pub_paths):
+        for key, path in zip(trusted, pub_paths, strict=False):
             TestLoadEd25519PublicKey.dump_public_key(key, "raw", path)
         # Instantiate a wrapper from paths.
         id_keys = IdentityKeys(prv_key=prv_path, trusted=pub_paths)
@@ -303,7 +303,7 @@ class TestIdentityKeys:
         )
         assert all(
             key_a.public_bytes_raw() == key_b.public_bytes_raw()
-            for key_a, key_b in zip(id_keys.trusted, trusted)
+            for key_a, key_b in zip(id_keys.trusted, trusted, strict=False)
         )
 
     def test_export_and_load_trusted_keys_to_and_from_file(
@@ -324,7 +324,7 @@ class TestIdentityKeys:
         assert isinstance(loaded, list) and len(loaded) == len(trusted)
         assert all(
             key_a.public_bytes_raw() == key_b.public_bytes_raw()
-            for key_a, key_b in zip(loaded, trusted)
+            for key_a, key_b in zip(loaded, trusted, strict=False)
         )
 
     def test_load_trusted_keys_from_file_invalid_data(
@@ -354,7 +354,7 @@ class TestIdentityKeys:
         id_keys = IdentityKeys(prv_key=prv_key, trusted=path)
         assert all(
             key_a.public_bytes_raw() == key_b.public_bytes_raw()
-            for key_a, key_b in zip(id_keys.trusted, trusted)
+            for key_a, key_b in zip(id_keys.trusted, trusted, strict=False)
         )
 
     def test_instantiate_with_invalid_private_key_type(

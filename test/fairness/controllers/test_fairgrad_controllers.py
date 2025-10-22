@@ -84,7 +84,7 @@ class TestFairgradControllers(FairnessControllerTestSuite):
         """Verify that FairGrad weights were shared to clients and applied."""
         assert isinstance(server, FairgradControllerServer)
         weights = server.weights_controller.get_current_weights(norm_nk=True)
-        expectw = dict(zip(server.groups, weights))
+        expectw = dict(zip(server.groups, weights, strict=False))
         for client in clients:
             mock_dst = client.manager.train_data
             assert isinstance(mock_dst, FairnessDataset)

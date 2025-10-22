@@ -129,5 +129,5 @@ class TestFairgradWeightsController:
         fairness = controller.get_current_fairness()
         assert isinstance(fairness, dict)
         assert fairness == dict(
-            zip(controller.function.groups, controller.f_k)
+            zip(controller.function.groups, controller.f_k, strict=False)
         )

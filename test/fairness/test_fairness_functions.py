@@ -177,8 +177,8 @@ class TestAccuracyParityFunction(FairnessFunctionTestSuite):
         c_kk = self.expected_constants[1]
         accuracy = self.accuracy
         acc = [accuracy[k] for k in ((0, 0), (0, 1), (1, 0), (1, 1))]
-        f_s0 = -sum(c * a for c, a in zip(c_kk[0], acc))
-        f_s1 = -sum(c * a for c, a in zip(c_kk[1], acc))
+        f_s0 = -sum(c * a for c, a in zip(c_kk[0], acc, strict=False))
+        f_s1 = -sum(c * a for c, a in zip(c_kk[1], acc, strict=False))
         return {(0, 0): f_s0, (0, 1): f_s1, (1, 0): f_s0, (1, 1): f_s1}
 
 
@@ -216,10 +216,14 @@ class TestDemographicParityFunction(FairnessFunctionTestSuite):
         accuracy = self.accuracy
         acc = [accuracy[k] for k in ((0, 0), (0, 1), (1, 0), (1, 1))]
         f_00 = (
-            c_k0[0] + c_kk[0].sum() - sum(c * a for c, a in zip(c_kk[0], acc))
+            c_k0[0]
+            + c_kk[0].sum()
+            - sum(c * a for c, a in zip(c_kk[0], acc, strict=False))
         )
         f_01 = (
-            c_k0[1] + c_kk[1].sum() - sum(c * a for c, a in zip(c_kk[1], acc))
+            c_k0[1]
+            + c_kk[1].sum()
+            - sum(c * a for c, a in zip(c_kk[1], acc, strict=False))
         )
         return {(0, 0): f_00, (0, 1): f_01, (1, 0): -f_00, (1, 1): -f_01}
 
@@ -257,7 +261,7 @@ class TestEqualizedOddsFunction(FairnessFunctionTestSuite):
         groups = ((0, 0), (0, 1), (1, 0), (1, 1))
         acc = [accuracy[k] for k in groups]
         return {
-            group: -sum(c * a for c, a in zip(c_kk[i], acc))
+            group: -sum(c * a for c, a in zip(c_kk[i], acc, strict=False))
             for i, group in enumerate(groups)
         }
 

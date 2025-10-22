@@ -146,7 +146,8 @@ class FairgradWeightsController:
     ) -> Dict[Tuple[Any, ...], float]:
         """Return the group-wise current fairness level."""
         return {
-            key: float(val) for key, val in zip(self.function.groups, self.f_k)
+            key: float(val)
+            for key, val in zip(self.function.groups, self.f_k, strict=False)
         }
 
 
@@ -216,7 +217,7 @@ class FairgradControllerServer(FairnessControllerServer):
     ) -> Aggregator:
         # Set up the FairgradWeightsController.
         self.weights_controller = FairgradWeightsController(
-            counts=dict(zip(self.groups, counts)),
+            counts=dict(zip(self.groups, counts, strict=False)),
             f_type=self.f_type,
             eta=self.weights_controller.eta,
             eps=self.weights_controller.eps,
@@ -230,6 +231,7 @@ class FairgradControllerServer(FairnessControllerServer):
                 "Overriding Aggregator choice to a 'SumAggregator', "
                 "due to the use of Fed-FairGrad.",
                 category=RuntimeWarning,
+                stacklevel=2,
             )
             aggregator = SumAggregator()
         return aggregator
@@ -257,7 +259,7 @@ class FairgradControllerServer(FairnessControllerServer):
         values: List[float],
     ) -> Dict[str, Union[float, np.ndarray]]:
         # Unpack group-wise accuracy metrics and update loss weights.
-        accuracy = dict(zip(self.groups, values))
+        accuracy = dict(zip(self.groups, values, strict=False))
         self.weights_controller.update_weights_based_on_accuracy(accuracy)
         # Send the updated weights to clients.
         await self._send_fairgrad_weights(netwk)

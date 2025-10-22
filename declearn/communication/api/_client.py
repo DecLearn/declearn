@@ -226,6 +226,7 @@ class NetworkClient(metaclass=abc.ABCMeta):
                 "registration process. The argument was ignored, and will be "
                 "removed in DecLearn version 2.4 and/or 3.0.",
                 DeprecationWarning,
+                stacklevel=2,
             )
         query = Join(name=self.name, version=VERSION)
         reply = await self._exchange_action_messages(query)

@@ -156,6 +156,7 @@ class HaikuTestCase(ModelTestCase):
                     convert(inputs),  # pylint: disable=not-callable
                     convert(labels),  # pylint: disable=not-callable
                     [None, None],
+                    strict=False,
                 )
             )
         return batches  # type: ignore

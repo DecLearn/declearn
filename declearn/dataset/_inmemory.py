@@ -71,7 +71,7 @@ class InMemoryDataset(Dataset):
     # attributes serve clarity; pylint: disable=too-many-instance-attributes
     # arguments serve modularity; pylint: disable=too-many-arguments
     # pylint: disable-next=too-many-positional-arguments
-    def __init__(
+    def __init__(  # noqa
         self,
         data: Union[DataArray, str],
         target: Optional[Union[DataArray, str]] = None,
@@ -478,7 +478,7 @@ class InMemoryDataset(Dataset):
             for data in (self.feats, self.target, self.weights)
         ]
         # Yield tuples zipping the former.
-        yield from zip(*iterators)
+        yield from zip(*iterators, strict=False)
 
     def _samples_batching(
         self,

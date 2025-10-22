@@ -96,6 +96,7 @@ def select_sgd_model_dtype(
             f"Cannot enforce dtype '{dtype}' for pre-initialized "
             f"scikit-learn SGD model (dtype '{model.coef_.dtype.name}').",
             RuntimeWarning,
+            stacklevel=2,
         )
         return model.coef_.dtype.name
     # When using scikit-learn <= 1.3, warn about un-settable dtype.
@@ -104,6 +105,7 @@ def select_sgd_model_dtype(
             "Using scikit-learn <1.3; hence the 'float64' dtype will"
             f"forcibly be used rather than user-input '{dtype}'.",
             RuntimeWarning,
+            stacklevel=2,
         )
         return "float64"
     return dtype
@@ -406,7 +408,7 @@ class SklearnSGDModel(Model):
         # Iteratively compute sample-wise gradients.
         grad = [
             self._compute_sample_gradient(x, y)
-            for x, y in zip(x_data, y_data)  # type: ignore
+            for x, y in zip(x_data, y_data, strict=False)  # type: ignore
         ]
         # Optionally clip sample-wise gradients based on their L2 norm.
         if max_norm:
@@ -416,7 +418,7 @@ class SklearnSGDModel(Model):
                     arr *= min(max_norm / norm, 1)
         # Optionally re-weight gradients based on sample weights.
         if s_wght is not None:
-            grad = [g * w for g, w in zip(grad, s_wght)]  # type: ignore
+            grad = [g * w for g, w in zip(grad, s_wght, strict=False)]  # type: ignore
         # Compute and record the loss value on the entire batch.
         loss = self.loss_function(
             y_data,  # type: ignore
@@ -561,7 +563,7 @@ class SklearnSGDModel(Model):
             # Wrap it to support batched inputs.
             def loss_1d(y_true: np.ndarray, y_pred: np.ndarray) -> np.ndarray:
                 return np.array(
-                    [loss_smp(*smp) for smp in zip(y_pred, y_true)]
+                    [loss_smp(*smp) for smp in zip(y_pred, y_true, strict=False)]
                 )
 
         # For multiclass classifiers, further wrap to support 2d predictions.
@@ -593,4 +595,7 @@ class SklearnSGDModel(Model):
         policy: Optional[DevicePolicy] = None,
     ) -> None:
         if policy is not None and policy.gpu:
-            warnings.warn("'SklearnSGDModel' only runs on a CPU backend.")
+            warnings.warn(
+                "'SklearnSGDModel' only runs on a CPU backend.",
+                stacklevel=2,
+            )

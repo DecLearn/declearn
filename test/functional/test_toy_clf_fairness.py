@@ -224,7 +224,9 @@ async def test_toy_classif_fairness(
     coro_server = server_routine(fairness, secagg, folder=tmp_path)
     coro_clients = [
         client_routine(train_dst, valid_dst, id_keys)
-        for (train_dst, valid_dst), id_keys in zip(datasets, clients_id_keys)
+        for (train_dst, valid_dst), id_keys in zip(
+            datasets, clients_id_keys, strict=False
+        )
     ]
     outputs = await asyncio.gather(
         coro_server, *coro_clients, return_exceptions=True

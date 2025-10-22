@@ -131,7 +131,7 @@ class FairbatchControllerServer(FairnessControllerServer):
         # Set up the FairbatchWeightsController.
         self.sampling_controller = self._setup_function(
             f_type=self.f_type,
-            counts=dict(zip(self.groups, counts)),
+            counts=dict(zip(self.groups, counts, strict=False)),
             target=self.f_args.get("target", 1),
             alpha=self.sampling_controller.alpha,
         )
@@ -143,6 +143,7 @@ class FairbatchControllerServer(FairnessControllerServer):
                 "Overriding Aggregator choice to a 'SumAggregator', "
                 "due to the use of Fed-FairBatch.",
                 category=RuntimeWarning,
+                stacklevel=2,
             )
             aggregator = SumAggregator()
         return aggregator
@@ -173,8 +174,10 @@ class FairbatchControllerServer(FairnessControllerServer):
         values: List[float],
     ) -> Dict[str, Union[float, np.ndarray]]:
         # Unpack group-wise accuracy and loss values.
-        accuracy = dict(zip(self.groups, values[: len(self.groups)]))
-        loss = dict(zip(self.groups, values[len(self.groups) :]))
+        accuracy = dict(
+            zip(self.groups, values[: len(self.groups)], strict=False)
+        )
+        loss = dict(zip(self.groups, values[len(self.groups) :], strict=False))
         # Update sampling probabilities and send them to clients.
         self.sampling_controller.update_from_federated_losses(loss)
         await self._send_fairbatch_probas(netwk)

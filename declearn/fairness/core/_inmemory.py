@@ -48,7 +48,7 @@ class FairnessInMemoryDataset(FairnessDataset, InMemoryDataset):
     which samples belong.
     """
 
-    def __init__(
+    def __init__(  # noqa
         self,
         data: Union[DataArray, str],
         *,
@@ -162,6 +162,7 @@ class FairnessInMemoryDataset(FairnessDataset, InMemoryDataset):
                     " called with 'use_label=True', but there are no labels"
                     " defined for this instance.",
                     RuntimeWarning,
+                    stacklevel=2,
                 )
             else:
                 target = (
@@ -171,7 +172,9 @@ class FairnessInMemoryDataset(FairnessDataset, InMemoryDataset):
                 )
                 s_data = pd.concat([target, s_data], axis=1)
         # Wrap sensitive data as a Series of tuples of values.
-        self.sensitive = pd.Series(zip(*[s_data[c] for c in s_data.columns]))
+        self.sensitive = pd.Series(
+            zip(*[s_data[c] for c in s_data.columns], strict=False)
+        )
 
     def _parse_sensitive_data(
         self,

@@ -145,7 +145,8 @@ def json_unpack(obj: Dict[str, Any]) -> Any:
         warnings.warn(
             "JSON deserializer received a seemingly-packed object "
             f"of name '{obj['__type__']}', the specifications for "
-            "which are unavailable.\nIt was returned as-is."
+            "which are unavailable.\nIt was returned as-is.",
+            stacklevel=2,
         )
         return obj
     # Otherwise, use the recovered spec to unpack the object.

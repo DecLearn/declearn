@@ -24,7 +24,6 @@ from typing import Dict, Tuple
 
 import griffe
 
-
 ROOT_FOLDER = os.path.split(os.path.dirname(os.path.abspath(__file__)))[0]
 DOCS_INDEX = """{title}
 
@@ -77,7 +76,7 @@ def _parse_readme() -> Tuple[str, Dict[str, str]]:
         text = file.read()
     title, text = text.split("\n", 1)
     content = re.split(r"\n(## \w+\n+)", text)
-    readme = dict(zip(content[1::2], content[2::2]))
+    readme = dict(zip(content[1::2], content[2::2], strict=False))
     readme = {k.strip("# \n"): v.strip("\n") for k, v in readme.items()}
     return title, readme
 

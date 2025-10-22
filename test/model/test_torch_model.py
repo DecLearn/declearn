@@ -273,8 +273,12 @@ class TestTorchModel(ModelTestSuite):
         mod_a = list(model.get_wrapped_model().modules())
         mod_b = list(other.get_wrapped_model().modules())
         assert len(mod_a) == len(mod_b)
-        assert all(isinstance(a, type(b)) for a, b in zip(mod_a, mod_b))
-        assert all(repr(a) == repr(b) for a, b in zip(mod_a, mod_b))
+        assert all(
+            isinstance(a, type(b)) for a, b in zip(mod_a, mod_b, strict=False)
+        )
+        assert all(
+            repr(a) == repr(b) for a, b in zip(mod_a, mod_b, strict=False)
+        )
 
     def test_compute_batch_gradients_clipped(
         self,

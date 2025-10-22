@@ -195,5 +195,6 @@ def test_list_rate_schedulers():
             "declearn."
         ):
             warnings.warn(
-                f"Registered Scheduler class '{cls}' is not covered by tests."
+                f"Registered Scheduler class '{cls}' is not covered by tests.",
+                stacklevel=2,
             )

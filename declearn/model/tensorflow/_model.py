@@ -258,7 +258,9 @@ class TensorflowModel(Model):
                 norm = tf.constant(max_norm)
                 grads, loss = self._compute_clipped_gradients(*data, norm)
         self._loss_history.append(float(loss.numpy()))
-        grads_and_vars = zip(grads, self._get_weight_variables(trainable=True))
+        grads_and_vars = zip(
+            grads, self._get_weight_variables(trainable=True), strict=False
+        )
         return TensorflowVector(
             {var.name: grad for grad, var in grads_and_vars}
         )

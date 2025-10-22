@@ -241,7 +241,9 @@ class X3DHServerRound:  # pylint: disable=too-few-public-methods
         replies = {client: X3DHRequests(requests=[]) for client in queries}
         for client, cli_msg in queries.items():
             assert len(cli_msg.requests) == len(requests[client])
-            for dst, req in zip(requests[client], cli_msg.requests):
+            for dst, req in zip(
+                requests[client], cli_msg.requests, strict=False
+            ):
                 replies[dst].requests.append(req)
         # Send back triaged requests to their recipients.
         await self.netwk.send_messages(replies)

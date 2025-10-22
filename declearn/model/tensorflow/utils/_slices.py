@@ -97,6 +97,7 @@ def apply_func_to_tensor_or_slices(
                     f"Applying function {tf_op.__name__} to IndexSlices with "
                     "a full-rank array or tensor results in densifying it.",
                     RuntimeWarning,
+                    stacklevel=2,
                 )
                 return tf_op(tf.convert_to_tensor(first), other)  # type: ignore
         # Generic case (including mis-shaped tensor, to raise an error).

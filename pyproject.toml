@@ -242,6 +242,10 @@ select = [
 	"I",  # isort
     "PL", # Pylint
 ]
+ignore = [
+    "PLR2004", # magic-value-comparison
+    "PLW0603", # global-statement
+]
 
 [tool.ruff.lint.per-file-ignores]
 # ignores unused imports in __init__.py (these imports are re-exports)

@@ -73,7 +73,7 @@ class FairgradControllerClient(FairnessControllerClient):
         message = await verify_server_message_validity(
             netwk, received, expected=FairgradWeights
         )
-        weights = dict(zip(self.groups, message.weights))
+        weights = dict(zip(self.groups, message.weights, strict=False))
         # Set the received weights, handling and propagating exceptions if any.
         try:
             assert isinstance(self.manager.train_data, FairnessDataset)

@@ -90,7 +90,7 @@ class FairbatchControllerClient(FairnessControllerClient):
         message = await verify_server_message_validity(
             netwk, received, expected=FairbatchSamplingProbas
         )
-        probas = dict(zip(self.groups, message.probas))
+        probas = dict(zip(self.groups, message.probas, strict=False))
         # Set the received weights, handling and propagating exceptions if any.
         try:
             assert isinstance(self.manager.train_data, FairbatchDataset)

@@ -316,7 +316,10 @@ def test_declearn(
         if "grpc" not in list_available_protocols():
             pytest.fail("Both 'grpc' and 'websockets' are unavailable.")
         protocol = "grpc"
-        warnings.warn("Using 'grpc' as 'websockets' is unavailable.")
+        warnings.warn(
+            "Using 'grpc' as 'websockets' is unavailable.",
+            stacklevel=2,
+        )
     # fmt: off
     run_test_case(
         kind, framework, strategy,

@@ -59,7 +59,9 @@ class VectorFactory(Generic[VT], metaclass=ABCMeta):
                 if dtype.startswith("float")
                 else rng.uniform(1, 10, size=shape).astype(dtype)
             )
-            for name, shape, dtype in zip(self.names, self.shapes, self.dtypes)
+            for name, shape, dtype in zip(
+                self.names, self.shapes, self.dtypes, strict=False
+            )
         }
 
     @abstractmethod
@@ -156,8 +158,12 @@ class VectorSelfOpTests:
         assert all(isinstance(x, float) for x in values)
         assert isinstance(v_spec, VectorSpec)
         assert v_spec.names == factory.names
-        assert v_spec.shapes == dict(zip(factory.names, factory.shapes))
-        assert v_spec.dtypes == dict(zip(factory.names, factory.dtypes))
+        assert v_spec.shapes == dict(
+            zip(factory.names, factory.shapes, strict=False)
+        )
+        assert v_spec.dtypes == dict(
+            zip(factory.names, factory.dtypes, strict=False)
+        )
         assert isinstance(v_spec.v_type, tuple)
         assert len(v_spec.v_type) == 2
         assert all(isinstance(s, str) for s in v_spec.v_type)

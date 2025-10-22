@@ -318,6 +318,7 @@ def warn_if_dataset_is_likely_batched(
             "is properly yielding unbatched samples. If so, you may ignore "
             "this warning.",
             category=RuntimeWarning,
+            stacklevel=2,
         )
 
 

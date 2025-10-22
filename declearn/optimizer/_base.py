@@ -600,7 +600,9 @@ class Optimizer:
         """Backend to the `set_state` method, lacking exception-catching."""
         self._lrate_scheduler.set_state(states["lrate"])
         self._wrate_scheduler.set_state(states["w_decay"])
-        for mod, (name, state) in zip(self.modules, states["modules"]):
+        for mod, (name, state) in zip(
+            self.modules, states["modules"], strict=False
+        ):
             if mod.name != name:
                 raise KeyError(
                     "Optimizer 'states' do not match modules config."

@@ -100,7 +100,10 @@ def _isinstance_generic(inputs: Any, typevar: Type) -> bool:
         return (
             isinstance(inputs, tuple)
             and len(inputs) == len(args)
-            and all(_isinstance_generic(e, t) for e, t in zip(inputs, args))
+            and all(
+                _isinstance_generic(e, t)
+                for e, t in zip(inputs, args, strict=False)
+            )
         )
     # Unsupported cases.
     raise TypeError(  # pragma: no cover
@@ -245,6 +248,7 @@ class TomlConfig:
                 f"Unsupported keyword argument in {cls.__name__}.from_params: "
                 f"'{key}'. This argument was ignored.",
                 category=RuntimeWarning,
+                stacklevel=2,
             )
         return cls(**fields)
 
@@ -408,6 +412,7 @@ class TomlConfig:
                     f"Unsupported section encountered in {path} TOML file: "
                     f"'{name}'. This section will be ignored.",
                     category=RuntimeWarning,
+                    stacklevel=2,
                 )
         # Finally, instantiate the FLConfig container.
         return cls.from_params(**params)

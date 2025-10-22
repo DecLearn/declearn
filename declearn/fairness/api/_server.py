@@ -396,7 +396,9 @@ class FairnessControllerServer(metaclass=abc.ABCMeta):
                 raise RuntimeError(error)
             return [
                 sum(rval)
-                for rval in zip(*[reply.values for reply in replies.values()])
+                for rval in zip(
+                    *[reply.values for reply in replies.values()], strict=False
+                )
             ]
         # Case when expecting encrypted values.
         secagg_replies = await verify_client_messages_validity(

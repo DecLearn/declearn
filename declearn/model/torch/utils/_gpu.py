@@ -61,7 +61,8 @@ def select_device(
     if gpu and not torch.cuda.is_available():
         warnings.warn(
             "Cannot use a GPU device: either CUDA is unavailable "
-            "or no GPU is visible to torch."
+            "or no GPU is visible to torch.",
+            stacklevel=2,
         )
         return torch.device("cpu")
     # Case when the desired GPU is invalid: select another one.
@@ -70,6 +71,7 @@ def select_device(
             f"Cannot use GPU device n°{idx}: index is out-of-range.\n"
             f"Using GPU device n°{torch.cuda.current_device()} instead.",
             RuntimeWarning,
+            stacklevel=2,
         )
         idx = None
     # Return the selected or auto-selected GPU device index.

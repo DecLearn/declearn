@@ -129,7 +129,7 @@ class TestFairfedControllers(FairnessControllerTestSuite):
         assert metrics[0]["fairfed_value"] == (
             server.fairfed_computer.compute_synthetic_fairness_value(fairness)
         )
-        for client, client_metrics in zip(clients, metrics[1:]):
+        for client, client_metrics in zip(clients, metrics[1:], strict=False):
             assert isinstance(client, FairfedControllerClient)
             fairness = {
                 group: float(client_metrics[f"{server.f_type}_{group}"])

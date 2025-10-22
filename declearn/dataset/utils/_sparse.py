@@ -109,8 +109,8 @@ def sparse_to_file(
     os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
     with open(path, "w", encoding="utf-8") as file:
         file.write(json.dumps(meta))
-        for ind, val in zip(lil.rows, lil.data):
-            row = " ".join(f"{i}:{v}" for i, v in zip(ind, val))
+        for ind, val in zip(lil.rows, lil.data, strict=False):
+            row = " ".join(f"{i}:{v}" for i, v in zip(ind, val, strict=False))
             file.write("\n" + row)
 
 

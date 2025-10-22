@@ -140,4 +140,4 @@ class NumpyVector(Vector):
         shapes = [v_spec.shapes[name] for name in v_spec.names]
         dtypes = [v_spec.dtypes[name] for name in v_spec.names]
         arrays = unflatten_numpy_arrays(values, shapes, dtypes)
-        return cls(dict(zip(v_spec.names, arrays)))
+        return cls(dict(zip(v_spec.names, arrays, strict=False)))

@@ -108,7 +108,7 @@ def unflatten_numpy_arrays(
     """
     arrays: List[np.ndarray] = []
     start = 0
-    for shape, dtype in zip(shapes, dtypes):
+    for shape, dtype in zip(shapes, dtypes, strict=False):
         end = start + int(np.prod(shape))
         array = np.array(values[start:end]).astype(dtype).reshape(shape)
         arrays.append(array)

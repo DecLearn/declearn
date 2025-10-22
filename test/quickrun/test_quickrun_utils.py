@@ -242,7 +242,7 @@ class TestParseDataFolder:
         expected = {
             cname: {
                 bname: os.path.join(data_folder, cname, fname)
-                for bname, fname in zip(base_names, file_names)
+                for bname, fname in zip(base_names, file_names, strict=False)
             }
             for cname in client_names
         }
@@ -250,7 +250,7 @@ class TestParseDataFolder:
         config = DataSourceConfig(
             data_folder=data_folder,
             client_names=None,
-            dataset_names=dict(zip(base_names, file_names)),
+            dataset_names=dict(zip(base_names, file_names, strict=False)),
         )
         clients = parse_data_folder(config)
         assert clients == expected

@@ -90,7 +90,7 @@ async def test_x3dh_setup_routines(
     # Verify that keys exist and differ for all pairs of clients.
     sec_keys: Dict[bytes, Dict[bytes, bytes]] = {
         idk.public_key().public_bytes_raw(): skd  # type: ignore
-        for idk, skd in zip(id_keys[:n_clients], s_keys)
+        for idk, skd in zip(id_keys[:n_clients], s_keys, strict=False)
     }
     idk_vals = [key.public_bytes_raw() for key in trusted]
     assert set(sec_keys) == set(idk_vals)
