@@ -100,6 +100,7 @@ tests = [
     "pytest ~= 8.4",
     "pytest-asyncio ~= 1.2",
     "pytest-cov ~= 7.0",
+    "ruff ~= 0.14",
     "tox ~= 4.31",
 ]
 
@@ -119,6 +120,7 @@ dev = [
     "pytest ~= 8.4",
     "pytest-asyncio ~= 1.2",
     "pytest-cov ~= 7.0",
+    "ruff ~= 0.14",
     "tox ~= 4.31",
 ]
 
@@ -141,6 +143,7 @@ dev = [
     "pytest ~= 8.4",
     "pytest-asyncio ~= 1.2",
     "pytest-cov ~= 7.0",
+    "ruff ~= 0.14",
     "tox ~= 4.31",
     # python stubs for mypy (when using uv, it is easier to install them explicitly, rather than via mypy)
     "pandas-stubs",
@@ -157,14 +160,11 @@ dev = [
 homepage = "https://magnet.gitlabpages.inria.fr/docs"
 repository = "https://gitlab.inria.fr/magnet/declearn/declearn2.git"
 
-[tool.black]
-line-length = 79
-extend-exclude = "(.*_pb2.*py$)"  # exclude auto-generated protobuf code files
+[project.scripts]
+declearn-quickrun = "declearn.quickrun._run:main"
+declearn-split = "declearn.dataset._split_data:main"
 
-[tool.isort]
-profile = "black"
-line_length = 79
-
+# TOOLS
 [tool.coverage.run]
 # enable coverage collection within multiprocessing
 concurrency = ["multiprocessing"]
@@ -173,7 +173,7 @@ sigterm = true
 # define rules to select the code files that need covering
 source_pkgs = ["declearn"]
 omit = [
-    "**/grpc/protobufs/*.py",  # auto-generated rotobuf code files
+    "**/grpc/protobufs/*.py",  # auto-generated protobuf code files
     "**/test_utils/*.py",  # dev-only test-oriented utils
 ]
 
@@ -184,14 +184,6 @@ source = ["declearn", ".tox/**/declearn"]
 exclude = [".*_pb2.*.py$"]
 follow_imports = "skip"  # otherwise excluded files are checked
 
-[tool.pylint.main]
-extension-pkg-allow-list = ["gmpy2"]
-fail-under = 10
-ignore-patterns = ["(.*_pb2.*py$)"]
-
-[tool.pylint.format]
-max-line-length = 79
-
 [tool.setuptools.packages.find]
 include = ["declearn", "declearn.*"]
 
@@ -201,6 +193,89 @@ declearn = ["py.typed"]
 [tool.pytest.ini_options]
 pythonpath = "."
 
-[project.scripts]
-declearn-quickrun = "declearn.quickrun._run:main"
-declearn-split = "declearn.dataset._split_data:main"
+[tool.ruff]
+# Exclude a variety of commonly ignored directories.
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".git-rewrite",
+    ".hg",
+    ".ipynb_checkpoints",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pyenv",
+    ".pytest_cache",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    ".vscode",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "site-packages",
+    "venv",
+    "(.*_pb2.*py$)" # auto-generated protobuf code files
+]
+
+# Same as Black.
+line-length = 79
+indent-width = 4
+
+# Assume Python 3.11
+target-version = "py311"
+
+[tool.ruff.lint]
+# 1. Rules to be taken into account
+# https://www.flake8rules.com/
+select = [
+	"E4", "E7", "E9",  # pycodestyle
+	"F",  # Pyflakes
+	"B",  # flake8-bugbear
+	"I",  # isort
+    "PL", # Pylint
+]
+
+[tool.ruff.lint.per-file-ignores]
+# ignores unused imports in __init__.py (these imports are re-exports)
+"__init__.py" = ["F401"]
+
+[tool.ruff.format]
+# Like Black, use double quotes for strings.
+quote-style = "double"
+
+# Like Black, indent with spaces, rather than tabs.
+indent-style = "space"
+
+# Like Black, respect magic trailing commas.
+skip-magic-trailing-comma = false
+
+# Like Black, automatically detect the appropriate line ending.
+line-ending = "auto"
+
+docstring-code-format = false
+docstring-code-line-length = "dynamic"
+
+# Legacy tools configs
+[tool.black]
+line-length = 79
+extend-exclude = "(.*_pb2.*py$)"  # exclude auto-generated protobuf code files
+
+[tool.isort]
+profile = "black"
+line_length = 79
+
+[tool.pylint.main]
+extension-pkg-allow-list = ["gmpy2"]
+fail-under = 10
+ignore-patterns = ["(.*_pb2.*py$)"]
+
+[tool.pylint.format]
+max-line-length = 79
