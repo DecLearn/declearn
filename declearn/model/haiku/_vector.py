@@ -52,7 +52,7 @@ def get_array_device(array: jax.Array) -> jax.Device:
 
 @register_vector_type(
     jax.Array,
-    jaxlib.xla_extension.ArrayImpl,  # pylint: disable=c-extension-no-member
+    jaxlib.xla_client.ArrayImpl,
 )
 class JaxNumpyVector(Vector):
     """Vector subclass to store jax.numpy.ndarray coefficients.

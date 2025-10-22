@@ -48,7 +48,7 @@ def select_device(
 
     Returns
     -------
-    device: jaxlib.xla_extension.Device
+    device: jax.Device
         Selected device.
     """
     idx = 0 if idx is None else idx
