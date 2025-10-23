@@ -151,9 +151,9 @@ def _generate_public_submodules_doc(
     for key, mod in module.modules.items():
         if not key.startswith("_"):
             if isinstance(mod, griffe.Alias):
-                key = f"{key} (alias re-export)"
-                mod = mod.target
-            pub_mod[key] = generate_module_docs(mod, docdir)
+                p_key = f"{key} (alias re-export)"
+                p_mod = mod.target
+            pub_mod[p_key] = generate_module_docs(p_mod, docdir)
     return pub_mod
 
 
