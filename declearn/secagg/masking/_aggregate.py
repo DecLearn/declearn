@@ -33,7 +33,7 @@ class MaskedAggregate(SecureAggregate[AggregateT]):
     """'Aggregate'-like container for mask-encrypted 'Aggregate' objects."""
 
     # pylint: disable-next=too-many-positional-arguments
-    def __init__(  # noqa
+    def __init__(  # noqa: PLR0913
         self,
         encrypted: List[int],
         enc_specs: EncryptedSpecs,

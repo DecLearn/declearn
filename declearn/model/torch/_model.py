@@ -326,7 +326,9 @@ class TorchModel(Model):
             self._loss_history.append(float(loss.cpu().numpy().mean()))
         return TorchVector(grads)
 
-    @functools.lru_cache
+    # TODO: move usage of lru_cache to prevent memory leaks
+    # (see: https://docs.astral.sh/ruff/rules/cached-instance-method/)
+    @functools.lru_cache  # noqa: B019
     def _build_samplewise_grads_fn(
         self,
         inputs: int,

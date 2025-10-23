@@ -227,7 +227,7 @@ class FairbatchDataset(FairnessDataset):
         return x_dat, y_dat, w_dat
 
     # pylint: disable-next=too-many-positional-arguments
-    def _generate_sensitive_group_batches(  # noqa
+    def _generate_sensitive_group_batches(  # noqa: PLR0913
         self,
         group: Tuple[Any, ...],
         nb_batches: int,
@@ -284,7 +284,7 @@ class FairbatchDataset(FairnessDataset):
                     yield full
 
     # pylint: disable-next=too-many-positional-arguments
-    def _generate_batches(  # noqa
+    def _generate_batches(  # noqa: PLR0913
         self,
         dataset: Dataset,
         group: Tuple[Any, ...],

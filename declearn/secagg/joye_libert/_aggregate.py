@@ -41,7 +41,7 @@ class JLSAggregate(SecureAggregate[AggregateT]):
     """'Aggregate'-like container for Joye-Libert encrypted values."""
 
     # pylint: disable-next=too-many-positional-arguments
-    def __init__(  # noqa
+    def __init__(  # noqa: PLR0913
         self,
         encrypted: List[int],
         enc_specs: EncryptedSpecs,

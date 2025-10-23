@@ -34,7 +34,7 @@ __all__ = [
 
 
 @register_vector_type(torch.Tensor)
-class TorchVector(Vector):
+class TorchVector(Vector):  # noqa : PLW1641
     """Vector subclass to store PyTorch tensors.
 
     This Vector is designed to store a collection of named PyTorch

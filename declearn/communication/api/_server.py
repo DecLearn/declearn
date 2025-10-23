@@ -97,7 +97,7 @@ class NetworkServer(metaclass=abc.ABCMeta):
             register_type(cls, cls.protocol, group="NetworkServer")
 
     # pylint: disable-next=too-many-positional-arguments
-    def __init__(  # noqa
+    def __init__(  # noqa: PLR0913
         self,
         host: str,
         port: int,

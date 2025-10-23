@@ -31,7 +31,7 @@ class Scalar(float):
 
 
 @register_vector_type(Scalar)
-class ScalarFloatVector(Vector):
+class ScalarFloatVector(Vector):  # noqa : PLW1641
     """Mock Vector subclasses operating on scalar float values."""
 
     def __eq__(

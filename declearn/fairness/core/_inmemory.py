@@ -48,7 +48,7 @@ class FairnessInMemoryDataset(FairnessDataset, InMemoryDataset):
     which samples belong.
     """
 
-    def __init__(  # noqa
+    def __init__(  # noqa: PLR0913
         self,
         data: Union[DataArray, str],
         *,

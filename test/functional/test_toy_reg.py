@@ -374,7 +374,7 @@ def prep_client_datasets(
     return out
 
 
-async def async_run_server(
+async def async_run_server(  # noqa: PLR0913
     folder: str,
     framework: FrameworkType,
     lrate: float = 0.01,

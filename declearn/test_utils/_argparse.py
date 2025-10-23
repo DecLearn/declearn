@@ -80,7 +80,7 @@ def setup_client_argparse(
 
 
 # pylint: disable-next=too-many-positional-arguments
-def setup_server_argparse(
+def setup_server_argparse(  # noqa: PLR0913
     usage: Optional[str] = None,
     default_host: str = "localhost",
     default_port: int = 8765,

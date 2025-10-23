@@ -31,7 +31,7 @@ from declearn.utils import (
 )
 
 
-class CustomType:
+class CustomType:  # noqa: PLW1641
     """Mock custom type used for testing purposes."""
 
     def __init__(self, val: int = 42) -> None:

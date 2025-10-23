@@ -53,7 +53,7 @@ class TrainingManager:
 
     # one too-many attribute; pylint: disable=too-many-instance-attributes
     # pylint: disable-next=too-many-positional-arguments
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         model: Model,
         optim: Optimizer,

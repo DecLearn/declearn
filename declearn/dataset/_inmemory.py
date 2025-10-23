@@ -71,7 +71,7 @@ class InMemoryDataset(Dataset):
     # attributes serve clarity; pylint: disable=too-many-instance-attributes
     # arguments serve modularity; pylint: disable=too-many-arguments
     # pylint: disable-next=too-many-positional-arguments
-    def __init__(  # noqa
+    def __init__(  # noqa: PLR0913
         self,
         data: Union[DataArray, str],
         target: Optional[Union[DataArray, str]] = None,

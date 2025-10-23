@@ -379,7 +379,7 @@ class HaikuModel(Model):
         # Unpack input batch and prepare model parameters.
         inputs = self._unpack_batch(batch)
         train_params, fixed_params = hk.data_structures.partition(
-            predicate=lambda l, w, _: f"{l}:{w}" in self._trainable,  # noqa
+            predicate=lambda l, w, _: f"{l}:{w}" in self._trainable,  # noqa: E741
             structure=self._params,
         )
         rng = next(self._rng_gen)

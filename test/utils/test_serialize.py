@@ -37,7 +37,7 @@ from declearn.utils import (
 )
 
 
-class MockClass:
+class MockClass:  # noqa: PLW1641
     """Mock class implementing get/from config used for testing purposes."""
 
     def __init__(self, val: int = 42) -> None:

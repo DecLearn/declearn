@@ -139,7 +139,7 @@ def _extract_column_by_index(
 
 
 # pylint: disable-next=too-many-positional-arguments
-def split_data(
+def split_data(  # noqa: PLR0913
     folder: str = ".",
     data_file: Optional[str] = None,
     label_file: Optional[Union[str, int]] = None,

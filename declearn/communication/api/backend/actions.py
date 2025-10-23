@@ -59,7 +59,7 @@ class LegacyMessageError(Exception):
 
 
 @dataclasses.dataclass
-class ActionMessage(metaclass=abc.ABCMeta):
+class ActionMessage(metaclass=abc.ABCMeta):  # noqa: B024
     """Abstract base class for fundamental messages."""
 
     def to_string(

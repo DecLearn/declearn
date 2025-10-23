@@ -141,22 +141,22 @@ class AurocStateUnbound(AurocState):
         for idr, thr in enumerate(thresh_r):
             # Case when the threshold exists in the partial subset.
             if thresh_p[idp] == thr:
-                for key in states_r:
+                for key in states_r:  # noqa: PLC0206
                     states_r[key][idr] = states_p[key][idp]
                 idp = min(idp + 1, max_p)
             # Case when the threshold is below the subset's minimum.
             elif idp == 0:
-                for key in states_r:
+                for key in states_r:  # noqa: PLC0206
                     states_r[key][idr] = states_p[key][idp]
             # Case when the threshold is above the subset's maximum.
             elif thresh_p[max_p] < thr:
-                for key in states_r:
+                for key in states_r:  # noqa: PLC0206
                     states_r[key][idr] = states_p[key][max_p]
             # Case when the threshold-indexed values must be interpolated.
             else:
                 t_inf = thresh_p[idp - 1]
                 t_sup = thresh_p[idp]
-                for key in states_r:
+                for key in states_r:  # noqa: PLC0206
                     v_inf = states_p[key][idp - 1]
                     v_sup = states_p[key][idp]
                     states_r[key][idr] = thr * (

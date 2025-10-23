@@ -335,8 +335,8 @@ class TensorflowModel(Model):
         outp: List[tf.Tensor] = []
         for grad in gradients:
             dims = list(range(1, grad.shape.rank))
-            grad = tf.clip_by_norm(grad, max_norm, axes=dims)
-            outp.append(tf.reduce_mean(grad * s_wght, axis=0))
+            clipped_grad = tf.clip_by_norm(grad, max_norm, axes=dims)
+            outp.append(tf.reduce_mean(clipped_grad * s_wght, axis=0))
         return outp
 
     def apply_updates(

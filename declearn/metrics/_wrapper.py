@@ -73,21 +73,23 @@ class MetricSet:
         # REVISE: store metrics into a Dict and adjust labels when needed
         self.metrics: List[Metric] = []
         for metric in metrics:
-            if isinstance(metric, str):
-                metric = Metric.from_specs(metric)
-            if isinstance(metric, (tuple, list)):
+            # reassign in new variable to avoid modifying loop variable
+            _metric = metric
+            if isinstance(_metric, str):
+                _metric = Metric.from_specs(_metric)
+            if isinstance(_metric, (tuple, list)):
                 if (
-                    (len(metric) == 2)
-                    and isinstance(metric[0], str)
-                    and isinstance(metric[1], dict)
+                    (len(_metric) == 2)
+                    and isinstance(_metric[0], str)
+                    and isinstance(_metric[1], dict)
                 ):
-                    metric = Metric.from_specs(*metric)
-            if not isinstance(metric, Metric):
+                    _metric = Metric.from_specs(*_metric)
+            if not isinstance(_metric, Metric):
                 raise TypeError(
                     "'MetricSet' inputs must be Metric instances, string "
                     "identifiers or (string identifier, config dict) tuples."
                 )
-            self.metrics.append(metric)
+            self.metrics.append(_metric)
         if len(set(type(m) for m in self.metrics)) < len(self.metrics):
             raise RuntimeError(
                 "'MetricSet' cannot wrap multiple metrics of the same type."

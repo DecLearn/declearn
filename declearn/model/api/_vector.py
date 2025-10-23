@@ -97,7 +97,7 @@ add_json_support(
 
 
 @create_types_registry
-class Vector(Generic[T], metaclass=ABCMeta):
+class Vector(Generic[T], metaclass=ABCMeta):  # noqa : PLW1641 (because mutable attributes, so non-hashable)
     """Abstract class defining an API to manipulate (sets of) data arrays.
 
     A Vector is an abstraction used to wrap a collection of data
@@ -691,8 +691,8 @@ def register_vector_type(
         # Add support for JSON (de)serialization, relying on (un)pack.
         add_json_support(cls, cls.pack, cls.unpack, name=name)
         # Make the subclass buildable through `Vector.build(coefs)`.
-        for v_type in v_types:
-            VECTOR_TYPES[v_type] = cls
+        for v_typ in v_types:
+            VECTOR_TYPES[v_typ] = cls
         return cls
 
     # Return the former, enabling decoration syntax for `register_vector_type`.

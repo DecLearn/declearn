@@ -41,7 +41,7 @@ from declearn.utils import run_as_processes, set_device_policy
 # pylint: disable=ungrouped-imports
 FRAMEWORKS = ["Sksgd", "Tflow", "Torch"]
 try:
-    import tensorflow  # type: ignore  # pylint: disable=unused-import
+    import tensorflow  # type: ignore  # pylint: disable=unused-import  # noqa: F401
 except ModuleNotFoundError:
     FRAMEWORKS.remove("Tflow")
 else:
@@ -62,7 +62,7 @@ class DeclearnTestCase:
 
     # pylint: disable=too-many-instance-attributes
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         kind: Literal["Reg", "Bin", "Clf"],
         framework: Literal["Sksgd", "Tflow", "Torch"],
@@ -257,7 +257,7 @@ class DeclearnTestCase:
             client.run()
 
 
-def run_test_case(
+def run_test_case(  # noqa: PLR0913
     kind: Literal["Reg", "Bin", "Clf"],
     framework: Literal["Sksgd", "Tflow", "Torch"],
     strategy: Literal["FedAvg", "FedAvgM", "Scaffold", "ScaffoldM"],
