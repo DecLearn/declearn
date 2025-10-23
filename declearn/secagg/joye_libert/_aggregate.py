@@ -41,7 +41,7 @@ class JLSAggregate(SecureAggregate[AggregateT]):
     """'Aggregate'-like container for Joye-Libert encrypted values."""
 
     # pylint: disable-next=too-many-positional-arguments
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         encrypted: List[int],
         enc_specs: EncryptedSpecs,
@@ -82,7 +82,9 @@ class JLSAggregate(SecureAggregate[AggregateT]):
         val_b: List[int],
     ) -> List[int]:
         """Aggregate encrypted integer values."""
-        return [sum_encrypted(values) for values in zip(val_a, val_b)]
+        return [
+            sum_encrypted(values) for values in zip(val_a, val_b, strict=False)
+        ]
 
     def aggregate(
         self,

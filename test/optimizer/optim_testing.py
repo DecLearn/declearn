@@ -120,7 +120,8 @@ class PluginTestBase:
                 _, output = self._run_plugin(plugin, f_case)
             except Exception:  # pylint: disable=broad-except
                 warnings.warn(
-                    f"Skipping framework '{fwk}' in equivalence test."
+                    f"Skipping framework '{fwk}' in equivalence test.",
+                    stacklevel=2,
                 )
             else:
                 coefs = {

@@ -65,10 +65,12 @@ class TestFairfedControllers(FairnessControllerTestSuite):
                 FairfedAggregator, "initialize_local_weight"
             ) as patch_initialize_aggregator:
                 with pytest.warns(RuntimeWarning, match="Aggregator"):
-                    agg_final, server, clients = (
-                        await self.run_finalize_fairness_setup(
-                            aggregator, use_secagg
-                        )
+                    (
+                        agg_final,
+                        server,
+                        clients,
+                    ) = await self.run_finalize_fairness_setup(
+                        aggregator, use_secagg
                     )
         # Verify that aggregators were replaced with a FairfedAggregator.
         assert isinstance(agg_final, FairfedAggregator)
@@ -127,7 +129,7 @@ class TestFairfedControllers(FairnessControllerTestSuite):
         assert metrics[0]["fairfed_value"] == (
             server.fairfed_computer.compute_synthetic_fairness_value(fairness)
         )
-        for client, client_metrics in zip(clients, metrics[1:]):
+        for client, client_metrics in zip(clients, metrics[1:], strict=False):
             assert isinstance(client, FairfedControllerClient)
             fairness = {
                 group: float(client_metrics[f"{server.f_type}_{group}"])

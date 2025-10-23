@@ -33,7 +33,7 @@ class MaskedAggregate(SecureAggregate[AggregateT]):
     """'Aggregate'-like container for mask-encrypted 'Aggregate' objects."""
 
     # pylint: disable-next=too-many-positional-arguments
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         encrypted: List[int],
         enc_specs: EncryptedSpecs,
@@ -87,7 +87,9 @@ class MaskedAggregate(SecureAggregate[AggregateT]):
         val_a: List[int],
         val_b: List[int],
     ) -> List[int]:
-        return [(a + b) % self.max_int for a, b in zip(val_a, val_b)]
+        return [
+            (a + b) % self.max_int for a, b in zip(val_a, val_b, strict=False)
+        ]
 
     def to_dict(
         self,

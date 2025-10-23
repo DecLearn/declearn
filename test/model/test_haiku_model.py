@@ -156,6 +156,7 @@ class HaikuTestCase(ModelTestCase):
                     convert(inputs),  # pylint: disable=not-callable
                     convert(labels),  # pylint: disable=not-callable
                     [None, None],
+                    strict=False,
                 )
             )
         return batches  # type: ignore
@@ -211,7 +212,7 @@ class HaikuTestCase(ModelTestCase):
             names = self.model.get_weight_names()
             return [names[2], names[3]]
         if c_type == "pytree":
-            params = getattr(self.model, "_params")
+            params = self.model._params
             return {k: v for i, (k, v) in enumerate(params.items()) if i != 1}
         if c_type == "predicate":
             return lambda m, n, p: n != "b"
@@ -310,7 +311,7 @@ class TestHaikuModel(ModelTestSuite):
         policy = model.device_policy
         assert policy.gpu == (test_case.device == "gpu")
         assert policy.idx == 0
-        params = jax.tree_util.tree_leaves(getattr(model, "_params"))
+        params = jax.tree_util.tree_leaves(model._params)
         device = f"{test_case.device}:0"
         for arr in params:
             assert len(arr.devices()) == 1

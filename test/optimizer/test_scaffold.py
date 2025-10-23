@@ -189,7 +189,7 @@ def test_scaffold_routine(mock_gradients: Vector) -> None:
     for rstep in range(2):
         # Emit and communicate initial states from the server to clients.
         aux_var = server.collect_aux_var()
-        for client in clients:
+        for client in clients:  # noqa: PLC0206
             clients[client].process_aux_var(aux_var)
         # Sample 5 participating clients. Have then run 3 training steps.
         participants = [f"client_{i}" for i in range(rstep, 10, 2)]

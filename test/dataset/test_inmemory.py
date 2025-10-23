@@ -265,7 +265,7 @@ class TestInMemoryDatasetProperties:
         """Test that an exception is raised with a mixed-type DataFrame."""
         dst = InMemoryDataset(data=dataset, expose_data_type=True)
         with pytest.raises(ValueError):
-            dst.data_type  # pylint: disable=pointless-statement
+            dst.data_type  # pylint: disable=pointless-statement  # noqa: B018
 
     def test_data_type_series(
         self,

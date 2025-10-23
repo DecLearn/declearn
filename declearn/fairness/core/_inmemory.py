@@ -48,7 +48,7 @@ class FairnessInMemoryDataset(FairnessDataset, InMemoryDataset):
     which samples belong.
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         data: Union[DataArray, str],
         *,
@@ -162,6 +162,7 @@ class FairnessInMemoryDataset(FairnessDataset, InMemoryDataset):
                     " called with 'use_label=True', but there are no labels"
                     " defined for this instance.",
                     RuntimeWarning,
+                    stacklevel=2,
                 )
             else:
                 target = (
@@ -171,7 +172,9 @@ class FairnessInMemoryDataset(FairnessDataset, InMemoryDataset):
                 )
                 s_data = pd.concat([target, s_data], axis=1)
         # Wrap sensitive data as a Series of tuples of values.
-        self.sensitive = pd.Series(zip(*[s_data[c] for c in s_data.columns]))
+        self.sensitive = pd.Series(
+            zip(*[s_data[c] for c in s_data.columns], strict=False)
+        )
 
     def _parse_sensitive_data(
         self,
@@ -230,14 +233,10 @@ class FairnessInMemoryDataset(FairnessDataset, InMemoryDataset):
         mask = self.sensitive == group
         inputs = self.feats[mask]  # type: ignore
         target = (
-            None
-            if (self.target is None)
-            else self.target[mask]  # type: ignore
+            None if (self.target is None) else self.target[mask]  # type: ignore
         )
         s_wght = (
-            None
-            if self._smp_wght is None
-            else self._smp_wght[mask]  # type: ignore
+            None if self._smp_wght is None else self._smp_wght[mask]  # type: ignore
         )
         return InMemoryDataset(
             data=inputs,

@@ -30,7 +30,7 @@ __all__ = [
 
 
 @register_vector_type(np.ndarray)
-class NumpyVector(Vector):
+class NumpyVector(Vector):  # noqa : PLW1641
     """Vector subclass to store numpy.ndarray coefficients.
 
     This Vector is designed to store a collection of named
@@ -140,4 +140,4 @@ class NumpyVector(Vector):
         shapes = [v_spec.shapes[name] for name in v_spec.names]
         dtypes = [v_spec.dtypes[name] for name in v_spec.names]
         arrays = unflatten_numpy_arrays(values, shapes, dtypes)
-        return cls(dict(zip(v_spec.names, arrays)))
+        return cls(dict(zip(v_spec.names, arrays, strict=False)))

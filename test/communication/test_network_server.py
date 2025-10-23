@@ -69,7 +69,7 @@ class TestNetworkServerInit:
             certificate=ssl_cert["server_cert"],
             private_key=ssl_cert["server_pkey"],
         )
-        assert getattr(server, "_ssl") is not None
+        assert server._ssl is not None
 
     def test_init_ssl_fails(self, protocol: str) -> None:
         """Test that instantiation with invalid SSL parameters fails."""
@@ -206,7 +206,7 @@ class TestNetworkServerSend:
         Mock the message-sending backend, that has dedicated tests.
         """
         handler = server.handler = mock.create_autospec(server.handler)
-        setattr(server.handler, "client_names", {"a", "b", "c"})
+        server.handler.client_names = {"a", "b", "c"}
         msg = messaging.GenericMessage(action="test", params={})
         await server.broadcast_message(msg)
         assert handler.send_message.await_count == 3
@@ -304,9 +304,9 @@ class TestNetworkServerSend:
         send = server.send_message(msg, client="mock.0", timeout=1)
         recv = server.handler.handle_message(req, 1)
         # Check that both routines time out.
-        excpt_reply: Tuple[asyncio.TimeoutError, messaging.Error] = (
-            await asyncio.gather(send, recv, return_exceptions=True)
-        )
+        excpt_reply: Tuple[
+            asyncio.TimeoutError, messaging.Error
+        ] = await asyncio.gather(send, recv, return_exceptions=True)
         excpt, reply = excpt_reply
         assert isinstance(excpt, asyncio.TimeoutError)
         assert isinstance(reply, actions.Reject)

@@ -20,7 +20,6 @@
 This module exposes conventional flags, which are all str constants.
 """
 
-
 from declearn.version import VERSION
 
 __all__ = [

@@ -200,7 +200,8 @@ def aggregate_data_info(
         if spec is None:
             warnings.warn(
                 f"Unspecified 'data_info' field '{field}': "
-                "returning list of individual values."
+                "returning list of individual values.",
+                stacklevel=2,
             )
             data_info[field] = values
         else:

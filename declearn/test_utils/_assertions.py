@@ -17,7 +17,6 @@
 
 """Custom "assert" functions commonly used in declearn tests."""
 
-
 import json
 from collections.abc import Generator, Sequence
 from typing import Any, Dict, List, Optional, Tuple, Type, Union
@@ -139,7 +138,7 @@ def assert_list_equal(
         If the two lists are not equal.
     """
     assert len(list_a) == len(list_b)
-    for val_a, val_b in zip(list_a, list_b):
+    for val_a, val_b in zip(list_a, list_b, strict=False):
         assert_values_equal(val_a, val_b, strict_tuple, np_tolerance)
 
 

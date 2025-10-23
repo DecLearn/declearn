@@ -38,7 +38,7 @@ __all__ = [
 jax.config.update("jax_enable_x64", True)  # enable float64 support
 
 
-def get_array_device(array: jax.Array) -> jax.Device:
+def get_array_device(array: jax.Array) -> jax.Device:  # type: ignore
     """Return the Device on which the input array is placed."""
     devices = array.devices()
     if len(devices) > 1:  # pragma: no cover
@@ -54,7 +54,7 @@ def get_array_device(array: jax.Array) -> jax.Device:
     jax.Array,
     jaxlib.xla_client.ArrayImpl,
 )
-class JaxNumpyVector(Vector):
+class JaxNumpyVector(Vector):  # noqa : PLW1641
     """Vector subclass to store jax.numpy.ndarray coefficients.
 
     This Vector is designed to store a collection of named
@@ -203,6 +203,6 @@ class JaxNumpyVector(Vector):
         shapes = [v_spec.shapes[name] for name in v_spec.names]
         dtypes = [v_spec.dtypes[name] for name in v_spec.names]
         arrays = unflatten_numpy_arrays(values, shapes, dtypes)
-        return cls.unpack(dict(zip(v_spec.names, arrays)))
+        return cls.unpack(dict(zip(v_spec.names, arrays, strict=False)))
 
     # pylint: enable=duplicate-code

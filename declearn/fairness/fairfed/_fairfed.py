@@ -108,6 +108,7 @@ class FairfedValueComputer:
                 f"Using fairness type '{self.f_type}' with FairFed in 'strict'"
                 " mode. This is supported, but beyond the original paper.",
                 RuntimeWarning,
+                stacklevel=2,
             )
         if len(groups) != 4:
             raise RuntimeError(

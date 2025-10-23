@@ -17,7 +17,6 @@
 
 """Unit tests for FairBatch sampling probability controllers."""
 
-
 import pytest
 
 from declearn.fairness.api import FairnessFunction

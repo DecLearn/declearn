@@ -87,7 +87,7 @@ def generate_secret_shares(
             for i, p in enumerate(poly_c, start=1)
         )
         ycoord.append(int(y_val % mprime))
-    return list(zip(xcoord, ycoord))
+    return list(zip(xcoord, ycoord, strict=False))
 
 
 def _type_check_shamir_parameters(
@@ -154,7 +154,7 @@ def recover_shared_secret(
         shares are incorrect, or if an unsufficient amount of shares was
         provided, the output value will be incorrect.
     """
-    xcoord, ycoord = list(zip(*shares))
+    xcoord, ycoord = list(zip(*shares, strict=False))
     total = gmpy2.mpz(0)
     for j, y in enumerate(ycoord):
         x_j = xcoord[j]

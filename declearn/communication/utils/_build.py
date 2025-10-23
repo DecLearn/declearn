@@ -110,7 +110,7 @@ def build_client(
 
 
 # pylint: disable-next=too-many-positional-arguments
-def build_server(
+def build_server(  # noqa: PLR0913
     protocol: str,
     host: str,
     port: int,

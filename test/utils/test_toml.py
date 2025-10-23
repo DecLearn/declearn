@@ -27,7 +27,7 @@ import pytest
 from declearn.utils import TomlConfig
 
 
-class Custom:
+class Custom:  # noqa: PLW1641
     """Custom class that requires specific TOML parsing."""
 
     def __init__(

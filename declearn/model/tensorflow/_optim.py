@@ -258,5 +258,7 @@ class TensorflowOptiModule(OptiModule):
         # Restore optimizer variables' values from the input state dict.
         opt_vars = self._get_optimizer_variables()
         with tf.device(self._device):
-            for var, val in zip(opt_vars, state["state"].coefs.values()):
+            for var, val in zip(
+                opt_vars, state["state"].coefs.values(), strict=False
+            ):
                 var.assign(val, read_value=False)

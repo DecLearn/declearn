@@ -118,8 +118,8 @@ class Quantizer:
         """
         try:
             # 1st access triggers checks; pylint: disable=pointless-statement
-            self._float_dtype
-            self._uint_dtype
+            self._float_dtype  # noqa: B018
+            self._uint_dtype  # noqa: B018
         except ValueError:
             return False
         return True

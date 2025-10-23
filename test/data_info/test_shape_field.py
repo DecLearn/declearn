@@ -17,7 +17,6 @@
 
 """Unit tests for 'declearn.data_info.FeaturesShapeField'."""
 
-
 import pytest
 
 from declearn.data_info import FeaturesShapeField

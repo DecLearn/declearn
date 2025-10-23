@@ -417,7 +417,8 @@ class TestMessagesHandler:
         # Verify that requests were all accepted due to concurrence.
         assert delay < 0.2
         assert all(
-            isinstance(reply, Accept) for reply in join_replies  # type: ignore
+            isinstance(reply, Accept)
+            for reply in join_replies  # type: ignore
         )
         # Verify that this resulting in a RuntimeError and purging the handler.
         assert isinstance(excp_wait, RuntimeError)  # type: ignore

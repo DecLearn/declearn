@@ -166,7 +166,8 @@ class HaikuModel(Model):
     ) -> Dict[str, Any]:
         warnings.warn(
             "Our custom Haiku serialization relies on pickle,"
-            "which may be unsafe."
+            "which may be unsafe.",
+            stacklevel=2,
         )
         with io.BytesIO() as buffer:
             joblib.dump(self._model_fn, buffer)
@@ -378,29 +379,25 @@ class HaikuModel(Model):
         # Unpack input batch and prepare model parameters.
         inputs = self._unpack_batch(batch)
         train_params, fixed_params = hk.data_structures.partition(
-            predicate=lambda l, w, _: f"{l}:{w}" in self._trainable,
+            predicate=lambda l, w, _: f"{l}:{w}" in self._trainable,  # noqa: E741
             structure=self._params,
         )
         rng = next(self._rng_gen)
         # Compute batch-averaged gradients, opt. clipped on a per-sample basis.
         if max_norm:
-            grads, loss = (
-                self._clipped_grads_and_loss_fn(  # pylint: disable=[not-callable, line-too-long]
-                    train_params, fixed_params, rng, inputs, max_norm
-                )
+            grads, loss = self._clipped_grads_and_loss_fn(  # pylint: disable=[not-callable, line-too-long]
+                train_params, fixed_params, rng, inputs, max_norm
             )
             grads = [value.mean(0) for value in grads]
         else:
-            loss, grads_tree = (
-                self._loss_and_grads_fn(  # pylint: disable=[not-callable, line-too-long]
-                    train_params, fixed_params, rng, inputs
-                )
+            loss, grads_tree = self._loss_and_grads_fn(  # pylint: disable=[not-callable, line-too-long]
+                train_params, fixed_params, rng, inputs
             )
             grads = jax.tree_util.tree_leaves(grads_tree)
         # Record the batch-averaged loss value.
         self._loss_history.append(float(np.array(loss).mean()))
         # Return the gradients, flattened into a JaxNumpyVector container.
-        return JaxNumpyVector(dict(zip(self._trainable, grads)))
+        return JaxNumpyVector(dict(zip(self._trainable, grads, strict=False)))
 
     @functools.cached_property
     def _loss_and_grads_fn(

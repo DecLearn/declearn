@@ -147,13 +147,16 @@ class FairfedControllerServer(FairnessControllerServer):
     ) -> Aggregator:
         # Set up a fairness function and initialized the FairFed computer.
         self._fairness = instantiate_fairness_function(
-            self.f_type, counts=dict(zip(self.groups, counts)), **self.f_args
+            self.f_type,
+            counts=dict(zip(self.groups, counts, strict=False)),
+            **self.f_args,
         )
         self.fairfed_computer.initialize(groups=self.groups)
         # Force the use of a FairFed-specific averaging aggregator.
         warnings.warn(
             "Overriding Aggregator choice due to the use of FairFed.",
             category=RuntimeWarning,
+            stacklevel=2,
         )
         return FairfedAggregator(beta=self.beta)
 
@@ -164,7 +167,7 @@ class FairfedControllerServer(FairnessControllerServer):
         values: List[float],
     ) -> Dict[str, Union[float, np.ndarray]]:
         # Unpack group-wise accuracy values and compute fairness ones.
-        accuracy = dict(zip(self.groups, values))
+        accuracy = dict(zip(self.groups, values, strict=False))
         fairness = self._fairness.compute_from_federated_group_accuracy(
             accuracy
         )

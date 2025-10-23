@@ -80,7 +80,7 @@ class NoiseModule(OptiModule, metaclass=ABCMeta, register=False):
         self,
         gradients: Vector,
     ) -> Vector:
-        if not NumpyVector in gradients.compatible_vector_types:
+        if NumpyVector not in gradients.compatible_vector_types:
             raise TypeError(  # pragma: no cover
                 f"{self.__class__.__name__} requires input gradients to "
                 "be compatible with NumpyVector, which is not the case "

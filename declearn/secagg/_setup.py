@@ -95,9 +95,9 @@ def parse_secagg_config_server(
     return cls.from_params(bitsize=bitsize, clipval=clipval, **kwargs)
 
 
-def list_available_secagg_types() -> (
-    Dict[str, Tuple[Type[SecaggConfigClient], Type[SecaggConfigServer]]]
-):
+def list_available_secagg_types() -> Dict[
+    str, Tuple[Type[SecaggConfigClient], Type[SecaggConfigServer]]
+]:
     """List available SecAgg types and access associated config types.
 
     Note: partially-defined SecAgg types (e.g. with a registered type for

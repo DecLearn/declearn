@@ -67,7 +67,7 @@ def enhance_tf_op(
 ) -> Callable[[TensorT, Any], TensorT]:
     """Wrap up a tensorflow operation to preserve IndexedSlices and device."""
     func = add_indexed_slices_support(preserve_tensor_device(tf_op), inplc)
-    setattr(func, "_pre_wrapped", True)
+    func._pre_wrapped = True  # type: ignore
     return func
 
 
@@ -86,7 +86,7 @@ tf_op_sqrt = enhance_tf_op(tf.sqrt, inplc=True)
 
 
 @register_vector_type(tf.Tensor, EagerTensor, tf.IndexedSlices)
-class TensorflowVector(Vector):
+class TensorflowVector(Vector):  # noqa : PLW1641
     """Vector subclass to store tensorflow tensors.
 
     This Vector is designed to store a collection of named TensorFlow
@@ -331,6 +331,7 @@ class TensorflowVector(Vector):
                     "exhaustive list of floats. This may result in a high "
                     "memory cost.",
                     UserWarning,
+                    stacklevel=2,
                 )
                 arrays.append(
                     np.array(tf.convert_to_tensor(self.coefs[name]).numpy())
@@ -358,7 +359,7 @@ class TensorflowVector(Vector):
         policy = get_device_policy()
         device = select_device(gpu=policy.gpu, idx=policy.idx)
         with tf.device(device):
-            for name, array in zip(v_spec.names, arrays):
+            for name, array in zip(v_spec.names, arrays, strict=False):
                 # Recover IndexedSlices structures from dense arrays.
                 if name in slices:
                     non_zero = np.any(

@@ -74,7 +74,7 @@ class FederatedServer:
 
     # one-too-many attribute; pylint: disable=too-many-instance-attributes
     # pylint: disable-next=too-many-positional-arguments
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         model: Union[Model, str, Dict[str, Any]],
         netwk: Union[NetworkServer, NetworkServerConfig, Dict[str, Any], str],

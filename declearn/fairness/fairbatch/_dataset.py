@@ -205,7 +205,7 @@ class FairbatchDataset(FairnessDataset):
             for group, g_batch_size in group_batch_size.items()
             if g_batch_size > 0
         ]
-        for batches in zip(*generators):
+        for batches in zip(*generators, strict=False):
             yield self._concatenate_batches(batches)
 
     @staticmethod
@@ -227,7 +227,7 @@ class FairbatchDataset(FairnessDataset):
         return x_dat, y_dat, w_dat
 
     # pylint: disable-next=too-many-positional-arguments
-    def _generate_sensitive_group_batches(
+    def _generate_sensitive_group_batches(  # noqa: PLR0913
         self,
         group: Tuple[Any, ...],
         nb_batches: int,
@@ -284,7 +284,7 @@ class FairbatchDataset(FairnessDataset):
                     yield full
 
     # pylint: disable-next=too-many-positional-arguments
-    def _generate_batches(
+    def _generate_batches(  # noqa: PLR0913
         self,
         dataset: Dataset,
         group: Tuple[Any, ...],

@@ -56,7 +56,7 @@ class MockNetworkServer(NetworkServer, register=False):
     protocol = "mock"
 
     # pylint: disable-next=too-many-positional-arguments
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         host: str = "localhost",
         port: int = 8765,

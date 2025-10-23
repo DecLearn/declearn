@@ -52,7 +52,7 @@ class FederatedClient:
 
     # one-too-many attribute; pylint: disable=too-many-instance-attributes
     # pylint: disable-next=too-many-positional-arguments
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         netwk: Union[NetworkClient, NetworkClientConfig, Dict[str, Any], str],
         train_data: Union[Dataset, str],
@@ -426,7 +426,7 @@ class FederatedClient:
         # fmt: off
         # lazy-import the DPTrainingManager, that involves some optional,
         # heavy-loadtime dependencies; pylint: disable=import-outside-toplevel
-        from declearn.training.dp import DPTrainingManager
+        from declearn.training.dp import DPTrainingManager # noqa: I001, PLC0415
 
         # pylint: enable=import-outside-toplevel
         self.trainmanager = DPTrainingManager(

@@ -17,7 +17,6 @@
 
 """Shared pytest fixtures for testing Vector classes."""
 
-
 import pytest
 
 from declearn.utils import set_device_policy

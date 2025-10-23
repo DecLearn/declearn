@@ -182,7 +182,7 @@ class FairnessControllerTestSuite:
             counts, *_ = await asyncio.gather(coro_server, *coro_clients)
         # Verify that expected attributes were assigned with expected values.
         assert isinstance(counts, list) and len(counts) == len(TOTAL_COUNTS)
-        assert dict(zip(server.groups, counts)) == TOTAL_COUNTS
+        assert dict(zip(server.groups, counts, strict=False)) == TOTAL_COUNTS
         assert all(client.groups == server.groups for client in clients)
 
     @pytest.mark.parametrize(
@@ -338,7 +338,10 @@ class FairnessControllerTestSuite:
         # Verify that outputs match expectations.
         assert isinstance(aggregated, list)
         expected = [
-            sum(rv) for rv in zip(*[rep.values for rep in replies.values()])
+            sum(rv)
+            for rv in zip(
+                *[rep.values for rep in replies.values()], strict=False
+            )
         ]
         assert np.allclose(np.array(aggregated), np.array(expected))
 
@@ -389,7 +392,9 @@ class FairnessControllerTestSuite:
                 client_values = client.compute_fairness_measures(32)
                 share_vals.append(client_values[0])
                 local_vals.append(client_values[1])
-        server_values = [float(sum(values)) for values in zip(*share_vals)]
+        server_values = [
+            float(sum(values)) for values in zip(*share_vals, strict=False)
+        ]
         # Setup optional SecAgg and mock network communication endpoints.
         # Run the tested method.
         n_peers = len(clients)

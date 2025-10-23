@@ -41,7 +41,7 @@ def build_samplewise_grads_fn_backend(
     """Implementation of `build_samplewise_grads_fn` for Torch 2.0."""
 
     # pylint: disable-next=too-many-positional-arguments
-    def run_forward(params, frozen, buffers, inputs, y_true, s_wght):
+    def run_forward(params, frozen, buffers, inputs, y_true, s_wght):  # noqa: PLR0913
         """Run the forward pass in a functional way."""
         # backend closure function; pylint: disable=too-many-arguments
         y_pred = torch.func.functional_call(

@@ -37,6 +37,7 @@ Data splitting
 [declearn.dataset.utils.split_multi_classif_dataset]:
     Split a classification dataset into (opt. heterogeneous) shards.
 """
+
 from ._save_load import load_data_array, save_data_array
 from ._sparse import sparse_from_file, sparse_to_file
 from ._split_classif import split_multi_classif_dataset

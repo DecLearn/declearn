@@ -34,7 +34,7 @@ __all__ = [
 
 
 # pylint: disable-next=too-many-positional-arguments
-def generate_ssl_certificates(
+def generate_ssl_certificates(  # noqa: PLR0913
     folder: str = ".",
     c_name: str = "localhost",
     password: Optional[str] = None,
@@ -118,9 +118,7 @@ def generate_private_key(
         key_size=key_size,
     )
     if password is None:
-        encryption_algorithm: (
-            crypto_serialization.KeySerializationEncryption
-        ) = crypto_serialization.NoEncryption()
+        encryption_algorithm: crypto_serialization.KeySerializationEncryption = crypto_serialization.NoEncryption()
     else:
         encryption_algorithm = crypto_serialization.BestAvailableEncryption(
             password.encode("utf-8")
@@ -281,7 +279,7 @@ def gen_ssl_csr(
 
 
 # pylint: disable-next=too-many-positional-arguments
-def gen_ssl_cert(
+def gen_ssl_cert(  # noqa: PLR0913
     folder: str,
     sv_csrq: str,
     ca_cert: str,

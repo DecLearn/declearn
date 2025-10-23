@@ -258,7 +258,9 @@ class TensorflowModel(Model):
                 norm = tf.constant(max_norm)
                 grads, loss = self._compute_clipped_gradients(*data, norm)
         self._loss_history.append(float(loss.numpy()))
-        grads_and_vars = zip(grads, self._get_weight_variables(trainable=True))
+        grads_and_vars = zip(
+            grads, self._get_weight_variables(trainable=True), strict=False
+        )
         return TensorflowVector(
             {var.name: grad for grad, var in grads_and_vars}
         )
@@ -268,6 +270,7 @@ class TensorflowModel(Model):
         batch: Batch,
     ) -> Tuple[tf.Tensor, Optional[tf.Tensor], Optional[tf.Tensor]]:
         """Unpack and enforce Tensor conversion to an input data batch."""
+
         # fmt: off
         # Define an array-to-tensor conversion routine.
         def convert(data: Optional[ArrayLike]) -> Optional[tf.Tensor]:
@@ -332,8 +335,8 @@ class TensorflowModel(Model):
         outp: List[tf.Tensor] = []
         for grad in gradients:
             dims = list(range(1, grad.shape.rank))
-            grad = tf.clip_by_norm(grad, max_norm, axes=dims)
-            outp.append(tf.reduce_mean(grad * s_wght, axis=0))
+            clipped_grad = tf.clip_by_norm(grad, max_norm, axes=dims)
+            outp.append(tf.reduce_mean(clipped_grad * s_wght, axis=0))
         return outp
 
     def apply_updates(

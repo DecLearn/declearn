@@ -162,13 +162,14 @@ class TestAccuracyParityFunction(FairnessFunctionTestSuite):
     @property
     def expected_constants(self) -> Tuple[np.ndarray, np.ndarray]:
         c_k0 = np.array(0.0)
+        # fmt: off
         c_kk = [  # (n_k' / n) - 1{s == s'}*(n_k' / n_s)
-            # fmt: off
             [0.4 - 4/7, 0.2 - 0.0, 0.3 - 3/7, 0.1 - 0.0],
             [0.4 - 0.0, 0.2 - 2/3, 0.3 - 0.0, 0.1 - 1/3],
             [0.4 - 4/7, 0.2 - 0.0, 0.3 - 3/7, 0.1 - 0.0],
             [0.4 - 0.0, 0.2 - 2/3, 0.3 - 0.0, 0.1 - 1/3],
         ]
+        # fmt: on
         return c_k0, np.array(c_kk)
 
     @property
@@ -176,8 +177,8 @@ class TestAccuracyParityFunction(FairnessFunctionTestSuite):
         c_kk = self.expected_constants[1]
         accuracy = self.accuracy
         acc = [accuracy[k] for k in ((0, 0), (0, 1), (1, 0), (1, 1))]
-        f_s0 = -sum(c * a for c, a in zip(c_kk[0], acc))
-        f_s1 = -sum(c * a for c, a in zip(c_kk[1], acc))
+        f_s0 = -sum(c * a for c, a in zip(c_kk[0], acc, strict=False))
+        f_s1 = -sum(c * a for c, a in zip(c_kk[1], acc, strict=False))
         return {(0, 0): f_s0, (0, 1): f_s1, (1, 0): f_s0, (1, 1): f_s1}
 
 
@@ -191,7 +192,10 @@ class TestDemographicParityFunction(FairnessFunctionTestSuite):
         # (n_k / n_s) - (n_y / n)
         c_k0 = [
             # fmt: off
-            4/7 - 0.6, 2/3 - 0.6, 3/7 - 0.4, 1/3 - 0.4
+            4 / 7 - 0.6,
+            2 / 3 - 0.6,
+            3 / 7 - 0.4,
+            1 / 3 - 0.4,
         ]
         # diagonal: (n_k / n) - (n_k / n_s)
         # reverse-diagonal: -n_k' / n
@@ -199,10 +203,10 @@ class TestDemographicParityFunction(FairnessFunctionTestSuite):
         # c_(y,s)^(y',s): (n_k' / n_s) - (n_k' / n)
         c_kk = [
             # fmt: off
-            [0.4 - 4/7, 0.2 - 0.0, 3/7 - 0.3, 0.0 - 0.1],
-            [0.4 - 0.0, 0.2 - 2/3, 0.0 - 0.3, 1/3 - 0.1],
-            [4/7 - 0.4, 0.0 - 0.2, 0.3 - 3/7, 0.1 - 0.0],
-            [0.0 - 0.4, 2/3 - 0.2, 0.3 - 0.0, 0.1 - 1/3],
+            [0.4 - 4 / 7, 0.2 - 0.0, 3 / 7 - 0.3, 0.0 - 0.1],
+            [0.4 - 0.0, 0.2 - 2 / 3, 0.0 - 0.3, 1 / 3 - 0.1],
+            [4 / 7 - 0.4, 0.0 - 0.2, 0.3 - 3 / 7, 0.1 - 0.0],
+            [0.0 - 0.4, 2 / 3 - 0.2, 0.3 - 0.0, 0.1 - 1 / 3],
         ]
         return np.array(c_k0), np.array(c_kk)
 
@@ -212,10 +216,14 @@ class TestDemographicParityFunction(FairnessFunctionTestSuite):
         accuracy = self.accuracy
         acc = [accuracy[k] for k in ((0, 0), (0, 1), (1, 0), (1, 1))]
         f_00 = (
-            c_k0[0] + c_kk[0].sum() - sum(c * a for c, a in zip(c_kk[0], acc))
+            c_k0[0]
+            + c_kk[0].sum()
+            - sum(c * a for c, a in zip(c_kk[0], acc, strict=False))
         )
         f_01 = (
-            c_k0[1] + c_kk[1].sum() - sum(c * a for c, a in zip(c_kk[1], acc))
+            c_k0[1]
+            + c_kk[1].sum()
+            - sum(c * a for c, a in zip(c_kk[1], acc, strict=False))
         )
         return {(0, 0): f_00, (0, 1): f_01, (1, 0): -f_00, (1, 1): -f_01}
 
@@ -239,10 +247,10 @@ class TestEqualizedOddsFunction(FairnessFunctionTestSuite):
         # otherwise: 1{y == y'} * (n_k' / n_y)
         c_kk = [
             # fmt: off
-            [4/6 - 1.0, 2/6 - 0.0, 0.0 - 0.0, 0.0 - 0.0],
-            [4/6 - 0.0, 2/6 - 1.0, 0.0 - 0.0, 0.0 - 0.0],
-            [0.0 - 0.0, 0.0 - 0.0, 3/4 - 1.0, 1/4 - 0.0],
-            [0.0 - 0.0, 0.0 - 0.0, 3/4 - 0.0, 1/4 - 1.0],
+            [4 / 6 - 1.0, 2 / 6 - 0.0, 0.0 - 0.0, 0.0 - 0.0],
+            [4 / 6 - 0.0, 2 / 6 - 1.0, 0.0 - 0.0, 0.0 - 0.0],
+            [0.0 - 0.0, 0.0 - 0.0, 3 / 4 - 1.0, 1 / 4 - 0.0],
+            [0.0 - 0.0, 0.0 - 0.0, 3 / 4 - 0.0, 1 / 4 - 1.0],
         ]
         return c_k0, np.array(c_kk)
 
@@ -253,7 +261,7 @@ class TestEqualizedOddsFunction(FairnessFunctionTestSuite):
         groups = ((0, 0), (0, 1), (1, 0), (1, 1))
         acc = [accuracy[k] for k in groups]
         return {
-            group: -sum(c * a for c, a in zip(c_kk[i], acc))
+            group: -sum(c * a for c, a in zip(c_kk[i], acc, strict=False))
             for i, group in enumerate(groups)
         }
 

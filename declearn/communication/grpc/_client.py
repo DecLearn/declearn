@@ -83,9 +83,7 @@ class GrpcClient(NetworkClient):
     async def start(self) -> None:
         if self._channel is None:
             self._channel = (
-                grpc.aio.secure_channel(
-                    self.server_uri, self._ssl
-                )  # type: ignore
+                grpc.aio.secure_channel(self.server_uri, self._ssl)  # type: ignore
                 if (self._ssl is not None)
                 else grpc.aio.insecure_channel(self.server_uri)
             )

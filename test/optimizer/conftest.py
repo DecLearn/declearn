@@ -17,7 +17,6 @@
 
 """Shared pytest fixtures for testing optmizer and plugins."""
 
-
 import pytest
 
 from declearn.test_utils import list_available_frameworks

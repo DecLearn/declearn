@@ -265,7 +265,7 @@ class TestNetworkExchanges:
         )
         assert all(
             reply.deserialize() == messages[client.name]
-            for client, reply in zip(clients, replies)
+            for client, reply in zip(clients, replies, strict=False)
         )
 
     async def clients_to_server_large(

@@ -31,7 +31,7 @@ class Scalar(float):
 
 
 @register_vector_type(Scalar)
-class ScalarFloatVector(Vector):
+class ScalarFloatVector(Vector):  # noqa : PLW1641
     """Mock Vector subclasses operating on scalar float values."""
 
     def __eq__(
@@ -183,7 +183,8 @@ class TestVectorErrors:
         """Test that `Vector.build_from_specs` raises on mistyped specs."""
         with pytest.raises(TypeError):
             Vector.build_from_specs(
-                [0.0, 1.0], v_spec="wrong-type"  # type: ignore
+                [0.0, 1.0],
+                v_spec="wrong-type",  # type: ignore
             )
 
     def test_build_from_specs_missing_vector_type(self) -> None:

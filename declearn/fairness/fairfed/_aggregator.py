@@ -17,7 +17,6 @@
 
 """FairFed-specific Aggregator subclass."""
 
-
 from declearn.aggregator import Aggregator, ModelUpdates
 from declearn.model.api import Vector
 

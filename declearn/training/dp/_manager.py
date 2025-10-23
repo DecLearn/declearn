@@ -65,7 +65,7 @@ class DPTrainingManager(TrainingManager):
     """
 
     # pylint: disable-next=too-many-positional-arguments
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         model: Model,
         optim: Optimizer,
@@ -131,7 +131,7 @@ class DPTrainingManager(TrainingManager):
         self._dp_budget = message.budget
 
     # pylint: disable=too-many-positional-arguments
-    def _fit_noise_multiplier(
+    def _fit_noise_multiplier(  # noqa: PLR0913
         self,
         budget: Tuple[float, float],
         n_samples: int,

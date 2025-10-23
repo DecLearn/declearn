@@ -69,7 +69,7 @@ class FairnessMonitorServer(FairnessControllerServer):
     ) -> Aggregator:
         self.function = instantiate_fairness_function(
             f_type=self.f_type,
-            counts=dict(zip(self.groups, counts)),
+            counts=dict(zip(self.groups, counts, strict=False)),
             **self.f_args,
         )
         return aggregator
@@ -81,7 +81,7 @@ class FairnessMonitorServer(FairnessControllerServer):
         values: List[float],
     ) -> Dict[str, Union[float, np.ndarray]]:
         # Unpack group-wise accuracy metrics and compute fairness ones.
-        accuracy = dict(zip(self.groups, values))
+        accuracy = dict(zip(self.groups, values, strict=False))
         fairness = self.function.compute_from_federated_group_accuracy(
             accuracy
         )

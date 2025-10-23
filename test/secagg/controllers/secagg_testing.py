@@ -256,7 +256,7 @@ class DecrypterTestSuite(metaclass=abc.ABCMeta):
         cleartext = [secrets.randbits(32) for _ in range(n_peers)]
         encrypted = [
             encrypter.encrypt_uint(value)
-            for encrypter, value in zip(encrypters, cleartext)
+            for encrypter, value in zip(encrypters, cleartext, strict=False)
         ]
         # Test that decryption works properly.
         decrypted = decrypter.decrypt_uint(decrypter.sum_encrypted(encrypted))
@@ -275,7 +275,7 @@ class DecrypterTestSuite(metaclass=abc.ABCMeta):
         ]
         encrypted = [
             encrypter.encrypt_float(value)
-            for encrypter, value in zip(encrypters, cleartext)
+            for encrypter, value in zip(encrypters, cleartext, strict=False)
         ]
         # Test that decryption works properly.
         decrypted = decrypter.decrypt_float(decrypter.sum_encrypted(encrypted))
@@ -299,11 +299,11 @@ class DecrypterTestSuite(metaclass=abc.ABCMeta):
         ]
         encrypted = [
             encrypter.encrypt_numpy_array(value)
-            for encrypter, value in zip(encrypters, cleartext)
+            for encrypter, value in zip(encrypters, cleartext, strict=False)
         ]
         sum_values = [
             decrypter.sum_encrypted(values)  # type: ignore  # false-positive
-            for values in zip(*(val for val, _ in encrypted))
+            for values in zip(*(val for val, _ in encrypted), strict=False)
         ]
         # Test that decryption works properly.
         decrypted = decrypter.decrypt_numpy_array(
@@ -331,11 +331,11 @@ class DecrypterTestSuite(metaclass=abc.ABCMeta):
         cleartext = [test_case.mock_ones for _ in range(n_peers)]
         encrypted = [
             encrypter.encrypt_vector(value)
-            for encrypter, value in zip(encrypters, cleartext)
+            for encrypter, value in zip(encrypters, cleartext, strict=False)
         ]
         sum_values = [
             decrypter.sum_encrypted(values)  # type: ignore  # false-positive
-            for values in zip(*(val for val, _ in encrypted))
+            for values in zip(*(val for val, _ in encrypted), strict=False)
         ]
         # Test that decryption works properly.
         decrypted = decrypter.decrypt_vector(
@@ -374,7 +374,7 @@ class DecrypterTestSuite(metaclass=abc.ABCMeta):
         ]
         encrypted = [
             encrypter.encrypt_aggregate(value)
-            for encrypter, value in zip(encrypters, cleartext)
+            for encrypter, value in zip(encrypters, cleartext, strict=False)
         ]
         sum_aggrg = sum(encrypted[1:], start=encrypted[0])
         # Test that decryption works properly.
