@@ -67,7 +67,7 @@ def enhance_tf_op(
 ) -> Callable[[TensorT, Any], TensorT]:
     """Wrap up a tensorflow operation to preserve IndexedSlices and device."""
     func = add_indexed_slices_support(preserve_tensor_device(tf_op), inplc)
-    func._pre_wrapped = True
+    func._pre_wrapped = True  # type: ignore
     return func
 
 
