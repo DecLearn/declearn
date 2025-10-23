@@ -93,10 +93,7 @@ docs = [
 
 # test-specific dependencies
 tests = [
-    "black ~= 25.0",
-    "isort~=7.0",
     "mypy ~= 1.0",
-    "pylint ~= 4.0",
     "pytest ~= 8.4",
     "pytest-asyncio ~= 1.2",
     "pytest-cov ~= 7.0",
@@ -106,17 +103,14 @@ tests = [
 
 # all dev dependencies : lint, test, doc, build
 dev = [
-    "black ~= 25.0",
     "build>=1.3.0",
     "griffe ~= 1.0",
-    "isort~=7.0",
     "mkdocstrings[python] ~= 0.8",
     "mkdocs-autorefs ~= 0.4",
     "mkdocs-literate-nav ~= 0.4",
     "mkdocs-material ~= 9.1",
     "mypy ~= 1.0",
     "pre-commit>=4.3",
-    "pylint ~= 4.0",
     "pytest ~= 8.4",
     "pytest-asyncio ~= 1.2",
     "pytest-cov ~= 7.0",
@@ -129,17 +123,14 @@ dev = [
 
 # all dev dependencies : lint, test, doc, build
 dev = [
-    "black ~= 25.0",
     "build>=1.3.0",
     "griffe ~= 1.0",
-    "isort~=7.0",
     "mkdocstrings[python] ~= 0.8",
     "mkdocs-autorefs ~= 0.4",
     "mkdocs-literate-nav ~= 0.4",
     "mkdocs-material ~= 9.1",
     "mypy ~= 1.0",
     "pre-commit>=4.3",
-    "pylint ~= 4.0",
     "pytest ~= 8.4",
     "pytest-asyncio ~= 1.2",
     "pytest-cov ~= 7.0",

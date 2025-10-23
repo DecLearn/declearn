@@ -30,9 +30,9 @@ This script comprises the following (types of) functions:
 
 - Functions that run (sets of) commands defining a category of tests:
     - lint_declearn_code
-        Run the pylint, mypy, black and isort commands on the source code.
+        Run the ruff and mypy commands on the source code.
     - lint_declearn_tests
-        Run the pylint, mypy, black and isort commands on the tests code.
+        Run the ruff and mypy commands on the tests code.
     - run_declearn_tests [pytest_args]*
         Run unit and integrations tests, managing coverage computation
         and reporting, using pytest, flags to which may be provided.
@@ -110,10 +110,8 @@ lint_declearn_code() {
         The number of sub-commands that failed (0 if successful).
     '
     commands=(
-        "pylint declearn"
+        "ruff check declearn"
         "mypy --install-types --non-interactive declearn"
-        "black --check declearn"
-        "isort --check declearn"
     )
     run_commands "declearn code static analysis" "${commands[@]}"
 }
@@ -127,10 +125,8 @@ lint_declearn_tests() {
         The number of sub-commands that failed (0 if successful).
     '
     commands=(
-        "pylint --recursive=y test"
+        "ruff check test"
         "mypy --install-types --non-interactive --exclude=conftest.py test"
-        "black --check test"
-        "isort --check test"
     )
     run_commands "declearn test code static analysis" "${commands[@]}"
 }
