@@ -149,11 +149,14 @@ def _generate_public_submodules_doc(
     """Create files for public submodules of a base module."""
     pub_mod = {}
     for key, mod in module.modules.items():
-        if not key.startswith("_"):
-            if isinstance(mod, griffe.Alias):
-                p_key = f"{key} (alias re-export)"
-                p_mod = mod.target
-            pub_mod[p_key] = generate_module_docs(p_mod, docdir)
+        # local copies, to avoid updating loop variables
+        _key = key
+        _mod = mod
+        if not _key.startswith("_"):
+            if isinstance(_mod, griffe.Alias):
+                _key = f"{_key} (alias re-export)"
+                _mod = _mod.target
+            pub_mod[_key] = generate_module_docs(_mod, docdir)
     return pub_mod
 
 
