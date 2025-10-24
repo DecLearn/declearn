@@ -226,9 +226,6 @@ class TestTorchModel(ModelTestSuite):
         test_case: ModelTestCase,
     ) -> None:
         if getattr(test_case, "kind", "") == "RNN":
-            # NOTE: this test fails on python 3.8 but succeeds in 3.10
-            #       due to the (de)serialization of a custom nn.Module
-            #       the expected model behaviour is, however, correct
             try:
                 super().test_get_config(test_case)
             except AssertionError:
@@ -243,9 +240,6 @@ class TestTorchModel(ModelTestSuite):
         test_case: ModelTestCase,
     ) -> None:
         if getattr(test_case, "kind", "") == "RNN":
-            # NOTE: this test fails on python 3.8 but succeeds in 3.10
-            #       due to the (de)serialization of a custom nn.Module
-            #       the expected model behaviour is, however, correct
             try:
                 self._test_from_config(test_case)
             except AssertionError:
