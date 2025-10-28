@@ -199,3 +199,7 @@ The **continuous development** (CI/CD) tools of GitLab are used:
   develop or a release branch.
 - It may be triggered manually for any merge request commit, whether draft or
   not, via the online gitlab interface.
+
+Resources relative to CI/CD are :
+- the `.gitlab-ci.yml` configuration file
+- the resources in the `ci/` directory (e.g. `Dockerfile` to build the CI/CD custom Docker image)
