@@ -25,7 +25,6 @@ stages:
 # - keep tox cache files, but make them branch-specific
 # - keep the small venv where pip and tox are installed
 variables:
-  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.pip"
   TOX_CACHE_DIR: "$CI_PROJECT_DIR/.tox"
   GIT_CLEAN_FLAGS: -ffdx -e .pip -e .tox -e venv
 
