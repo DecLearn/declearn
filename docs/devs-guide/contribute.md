@@ -96,6 +96,10 @@ During development phase, uv can show some benefits compared to pip, among which
 - reproducibility (thanks to its `uv.lock` file)
 - test the code with different Python versions in an isolated way
 
+If you want to use uv, you can quick install it [here](https://docs.astral.sh/uv/getting-started/installation/).
+
+___
+
 If you use uv as a Declearn contributor, you can find below some useful
 commands.
 
