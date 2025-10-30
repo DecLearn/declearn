@@ -47,7 +47,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-all = [  # all non-dev extra dependencies
+all = [  # all non-dev and non-example extra dependencies
     "dm-haiku >= 0.0.15",
     "flax ~= 0.12",
     "grpcio >= 1.45",
@@ -80,6 +80,15 @@ torch = [
 ]
 websockets = [
     "websockets >= 10.1, < 14.0",
+]
+
+# examples-related dependencies
+
+# the FLamby dependency below is not enough to run the example
+# it is here to resolve FLamby classes / objects during the dev phase
+# to properly run the FLamby example, refer to its specific readme
+flamby = [
+    "flamby[tcga]@git+https://github.com/owkin/FLamby",
 ]
 
 # docs-building dependencies
