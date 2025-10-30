@@ -96,18 +96,24 @@ During development phase, uv can show some benefits compared to pip, among which
 - reproducibility (thanks to its `uv.lock` file)
 - test the code with different Python versions in an isolated way
 
-If you want to use uv, you can quick install it [here](https://docs.astral.sh/uv/getting-started/installation/).
+If you want to use uv, you can quick install it
+[here](https://docs.astral.sh/uv/getting-started/installation/).
 
-___
+---
 
 If you use uv as a Declearn contributor, you can find below some useful
 commands.
 
-- Install all dependencies of the project (required + optional + dev
-  dependencies) :
+- Install all main dependencies of the project useful for users and devs, it excludes
+  example-specific dependencies (e.g. flamby):
 
 ```bash
 uv sync --extra all
+```
+
+- Install all dependencies of the project, with no exception :
+```bash
+uv sync --all-extras
 ```
 
 - Add / remove dependencies in the project :  
@@ -205,5 +211,7 @@ The **continuous development** (CI/CD) tools of GitLab are used:
   not, via the online gitlab interface.
 
 Resources relative to CI/CD are :
+
 - the `.gitlab-ci.yml` configuration file
-- the resources in the `ci/` directory (e.g. `Dockerfile` to build the CI/CD custom Docker image)
+- the resources in the `ci/` directory (e.g. `Dockerfile` to build the CI/CD
+  custom Docker image)
