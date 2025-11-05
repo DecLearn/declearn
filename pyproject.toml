@@ -91,6 +91,11 @@ flamby = [
     "flamby[tcga]@git+https://github.com/owkin/FLamby",
 ]
 
+nlp = [
+    "datasets ~= 4.0",
+    "transformers ~= 4.57",
+]
+
 # docs-building dependencies
 docs = [
     "griffe ~= 1.0",
