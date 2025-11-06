@@ -65,7 +65,7 @@ You will need to **press y** when prompted if you accept the dataset license agr
 
 ```bash
 cd declearn/examples/flamby/
-python run_demo.py  # note: python declearn/examples/flamby/run.py works as well
+python run_demo.py  # note: python declearn/examples/flamby/run_demo.py works as well
 ```
 
 The `run_demo.py` scripts collects the server and client routines defined under

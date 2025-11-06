@@ -172,7 +172,7 @@ def run_server(
         training=training,
         evaluate=evaluate,
         privacy=None,  # you may set up local DP (DP-SGD) here
-        early_stop=None,  # you may add an early-stopping cirterion here
+        early_stop=None,  # you may add an early-stopping criterion here
     )
     server.run(run_config)
 

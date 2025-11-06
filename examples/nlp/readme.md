@@ -34,7 +34,7 @@ structured the following way:
 nlp/
 │   dataset.py      - contains a torch Dataset implementation adapted to this task
 │   generate_ssl.py - generate self-signed ssl certificates
-│   dataset.py      - contains a torch module implementation adapted to this task
+│   model.py        - contains a torch module implementation adapted to this task
 |   prepare_data.py - fetch and split the IMDb dataset for FL use
 |   run_client.py   - set up and launch a federated-learning client
 │   run_demo.py     - simulate the entire FL process in a single session

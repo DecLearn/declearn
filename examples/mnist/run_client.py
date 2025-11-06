@@ -24,8 +24,6 @@ import os
 import fire  # type: ignore
 
 import declearn
-import declearn.model.tensorflow
-
 
 FILEDIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_CERT = os.path.join(FILEDIR, "ca-cert.pem")

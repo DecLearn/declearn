@@ -50,9 +50,16 @@ class CIndexMetric(Metric[CIndexState]):
     when, in the observed data, X is indeed greater than Y.
     The c-index also handles how to handle censored values.
 
-    Note : this metric implementation is a weighted average adaptation
-    of the metric provided in the FLamby TCGA-BRCA dataset example, see :
+    Note: This implementation uses a weighted average version of the metric
+    from the FLamby TCGA-BRCA dataset example, see :
     https://github.com/owkin/FLamby/blob/main/flamby/datasets/fed_tcga_brca/metric.py
+
+    Caveat: For simplicity, this implementation relies directly on
+    `lifelines.utils.concordance_index`.
+    A more rigorous approach would compute from scratch and store intermediate
+    aggregates in CIndexState to obtain a global c-index over all
+    (y_true, y_pred) pairs, rather than a weighted average of subset-level
+    c-indices.
     """
 
     name = "c_index"
