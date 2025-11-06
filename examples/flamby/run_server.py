@@ -35,10 +35,8 @@ from declearn.model.torch import TorchModel
 from declearn.test_utils import make_importable
 
 # Perform local imports.
-# pylint: disable=wrong-import-position, wrong-import-order
 with make_importable(os.path.dirname(__file__)):
     from metric import CIndexMetric
-# pylint: enable=wrong-import-position, wrong-import-order
 
 
 FILEDIR = os.path.dirname(os.path.abspath(__file__))

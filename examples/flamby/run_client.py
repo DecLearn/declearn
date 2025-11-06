@@ -27,6 +27,16 @@ import fire  # type: ignore
 from flamby.datasets.fed_tcga_brca import FedTcgaBrca as TcgaBrcaDataset
 from torch.utils.data import random_split
 
+# Do not remove the following "unused" import,
+# it is necessary for type registration
+import declearn.model.torch
+from declearn.test_utils import make_importable
+
+# Do not remove the following "unused" import,
+# it is necessary for type registration
+with make_importable(os.path.dirname(__file__)):
+    from metric import CIndexMetric
+
 import declearn
 from declearn.dataset.torch import TorchDataset
 

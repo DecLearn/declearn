@@ -85,11 +85,11 @@ We then sequentially run the server then the clients on separate terminals.
    using the same random seed and agreeing on clients' ordering.
 
    To use the `prepare_data.py` script, simply run:
-   ```bashand `SEED` may be
-   any int
+   ```bashand
    python prepare_data.py <NB_CLIENTS> [--scheme=SCHEME] [--seed=SEED]
    ```
-   where `SCHEME` must be in `{"iid", "labels", "biased"}`.
+   where `SCHEME` must be in `{"iid", "labels", "biased"}`
+   and `SEED` may be any int.
 
    Alternatively, you may use the `declearn-split` command-line utility, with
    similar arguments:

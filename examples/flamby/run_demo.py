@@ -29,11 +29,9 @@ from declearn.test_utils import generate_ssl_certificates, make_importable
 from declearn.utils import run_as_processes
 
 # Perform local imports.
-# pylint: disable=wrong-import-position, wrong-import-order
 with make_importable(os.path.dirname(__file__)):
     from run_client import run_client
     from run_server import run_server
-# pylint: enable=wrong-import-position, wrong-import-order
 
 
 def run_demo(

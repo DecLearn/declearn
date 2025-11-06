@@ -25,6 +25,10 @@ import fire  # type: ignore
 
 import declearn
 
+# Do not remove the following "unused" import,
+# it is necessary for type registration
+import declearn.model.tensorflow
+
 FILEDIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_CERT = os.path.join(FILEDIR, "ca-cert.pem")
 

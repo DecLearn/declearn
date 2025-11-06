@@ -26,6 +26,10 @@ import pandas as pd
 from transformers import DistilBertTokenizer
 
 import declearn
+
+# Do not remove the following "unused" import,
+# it is necessary for type registration
+import declearn.model.torch
 from declearn.dataset.torch import TorchDataset
 from declearn.test_utils import make_importable
 
