@@ -1,11 +1,15 @@
-# Demo training task : FLamby (TCGA_BRCA)
+# Demo NLP training task : HuggingFace transformer on IMDb dataset
 
 ## Overview
 
+This is a demo of a Natural Language Processing (NLP) training task with Declearn.  
 **We are going to train a common model between two simulated clients on the
 [IMDb dataset](https://huggingface.co/datasets/stanfordnlp/imdb)
-provided by HuggingFace**. This dataset contains texts: reviews of highly polar movies, for the task of binary sentiment classification.
-We fine-tune the model [DistilBERT base (uncased)](https://huggingface.co/distilbert/distilbert-base-uncased), which is a relatively small transformer model (67M parameters). More precisely we fine-tune the [sequence classification variant](https://huggingface.co/docs/transformers/model_doc/distilbert#transformers.DistilBertForSequenceClassification) of this model.
+provided by HuggingFace**.  
+
+This dataset contains texts that are reviews of highly polar movies. They are associated with labels : 0 for a negative review and 1 for a positive review. Indeed, the task involved is binary sentiment classification.  
+
+We fine-tune the [DistilBERT base (uncased)](https://huggingface.co/distilbert/distilbert-base-uncased) model, a compact transformer architecture with approximately 67 million parameters. Specifically, we use its [sequence classification variant](https://huggingface.co/docs/transformers/model_doc/distilbert#transformers.DistilBertForSequenceClassification) for this task.
 
 ## Setup
 
