@@ -787,7 +787,11 @@ class FederatedServer:
         if metrics:
             self.logger.info(
                 "Other averaged scalar metrics are: %s",
-                {k: v for k, v in metrics.items() if isinstance(v, float)},
+                {
+                    k: f"{v:.4f}"
+                    for k, v in metrics.items()
+                    if isinstance(v, float)
+                },
             )
         # Optionally checkpoint the model, optimizer and metrics.
         if self.ckptr:

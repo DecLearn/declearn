@@ -423,7 +423,7 @@ class TrainingManager:
         self.logger.log(
             LOGGING_LEVEL_MAJOR,
             "Local scalar evaluation metrics: %s",
-            {k: v for k, v in values.items() if isinstance(v, float)},
+            {k: f"{v:.4f}" for k, v in values.items() if isinstance(v, float)},
         )
         # Return the metrics' values, their states and the effort information.
         return values, states, effort
