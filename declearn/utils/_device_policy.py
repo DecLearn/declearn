@@ -108,7 +108,7 @@ def set_device_policy(
 ) -> None:
     """Update the current global device policy.
 
-    To access the current policy, use `declearn.utils.set_device_policy`.
+    To access the current policy, use `declearn.utils.get_device_policy`.
 
     Parameters
     ----------
