@@ -74,6 +74,9 @@ def _parse_readme() -> Tuple[str, Dict[str, str]]:
     path = os.path.join(ROOT_FOLDER, "README.md")
     with open(path, "r", encoding="utf-8") as file:
         text = file.read()
+    # ignore headers, extract text starting at the h1 title
+    text = re.split(r'^# ', text, maxsplit=1, flags=re.MULTILINE)[-1]
+    text = "# " + text # split string is recovered
     title, text = text.split("\n", 1)
     content = re.split(r"\n(## \w+\n+)", text)
     readme = dict(zip(content[1::2], content[2::2], strict=False))
