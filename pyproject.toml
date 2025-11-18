@@ -83,13 +83,6 @@ websockets = [
 
 # examples-related dependencies
 
-# the FLamby dependency below is not enough to run the example
-# it is here to resolve FLamby classes / objects during the dev phase
-# to properly run the FLamby example, refer to its specific readme
-flamby = [
-    "flamby[tcga]@git+https://github.com/owkin/FLamby",
-]
-
 nlp = [
     "datasets ~= 4.0",
     "transformers ~= 4.57",
