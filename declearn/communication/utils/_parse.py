@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,10 +19,8 @@
 
 from typing import Dict, Type, TypeVar
 
-
 from declearn.communication.api import NetworkClient, NetworkServer
 from declearn.messaging import Error, Message, SerializedMessage
-
 
 __all__ = [
     "ErrorMessageException",
@@ -83,7 +81,7 @@ async def verify_client_messages_validity(
     # Iterate over received messages to identify any unexpected 'Error' ones
     # or unexpected-type message.
     wrong_types = ""
-    unexp_errors = {}  # type: Dict[str, str]
+    unexp_errors: Dict[str, str] = {}
     for client, srm in received.items():
         if issubclass(srm.message_cls, expected):
             pass

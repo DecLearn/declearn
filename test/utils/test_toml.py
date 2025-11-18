@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,15 +20,14 @@
 import dataclasses
 import os
 import warnings
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Self, Tuple, Union
 
 import pytest
-from typing_extensions import Self
 
 from declearn.utils import TomlConfig
 
 
-class Custom:
+class Custom:  # noqa: PLW1641
     """Custom class that requires specific TOML parsing."""
 
     def __init__(

@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,9 +18,7 @@
 """Messages for the default Federated Learning process of DecLearn."""
 
 import dataclasses
-from typing import Any, Dict, List, Optional, Tuple
-
-from typing_extensions import Self  # future: import from typing (py >=3.11)
+from typing import Any, Dict, List, Optional, Self, Tuple
 
 from declearn.aggregator import Aggregator, ModelUpdates
 from declearn.messaging._api import Message
@@ -29,7 +27,6 @@ from declearn.model.api import Model, Vector
 from declearn.optimizer import Optimizer
 from declearn.optimizer.modules import AuxVar
 from declearn.utils import deserialize_object, serialize_object
-
 
 __all__ = [
     "CancelTraining",
@@ -125,7 +122,7 @@ class InitRequest(Message):
     fairness: bool = False
 
     def to_kwargs(self) -> Dict[str, Any]:
-        data = {}  # type: Dict[str, Any]
+        data: Dict[str, Any] = {}
         data["model"] = serialize_object(self.model, group="Model").to_dict()
         data["optim"] = self.optim.get_config()
         data["aggrg"] = serialize_object(self.aggrg, "Aggregator").to_dict()

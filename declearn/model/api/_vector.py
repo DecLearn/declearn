@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,17 +17,26 @@
 
 """Vector abstraction API."""
 
+from __future__ import annotations
+
 import dataclasses
 import operator
 import warnings
 from abc import ABCMeta, abstractmethod
-from typing import (
-    # fmt: off
-    Any, Callable, Dict, Generic, List, Optional,
-    Set, Tuple, Type, TypeVar, Union
+from typing import (  # fmt: off
+    Any,
+    Callable,
+    Dict,
+    Generic,
+    List,
+    Optional,
+    Self,
+    Set,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
 )
-
-from typing_extensions import Self  # future: import from typing (Py>=3.11)
 
 from declearn.utils import (
     access_registered,
@@ -44,7 +53,7 @@ __all__ = [
 ]
 
 
-VECTOR_TYPES = {}  # type: Dict[Type[Any], Type[Vector]]
+VECTOR_TYPES: Dict[Type[Any], Type[Vector]] = {}
 """Private constant holding registered Vector types."""
 
 
@@ -88,7 +97,7 @@ add_json_support(
 
 
 @create_types_registry
-class Vector(Generic[T], metaclass=ABCMeta):
+class Vector(Generic[T], metaclass=ABCMeta):  # noqa : PLW1641 (because mutable attributes, so non-hashable)
     """Abstract class defining an API to manipulate (sets of) data arrays.
 
     A Vector is an abstraction used to wrap a collection of data
@@ -498,6 +507,7 @@ class Vector(Generic[T], metaclass=ABCMeta):
             warnings.warn(
                 "Accessing specs of an unregistered Vector subclass.",
                 UserWarning,
+                stacklevel=2,
             )
         return VectorSpec(
             names=list(self.coefs),
@@ -681,8 +691,8 @@ def register_vector_type(
         # Add support for JSON (de)serialization, relying on (un)pack.
         add_json_support(cls, cls.pack, cls.unpack, name=name)
         # Make the subclass buildable through `Vector.build(coefs)`.
-        for v_type in v_types:
-            VECTOR_TYPES[v_type] = cls
+        for v_typ in v_types:
+            VECTOR_TYPES[v_typ] = cls
         return cls
 
     # Return the former, enabling decoration syntax for `register_vector_type`.

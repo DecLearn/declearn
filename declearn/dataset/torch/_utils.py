@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -105,19 +105,19 @@ def collate_with_padding(
         Tuple with the same structure as input ones, collating sample-level
         records into batched tensors.
     """
-    output = []  # type: List[Union[List[torch.Tensor], torch.Tensor]]
+    output: List[Union[List[torch.Tensor], torch.Tensor]] = []
     for i, element in enumerate(samples[0]):
         if element is None:
             output.append(None)
             continue
         if isinstance(element, (list, tuple)):
-            out = [
+            out: Union[torch.Tensor, List[torch.Tensor]] = [
                 torch.nn.utils.rnn.pad_sequence(
                     [smp[i][j] for smp in samples],
                     batch_first=True,
                 )
                 for j in range(len(element))
-            ]  # type: Union[torch.Tensor, List[torch.Tensor]]
+            ]
         elif element.shape:
             out = torch.nn.utils.rnn.pad_sequence(
                 [smp[i] for smp in samples],  # type: ignore  # false-positive

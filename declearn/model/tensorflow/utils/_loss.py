@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,13 +18,13 @@
 """Function to parse and/or wrap a keras loss for use with declearn."""
 
 import inspect
-
 from typing import Any, Callable, Dict, Optional, Union
 
 # fmt: off
 # pylint: disable=import-error,no-name-in-module
 import tensorflow as tf  # type: ignore
 import tensorflow.keras as tf_keras  # type: ignore
+
 # pylint: enable=import-error,no-name-in-module
 # fmt: on
 
@@ -48,8 +48,8 @@ class LossFunction(tf_keras.losses.Loss):
         reduction: str = tf_keras.losses.Reduction.NONE,
         name: Optional[str] = None,
     ) -> None:
-        super().__init__(reduction=reduction, name=name)
-        self.loss_fn = tf_keras.losses.deserialize(loss_fn)
+        super().__init__(reduction=reduction, name=name)  # type: ignore
+        self.loss_fn = tf_keras.losses.deserialize(loss_fn)  # type: ignore
 
     def call(
         self,
@@ -63,7 +63,7 @@ class LossFunction(tf_keras.losses.Loss):
         self,
     ) -> Dict[str, Any]:
         # inherited docstring; pylint: disable=missing-docstring
-        config = super().get_config()  # type: Dict[str, Any]
+        config: Dict[str, Any] = super().get_config()
         config["loss_fn"] = tf_keras.losses.serialize(self.loss_fn)
         return config
 
@@ -89,7 +89,7 @@ def build_keras_loss(
     """
     # Case when 'loss' is already a Loss object.
     if isinstance(loss, tf_keras.losses.Loss):
-        loss.reduction = reduction
+        loss.reduction = reduction  # type: ignore
     # Case when 'loss' is a string: deserialize and/or wrap into a Loss object.
     elif isinstance(loss, str):
         loss = get_keras_loss_from_string(name=loss, reduction=reduction)
@@ -119,7 +119,7 @@ def get_keras_loss_from_string(
     """
     loss = tf_keras.losses.deserialize(name)
     if isinstance(loss, tf_keras.losses.Loss):
-        loss.reduction = reduction
+        loss.reduction = reduction  # type: ignore
         return loss
     if inspect.isfunction(loss):
         try:

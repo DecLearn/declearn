@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -42,7 +42,7 @@ def test_case_fixture(
     y_pred = np.random.normal(size=(32,))
     inputs = {"y_true": y_true, "y_pred": y_pred}
     if case == "mae":
-        metric = MeanAbsoluteError()  # type: Metric
+        metric: Metric = MeanAbsoluteError()
         errors = np.abs(y_pred)
     else:
         metric = MeanSquaredError()
@@ -54,9 +54,9 @@ def test_case_fixture(
         states = {"num_sum": errors.sum(), "divisor": s_wght.sum()}
     else:
         states = {"num_sum": errors.sum(), "divisor": 32}
-    scores = {
+    scores: Dict[str, Union[float, np.ndarray]] = {
         case: states["num_sum"] / states["divisor"]
-    }  # type: Dict[str, Union[float, np.ndarray]]
+    }
     # Compute derived aggregation results. Wrap as a test case and return.
     agg_states = {key: 2 * val for key, val in states.items()}
     agg_scores = scores.copy()

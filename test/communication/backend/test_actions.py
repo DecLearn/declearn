@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,20 +22,20 @@ import json
 
 import pytest
 
+from declearn.communication.api.backend import flags
 from declearn.communication.api.backend.actions import (
     Accept,
     ActionMessage,
     Drop,
     Join,
-    LegacyReject,
     LegacyMessageError,
+    LegacyReject,
     Ping,
     Recv,
     Reject,
     Send,
     parse_action_from_string,
 )
-from declearn.communication.api.backend import flags
 
 
 def assert_action_is_serializable(

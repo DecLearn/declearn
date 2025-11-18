@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,8 +25,6 @@ from .shared import GetGradientsFunction
 
 if torch.__version__.startswith("2."):
     from .torchfunc import build_samplewise_grads_fn_backend
-elif torch.__version__.startswith("1.1"):
-    from .functorch import build_samplewise_grads_fn_backend
 else:
     # pragma: no cover
     raise ImportError(f"Unsupported Torch version: {torch.__version__}")
@@ -68,12 +66,6 @@ def build_samplewise_grads_fn(
         clipping based on a maximum l2-norm value `clip`.
         It returns the sample-wise gradients as a dict of tensors with their
         parameter name as key, plus the sample-wise loss values as a tensor.
-
-    Note
-    ----
-    The underlying backend code depends on your Torch version, so as to
-    enable optimizing operations using either `functorch` for torch 1.1X
-    or `torch.func` for torch 2.X.
     """
     return build_samplewise_grads_fn_backend(
         model, loss_fn, inputs, y_true, s_wght

@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,7 +17,6 @@
 
 """Unit tests for FairBatch sampling probability controllers."""
 
-
 import pytest
 
 from declearn.fairness.api import FairnessFunction
@@ -26,7 +25,6 @@ from declearn.fairness.fairbatch import (
     setup_fairbatch_controller,
     setup_fedfb_controller,
 )
-
 
 ALPHA = 0.05
 COUNTS = {(0, 0): 30, (0, 1): 15, (1, 0): 35, (1, 1): 20}

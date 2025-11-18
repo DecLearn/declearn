@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -90,6 +90,9 @@ References
     https://arxiv.org/abs/2110.15545
 """
 
+from ._client import FairbatchControllerClient
+from ._dataset import FairbatchDataset
+from ._fedfb import setup_fedfb_controller
 from ._messages import (
     FairbatchOkay,
     FairbatchSamplingProbas,
@@ -98,7 +101,4 @@ from ._sampling import (
     FairbatchSamplingController,
     setup_fairbatch_controller,
 )
-from ._fedfb import setup_fedfb_controller
-from ._dataset import FairbatchDataset
-from ._client import FairbatchControllerClient
 from ._server import FairbatchControllerServer

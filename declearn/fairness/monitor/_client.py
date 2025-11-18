@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,9 +21,9 @@ from typing import Any, Dict, Optional, Tuple, Union
 
 import numpy as np
 
-from declearn.secagg.api import Encrypter
 from declearn.communication.api import NetworkClient
 from declearn.fairness.api import FairnessControllerClient
+from declearn.secagg.api import Encrypter
 
 __all__ = [
     "FairnessMonitorClient",

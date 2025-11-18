@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,7 +16,6 @@
 # limitations under the License.
 
 """Custom "assert" functions commonly used in declearn tests."""
-
 
 import json
 from collections.abc import Generator, Sequence
@@ -139,7 +138,7 @@ def assert_list_equal(
         If the two lists are not equal.
     """
     assert len(list_a) == len(list_b)
-    for val_a, val_b in zip(list_a, list_b):
+    for val_a, val_b in zip(list_a, list_b, strict=False):
         assert_values_equal(val_a, val_b, strict_tuple, np_tolerance)
 
 

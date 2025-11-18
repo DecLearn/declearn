@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,9 +18,7 @@
 """Gradient Masked Averaging aggregation class."""
 
 import dataclasses
-from typing import Any, Dict, Optional, Tuple
-
-from typing_extensions import Self  # future: import from typing (py >=3.11)
+from typing import Any, Dict, Optional, Self, Tuple
 
 from declearn.aggregator._api import Aggregator, ModelUpdates
 from declearn.aggregator._avg import AveragingAggregator

@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,7 +21,6 @@ import asyncio
 import logging
 import math
 from typing import Any, Dict, Optional, Set, Union
-
 
 from declearn.communication.api.backend import flags
 from declearn.communication.api.backend.actions import (
@@ -52,9 +51,9 @@ class MessagesHandler:
         self.logger = logger
         self.heartbeat = heartbeat
         # Set up containers for client identifiers and pending messages.
-        self.registered_clients = {}  # type: Dict[Any, str]
-        self.outgoing_messages = {}  # type: Dict[str, str]
-        self.incoming_messages = {}  # type: Dict[str, str]
+        self.registered_clients: Dict[Any, str] = {}
+        self.outgoing_messages: Dict[str, str] = {}
+        self.incoming_messages: Dict[str, str] = {}
         # Mark client-registration as unopened.
         self.registration_status = flags.REGISTRATION_UNSTARTED
 

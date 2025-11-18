@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,11 +18,10 @@
 """Unit tests on 'declearn.model.api.Vector', using an ad-hoc subclass."""
 
 import uuid
-from typing import Any, List, Tuple, Union
+from typing import Any, List, Self, Tuple, Union
 
 import numpy as np
 import pytest
-from typing_extensions import Self
 
 from declearn.model.api import Vector, VectorSpec, register_vector_type
 
@@ -32,7 +31,7 @@ class Scalar(float):
 
 
 @register_vector_type(Scalar)
-class ScalarFloatVector(Vector):
+class ScalarFloatVector(Vector):  # noqa : PLW1641
     """Mock Vector subclasses operating on scalar float values."""
 
     def __eq__(
@@ -184,7 +183,8 @@ class TestVectorErrors:
         """Test that `Vector.build_from_specs` raises on mistyped specs."""
         with pytest.raises(TypeError):
             Vector.build_from_specs(
-                [0.0, 1.0], v_spec="wrong-type"  # type: ignore
+                [0.0, 1.0],
+                v_spec="wrong-type",  # type: ignore
             )
 
     def test_build_from_specs_missing_vector_type(self) -> None:

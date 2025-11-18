@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -35,9 +35,9 @@ from declearn.messaging import (
 )
 from declearn.secagg.api import Decrypter
 from declearn.secagg.messaging import (
-    aggregate_secagg_messages,
     SecaggFairnessCounts,
     SecaggFairnessReply,
+    aggregate_secagg_messages,
 )
 from declearn.utils import (
     access_registered,
@@ -130,7 +130,7 @@ class FairnessControllerServer(metaclass=abc.ABCMeta):
         """
         self.f_type = f_type
         self.f_args = f_args or {}
-        self.groups = []  # type: List[Tuple[Any, ...]]
+        self.groups: List[Tuple[Any, ...]] = []
 
     # Fairness Setup methods.
 
@@ -279,7 +279,7 @@ class FairnessControllerServer(metaclass=abc.ABCMeta):
         replies = await verify_client_messages_validity(
             netwk, received, expected=FairnessCounts
         )
-        counts = np.zeros(n_groups, dtype="uint64")
+        counts: np.ndarray = np.zeros(n_groups, dtype="uint64")
         for message in replies.values():
             counts = counts + np.asarray(message.counts, dtype="uint64")
         return counts.tolist()
@@ -396,7 +396,9 @@ class FairnessControllerServer(metaclass=abc.ABCMeta):
                 raise RuntimeError(error)
             return [
                 sum(rval)
-                for rval in zip(*[reply.values for reply in replies.values()])
+                for rval in zip(
+                    *[reply.values for reply in replies.values()], strict=False
+                )
             ]
         # Case when expecting encrypted values.
         secagg_replies = await verify_client_messages_validity(

@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -44,7 +44,6 @@ Utils to list available plug-ins:
 * [list_rate_schedulers][declearn.optimizer.list_rate_schedulers]:
     Return a mapping of registered Scheduler subclasses.
 """
-
 
 from . import modules, regularizers
 from ._base import Optimizer

@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -70,15 +70,15 @@ Scaffold is implemented as a pair of complementary modules:
     AuxVar subclass for Scaffold modules.
 """
 
-from ._api import (
-    AuxVar,
-    OptiModule,
-)
 from ._adaptive import (
     AdaGradModule,
     AdamModule,
     RMSPropModule,
     YogiModule,
+)
+from ._api import (
+    AuxVar,
+    OptiModule,
 )
 from ._clipping import (
     L2Clipping,

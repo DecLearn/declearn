@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,7 +23,6 @@ from typing import Any, List, Literal, Optional, Tuple, Type, Union
 import numpy as np
 import scipy.stats  # type: ignore
 from scipy.sparse import csr_matrix, spmatrix  # type: ignore
-
 
 __all__ = [
     "split_multi_classif_dataset",
@@ -102,7 +101,7 @@ def split_multi_classif_dataset(
     rng = np.random.default_rng(seed)
     inputs, target = dataset
     # Optionally handle sparse matrix inputs.
-    sp_type = None  # type: Optional[Type[spmatrix]]
+    sp_type: Optional[Type[spmatrix]] = None
     if isinstance(inputs, spmatrix):
         sp_type = type(inputs)
         inputs = csr_matrix(inputs)
@@ -117,7 +116,7 @@ def split_multi_classif_dataset(
     # Optionally convert back sparse inputs, then return.
     if sp_type is not None:
         shards = [
-            ((sp_type(xt), yt), (sp_type(xv), yv))
+            ((sp_type(xt), yt), (sp_type(xv), yv))  # type: ignore
             for (xt, yt), (xv, yv) in shards
         ]
     return shards
@@ -132,7 +131,7 @@ def split_iid(
     """Split a dataset into shards using iid sampling."""
     order = rng.permutation(inputs.shape[0])
     s_len = inputs.shape[0] // n_shards
-    split = []  # type: List[Tuple[np.ndarray, np.ndarray]]
+    split: List[Tuple[np.ndarray, np.ndarray]] = []
     for idx in range(n_shards):
         srt = idx * s_len
         end = (srt + s_len) if idx < (n_shards - 1) else len(order)
@@ -156,7 +155,7 @@ def split_labels(
         )
     s_len = len(classes) // n_shards
     order = rng.permutation(classes)
-    split = []  # type: List[Tuple[np.ndarray, np.ndarray]]
+    split: List[Tuple[np.ndarray, np.ndarray]] = []
     for idx in range(n_shards):
         srt = idx * s_len
         end = (srt + s_len) if idx < (n_shards - 1) else len(order)
@@ -182,7 +181,7 @@ def split_biased(
     classes = np.unique(target)
     index = np.arange(len(target))
     s_len = len(target) // n_shards
-    split = []  # type: List[Tuple[np.ndarray, np.ndarray]]
+    split: List[Tuple[np.ndarray, np.ndarray]] = []
     for idx in range(n_shards):
         if idx < (n_shards - 1):
             # Draw a random distribution of labels for this node.
@@ -219,14 +218,17 @@ def split_dirichlet(
     process = scipy.stats.dirichlet(alpha=[alpha] * n_shards)
     c_probs = process.rvs(size=len(classes), random_state=rng)
     # Randomly assign label-wise samples to shards based on these.
-    shard_i = [[] for _ in range(n_shards)]  # type: List[List[int]]
+    shard_i: List[List[int]] = [[] for _ in range(n_shards)]
     for lab_i, label in enumerate(classes):
         index = np.where(target == label)[0]
         s_idx = rng.choice(n_shards, size=len(index), p=c_probs[lab_i])
         for i in range(n_shards):
             shard_i[i].extend(index[s_idx == i])
     # Gather the actual sample shards.
-    return [(inputs[index], target[index]) for index in shard_i]
+    return [
+        (inputs[index], target[index])  # type: ignore
+        for index in shard_i
+    ]
 
 
 def train_valid_split(

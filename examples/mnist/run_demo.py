@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -44,10 +44,13 @@ def run_demo(
 
     Parameters
     ------
-    n_clients: int
+    n_clients:
         number of clients to run.
-    data_folder: str
-        Relative path to the folder holding client's data
+    scheme:
+        Splitting scheme to use. In all cases, shards contain mutually-
+        exclusive samples and cover the full dataset. See details below.
+    seed:
+        Optional seed to the RNG used for all sampling operations.
     """
     # Generate the MNIST split data for this demo.
     data_folder = prepare_mnist(nb_clients, scheme, seed=seed)
@@ -58,7 +61,9 @@ def run_demo(
         # Specify the server and client routines that need executing.
         server = (run_server, (nb_clients, sv_cert, sv_pkey))
         client_kwargs = {
-            "data_folder": data_folder, "ca_cert": ca_cert, "verbose": False
+            "data_folder": data_folder,
+            "ca_cert": ca_cert,
+            "verbose": False,
         }
         clients = [
             (run_client, (f"client_{idx}",), client_kwargs)

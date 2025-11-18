@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,7 +21,6 @@ import secrets
 from typing import List, Optional, Tuple
 
 import gmpy2  # type: ignore
-
 
 __all__ = [
     "DEFAULT_SHAMIR_PRIME",
@@ -81,14 +80,14 @@ def generate_secret_shares(
     # Generate a random polynom Q of order (k - 1).
     poly_c = [gmpy2.mpz(secrets.randbelow(mprime)) for _ in range(thresh - 1)]
     # Return shares, defined as (x_1, Q(x_1)), ..., (x_n, Q(x_n)).
-    ycoord = []  # type: List[int]
+    ycoord: List[int] = []
     for x in xcoord:
         y_val = secret + sum(
             p * gmpy2.powmod(x, i, mprime)
             for i, p in enumerate(poly_c, start=1)
         )
         ycoord.append(int(y_val % mprime))
-    return list(zip(xcoord, ycoord))
+    return list(zip(xcoord, ycoord, strict=False))
 
 
 def _type_check_shamir_parameters(
@@ -155,7 +154,7 @@ def recover_shared_secret(
         shares are incorrect, or if an unsufficient amount of shares was
         provided, the output value will be incorrect.
     """
-    xcoord, ycoord = list(zip(*shares))
+    xcoord, ycoord = list(zip(*shares, strict=False))
     total = gmpy2.mpz(0)
     for j, y in enumerate(ycoord):
         x_j = xcoord[j]

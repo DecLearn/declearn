@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,9 +18,9 @@
 """Numpy-related utils for SecAgg, Quantization, etc."""
 
 import functools
+from typing import List, Tuple
 
 import numpy as np
-
 
 __all__ = [
     "get_numpy_float_dtype",
@@ -51,7 +51,7 @@ def get_numpy_uint_dtype(
         If `int_range` is too large to fit within a numpy uint dtype.
     """
     # Gather the list of numpy uint types and their bitsize limit.
-    uint_types = [
+    uint_types: List[Tuple[np.dtype, int]] = [
         (np.dtype(dtype), np.iinfo(dtype).max.bit_length())
         for dtype in np.unsignedinteger.__subclasses__()
     ]
@@ -90,7 +90,7 @@ def get_numpy_float_dtype(
         If `val_range` is too large to fit within a numpy float dtype.
     """
     # Gather the list of numpy uint types and their bitsize limit.
-    float_types = [
+    float_types: List[Tuple[np.dtype, float]] = [
         (np.dtype(dtype), float(np.finfo(dtype).max))
         for dtype in np.floating.__subclasses__()
     ]

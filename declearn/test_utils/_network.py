@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,16 +21,21 @@ import asyncio
 import contextlib
 import logging
 import uuid
-from typing import (
-    # fmt: off
-    AsyncIterator, Dict, List, Mapping, Optional, Set, Tuple, TypeVar, Union
+from typing import (  # fmt: off
+    AsyncIterator,
+    Dict,
+    List,
+    Mapping,
+    Optional,
+    Set,
+    Tuple,
+    TypeVar,
+    Union,
 )
-
 
 from declearn.communication.api import NetworkClient, NetworkServer
 from declearn.communication.api.backend import MessagesHandler
 from declearn.messaging import Message, SerializedMessage
-
 
 __all__ = [
     "MockNetworkClient",
@@ -42,7 +47,7 @@ __all__ = [
 MessageT = TypeVar("MessageT", bound=Message)
 
 
-HANDLERS = {}  # type: Dict[str, MessagesHandler]
+HANDLERS: Dict[str, MessagesHandler] = {}
 
 
 class MockNetworkServer(NetworkServer, register=False):
@@ -50,7 +55,8 @@ class MockNetworkServer(NetworkServer, register=False):
 
     protocol = "mock"
 
-    def __init__(
+    # pylint: disable-next=too-many-positional-arguments
+    def __init__(  # noqa: PLR0913
         self,
         host: str = "localhost",
         port: int = 8765,

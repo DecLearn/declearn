@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,9 +18,7 @@
 """Warmup scheduler (wrapper)."""
 
 import abc
-from typing import Any, Dict, Optional, Union
-
-from typing_extensions import Self  # future: import from typing (py >=3.11)
+from typing import Any, Dict, Optional, Self, Union
 
 from declearn.optimizer.schedulers._api import Scheduler
 
@@ -40,7 +38,7 @@ class WarmupScheduler(Scheduler, register=False, metaclass=abc.ABCMeta):
     ) -> None:
         if isinstance(base, Scheduler):
             self.base = base.base
-            self.wrapped = base  # type: Optional[Scheduler]
+            self.wrapped: Optional[Scheduler] = base
         else:
             self.base = float(base)
             self.wrapped = None

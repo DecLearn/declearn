@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,8 +22,7 @@ import warnings
 from typing import Any, Callable, TypeVar
 
 import numpy as np
-import tensorflow as tf  # type: ignore
-
+import tensorflow as tf
 
 __all__ = [
     "add_indexed_slices_support",
@@ -68,17 +67,23 @@ def apply_func_to_tensor_or_slices(
         shapes or non-zero indices.
         If `first` is a tf.IndexedSlices and `func` failed on its values.
     """
+
+    def _same_indexedslices_shape(a, b):
+        return (
+            a.dense_shape is not None
+            and b.dense_shape is not None
+            and a.dense_shape.ndim == b.dense_shape.ndim
+            and tf.reduce_all(a.dense_shape == b.dense_shape)
+            and a.indices.shape == b.indices.shape
+            and tf.reduce_all(a.indices == b.indices)
+        )
+
     slice_inp = isinstance(first, tf.IndexedSlices)
     # Case when combining two IndexedSlices objects.
     if slice_inp and isinstance(other, tf.IndexedSlices):
-        if (
-            (first.dense_shape.ndim == other.dense_shape.ndim)
-            and tf.reduce_all(first.dense_shape == other.dense_shape)
-            and (first.indices.shape == other.indices.shape)
-            and tf.reduce_all(first.indices == other.indices)
-        ):
+        if _same_indexedslices_shape(first, other):
             values = tf_op(first.values, other.values)
-            return tf.IndexedSlices(values, first.indices, first.dense_shape)
+            return tf.IndexedSlices(values, first.indices, first.dense_shape)  # type: ignore
         raise TypeError(
             f"Cannot apply function {tf_op.__name__} to two IndexedSlices "
             "structures with different shapes or indices."
@@ -92,8 +97,9 @@ def apply_func_to_tensor_or_slices(
                     f"Applying function {tf_op.__name__} to IndexSlices with "
                     "a full-rank array or tensor results in densifying it.",
                     RuntimeWarning,
+                    stacklevel=2,
                 )
-                return tf_op(tf.convert_to_tensor(first), other)
+                return tf_op(tf.convert_to_tensor(first), other)  # type: ignore
         # Generic case (including mis-shaped tensor, to raise an error).
         try:
             values = tf_op(first.values, other)
@@ -102,9 +108,9 @@ def apply_func_to_tensor_or_slices(
                 f"Failed to apply function {tf_op.__name__} to combine a "
                 f"{type(other)} object into an IndexedSlices tensor: {exc}."
             ) from exc
-        return tf.IndexedSlices(values, first.indices, first.dense_shape)
+        return tf.IndexedSlices(values, first.indices, first.dense_shape)  # type: ignore
     # All other cases (including right-hand slices that will be converted).
-    return tf_op(first, other)
+    return tf_op(first, other)  # type: ignore
 
 
 def add_indexed_slices_support(

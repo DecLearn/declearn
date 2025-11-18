@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -40,7 +40,8 @@ def build_samplewise_grads_fn_backend(
 ) -> GetGradientsFunction:
     """Implementation of `build_samplewise_grads_fn` for Torch 2.0."""
 
-    def run_forward(params, frozen, buffers, inputs, y_true, s_wght):
+    # pylint: disable-next=too-many-positional-arguments
+    def run_forward(params, frozen, buffers, inputs, y_true, s_wght):  # noqa: PLR0913
         """Run the forward pass in a functional way."""
         # backend closure function; pylint: disable=too-many-arguments
         y_pred = torch.func.functional_call(
@@ -75,8 +76,8 @@ def get_params(
     model: torch.nn.Module,
 ) -> Tuple[Dict[str, torch.nn.Parameter], Dict[str, torch.nn.Parameter]]:
     """Return a model's parameters, split between trainable and frozen ones."""
-    params = {}  # type: Dict[str, torch.nn.Parameter]
-    frozen = {}  # type: Dict[str, torch.nn.Parameter]
+    params: Dict[str, torch.nn.Parameter] = {}
+    frozen: Dict[str, torch.nn.Parameter] = {}
     for name, param in model.named_parameters():
         (params if param.requires_grad else frozen)[name] = param
     return params, frozen

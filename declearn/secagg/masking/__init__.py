@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -74,10 +74,10 @@ References
     https://www.signal.org/docs/specifications/x3dh/
 """
 
-from ._aggregate import MaskedAggregate
-from ._encrypt import MaskingEncrypter
-from ._decrypt import MaskingDecrypter
 from . import messages
+from ._aggregate import MaskedAggregate
+from ._decrypt import MaskingDecrypter
+from ._encrypt import MaskingEncrypter
 from ._setup import (
     MaskingSecaggConfigClient,
     MaskingSecaggConfigServer,

@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,9 +19,17 @@
 
 import typing
 import warnings
-from typing import (
-    # fmt: off
-    Any, Callable, Dict, Literal, Optional, Set, Tuple, Type, Union
+from typing import (  # fmt: off
+    Any,
+    Callable,
+    Dict,
+    Literal,
+    Optional,
+    Self,
+    Set,
+    Tuple,
+    Type,
+    Union,
 )
 
 import numpy as np
@@ -29,8 +37,12 @@ import pandas as pd
 import sklearn  # type: ignore
 from numpy.typing import ArrayLike
 from scipy.sparse import spmatrix  # type: ignore
+from sklearn._loss.loss import (  # type: ignore
+    HalfBinomialLoss,
+    HalfSquaredError,
+    HuberLoss,
+)
 from sklearn.linear_model import SGDClassifier, SGDRegressor  # type: ignore
-from typing_extensions import Self  # future: import from typing (py >=3.11)
 
 from declearn.data_info import aggregate_data_info
 from declearn.model.api import Model
@@ -84,6 +96,7 @@ def select_sgd_model_dtype(
             f"Cannot enforce dtype '{dtype}' for pre-initialized "
             f"scikit-learn SGD model (dtype '{model.coef_.dtype.name}').",
             RuntimeWarning,
+            stacklevel=2,
         )
         return model.coef_.dtype.name
     # When using scikit-learn <= 1.3, warn about un-settable dtype.
@@ -92,6 +105,7 @@ def select_sgd_model_dtype(
             "Using scikit-learn <1.3; hence the 'float64' dtype will"
             f"forcibly be used rather than user-input '{dtype}'.",
             RuntimeWarning,
+            stacklevel=2,
         )
         return "float64"
     return dtype
@@ -171,9 +185,9 @@ class SklearnSGDModel(Model):
             if isinstance(model, SGDClassifier)
             else self._model.predict
         )
-        self._loss_fn = (
-            None
-        )  # type: Optional[Callable[[np.ndarray, np.ndarray], np.ndarray]]
+        self._loss_fn: Optional[
+            Callable[[np.ndarray, np.ndarray], np.ndarray]
+        ] = None
 
     @property
     def device_policy(
@@ -220,8 +234,9 @@ class SklearnSGDModel(Model):
             self._model.coef_ = np.zeros((feat,), dtype=self._dtype)
             self._model.intercept_ = np.zeros((1,), dtype=self._dtype)
 
+    # pylint: disable=too-many-positional-arguments
     @classmethod
-    def from_parameters(
+    def from_parameters(  # noqa: PLR0913
         cls,
         kind: Literal["classifier", "regressor"],
         loss: Optional[LossesLiteral] = None,
@@ -324,7 +339,7 @@ class SklearnSGDModel(Model):
         self,
     ) -> Dict[str, Any]:
         is_clf = isinstance(self._model, SGDClassifier)
-        data_info = None  # type: Optional[Dict[str, Any]]
+        data_info: Optional[Dict[str, Any]] = None
         if hasattr(self._model, "coef_"):
             data_info = {
                 "features_shape": (self._model.coef_.shape[-1],),
@@ -392,20 +407,23 @@ class SklearnSGDModel(Model):
         x_data, y_data, s_wght = self._unpack_batch(batch)
         # Iteratively compute sample-wise gradients.
         grad = [
-            self._compute_sample_gradient(x, y) for x, y in zip(x_data, y_data)
+            self._compute_sample_gradient(x, y)
+            for x, y in zip(x_data, y_data, strict=False)  # type: ignore
         ]
         # Optionally clip sample-wise gradients based on their L2 norm.
         if max_norm:
             for vec in grad:
-                for arr in vec.coefs.values():
+                for key, arr in vec.coefs.items():
                     norm = np.sqrt(np.sum(np.square(arr)))
-                    arr *= min(max_norm / norm, 1)
+                    # update arr (without mutating loop variables)
+                    vec.coefs[key] *= min(max_norm / norm, 1)
         # Optionally re-weight gradients based on sample weights.
         if s_wght is not None:
-            grad = [g * w for g, w in zip(grad, s_wght)]
+            grad = [g * w for g, w in zip(grad, s_wght, strict=False)]  # type: ignore
         # Compute and record the loss value on the entire batch.
         loss = self.loss_function(
-            y_data, self._predict(x_data)  # type: ignore
+            y_data,  # type: ignore
+            self._predict(x_data),
         )
         self._loss_history.append(float(loss.mean()))
         # Batch-average the gradients and return them.
@@ -493,25 +511,81 @@ class SklearnSGDModel(Model):
     def _setup_loss_fn(
         self,
     ) -> Callable[[np.ndarray, np.ndarray], np.ndarray]:
-        """Return a function to compute point-wise loss for a given batch."""
-        # fmt: off
-        # Instantiate a loss function from the wrapped model's specs.
-        loss_cls, *args = self._model.loss_functions[self._model.loss]
-        if self._model.loss in (
-            "huber", "epsilon_insensitive", "squared_epsilon_insensitive"
-        ):
-            args = (self._model.epsilon,)
-        loss_smp = loss_cls(*args).py_loss
-        # Wrap it to support batched inputs.
-        def loss_1d(y_true: np.ndarray, y_pred: np.ndarray) -> np.ndarray:
-            return np.array([loss_smp(*smp) for smp in zip(y_pred, y_true)])
+        """Return a function to compute point-wise loss for a given batch.
+
+        Warning : this method use sklearn SGDRegressor / SGDClassifier internal
+        mechanisms (and not public API) to instantiate losses (i.e.
+        using Cython loss classes in the process). Those mechanisms have
+        already changed in the past, breaking some stuff, so it can happen
+        again in the future
+        """
+        # Losses in the following conditions need to be retrieved explicitly
+        # (cannot use a "py_loss" of the loss Cython class)
+        if self._model.loss == "squared_error":
+
+            def loss_1d(y_true: np.ndarray, y_pred: np.ndarray) -> np.ndarray:
+                return HalfSquaredError().loss(
+                    y_true=y_true, raw_prediction=y_pred
+                )
+
+        elif self._model.loss == "huber":
+
+            def loss_1d(y_true: np.ndarray, y_pred: np.ndarray) -> np.ndarray:
+                return HuberLoss(delta=self._model.epsilon).loss(
+                    y_true=y_true, raw_prediction=y_pred
+                )
+
+        elif self._model.loss == "log_loss":
+
+            def loss_1d(y_true: np.ndarray, y_pred: np.ndarray) -> np.ndarray:
+                return HalfBinomialLoss().loss(
+                    y_true=y_true, raw_prediction=y_pred
+                )
+
+        # Other losses can be retrieved via "loss_functions" dict and
+        # should implement a "py_loss" attribute
+        else:
+            # fmt: off
+            # Instantiate a loss function from the wrapped model's specs.
+            loss_cls, *args = self._model.loss_functions[self._model.loss]
+            if self._model.loss in (
+                "huber", "epsilon_insensitive", "squared_epsilon_insensitive"
+            ):
+                args = (self._model.epsilon,)
+
+            loss_obj = loss_cls(*args)
+            # Check that loss class has attribute "py_loss"
+            if not hasattr(loss_obj, "py_loss"):
+                raise NotImplementedError(
+                    f"Loss {self._model.loss} not supported : "
+                    "corresponding py_loss function does not exist"
+                )
+            loss_smp = loss_obj.py_loss
+            # Wrap it to support batched inputs.
+            def loss_1d(y_true: np.ndarray, y_pred: np.ndarray) -> np.ndarray:
+                return np.array(
+                    [loss_smp(*smp) for smp in zip(y_pred, y_true, strict=False)]
+                )
+
         # For multiclass classifiers, further wrap to support 2d predictions.
         if len(getattr(self._model, "classes_", [])) > 2:
+
+            def to_float_contig(arr: np.ndarray) -> np.ndarray:
+                """Convert array to float64 and C-contiguous layout"""
+                return np.ascontiguousarray(arr, dtype=np.float64)
+
             def loss_fn(y_true: np.ndarray, y_pred: np.ndarray) -> np.ndarray:
-                return np.sum([
-                    loss_1d(y_true == val, y_pred[:, i])
-                    for i, val in enumerate(self._model.classes_)
-                ], axis=0)
+                return np.sum(
+                    [
+                        loss_1d(
+                            to_float_contig(y_true == class_val),
+                            to_float_contig(y_pred[:, i]),
+                        )
+                        for i, class_val in enumerate(self._model.classes_)
+                    ],
+                    axis=0,
+                )
+
         else:
             loss_fn = loss_1d
         return loss_fn
@@ -522,4 +596,7 @@ class SklearnSGDModel(Model):
         policy: Optional[DevicePolicy] = None,
     ) -> None:
         if policy is not None and policy.gpu:
-            warnings.warn("'SklearnSGDModel' only runs on a CPU backend.")
+            warnings.warn(
+                "'SklearnSGDModel' only runs on a CPU backend.",
+                stacklevel=2,
+            )

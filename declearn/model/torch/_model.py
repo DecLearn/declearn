@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,14 +17,13 @@
 
 """Model subclass to wrap PyTorch models."""
 
-import io
 import functools
+import io
 import warnings
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Self, Set, Tuple
 
 import numpy as np
 import torch
-from typing_extensions import Self  # future: import from typing (py >=3.11)
 
 from declearn.model._utils import raise_on_stringsets_mismatch
 from declearn.model.api import Model
@@ -119,7 +118,7 @@ class TorchModel(Model):
         self._raw_model = self._model
         if hasattr(torch, "compile") and hasattr(model, "_orig_mod"):
             self._raw_model = AutoDeviceModule(
-                module=getattr(model, "_orig_mod"),
+                module=model._orig_mod,
                 device=self._model.device,
             )
 
@@ -146,7 +145,8 @@ class TorchModel(Model):
         self,
     ) -> Dict[str, Any]:
         warnings.warn(
-            "PyTorch JSON serialization relies on pickle, which may be unsafe."
+            "PyTorch JSON serialization relies on pickle, which may be unsafe.",
+            stacklevel=2,
         )
         with io.BytesIO() as buffer:
             torch.save(self._raw_model.module, buffer)
@@ -269,6 +269,7 @@ class TorchModel(Model):
         List[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor]
     ]:
         """Unpack and enforce Tensor conversion to an input data batch."""
+
         # fmt: off
         # Define an array-to-tensor conversion routine.
         def convert(data: Any) -> Optional[torch.Tensor]:
@@ -321,13 +322,13 @@ class TorchModel(Model):
             s_wght=(s_wght is not None),
         )
         with torch.no_grad():
-            grads, loss = grads_fn(
-                inputs, y_true, s_wght, clip=clip
-            )  # type: ignore
+            grads, loss = grads_fn(inputs, y_true, s_wght, clip=clip)  # type: ignore
             self._loss_history.append(float(loss.cpu().numpy().mean()))
         return TorchVector(grads)
 
-    @functools.lru_cache
+    # TODO: move usage of lru_cache to prevent memory leaks
+    # (see: https://docs.astral.sh/ruff/rules/cached-instance-method/)
+    @functools.lru_cache  # noqa: B019
     def _build_samplewise_grads_fn(
         self,
         inputs: int,
@@ -346,12 +347,6 @@ class TorchModel(Model):
             Function to efficiently compute and return sample-wise gradients
             wrt trainable model parameters based on a batch of inputs, with
             opt. clipping based on a maximum l2-norm value `clip`.
-
-        Note
-        ----
-        The underlying backend code depends on your Torch version, so as to
-        enable optimizing operations using either `functorch` for torch 1.1X
-        or `torch.func` for torch 2.X.
         """
         # NOTE: torch.func is not compatible with torch.compile yet
         return build_samplewise_grads_fn(

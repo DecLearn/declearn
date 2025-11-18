@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,6 +24,7 @@ from unittest import mock
 
 import pytest
 
+from declearn.communication.api.backend import MessagesHandler, flags
 from declearn.communication.api.backend.actions import (
     Accept,
     Drop,
@@ -34,7 +35,6 @@ from declearn.communication.api.backend.actions import (
     Reject,
     Send,
 )
-from declearn.communication.api.backend import MessagesHandler, flags
 from declearn.version import VERSION
 
 
@@ -417,7 +417,8 @@ class TestMessagesHandler:
         # Verify that requests were all accepted due to concurrence.
         assert delay < 0.2
         assert all(
-            isinstance(reply, Accept) for reply in join_replies  # type: ignore
+            isinstance(reply, Accept)
+            for reply in join_replies  # type: ignore
         )
         # Verify that this resulting in a RuntimeError and purging the handler.
         assert isinstance(excp_wait, RuntimeError)  # type: ignore

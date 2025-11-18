@@ -40,15 +40,15 @@ automatically handled in declearn based on the provided privacy configuration:
 
 - **Add a privacy accountant**. We use the `Opacus` library, to set up a
 privacy accountant. The accountant is used in two key ways :
-  - To calculate how much noise to add to the gradient at each trainig step
-  to provide an $`(\epsilon-\delta)`$-DP guarantee over the total number of
-  steps planned. This is where the heavily lifting is done, as estimating
-  the tighest bounds on the privacy loss is a non-trivial problem. We default
-  to the Renyi-DP accountant used in the original paper, but Opacus provides
-  an evolving list of options, since this is an active area of research. For
-  more details see the documentation of `declearn.main.utils.PrivacyConfig`.
-  - To keep track of the privacy budget spent as training progresses, in
-  particular in case of early stopping.
+    - To calculate how much noise to add to the gradient at each trainig step
+    to provide an $`(\epsilon-\delta)`$-DP guarantee over the total number of
+    steps planned. This is where the heavily lifting is done, as estimating
+    the tighest bounds on the privacy loss is a non-trivial problem. We default
+    to the Renyi-DP accountant used in the original paper, but Opacus provides
+    an evolving list of options, since this is an active area of research. For
+    more details see the documentation of `declearn.main.utils.PrivacyConfig`.
+    - To keep track of the privacy budget spent as training progresses, in
+    particular in case of early stopping.
 
 - **Implement per-sample gradient clipping**. Clipping bounds the sensitivity
 of samples' contributions to model updates. It is performed using the
@@ -60,14 +60,14 @@ which the local model is updated at each and every training step.
 
 - **Use Poisson sampling to draw batches**. This is done at the `Dataset` level
 using the `poisson` argument of `Dataset.generate_batches`.
-  - As stated in the Opacus documentation, "Minibatches should be formed by
-  uniform sampling, i.e. on each training step, each sample from the dataset
-  is included with a certain probability p. Note that this is different from
-  standard approach of dataset being shuffled and split into batches: each
-  sample has a non-zero probability of appearing multiple times in a given
-  epoch, or not appearing at all."
-  - For more details, see Zhu and Wang, 2019,
-  [Poisson Subsampled Renyi Differential Privacy](http://proceedings.mlr.press/v97/zhu19c/zhu19c.pdf)
+    - As stated in the Opacus documentation, "Minibatches should be formed by
+    uniform sampling, i.e. on each training step, each sample from the dataset
+    is included with a certain probability p. Note that this is different from
+    standard approach of dataset being shuffled and split into batches: each
+    sample has a non-zero probability of appearing multiple times in a given
+    epoch, or not appearing at all."
+    - For more details, see Zhu and Wang, 2019,
+    [Poisson Subsampled Renyi Differential Privacy](http://proceedings.mlr.press/v97/zhu19c/zhu19c.pdf)
 
 ## Warnings and limits
 

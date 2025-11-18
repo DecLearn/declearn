@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,7 +19,6 @@
 
 import time
 from typing import Dict, Optional
-
 
 __all__ = [
     "Constraint",
@@ -158,7 +157,7 @@ class ConstraintSet:
             If multiple constraints have the same name, suffixes
             will be appended in order to disambiguate them.
         """
-        values = {}  # type: Dict[str, float]
+        values: Dict[str, float] = {}
         for constraint in self.constraints:
             name = constraint.name
             idx = 0

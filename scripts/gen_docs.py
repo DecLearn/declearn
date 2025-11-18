@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,7 +23,6 @@ import shutil
 from typing import Dict, Tuple
 
 import griffe
-
 
 ROOT_FOLDER = os.path.split(os.path.dirname(os.path.abspath(__file__)))[0]
 DOCS_INDEX = """{title}
@@ -77,7 +76,7 @@ def _parse_readme() -> Tuple[str, Dict[str, str]]:
         text = file.read()
     title, text = text.split("\n", 1)
     content = re.split(r"\n(## \w+\n+)", text)
-    readme = dict(zip(content[1::2], content[2::2]))
+    readme = dict(zip(content[1::2], content[2::2], strict=False))
     readme = {k.strip("# \n"): v.strip("\n") for k, v in readme.items()}
     return title, readme
 
@@ -150,11 +149,14 @@ def _generate_public_submodules_doc(
     """Create files for public submodules of a base module."""
     pub_mod = {}
     for key, mod in module.modules.items():
-        if not key.startswith("_"):
-            if isinstance(mod, griffe.Alias):
-                key = f"{key} (alias re-export)"
-                mod = mod.target
-            pub_mod[key] = generate_module_docs(mod, docdir)
+        # local copies, to avoid updating loop variables
+        _key = key
+        _mod = mod
+        if not _key.startswith("_"):
+            if isinstance(_mod, griffe.Alias):
+                _key = f"{_key} (alias re-export)"
+                _mod = _mod.target
+            pub_mod[_key] = generate_module_docs(_mod, docdir)
     return pub_mod
 
 

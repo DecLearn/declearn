@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,6 +26,7 @@ from declearn.communication.api import NetworkClient
 from declearn.communication.utils import verify_server_message_validity
 from declearn.fairness.api._dataset import FairnessDataset
 from declearn.fairness.api._fair_func import instantiate_fairness_function
+from declearn.fairness.api._metrics import FairnessMetricsComputer
 from declearn.messaging import (
     Error,
     FairnessCounts,
@@ -34,7 +35,6 @@ from declearn.messaging import (
     FairnessReply,
     FairnessSetupQuery,
 )
-from declearn.fairness.api._metrics import FairnessMetricsComputer
 from declearn.metrics import MeanMetric
 from declearn.secagg.api import Encrypter
 from declearn.secagg.messaging import (
@@ -154,7 +154,7 @@ class FairnessControllerClient(metaclass=abc.ABCMeta):
         self.fairness_function = instantiate_fairness_function(
             f_type=f_type, counts=self.computer.counts, **f_args
         )
-        self.groups = []  # type: List[Tuple[Any, ...]]
+        self.groups: List[Tuple[Any, ...]] = []
 
     @staticmethod
     def from_setup_query(

@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -73,16 +73,16 @@ References
     https://marcjoye.github.io/papers/JL13aggreg.pdf
 """
 
+from . import messages
+from ._aggregate import JLSAggregate
+from ._decrypt import JoyeLibertDecrypter
+from ._encrypt import JoyeLibertEncrypter
 from ._primitives import (
     DEFAULT_BIPRIME,
     decrypt_sum,
     encrypt,
     sum_encrypted,
 )
-from ._aggregate import JLSAggregate
-from ._encrypt import JoyeLibertEncrypter
-from ._decrypt import JoyeLibertDecrypter
-from . import messages
 from ._setup import (
     JoyeLibertSecaggConfigClient,
     JoyeLibertSecaggConfigServer,

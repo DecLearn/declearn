@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,7 +19,6 @@
 
 import warnings
 from typing import Any, Dict, List, Optional, Tuple
-
 
 __all__ = [
     "FairfedValueComputer",
@@ -77,9 +76,9 @@ class FairfedValueComputer:
         self.f_type = f_type
         self.strict = strict
         self.target = target
-        self._key_groups = (
+        self._key_groups: Optional[Tuple[Tuple[Any, ...], Tuple[Any, ...]]] = (
             None
-        )  # type: Optional[Tuple[Tuple[Any, ...], Tuple[Any, ...]]]
+        )
 
     def initialize(
         self,
@@ -109,6 +108,7 @@ class FairfedValueComputer:
                 f"Using fairness type '{self.f_type}' with FairFed in 'strict'"
                 " mode. This is supported, but beyond the original paper.",
                 RuntimeWarning,
+                stacklevel=2,
             )
         if len(groups) != 4:
             raise RuntimeError(

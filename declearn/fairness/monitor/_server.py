@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,12 +22,12 @@ from typing import Any, Dict, List, Optional, Union
 import numpy as np
 
 from declearn.aggregator import Aggregator
-from declearn.secagg.api import Decrypter
 from declearn.communication.api import NetworkServer
 from declearn.fairness.api import (
     FairnessControllerServer,
     instantiate_fairness_function,
 )
+from declearn.secagg.api import Decrypter
 
 __all__ = [
     "FairnessMonitorServer",
@@ -69,7 +69,7 @@ class FairnessMonitorServer(FairnessControllerServer):
     ) -> Aggregator:
         self.function = instantiate_fairness_function(
             f_type=self.f_type,
-            counts=dict(zip(self.groups, counts)),
+            counts=dict(zip(self.groups, counts, strict=False)),
             **self.f_args,
         )
         return aggregator
@@ -81,14 +81,14 @@ class FairnessMonitorServer(FairnessControllerServer):
         values: List[float],
     ) -> Dict[str, Union[float, np.ndarray]]:
         # Unpack group-wise accuracy metrics and compute fairness ones.
-        accuracy = dict(zip(self.groups, values))
+        accuracy = dict(zip(self.groups, values, strict=False))
         fairness = self.function.compute_from_federated_group_accuracy(
             accuracy
         )
         # Package and return these metrics.
-        metrics = {
+        metrics: Dict[str, Union[float, np.ndarray]] = {
             f"accuracy_{key}": val for key, val in accuracy.items()
-        }  # type: Dict[str, Union[float, np.ndarray]]
+        }
         metrics.update(
             {f"{self.f_type}_{key}": val for key, val in fairness.items()}
         )

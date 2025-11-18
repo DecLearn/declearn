@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,11 +20,11 @@
 import asyncio
 import logging
 import ssl
-from typing import Any, Dict, Optional, Union, ClassVar
+from typing import Any, ClassVar, Dict, Optional, Union
 
 import websockets as ws
 from websockets.client import WebSocketClientProtocol
-from websockets.exceptions import ConnectionClosedOK, ConnectionClosedError
+from websockets.exceptions import ConnectionClosedError, ConnectionClosedOK
 
 from declearn.communication.api import NetworkClient
 from declearn.communication.websockets._tools import (
@@ -42,6 +42,7 @@ class WebsocketsClient(NetworkClient):
 
     protocol: ClassVar[str] = "websockets"
 
+    # pylint: disable-next=too-many-positional-arguments
     def __init__(
         self,
         server_uri: str,
@@ -75,7 +76,7 @@ class WebsocketsClient(NetworkClient):
         # arguments serve modularity; pylint: disable=too-many-arguments
         super().__init__(server_uri, name, certificate, logger)
         self.headers = headers
-        self._socket = None  # type: Optional[WebSocketClientProtocol]
+        self._socket: Optional[WebSocketClientProtocol] = None
 
     @staticmethod
     def _setup_ssl_context(

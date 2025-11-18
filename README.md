@@ -1,3 +1,8 @@
+[![Documentation](https://img.shields.io/badge/Documentation-sienna)](https://magnet.gitlabpages.inria.fr/declearn/docs)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue)](https://gitlab.inria.fr/magnet/declearn/declearn2/-/blob/develop/LICENSE)
+[![Python-versions](https://img.shields.io/badge/python-3.11%20|%203.12%20|%203.13-seagreen)](https://www.python.org/)
+[![PyPI - Version](https://img.shields.io/pypi/v/declearn?color=wheat)](https://pypi.org/project/declearn)
+
 # Declearn: a modular and extensible framework for Federated Learning
 
 - [Introduction](#introduction)
@@ -97,7 +102,7 @@ Declearn distributed under the Apache-2.0 license. All code files should
 therefore contain the following mention, which also applies to the present
 README file:
 ```
-Copyright 2023 Inria (Institut National de la Recherche en Informatique
+Copyright 2025 Inria (Institut National de Recherche en Informatique
 et Automatique)
 
 Licensed under the Apache License, Version 2.0 (the "License");

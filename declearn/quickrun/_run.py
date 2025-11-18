@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -89,7 +89,8 @@ def get_checkpoint(folder: str, expe_config: ExperimentConfig) -> str:
     return checkpoint
 
 
-async def run_server(
+# pylint: disable-next=too-many-positional-arguments
+async def run_server(  # noqa: PLR0913
     folder: str,
     network: NetworkServerConfig,
     model_config: ModelConfig,
@@ -138,12 +139,12 @@ async def run_client(
             handler.setLevel(LOGGING_LEVEL_MAJOR)
     # Wrap train and validation data as Dataset objects.
     train = InMemoryDataset(
-        paths.get("train_data"),
+        paths.get("train_data"),  # type: ignore
         target=paths.get("train_target"),
         expose_classes=True,
     )
     valid = InMemoryDataset(
-        paths.get("valid_data"),
+        paths.get("valid_data"),  # type: ignore
         target=paths.get("valid_target"),
     )
     client = FederatedClient(

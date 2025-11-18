@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,8 +26,17 @@ as to eventually call a given function or build a given object.
 import dataclasses
 import inspect
 from typing import (
-    Any, Callable, Dict, List, Optional, Protocol, Tuple, Type, TypeVar
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Protocol,
+    Tuple,
+    Type,
+    TypeVar,
 )
+
 # fmt: on
 
 
@@ -89,13 +98,14 @@ def dataclass_from_func(
     if not name:
         name = "".join(w.capitalize() for w in func.__name__.split("_"))
         name += "Config"
-    dcls = dataclasses.make_dataclass(name, fields)  # type: Type
+    dcls: Type = dataclasses.make_dataclass(name, fields)
     # Bind the dataclass's main and __init__ docstrings.
     docs = f"Dataclass for {func.__name__} instantiation parameters.\n"
     dcls.__doc__ = docs
     dcls.__init__.__doc__ = docs + (func.__doc__ or "").split("\n", 1)[-1]
     # If the signature comprises *args / **kwargs parameters, record it.
-    args_field = kwargs_field = None  # type: Optional[str]
+    args_field: Optional[str] = None
+    kwargs_field: Optional[str] = None
     for param in parameters:
         if param.kind is param.VAR_POSITIONAL:
             args_field = param.name
@@ -152,7 +162,7 @@ def dataclass_from_init(
     fields = _parameters_to_fields(parameters)
     # Make a dataclass out of the former fields.
     name = name or f"{cls.__name__}Config"
-    dcls = dataclasses.make_dataclass(name, fields)  # type: Type
+    dcls: Type = dataclasses.make_dataclass(name, fields)
     # Bind the dataclass's main and __init__ docstrings.
     docs = f"Dataclass for {cls.__name__} instantiation parameters.\n"
     dcls.__doc__ = docs
@@ -160,7 +170,8 @@ def dataclass_from_init(
         docs + (cls.__init__.__doc__ or "").split("\n", 1)[-1]
     )
     # If the signature comprises *args / **kwargs parameters, record it.
-    args_field = kwargs_field = None  # type: Optional[str]
+    args_field: Optional[str] = None
+    kwargs_field: Optional[str] = None
     for param in parameters:
         if param.kind is param.VAR_POSITIONAL:
             args_field = param.name
@@ -188,7 +199,7 @@ def _parameters_to_fields(
     params: List[inspect.Parameter],
 ) -> List[Tuple[str, Type, dataclasses.Field]]:
     """Parse function or method parameters into dataclass fields."""
-    fields = []  # type: List[Tuple[str, Type, dataclasses.Field]]
+    fields: List[Tuple[str, Type, dataclasses.Field]] = []
     for param in params:
         # Parse out the parameter's name, annotated type and default value.
         fname = param.name
@@ -204,7 +215,5 @@ def _parameters_to_fields(
             ftype = Dict[str, ftype]  # type: ignore
             field.default_factory = dict
         # Append parsed information to the fields list.
-        fields.append(
-            (fname, ftype, field)  # type: ignore  # update when py >=3.9
-        )
+        fields.append((fname, ftype, field))
     return fields

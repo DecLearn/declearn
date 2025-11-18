@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -52,9 +52,9 @@ def test_case_fixture(
         "sum_of_labels": np.sum(s_wght * y_true),
         "sum_of_weights": s_wght.sum(),
     }
-    scores = {
+    scores: Dict[str, Union[float, np.ndarray]] = {
         "r2": r2_score(y_true, y_pred, sample_weight=s_wght)
-    }  # type: Dict[str, Union[float, np.ndarray]]
+    }
     # Compute derived aggregation results. Wrap as a test case and return.
     agg_states = {key: 2 * val for key, val in states.items()}
     agg_scores = scores.copy()

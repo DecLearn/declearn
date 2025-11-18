@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,9 +19,15 @@
 
 import dataclasses
 import warnings
-from typing import (
-    # fmt: off
-    Callable, Iterator, List, Literal, Optional, Set, Tuple, Union
+from typing import (  # fmt: off
+    Callable,
+    Iterator,
+    List,
+    Literal,
+    Optional,
+    Set,
+    Tuple,
+    Union,
 )
 
 import numpy as np
@@ -30,7 +36,6 @@ import tensorflow as tf  # type: ignore
 from declearn.dataset._base import Dataset, DataSpecs
 from declearn.typing import Batch
 from declearn.utils import register_type
-
 
 __all__ = [
     "TensorflowDataset",
@@ -111,6 +116,7 @@ class TensorflowDataset(Dataset):
             data_type=self._dspecs.data_type,
         )
 
+    # pylint: disable-next=too-many-positional-arguments
     def generate_batches(
         self,
         batch_size: int,
@@ -224,7 +230,7 @@ class TensorflowDataset(Dataset):
         if replacement:
             dataset = dataset.repeat(count=None)
         return dataset.shuffle(
-            seed=self.rng.integers(2**63),
+            seed=int(self.rng.integers(2**63)),
             buffer_size=self.buffer_size or batch_size * 10,
         )
 
@@ -269,7 +275,7 @@ def parse_and_validate_tensorflow_dataset(
     # Gather cardinality and need for y and/or w elements' filling.
     info.n_padding = 3 - len(spec)
     if int(tf.version.VERSION.split(".", 2)[1]) >= 13:
-        info.n_samples = int(dataset.cardinality().numpy())
+        info.n_samples = int(dataset.cardinality().numpy())  # type: ignore
         if info.n_samples == tf.data.UNKNOWN_CARDINALITY:
             info.n_samples = 0  # force evaluating via next logic branch
     if not info.n_samples:
@@ -312,6 +318,7 @@ def warn_if_dataset_is_likely_batched(
             "is properly yielding unbatched samples. If so, you may ignore "
             "this warning.",
             category=RuntimeWarning,
+            stacklevel=2,
         )
 
 
@@ -337,11 +344,11 @@ def get_stack_function(
 ) -> Callable[[Union[List[None], List[tf.Tensor]]], Optional[tf.Tensor]]:
     """Return a function to stack sample-wise atomic elements."""
     if batch_mode == "default":
-        return _stack_default
+        return _stack_default  # type: ignore
     if batch_mode == "padded":
-        return _stack_padded
+        return _stack_padded  # type: ignore
     if batch_mode == "ragged":
-        return _stack_ragged
+        return _stack_ragged  # type: ignore
     raise TypeError(
         "Invalid value for 'batch_mode': should be one of "
         f"{{'default', 'padded', 'ragged'}}, not '{batch_mode}'."

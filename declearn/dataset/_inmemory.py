@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,14 +19,13 @@
 
 import os
 import typing
-from typing import Any, Dict, Iterator, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, Iterator, List, Optional, Self, Set, Tuple, Union
 
 import numpy as np
 import pandas as pd
 from numpy.typing import ArrayLike
 from scipy.sparse import spmatrix  # type: ignore
 from sklearn.datasets import load_svmlight_file  # type: ignore
-from typing_extensions import Self  # future: import from typing (py >=3.11)
 
 from declearn.dataset._base import Dataset, DataSpecs
 from declearn.dataset.utils import load_data_array, save_data_array
@@ -71,8 +70,8 @@ class InMemoryDataset(Dataset):
 
     # attributes serve clarity; pylint: disable=too-many-instance-attributes
     # arguments serve modularity; pylint: disable=too-many-arguments
-
-    def __init__(
+    # pylint: disable-next=too-many-positional-arguments
+    def __init__(  # noqa: PLR0913
         self,
         data: Union[DataArray, str],
         target: Optional[Union[DataArray, str]] = None,
@@ -230,7 +229,7 @@ class InMemoryDataset(Dataset):
         """
         # Case of a data array or None value: return as-is.
         if isinstance(value, DATA_ARRAY_TYPES) or value is None:
-            return value, None
+            return value, None  # type: ignore
         # Case of an invalid type: raise.
         if not isinstance(value, str):
             raise TypeError(
@@ -281,7 +280,9 @@ class InMemoryDataset(Dataset):
         if isinstance(self.target, np.ndarray):
             return set(np.unique(self.target).tolist())
         if isinstance(self.target, spmatrix):
-            return set(np.unique(self.target.tocsr().data).tolist())
+            return set(
+                np.unique(self.target.tocsr().data).tolist()  # type: ignore
+            )
         raise TypeError(  # pragma: no cover
             f"Invalid 'target' attribute type: '{type(self.target)}'."
         )
@@ -300,7 +301,7 @@ class InMemoryDataset(Dataset):
                 )
             return list(dtypes)[0]
         if isinstance(self.feats, (pd.Series, np.ndarray, spmatrix)):
-            return str(self.feats.dtype)
+            return str(self.feats.dtype)  # type: ignore
         raise TypeError(  # pragma: no cover
             f"Invalid 'data' attribute type: '{type(self.target)}'."
         )
@@ -351,7 +352,7 @@ class InMemoryDataset(Dataset):
         """
         path = os.path.abspath(path)
         folder = os.path.dirname(path)
-        info = {}  # type: Dict[str, Any]
+        info: Dict[str, Any] = {}
         info["type"] = "InMemoryDataset"  # NOTE: for backward compatibility
         # Optionally create data dumps. Record data dumps' paths.
         # fmt: off
@@ -412,6 +413,7 @@ class InMemoryDataset(Dataset):
             data_type=self.data_type,
         )
 
+    # pylint: disable-next=too-many-positional-arguments
     def generate_batches(
         self,
         batch_size: int,
@@ -476,7 +478,7 @@ class InMemoryDataset(Dataset):
             for data in (self.feats, self.target, self.weights)
         ]
         # Yield tuples zipping the former.
-        yield from zip(*iterators)
+        yield from zip(*iterators, strict=False)
 
     def _samples_batching(
         self,
@@ -600,8 +602,8 @@ class InMemoryDataset(Dataset):
         else:
             # Ensure slicing compatibility for pandas structures.
             if isinstance(data, (pd.DataFrame, pd.Series)):
-                data = data.values
+                data = data.values  # type: ignore
             # Iteratively yield slices of the data array.
             for idx in range(0, len(order), batch_size):
                 end = idx + batch_size
-                yield data[order[idx:end]]
+                yield data[order[idx:end]]  # type: ignore

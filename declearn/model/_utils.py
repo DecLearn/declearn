@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,7 +20,6 @@
 from typing import List, Set, Tuple
 
 import numpy as np
-
 
 __all__ = [
     "flatten_numpy_arrays",
@@ -78,7 +77,7 @@ def flatten_numpy_arrays(
         List of float values made from concatenating, flattening
         and converting input numpy arrays to python float values.
     """
-    return [
+    return [  # type: ignore
         value
         for array in arrays
         for value in array.ravel().astype(float).tolist()
@@ -107,9 +106,9 @@ def unflatten_numpy_arrays(
         List of numpy arrays storing the input values, enforcing the
         input specs as to shapes and dtypes.
     """
-    arrays = []  # type: List[np.ndarray]
+    arrays: List[np.ndarray] = []
     start = 0
-    for shape, dtype in zip(shapes, dtypes):
+    for shape, dtype in zip(shapes, dtypes, strict=False):
         end = start + int(np.prod(shape))
         array = np.array(values[start:end]).astype(dtype).reshape(shape)
         arrays.append(array)

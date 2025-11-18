@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,10 +17,9 @@
 
 """Wrapper for an ensemble of Metric objects."""
 
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, List, Optional, Self, Sequence, Tuple, Union
 
 import numpy as np
-from typing_extensions import Self  # future: import from typing (py >=3.11)
 
 from declearn.metrics._api import Metric, MetricState
 
@@ -72,23 +71,25 @@ class MetricSet:
             If multiple metrics are of the same final type.
         """
         # REVISE: store metrics into a Dict and adjust labels when needed
-        self.metrics = []  # type: List[Metric]
+        self.metrics: List[Metric] = []
         for metric in metrics:
-            if isinstance(metric, str):
-                metric = Metric.from_specs(metric)
-            if isinstance(metric, (tuple, list)):
+            # reassign in new variable to avoid modifying loop variable
+            _metric = metric
+            if isinstance(_metric, str):
+                _metric = Metric.from_specs(_metric)
+            if isinstance(_metric, (tuple, list)):
                 if (
-                    (len(metric) == 2)
-                    and isinstance(metric[0], str)
-                    and isinstance(metric[1], dict)
+                    (len(_metric) == 2)
+                    and isinstance(_metric[0], str)
+                    and isinstance(_metric[1], dict)
                 ):
-                    metric = Metric.from_specs(*metric)
-            if not isinstance(metric, Metric):
+                    _metric = Metric.from_specs(*_metric)
+            if not isinstance(_metric, Metric):
                 raise TypeError(
                     "'MetricSet' inputs must be Metric instances, string "
                     "identifiers or (string identifier, config dict) tuples."
                 )
-            self.metrics.append(metric)
+            self.metrics.append(_metric)
         if len(set(type(m) for m in self.metrics)) < len(self.metrics):
             raise RuntimeError(
                 "'MetricSet' cannot wrap multiple metrics of the same type."

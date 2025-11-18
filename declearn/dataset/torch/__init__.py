@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -31,5 +31,5 @@ backend or to be used in conjunction with it:
     Custom collate function that implements variable-lenght inputs' padding.
 """
 
-from ._utils import PoissonSampler, collate_with_padding
 from ._torch import TorchDataset
+from ._utils import PoissonSampler, collate_with_padding

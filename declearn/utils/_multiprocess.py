@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -70,9 +70,7 @@ def run_as_processes(
         indicates that the process was interrupted while running.
     """
     # Wrap routines into named processes and set up exceptions catching.
-    queue = (
-        mp.Manager().Queue()
-    )  # type: Queue  # Queue[Tuple[str, Union[Any, RuntimeError]]] (py >=3.9)
+    queue: Queue[Tuple[str, Union[Any, RuntimeError]]] = mp.Manager().Queue()
     processes, names = prepare_routine_processes(routines, queue)
     # Run the processes concurrently.
     run_processes(processes, auto_stop)
@@ -92,7 +90,7 @@ def prepare_routine_processes(
             Tuple[Callable[..., Any], Tuple[Any, ...], Dict[str, Any]],
         ]
     ],
-    queue: Queue,  # Queue[Tuple[str, Union[Any, RuntimeError]]] (py >=3.9)
+    queue: Queue[Tuple[str, Union[Any, RuntimeError]]],
 ) -> Tuple[List[mp.Process], List[str]]:
     """Wrap up routines into named unstarted processes.
 
@@ -116,9 +114,9 @@ def prepare_routine_processes(
     names:
         List of names identifying the processes (used for results collection).
     """
-    names = []  # type: List[str]
-    count = {}  # type: Dict[str, int]
-    processes = []  # type: List[mp.Process]
+    names: List[str] = []
+    count: Dict[str, int] = {}
+    processes: List[mp.Process] = []
     for routine in routines:
         func, args, kwargs = parse_routine_specification(routine)
         name = func.__name__
@@ -137,7 +135,7 @@ def parse_routine_specification(
         Tuple[Callable[..., Any], Tuple[Any, ...]],
         Tuple[Callable[..., Any], Dict[str, Any]],
         Tuple[Callable[..., Any], Tuple[Any, ...], Dict[str, Any]],
-    ]
+    ],
 ) -> Tuple[Callable[..., Any], Tuple[Any, ...], Dict[str, Any]]:
     """Type-check and unpack a given routine specification.
 
@@ -195,7 +193,7 @@ def parse_routine_specification(
 
 def add_exception_catching(
     func: Callable[..., Any],
-    queue: Queue,  # Queue[Tuple[str, Union[Any, RuntimeError]]] (py >=3.9)
+    queue: Queue[Tuple[str, Union[Any, RuntimeError]]],
     name: str,
 ) -> Callable[..., Any]:
     """Wrap a function to catch exceptions and put them in a Queue."""
@@ -209,8 +207,8 @@ def add_exception_catching(
         except Exception as exc:  # pylint: disable=broad-exception-caught
             err = RuntimeError(
                 f"Exception of type {type(exc)} occurred:\n"
-                + "".join(traceback.format_exception(type(exc), exc, tb=None))
-            )  # future: `traceback.format_exception(exc)` (py >=3.10)
+                + "".join(traceback.format_exception(exc))
+            )
             queue.put((name, err))
             sys.exit(1)
         else:

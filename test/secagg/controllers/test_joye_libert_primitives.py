@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,8 +23,8 @@ import pytest
 
 from declearn.secagg.joye_libert import (
     DEFAULT_BIPRIME,
-    encrypt,
     decrypt_sum,
+    encrypt,
     sum_encrypted,
 )
 
@@ -63,7 +63,7 @@ def test_sum_encrypted_joye_libert() -> None:
     s_keys = [secrets.randbelow(2**256) for _ in range(2)]
     c_vals = [
         encrypt(value, index=1, secret=secret)
-        for value, secret in zip(values, s_keys)
+        for value, secret in zip(values, s_keys, strict=False)
     ]
     c_sum = sum_encrypted(c_vals)
     assert isinstance(c_sum, int)
@@ -84,7 +84,7 @@ def test_encrypt_decrypt_joye_libert(index: int) -> None:
     s_keys = [secrets.randbelow(2**256) for _ in range(4)]
     c_vals = [
         encrypt(value, index=index, secret=secret)
-        for value, secret in zip(values, s_keys)
+        for value, secret in zip(values, s_keys, strict=False)
     ]
     # Sum and decrypt into a public value.
     c_sum = sum_encrypted(c_vals)
@@ -103,7 +103,7 @@ def test_encrypt_decrypt_joye_libert_wrong_index() -> None:
     index = secrets.randbelow(2**32) + 1
     c_vals = [
         encrypt(value, index=index, secret=secret)
-        for value, secret in zip(values, s_keys)
+        for value, secret in zip(values, s_keys, strict=False)
     ]
     # Sum them, then decrypt using the wrong time index.
     c_sum = sum_encrypted(c_vals)
@@ -121,7 +121,7 @@ def test_encrypt_decrypt_joye_libert_wrong_public_key() -> None:
     index = secrets.randbelow(2**32) + 1
     c_vals = [
         encrypt(value, index=index, secret=secret)
-        for value, secret in zip(values, s_keys)
+        for value, secret in zip(values, s_keys, strict=False)
     ]
     # Sum them, then decrypt using the wrong public key.
     c_sum = sum_encrypted(c_vals)

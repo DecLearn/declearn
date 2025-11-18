@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -30,7 +30,6 @@ from declearn.secagg.api._aggregate import (
 )
 from declearn.secagg.utils import Quantizer
 from declearn.utils import Aggregate
-
 
 __all__ = [
     "Encrypter",
@@ -209,8 +208,8 @@ class Encrypter(metaclass=abc.ABCMeta):
         # Gather fields that need encryption and fields that remain cleartext.
         cryptable, cleartext = value.prepare_for_secagg()
         # Iteratively encrypt fields that need it.
-        encrypted = []  # type: List[int]
-        enc_specs = []  # type: EncryptedSpecs
+        encrypted: List[int] = []
+        enc_specs: EncryptedSpecs = []
         for key, val in cryptable.items():
             enc_v, spec = self._encrypt_value(val)
             encrypted.extend(enc_v)

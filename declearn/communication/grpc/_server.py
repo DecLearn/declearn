@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -71,7 +71,8 @@ class GrpcServer(NetworkServer):
 
     protocol = "grpc"
 
-    def __init__(
+    # pylint: disable-next=too-many-positional-arguments
+    def __init__(  # noqa: PLR0913
         self,
         host: str = "localhost",
         port: int = 8765,
@@ -114,7 +115,7 @@ class GrpcServer(NetworkServer):
         super().__init__(
             host, port, certificate, private_key, password, heartbeat, logger
         )
-        self._server = None  # type: Optional[grpc.Server]
+        self._server: Optional[grpc.Server] = None
 
     @property
     def uri(self) -> str:
@@ -141,7 +142,7 @@ class GrpcServer(NetworkServer):
         """Start the gRPC server."""
         self._server = self._setup_server()
         self.logger.info("Server is now starting...")
-        await self._server.start()
+        await self._server.start()  # type: ignore
 
     def _setup_server(
         self,
@@ -156,14 +157,14 @@ class GrpcServer(NetworkServer):
         )
         servicer = GrpcServicer(self.handler)
         add_MessageBoardServicer_to_server(servicer, server)
-        return server
+        return server  # type: ignore
 
     async def stop(
         self,
     ) -> None:
         """Stop the gRPC server and purge information about clients."""
         if self._server is not None:
-            await self._server.stop(grace=None)
+            await self._server.stop(grace=None)  # type: ignore
             self._server = None
         await self.handler.purge()
 

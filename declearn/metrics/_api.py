@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,10 +19,19 @@
 
 import abc
 from copy import deepcopy
-from typing import Any, ClassVar, Dict, Generic, Optional, Type, TypeVar, Union
+from typing import (
+    Any,
+    ClassVar,
+    Dict,
+    Generic,
+    Optional,
+    Self,
+    Type,
+    TypeVar,
+    Union,
+)
 
 import numpy as np
-from typing_extensions import Self  # future: import from typing (py >=3.11)
 
 from declearn.utils import (
     Aggregate,

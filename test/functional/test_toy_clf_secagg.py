@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -87,7 +87,7 @@ def generate_toy_dataset(
     kclust = sklearn.cluster.KMeans(
         n_clusters=n_clients, init="random", n_init="auto", random_state=SEED
     ).fit_predict(inputs)
-    datasets = []  # type: List[Tuple[InMemoryDataset, InMemoryDataset]]
+    datasets: List[Tuple[InMemoryDataset, InMemoryDataset]] = []
     for i in range(n_clients):
         arrays = sklearn.model_selection.train_test_split(
             inputs[kclust == i],

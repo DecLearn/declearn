@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,13 +19,12 @@
 
 import operator
 from abc import ABCMeta, abstractmethod
-from typing import Any, Callable, Dict, ClassVar, Generic, Type, TypeVar
+from typing import Any, Callable, ClassVar, Dict, Generic, Type, TypeVar
 
 import numpy as np
 
 from declearn.model.api import Vector, VectorSpec
 from declearn.test_utils import assert_json_serializable_dict, to_numpy
-
 
 __all__ = [
     "VectorFactory",
@@ -60,7 +59,9 @@ class VectorFactory(Generic[VT], metaclass=ABCMeta):
                 if dtype.startswith("float")
                 else rng.uniform(1, 10, size=shape).astype(dtype)
             )
-            for name, shape, dtype in zip(self.names, self.shapes, self.dtypes)
+            for name, shape, dtype in zip(
+                self.names, self.shapes, self.dtypes, strict=False
+            )
         }
 
     @abstractmethod
@@ -157,8 +158,12 @@ class VectorSelfOpTests:
         assert all(isinstance(x, float) for x in values)
         assert isinstance(v_spec, VectorSpec)
         assert v_spec.names == factory.names
-        assert v_spec.shapes == dict(zip(factory.names, factory.shapes))
-        assert v_spec.dtypes == dict(zip(factory.names, factory.dtypes))
+        assert v_spec.shapes == dict(
+            zip(factory.names, factory.shapes, strict=False)
+        )
+        assert v_spec.dtypes == dict(
+            zip(factory.names, factory.dtypes, strict=False)
+        )
         assert isinstance(v_spec.v_type, tuple)
         assert len(v_spec.v_type) == 2
         assert all(isinstance(s, str) for s in v_spec.v_type)
@@ -206,10 +211,10 @@ class VectorSelfOpTests:
     ) -> None:
         """Test that the sum-reduce operator of a Vector works properly."""
         vector = factory.make_vector(seed=0)
-        expect = {
+        expect: Dict[str, np.ndarray] = {
             key: np.sum(to_numpy(val, factory.framework))
             for key, val in vector.coefs.items()
-        }  # type: Dict[str, np.ndarray]
+        }
         result = vector.sum()
         factory.assert_equal(expect, result)
 

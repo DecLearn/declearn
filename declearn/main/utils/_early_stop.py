@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,9 +19,7 @@
 
 from typing import Optional
 
-
 from declearn.utils import dataclass_from_init
-
 
 __all__ = [
     "EarlyStopping",
@@ -64,7 +62,7 @@ class EarlyStopping:
         self.patience = patience
         self.decrease = decrease
         self.relative = relative
-        self._best_metric = None  # type: Optional[float]
+        self._best_metric: Optional[float] = None
         self._n_iter_stuck = 0
 
     def reset(

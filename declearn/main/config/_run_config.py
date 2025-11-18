@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,11 +18,8 @@
 """TOML-parsable container for Federated Learning "run" configurations."""
 
 import dataclasses
-from typing import Any, Optional
+from typing import Any, Optional, Self
 
-from typing_extensions import Self  # future: import from typing (py >=3.11)
-
-from declearn.main.utils import EarlyStopConfig
 from declearn.main.config._dataclasses import (
     EvaluateConfig,
     FairnessConfig,
@@ -30,8 +27,8 @@ from declearn.main.config._dataclasses import (
     RegisterConfig,
     TrainingConfig,
 )
+from declearn.main.utils import EarlyStopConfig
 from declearn.utils import TomlConfig
-
 
 __all__ = [
     "FLRunConfig",
@@ -112,7 +109,7 @@ class FLRunConfig(TomlConfig):
     @classmethod
     def parse_register(
         cls,
-        field: dataclasses.Field,  # future: dataclasses.Field[RegisterConfig]
+        field: dataclasses.Field[RegisterConfig],
         inputs: Any,
     ) -> RegisterConfig:
         """Field-specific parser to instantiate a RegisterConfig.

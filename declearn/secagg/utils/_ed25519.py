@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -130,7 +130,7 @@ class IdentityKeys:
                 f"but it received inputs with type '{type(trusted)}'."
             )
         # Case when inputs are a list of values. Type-check and/or load keys.
-        keys = []  # type: List[Ed25519PublicKey]
+        keys: List[Ed25519PublicKey] = []
         for value in trusted:
             if isinstance(value, Ed25519PublicKey):
                 keys.append(value)
@@ -364,7 +364,7 @@ class IdentityKeys:
         ValueError
             If the file is not found or cannot be parsed.
         """
-        keys = []  # type: List[Ed25519PublicKey]
+        keys: List[Ed25519PublicKey] = []
         try:
             with open(path, "rb") as file:
                 while dat := file.read(33):

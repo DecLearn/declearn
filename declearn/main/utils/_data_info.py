@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,11 +17,9 @@
 
 """Dependency functions for a FL server to process 'data_info'."""
 
-from typing import Any, Dict, Set, NoReturn
-
+from typing import Any, Dict, NoReturn, Set
 
 from declearn.data_info import aggregate_data_info
-
 
 __all__ = [
     "AggregationError",
@@ -121,7 +119,7 @@ def _raise_on_missing_fields(
     Return None if no missing field was encountered.
     """
     # Identify missing fields.
-    errors = {}  # type: Dict[str, str]
+    errors: Dict[str, str] = {}
     for client, data_info in clients_data_info.items():
         missing = required_fields.difference(data_info.keys())
         if missing:
@@ -170,7 +168,7 @@ def _raise_on_invalid_fields(
     Return None if no client-due value error was encountered.
     """
     # Identify missing fields.
-    errors = {}  # type: Dict[str, str]
+    errors: Dict[str, str] = {}
     for client, data_info in clients_data_info.items():
         try:
             aggregate_data_info([data_info], required_fields)

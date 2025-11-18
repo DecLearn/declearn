@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -50,7 +50,6 @@ from declearn.communication import (
     list_available_protocols,
 )
 from declearn.communication.api import NetworkClient, NetworkServer
-
 
 ### 1. Test that connections can be properly set up.
 
@@ -254,10 +253,10 @@ class TestNetworkExchanges:
     ) -> None:
         """Test that the server can send individual messages to clients."""
         server, clients = agents
-        messages = {
+        messages: Dict[str, messaging.Message] = {
             name: messaging.GenericMessage(action="test", params={"idx": idx})
             for idx, name in enumerate(server.client_names)
-        }  # type: Dict[str, messaging.Message]
+        }
         send = server.send_messages(messages)
         recv = [client.recv_message(timeout=1) for client in clients]
         _, *replies = await asyncio.gather(send, *recv)
@@ -266,7 +265,7 @@ class TestNetworkExchanges:
         )
         assert all(
             reply.deserialize() == messages[client.name]
-            for client, reply in zip(clients, replies)
+            for client, reply in zip(clients, replies, strict=False)
         )
 
     async def clients_to_server_large(

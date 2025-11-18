@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -31,7 +31,6 @@ from declearn.fairness.api import (
 )
 from declearn.fairness.fairgrad._messages import FairgradOkay, FairgradWeights
 from declearn.secagg.api import Decrypter
-
 
 __all__ = [
     "FairgradControllerServer",
@@ -147,7 +146,8 @@ class FairgradWeightsController:
     ) -> Dict[Tuple[Any, ...], float]:
         """Return the group-wise current fairness level."""
         return {
-            key: float(val) for key, val in zip(self.function.groups, self.f_k)
+            key: float(val)
+            for key, val in zip(self.function.groups, self.f_k, strict=False)
         }
 
 
@@ -217,7 +217,7 @@ class FairgradControllerServer(FairnessControllerServer):
     ) -> Aggregator:
         # Set up the FairgradWeightsController.
         self.weights_controller = FairgradWeightsController(
-            counts=dict(zip(self.groups, counts)),
+            counts=dict(zip(self.groups, counts, strict=False)),
             f_type=self.f_type,
             eta=self.weights_controller.eta,
             eps=self.weights_controller.eps,
@@ -231,6 +231,7 @@ class FairgradControllerServer(FairnessControllerServer):
                 "Overriding Aggregator choice to a 'SumAggregator', "
                 "due to the use of Fed-FairGrad.",
                 category=RuntimeWarning,
+                stacklevel=2,
             )
             aggregator = SumAggregator()
         return aggregator
@@ -258,14 +259,14 @@ class FairgradControllerServer(FairnessControllerServer):
         values: List[float],
     ) -> Dict[str, Union[float, np.ndarray]]:
         # Unpack group-wise accuracy metrics and update loss weights.
-        accuracy = dict(zip(self.groups, values))
+        accuracy = dict(zip(self.groups, values, strict=False))
         self.weights_controller.update_weights_based_on_accuracy(accuracy)
         # Send the updated weights to clients.
         await self._send_fairgrad_weights(netwk)
         # Package and return accuracy and fairness metrics.
-        metrics = {
+        metrics: Dict[str, Union[float, np.ndarray]] = {
             f"accuracy_{key}": val for key, val in accuracy.items()
-        }  # type: Dict[str, Union[float, np.ndarray]]
+        }
         fairness = self.weights_controller.get_current_fairness()
         metrics.update(
             {f"{self.f_type}_{key}": val for key, val in fairness.items()}

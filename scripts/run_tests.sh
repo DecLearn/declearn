@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-: '
+: <<'DOC' # DOC keyword delimits the docstring of this script
 Bash script to launch test pipelines for declearn.
 
 This script comprises the following (types of) functions:
@@ -30,9 +30,9 @@ This script comprises the following (types of) functions:
 
 - Functions that run (sets of) commands defining a category of tests:
     - lint_declearn_code
-        Run the pylint, mypy and black commands on the source code.
+        Run the ruff and mypy commands on the source code.
     - lint_declearn_tests
-        Run the pylint, mypy and black commands on the tests code.
+        Run the ruff and mypy commands on the tests code.
     - run_declearn_tests [pytest_args]*
         Run unit and integrations tests, managing coverage computation
         and reporting, using pytest, flags to which may be provided.
@@ -40,7 +40,6 @@ This script comprises the following (types of) functions:
 - Functions that make up bits of the 'run_declearn_tests' one:
     - run_unit_tests [pytest_args]*
     - run_integration_tests [pytest_args]*
-    - run_torch13_tests [pytest_args]*
 
 - The 'main' entry point, that enables calling any of the category of tests.
 
@@ -53,7 +52,7 @@ Instructions for developers/maintainers:
       and edit accordingly the array of commands under 'run_declearn_tests'
 - If you want to add a new group of tests, write up a function for it, and
   edit 'main' to add an input argument case for triggering it.
-'
+DOC
 
 run_command(){
     : '
@@ -62,8 +61,8 @@ run_command(){
     Return:
         1 if the command failed, 0 if it was successful.
     '
-    cmd=$@
-    name="\e[34m$(echo $cmd | cut -d' ' -f1)\e[0m"
+    cmd="$*"
+    name="\e[34m$(echo "$cmd" | cut -d' ' -f1)\e[0m"
     echo -e "\nRunning command: \e[34m$cmd\e[0m"
     if $cmd; then
         echo -e "$name command was \e[32msuccessful\e[0m"
@@ -89,8 +88,9 @@ run_commands() {
     n_cmd=${#commands[@]}
     declare -i failed
     echo "Running $context ($n_cmd commands)."
-    for ((i = 0; i < $n_cmd ; i++)); do
-        run_command ${commands[i]}
+    for ((i = 0; i < n_cmd ; i++)); do
+        run_command "${commands[i]}"
+        # shellcheck disable=SC2181
         if [[ $? -ne 0 ]]; then failed+=1; fi
     done
     if [[ $failed -eq 0 ]]; then
@@ -110,9 +110,8 @@ lint_declearn_code() {
         The number of sub-commands that failed (0 if successful).
     '
     commands=(
-        "pylint declearn"
+        "ruff check declearn"
         "mypy --install-types --non-interactive declearn"
-        "black --check declearn"
     )
     run_commands "declearn code static analysis" "${commands[@]}"
 }
@@ -126,9 +125,8 @@ lint_declearn_tests() {
         The number of sub-commands that failed (0 if successful).
     '
     commands=(
-        "pylint --recursive=y test"
+        "ruff check test"
         "mypy --install-types --non-interactive --exclude=conftest.py test"
-        "black --check test"
     )
     run_commands "declearn test code static analysis" "${commands[@]}"
 }
@@ -150,7 +148,6 @@ run_declearn_tests() {
     commands=(
         "run_unit_tests $@"
         "run_integration_tests $@"
-        "run_torch13_tests $@"
     )
     run_commands "declearn test suite" "${commands[@]}"
     status=$?
@@ -162,11 +159,13 @@ run_declearn_tests() {
 }
 
 
+# shellcheck disable=SC2329
 run_unit_tests() {
     : '
     Verbosely run the declearn unit tests (excluding integration ones).
     '
     echo "Running DecLearn unit tests."
+    # shellcheck disable=SC2124
     command="pytest $@
         --cov=declearn --cov-append --cov-report=
         --ignore=test/functional/
@@ -177,49 +176,19 @@ run_unit_tests() {
 }
 
 
+# shellcheck disable=SC2329
 run_integration_tests() {
     : '
     Verbosely run the declearn integration tests (skipping unit ones).
     '
     echo "Running DecLearn integration tests."
+    # shellcheck disable=SC2124
     command="pytest $@
         --cov=declearn --cov-append --cov-report=
         test/functional/
     "
     echo -e "\e[34m$command\e[0m"
     if $command; then return 0; else return 1; fi
-}
-
-
-run_torch13_tests() {
-    : '
-    Verbosely run Torch 1.13-specific unit tests.
-
-    Install Torch 1.13 at the start of this function, and attempt
-    to re-install torch >=2.0 at the end of it, together with its
-    co- dependencies. (This last step fails with a warning when
-    the initial torch was installed from an extra index, e.g. to
-    have support for a specific CUDA version.)
-    '
-    echo "Installing torch 1.13 and its co-dependencies."
-    TORCH_DEPS=$(pip freeze | grep -e torch -e opacus)
-    pip install "opacus == 1.4.0" "torch ~=1.13.0"
-    if [[ $? -eq 0 ]]; then
-        echo "Running unit tests for torch 1.13."
-        command="pytest $@
-            --cov=declearn --cov-append --cov-report=
-            test/model/test_torch_model.py
-        "
-        echo -e "\e[34m$command\e[0m"
-        $command
-        status=$?
-    else
-        echo "\e[31mSkipping tests as installation failed.\e[0m"
-        status=1
-    fi
-    echo "Re-installing torch 2.X and its co-dependencies."
-    pip install $TORCH_DEPS
-    return $status
 }
 
 
@@ -252,4 +221,4 @@ main() {
 }
 
 
-main $@
+main "$@"

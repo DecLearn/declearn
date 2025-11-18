@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -93,7 +93,7 @@ class MaskingEncrypter(Encrypter):
         quant_b = bitsize - int(math.ceil(math.log2(n_peers)))
         super().__init__(bitsize=quant_b, clipval=clipval)
         # Identify numpy dtype for masks, if any is large enough.
-        self._dtype = None  # type: Optional[np.dtype]
+        self._dtype: Optional[np.dtype] = None
         try:
             self._dtype = get_numpy_uint_dtype(self.max_int - 1)
         except ValueError:

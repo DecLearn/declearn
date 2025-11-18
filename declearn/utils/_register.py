@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,9 +17,10 @@
 
 """Generic types-registration system backing some (de)serialization utils."""
 
+from __future__ import annotations
+
 import functools
 from typing import Dict, Optional, Tuple, Type
-
 
 __all__ = [
     "access_registered",
@@ -30,7 +31,7 @@ __all__ = [
 ]
 
 
-REGISTRIES = {}  # type: Dict[str, TypesRegistry]
+REGISTRIES: Dict[str, TypesRegistry] = {}
 
 
 class TypesRegistry:
@@ -48,7 +49,7 @@ class TypesRegistry:
         """
         self.name = name
         self.base = base
-        self._reg = {}  # type: Dict[str, Type]
+        self._reg: Dict[str, Type] = {}
 
     def get_mapping(self) -> Dict[str, Type]:
         """Return a copy of the mapping managed by this TypesRegistry.
@@ -142,7 +143,7 @@ def create_types_registry(
 ) -> Type:
     """Create a TypesRegistry backing generic (de)serialization utils.
 
-    Note: this function may either be used to create a registy with
+    Note: this function may either be used to create a registry with
           an existing type as base through functional syntax, or be
           placed as a decorator for class-defining code
 

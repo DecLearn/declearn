@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -31,8 +31,8 @@ except ModuleNotFoundError:
 from declearn import messaging
 from declearn.dataset import DataSpecs
 from declearn.optimizer.modules import GaussianNoiseModule
-from declearn.training.dp import DPTrainingManager
 from declearn.test_utils import make_importable
+from declearn.training.dp import DPTrainingManager
 
 with make_importable(os.path.dirname(__file__)):
     from test_train_manager import BATCHES, build_manager, build_train_request

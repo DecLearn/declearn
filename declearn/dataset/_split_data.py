@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -46,7 +46,6 @@ from declearn.dataset.utils import (
     split_multi_classif_dataset,
 )
 
-
 __all__ = [
     "split_data",
 ]
@@ -90,12 +89,12 @@ def load_data(
         if os.path.isfile(target):
             labels = load_data_array(target)
             if isinstance(labels, spmatrix):
-                labels = labels.toarray()
+                labels = labels.toarray()  # type: ignore
             elif isinstance(labels, pd.DataFrame):
                 labels = labels.values
         # Case when 'target' is the name of a column in a csv file.
         elif isinstance(inputs, pd.DataFrame) and target in inputs:
-            labels = inputs.pop(target).values
+            labels = inputs.pop(target).values  # type: ignore
             inputs = inputs.values
         else:
             raise ValueError(
@@ -104,10 +103,13 @@ def load_data(
             )
     elif isinstance(target, int):
         # Case when 'target' is the index of a data column.
-        inputs, labels = _extract_column_by_index(inputs, target)
+        inputs, labels = _extract_column_by_index(
+            inputs,  # type: ignore
+            target,
+        )
     else:
         raise TypeError("Invalid type for 'target': should be str or int.")
-    return inputs, labels
+    return inputs, labels  # type: ignore
 
 
 def _extract_column_by_index(
@@ -127,15 +129,17 @@ def _extract_column_by_index(
         inputs = np.delete(inputs, target, axis=1)
     elif isinstance(inputs, spmatrix):
         labels = inputs.getcol(target).toarray().ravel()
-        csc = inputs.tocsc()  # sparse matrix with efficient column slicing
+        csc = inputs.tocsc()  # type: ignore
+        # csc: sparse matrix with efficient column slicing
         idx = [i for i in range(inputs.shape[1]) if i != target]
-        inputs = type(inputs)(csc[:, idx])
+        inputs = type(inputs)(csc[:, idx])  # type: ignore
     else:  # pragma: no cover
         raise TypeError("Invalid type for 'inputs'.")
-    return inputs, labels
+    return inputs, labels  # type: ignore
 
 
-def split_data(
+# pylint: disable-next=too-many-positional-arguments
+def split_data(  # noqa: PLR0913
     folder: str = ".",
     data_file: Optional[str] = None,
     label_file: Optional[Union[str, int]] = None,

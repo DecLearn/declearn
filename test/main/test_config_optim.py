@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,7 +29,6 @@ from declearn.fairness.fairgrad import FairgradControllerServer
 from declearn.main.config import FLOptimConfig
 from declearn.optimizer import Optimizer
 from declearn.optimizer.modules import AdamModule
-
 
 FIELDS = {field.name: field for field in dataclasses.fields(FLOptimConfig)}
 

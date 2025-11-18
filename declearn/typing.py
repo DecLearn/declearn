@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,14 +18,12 @@
 """Type hinting utils, defined and exposed for code readability purposes."""
 
 from abc import ABCMeta, abstractmethod
-from typing import Any, Dict, List, Optional, Protocol, Tuple, Union
+from typing import Any, Dict, List, Optional, Protocol, Self, Tuple, Union
 
 import numpy as np
 import pandas as pd
 from numpy.typing import ArrayLike
 from scipy.sparse import spmatrix  # type: ignore
-from typing_extensions import Self  # future: import from typing (Py>=3.11)
-
 
 __all__ = [
     "Batch",

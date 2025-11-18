@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -31,7 +31,6 @@ from declearn.test_utils import (
     list_available_frameworks,
 )
 from declearn.utils import set_device_policy
-
 
 AGGREGATOR_CLASSES = list_aggregators()
 VECTOR_FRAMEWORKS = list_available_frameworks()

@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,8 +20,8 @@
 import asyncio
 import logging
 import warnings
-from unittest import mock
 from typing import Any, Dict, List, Optional, Tuple, Type, Union
+from unittest import mock
 
 import numpy as np
 import pytest
@@ -50,7 +50,6 @@ from declearn.test_utils import (
     setup_mock_network_endpoints,
 )
 from declearn.training import TrainingManager
-
 
 # Define arbitrary group definitions and sample counts.
 CLIENT_COUNTS = [
@@ -183,7 +182,7 @@ class FairnessControllerTestSuite:
             counts, *_ = await asyncio.gather(coro_server, *coro_clients)
         # Verify that expected attributes were assigned with expected values.
         assert isinstance(counts, list) and len(counts) == len(TOTAL_COUNTS)
-        assert dict(zip(server.groups, counts)) == TOTAL_COUNTS
+        assert dict(zip(server.groups, counts, strict=False)) == TOTAL_COUNTS
         assert all(client.groups == server.groups for client in clients)
 
     @pytest.mark.parametrize(
@@ -339,7 +338,10 @@ class FairnessControllerTestSuite:
         # Verify that outputs match expectations.
         assert isinstance(aggregated, list)
         expected = [
-            sum(rv) for rv in zip(*[rep.values for rep in replies.values()])
+            sum(rv)
+            for rv in zip(
+                *[rep.values for rep in replies.values()], strict=False
+            )
         ]
         assert np.allclose(np.array(aggregated), np.array(expected))
 
@@ -379,8 +381,8 @@ class FairnessControllerTestSuite:
                 use_secagg,
             )
         # Run mock client computations and compute expected aggregate.
-        share_vals = []  # type: List[List[float]]
-        local_vals = []  # type: List[Dict[str, Dict[Tuple[Any, ...], float]]]
+        share_vals: List[List[float]] = []
+        local_vals: List[Dict[str, Dict[Tuple[Any, ...], float]]] = []
         for idx, client in enumerate(clients):
             with mock.patch.object(
                 client.computer,
@@ -390,7 +392,9 @@ class FairnessControllerTestSuite:
                 client_values = client.compute_fairness_measures(32)
                 share_vals.append(client_values[0])
                 local_vals.append(client_values[1])
-        server_values = [float(sum(values)) for values in zip(*share_vals)]
+        server_values = [
+            float(sum(values)) for values in zip(*share_vals, strict=False)
+        ]
         # Setup optional SecAgg and mock network communication endpoints.
         # Run the tested method.
         n_peers = len(clients)
@@ -453,8 +457,8 @@ class FairnessControllerTestSuite:
         """
         # Instantiate the fairness and optional secagg controllers.
         n_peers = len(CLIENT_COUNTS)
-        decrypter = None  # type: Optional[Decrypter]
-        encrypters = [None] * n_peers  # type: List[Optional[Encrypter]]
+        decrypter: Optional[Decrypter] = None
+        encrypters: List[Optional[Encrypter]] = [None] * n_peers
         if use_secagg:
             decrypter, encrypters = build_secagg_controllers(  # type: ignore
                 n_peers

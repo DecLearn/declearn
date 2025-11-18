@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -27,9 +27,9 @@ import pytest
 from declearn.aggregator import Aggregator, SumAggregator
 from declearn.communication.utils import ErrorMessageException
 from declearn.fairness.api import (
-    FairnessDataset,
     FairnessControllerClient,
     FairnessControllerServer,
+    FairnessDataset,
 )
 from declearn.fairness.fairgrad import (
     FairgradControllerClient,
@@ -62,9 +62,11 @@ class TestFairgradControllers(FairnessControllerTestSuite):
     ) -> None:
         aggregator = mock.create_autospec(Aggregator, instance=True)
         with pytest.warns(RuntimeWarning, match="SumAggregator"):
-            agg_final, server, clients = (
-                await self.run_finalize_fairness_setup(aggregator, use_secagg)
-            )
+            (
+                agg_final,
+                server,
+                clients,
+            ) = await self.run_finalize_fairness_setup(aggregator, use_secagg)
         # Verify that aggregators were replaced with a SumAggregator.
         assert isinstance(agg_final, SumAggregator)
         assert all(
@@ -82,7 +84,7 @@ class TestFairgradControllers(FairnessControllerTestSuite):
         """Verify that FairGrad weights were shared to clients and applied."""
         assert isinstance(server, FairgradControllerServer)
         weights = server.weights_controller.get_current_weights(norm_nk=True)
-        expectw = dict(zip(server.groups, weights))
+        expectw = dict(zip(server.groups, weights, strict=False))
         for client in clients:
             mock_dst = client.manager.train_data
             assert isinstance(mock_dst, FairnessDataset)

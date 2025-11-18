@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,11 +17,12 @@
 
 """Tools to add support for non-standard types' JSON-(de)serialization."""
 
+from __future__ import annotations
+
 import dataclasses
 import json
 import warnings
 from typing import Any, Callable, Dict, Optional, Type, TypedDict
-
 
 __all__ = [
     "add_json_support",
@@ -32,10 +33,12 @@ __all__ = [
 ]
 
 
-JSON_PACK = {}  # type:  Dict[Type[Any], SerializeSpec]
-JSON_UNPACK = {}  # type:  Dict[str, SerializeSpec]
+JSON_PACK: Dict[Type[Any], SerializeSpec] = {}
+JSON_UNPACK: Dict[str, SerializeSpec] = {}
 
-JsonPack = TypedDict("JsonPack", {"__type__": str, "dump": Any})
+JsonPack = TypedDict(  # pylint: disable=invalid-name
+    "JsonPack", {"__type__": str, "dump": Any}
+)
 
 
 @dataclasses.dataclass
@@ -142,7 +145,8 @@ def json_unpack(obj: Dict[str, Any]) -> Any:
         warnings.warn(
             "JSON deserializer received a seemingly-packed object "
             f"of name '{obj['__type__']}', the specifications for "
-            "which are unavailable.\nIt was returned as-is."
+            "which are unavailable.\nIt was returned as-is.",
+            stacklevel=2,
         )
         return obj
     # Otherwise, use the recovered spec to unpack the object.

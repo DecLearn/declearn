@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -38,7 +38,6 @@ from declearn.secagg.x3dh.messages import (
     X3DHResponses,
     X3DHTrigger,
 )
-
 
 __all__ = [
     "run_x3dh_setup_client",
@@ -220,7 +219,7 @@ class X3DHServerRound:  # pylint: disable=too-few-public-methods
         n_req = (n_cli * (n_cli - 1)) // 2
         direction = self.rng.uniform(size=n_req) < 0.5
         # Format results as a dict: for each client, those they will request.
-        requests = {name: [] for name in clients}  # type: Dict[str, List[str]]
+        requests: Dict[str, List[str]] = {name: [] for name in clients}
         idx = 0
         for cdx, cli_a in enumerate(clients[:-1], start=1):
             for cli_b in clients[cdx:]:
@@ -242,7 +241,9 @@ class X3DHServerRound:  # pylint: disable=too-few-public-methods
         replies = {client: X3DHRequests(requests=[]) for client in queries}
         for client, cli_msg in queries.items():
             assert len(cli_msg.requests) == len(requests[client])
-            for dst, req in zip(requests[client], cli_msg.requests):
+            for dst, req in zip(
+                requests[client], cli_msg.requests, strict=False
+            ):
                 replies[dst].requests.append(req)
         # Send back triaged requests to their recipients.
         await self.netwk.send_messages(replies)

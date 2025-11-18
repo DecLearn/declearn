@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -64,7 +64,7 @@ class FedProxRegularizer(Regularizer):
         alpha: float = 0.01,
     ) -> None:
         super().__init__(alpha)
-        self.ref_wgt = None  # type: Optional[Vector]
+        self.ref_wgt: Optional[Vector] = None
 
     def on_round_start(
         self,

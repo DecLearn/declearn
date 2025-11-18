@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,12 +19,18 @@
 
 import abc
 import copy
-from typing import (
-    # fmt: off
-    Any, Dict, Generic, List, Optional, Tuple, Type, TypeVar, Union
+from typing import (  # fmt: off
+    Any,
+    Dict,
+    Generic,
+    List,
+    Optional,
+    Self,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
 )
-
-from typing_extensions import Self  # future: import from typing (py >=3.11)
 
 from declearn.model.api import VectorSpec
 from declearn.utils import (
@@ -93,6 +99,7 @@ class SecureAggregate(Generic[AggregateT], metaclass=abc.ABCMeta):
             aggregated into this instance.
         """
         # backend class; pylint: disable=too-many-arguments
+        # pylint: disable=too-many-positional-arguments
         self.encrypted = encrypted
         self.enc_specs = enc_specs
         self.cleartext = cleartext or {}

@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -37,7 +37,7 @@ from declearn.utils import (
 )
 
 
-class MockClass:
+class MockClass:  # noqa: PLW1641
     """Mock class implementing get/from config used for testing purposes."""
 
     def __init__(self, val: int = 42) -> None:
@@ -108,7 +108,7 @@ def test_serialize_unregistered() -> None:
 
 
 def test_serialize_registered(
-    registered_class: Tuple[Type[MockClass], str]
+    registered_class: Tuple[Type[MockClass], str],
 ) -> None:
     """Unit tests for `serialize_object` with a registered type."""
     cls, group = registered_class

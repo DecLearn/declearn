@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,9 +18,7 @@
 """API-defining abstract base class for time-based learning rate schedulers."""
 
 import abc
-from typing import Any, ClassVar, Dict
-
-from typing_extensions import Self  # future: import from typing (py >=3.11)
+from typing import Any, ClassVar, Dict, Self
 
 from declearn.utils import (
     access_registered,

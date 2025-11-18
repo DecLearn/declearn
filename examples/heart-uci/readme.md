@@ -70,7 +70,7 @@ We then sequentially run the server then the clients on separate terminals.
    ```
 
    Note that in real-life applications, one would most likely use certificates
-   certificates signed by a trusted certificate authority instead.
+   signed by a trusted certificate authority instead.
    Alternatively, `declearn.test_utils.gen_ssl_certificates` may be used to
    generate a self-signed CA and a signed certificate for a given domain name
    or IP address.

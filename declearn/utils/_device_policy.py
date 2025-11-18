@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,7 +26,6 @@ This private submodule defines:
 
 import dataclasses
 from typing import Optional
-
 
 __all__ = [
     "DevicePolicy",
@@ -77,7 +76,9 @@ class DevicePolicy:
             )
 
 
-DEVICE_POLICY = DevicePolicy(gpu=True, idx=None)
+DEVICE_POLICY = DevicePolicy(  # pylint: disable=[invalid-name]
+    gpu=True, idx=None
+)
 
 
 def get_device_policy() -> DevicePolicy:
@@ -107,7 +108,7 @@ def set_device_policy(
 ) -> None:
     """Update the current global device policy.
 
-    To access the current policy, use `declearn.utils.set_device_policy`.
+    To access the current policy, use `declearn.utils.get_device_policy`.
 
     Parameters
     ----------

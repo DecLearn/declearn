@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,7 +18,6 @@
 """API-defining ABCs for SecAgg setup config, routines and messages."""
 
 from typing import Any, Dict, Tuple, Type, Union
-
 
 from declearn.secagg.api import SecaggConfigClient, SecaggConfigServer
 from declearn.secagg.utils import IdentityKeys
@@ -96,9 +95,9 @@ def parse_secagg_config_server(
     return cls.from_params(bitsize=bitsize, clipval=clipval, **kwargs)
 
 
-def list_available_secagg_types() -> (
-    Dict[str, Tuple[Type[SecaggConfigClient], Type[SecaggConfigServer]]]
-):
+def list_available_secagg_types() -> Dict[
+    str, Tuple[Type[SecaggConfigClient], Type[SecaggConfigServer]]
+]:
     """List available SecAgg types and access associated config types.
 
     Note: partially-defined SecAgg types (e.g. with a registered type for

@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,7 +29,6 @@ from declearn.dataset.utils import load_data_array
 from declearn.fairness.api import FairnessDataset
 from declearn.typing import DataArray
 
-
 __all__ = [
     "FairnessInMemoryDataset",
 ]
@@ -49,7 +48,7 @@ class FairnessInMemoryDataset(FairnessDataset, InMemoryDataset):
     which samples belong.
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         data: Union[DataArray, str],
         *,
@@ -115,8 +114,8 @@ class FairnessInMemoryDataset(FairnessDataset, InMemoryDataset):
             seed=seed,
         )
         # Pre-emptively declare attributes to deal with fairness balancing.
-        self.sensitive = pd.Series()  # type: pd.Series[Any]
-        self._smp_wght = self.weights  # type: DataArray
+        self.sensitive: pd.Series = pd.Series()
+        self._smp_wght: DataArray = self.weights
         # Actually set up sensitive groups based on specific parameters.
         self._set_sensitive_data(sensitive=s_attr, use_label=sensitive_target)
 
@@ -150,7 +149,7 @@ class FairnessInMemoryDataset(FairnessDataset, InMemoryDataset):
         """
         # Gather (and/or validate) sensitive data as a data array.
         s_data = self._parse_sensitive_data(sensitive)
-        if len(s_data) != len(self.data):
+        if len(s_data) != len(self.data):  # type: ignore
             raise ValueError(
                 "The passed 'sensitive' data was parsed into a DataFrame with"
                 " a number of records that does not match the base data."
@@ -163,6 +162,7 @@ class FairnessInMemoryDataset(FairnessDataset, InMemoryDataset):
                     " called with 'use_label=True', but there are no labels"
                     " defined for this instance.",
                     RuntimeWarning,
+                    stacklevel=2,
                 )
             else:
                 target = (
@@ -172,7 +172,9 @@ class FairnessInMemoryDataset(FairnessDataset, InMemoryDataset):
                 )
                 s_data = pd.concat([target, s_data], axis=1)
         # Wrap sensitive data as a Series of tuples of values.
-        self.sensitive = pd.Series(zip(*[s_data[c] for c in s_data.columns]))
+        self.sensitive = pd.Series(
+            zip(*[s_data[c] for c in s_data.columns], strict=False)
+        )
 
     def _parse_sensitive_data(
         self,
@@ -207,7 +209,7 @@ class FairnessInMemoryDataset(FairnessDataset, InMemoryDataset):
         if isinstance(sensitive, np.ndarray):
             return pd.DataFrame(sensitive)
         if isinstance(sensitive, scipy.sparse.spmatrix):
-            return pd.DataFrame(sensitive.toarray())
+            return pd.DataFrame(sensitive.toarray())  # type: ignore
         raise TypeError(
             "'sensitive' should be a numpy array, scipy matrix, pandas"
             " DataFrame, path to such a structure's file dump, or list"
@@ -229,12 +231,12 @@ class FairnessInMemoryDataset(FairnessDataset, InMemoryDataset):
         group: Tuple[Any, ...],
     ) -> InMemoryDataset:
         mask = self.sensitive == group
-        inputs = self.feats[mask]
-        target = None if self.target is None else self.target[mask]
+        inputs = self.feats[mask]  # type: ignore
+        target = (
+            None if (self.target is None) else self.target[mask]  # type: ignore
+        )
         s_wght = (
-            None
-            if self._smp_wght is None
-            else self._smp_wght[mask]  # type: ignore
+            None if self._smp_wght is None else self._smp_wght[mask]  # type: ignore
         )
         return InMemoryDataset(
             data=inputs,

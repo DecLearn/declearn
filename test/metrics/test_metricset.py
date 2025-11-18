@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,8 +17,8 @@
 
 """Unit tests for `declearn.metrics.MetricSet`."""
 
-from unittest import mock
 from typing import Tuple
+from unittest import mock
 
 import numpy as np
 import pytest
@@ -31,9 +31,9 @@ from declearn.metrics import (
 )
 
 
-def get_mock_metricset() -> (
-    Tuple[MeanAbsoluteError, MeanSquaredError, MetricSet]
-):
+def get_mock_metricset() -> Tuple[
+    MeanAbsoluteError, MeanSquaredError, MetricSet
+]:
     """Provide with a MetricSet wrapping mock metrics."""
     mae = mock.create_autospec(MeanAbsoluteError, instance=True)
     mae.name = MeanAbsoluteError.name

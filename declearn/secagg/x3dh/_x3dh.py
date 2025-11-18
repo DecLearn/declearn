@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -34,7 +34,6 @@ from cryptography.hazmat.primitives.asymmetric.x25519 import (
 )
 from cryptography.hazmat.primitives.ciphers import aead as cryptography_aead
 from cryptography.hazmat.primitives.kdf import hkdf as cryptography_hkdf
-
 
 __all__ = [
     "X3DHManager",
@@ -84,9 +83,9 @@ class X3DHManager:
         self.id_key = prv_key
         self.sp_key = X25519PrivateKey.generate()
         self.trusted = {key.public_bytes_raw() for key in trusted}
-        self._pre_rq = None  # type: Optional[bytes]
-        self._otkeys = {}  # type: Dict[bytes, X25519PrivateKey]
-        self.secrets = {}  # type: Dict[bytes, bytes]
+        self._pre_rq: Optional[bytes] = None
+        self._otkeys: Dict[bytes, X25519PrivateKey] = {}
+        self.secrets: Dict[bytes, bytes] = {}
 
     def _create_prerequest(
         self,

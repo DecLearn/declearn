@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -33,9 +33,9 @@ from declearn.communication.utils import (
 )
 from declearn.messaging import Error, Message, SerializedMessage
 from declearn.secagg.api import SecaggConfigClient, SecaggConfigServer
-from declearn.secagg.joye_libert._primitives import DEFAULT_BIPRIME
 from declearn.secagg.joye_libert._decrypt import JoyeLibertDecrypter
 from declearn.secagg.joye_libert._encrypt import JoyeLibertEncrypter
+from declearn.secagg.joye_libert._primitives import DEFAULT_BIPRIME
 from declearn.secagg.joye_libert.messages import (
     JoyeLibertPeerInfo,
     JoyeLibertPublicShare,
@@ -210,7 +210,7 @@ class JoyeLibertSecaggConfigClient(
         y_share = shares.pop(xcoord[self.id_keys.pub_key_bytes])
         # Encrypt, address and send secret shares to peers.
         id_keys = {coord: idk for idk, coord in xcoord.items()}
-        peer_shares = {}  # type: Dict[str, str]
+        peer_shares: Dict[str, str] = {}
         for coord, share in shares.items():
             key = base64.urlsafe_b64encode(s_keys[id_keys[coord]])
             enc = cryptography.fernet.Fernet(key).encrypt(
@@ -360,7 +360,7 @@ class JoyeLibertSecaggConfigServer(
         # Ensure all clients share the same biprime key.
         # Record mappings between clients' identity key and name.
         biprime = 0
-        id_keys = {}  # type: Dict[str, str]
+        id_keys: Dict[str, str] = {}
         for client, msg in messages.items():
             if not biprime:
                 biprime = msg.biprime
@@ -396,7 +396,7 @@ class JoyeLibertSecaggConfigServer(
         messages = await verify_client_messages_validity(
             netwk, received, expected=JoyeLibertSecretShares
         )
-        c_shares = {}  # type: Dict[str, Dict[str, str]]
+        c_shares: Dict[str, Dict[str, str]] = {}
         for client, msg in messages.items():
             for idk, val in msg.shares.items():
                 c_shares.setdefault(c_names[idk], {})[id_keys[client]] = val
@@ -439,7 +439,7 @@ class JoyeLibertSecaggConfigServer(
         messages = await verify_client_messages_validity(
             netwk, received, expected=JoyeLibertPublicShare
         )
-        s_shares = []  # type: List[Tuple[int, int]]
+        s_shares: List[Tuple[int, int]] = []
         for client, msg in messages.items():
             x_coord = int.from_bytes(bytes.fromhex(id_keys[client]), "big")
             y_coord = msg.share

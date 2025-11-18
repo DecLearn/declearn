@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,8 +29,7 @@ Instructions to re-generate the code:
 """
 
 try:
-    from . import message_pb2
-    from . import message_pb2_grpc
+    from . import message_pb2, message_pb2_grpc
 except ImportError as err:
     raise ImportError(
         "Failed to import grpc protobuf code. Try re-generating the files?\n"

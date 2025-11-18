@@ -286,7 +286,7 @@ of coherence across peers.
 
 Routines to set up matching `Encrypter` and `Decrypter` instances across a
 federated network of peers are to be implemented by a pair of
-`SecaggConfligClient` and `SecaggConfligServer` subclasses. In addition, a
+`SecaggConfigClient` and `SecaggConfigServer` subclasses. In addition, a
 dedicated `SecaggSetupQuery` subclass (itself a `Message`) should be defined.
 
 These classes define a setup that is bound to be initiated by the server, that

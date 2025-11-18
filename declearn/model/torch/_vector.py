@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,18 +17,16 @@
 
 """TorchVector data arrays container."""
 
-from typing import Any, Callable, Dict, List, Set, Tuple, Type, Union
+from typing import Any, Callable, Dict, List, Self, Set, Tuple, Type, Union
 
 import numpy as np
 import torch
-from typing_extensions import Self  # future: import from typing (Py>=3.11)
 
+from declearn.model._utils import flatten_numpy_arrays, unflatten_numpy_arrays
 from declearn.model.api import Vector, VectorSpec, register_vector_type
 from declearn.model.sklearn import NumpyVector
 from declearn.model.torch.utils import select_device
-from declearn.model._utils import flatten_numpy_arrays, unflatten_numpy_arrays
 from declearn.utils import get_device_policy
-
 
 __all__ = [
     "TorchVector",
@@ -36,7 +34,7 @@ __all__ = [
 
 
 @register_vector_type(torch.Tensor)
-class TorchVector(Vector):
+class TorchVector(Vector):  # noqa : PLW1641
     """Vector subclass to store PyTorch tensors.
 
     This Vector is designed to store a collection of named PyTorch
@@ -234,4 +232,4 @@ class TorchVector(Vector):
         shapes = [v_spec.shapes[name] for name in v_spec.names]
         dtypes = [v_spec.dtypes[name] for name in v_spec.names]
         arrays = unflatten_numpy_arrays(values, shapes, dtypes)
-        return cls.unpack(dict(zip(v_spec.names, arrays)))
+        return cls.unpack(dict(zip(v_spec.names, arrays, strict=False)))

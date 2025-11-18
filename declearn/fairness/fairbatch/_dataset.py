@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -176,6 +176,7 @@ class FairbatchDataset(FairnessDataset):
             key: val / total for key, val in probas.items()
         }
 
+    # pylint: disable-next=too-many-positional-arguments
     def generate_batches(
         self,
         batch_size: int,
@@ -204,7 +205,7 @@ class FairbatchDataset(FairnessDataset):
             for group, g_batch_size in group_batch_size.items()
             if g_batch_size > 0
         ]
-        for batches in zip(*generators):
+        for batches in zip(*generators, strict=False):
             yield self._concatenate_batches(batches)
 
     @staticmethod
@@ -225,7 +226,8 @@ class FairbatchDataset(FairnessDataset):
         )
         return x_dat, y_dat, w_dat
 
-    def _generate_sensitive_group_batches(
+    # pylint: disable-next=too-many-positional-arguments
+    def _generate_sensitive_group_batches(  # noqa: PLR0913
         self,
         group: Tuple[Any, ...],
         nb_batches: int,
@@ -281,7 +283,8 @@ class FairbatchDataset(FairnessDataset):
                 for _ in range(nb_batches):
                     yield full
 
-    def _generate_batches(
+    # pylint: disable-next=too-many-positional-arguments
+    def _generate_batches(  # noqa: PLR0913
         self,
         dataset: Dataset,
         group: Tuple[Any, ...],

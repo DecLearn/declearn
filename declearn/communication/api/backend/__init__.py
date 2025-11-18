@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -42,6 +42,5 @@ Submodules exposing truly-backend bricks
     Communication flags used by the declearn communication backend.
 """
 
-from . import actions
-from . import flags
+from . import actions, flags
 from ._handler import MessagesHandler

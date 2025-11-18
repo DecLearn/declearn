@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,7 +22,6 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 from declearn.quickrun._config import DataSourceConfig
-
 
 __all__ = [
     "parse_data_folder",
@@ -67,7 +66,7 @@ def parse_data_folder(
     data_folder = get_data_folder_path(data_config.data_folder, folder)
     # Identify clients' data folders.
     client_names = list_client_names(data_folder, data_config.client_names)
-    clients = {c: {} for c in client_names}  # type: Dict[str, Dict[str, str]]
+    clients: Dict[str, Dict[str, str]] = {c: {} for c in client_names}
     # Set up a mapping between expected files and their naming.
     data_items = [
         "train_data",

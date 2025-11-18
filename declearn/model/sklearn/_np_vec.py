@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,14 +17,12 @@
 
 """NumpyVector data arrays container."""
 
-from typing import Any, Callable, Dict, List, Tuple, Union
+from typing import Any, Callable, Dict, List, Self, Tuple, Union
 
 import numpy as np
-from typing_extensions import Self  # future: import from typing (Py>=3.11)
 
-from declearn.model.api._vector import Vector, VectorSpec, register_vector_type
 from declearn.model._utils import flatten_numpy_arrays, unflatten_numpy_arrays
-
+from declearn.model.api._vector import Vector, VectorSpec, register_vector_type
 
 __all__ = [
     "NumpyVector",
@@ -32,7 +30,7 @@ __all__ = [
 
 
 @register_vector_type(np.ndarray)
-class NumpyVector(Vector):
+class NumpyVector(Vector):  # noqa : PLW1641
     """Vector subclass to store numpy.ndarray coefficients.
 
     This Vector is designed to store a collection of named
@@ -142,4 +140,4 @@ class NumpyVector(Vector):
         shapes = [v_spec.shapes[name] for name in v_spec.names]
         dtypes = [v_spec.dtypes[name] for name in v_spec.names]
         arrays = unflatten_numpy_arrays(values, shapes, dtypes)
-        return cls(dict(zip(v_spec.names, arrays)))
+        return cls(dict(zip(v_spec.names, arrays, strict=False)))

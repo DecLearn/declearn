@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -38,6 +38,7 @@ import os
 from typing import Type
 
 import pytest
+
 from declearn.optimizer import list_optim_modules
 from declearn.optimizer.modules import AuxVar, NoiseModule, OptiModule
 from declearn.test_utils import (

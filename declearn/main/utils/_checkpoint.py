@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,11 +20,10 @@
 import json
 import os
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Self, Union
 
 import numpy as np
 import pandas as pd
-from typing_extensions import Self  # future: import from typing (py >=3.11)
 
 from declearn.model.api import Model
 from declearn.optimizer import Optimizer
@@ -377,7 +376,7 @@ class Checkpointer:
             files, as well as the values appended to the metrics files.
         """
         timestamp = datetime.now().strftime("%y-%m-%d_%H-%M-%S")
-        remove = []  # type: List[str]
+        remove: List[str] = []
         if model:
             self.save_model(
                 model, config=first_call, state=True, timestamp=timestamp

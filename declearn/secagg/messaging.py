@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,9 +19,7 @@
 
 import abc
 import dataclasses
-from typing import Dict, Generic, List, Mapping, TypeVar
-
-from typing_extensions import Self  # future: import from typing (py >=3.11)
+from typing import Dict, Generic, List, Mapping, Self, TypeVar
 
 from declearn.aggregator import ModelUpdates
 from declearn.messaging import (
@@ -297,7 +295,7 @@ class SecaggFairnessCounts(SecaggMessage[FairnessCounts]):
     ) -> Self:
         counts = [
             decrypter.sum_encrypted([v_a, v_b])
-            for v_a, v_b in zip(self.counts, other.counts)
+            for v_a, v_b in zip(self.counts, other.counts, strict=False)
         ]
         return self.__class__(counts=counts)
 
@@ -338,6 +336,6 @@ class SecaggFairnessReply(SecaggMessage[FairnessReply]):
             )
         values = [
             decrypter.sum_encrypted([v_a, v_b])
-            for v_a, v_b in zip(self.values, other.values)
+            for v_a, v_b in zip(self.values, other.values, strict=False)
         ]
         return self.__class__(values=values)

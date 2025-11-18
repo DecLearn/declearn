@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,6 +25,7 @@ from typing import Any, Callable, Optional, Union
 # pylint: disable=import-error,no-name-in-module
 import tensorflow as tf  # type: ignore
 import tensorflow.keras as tf_keras  # type: ignore
+
 # pylint: enable=import-error,no-name-in-module
 # fmt: on
 
@@ -70,7 +71,8 @@ def select_device(
     if gpu and not devices:
         warnings.warn(
             "Cannot use a GPU device: either CUDA is unavailable "
-            "or no GPU is visible to tensorflow."
+            "or no GPU is visible to tensorflow.",
+            stacklevel=2,
         )
         device_type, idx = "CPU", 0
         devices = tf.config.list_logical_devices("CPU")
@@ -80,6 +82,7 @@ def select_device(
             f"Cannot use {device_type} device n°{idx}: index is out-of-range."
             f"\nUsing {device_type} device n°0 instead.",
             RuntimeWarning,
+            stacklevel=2,
         )
         idx = 0
     # Return the selected device.

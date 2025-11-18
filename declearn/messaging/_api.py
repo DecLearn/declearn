@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,18 +20,15 @@
 import dataclasses
 import json
 from abc import ABCMeta
-from typing import Any, ClassVar, Dict, Generic, Type, TypeVar
-
-from typing_extensions import Self  # future: import from typing (py >=3.11)
+from typing import Any, ClassVar, Dict, Generic, Self, Type, TypeVar
 
 from declearn.utils import (
     access_registered,
     create_types_registry,
-    register_type,
     json_pack,
     json_unpack,
+    register_type,
 )
-
 
 __all__ = [
     "Message",

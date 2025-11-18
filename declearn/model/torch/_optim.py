@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,18 +18,16 @@
 """Hacky OptiModule subclass enabling the use of a torch.nn.Optimizer."""
 
 import importlib
-from typing import Any, Dict, List, Optional, Union, Tuple, Type
+from typing import Any, Dict, List, Optional, Self, Tuple, Type, Union
 
 import numpy as np
 import torch
-from typing_extensions import Self  # future: import from typing (py >=3.11)
 
 from declearn.model.api import Vector
-from declearn.model.torch.utils import select_device
 from declearn.model.torch._vector import TorchVector
+from declearn.model.torch.utils import select_device
 from declearn.optimizer.modules import OptiModule
 from declearn.utils import get_device_policy
-
 
 __all__ = [
     "TorchOptiModule",
@@ -108,8 +106,8 @@ class TorchOptiModule(OptiModule):
         self.optim_cls = self._validate_optim_cls(optim_cls, validate)
         self.kwargs = kwargs
         self.kwargs["lr"] = 1.0
-        self._params = {}  # type: Dict[str, torch.nn.Parameter]
-        self._optim = None  # type: Optional[torch.optim.Optimizer]
+        self._params: Dict[str, torch.nn.Parameter] = {}
+        self._optim: Optional[torch.optim.Optimizer] = None
 
     def _validate_optim_cls(
         self,
@@ -270,7 +268,7 @@ class TorchOptiModule(OptiModule):
         sdict = (
             {"state": {}} if self._optim is None else self._optim.state_dict()
         )
-        state = []  # type: List[Tuple[int, Dict[str, Any]]]
+        state: List[Tuple[int, Dict[str, Any]]] = []
         for key, group in sdict["state"].items():
             gval = {
                 k: v.cpu().numpy().copy() if isinstance(v, torch.Tensor) else v

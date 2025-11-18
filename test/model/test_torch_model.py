@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -226,9 +226,6 @@ class TestTorchModel(ModelTestSuite):
         test_case: ModelTestCase,
     ) -> None:
         if getattr(test_case, "kind", "") == "RNN":
-            # NOTE: this test fails on python 3.8 but succeeds in 3.10
-            #       due to the (de)serialization of a custom nn.Module
-            #       the expected model behaviour is, however, correct
             try:
                 super().test_get_config(test_case)
             except AssertionError:
@@ -243,9 +240,6 @@ class TestTorchModel(ModelTestSuite):
         test_case: ModelTestCase,
     ) -> None:
         if getattr(test_case, "kind", "") == "RNN":
-            # NOTE: this test fails on python 3.8 but succeeds in 3.10
-            #       due to the (de)serialization of a custom nn.Module
-            #       the expected model behaviour is, however, correct
             try:
                 self._test_from_config(test_case)
             except AssertionError:
@@ -273,8 +267,12 @@ class TestTorchModel(ModelTestSuite):
         mod_a = list(model.get_wrapped_model().modules())
         mod_b = list(other.get_wrapped_model().modules())
         assert len(mod_a) == len(mod_b)
-        assert all(isinstance(a, type(b)) for a, b in zip(mod_a, mod_b))
-        assert all(repr(a) == repr(b) for a, b in zip(mod_a, mod_b))
+        assert all(
+            isinstance(a, type(b)) for a, b in zip(mod_a, mod_b, strict=False)
+        )
+        assert all(
+            repr(a) == repr(b) for a, b in zip(mod_a, mod_b, strict=False)
+        )
 
     def test_compute_batch_gradients_clipped(
         self,

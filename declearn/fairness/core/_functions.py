@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -112,7 +112,7 @@ class AccuracyParityFunction(FairnessFunction):
     ) -> Tuple[np.ndarray, np.ndarray]:
         counts = self._counts
         # Compute the sensitive-attributes-wise and total number of samples.
-        s_tot = {}  # type: Dict[Any, int]  # attributes-wise number of samples
+        s_tot: Dict[Any, int] = {}  # attributes-wise number of samples
         for categ, count in counts.items():
             s_tot[categ[1:]] = s_tot.get(categ[1:], 0) + count
         total = sum(s_tot.values())
@@ -190,8 +190,8 @@ class DemographicParityFunction(FairnessFunction):
         if len(set(key[0] for key in counts)) != 2:
             raise ValueError("Demographic Parity requires binary labels.")
         # Compute label-wise, attribute-wise and total number of samples.
-        l_tot = {}  # type: Dict[Any, int]  # label-wise number of samples
-        s_tot = {}  # type: Dict[Tuple[Any, ...], int]  # attribute-wise
+        l_tot: Dict[Any, int] = {}  # label-wise number of samples
+        s_tot: Dict[Tuple[Any, ...], int] = {}  # attribute-wise
         for categ, count in counts.items():
             l_tot[categ[0]] = l_tot.get(categ[0], 0) + count
             s_tot[categ[1:]] = s_tot.get(categ[1:], 0) + count
@@ -267,7 +267,7 @@ class EqualizedOddsFunction(FairnessFunction):
     ) -> Tuple[np.ndarray, np.ndarray]:
         counts = self._counts
         # Compute the label-wise number of samples.
-        l_tot = {}  # type: Dict[Any, int]  # label-wise number of samples
+        l_tot: Dict[Any, int] = {}  # label-wise number of samples
         for categ, count in counts.items():
             l_tot[categ[0]] = l_tot.get(categ[0], 0) + count
         # Compute fairness constraint constants C_k^k'.

@@ -11,8 +11,14 @@ __pycache__
 .vscode
 # Coverage files
 .coverage
+.coverage*
 htmlcov
 coverage.xml
+# Virtual environment files
+.venv/
+.venv*/
+venv/
+venv*/
 # Data files generated under examples.
 examples/*/*.csv
 examples/*/*.pem

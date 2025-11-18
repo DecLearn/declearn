@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -63,8 +63,7 @@ Utility entry-point
     together with declearn.
 """
 
-from . import utils
-from . import examples
+from . import examples, utils
 from ._base import Dataset, DataSpecs
 from ._inmemory import InMemoryDataset
 from ._split_data import split_data

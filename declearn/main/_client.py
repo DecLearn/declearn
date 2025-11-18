@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -36,12 +36,11 @@ from declearn.dataset import Dataset
 from declearn.fairness.api import FairnessControllerClient
 from declearn.main.utils import Checkpointer
 from declearn.messaging import Message, SerializedMessage
-from declearn.training import TrainingManager
+from declearn.secagg import messaging as secagg_messaging
 from declearn.secagg import parse_secagg_config_client
 from declearn.secagg.api import Encrypter, SecaggConfigClient, SecaggSetupQuery
-from declearn.secagg import messaging as secagg_messaging
+from declearn.training import TrainingManager
 from declearn.utils import LOGGING_LEVEL_MAJOR, get_logger
-
 
 __all__ = [
     "FederatedClient",
@@ -52,8 +51,8 @@ class FederatedClient:
     """Client-side Federated Learning orchestrating class."""
 
     # one-too-many attribute; pylint: disable=too-many-instance-attributes
-
-    def __init__(
+    # pylint: disable-next=too-many-positional-arguments
+    def __init__(  # noqa: PLR0913
         self,
         netwk: Union[NetworkClient, NetworkClientConfig, Dict[str, Any], str],
         train_data: Union[Dataset, str],
@@ -129,7 +128,7 @@ class FederatedClient:
         self.ckptr = checkpoint
         # Assign the optional SecAgg config and declare an Encrypter slot.
         self.secagg = self._parse_secagg(secagg)
-        self._encrypter = None  # type: Optional[Encrypter]
+        self._encrypter: Optional[Encrypter] = None
         # Record the metric-sharing and verbosity bool values.
         self.share_metrics = bool(share_metrics)
         if (self.secagg is not None) and not self.share_metrics:
@@ -141,8 +140,8 @@ class FederatedClient:
             warnings.warn(msg, UserWarning, stacklevel=-1)
         self.verbose = bool(verbose)
         # Create slots that are (opt.) populated during initialization.
-        self.trainmanager = None  # type: Optional[TrainingManager]
-        self.fairness = None  # type: Optional[FairnessControllerClient]
+        self.trainmanager: Optional[TrainingManager] = None
+        self.fairness: Optional[FairnessControllerClient] = None
 
     @staticmethod
     def _parse_netwk(netwk) -> Tuple[NetworkClient, bool]:
@@ -427,7 +426,8 @@ class FederatedClient:
         # fmt: off
         # lazy-import the DPTrainingManager, that involves some optional,
         # heavy-loadtime dependencies; pylint: disable=import-outside-toplevel
-        from declearn.training.dp import DPTrainingManager
+        from declearn.training.dp import DPTrainingManager # noqa: I001, PLC0415
+
         # pylint: enable=import-outside-toplevel
         self.trainmanager = DPTrainingManager(
             model=self.trainmanager.model,
@@ -542,7 +542,7 @@ class FederatedClient:
             await self.netwk.send_message(messaging.Error(error))
             return
         # Run the training round.
-        reply = self.trainmanager.training_round(message)  # type: Message
+        reply: Message = self.trainmanager.training_round(message)
         # Collect and optionally record batch-wise training losses.
         # Note: collection enables purging them from memory.
         losses = self.trainmanager.model.collect_training_losses()
@@ -593,7 +593,7 @@ class FederatedClient:
             await self.netwk.send_message(messaging.Error(error))
             return
         # Run the evaluation round.
-        reply = self.trainmanager.evaluation_round(message)  # type: Message
+        reply: Message = self.trainmanager.evaluation_round(message)
         # Post-process the results.
         if isinstance(reply, messaging.EvaluationReply):  # not an Error
             # Optionnally checkpoint the model, optimizer and local loss.

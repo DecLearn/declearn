@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -46,7 +46,8 @@ class FairfedControllerClient(FairnessControllerClient):
 
     algorithm = "fairfed"
 
-    def __init__(
+    # pylint: disable-next=too-many-positional-arguments
+    def __init__(  # noqa: PLR0913
         self,
         manager: TrainingManager,
         f_type: str,
@@ -140,11 +141,11 @@ class FairfedControllerClient(FairnessControllerClient):
         # Signal the server that things went well.
         await netwk.send_message(FairfedOkay())
         # Flatten group-wise local accuracy and fairness scores.
-        metrics = {
+        metrics: Dict[str, Union[float, np.ndarray]] = {
             f"{metric}_{group}": value
             for metric, m_dict in values.items()
             for group, value in m_dict.items()
-        }  # type: Dict[str, Union[float, np.ndarray]]
+        }
         # Add FairFed-specific metrics, then return.
         metrics["fairfed_value"] = fair_avg
         metrics["fairfed_delta"] = my_delta.delta

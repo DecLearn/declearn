@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,17 +21,23 @@ import abc
 import asyncio
 import logging
 import types
-from typing import (
-    # fmt: off
-    Any, ClassVar, Dict, List, Mapping, Optional, Set, Type, Tuple, Union
+from typing import (  # fmt: off
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Mapping,
+    Optional,
+    Self,
+    Set,
+    Tuple,
+    Type,
+    Union,
 )
-
-from typing_extensions import Self  # future: import from typing (py >=3.11)
 
 from declearn.communication.api.backend import MessagesHandler
 from declearn.messaging import Message, SerializedMessage
 from declearn.utils import create_types_registry, get_logger, register_type
-
 
 __all__ = [
     "NetworkServer",
@@ -90,7 +96,8 @@ class NetworkServer(metaclass=abc.ABCMeta):
         if register:
             register_type(cls, cls.protocol, group="NetworkServer")
 
-    def __init__(
+    # pylint: disable-next=too-many-positional-arguments
+    def __init__(  # noqa: PLR0913
         self,
         host: str,
         port: int,
@@ -335,7 +342,7 @@ class NetworkServer(metaclass=abc.ABCMeta):
         received = await asyncio.gather(*routines, return_exceptions=False)
         return {
             client: SerializedMessage.from_message_string(string)
-            for client, string in zip(clients, received)
+            for client, string in zip(clients, received, strict=False)
         }
 
     async def wait_for_messages_with_timeout(
@@ -369,9 +376,9 @@ class NetworkServer(metaclass=abc.ABCMeta):
             self.handler.recv_message(client, timeout) for client in clients
         ]
         received = await asyncio.gather(*routines, return_exceptions=True)
-        messages = {}  # type: Dict[str, SerializedMessage]
-        timeouts = []  # type: List[str]
-        for client, output in zip(clients, received):
+        messages: Dict[str, SerializedMessage] = {}
+        timeouts: List[str] = []
+        for client, output in zip(clients, received, strict=False):
             if isinstance(output, asyncio.TimeoutError):
                 timeouts.append(client)
             elif isinstance(output, BaseException):

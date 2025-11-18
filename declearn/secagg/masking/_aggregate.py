@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,9 +17,7 @@
 
 """Secure Aggregation Controller using Joye-Libert homomorphic summation."""
 
-from typing import Any, Dict, List, Optional, Type, TypeVar
-
-from typing_extensions import Self  # future: import from typing (py >=3.11)
+from typing import Any, Dict, List, Optional, Self, Type, TypeVar
 
 from declearn.secagg.api import EncryptedSpecs, SecureAggregate
 from declearn.utils import Aggregate
@@ -34,7 +32,8 @@ AggregateT = TypeVar("AggregateT", bound=Aggregate)
 class MaskedAggregate(SecureAggregate[AggregateT]):
     """'Aggregate'-like container for mask-encrypted 'Aggregate' objects."""
 
-    def __init__(
+    # pylint: disable-next=too-many-positional-arguments
+    def __init__(  # noqa: PLR0913
         self,
         encrypted: List[int],
         enc_specs: EncryptedSpecs,
@@ -88,7 +87,9 @@ class MaskedAggregate(SecureAggregate[AggregateT]):
         val_a: List[int],
         val_b: List[int],
     ) -> List[int]:
-        return [(a + b) % self.max_int for a, b in zip(val_a, val_b)]
+        return [
+            (a + b) % self.max_int for a, b in zip(val_a, val_b, strict=False)
+        ]
 
     def to_dict(
         self,

@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -75,6 +75,7 @@ except ModuleNotFoundError:
     pass
 else:
     import tensorflow.keras as tf_keras  # type: ignore
+
     from declearn.dataset.tensorflow import TensorflowDataset
     from declearn.model.tensorflow import TensorflowModel, TensorflowVector
 # torch imports
@@ -171,7 +172,8 @@ def _get_model_haiku() -> Model:
     model.initialize({"data_type": "float32", "features_shape": (100,)})
     zeros_like = jax.jit(jax.numpy.zeros_like, backend="cpu")
     zeros = {
-        key: zeros_like(val) for key, val in model.get_weights().coefs.items()
+        key: zeros_like(val)  # pylint: disable=not-callable
+        for key, val in model.get_weights().coefs.items()
     }
     model.set_weights(JaxNumpyVector(zeros))
     return model
@@ -303,7 +305,7 @@ def test_declearn_baseline(
     )
     # Iteratively train the model and evaluate it between rounds.
     r_sq = RSquared()
-    scores = []  # type: List[float]
+    scores: List[float] = []
     for _ in range(rounds):
         for batch in dst_train.generate_batches(
             batch_size=b_size, drop_remainder=False
@@ -349,7 +351,7 @@ def prep_client_datasets(
         n_valid=clients * n_valid,
     )
     # Wrap up the data into client-wise pairs of dataset.
-    out = []  # type: List[Tuple[Dataset, Dataset]]
+    out: List[Tuple[Dataset, Dataset]] = []
     for idx in range(clients):
         # Gather the client's training dataset.
         srt = n_train * idx
@@ -372,7 +374,7 @@ def prep_client_datasets(
     return out
 
 
-async def async_run_server(
+async def async_run_server(  # noqa: PLR0913
     folder: str,
     framework: FrameworkType,
     lrate: float = 0.01,
@@ -382,6 +384,7 @@ async def async_run_server(
 ) -> None:
     """Routine to run a FL server, called by `run_declearn_experiment`."""
     # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-positional-arguments
     # Set up the FederatedServer.
     model = get_model(framework)
     netwk = NetworkServerConfig.from_params(

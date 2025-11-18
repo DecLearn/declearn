@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -34,9 +34,9 @@ import os
 
 from scipy.sparse import (  # type: ignore
     bsr_matrix,
+    coo_matrix,
     csc_matrix,
     csr_matrix,
-    coo_matrix,
     dia_matrix,
     dok_matrix,
     lil_matrix,
@@ -95,10 +95,10 @@ def sparse_to_file(
     if os.path.splitext(path)[1] != ".sparse":
         path += ".sparse"
     # Identify the type of sparse matrix, and convert it to lil.
-    name = SPARSE_TYPES.get(type(matrix))
+    name = SPARSE_TYPES.get(type(matrix))  # type: ignore
     if name is None:
         raise TypeError(f"Unsupported sparse matrix type: '{type(matrix)}'.")
-    lil = matrix.tolil()
+    lil = matrix.tolil()  # type: ignore
     # Record key metadata required to rebuild the matrix.
     meta = {
         "stype": name,
@@ -109,8 +109,8 @@ def sparse_to_file(
     os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
     with open(path, "w", encoding="utf-8") as file:
         file.write(json.dumps(meta))
-        for ind, val in zip(lil.rows, lil.data):
-            row = " ".join(f"{i}:{v}" for i, v in zip(ind, val))
+        for ind, val in zip(lil.rows, lil.data, strict=False):
+            row = " ".join(f"{i}:{v}" for i, v in zip(ind, val, strict=False))
             file.write("\n" + row)
 
 
@@ -164,10 +164,10 @@ def sparse_from_file(path: str) -> spmatrix:
         cnv = int if lil.dtype.kind == "i" else float
         # Iteratively parse and fill-in row data.
         for rix, row in enumerate(file):
-            row = row.strip(" \n")
-            if not row:  # all-zeros row
+            _row = row.strip(" \n")
+            if not _row:  # all-zeros row
                 continue
-            for field in row.split(" "):
+            for field in _row.split(" "):
                 ind, val = field.split(":")
                 lil[rix, int(ind)] = cnv(val)
     # Convert the matrix to its initial format and return.

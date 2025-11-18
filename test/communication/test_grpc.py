@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -40,8 +40,8 @@ except ModuleNotFoundError:
     pytest.skip("GRPC is unavailable", allow_module_level=True)
 
 from declearn.communication.api.backend.actions import Ping
-from declearn.communication.grpc._server import load_pem_file
 from declearn.communication.grpc import GrpcClient, GrpcServer
+from declearn.communication.grpc._server import load_pem_file
 from declearn.communication.grpc.protobufs import message_pb2
 from declearn.communication.grpc.protobufs.message_pb2_grpc import (
     MessageBoardServicer,
@@ -83,7 +83,7 @@ class FakeMessageBoard(MessageBoardServicer):
 
 
 @pytest_asyncio.fixture(name="insecure_grpc_server")
-async def insecure_grpc_server_fixture() -> AsyncIterator[grpc.Server]:
+async def insecure_grpc_server_fixture() -> AsyncIterator[grpc.aio.Server]:
     """Create, start and return a grpc Server with unsecured communications."""
     server = grpc.aio.server()
     mboard = FakeMessageBoard()
@@ -97,7 +97,7 @@ async def insecure_grpc_server_fixture() -> AsyncIterator[grpc.Server]:
 @pytest_asyncio.fixture(name="secure_grpc_server")
 async def secure_grpc_server_fixture(
     ssl_cert: Dict[str, str],
-) -> AsyncIterator[grpc.Server]:
+) -> AsyncIterator[grpc.aio.Server]:
     """Create, start and return a grpc Server with secured communications."""
     server = grpc.aio.server()
     mboard = FakeMessageBoard()

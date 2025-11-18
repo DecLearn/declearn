@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -96,9 +96,4 @@ References
     https://arxiv.org/abs/2110.00857
 """
 
-from . import api
-from . import core
-from . import fairbatch
-from . import fairfed
-from . import fairgrad
-from . import monitor
+from . import api, core, fairbatch, fairfed, fairgrad, monitor

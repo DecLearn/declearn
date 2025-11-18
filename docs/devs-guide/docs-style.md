@@ -302,7 +302,7 @@ Rest of the description, arguments, etc.
 
 You may include some LaTeX formulas as part of docstrings, that will be
 rendered using [mathjax](https://www.mathjax.org/) in the website docs,
-as long as they are delimited with `$$` signs, and you double all backquote
+as long as they are delimited with `$$` signs, and you double all backslashes
 to avoid bad python parsing (e.g. `$$ f(x) = \\sqrt{x} $$`).
 
 These should be used sparingly, to avoid making the raw docstrings unreadable

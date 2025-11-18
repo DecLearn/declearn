@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,6 @@ import pytest
 
 from declearn.fairness.api import FairnessFunction
 from declearn.fairness.fairgrad import FairgradWeightsController
-
 
 # pylint: disable=duplicate-code
 COUNTS = {(0, 0): 30, (0, 1): 15, (1, 0): 35, (1, 1): 20}
@@ -130,5 +129,5 @@ class TestFairgradWeightsController:
         fairness = controller.get_current_fairness()
         assert isinstance(fairness, dict)
         assert fairness == dict(
-            zip(controller.function.groups, controller.f_k)
+            zip(controller.function.groups, controller.f_k, strict=False)
         )

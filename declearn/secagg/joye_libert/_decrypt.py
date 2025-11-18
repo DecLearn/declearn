@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,7 +18,6 @@
 """Data decrypter for SecAgg using Joye-Libert homomorphic summation."""
 
 from typing import List, TypeVar
-
 
 from declearn.secagg.api import Decrypter, SecureAggregate
 from declearn.secagg.joye_libert._aggregate import JLSAggregate
@@ -58,6 +57,7 @@ class JoyeLibertDecrypter(Decrypter):
 
     secure_aggregate_cls = JLSAggregate
 
+    # pylint: disable-next=too-many-positional-arguments
     def __init__(
         self,
         pub_key: int,

@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,17 +18,18 @@
 """Model subclass to wrap TensorFlow models."""
 
 from copy import deepcopy
-from typing import Any, Dict, Iterable, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, Iterable, List, Optional, Self, Set, Tuple, Union
 
 import numpy as np
+
 # fmt: off
 # pylint: disable=import-error,no-name-in-module
 import tensorflow as tf  # type: ignore
 import tensorflow.keras as tf_keras  # type: ignore
+
 # pylint: enable=import-error,no-name-in-module
 # fmt: on
 from numpy.typing import ArrayLike
-from typing_extensions import Self  # future: import from typing (py >=3.11)
 
 from declearn.data_info import aggregate_data_info
 from declearn.model._utils import raise_on_stringsets_mismatch
@@ -155,7 +156,7 @@ class TensorflowModel(Model):
     def get_config(
         self,
     ) -> Dict[str, Any]:
-        config = tf_keras.layers.serialize(self._model)  # type: Dict[str, Any]
+        config: Dict[str, Any] = tf_keras.layers.serialize(self._model)
         kwargs = deepcopy(self._kwargs)
         loss = tf_keras.losses.serialize(kwargs.pop("loss"))
         return {"model": config, "loss": loss, "kwargs": kwargs}
@@ -257,7 +258,9 @@ class TensorflowModel(Model):
                 norm = tf.constant(max_norm)
                 grads, loss = self._compute_clipped_gradients(*data, norm)
         self._loss_history.append(float(loss.numpy()))
-        grads_and_vars = zip(grads, self._get_weight_variables(trainable=True))
+        grads_and_vars = zip(
+            grads, self._get_weight_variables(trainable=True), strict=False
+        )
         return TensorflowVector(
             {var.name: grad for grad, var in grads_and_vars}
         )
@@ -267,6 +270,7 @@ class TensorflowModel(Model):
         batch: Batch,
     ) -> Tuple[tf.Tensor, Optional[tf.Tensor], Optional[tf.Tensor]]:
         """Unpack and enforce Tensor conversion to an input data batch."""
+
         # fmt: off
         # Define an array-to-tensor conversion routine.
         def convert(data: Optional[ArrayLike]) -> Optional[tf.Tensor]:
@@ -328,11 +332,11 @@ class TensorflowModel(Model):
         s_wght: tf.Tensor,
     ) -> List[tf.Tensor]:
         """Clip sample-wise gradients then batch-average them."""
-        outp = []  # type: List[tf.Tensor]
+        outp: List[tf.Tensor] = []
         for grad in gradients:
             dims = list(range(1, grad.shape.rank))
-            grad = tf.clip_by_norm(grad, max_norm, axes=dims)
-            outp.append(tf.reduce_mean(grad * s_wght, axis=0))
+            clipped_grad = tf.clip_by_norm(grad, max_norm, axes=dims)
+            outp.append(tf.reduce_mean(clipped_grad * s_wght, axis=0))
         return outp
 
     def apply_updates(

@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -72,6 +72,9 @@ References
     https://arxiv.org/abs/2110.00857
 """
 
+from ._aggregator import FairfedAggregator
+from ._client import FairfedControllerClient
+from ._fairfed import FairfedValueComputer
 from ._messages import (
     FairfedDelta,
     FairfedDeltavg,
@@ -79,7 +82,4 @@ from ._messages import (
     FairfedOkay,
     SecaggFairfedDelta,
 )
-from ._aggregator import FairfedAggregator
-from ._fairfed import FairfedValueComputer
-from ._client import FairfedControllerClient
 from ._server import FairfedControllerServer

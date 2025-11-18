@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,7 +25,6 @@ from declearn.fairness.api._dataset import FairnessDataset
 from declearn.metrics import Accuracy, MeanMetric, MetricSet
 from declearn.model.api import Model
 from declearn.model.sklearn import SklearnSGDModel
-
 
 __all__ = [
     "FairnessMetricsComputer",
@@ -121,9 +120,9 @@ class FairnessMetricsComputer:
             with `{metric.name: {group: value}}` structure.
         """
         metricset = MetricSet(metrics)
-        output = {
+        output: Dict[str, Dict[Tuple[Any, ...], float]] = {
             metric.name: {} for metric in metrics
-        }  # type: Dict[str, Dict[Tuple[Any, ...], float]]
+        }
         for group in self.g_data:
             values = self.compute_metrics_over_sensitive_group(
                 group, metricset, model, batch_size, n_batch
@@ -132,6 +131,7 @@ class FairnessMetricsComputer:
                 output[metric.name][group] = float(values[metric.name])
         return output
 
+    # pylint: disable-next=too-many-positional-arguments
     def compute_metrics_over_sensitive_group(
         self,
         group: Tuple[Any, ...],

@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -88,10 +88,10 @@ async def test_x3dh_setup_routines(
         assert all(isinstance(key, bytes) for key in skd)
         assert all(isinstance(val, bytes) for val in skd.values())
     # Verify that keys exist and differ for all pairs of clients.
-    sec_keys = {
+    sec_keys: Dict[bytes, Dict[bytes, bytes]] = {
         idk.public_key().public_bytes_raw(): skd  # type: ignore
-        for idk, skd in zip(id_keys[:n_clients], s_keys)
-    }  # type: Dict[bytes, Dict[bytes, bytes]]
+        for idk, skd in zip(id_keys[:n_clients], s_keys, strict=False)
+    }
     idk_vals = [key.public_bytes_raw() for key in trusted]
     assert set(sec_keys) == set(idk_vals)
     assert {idk for sec in sec_keys.values() for idk in sec} == set(idk_vals)

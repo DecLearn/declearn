@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,12 +17,18 @@
 
 """Base class to define gradient-descent-based optimizers."""
 
-from typing import (
-    # fmt: off
-    Any, Dict, List, Optional, Sequence, Tuple, Type, TypeVar, Union
+from typing import (  # fmt: off
+    Any,
+    Dict,
+    List,
+    Optional,
+    Self,
+    Sequence,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
 )
-
-from typing_extensions import Self  # future: import from typing (py >=3.11)
 
 from declearn.model.api import Model, Vector
 from declearn.optimizer.modules import AuxVar, OptiModule
@@ -209,16 +215,14 @@ class Optimizer:
         self._wrate_scheduler = self._parse_scheduler(w_decay)
         self._lrate = self._lrate_scheduler.get_next_rate()
         self._wrate = self._wrate_scheduler.get_next_rate()
-        self.regularizers = (
+        self.regularizers: List[Regularizer] = (
             []
             if regularizers is None
             else self._parse_plugins(Regularizer, regularizers)  # type: ignore
-        )  # type: List[Regularizer]
-        self.modules = (
-            []
-            if modules is None
-            else self._parse_plugins(OptiModule, modules)  # type: ignore
-        )  # type: List[OptiModule]
+        )
+        self.modules: List[OptiModule] = (
+            [] if modules is None else self._parse_plugins(OptiModule, modules)  # type: ignore
+        )
 
     @property
     def lrate(self) -> float:
@@ -405,7 +409,7 @@ class Optimizer:
             to `module.name` keys for each and every module plugged
             in this optimizer that produces auxiliary variables.
         """
-        aux_var = {}  # type: Dict[str, AuxVar]
+        aux_var: Dict[str, AuxVar] = {}
         for module in self.modules:
             auxv = module.collect_aux_var()
             if auxv is not None:
@@ -596,7 +600,9 @@ class Optimizer:
         """Backend to the `set_state` method, lacking exception-catching."""
         self._lrate_scheduler.set_state(states["lrate"])
         self._wrate_scheduler.set_state(states["w_decay"])
-        for mod, (name, state) in zip(self.modules, states["modules"]):
+        for mod, (name, state) in zip(
+            self.modules, states["modules"], strict=False
+        ):
             if mod.name != name:
                 raise KeyError(
                     "Optimizer 'states' do not match modules config."

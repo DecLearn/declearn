@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -50,8 +50,8 @@ Backend
     Utility dataset-handler to compute group-wise evaluation metrics.
 """
 
+from ._client import FairnessControllerClient
 from ._dataset import FairnessDataset
 from ._fair_func import FairnessFunction, instantiate_fairness_function
 from ._metrics import FairnessMetricsComputer
-from ._client import FairnessControllerClient
 from ._server import FairnessControllerServer

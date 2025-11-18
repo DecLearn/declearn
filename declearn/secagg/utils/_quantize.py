@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -118,8 +118,8 @@ class Quantizer:
         """
         try:
             # 1st access triggers checks; pylint: disable=pointless-statement
-            self._float_dtype
-            self._uint_dtype
+            self._float_dtype  # noqa: B018
+            self._uint_dtype  # noqa: B018
         except ValueError:
             return False
         return True

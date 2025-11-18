@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -132,7 +132,7 @@ class TestSaveLoadSparse:
     ) -> None:
         """Test that 'sparse_(to|from)_file' works properly."""
         data = build_sparse_data()
-        data = sparse_cls(data)
+        data = sparse_cls(data)  # type: ignore
         path = os.path.join(tmpdir, "data.sparse")
         # Test that the data can properly be saved.
         sparse_to_file(path, data)
@@ -141,8 +141,8 @@ class TestSaveLoadSparse:
         dbis = sparse_from_file(path)
         assert isinstance(dbis, sparse_cls)
         assert data.shape == dbis.shape
-        assert data.nnz == dbis.nnz
-        assert np.all(data.toarray() == dbis.toarray())
+        assert data.nnz == dbis.nnz  # type: ignore
+        assert np.all(data.toarray() == dbis.toarray())  # type: ignore
 
     def test_sparse_to_file_fails(self, tmpdir: str) -> None:
         """Test that a TypeError is raised with a bad input type."""

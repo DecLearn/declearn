@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,7 +20,6 @@
 import abc
 import dataclasses
 from typing import ClassVar, Generic, Optional, Set, TypeVar
-
 
 from declearn.communication.api import NetworkClient, NetworkServer
 from declearn.messaging import Message, SerializedMessage

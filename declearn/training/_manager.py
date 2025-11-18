@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -52,8 +52,8 @@ class TrainingManager:
     """Class wrapping the logic for local training and evaluation rounds."""
 
     # one too-many attribute; pylint: disable=too-many-instance-attributes
-
-    def __init__(
+    # pylint: disable-next=too-many-positional-arguments
+    def __init__(  # noqa: PLR0913
         self,
         model: Model,
         optim: Optimizer,
@@ -423,7 +423,7 @@ class TrainingManager:
         self.logger.log(
             LOGGING_LEVEL_MAJOR,
             "Local scalar evaluation metrics: %s",
-            {k: v for k, v in values.items() if isinstance(v, float)},
+            {k: f"{v:.4f}" for k, v in values.items() if isinstance(v, float)},
         )
         # Return the metrics' values, their states and the effort information.
         return values, states, effort

@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -39,5 +39,5 @@ This module exposes:
 """
 
 from . import utils
-from ._vector import JaxNumpyVector
 from ._model import HaikuModel
+from ._vector import JaxNumpyVector

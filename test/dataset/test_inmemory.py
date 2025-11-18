@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,7 +25,6 @@ import pandas as pd
 import pytest
 import scipy.sparse  # type: ignore
 import sklearn.datasets  # type: ignore
-
 
 from declearn.dataset import InMemoryDataset
 from declearn.dataset.utils import save_data_array
@@ -266,7 +265,7 @@ class TestInMemoryDatasetProperties:
         """Test that an exception is raised with a mixed-type DataFrame."""
         dst = InMemoryDataset(data=dataset, expose_data_type=True)
         with pytest.raises(ValueError):
-            dst.data_type  # pylint: disable=pointless-statement
+            dst.data_type  # pylint: disable=pointless-statement  # noqa: B018
 
     def test_data_type_series(
         self,

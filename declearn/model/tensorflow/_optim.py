@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,14 +23,15 @@ from typing import Any, Dict, List, Union
 # pylint: disable=import-error,no-name-in-module
 import tensorflow as tf  # type: ignore
 import tensorflow.keras as tf_keras  # type: ignore
-# pylint: enable=import-error,no-name-in-module
-# fmt: on
 
 from declearn.model.api import Vector
-from declearn.model.tensorflow.utils import select_device
 from declearn.model.tensorflow._vector import TensorflowVector
+from declearn.model.tensorflow.utils import select_device
 from declearn.optimizer.modules import OptiModule
 from declearn.utils import get_device_policy
+
+# pylint: enable=import-error,no-name-in-module
+# fmt: on
 
 
 __all__ = [
@@ -120,7 +121,7 @@ class TensorflowOptiModule(OptiModule):
         with tf.device(self._device):
             self.optim = self.optim.from_config(config)
         # Create a container for artificial, zero-valued variables.
-        self._vars = {}  # type: Dict[str, tf.Variable]
+        self._vars: Dict[str, tf.Variable] = {}
 
     def run(
         self,
@@ -257,5 +258,7 @@ class TensorflowOptiModule(OptiModule):
         # Restore optimizer variables' values from the input state dict.
         opt_vars = self._get_optimizer_variables()
         with tf.device(self._device):
-            for var, val in zip(opt_vars, state["state"].coefs.values()):
+            for var, val in zip(
+                opt_vars, state["state"].coefs.values(), strict=False
+            ):
                 var.assign(val, read_value=False)

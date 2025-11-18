@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -75,7 +75,12 @@ def test_case_fixture(
         labels=["a", "b", "c"] if use_lnames else [0, 1, 2]  # type: ignore
     )
     return MetricTestCase(
-        metric, inputs, states, scores, agg_states, agg_scores  # type: ignore
+        metric,
+        inputs,
+        states,
+        scores,
+        agg_states,
+        agg_scores,  # type: ignore
     )
 
 

@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -109,12 +109,12 @@ class BinaryAccuracyPrecisionRecall(Metric[BinaryConfmat]):
         fpos = self._states.fpos
         fneg = self._states.fneg
         # Compute metrics, catching division-by-zero errors (replace with 0.0).
-        scores = {
+        scores: Dict[str, Union[float, np.ndarray]] = {
             "accuracy": safe_division(tpos + tneg, tpos + tneg + fpos + fneg),
             "precision": safe_division(tpos, tpos + fpos),
             "recall": safe_division(tpos, tpos + fneg),
             "f-score": safe_division(tpos + tpos, tpos + tpos + fpos + fneg),
-        }  # type: Dict[str, Union[float, np.ndarray]]
+        }
         # Add the confusion matrix and return.
         scores["confusion"] = np.array([[tneg, fpos], [fneg, tpos]])
         return scores

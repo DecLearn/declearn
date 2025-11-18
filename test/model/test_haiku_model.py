@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -151,7 +151,14 @@ class HaikuTestCase(ModelTestCase):
         with warnings.catch_warnings():  # jax.jit(device=...) is deprecated
             warnings.simplefilter("ignore", DeprecationWarning)
             convert = jax.jit(jnp.asarray, backend=self.device)
-            batches = list(zip(convert(inputs), convert(labels), [None, None]))
+            batches = list(
+                zip(
+                    convert(inputs),  # pylint: disable=not-callable
+                    convert(labels),  # pylint: disable=not-callable
+                    [None, None],
+                    strict=False,
+                )
+            )
         return batches  # type: ignore
 
     @property
@@ -205,7 +212,7 @@ class HaikuTestCase(ModelTestCase):
             names = self.model.get_weight_names()
             return [names[2], names[3]]
         if c_type == "pytree":
-            params = getattr(self.model, "_params")
+            params = self.model._params
             return {k: v for i, (k, v) in enumerate(params.items()) if i != 1}
         if c_type == "predicate":
             return lambda m, n, p: n != "b"
@@ -261,7 +268,7 @@ class TestHaikuModel(ModelTestSuite):
         criterion_type: str,
     ) -> None:
         """Check that `get_weights` behaves properly with frozen weights."""
-        model = test_case.model  # type: HaikuModel
+        model: HaikuModel = test_case.model
         criterion = test_case.get_trainable_criterion(criterion_type)
         model.set_trainable_weights(criterion)  # freeze some weights
         w_all = model.get_weights()
@@ -304,7 +311,7 @@ class TestHaikuModel(ModelTestSuite):
         policy = model.device_policy
         assert policy.gpu == (test_case.device == "gpu")
         assert policy.idx == 0
-        params = jax.tree_util.tree_leaves(getattr(model, "_params"))
+        params = jax.tree_util.tree_leaves(model._params)
         device = f"{test_case.device}:0"
         for arr in params:
             assert len(arr.devices()) == 1

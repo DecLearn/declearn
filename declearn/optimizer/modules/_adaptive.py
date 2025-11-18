@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -69,7 +69,7 @@ class AdaGradModule(OptiModule):
             to the (divisor) adapative scaling term.
         """
         self.eps = eps
-        self.state = 0.0  # type: Union[Vector, float]
+        self.state: Union[Vector, float] = 0.0
 
     def get_config(
         self,
@@ -237,7 +237,7 @@ class AdamModule(OptiModule):
         self.steps = 0
         self.eps = eps
         self.amsgrad = amsgrad
-        self.vmax = None  # type: Optional[Vector]
+        self.vmax: Optional[Vector] = None
 
     def get_config(
         self,
@@ -272,10 +272,10 @@ class AdamModule(OptiModule):
     def get_state(
         self,
     ) -> Dict[str, Any]:
-        state = {
+        state: Dict[str, Any] = {
             "steps": self.steps,
             "vmax": self.vmax,
-        }  # type: Dict[str, Any]
+        }
         state["momentum"] = self.ewma_1.get_state()
         state["velocity"] = self.ewma_2.get_state()
         return state

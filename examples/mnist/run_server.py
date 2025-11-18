@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,12 +20,14 @@
 import datetime
 import os
 
+# set env variable to prevent the whole gpu allocation by tensorflow
+os.environ["TF_FORCE_GPU_ALLOW_GROWTH"] = "true"
+
 import fire  # type: ignore
 import tensorflow as tf  # type: ignore
 
 import declearn
 import declearn.model.tensorflow
-
 
 FILEDIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_CERT = os.path.join(FILEDIR, "server-cert.pem")
@@ -172,7 +174,7 @@ def run_server(
         training=training,
         evaluate=evaluate,
         privacy=None,  # you may set up local DP (DP-SGD) here
-        early_stop=None,  # you may add an early-stopping cirterion here
+        early_stop=None,  # you may add an early-stopping criterion here
     )
     server.run(run_config)
 

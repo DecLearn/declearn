@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,8 +23,8 @@ import ssl
 from typing import Optional, Union
 
 import websockets as ws
+from websockets.exceptions import ConnectionClosedError, ConnectionClosedOK
 from websockets.server import WebSocketServer, WebSocketServerProtocol
-from websockets.exceptions import ConnectionClosedOK, ConnectionClosedError
 
 from declearn.communication.api import NetworkServer
 from declearn.communication.websockets._tools import (
@@ -43,7 +43,8 @@ class WebsocketsServer(NetworkServer):
 
     protocol = "websockets"
 
-    def __init__(
+    # pylint: disable-next=too-many-positional-arguments
+    def __init__(  # noqa: PLR0913
         self,
         host: str = "localhost",
         port: int = 8765,
@@ -83,7 +84,7 @@ class WebsocketsServer(NetworkServer):
         super().__init__(
             host, port, certificate, private_key, password, heartbeat, logger
         )
-        self._server = None  # type: Optional[WebSocketServer]
+        self._server: Optional[WebSocketServer] = None
 
     @property
     def uri(self) -> str:

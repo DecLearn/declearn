@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,7 +19,7 @@
 
 from copy import deepcopy
 from dataclasses import dataclass
-from typing import Dict, Generic, Optional, Union, TypeVar
+from typing import Dict, Generic, Optional, TypeVar, Union
 from unittest import mock
 
 import numpy as np
@@ -30,7 +30,6 @@ from declearn.test_utils import (
     assert_dict_equal,
     assert_json_serializable_dict,
 )
-
 
 MetricStateT = TypeVar("MetricStateT", bound=MetricState)
 

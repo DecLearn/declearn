@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -31,23 +31,23 @@ from declearn.communication import (
 )
 from declearn.communication.api import NetworkClient, NetworkServer
 from declearn.dataset import InMemoryDataset
+from declearn.main import FederatedClient, FederatedServer
 from declearn.model.api import Model
 from declearn.model.sklearn import SklearnSGDModel
-from declearn.main import FederatedClient, FederatedServer
-from declearn.utils import run_as_processes
-from declearn.utils import set_device_policy
+from declearn.utils import run_as_processes, set_device_policy
 
 # Select the subset of tests to run, based on framework availability.
 # Note: TensorFlow and Torch (-related) imports are delayed due to this.
 # pylint: disable=ungrouped-imports
 FRAMEWORKS = ["Sksgd", "Tflow", "Torch"]
 try:
-    import tensorflow  # type: ignore  # pylint: disable=unused-import
+    import tensorflow  # type: ignore  # pylint: disable=unused-import  # noqa: F401
 except ModuleNotFoundError:
     FRAMEWORKS.remove("Tflow")
 else:
     # pylint: disable=import-error,no-name-in-module
     import tensorflow.keras as tf_keras  # type: ignore
+
     from declearn.model.tensorflow import TensorflowModel
 try:
     import torch
@@ -62,7 +62,7 @@ class DeclearnTestCase:
 
     # pylint: disable=too-many-instance-attributes
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         kind: Literal["Reg", "Bin", "Clf"],
         framework: Literal["Sksgd", "Tflow", "Torch"],
@@ -74,6 +74,7 @@ class DeclearnTestCase:
         rounds: int = 5,
     ) -> None:
         # arguments provide modularity; pylint: disable=too-many-arguments
+        # pylint: disable=too-many-positional-arguments
         self.kind = kind
         self.framework = framework
         self.strategy = strategy
@@ -142,7 +143,7 @@ class DeclearnTestCase:
         ]
         if self.kind == "Reg":
             stack.append(torch.nn.Linear(8, 1))
-            loss = torch.nn.MSELoss()  # type: torch.nn.Module
+            loss: torch.nn.Module = torch.nn.MSELoss()
         elif self.kind == "Bin":
             stack.append(torch.nn.Linear(8, 1))
             stack.append(torch.nn.Sigmoid())
@@ -256,7 +257,7 @@ class DeclearnTestCase:
             client.run()
 
 
-def run_test_case(
+def run_test_case(  # noqa: PLR0913
     kind: Literal["Reg", "Bin", "Clf"],
     framework: Literal["Sksgd", "Tflow", "Torch"],
     strategy: Literal["FedAvg", "FedAvgM", "Scaffold", "ScaffoldM"],
@@ -268,6 +269,7 @@ def run_test_case(
 ) -> None:
     """Run a given test case, using processes to isolate server and clients."""
     # arguments provide modularity; pylint: disable=too-many-arguments
+    # pylint: disable=too-many-positional-arguments
     # Set up a test case object.
     # fmt: off
     test_case = DeclearnTestCase(
@@ -309,12 +311,15 @@ def test_declearn(
     if not fulltest:
         if (kind != "Reg") or (strategy == "FedAvg"):
             pytest.skip("skip scenario (no --fulltest option)")
-    protocol = "websockets"  # type: Literal["grpc", "websockets"]
+    protocol: Literal["grpc", "websockets"] = "websockets"
     if "websockets" not in list_available_protocols():
         if "grpc" not in list_available_protocols():
             pytest.fail("Both 'grpc' and 'websockets' are unavailable.")
         protocol = "grpc"
-        warnings.warn("Using 'grpc' as 'websockets' is unavailable.")
+        warnings.warn(
+            "Using 'grpc' as 'websockets' is unavailable.",
+            stacklevel=2,
+        )
     # fmt: off
     run_test_case(
         kind, framework, strategy,

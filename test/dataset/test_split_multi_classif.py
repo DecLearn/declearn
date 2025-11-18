@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,7 +25,6 @@ from scipy.sparse import coo_matrix, spmatrix  # type: ignore
 from scipy.stats import chi2_contingency  # type: ignore
 
 from declearn.dataset.utils import split_multi_classif_dataset
-
 
 Array = Union[np.ndarray, spmatrix]
 
@@ -89,7 +88,7 @@ class TestSplitMultiClassifDataset:
         assert isinstance(y_train, np.ndarray)
         assert isinstance(y_valid, np.ndarray)
         # Assert that array shapes match expectations.
-        assert x_train.ndim == x_valid.ndim == 2
+        assert x_train.ndim == x_valid.ndim == 2  # type: ignore
         assert x_train.shape[0] == y_train.shape[0]
         assert x_valid.shape[0] == y_valid.shape[0]
         assert x_train.shape[1] == x_valid.shape[1] == n_feats

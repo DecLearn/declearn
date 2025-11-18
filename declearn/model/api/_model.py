@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,15 +18,23 @@
 """Model abstraction API."""
 
 from abc import ABCMeta, abstractmethod
-from typing import Any, Dict, Generic, List, Optional, Set, Tuple, TypeVar
+from typing import (
+    Any,
+    Dict,
+    Generic,
+    List,
+    Optional,
+    Self,
+    Set,
+    Tuple,
+    TypeVar,
+)
 
 import numpy as np
-from typing_extensions import Self  # future: import from typing (py >=3.11)
 
 from declearn.model.api._vector import Vector
 from declearn.typing import Batch
 from declearn.utils import DevicePolicy, create_types_registry
-
 
 __all__ = [
     "Model",
@@ -63,7 +71,7 @@ class Model(Generic[VectorT], metaclass=ABCMeta):
         """Instantiate a Model interface wrapping a 'model' object."""
         self._model = model
         # Declare a private list where to record batch-wise training losses.
-        self._loss_history = []  # type: List[float]
+        self._loss_history: List[float] = []
 
     def get_wrapped_model(self) -> Any:
         """Getter to access the wrapped framework-specific model object.

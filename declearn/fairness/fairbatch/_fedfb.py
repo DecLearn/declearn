@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,12 +23,11 @@ import numpy as np
 
 from declearn.fairness.fairbatch._sampling import (
     FairbatchDemographicParity,
-    FairbatchEqualizedOdds,
     FairbatchEqualityOpportunity,
+    FairbatchEqualizedOdds,
     FairbatchSamplingController,
     assign_sensitive_group_labels,
 )
-
 
 __all__ = [
     "setup_fedfb_controller",

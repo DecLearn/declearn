@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,9 +25,9 @@ from unittest import mock
 import pytest  # type: ignore
 
 from declearn import messaging
-from declearn.dataset import Dataset, DataSpecs
 from declearn.communication import NetworkClientConfig
 from declearn.communication.api import NetworkClient
+from declearn.dataset import Dataset, DataSpecs
 from declearn.fairness.api import FairnessControllerClient
 from declearn.main import FederatedClient
 from declearn.main.utils import Checkpointer
@@ -398,9 +398,11 @@ class TestFederatedClientInitialize:
         # Set up a mock network receiving a MetadataQuery and an InitRequest.
         netwk = mock.create_autospec(NetworkClient, instance=True)
         netwk.name = "client"
-        msg_data = messaging.SerializedMessage.from_message_string(
-            messaging.MetadataQuery(fields=["n_samples"]).to_string()
-        )  # type: messaging.SerializedMessage[messaging.MetadataQuery]
+        msg_data: messaging.SerializedMessage[messaging.MetadataQuery] = (
+            messaging.SerializedMessage.from_message_string(
+                messaging.MetadataQuery(fields=["n_samples"]).to_string()
+            )
+        )
         msg_init = self._setup_mock_init_request()
         netwk.recv_message.side_effect = [msg_data, msg_init]
         # Set up a client with a mock dataset returning some arbitrary specs.
@@ -432,9 +434,11 @@ class TestFederatedClientInitialize:
         # Set up a mock network receiving an invalid MetadataQuery.
         netwk = mock.create_autospec(NetworkClient, instance=True)
         netwk.name = "client"
-        msg_data = messaging.SerializedMessage.from_message_string(
-            messaging.MetadataQuery(fields=["invalid"]).to_string()
-        )  # type: messaging.SerializedMessage[messaging.MetadataQuery]
+        msg_data: messaging.SerializedMessage[messaging.MetadataQuery] = (
+            messaging.SerializedMessage.from_message_string(
+                messaging.MetadataQuery(fields=["invalid"]).to_string()
+            )
+        )
         netwk.recv_message.return_value = msg_data
         # Set up a client with a mock dataset returning some arbitrary specs.
         dataset = mock.create_autospec(Dataset, instance=True)
@@ -1167,9 +1171,11 @@ class TestFederatedClientMisc:
         netwk.name = "client"
         client = FederatedClient(netwk=netwk, train_data=MOCK_DATASET)
         # Have it process a CancelTraining message.
-        message = messaging.SerializedMessage.from_message_string(
-            messaging.CancelTraining(reason="mock-reason").to_string()
-        )  # type: messaging.SerializedMessage[messaging.CancelTraining]
+        message: messaging.SerializedMessage[messaging.CancelTraining] = (
+            messaging.SerializedMessage.from_message_string(
+                messaging.CancelTraining(reason="mock-reason").to_string()
+            )
+        )
         with pytest.raises(RuntimeError, match=".*mock-reason"):
             await client.handle_message(message)
 
@@ -1181,8 +1187,10 @@ class TestFederatedClientMisc:
         netwk.name = "client"
         client = FederatedClient(netwk=netwk, train_data=MOCK_DATASET)
         # Have it process an Error message.
-        message = messaging.SerializedMessage.from_message_string(
-            messaging.Error(message="error-message").to_string()
-        )  # type: messaging.SerializedMessage[messaging.Error]
+        message: messaging.SerializedMessage[messaging.Error] = (
+            messaging.SerializedMessage.from_message_string(
+                messaging.Error(message="error-message").to_string()
+            )
+        )
         with pytest.raises(ValueError):
             await client.handle_message(message)

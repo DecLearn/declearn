@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,9 +18,7 @@
 """Generic tools to (de-)serialize custom declearn objects to and from JSON."""
 
 import dataclasses
-from typing import Any, Dict, Optional, Type, TypedDict, Union
-
-from typing_extensions import Self  # future: import from typing (Py>=3.11)
+from typing import Any, Dict, Optional, Self, Type, TypedDict, Union
 
 from declearn.typing import SupportsConfig
 from declearn.utils._json import json_dump, json_load
@@ -29,7 +27,6 @@ from declearn.utils._register import (
     access_registration_info,
 )
 
-
 __all__ = [
     "ObjectConfig",
     "deserialize_object",
@@ -37,7 +34,7 @@ __all__ = [
 ]
 
 
-ObjectConfigDict = TypedDict(
+ObjectConfigDict = TypedDict(  # pylint: disable=invalid-name
     "ObjectConfigDict",
     {"name": str, "group": Optional[str], "config": Dict[str, Any]},
 )

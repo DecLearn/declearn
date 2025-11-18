@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -49,8 +49,7 @@ data_info fields, are implemented (although unexposed) here.
 
 import warnings
 from abc import ABCMeta, abstractmethod
-from typing import Any, Dict, List, Optional, Set, Tuple, Type, ClassVar
-
+from typing import Any, ClassVar, Dict, List, Optional, Set, Tuple, Type
 
 __all__ = [
     "DataInfoField",
@@ -119,7 +118,7 @@ class DataInfoField(metaclass=ABCMeta):
             )
 
 
-DATA_INFO_FIELDS = {}  # type: Dict[str, Type[DataInfoField]]
+DATA_INFO_FIELDS: Dict[str, Type[DataInfoField]] = {}
 
 
 def register_data_info_field(
@@ -194,14 +193,15 @@ def aggregate_data_info(
             )
         fields = required_fields
     # Gather and spec-based-aggregate individual values.
-    data_info = {}  # type: Dict[str, Any]
+    data_info: Dict[str, Any] = {}
     for field in fields:
         values = [info[field] for info in clients_data_info]
         spec = DATA_INFO_FIELDS.get(field)
         if spec is None:
             warnings.warn(
                 f"Unspecified 'data_info' field '{field}': "
-                "returning list of individual values."
+                "returning list of individual values.",
+                stacklevel=2,
             )
             data_info[field] = values
         else:

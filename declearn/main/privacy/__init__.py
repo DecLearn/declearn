@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -34,6 +34,7 @@ warnings.warn(
     "'declearn.main.privacy' was moved to `declearn.training.dp` and is only "
     "re-exported for retro-compatibility. It will be removed in DecLearn 2.8.",
     DeprecationWarning,
+    stacklevel=2,
 )
 
 __all__ = ["DPTrainingManager"]

@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -41,6 +41,8 @@ from declearn.utils import set_device_policy
 # relative imports from `model_testing.py`
 with make_importable(os.path.dirname(__file__)):
     from model_testing import ModelTestCase, ModelTestSuite
+
+# mypy: ignore-errors
 
 
 class TensorflowTestCase(ModelTestCase):

@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -75,9 +75,9 @@ class TestMaskingDecrypter(DecrypterTestSuite):
     ) -> Tuple[MaskingDecrypter, List[MaskingEncrypter]]:
         bitsize = self.get_bitsize()
         decrypter = MaskingDecrypter(n_peers=n_peers, bitsize=bitsize)
-        rng_seeds = [
+        rng_seeds: List[Tuple[List[int], List[int]]] = [
             ([], []) for _ in range(n_peers)
-        ]  # type: List[Tuple[List[int], List[int]]]
+        ]
         counter = 0
         for i in range(n_peers - 1):
             for j in range(i + 1, n_peers):

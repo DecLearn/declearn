@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -78,4 +78,4 @@ from declearn.training._constraints import (
 
 from ._checkpoint import Checkpointer
 from ._data_info import AggregationError, aggregate_clients_data_info
-from ._early_stop import EarlyStopping, EarlyStopConfig
+from ._early_stop import EarlyStopConfig, EarlyStopping

@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,15 +22,14 @@ import asyncio
 import logging
 import types
 import warnings
-from typing import Any, ClassVar, Dict, Optional, Type, Union
-
-from typing_extensions import Self  # future: import from typing (py >=3.11)
+from typing import Any, ClassVar, Dict, Optional, Self, Type, Union
 
 from declearn.communication.api.backend import flags
+
+# Drop,  # FUTURE: implement a method to drop politely
 from declearn.communication.api.backend.actions import (
     Accept,
     ActionMessage,
-    # Drop,  # FUTURE: implement a method to drop politely
     Join,
     Ping,
     Recv,
@@ -227,6 +226,7 @@ class NetworkClient(metaclass=abc.ABCMeta):
                 "registration process. The argument was ignored, and will be "
                 "removed in DecLearn version 2.4 and/or 3.0.",
                 DeprecationWarning,
+                stacklevel=2,
             )
         query = Join(name=self.name, version=VERSION)
         reply = await self._exchange_action_messages(query)

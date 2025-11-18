@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -42,7 +42,6 @@ from declearn.messaging import FairnessSetupQuery
 from declearn.secagg.api import Decrypter
 from declearn.secagg.messaging import aggregate_secagg_messages
 
-
 __all__ = [
     "FairfedControllerServer",
 ]
@@ -81,6 +80,7 @@ class FairfedControllerServer(FairnessControllerServer):
 
     algorithm = "fairfed"
 
+    # pylint: disable-next=too-many-positional-arguments
     def __init__(
         self,
         f_type: str,
@@ -147,13 +147,16 @@ class FairfedControllerServer(FairnessControllerServer):
     ) -> Aggregator:
         # Set up a fairness function and initialized the FairFed computer.
         self._fairness = instantiate_fairness_function(
-            self.f_type, counts=dict(zip(self.groups, counts)), **self.f_args
+            self.f_type,
+            counts=dict(zip(self.groups, counts, strict=False)),
+            **self.f_args,
         )
         self.fairfed_computer.initialize(groups=self.groups)
         # Force the use of a FairFed-specific averaging aggregator.
         warnings.warn(
             "Overriding Aggregator choice due to the use of FairFed.",
             category=RuntimeWarning,
+            stacklevel=2,
         )
         return FairfedAggregator(beta=self.beta)
 
@@ -164,7 +167,7 @@ class FairfedControllerServer(FairnessControllerServer):
         values: List[float],
     ) -> Dict[str, Union[float, np.ndarray]]:
         # Unpack group-wise accuracy values and compute fairness ones.
-        accuracy = dict(zip(self.groups, values))
+        accuracy = dict(zip(self.groups, values, strict=False))
         fairness = self._fairness.compute_from_federated_group_accuracy(
             accuracy
         )
@@ -192,9 +195,9 @@ class FairfedControllerServer(FairnessControllerServer):
             netwk, received, expected=FairfedOkay
         )
         # Package and return accuracy, fairness and computed average metrics.
-        metrics = {
+        metrics: Dict[str, Union[float, np.ndarray]] = {
             f"accuracy_{key}": val for key, val in accuracy.items()
-        }  # type: Dict[str, Union[float, np.ndarray]]
+        }
         metrics.update(
             {f"{self.f_type}_{key}": val for key, val in fairness.items()}
         )

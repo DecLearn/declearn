@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,7 +23,6 @@ from typing import Optional, Tuple
 
 import numpy as np
 import requests
-
 
 __all__ = [
     "load_mnist",
@@ -82,9 +81,10 @@ def _load_mnist_data(
             data = file.read()
     # Read and parse the source data into a numpy array.
     if images:
-        shape, off = [
-            int(data[i : i + 4].hex(), 16) for i in range(4, 16, 4)
-        ], 16
+        shape, off = (
+            [int(data[i : i + 4].hex(), 16) for i in range(4, 16, 4)],
+            16,
+        )
     else:
         shape, off = [int(data[4:8].hex(), 16)], 8
     array = np.frombuffer(bytearray(data[off:]), dtype="uint8").reshape(shape)

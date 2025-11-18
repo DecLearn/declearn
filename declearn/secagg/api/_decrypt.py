@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,11 +18,11 @@
 """Abstract base class for decryption controllers for SecAgg."""
 
 import abc
-from typing import Any, ClassVar, Dict, List, Union, Type, TypeVar
+from typing import Any, ClassVar, Dict, List, Type, TypeVar, Union
 
 import numpy as np
-from declearn.model.api import Vector, VectorSpec
 
+from declearn.model.api import Vector, VectorSpec
 from declearn.secagg.api._aggregate import ArraySpec, SecureAggregate
 from declearn.secagg.utils import Quantizer
 from declearn.utils import Aggregate
@@ -227,7 +227,7 @@ class Decrypter(metaclass=abc.ABCMeta):
             )
         # Iteratively decrypt and recover encrypted fields.
         srt = end = 0
-        fields = {}  # type: Dict[str, Any]
+        fields: Dict[str, Any] = {}
         for name, size, specs in value.enc_specs:
             end += size
             fields[name] = self._decrypt_value(value.encrypted[srt:end], specs)

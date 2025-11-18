@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,7 +19,7 @@
 
 import abc
 import asyncio
-from typing import Any, Dict, List, Tuple, Type
+from typing import Any, Dict, List, Type
 
 import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import (
@@ -39,8 +39,8 @@ from declearn.secagg.api import (
     SecaggConfigServer,
     SecaggSetupQuery,
 )
-from declearn.utils import access_registered
 from declearn.test_utils import MockNetworkClient, MockNetworkServer
+from declearn.utils import access_registered
 
 
 class SecaggSetupTestCase(metaclass=abc.ABCMeta):
@@ -127,9 +127,9 @@ class SecaggSetupTestCase(metaclass=abc.ABCMeta):
         ]
         server_routine = self.run_server_routine(n_clients, **server_kwargs)
         # Run the routines concurrently and gather resulting objects.
-        decrypter, *encrypters = await (  # type: ignore[assignment]
-            asyncio.gather(server_routine, *client_routines)
-        )  # type: Tuple[Decrypter, List[Encrypter]]
+        result = await asyncio.gather(server_routine, *client_routines)
+        decrypter: Decrypter = result[0]
+        encrypters: List[Encrypter] = result[1:]
         # Verify that the resulring objects have proper types and parameters.
         kwargs = {**server_kwargs, **client_kwargs, "n_clients": n_clients}
         self.assert_decrypter_validity(decrypter, **kwargs)

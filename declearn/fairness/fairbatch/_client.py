@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -30,8 +30,8 @@ from declearn.fairness.api import (
 )
 from declearn.fairness.fairbatch._dataset import FairbatchDataset
 from declearn.fairness.fairbatch._messages import (
-    FairbatchSamplingProbas,
     FairbatchOkay,
+    FairbatchSamplingProbas,
 )
 from declearn.messaging import Error
 from declearn.metrics import MeanMetric
@@ -90,7 +90,7 @@ class FairbatchControllerClient(FairnessControllerClient):
         message = await verify_server_message_validity(
             netwk, received, expected=FairbatchSamplingProbas
         )
-        probas = dict(zip(self.groups, message.probas))
+        probas = dict(zip(self.groups, message.probas, strict=False))
         # Set the received weights, handling and propagating exceptions if any.
         try:
             assert isinstance(self.manager.train_data, FairbatchDataset)

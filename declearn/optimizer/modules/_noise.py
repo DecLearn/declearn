@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -80,7 +80,7 @@ class NoiseModule(OptiModule, metaclass=ABCMeta, register=False):
         self,
         gradients: Vector,
     ) -> Vector:
-        if not NumpyVector in gradients.compatible_vector_types:
+        if NumpyVector not in gradients.compatible_vector_types:
             raise TypeError(  # pragma: no cover
                 f"{self.__class__.__name__} requires input gradients to "
                 "be compatible with NumpyVector, which is not the case "
@@ -160,7 +160,7 @@ class GaussianNoiseModule(NoiseModule):
         if isinstance(self._rng, SystemRandom):
             value = [self._rng.random() for _ in range(np.prod(shape))]
             array = np.array(value).reshape(shape).astype(dtype)
-            return scipy.stats.norm.ppf(array, scale=self.std)
+            return scipy.stats.norm.ppf(array, scale=self.std)  # type: ignore
         # Case when using numpy RNG, that provides with gaussian sampling.
         if isinstance(self._rng, np.random.Generator):
             # false-positive; pylint: disable=no-member

@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -198,7 +198,7 @@ class FairnessFunction(metaclass=abc.ABCMeta):
         c_k0, c_kk = self.constants
         f_k = c_k0 + np.dot(c_kk, cerr)
         # Wrap up results as a {group: score} dict, for readability purposes.
-        return dict(zip(self.groups, f_k.tolist()))
+        return dict(zip(self.groups, f_k.tolist(), strict=False))
 
     def compute_from_federated_group_accuracy(
         self,

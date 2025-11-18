@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -63,6 +63,7 @@ class Dataset(metaclass=abc.ABCMeta):
     ) -> DataSpecs:
         """Return a DataSpecs object describing this dataset."""
 
+    # pylint: disable=too-many-positional-arguments
     @abc.abstractmethod
     def generate_batches(  # pylint: disable=too-many-arguments
         self,

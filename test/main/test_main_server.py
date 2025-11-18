@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,8 +20,8 @@
 import logging
 import math
 import os
-from unittest import mock
 from typing import Dict, List, Optional, Type
+from unittest import mock
 
 import pytest  # type: ignore
 
@@ -31,15 +31,14 @@ from declearn.communication.api import NetworkServer
 from declearn.fairness.api import FairnessControllerServer
 from declearn.main import FederatedServer
 from declearn.main.config import (
-    FLOptimConfig,
-    FLRunConfig,
     EvaluateConfig,
     FairnessConfig,
+    FLOptimConfig,
+    FLRunConfig,
     RegisterConfig,
     TrainingConfig,
 )
 from declearn.main.utils import Checkpointer
-from declearn.metrics import MetricSet
 from declearn.messaging import (
     EvaluationReply,
     EvaluationRequest,
@@ -53,9 +52,10 @@ from declearn.messaging import (
     PrivacyRequest,
     SerializedMessage,
     StopTraining,
-    TrainRequest,
     TrainReply,
+    TrainRequest,
 )
+from declearn.metrics import MetricSet
 from declearn.model.api import Model
 from declearn.model.sklearn import SklearnSGDModel
 from declearn.optimizer import Optimizer
@@ -65,7 +65,6 @@ from declearn.secagg.messaging import (
     SecaggTrainReply,
 )
 from declearn.utils import serialize_object
-
 
 MOCK_MODEL = mock.create_autospec(Model, instance=True)
 MOCK_NETWK = mock.create_autospec(NetworkServer, instance=True)
@@ -256,11 +255,12 @@ class TestFederatedServerInit:  # pylint: disable=too-many-public-methods
         """
         metrics = ["binary-classif", "binary-roc"]
         with mock.patch.object(MetricSet, "from_specs") as patched:
+            # fmt: off
             server = FederatedServer(
-                # fmt: off
                 MOCK_MODEL, MOCK_NETWK, MOCK_OPTIM,
                 metrics=metrics  # type: ignore[arg-type]
             )
+            # fmt: on
         patched.assert_called_once_with(metrics)
         assert server.metrics is patched.return_value
 
@@ -401,7 +401,7 @@ class TestFederatedServerRoutines:
                 else None
             ),
         )
-        secagg = None  # type: Optional[SecaggConfigServer]
+        secagg: Optional[SecaggConfigServer] = None
         if use_secagg:
             secagg = mock.create_autospec(SecaggConfigServer, instance=True)
             secagg.secagg_type = "mock_secagg"  # type: ignore
@@ -495,7 +495,7 @@ class TestFederatedServerRoutines:
             assert query.sclip_norm == 1.0
             assert query.rounds == 10
         # Verify that SecAgg setup occurred when expected.
-        decrypter = None  # type: Optional[Decrypter]
+        decrypter: Optional[Decrypter] = None
         if secagg:
             assert isinstance(server.secagg, mock.NonCallableMagicMock)
             if fairness:
@@ -517,7 +517,7 @@ class TestFederatedServerRoutines:
         privacy: bool,
     ) -> List[Dict[str, mock.NonCallableMagicMock]]:
         clients = ("client_a", "client_b")
-        messages = []  # type: List[Dict[str, mock.NonCallableMagicMock]]
+        messages: List[Dict[str, mock.NonCallableMagicMock]] = []
         if metadata:
             msg = MetadataReply({"n_samples": 100})
             messages.append(
@@ -555,9 +555,9 @@ class TestFederatedServerRoutines:
         assert isinstance(server.optim, mock.NonCallableMagicMock)
         assert isinstance(server.aggrg, mock.NonCallableMagicMock)
         # Mock-run a training routine.
-        reply_cls = (
+        reply_cls: Type[Message] = (
             SecaggTrainReply if secagg else TrainReply  # type: ignore
-        )  # type: Type[Message]
+        )
         updates = mock.create_autospec(ModelUpdates, instance=True)
         reply_msg = TrainReply(
             n_epoch=1, n_steps=10, t_spent=0.0, updates=updates, aux_var={}
@@ -613,11 +613,11 @@ class TestFederatedServerRoutines:
         assert isinstance(server.metrics, mock.NonCallableMagicMock)
         assert isinstance(server.ckptr, mock.NonCallableMagicMock)
         # Mock-run an evaluation routine.
-        reply_cls = (
+        reply_cls: Type[Message] = (
             SecaggEvaluationReply  # type: ignore
             if secagg
             else EvaluationReply
-        )  # type: Type[Message]
+        )
         reply_msg = EvaluationReply(
             loss=0.42, n_steps=10, t_spent=0.0, metrics={}
         )
@@ -703,7 +703,7 @@ class TestFederatedServerRoutines:
         )
         # Verify that expected actions occured.
         # (a) optional secagg setup
-        decrypter = None  # type: Optional[Decrypter]
+        decrypter: Optional[Decrypter] = None
         if secagg:
             assert isinstance(server.secagg, mock.NonCallableMagicMock)
             server.secagg.setup_decrypter.assert_awaited_once()

@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,7 +29,6 @@ from scipy import stats  # type: ignore
 
 from declearn.optimizer.modules import GaussianNoiseModule, NoiseModule
 from declearn.test_utils import FrameworkType, GradientsTestCase
-
 
 NOISETYPES = NoiseModule.__subclasses__()
 
@@ -82,7 +81,7 @@ class TestGaussianNoiseModule:
         """Test that the noise's average and stdev are statistically correct.
 
         Assesses goodness of fit using the two-sided Kolmogorov-Smirnov test
-        with a confidence level of 0.995.
+        with a (H0-rejection) confidence level of 0.999.
 
         For more details, see :
         https://en.wikipedia.org/wiki/Kolmogorov–Smirnov_test
@@ -99,4 +98,5 @@ class TestGaussianNoiseModule:
             for coef in just_noise.coefs.values()
             for value in coef.flatten().tolist()
         ]
-        assert stats.kstest(noise_list, "norm", args=(0, std))[1] > 0.005
+        p_value = stats.kstest(noise_list, "norm", args=(0, std))[1]
+        assert p_value > 0.001

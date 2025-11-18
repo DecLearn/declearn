@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,17 +18,29 @@
 """TensorflowVector data arrays container."""
 
 import warnings
-from typing import Any, Callable, Dict, List, Set, Tuple, Type, TypeVar, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Self,
+    Set,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+)
 
 # fmt: off
 import numpy as np
 import tensorflow as tf  # type: ignore
+
 # false-positive; pylint: disable=no-name-in-module
 from tensorflow.python.framework.ops import EagerTensor  # type: ignore
-# pylint: enable=no-name-in-module
-from typing_extensions import Self  # future: import from typing (Py>=3.11)
-# fmt: on
 
+from declearn.model._utils import flatten_numpy_arrays, unflatten_numpy_arrays
+
+# fmt: on
 from declearn.model.api import Vector, VectorSpec, register_vector_type
 from declearn.model.sklearn import NumpyVector
 from declearn.model.tensorflow.utils import (
@@ -36,8 +48,9 @@ from declearn.model.tensorflow.utils import (
     preserve_tensor_device,
     select_device,
 )
-from declearn.model._utils import flatten_numpy_arrays, unflatten_numpy_arrays
 from declearn.utils import get_device_policy
+
+# pylint: enable=no-name-in-module
 
 
 __all__ = [
@@ -54,7 +67,7 @@ def enhance_tf_op(
 ) -> Callable[[TensorT, Any], TensorT]:
     """Wrap up a tensorflow operation to preserve IndexedSlices and device."""
     func = add_indexed_slices_support(preserve_tensor_device(tf_op), inplc)
-    setattr(func, "_pre_wrapped", True)
+    func._pre_wrapped = True  # type: ignore
     return func
 
 
@@ -73,7 +86,7 @@ tf_op_sqrt = enhance_tf_op(tf.sqrt, inplc=True)
 
 
 @register_vector_type(tf.Tensor, EagerTensor, tf.IndexedSlices)
-class TensorflowVector(Vector):
+class TensorflowVector(Vector):  # noqa : PLW1641
     """Vector subclass to store tensorflow tensors.
 
     This Vector is designed to store a collection of named TensorFlow
@@ -205,7 +218,7 @@ class TensorflowVector(Vector):
         if isinstance(tensor, tf.IndexedSlices):
             val = cls._pack_tensor(tensor.values)
             ind = cls._pack_tensor(tensor.indices)
-            shp = cls._pack_tensor(tensor.dense_shape)
+            shp = cls._pack_tensor(tensor.dense_shape)  # type: ignore
             return ["slices", val, ind, shp]
         return np.array(tensor.numpy())
 
@@ -219,7 +232,7 @@ class TensorflowVector(Vector):
             val = cls._unpack_tensor(data[1])
             ind = cls._unpack_tensor(data[2])
             shp = cls._unpack_tensor(data[3])
-            return tf.IndexedSlices(val, ind, shp)
+            return tf.IndexedSlices(val, ind, shp)  # type: ignore
         try:
             return tf.convert_to_tensor(data)
         except TypeError as exc:  # pragma: no cover
@@ -310,7 +323,7 @@ class TensorflowVector(Vector):
         self,
     ) -> Tuple[List[float], VectorSpec]:
         v_spec = self.get_vector_specs()
-        arrays = []  # type: List[np.ndarray]
+        arrays: List[np.ndarray] = []
         for name in v_spec.names:
             if isinstance(self.coefs[name], tf.IndexedSlices):
                 warnings.warn(
@@ -318,6 +331,7 @@ class TensorflowVector(Vector):
                     "exhaustive list of floats. This may result in a high "
                     "memory cost.",
                     UserWarning,
+                    stacklevel=2,
                 )
                 arrays.append(
                     np.array(tf.convert_to_tensor(self.coefs[name]).numpy())
@@ -345,7 +359,7 @@ class TensorflowVector(Vector):
         policy = get_device_policy()
         device = select_device(gpu=policy.gpu, idx=policy.idx)
         with tf.device(device):
-            for name, array in zip(v_spec.names, arrays):
+            for name, array in zip(v_spec.names, arrays, strict=False):
                 # Recover IndexedSlices structures from dense arrays.
                 if name in slices:
                     non_zero = np.any(
@@ -359,5 +373,5 @@ class TensorflowVector(Vector):
                     )
                 # Otherwise, merely convert arrays to tensors.
                 else:
-                    tf_dat[name] = tf.convert_to_tensor(array)
-        return cls(tf_dat)
+                    tf_dat[name] = tf.convert_to_tensor(array)  # type: ignore
+        return cls(tf_dat)  # type: ignore

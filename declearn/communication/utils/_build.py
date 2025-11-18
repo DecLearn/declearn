@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,7 +20,6 @@
 import logging
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-
 from declearn.communication.api import NetworkClient, NetworkServer
 from declearn.utils import (
     TomlConfig,
@@ -28,7 +27,6 @@ from declearn.utils import (
     access_types_mapping,
     dataclass_from_func,
 )
-
 
 __all__ = [
     "NetworkClientConfig",
@@ -40,7 +38,7 @@ __all__ = [
 ]
 
 
-_INSTALLABLE_BACKENDS = {}  # type: Dict[str, Tuple[str, ...]]
+_INSTALLABLE_BACKENDS: Dict[str, Tuple[str, ...]] = {}
 
 
 def raise_if_installable(
@@ -111,7 +109,8 @@ def build_client(
     )
 
 
-def build_server(
+# pylint: disable-next=too-many-positional-arguments
+def build_server(  # noqa: PLR0913
     protocol: str,
     host: str,
     port: int,

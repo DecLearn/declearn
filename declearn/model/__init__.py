@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -67,8 +67,7 @@ The optional-dependency-based submodules that may be manually imported are:
         Vector for torch Tensor objects.
 """
 
-from . import api
-from . import sklearn
+from . import api, sklearn
 
 OPTIONAL_MODULES = [
     "haiku",

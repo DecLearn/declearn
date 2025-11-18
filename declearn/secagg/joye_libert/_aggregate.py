@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,9 +17,7 @@
 
 """Secure Aggregation Controller using Joye-Libert homomorphic summation."""
 
-from typing import Any, Dict, List, Optional, Type, TypeVar
-
-from typing_extensions import Self  # future: import from typing (py >=3.11)
+from typing import Any, Dict, List, Optional, Self, Type, TypeVar
 
 from declearn.secagg.api import ArraySpec, EncryptedSpecs, SecureAggregate
 from declearn.secagg.joye_libert._primitives import (
@@ -42,7 +40,8 @@ AggregateT = TypeVar("AggregateT", bound=Aggregate)
 class JLSAggregate(SecureAggregate[AggregateT]):
     """'Aggregate'-like container for Joye-Libert encrypted values."""
 
-    def __init__(
+    # pylint: disable-next=too-many-positional-arguments
+    def __init__(  # noqa: PLR0913
         self,
         encrypted: List[int],
         enc_specs: EncryptedSpecs,
@@ -83,7 +82,9 @@ class JLSAggregate(SecureAggregate[AggregateT]):
         val_b: List[int],
     ) -> List[int]:
         """Aggregate encrypted integer values."""
-        return [sum_encrypted(values) for values in zip(val_a, val_b)]
+        return [
+            sum_encrypted(values) for values in zip(val_a, val_b, strict=False)
+        ]
 
     def aggregate(
         self,

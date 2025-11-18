@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -123,11 +123,12 @@ def preprocess_heart_uci_dataframe(
     data: pd.DataFrame,
 ) -> pd.DataFrame:
     """Preprocess a subset of the Heart UCI dataset."""
+    # fmt: off
     columns = [
-        # fmt: off
         "age", "sex", "cp", "trestbps", "chol", "fbs", "restecg",
         "thalach", "exang", "oldpeak", "slope", "ca", "thal", "num",
     ]
+    # fmt: on
     data = data.set_axis(columns, axis=1, copy=False)
     # Drop unused columns and rows with missing values.
     data.drop(columns=["ca", "chol", "fbs", "slope", "thal"], inplace=True)

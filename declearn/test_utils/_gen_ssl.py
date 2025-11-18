@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -33,7 +33,8 @@ __all__ = [
 ]
 
 
-def generate_ssl_certificates(
+# pylint: disable-next=too-many-positional-arguments
+def generate_ssl_certificates(  # noqa: PLR0913
     folder: str = ".",
     c_name: str = "localhost",
     password: Optional[str] = None,
@@ -117,9 +118,7 @@ def generate_private_key(
         key_size=key_size,
     )
     if password is None:
-        encryption_algorithm = (
-            crypto_serialization.NoEncryption()
-        )  # type: crypto_serialization.KeySerializationEncryption
+        encryption_algorithm: crypto_serialization.KeySerializationEncryption = crypto_serialization.NoEncryption()
     else:
         encryption_algorithm = crypto_serialization.BestAvailableEncryption(
             password.encode("utf-8")
@@ -279,7 +278,8 @@ def gen_ssl_csr(
     return sv_csrq, sv_pkey
 
 
-def gen_ssl_cert(
+# pylint: disable-next=too-many-positional-arguments
+def gen_ssl_cert(  # noqa: PLR0913
     folder: str,
     sv_csrq: str,
     ca_cert: str,

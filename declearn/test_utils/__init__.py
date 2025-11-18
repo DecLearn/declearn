@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -30,10 +30,10 @@ features that may be ported to the stable API in the future.
 
 from ._argparse import setup_client_argparse, setup_server_argparse
 from ._assertions import (
-    assert_dict_equal,
-    assert_list_equal,
-    assert_json_serializable_dict,
     assert_batch_equal,
+    assert_dict_equal,
+    assert_json_serializable_dict,
+    assert_list_equal,
 )
 from ._convert import to_numpy
 from ._gen_ssl import generate_ssl_certificates

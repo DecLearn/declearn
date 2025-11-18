@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -96,12 +96,15 @@ class TestJoyeLibertSecaggSetup(SecaggSetupTestCase):
             "1", id_keys[1], trusted, biprime=generate_random_biprime(16)
         )
         # Test that as a result, the setup fails.
-        server_exc, peer_0_exc, peer_1_exc = await asyncio.gather(
+        result: Tuple[
+            RuntimeError, RuntimeError, RuntimeError
+        ] = await asyncio.gather(
             server_routine,
             peer_0_routine,
             peer_1_routine,
             return_exceptions=True,
-        )  # type: Tuple[RuntimeError, RuntimeError, RuntimeError]
+        )
+        server_exc, peer_0_exc, peer_1_exc = result
         assert isinstance(server_exc, RuntimeError)
         assert isinstance(peer_0_exc, RuntimeError)
         assert isinstance(peer_1_exc, RuntimeError)
@@ -139,12 +142,15 @@ class TestJoyeLibertSecaggSetup(SecaggSetupTestCase):
             "0", id_keys[1], trusted, biprime=biprime
         )
         # Test that as a result, the setup fails.
-        server_exc, peer_0_exc, peer_1_exc = await asyncio.gather(
+        result: Tuple[
+            RuntimeError, RuntimeError, RuntimeError
+        ] = await asyncio.gather(
             server_routine,
             peer_0_routine,
             peer_1_routine,
             return_exceptions=True,
-        )  # type: Tuple[RuntimeError, RuntimeError, RuntimeError]
+        )
+        server_exc, peer_0_exc, peer_1_exc = result
         assert isinstance(server_exc, RuntimeError)
         assert isinstance(peer_0_exc, RuntimeError)
         assert isinstance(peer_1_exc, RuntimeError)

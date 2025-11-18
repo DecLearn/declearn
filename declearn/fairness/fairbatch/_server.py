@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -33,7 +33,6 @@ from declearn.fairness.fairbatch._messages import (
 )
 from declearn.fairness.fairbatch._sampling import setup_fairbatch_controller
 from declearn.secagg.api import Decrypter
-
 
 __all__ = [
     "FairbatchControllerServer",
@@ -132,7 +131,7 @@ class FairbatchControllerServer(FairnessControllerServer):
         # Set up the FairbatchWeightsController.
         self.sampling_controller = self._setup_function(
             f_type=self.f_type,
-            counts=dict(zip(self.groups, counts)),
+            counts=dict(zip(self.groups, counts, strict=False)),
             target=self.f_args.get("target", 1),
             alpha=self.sampling_controller.alpha,
         )
@@ -144,6 +143,7 @@ class FairbatchControllerServer(FairnessControllerServer):
                 "Overriding Aggregator choice to a 'SumAggregator', "
                 "due to the use of Fed-FairBatch.",
                 category=RuntimeWarning,
+                stacklevel=2,
             )
             aggregator = SumAggregator()
         return aggregator
@@ -174,15 +174,17 @@ class FairbatchControllerServer(FairnessControllerServer):
         values: List[float],
     ) -> Dict[str, Union[float, np.ndarray]]:
         # Unpack group-wise accuracy and loss values.
-        accuracy = dict(zip(self.groups, values[: len(self.groups)]))
-        loss = dict(zip(self.groups, values[len(self.groups) :]))
+        accuracy = dict(
+            zip(self.groups, values[: len(self.groups)], strict=False)
+        )
+        loss = dict(zip(self.groups, values[len(self.groups) :], strict=False))
         # Update sampling probabilities and send them to clients.
         self.sampling_controller.update_from_federated_losses(loss)
         await self._send_fairbatch_probas(netwk)
         # Package and return accuracy, loss and fairness metrics.
-        metrics = {
+        metrics: Dict[str, Union[float, np.ndarray]] = {
             f"accuracy_{key}": val for key, val in accuracy.items()
-        }  # type: Dict[str, Union[float, np.ndarray]]
+        }
         metrics.update({f"loss_{key}": val for key, val in loss.items()})
         f_func = self.sampling_controller.f_func
         fairness = f_func.compute_from_federated_group_accuracy(accuracy)

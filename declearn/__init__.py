@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -69,8 +69,8 @@ from . import (
     dataset,
     fairness,
     main,
-    metrics,
     messaging,
+    metrics,
     model,
     optimizer,
     secagg,

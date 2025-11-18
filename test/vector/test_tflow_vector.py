@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -55,7 +55,7 @@ class TensorflowVectorFactory(VectorFactory):
             # their dense counterpart. This is not very realistic, but enables
             # testing support for these structures as it enables comparing
             # outputs' values with numpy and other frameworks.
-            tensor[self.names[0]] = tf.IndexedSlices(
+            tensor[self.names[0]] = tf.IndexedSlices(  # type: ignore
                 values=tensor[self.names[0]],
                 indices=tf.range(self.shapes[0][0]),
                 dense_shape=tf.convert_to_tensor(self.shapes[0]),

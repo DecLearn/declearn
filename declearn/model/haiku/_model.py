@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,14 +22,13 @@ import inspect
 import io
 import warnings
 from random import SystemRandom
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Self, Set, Tuple, Union
 
 import haiku as hk
 import jax
 import jax.numpy as jnp
 import joblib  # type: ignore
 import numpy as np
-from typing_extensions import Self
 
 from declearn.data_info import aggregate_data_info
 from declearn.model._utils import raise_on_stringsets_mismatch
@@ -106,9 +105,9 @@ class HaikuModel(Model):
         policy = get_device_policy()
         self._device = select_device(gpu=policy.gpu, idx=policy.idx)
         # Create model state attributes.
-        self._params = {}  # type: hk.Params
-        self._pnames = []  # type: List[str]
-        self._trainable = []  # type: List[str]
+        self._params: hk.Params = {}
+        self._pnames: List[str] = []
+        self._trainable: List[str] = []
         # Initialize the PRNG.
         if seed is None:
             seed = int(SystemRandom().random() * 10e6)
@@ -117,7 +116,7 @@ class HaikuModel(Model):
         )
         # Initialized and data_info utils
         self._initialized = False
-        self.data_info = {}  # type: Dict[str, Any]
+        self.data_info: Dict[str, Any] = {}
 
     @property
     def device_policy(
@@ -148,7 +147,9 @@ class HaikuModel(Model):
         ).astype(data_info["data_type"])
         with warnings.catch_warnings():  # jax.jit(device=...) is deprecated
             warnings.simplefilter("ignore", DeprecationWarning)
-            params = jax.jit(self._model.init, device=self._device)(
+            params = jax.jit(  # pylint: disable=[not-callable]
+                self._model.init, device=self._device
+            )(
                 next(self._rng_gen), inputs
             )  # NOTE: jit is used to force haiku's device selection
         self._params = jax.device_put(params, self._device)
@@ -165,7 +166,8 @@ class HaikuModel(Model):
     ) -> Dict[str, Any]:
         warnings.warn(
             "Our custom Haiku serialization relies on pickle,"
-            "which may be unsafe."
+            "which may be unsafe.",
+            stacklevel=2,
         )
         with io.BytesIO() as buffer:
             joblib.dump(self._model_fn, buffer)
@@ -323,9 +325,7 @@ class HaikuModel(Model):
         else:
             self._trainable = []  # reset if needed
             if inspect.isfunction(criterion):
-                include_fn = (
-                    criterion
-                )  # type: Callable[[str, str, jax.Array], bool]
+                include_fn: Callable[[str, str, jax.Array], bool] = criterion
             elif isinstance(criterion, dict):
                 include_fn = self._build_include_fn(criterion)
             else:
@@ -379,25 +379,25 @@ class HaikuModel(Model):
         # Unpack input batch and prepare model parameters.
         inputs = self._unpack_batch(batch)
         train_params, fixed_params = hk.data_structures.partition(
-            predicate=lambda l, w, _: f"{l}:{w}" in self._trainable,
+            predicate=lambda l, w, _: f"{l}:{w}" in self._trainable,  # noqa: E741
             structure=self._params,
         )
         rng = next(self._rng_gen)
         # Compute batch-averaged gradients, opt. clipped on a per-sample basis.
         if max_norm:
-            grads, loss = self._clipped_grads_and_loss_fn(
+            grads, loss = self._clipped_grads_and_loss_fn(  # pylint: disable=[not-callable, line-too-long]
                 train_params, fixed_params, rng, inputs, max_norm
             )
             grads = [value.mean(0) for value in grads]
         else:
-            loss, grads_tree = self._loss_and_grads_fn(
+            loss, grads_tree = self._loss_and_grads_fn(  # pylint: disable=[not-callable, line-too-long]
                 train_params, fixed_params, rng, inputs
             )
             grads = jax.tree_util.tree_leaves(grads_tree)
         # Record the batch-averaged loss value.
         self._loss_history.append(float(np.array(loss).mean()))
         # Return the gradients, flattened into a JaxNumpyVector container.
-        return JaxNumpyVector(dict(zip(self._trainable, grads)))
+        return JaxNumpyVector(dict(zip(self._trainable, grads, strict=False)))
 
     @functools.cached_property
     def _loss_and_grads_fn(
@@ -522,7 +522,9 @@ class HaikuModel(Model):
                 "correct the inputs, or override this method to support "
                 "creating labels from the base inputs."
             )
-        y_pred = self._predict_fn(self._params, next(self._rng_gen), *inputs)
+        y_pred = self._predict_fn(  # pylint: disable=[not-callable]
+            self._params, next(self._rng_gen), *inputs
+        )
         return (
             np.asarray(y_true),
             np.asarray(y_pred),

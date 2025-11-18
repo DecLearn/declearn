@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -34,6 +34,6 @@ mainly aims at providing tools used in the backend of the former objects.
 """
 
 from . import utils
-from ._vector import TorchVector
-from ._optim import TorchOptiModule
 from ._model import TorchModel
+from ._optim import TorchOptiModule
+from ._vector import TorchVector

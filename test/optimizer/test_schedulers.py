@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -43,7 +43,7 @@ from declearn.test_utils import (
     assert_json_serializable_dict,
 )
 
-SCHEDULERS = [
+SCHEDULERS: List[Scheduler] = [
     CosineAnnealing(0.001, max_lr=0.01, duration=10, step_level=False),
     CosineAnnealingWarmRestarts(0.001, max_lr=0.01, period=100, t_mult=0.5),
     CyclicExpRange(0.001, max_lr=0.01, stepsize=30, decay=0.9),
@@ -55,7 +55,7 @@ SCHEDULERS = [
     PolynomialDecay(0.001, power=3, limit=10, step_level=False),
     Warmup(0.001, warmup=100),
     WarmupRounds(0.001, warmup=2),
-]  # type: List[Scheduler]
+]
 SCHEDULERS_DICT = {scheduler.name: scheduler for scheduler in SCHEDULERS}
 SCHEDULERS_DICT["warmup-decay"] = Warmup(LinearDecay(0.001, 0.1), warmup=100)
 SCHEDULERS_DICT["warmup-rounds-decay"] = WarmupRounds(
@@ -195,5 +195,6 @@ def test_list_rate_schedulers():
             "declearn."
         ):
             warnings.warn(
-                f"Registered Scheduler class '{cls}' is not covered by tests."
+                f"Registered Scheduler class '{cls}' is not covered by tests.",
+                stacklevel=2,
             )

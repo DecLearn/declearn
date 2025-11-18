@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,17 +19,20 @@
 
 import dataclasses
 import os
+import tomllib  # type: ignore
 import typing
 import warnings
-
-try:
-    import tomllib  # type: ignore
-except ModuleNotFoundError:
-    import tomli as tomllib
-
-from typing import Any, ClassVar, Dict, Optional, Set, Type, TypeVar, Union
-
-from typing_extensions import Self  # future: import from typing (py >=3.11)
+from typing import (
+    Any,
+    ClassVar,
+    Dict,
+    Optional,
+    Self,
+    Set,
+    Type,
+    TypeVar,
+    Union,
+)
 
 __all__ = [
     "TomlConfig",
@@ -97,7 +100,10 @@ def _isinstance_generic(inputs: Any, typevar: Type) -> bool:
         return (
             isinstance(inputs, tuple)
             and len(inputs) == len(args)
-            and all(_isinstance_generic(e, t) for e, t in zip(inputs, args))
+            and all(
+                _isinstance_generic(e, t)
+                for e, t in zip(inputs, args, strict=False)
+            )
         )
     # Unsupported cases.
     raise TypeError(  # pragma: no cover
@@ -112,9 +118,9 @@ def _parse_float(src: str) -> Optional[float]:
 
 
 def _instantiate_field(
-    field: dataclasses.Field,  # future: dataclasses.Field[T] (Py >=3.9)
+    field: dataclasses.Field[T],
     **kwargs: Any,
-) -> Any:  # future: T
+) -> T:
     """Instantiate a dataclass field from input args and kwargs.
 
     This function is meant to enable building dataclass object fields,
@@ -139,7 +145,7 @@ def _instantiate_field(
     origin = typing.get_origin(field.type)
     # Case of a raw type.
     if origin is None:
-        return _instantiate(field.type)  # type: ignore  # update when py >=3.9
+        return _instantiate(field.type)  # type: ignore
     # Case of a union of types (including optional).
     if origin is Union:
         for cls in typing.get_args(field.type):
@@ -225,7 +231,7 @@ class TomlConfig:
             In case some keyword arguments are unused due to the lack of a
             corresponding dataclass field.
         """
-        fields = {}  # type: Dict[str, Any]
+        fields: Dict[str, Any] = {}
         # Look up expected kwargs and parse them.
         for field in dataclasses.fields(cls):
             parser = getattr(cls, f"parse_{field.name}", cls.default_parser)
@@ -242,13 +248,14 @@ class TomlConfig:
                 f"Unsupported keyword argument in {cls.__name__}.from_params: "
                 f"'{key}'. This argument was ignored.",
                 category=RuntimeWarning,
+                stacklevel=2,
             )
         return cls(**fields)
 
     @classmethod
     def default_parser(
         cls,
-        field: dataclasses.Field,  # future: dataclasses.Field[T] (Py >=3.9)
+        field: dataclasses.Field[T],
         inputs: Union[str, Dict[str, Any], T, None],
     ) -> Any:
         """Default method to instantiate a field from python inputs.
@@ -285,7 +292,8 @@ class TomlConfig:
         """
         # Case of valid inputs: return them as-is (including valid None).
         if _isinstance_generic(
-            inputs, field.type  # type: ignore  # update when py >=3.9
+            inputs,
+            field.type,  # type: ignore
         ):  # see function's notes
             return inputs
         # Case of None inputs: return default value if any, else raise.
@@ -382,7 +390,7 @@ class TomlConfig:
             except KeyError as exc:
                 if not section_fail_ok:
                     raise KeyError("Specified section not found") from exc
-        params = {}  # type: Dict[str, Any]
+        params: Dict[str, Any] = {}
         for field in dataclasses.fields(cls):
             # Case when the section is provided: set it up for parsing.
             if field.name in config:
@@ -404,6 +412,7 @@ class TomlConfig:
                     f"Unsupported section encountered in {path} TOML file: "
                     f"'{name}'. This section will be ignored.",
                     category=RuntimeWarning,
+                    stacklevel=2,
                 )
         # Finally, instantiate the FLConfig container.
         return cls.from_params(**params)

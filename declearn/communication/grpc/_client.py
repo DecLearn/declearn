@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -66,8 +66,8 @@ class GrpcClient(NetworkClient):
             `declearn.utils.get_logger`. If None, use `type(self)-name`.
         """
         super().__init__(server_uri, name, certificate, logger)
-        self._channel = None  # type: Optional[grpc.Channel]
-        self._service = None  # type: Optional[MessageBoardStub]
+        self._channel: Optional[grpc.Channel] = None
+        self._service: Optional[MessageBoardStub] = None
 
     @staticmethod
     def _setup_ssl_context(
@@ -83,7 +83,7 @@ class GrpcClient(NetworkClient):
     async def start(self) -> None:
         if self._channel is None:
             self._channel = (
-                grpc.aio.secure_channel(self.server_uri, self._ssl)
+                grpc.aio.secure_channel(self.server_uri, self._ssl)  # type: ignore
                 if (self._ssl is not None)
                 else grpc.aio.insecure_channel(self.server_uri)
             )
@@ -91,7 +91,7 @@ class GrpcClient(NetworkClient):
 
     async def stop(self) -> None:
         if self._channel is not None:
-            await self._channel.close()
+            await self._channel.close()  # type: ignore
             self._channel = None
             self._service = None
 

@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2023 Inria (Institut National de Recherche en Informatique
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,9 +20,7 @@
 import abc
 from typing import Any, ClassVar, Dict, List, Literal, Tuple
 
-
 from declearn.fairness.api import instantiate_fairness_function
-
 
 __all__ = [
     "FairbatchSamplingController",
@@ -232,16 +230,15 @@ class FairbatchEqualizedOdds(FairbatchSamplingController):
                 self.states["lambda_1"] = max(
                     self.states["lambda_1"] - self.alpha, 0
                 )
-        else:
-            if diff_loss_tgt_1 > 0:
-                self.states["lambda_2"] = min(
-                    self.states["lambda_2"] + self.alpha,
-                    self.states["p_trgt_1"],
-                )
-            elif diff_loss_tgt_1 < 0:
-                self.states["lambda_2"] = max(
-                    self.states["lambda_2"] - self.alpha, 0
-                )
+        elif diff_loss_tgt_1 > 0:
+            self.states["lambda_2"] = min(
+                self.states["lambda_2"] + self.alpha,
+                self.states["p_trgt_1"],
+            )
+        elif diff_loss_tgt_1 < 0:
+            self.states["lambda_2"] = max(
+                self.states["lambda_2"] - self.alpha, 0
+            )
 
 
 class FairbatchDemographicParity(FairbatchSamplingController):
@@ -308,16 +305,15 @@ class FairbatchDemographicParity(FairbatchSamplingController):
                     self.states["lambda_1"] + self.alpha,
                     self.states["p_attr_0"],
                 )
-        else:
-            if diff_loss_tgt_1 > 0:
-                self.states["lambda_2"] = min(
-                    self.states["lambda_2"] + self.alpha,
-                    self.states["p_attr_1"],
-                )
-            elif diff_loss_tgt_1 < 0:
-                self.states["lambda_2"] = max(
-                    self.states["lambda_2"] - self.alpha, 0
-                )
+        elif diff_loss_tgt_1 > 0:
+            self.states["lambda_2"] = min(
+                self.states["lambda_2"] + self.alpha,
+                self.states["p_attr_1"],
+            )
+        elif diff_loss_tgt_1 < 0:
+            self.states["lambda_2"] = max(
+                self.states["lambda_2"] - self.alpha, 0
+            )
 
 
 def assign_sensitive_group_labels(
