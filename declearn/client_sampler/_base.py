@@ -1,6 +1,6 @@
 """Implementation of Client Sampler"""
 
-from abc import ABC, abstractmethod
+from abc import ABCMeta, abstractmethod
 from typing import (
     Dict,
     Optional,
@@ -10,7 +10,7 @@ from typing import (
 from declearn.messaging import Message
 
 
-class ClientSampler(ABC):
+class ClientSampler(metaclass=ABCMeta):
     """
 
     Attributes
@@ -126,6 +126,7 @@ class CompositionClientSampler(ClientSampler):
             if all samplers do not have the same initialization policy.
 
     """
+
     def __init__(self, *samplers: ClientSampler):
         self.check_composition_homogeneity(*samplers)
         self.samplers = samplers

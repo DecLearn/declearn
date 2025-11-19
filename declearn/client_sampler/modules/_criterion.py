@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
+from abc import ABCMeta, abstractmethod
 from typing import Any, Callable, Dict, Literal, Optional, Set, Union
 
 import numpy as np
@@ -9,7 +9,7 @@ from ...messaging import TrainReply
 from .._base import ClientSampler
 
 
-class Criterion(ABC):
+class Criterion(metaclass=ABCMeta):
     """
     Client sampling criterion.
     """
@@ -126,10 +126,8 @@ class GradientNormCriterion(Criterion):
         self, client_replies: Dict[str, TrainReply]
     ) -> Dict[str, float]:
         criterion_dict: Dict[str, float] = {}
-        for client_name in client_replies:
-            flattened_gradients, _ = client_replies[
-                client_name
-            ].updates.updates.flatten()
+        for client_name, reply in client_replies.items():
+            flattened_gradients, _ = reply.updates.updates.flatten()
             criterion_dict[client_name] = np.linalg.norm(flattened_gradients)
 
         return criterion_dict
@@ -142,7 +140,7 @@ class CriterionClientSampler(ClientSampler):
 
     secagg_compatible = False
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         clients: Set[str],
         n_samples: int,
