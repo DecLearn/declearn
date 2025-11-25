@@ -138,6 +138,8 @@ class CriterionClientSampler(ClientSampler):
     Samples participants with the highest criterion values.
     """
 
+    # TODO : adapt to base class
+
     secagg_compatible = False
 
     def __init__(  # noqa: PLR0913
@@ -186,7 +188,7 @@ class CriterionClientSampler(ClientSampler):
             for client_name, weight in self.learnt_weights.items()
         }
 
-    def cls_sample(self, input_clients: Set[str]) -> Set[str]:
+    def _sample(self, input_clients: Set[str]) -> Set[str]:
         learnt_weights = self.convert_missing_weights()
 
         weights_subset = {
@@ -204,6 +206,6 @@ class CriterionClientSampler(ClientSampler):
         )
         return best_clients
 
-    def update(self, results: Dict[str, TrainReply]):
+    def update(self, results: Dict[str, TrainReply]) -> None:
         learnt_weights = self.criterion.compute(results)
         self.learnt_weights.update(learnt_weights)

@@ -23,14 +23,14 @@ import numpy as np
 import pytest
 
 from declearn.aggregator import ModelUpdates
+from declearn.client_sampler.modules import GradientNormCriterion
+from declearn.messaging import TrainReply
 from declearn.test_utils import (
     FrameworkType,
     GradientsTestCase,
     list_available_frameworks,
 )
 from declearn.utils import set_device_policy
-from declearn.messaging import TrainReply
-from declearn.client_sampler.modules import GradientNormCriterion
 
 VECTOR_FRAMEWORKS = list_available_frameworks()
 

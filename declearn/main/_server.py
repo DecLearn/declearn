@@ -37,6 +37,7 @@ from typing import (  # fmt: off
 import numpy as np
 
 from declearn import messaging
+from declearn.client_sampler import ClientSampler, DefaultClientSampler
 from declearn.communication import NetworkServerConfig
 from declearn.communication.api import NetworkServer
 from declearn.main.config import (
@@ -80,6 +81,10 @@ class FederatedServer:
         netwk: Union[NetworkServer, NetworkServerConfig, Dict[str, Any], str],
         optim: Union[FLOptimConfig, str, Dict[str, Any]],
         metrics: Union[MetricSet, List[MetricInputType], None] = None,
+        client_sampler: Union[
+            ClientSampler, None
+        ] = None,  # TODO add other types
+        # TODO doc add arg
         secagg: Union[SecaggConfigServer, Dict[str, Any], None] = None,
         checkpoint: Union[Checkpointer, Dict[str, Any], str, None] = None,
         logger: Union[logging.Logger, str, None] = None,
@@ -135,6 +140,8 @@ class FederatedServer:
         self.fairness = optim.fairness  # note: optional
         # Assign the wrapped MetricSet.
         self.metrics = MetricSet.from_specs(metrics)
+        # Assign a client sampler
+        self.client_sampler = self._parse_cli_sampler(client_sampler)
         # Assign an optional checkpointer.
         if checkpoint is not None:
             checkpoint = Checkpointer.from_specs(checkpoint)
@@ -218,6 +225,25 @@ class FederatedServer:
         )
 
     @staticmethod
+    def _parse_cli_sampler(
+        client_sampler: Union[ClientSampler, None],  # TODO update
+    ) -> ClientSampler:
+        """
+        Parse 'client_sampler' instantiation argument.
+        If None provided, return the default client sampler
+        (which selects all clients)
+        """
+        if client_sampler is None:
+            return DefaultClientSampler()
+        if isinstance(client_sampler, ClientSampler):
+            return client_sampler
+        raise TypeError(
+            "'client_sampler' should be a 'ClientSampler' instance, "
+            f"not '{type(client_sampler)}'."
+        )
+        # TODO add cases given input types
+
+    @staticmethod
     def _parse_secagg(
         secagg: Union[SecaggConfigServer, Dict[str, Any], None],
     ) -> Optional[SecaggConfigServer]:
@@ -286,6 +312,7 @@ class FederatedServer:
         async with self.netwk:
             # Conduct the initialization phase.
             await self.initialization(config)
+            self.client_sampler.init_check_clients(self.netwk.client_names)
             if self.ckptr:
                 self.ckptr.checkpoint(self.model, self.optim, first_call=True)
             # Iteratively run training and evaluation rounds.
@@ -293,10 +320,16 @@ class FederatedServer:
             while True:
                 clients_train = self._select_training_round_participants()
                 clients_evaluate = self._select_evaluation_round_participants()
-                await self.fairness_round(round_i, config.fairness, clients_train)
+                await self.fairness_round(
+                    round_i, config.fairness, clients_train
+                )
                 round_i += 1
-                await self.training_round(round_i, config.training, clients_train)
-                await self.evaluation_round(round_i, config.evaluate, clients_evaluate)
+                await self.training_round(
+                    round_i, config.training, clients_train
+                )
+                await self.evaluation_round(
+                    round_i, config.evaluate, clients_evaluate
+                )
                 # Decide whether to keep training for at least one round.
                 if not self._keep_training(round_i, config.rounds, early_stop):
                     break
@@ -304,10 +337,16 @@ class FederatedServer:
             if self.ckptr is not None:
                 if round_i % config.evaluate.frequency:
                     await self.evaluation_round(
-                        round_i, config.evaluate, self.netwk.client_names, force_run=True  # TODO: check which clients to use
+                        round_i,
+                        config.evaluate,
+                        self.netwk.client_names,
+                        force_run=True,  # TODO: check which clients to use
                     )
                 await self.fairness_round(
-                    round_i, config.fairness, self.netwk.client_names, force_run=True  # TODO: check which clients to use
+                    round_i,
+                    config.fairness,
+                    self.netwk.client_names,
+                    force_run=True,  # TODO: check which clients to use
                 )
             # Interrupt training when time comes.
             self.logger.info("Stopping training.")
@@ -654,7 +693,7 @@ class FederatedServer:
         self,
     ) -> Set[str]:
         """Return the names of clients that should participate in the round."""
-        return self.netwk.client_names
+        return self.client_sampler.sample()
 
     async def _send_training_instructions(
         self,
@@ -815,7 +854,7 @@ class FederatedServer:
         self,
     ) -> Set[str]:
         """Return the names of clients that should participate in the round."""
-        return self.netwk.client_names
+        return self.client_sampler.sample()
 
     async def _send_evaluation_instructions(
         self,
