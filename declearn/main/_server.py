@@ -141,7 +141,9 @@ class FederatedServer:
         # Assign the wrapped MetricSet.
         self.metrics = MetricSet.from_specs(metrics)
         # Assign a client sampler
-        self.client_sampler = self._parse_cli_sampler(client_sampler)
+        self.client_sampler = self._parse_cli_sampler(
+            client_sampler, logger=self.logger
+        )
         # Assign an optional checkpointer.
         if checkpoint is not None:
             checkpoint = Checkpointer.from_specs(checkpoint)
@@ -227,21 +229,38 @@ class FederatedServer:
     @staticmethod
     def _parse_cli_sampler(
         client_sampler: Union[ClientSampler, None],  # TODO update
+        logger: logging.Logger,
     ) -> ClientSampler:
         """
         Parse 'client_sampler' instantiation argument.
         If None provided, return the default client sampler
         (which selects all clients)
         """
+        parsed_sampler = None
         if client_sampler is None:
-            return DefaultClientSampler()
+            parsed_sampler = DefaultClientSampler()
         if isinstance(client_sampler, ClientSampler):
-            return client_sampler
-        raise TypeError(
-            "'client_sampler' should be a 'ClientSampler' instance, "
-            f"not '{type(client_sampler)}'."
-        )
+            parsed_sampler = client_sampler
         # TODO add cases given input types
+
+        if parsed_sampler is not None:
+            if isinstance(parsed_sampler, DefaultClientSampler):
+                msg = (
+                    "Default client sampler selected, all clients "
+                    "will be involved in each round"
+                )
+            else:
+                msg = (
+                    "Selected client sampler is "
+                    f"'{parsed_sampler.__class__.__name__}'"
+                )
+            logger.info(msg)
+            return parsed_sampler
+        else:
+            raise TypeError(
+                "'client_sampler' should be a 'ClientSampler' instance, "
+                f"not '{type(client_sampler)}'."
+            )
 
     @staticmethod
     def _parse_secagg(
@@ -693,7 +712,12 @@ class FederatedServer:
         self,
     ) -> Set[str]:
         """Return the names of clients that should participate in the round."""
-        return self.client_sampler.sample()
+        sampled_clients = self.client_sampler.sample()
+        if not isinstance(self.client_sampler, DefaultClientSampler):
+            self.logger.debug(
+                f"Sampled clients for train round are : {sampled_clients}"
+            )
+        return sampled_clients
 
     async def _send_training_instructions(
         self,
@@ -854,7 +878,12 @@ class FederatedServer:
         self,
     ) -> Set[str]:
         """Return the names of clients that should participate in the round."""
-        return self.client_sampler.sample()
+        sampled_clients = self.client_sampler.sample()
+        if not isinstance(self.client_sampler, DefaultClientSampler):
+            self.logger.debug(
+                f"Sampled clients for eval round are : {sampled_clients}"
+            )
+        return sampled_clients
 
     async def _send_evaluation_instructions(
         self,
