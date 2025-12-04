@@ -1,176 +1,151 @@
-"""Implementation of Client Sampler"""
+"""Client Sampler abstraction API"""
 
 from abc import ABCMeta, abstractmethod
 from typing import (
+    Any,
     Dict,
-    Optional,
     Set,
 )
 
-from declearn.messaging import Message
+from declearn.messaging import TrainReply
+from declearn.utils import create_types_registry, register_type
 
 
+@create_types_registry
 class ClientSampler(metaclass=ABCMeta):
     """
+    Abstract base class for client sampler.
+
+    The aim of this abstraction is to enable implementing client
+    sampling strategies, to sample a subset of clients at each
+    round instead of selecting them all.
 
     Attributes
     ----------
-    # TODO fix
-    clients: Optional[Set[str]]
+    clients: Set[str]
         Set of clients among which sampling is done.
-    n_samples: int TODO remove
-        Number of clients sampled each round.
-    prior_weights: dict[str, float] or None, default=None
-        Prior weights attributed to each client.
-        Higher weight for a client should mean higher chances of being
-        sampled, depends on the implementation class.
-        Default will assign the same weights to each client.
-    initialization_round: bool, default=False
-        If True, all clients will be used during the first round.
-    secagg_compatible : TODO
 
-    TODO : Abstract, Overridable, Inheritance
+    client_to_metadata: Dict[str, Dict[str, Any]]
+        Dictionary mapping each client name with its metadata dictionary,
+        itself mapping the metadata name with its value (of arbitrary type).
+        This metadata could be used in a selection strategy.
 
+    secagg_compatible: boolean
+        Flag that is True if the client sampler is compatible with secure
+        aggregation, False otherwise. Must be defined by the subclass.
+
+    Abstract
+    --------
+    The following attributes and methods must be implemented by any
+    non-abstract child class:
+
+    - name: str class attribute
+        Name of the client sampler strategy, should match the class name,
+        ex: "default"
+    - secagg_compatible(): boolean class property
+        Indicate if the client sampler is compatible with secure
+        aggregation
+    - cls_sample():
+        Back-end of the sampling method.
+    - update(results: Dict[str, Message]):
+        Update clients metadata and sampler internal state.
+
+    Overridable
+    -----------
+    - init_clients(clients: Set[str]):
+        Initialize clients and their metadata in the sampler.
+        Can be overriden (extended) to precisely initialize
+        some metadata used by in the strategy of the sampler
+        subclass.
+
+    Inheritance
+    -----------
+    When a subclass inheriting from `ClientSampler` is declared, it is
+    automatically registered under the "ClientSampler" group using its
+    class-attribute `name`. This can be prevented by adding `register=False`
+    to the inheritance specs (e.g. `class MyCls(ClientSampler, register=False)`).
+    See `declearn.utils.register_type` for details on types registration.
     """
 
-    def __init__(
-        self,
-        clients: Optional[Set[str]] = None,
-        prior_weights: Optional[Dict[str, float]] = None,
-        initialization_round: bool = False,
-    ):
-        """
-        TODO full doc
-        clients: expected set of all clients in the federated process
-
-        Raises
-        ------
-        KeyError
-            If the weights keys do not match the set of clients.
-        ValueError
-            If the number of samples is higher that the number of clients.
-        """
-        if clients is None:
-            if prior_weights is not None:
-                raise ValueError(
-                    "'prior_weights' cannot be set if 'clients' is not set"
+    def __init_subclass__(
+        cls,
+        register: bool = True,
+        **kwargs: Any,
+    ) -> None:
+        """Automatically type-register ClientSampler subclasses."""
+        super().__init_subclass__(**kwargs)
+        if register:
+            if not getattr(cls, "name", None):
+                raise TypeError(
+                    f"{cls.__name__} must define a class attribute 'name'"
                 )
-        elif (
-            prior_weights is not None and set(prior_weights.keys()) != clients
-        ):
-            raise KeyError(
-                f"The weights keys {prior_weights.keys()} do not match "
-                f"clients {clients}."
-            )
 
-        # TODO : move constraint below elsewhere
-        # if n_samples > len(clients):
-        #     raise ValueError(
-        #         f"The number of samples {n_samples} is higher than the "
-        #         f"number of clients {len(clients)}."
-        #     )
-        self.clients = clients
-        self.prior_weights = prior_weights
-        self.initialization_round = initialization_round
+            register_type(cls, cls.name, group="ClientSampler")
 
-    def init_check_clients(self, actual_clients: Set[str]) -> None:
+    @property
+    @abstractmethod
+    def secagg_compatible(self) -> bool:
         """
-        Initialize or check clients attribute in the sampler
+        Property to indicate if the client sampler is compatible with secure
+        aggregation
+        """
 
-        If 'clients' attribute is not set, initialize it with provided
-        clients.
-        Else, check that already-initialized clients match provided
-        clients.
+    def init_clients(self, clients: Set[str]) -> None:
+        """
+        Initialize clients and their metadata in the sampler.
+
+        This method can be overriden by subclasses, but if so, it should
+        ideally be extended (call to super().init_clients() at first, then add new
+        code)
 
         Parameters
         ----------
-            actual_clients: the set of all clients involved in the federated
+            clients: the set of all clients involved in the federated
             process
-
-        Raises
-        ------
-
         """
-        if self.clients is None:
-            self.clients = actual_clients
-        elif self.clients != actual_clients:
-            raise AttributeError(
-                f"Initialized set of clients {self.clients} does not match "
-                f"actual set of clients {actual_clients}"
-            )
+        self.clients: Set[str] = clients
+        self.client_to_metadata: Dict[str, Dict[str, Any]] = {
+            client: {} for client in clients
+        }
 
-    def sample(
-        self,
-        input_clients: Optional[Set[str]] = None,
-    ) -> Set[str]:
+    def sample(self) -> Set[str]:
         """
         Samples a subset of clients.
-
-        Parameters
-        ----------
-            input_clients: subset of clients to sample from.
-            Default will use the complete set of clients.
 
         Returns
         -------
             sampled_clients: subset of sampled clients.
 
-        TODO Raises
+        Raises
+        ------aises
+            AttributeError
+                If clients attribute is not initialized or equals zero
         """
-        if self.initialization_round:
-            self.initialization_round = False
-            return self.clients
-
         # check that clients attribute is not unassigned
         if self.clients is None or len(self.clients) == 0:
             raise AttributeError(
                 "The client sampler must have a non-empty set of clients "
                 "before performing the sampling."
             )
-        # check that input subset is valid
-        elif input_clients is not None and not input_clients.issubset(
-            self.clients
-        ):
-            raise ValueError(
-                f"The given client subset {input_clients} is not a subset "
-                f"of {self.clients}."
-            )
-
-        return self._sample(
-            input_clients if input_clients is not None else self.clients
-        )
+        return self.cls_sample()
 
     @abstractmethod
-    def _sample(self, input_clients: Set[str]) -> Set[str]:
+    def cls_sample(self) -> Set[str]:
         """
-        Back-end to the sample method.
+        Back-end of the sampling method.
         """
 
     @abstractmethod
-    def update(self, results: Dict[str, Message]) -> None:
+    def update(self, client_to_reply: Dict[str, TrainReply]) -> None:
         """
-        Updates the learnt weights.
+        Update clients metadata and sampler internal state according
+        to each client training reply.
 
         Parameters
         ----------
-            results: dict[str, Message]
-                reply of clients after training
+            client_to_reply: dict[str, Message]
+                dictionary mapping each client to their training reply
         """
-
-
-class DefaultClientSampler(ClientSampler):
-    """
-    Default client sampler which actually don't sample, because
-    it selects all clients.
-    """
-
-    secagg_compatible = True
-
-    def _sample(self, input_clients: Set[str]) -> Set[str]:
-        return input_clients
-
-    def update(self, results: Dict[str, Message]) -> None:
-        pass
 
 
 # TODO handle composition
@@ -192,6 +167,8 @@ class DefaultClientSampler(ClientSampler):
 #             if all samplers do not have the same initialization policy.
 
 #     """
+
+#     name = "composition"
 
 #     def __init__(self, *samplers: ClientSampler):
 #         self.check_composition_homogeneity(*samplers)

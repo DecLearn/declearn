@@ -22,38 +22,11 @@ from typing import Dict
 import numpy as np
 import pytest
 
-from declearn.aggregator import ModelUpdates
 from declearn.client_sampler.modules import GradientNormCriterion
 from declearn.messaging import TrainReply
-from declearn.test_utils import (
-    FrameworkType,
-    GradientsTestCase,
-    list_available_frameworks,
-)
-from declearn.utils import set_device_policy
+from declearn.test_utils import list_available_frameworks
 
 VECTOR_FRAMEWORKS = list_available_frameworks()
-
-
-@pytest.fixture(name="train_replies")
-def train_replies_fixture(
-    framework: FrameworkType,
-    n_clients: int = 3,
-) -> Dict[str, TrainReply]:
-    """Build the dictionary of client replies (messages) from the updates."""
-    set_device_policy(gpu=False)
-    return {
-        str(idx): TrainReply(
-            n_epoch=1,
-            n_steps=10,
-            t_spent=0,
-            updates=ModelUpdates(
-                GradientsTestCase(framework, seed=idx).mock_gradient, weights=1
-            ),
-            aux_var={},
-        )
-        for idx in range(n_clients)
-    }
 
 
 class TestCriterion:

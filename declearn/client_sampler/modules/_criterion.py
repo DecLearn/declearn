@@ -1,41 +1,64 @@
 from __future__ import annotations
 
 from abc import ABCMeta, abstractmethod
-from typing import Any, Callable, Dict, Literal, Optional, Set, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Literal,
+    Optional,
+    Set,
+    Tuple,
+    Union,
+)
 
 import numpy as np
 
 from ...messaging import TrainReply
 from .._base import ClientSampler
 
+MissingWeightPolicy = Literal["priority", "equal"]
+
 
 class Criterion(metaclass=ABCMeta):
     """
-    Client sampling criterion.
+    Abstract class for client sampling criterion.
+
+    TODO details
     """
 
     @abstractmethod
     def compute(
-        self, client_replies: Dict[str, TrainReply]
+        self,
+        client_to_reply: Dict[str, TrainReply],
     ) -> Dict[str, float]:
         """
-        Compute the value of a criterion based on the train replies of clients.
+        Compute the criterion value for each client based on the train replies of clients.
+
+        Parameters
+        ----------
+        client_to_reply: Dict[str, TrainReply]
+            Dictionary mapping a client name to their reply
+
+        Returns
+        -------
+        Dictionary mapping a client name to their criterion value
         """
 
     @staticmethod
     def wrap(obj: Any):
         """
-        Makes sure a native Python object is wrapped in a Criterion.
+        Make sure a native Python object is wrapped in a Criterion.
 
         Parameters
         ----------
-            obj : Any
-                object to be wrapped in a Criterion
+        obj : Any
+            object to be wrapped in a Criterion
 
         Raises
         ------
-            ValueError
-                If object is not a bool, int, float or Criterion.
+        ValueError
+            If object is not a bool, int, float or Criterion.
         """
         if obj is None or isinstance(obj, (int, float, bool)):
             return ConstantCriterion(value=obj)
@@ -76,35 +99,37 @@ class Criterion(metaclass=ABCMeta):
 
 class CompositionCriterion(Criterion):
     """
-    Allows to apply operations between criteria to compose them.
+    Allow to apply operations between criteria to compose them.
     """
 
     def __init__(self, operation: Callable, *parents: Criterion):
         self.operation = operation
-        self.parents = parents
+        self.parents: Tuple[Criterion, ...] = parents
 
     def compute(
-        self, client_replies: Dict[str, TrainReply]
+        self, client_to_reply: Dict[str, TrainReply]
     ) -> Dict[str, float]:
         if self.operation is None:
             raise ValueError(
                 "Criterion value cannot be computed with no operation."
             )
 
-        parent_values = [
-            parent.compute(client_replies) for parent in self.parents
-        ]
-        out_result = {}
-        for client_name in client_replies.keys():
-            client_parent = [parent[client_name] for parent in parent_values]
-            out_result[client_name] = self.operation(*client_parent)
+        cli_to_val_list = [
+            parent.compute(client_to_reply) for parent in self.parents
+        ]  # list of mappings between client and value for each parent
+        client_to_composed_val = {}
+        for client in client_to_reply.keys():
+            client_values = [
+                cli_to_val[client] for cli_to_val in cli_to_val_list
+            ]  # list of values of *this client* for each parent
+            client_to_composed_val[client] = self.operation(*client_values)
 
-        return out_result
+        return client_to_composed_val
 
 
 class ConstantCriterion(Criterion):
     """
-    Wraps a native Python object (int, float, bool or None) in a Criterion.
+    Wrap a native Python object (int, float, bool or None) in a Criterion.
     """
 
     def __init__(self, value: Union[int, float, bool, None]):
@@ -112,66 +137,70 @@ class ConstantCriterion(Criterion):
         self.value = value
 
     def compute(
-        self, client_replies: Dict[str, TrainReply]
+        self, client_to_reply: Dict[str, TrainReply]
     ) -> Dict[str, float]:
-        return {client_name: self.value for client_name in client_replies}
+        return {client_name: self.value for client_name in client_to_reply}
 
 
 class GradientNormCriterion(Criterion):
     """
-    Retrieves the norm of the gradients from the TrainReply message of clients.
+    Retrieve the norm of the gradients from the TrainReply message of clients.
     """
 
     def compute(
-        self, client_replies: Dict[str, TrainReply]
+        self, client_to_reply: Dict[str, TrainReply]
     ) -> Dict[str, float]:
-        criterion_dict: Dict[str, float] = {}
-        for client_name, reply in client_replies.items():
+        client_to_norm: Dict[str, float] = {}
+        for client, reply in client_to_reply.items():
             flattened_gradients, _ = reply.updates.updates.flatten()
-            criterion_dict[client_name] = np.linalg.norm(flattened_gradients)
+            client_to_norm[client] = np.linalg.norm(flattened_gradients)
 
-        return criterion_dict
+        return client_to_norm
 
 
 class CriterionClientSampler(ClientSampler):
     """
-    Samples participants with the highest criterion values.
+    Sample participants with the highest criterion values.
+
+    This implementation sets and uses a client metadata named "weight"
+    to perform the sample. A client weight is this client criterion value
+    if already computed ; else, it is a default value depending on the
+    missing_weights_policy.
+
+    TODO doc
     """
 
-    # TODO : adapt to base class
+    name = "criterion"
 
-    secagg_compatible = False
-
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
-        clients: Set[str],
         n_samples: int,
         criterion: Criterion,
-        prior_weights: Optional[Dict[str, float]] = None,
-        initialization_round: bool = False,
-        missing_weights_policy: Optional[
-            Literal["priority", "equal"]
-        ] = "priority",
+        missing_weights_policy: Optional[MissingWeightPolicy] = "priority",
     ):
-        super().__init__(
-            clients, n_samples, prior_weights, initialization_round
-        )
-        if missing_weights_policy not in ["priority", "equal"]:
+        super().__init__()
+        if missing_weights_policy not in MissingWeightPolicy.__args__:
             raise NotImplementedError(
                 f"Missing weights policy {missing_weights_policy} "
                 f"is not implemented."
             )
-
+        self.n_samples = n_samples
         self.criterion = criterion
-        self.learnt_weights: Dict[str, Optional[float]] = {
-            client_name: None for client_name in clients
-        }
         self.missing_weights_policy = missing_weights_policy
+
+    @property
+    def secagg_compatible(self) -> bool:
+        return False
+
+    def init_clients(self, clients: Set[str]) -> None:
+        super().init_clients(clients)
+        for client in clients:
+            self.client_to_metadata[client].setdefault("weight", None)
 
     def convert_missing_weights(self) -> Dict[str, float]:
         """
-        Convert missing weights such as each client gets a weight which is
-        not None.
+        Access client weights in metadata, and convert missing weights such that
+        each client gets a non-None weight.
         """
         if self.missing_weights_policy == "priority":
             replacement_weight = float("inf")
@@ -183,29 +212,31 @@ class CriterionClientSampler(ClientSampler):
                 f"is not implemented."
             )
 
+        client_to_weight = {
+            client: self.client_to_metadata[client]["weight"]
+            for client in self.client_to_metadata.keys()
+        }
         return {
-            client_name: weight if weight is not None else replacement_weight
-            for client_name, weight in self.learnt_weights.items()
+            client: weight if weight is not None else replacement_weight
+            for client, weight in client_to_weight.items()
         }
 
-    def _sample(self, input_clients: Set[str]) -> Set[str]:
-        learnt_weights = self.convert_missing_weights()
+    def cls_sample(self) -> Set[str]:
+        client_to_weight = self.convert_missing_weights()
 
-        weights_subset = {
-            client_name: self.prior_weights[client_name]
-            * learnt_weights[client_name]
-            for client_name in input_clients
-        }
-        ordered_clients_criterion = dict(
+        ordered_client_to_weight = dict(
             sorted(
-                weights_subset.items(), key=lambda item: item[1], reverse=True
+                client_to_weight.items(),
+                key=lambda item: item[1],
+                reverse=True,
             )
-        )
+        )  # ordered by highest criterion weight
         best_clients = set(
-            list(ordered_clients_criterion.keys())[: self.n_samples]
+            list(ordered_client_to_weight.keys())[: self.n_samples]
         )
         return best_clients
 
-    def update(self, results: Dict[str, TrainReply]) -> None:
-        learnt_weights = self.criterion.compute(results)
-        self.learnt_weights.update(learnt_weights)
+    def update(self, client_to_reply: Dict[str, TrainReply]) -> None:
+        updated_client_to_weight = self.criterion.compute(client_to_reply)
+        for client, weight in updated_client_to_weight.items():
+            self.client_to_metadata[client]["weight"] = weight

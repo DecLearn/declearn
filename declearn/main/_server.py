@@ -37,7 +37,8 @@ from typing import (  # fmt: off
 import numpy as np
 
 from declearn import messaging
-from declearn.client_sampler import ClientSampler, DefaultClientSampler
+from declearn.client_sampler import ClientSampler
+from declearn.client_sampler.modules import DefaultClientSampler
 from declearn.communication import NetworkServerConfig
 from declearn.communication.api import NetworkServer
 from declearn.main.config import (
@@ -51,6 +52,7 @@ from declearn.main.utils import (
     AggregationError,
     Checkpointer,
     EarlyStopping,
+    IncompatibleModulesError,
     aggregate_clients_data_info,
 )
 from declearn.metrics import MetricInputType, MetricSet
@@ -141,7 +143,7 @@ class FederatedServer:
         # Assign the wrapped MetricSet.
         self.metrics = MetricSet.from_specs(metrics)
         # Assign a client sampler
-        self.client_sampler = self._parse_cli_sampler(
+        self.client_sampler = self._parse_clisamp(
             client_sampler, logger=self.logger
         )
         # Assign an optional checkpointer.
@@ -150,6 +152,7 @@ class FederatedServer:
         self.ckptr = checkpoint
         # Assign the optional SecAgg config and declare a Decrypter slot.
         self.secagg = self._parse_secagg(secagg)
+        self._check_clisamp_secagg_compat()
         self._decrypter: Optional[Decrypter] = None
         self._secagg_peers: Set[str] = set()
         # Set up private attributes to record the loss values and best weights.
@@ -227,7 +230,7 @@ class FederatedServer:
         )
 
     @staticmethod
-    def _parse_cli_sampler(
+    def _parse_clisamp(
         client_sampler: Union[ClientSampler, None],  # TODO update
         logger: logging.Logger,
     ) -> ClientSampler:
@@ -281,6 +284,25 @@ class FederatedServer:
             f"of keyword arguments to set one up, not '{type(secagg)}'."
         )
 
+    def _check_clisamp_secagg_compat(self) -> None:
+        """Check if instantiated client sampler config and secure aggregation
+        config are compatible, if not: raises an exception
+
+        Raises
+        ------
+        IncompatibleModulesError
+            In case the server client sampler and secure aggregation configs
+            are incompatible
+        """
+        if (
+            self.secagg is not None
+            and not self.client_sampler.secagg_compatible
+        ):
+            raise IncompatibleModulesError(
+                "Secure aggregation is enabled, but the selected client "
+                "sampler is not compatible with secure aggregation."
+            )
+
     def run(
         self,
         config: Union[FLRunConfig, str, Dict[str, Any]],
@@ -331,7 +353,7 @@ class FederatedServer:
         async with self.netwk:
             # Conduct the initialization phase.
             await self.initialization(config)
-            self.client_sampler.init_check_clients(self.netwk.client_names)
+            self.client_sampler.init_clients(self.netwk.client_names)
             if self.ckptr:
                 self.ckptr.checkpoint(self.model, self.optim, first_call=True)
             # Iteratively run training and evaluation rounds.
@@ -697,6 +719,7 @@ class FederatedServer:
             results = await self._collect_results(
                 clients, messaging.TrainReply, "training"
             )
+            self.client_sampler.update(results)
         else:
             secagg_results = await self._collect_results(
                 clients, secagg_messaging.SecaggTrainReply, "training"

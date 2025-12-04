@@ -7,6 +7,7 @@ from ._criterion import (
     CriterionClientSampler,
     GradientNormCriterion,
 )
+from ._default import DefaultClientSampler
 from ._uniform import UniformClientSampler
 
 __all__ = [
@@ -14,6 +15,7 @@ __all__ = [
     "ConstantCriterion",
     "Criterion",
     "CriterionClientSampler",
+    "DefaultClientSampler",
     "GradientNormCriterion",
     "UniformClientSampler",
 ]
