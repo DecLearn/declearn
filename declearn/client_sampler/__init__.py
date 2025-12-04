@@ -6,11 +6,11 @@ TODO
 from . import modules
 from ._base import (
     ClientSampler,
-    # CompositionClientSampler,
+    CompositionClientSampler,
 )
 
 __all__ = [
     "modules",
     "ClientSampler",
-    # "CompositionClientSampler",
+    "CompositionClientSampler",
 ]

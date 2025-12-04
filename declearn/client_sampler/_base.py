@@ -4,6 +4,8 @@ from abc import ABCMeta, abstractmethod
 from typing import (
     Any,
     Dict,
+    List,
+    Optional,
     Set,
 )
 
@@ -63,7 +65,7 @@ class ClientSampler(metaclass=ABCMeta):
     When a subclass inheriting from `ClientSampler` is declared, it is
     automatically registered under the "ClientSampler" group using its
     class-attribute `name`. This can be prevented by adding `register=False`
-    to the inheritance specs (e.g. `class MyCls(ClientSampler, register=False)`).
+    to the inheritance specs (e.g. `class MyCls(ClientSampler, register=False)`)
     See `declearn.utils.register_type` for details on types registration.
     """
 
@@ -95,8 +97,8 @@ class ClientSampler(metaclass=ABCMeta):
         Initialize clients and their metadata in the sampler.
 
         This method can be overriden by subclasses, but if so, it should
-        ideally be extended (call to super().init_clients() at first, then add new
-        code)
+        ideally be extended (call to super().init_clients() at first, then add
+        new code)
 
         Parameters
         ----------
@@ -108,29 +110,49 @@ class ClientSampler(metaclass=ABCMeta):
             client: {} for client in clients
         }
 
-    def sample(self) -> Set[str]:
+    def sample(
+        self,
+        input_clients: Optional[Set[str]] = None,
+    ) -> Set[str]:
         """
-        Samples a subset of clients.
+        Samples clients a subset of clients.
+        TODO explain why input_clients parameter
+
+        Parameters:
+        TODO
 
         Returns
         -------
-            sampled_clients: subset of sampled clients.
+        Subset of input clients, containing the sampled clients.
 
         Raises
-        ------aises
-            AttributeError
-                If clients attribute is not initialized or equals zero
+        ------
+        AttributeError
+            If clients attribute is not initialized
+
+        ValueErrror
+            If the provided clients is not a subset of the attribute 'clients'
         """
-        # check that clients attribute is not unassigned
-        if self.clients is None or len(self.clients) == 0:
+        if self.clients is None:
             raise AttributeError(
-                "The client sampler must have a non-empty set of clients "
-                "before performing the sampling."
+                "The attribute 'clients' must be initialized before calling "
+                "the sample method."
             )
-        return self.cls_sample()
+        # check that input subset is valid
+        if input_clients is not None and not input_clients.issubset(
+            self.clients
+        ):
+            raise ValueError(
+                f"The given client subset {input_clients} is not a subset "
+                f"of {self.clients}."
+            )
+
+        return self.cls_sample(
+            input_clients if input_clients is not None else self.clients
+        )
 
     @abstractmethod
-    def cls_sample(self) -> Set[str]:
+    def cls_sample(self, input_clients: Set[str]) -> Set[str]:
         """
         Back-end of the sampling method.
         """
@@ -148,89 +170,54 @@ class ClientSampler(metaclass=ABCMeta):
         """
 
 
-# TODO handle composition
-# class CompositionClientSampler(ClientSampler):
-#     """
-#     Class allowing the composition of a list of samplers
+class CompositionClientSampler(ClientSampler):
+    """
+    Class allowing the composition of a list of samplers
 
-#     TODO: order convention to be defined.
+    TODO: order convention to be detailed
+    (first sampler sample, then the others does among the remaining ones)
 
-#     Parameters
-#     ----------
-#         samplers: tuple[ClientSampler, ...]
-#             list of client samplers to be combined.
+    Parameters
+    ----------
+        samplers: List[ClientSampler, ...]
+            list of client samplers to be combined.
 
-#     Raises
-#     ------
-#         ValueError
-#             if all samplers do not have the same clients set.
-#             if all samplers do not have the same initialization policy.
+    Raises
+    ------
+        ValueError
+            if all samplers do not have the same clients set.
+            if all samplers do not have the same initialization policy.
 
-#     """
+    """
 
-#     name = "composition"
+    name = "composition"
 
-#     def __init__(self, *samplers: ClientSampler):
-#         self.check_composition_homogeneity(*samplers)
-#         self.samplers = samplers
+    def __init__(self, *samplers: ClientSampler):
+        super().__init__()
+        self.samplers: List[ClientSampler] = list(samplers)
 
-#         clients = samplers[0].clients
-#         n_samples = sum((sampler.n_samples for sampler in samplers))
-#         initialization_round = samplers[0].initialization_round
+    @property
+    def secagg_compatible(self) -> bool:
+        """
+        Composition client sampler is secagg-compatible if all of its
+        samplers are
+        """
+        return all([sampler.secagg_compatible for sampler in self.samplers])
 
-#         super().__init__(
-#             clients,
-#             n_samples,
-#             initialization_round=initialization_round,
-#         )
+    def init_clients(self, clients: Set[str]) -> None:
+        super().init_clients(clients)
+        for sampler in self.samplers:
+            sampler.init_clients(clients)
 
-#     @staticmethod
-#     def check_composition_homogeneity(
-#         *samplers: ClientSampler,
-#     ):
-#         """
-#         Checks that the composition of given samplers is possible.
+    def cls_sample(self, input_clients: Set[str]):
+        total_sampled_clients = set()
+        for sampler in self.samplers:
+            sampler_clients = sampler.sample(input_clients)
+            total_sampled_clients.update(sampler_clients)
+            input_clients = input_clients - sampler_clients
 
-#         Parameters
-#         ----------
-#         samplers: tuple[ClientSampler]
-#             Tuple of client samplers to be composed together
+        return total_sampled_clients
 
-#         Raises
-#         ------
-#             ValueError
-#                 if all samplers do not have the same clients set.
-#                 if all samplers do not have the same initialization policy.
-#         """
-#         if not all(
-#             (sampler.clients == samplers[0].clients for sampler in samplers)
-#         ):
-#             raise ValueError(
-#                 "All samplers composed together should have the same set of "
-#                 "clients."
-#             )
-
-#         if not all(
-#             (
-#                 sampler.initialization_round
-#                 == samplers[0].initialization_round
-#                 for sampler in samplers
-#             )
-#         ):
-#             raise ValueError(
-#                 "All samplers composed together should have the same "
-#                 "initialization policy."
-#             )
-
-#     def _sample(self, input_clients: Set[str]):
-#         total_sampled_clients = set()
-#         for sampler in self.samplers:
-#             sampler_clients = sampler._sample(input_clients)
-#             total_sampled_clients.update(sampler_clients)
-#             input_clients = input_clients - sampler_clients
-
-#         return total_sampled_clients
-
-#     def update(self, results: Dict[str, Message]):
-#         for sampler in self.samplers:
-#             sampler.update(results)
+    def update(self, results: Dict[str, TrainReply]):
+        for sampler in self.samplers:
+            sampler.update(results)

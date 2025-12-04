@@ -12,7 +12,7 @@ from typing import Dict, List, Tuple
 
 import pytest
 
-from declearn.client_sampler import ClientSampler
+from declearn.client_sampler import ClientSampler, CompositionClientSampler
 from declearn.client_sampler.modules import (
     CriterionClientSampler,
     DefaultClientSampler,
@@ -166,11 +166,15 @@ async def run_declearn_experiment(
 
 # client samplers involved in the integration tests
 CLIENT_SAMPLERS: Dict[str, ClientSampler] = {
+    "Default": DefaultClientSampler(),
+    "Uniform": UniformClientSampler(n_samples=2),
     "Criterion": CriterionClientSampler(
         n_samples=2, criterion=GradientNormCriterion()
     ),
-    "Default": DefaultClientSampler(),
-    "Uniform": UniformClientSampler(n_samples=2),
+    "Composition": CompositionClientSampler(
+        CriterionClientSampler(n_samples=1, criterion=GradientNormCriterion()),
+        UniformClientSampler(n_samples=1),
+    ),
 }
 # TODO add tests with configs and dict when supported, /!\ update typing
 

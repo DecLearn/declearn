@@ -41,11 +41,13 @@ class UniformClientSampler(ClientSampler):
     def secagg_compatible(self) -> bool:
         return True
 
-    def cls_sample(self) -> Set[str]:
-        clients_list = list(self.clients)
-        sampled = self._rng.choice(
-            clients_list, size=self.n_samples, replace=False
-        )
+    def cls_sample(self, input_clients: Set[str]) -> Set[str]:
+        """
+        TODO doc, precise that we sample min(n_samples, len(input_clients)) clients
+        """
+        clients_list = list(input_clients)
+        n_samples = min(self.n_samples, len(clients_list))
+        sampled = self._rng.choice(clients_list, size=n_samples, replace=False)
         return {str(client_np) for client_np in sampled}
 
     def update(self, client_to_reply: Dict[str, TrainReply]) -> None:

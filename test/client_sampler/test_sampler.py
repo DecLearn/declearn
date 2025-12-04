@@ -4,6 +4,7 @@ from typing import Set
 
 import pytest
 
+from declearn.client_sampler import CompositionClientSampler
 from declearn.client_sampler.modules import (
     CriterionClientSampler,
     DefaultClientSampler,
@@ -37,8 +38,12 @@ class TestClientSampler:
     @pytest.mark.parametrize("framework", ["torch"])
     def test_criterion_sampling(self, clients, train_replies, monkeypatch):
         """
-        Note: uses the train_replies fixture with one arbitrary fixed framework: torch
-        Overrides the "compute" method thanks to the pytest feature "monkeypatch"
+        Test gradient norm criterion client sampling
+
+        Notes: uses the train_replies fixture with one arbitrary fixed framework:
+        torch
+        Overrides the "compute" method thanks to the pytest feature
+        "monkeypatch"
         """
         criterion = GradientNormCriterion()
 
@@ -61,8 +66,45 @@ class TestClientSampler:
         sampler.init_clients(clients)
         # update the weights using the fake gradient norms
         sampler.update(train_replies)
-        sampled_client = sampler.sample()
-        assert len(sampled_client) == 2
+        sampled_clients = sampler.sample()
+        assert len(sampled_clients) == 2
         # client 2 and 3 have the highest weights (2 and 3)
         # so they must be chosen
-        assert sampled_client == {"client2", "client3"}
+        assert sampled_clients == {"client2", "client3"}
+
+    @pytest.mark.parametrize("framework", ["torch"])
+    def test_compo_crit_unif_sampling(
+        self, clients, train_replies, monkeypatch
+    ):
+        """
+        Test composition client sampler with a gradient norm criterion client
+        sampling and then a uniform sampling
+
+        Note: we use the same mocking method (with monkeypatch) as in
+        'test_criterion_sampling'
+        """
+        criterion = GradientNormCriterion()
+        fake_client_to_norm = {
+            client: float(i + 1) for i, client in enumerate(sorted(clients))
+        }
+        monkeypatch.setattr(
+            criterion, "compute", lambda *_: fake_client_to_norm
+        )
+
+        crit_sampler = CriterionClientSampler(
+            n_samples=1,
+            criterion=criterion,
+            missing_weights_policy="priority",
+        )
+        unif_sampler = UniformClientSampler(n_samples=1)
+        compo_sampler = CompositionClientSampler(crit_sampler, unif_sampler)
+
+        compo_sampler.init_clients(clients)
+        # update the weights using the fake gradient norms
+        compo_sampler.update(train_replies)
+        sampled_clients = compo_sampler.sample()
+
+        # first, the criterion sampler should have selected client3 and then
+        # the uniform sampler should have picked randomly one among the others
+        assert len(sampled_clients) == 2
+        assert "client3" in sampled_clients
