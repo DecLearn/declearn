@@ -79,7 +79,7 @@ from declearn.training._constraints import (
 from ._checkpoint import Checkpointer
 from ._data_info import AggregationError, aggregate_clients_data_info
 from ._early_stop import EarlyStopConfig, EarlyStopping
-from ._modules import IncompatibleModulesError
+from ._error import IncompatibleConfigsError
 
 __all__ = [
     "Constraint",
@@ -90,5 +90,5 @@ __all__ = [
     "aggregate_clients_data_info",
     "EarlyStopConfig",
     "EarlyStopping",
-    "IncompatibleModulesError",
+    "IncompatibleConfigsError",
 ]

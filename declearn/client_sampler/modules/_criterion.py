@@ -144,7 +144,7 @@ class ConstantCriterion(Criterion):
 
 class GradientNormCriterion(Criterion):
     """
-    Retrieve the norm of the gradients from the TrainReply message of clients.
+    Retrieve the L2-norm of the gradients from the TrainReply message of clients.
     """
 
     def compute(
@@ -221,18 +221,18 @@ class CriterionClientSampler(ClientSampler):
             for client, weight in client_to_weight.items()
         }
 
-    def cls_sample(self, input_clients: Set[str]) -> Set[str]:
+    def cls_sample(self, eligible_clients: Set[str]) -> Set[str]:
         client_to_weight = self.convert_missing_weights()
 
-        input_client_to_weight = {
+        eligible_client_to_weight = {
             client: weight
             for client, weight in client_to_weight.items()
-            if client in input_clients
+            if client in eligible_clients
         }
 
         ordered_client_to_weight = dict(
             sorted(
-                input_client_to_weight.items(),
+                eligible_client_to_weight.items(),
                 key=lambda item: item[1],
                 reverse=True,
             )

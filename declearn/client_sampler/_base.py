@@ -3,6 +3,7 @@
 from abc import ABCMeta, abstractmethod
 from typing import (
     Any,
+    ClassVar,
     Dict,
     List,
     Optional,
@@ -69,6 +70,9 @@ class ClientSampler(metaclass=ABCMeta):
     See `declearn.utils.register_type` for details on types registration.
     """
 
+    name: ClassVar[str]
+    """Name identifier of the class, unique across ClientSampler classes."""
+
     def __init_subclass__(
         cls,
         register: bool = True,
@@ -76,6 +80,8 @@ class ClientSampler(metaclass=ABCMeta):
     ) -> None:
         """Automatically type-register ClientSampler subclasses."""
         super().__init_subclass__(**kwargs)
+        # TODO : put the process below into a util function
+        # and reuse it for other auto-registered abstract classes
         if register:
             if not getattr(cls, "name", None):
                 raise TypeError(
@@ -83,6 +89,10 @@ class ClientSampler(metaclass=ABCMeta):
                 )
 
             register_type(cls, cls.name, group="ClientSampler")
+
+    def __init__(self):
+        self.clients: Set[str] = {}
+        self.client_to_metadata: Dict[str, Dict[str, Any]] = {}
 
     @property
     @abstractmethod
@@ -112,47 +122,54 @@ class ClientSampler(metaclass=ABCMeta):
 
     def sample(
         self,
-        input_clients: Optional[Set[str]] = None,
+        eligible_clients: Optional[Set[str]] = None,  # FIXME : better name ?
     ) -> Set[str]:
         """
-        Samples clients a subset of clients.
-        TODO explain why input_clients parameter
+        Samples clients among the provided eligible clients, or among
+        the full clients set
 
         Parameters:
-        TODO
+        eligible_clients: optional subset of all clients among which the
+        sampling has to be made, if None: all clients are considered.
+
+        This parameter allows to constrain the sampling to a subset of clients,
+        e.g. useful if we use consecutively two samplers, the first would
+        sample among all clients, the second sampler among the clients that
+        have not been selected by the first sampler.
 
         Returns
         -------
-        Subset of input clients, containing the sampled clients.
+        Subset of eligible clients, containing the sampled clients.
 
         Raises
         ------
         AttributeError
-            If clients attribute is not initialized
+            If clients attribute is not initialized (= is empty)
 
         ValueErrror
-            If the provided clients is not a subset of the attribute 'clients'
+            If the provided clients set is not a subset of the 'clients'
+            attribute
         """
-        if self.clients is None:
+        if self.clients == {}:
             raise AttributeError(
-                "The attribute 'clients' must be initialized before calling "
-                "the sample method."
+                "The clients set is empty, it must be initialized before "
+                "calling the sample method."
             )
-        # check that input subset is valid
-        if input_clients is not None and not input_clients.issubset(
+
+        if eligible_clients is not None and not eligible_clients.issubset(
             self.clients
         ):
             raise ValueError(
-                f"The given client subset {input_clients} is not a subset "
+                f"The given client subset {eligible_clients} is not a subset "
                 f"of {self.clients}."
             )
 
         return self.cls_sample(
-            input_clients if input_clients is not None else self.clients
+            eligible_clients if eligible_clients is not None else self.clients
         )
 
     @abstractmethod
-    def cls_sample(self, input_clients: Set[str]) -> Set[str]:
+    def cls_sample(self, eligible_clients: Set[str]) -> Set[str]:
         """
         Back-end of the sampling method.
         """
@@ -172,7 +189,8 @@ class ClientSampler(metaclass=ABCMeta):
 
 class CompositionClientSampler(ClientSampler):
     """
-    Class allowing the composition of a list of samplers
+    Class allowing the composition of a list of samplers, i.e. the use of
+    multiple samplers consecutively
 
     TODO: order convention to be detailed
     (first sampler sample, then the others does among the remaining ones)
@@ -209,12 +227,12 @@ class CompositionClientSampler(ClientSampler):
         for sampler in self.samplers:
             sampler.init_clients(clients)
 
-    def cls_sample(self, input_clients: Set[str]):
+    def cls_sample(self, eligible_clients: Set[str]):
         total_sampled_clients = set()
         for sampler in self.samplers:
-            sampler_clients = sampler.sample(input_clients)
+            sampler_clients = sampler.sample(eligible_clients)
             total_sampled_clients.update(sampler_clients)
-            input_clients = input_clients - sampler_clients
+            eligible_clients = eligible_clients - sampler_clients
 
         return total_sampled_clients
 

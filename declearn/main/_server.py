@@ -52,7 +52,7 @@ from declearn.main.utils import (
     AggregationError,
     Checkpointer,
     EarlyStopping,
-    IncompatibleModulesError,
+    IncompatibleConfigsError,
     aggregate_clients_data_info,
 )
 from declearn.metrics import MetricInputType, MetricSet
@@ -290,7 +290,7 @@ class FederatedServer:
 
         Raises
         ------
-        IncompatibleModulesError
+        IncompatibleConfigsError
             In case the server client sampler and secure aggregation configs
             are incompatible
         """
@@ -298,7 +298,7 @@ class FederatedServer:
             self.secagg is not None
             and not self.client_sampler.secagg_compatible
         ):
-            raise IncompatibleModulesError(
+            raise IncompatibleConfigsError(
                 "Secure aggregation is enabled, but the selected client "
                 "sampler is not compatible with secure aggregation."
             )
@@ -724,9 +724,14 @@ class FederatedServer:
             secagg_results = await self._collect_results(
                 clients, secagg_messaging.SecaggTrainReply, "training"
             )
-            results = {
-                "aggregated": self._aggregate_secagg_replies(secagg_results)
-            }
+            aggregated_results = self._aggregate_secagg_replies(secagg_results)
+            results = {"aggregated": aggregated_results}
+
+            # in secagg case: we provide to the sampler each client that has
+            # participated associated to the *aggregated* train reply
+            self.client_sampler.update(
+                {client: aggregated_results for client in clients}
+            )
         # Aggregate client-wise results and update the global model.
         self.logger.info("Conducting server-side optimization.")
         self._conduct_global_update(results)
@@ -735,7 +740,23 @@ class FederatedServer:
         self,
     ) -> Set[str]:
         """Return the names of clients that should participate in the round."""
-        sampled_clients = self.client_sampler.sample()
+        max_nb_retries = 5
+        nb_retries = 0
+        retry = True
+        while retry:
+            sampled_clients = self.client_sampler.sample()
+            if len(sampled_clients) > 0:
+                retry = False
+            elif nb_retries < max_nb_retries:
+                nb_retries += 1
+            else:  # no client sampled and max number of retries reached
+                self.logger.warning(
+                    f"No client was sampled after {max_nb_retries} attempts. "
+                    "Falling back to selecting all clients."
+                )
+                sampled_clients = self.netwk.client_names
+                retry = False
+
         if not isinstance(self.client_sampler, DefaultClientSampler):
             self.logger.debug(
                 f"Sampled clients for train round are : {sampled_clients}"
@@ -901,12 +922,8 @@ class FederatedServer:
         self,
     ) -> Set[str]:
         """Return the names of clients that should participate in the round."""
-        sampled_clients = self.client_sampler.sample()
-        if not isinstance(self.client_sampler, DefaultClientSampler):
-            self.logger.debug(
-                f"Sampled clients for eval round are : {sampled_clients}"
-            )
-        return sampled_clients
+        # FUTURE: implement client sampling for evaluation rounds
+        return self.netwk.client_names
 
     async def _send_evaluation_instructions(
         self,

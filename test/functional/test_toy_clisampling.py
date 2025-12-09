@@ -23,7 +23,7 @@ from declearn.communication import NetworkClientConfig, NetworkServerConfig
 from declearn.dataset import InMemoryDataset
 from declearn.main import FederatedClient, FederatedServer
 from declearn.main.config import FLOptimConfig, FLRunConfig
-from declearn.main.utils import IncompatibleModulesError
+from declearn.main.utils import IncompatibleConfigsError
 from declearn.model.sklearn import SklearnSGDModel
 from declearn.secagg.masking import MaskingSecaggConfigServer
 from declearn.test_utils import make_importable
@@ -176,7 +176,7 @@ CLIENT_SAMPLERS: Dict[str, ClientSampler] = {
         UniformClientSampler(n_samples=1),
     ),
 }
-# TODO add tests with configs and dict when supported, /!\ update typing
+# TODO add tests with a config and a dict when supported, /!\ update typing
 
 
 @pytest.mark.parametrize(
@@ -211,7 +211,7 @@ async def test_clisamp_secagg_incompatibility() -> None:
     client_sampler = CriterionClientSampler(
         n_samples=2, criterion=GradientNormCriterion()
     )
-    with pytest.raises(IncompatibleModulesError):
+    with pytest.raises(IncompatibleConfigsError):
         await run_declearn_experiment(
             client_sampler=client_sampler,
             datasets=datasets,
