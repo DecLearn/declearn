@@ -14,7 +14,7 @@ class UniformClientSampler(ClientSampler):
     at random with uniform probability.
     """
 
-    name = "uniform"
+    strategy = "uniform"
 
     def __init__(
         self,
@@ -41,7 +41,7 @@ class UniformClientSampler(ClientSampler):
     def secagg_compatible(self) -> bool:
         return True
 
-    def cls_sample(self, eligible_clients: Set[str]) -> Set[str]:
+    def _sample(self, eligible_clients: Set[str]) -> Set[str]:
         """
         TODO doc, precise that we sample min(n_samples, len(eligible_clients)) clients
         """

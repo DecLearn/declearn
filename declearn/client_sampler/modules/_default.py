@@ -12,13 +12,13 @@ class DefaultClientSampler(ClientSampler):
     it selects all provided clients.
     """
 
-    name = "default"
+    strategy = "default"
 
     @property
     def secagg_compatible(self) -> bool:
         return True
 
-    def cls_sample(self, eligible_clients: Set[str]) -> Set[str]:
+    def _sample(self, eligible_clients: Set[str]) -> Set[str]:
         return eligible_clients
 
     def update(self, client_to_reply: Dict[str, TrainReply]) -> None:

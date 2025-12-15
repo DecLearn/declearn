@@ -1,5 +1,7 @@
 """Client Sampler abstraction API"""
 
+from __future__ import annotations
+
 from abc import ABCMeta, abstractmethod
 from typing import (
     Any,
@@ -11,7 +13,11 @@ from typing import (
 )
 
 from declearn.messaging import TrainReply
-from declearn.utils import create_types_registry, register_type
+from declearn.utils import (
+    access_registered,
+    create_types_registry,
+    register_type,
+)
 
 
 @create_types_registry
@@ -42,13 +48,13 @@ class ClientSampler(metaclass=ABCMeta):
     The following attributes and methods must be implemented by any
     non-abstract child class:
 
-    - name: str class attribute
+    - strategy: str class attribute
         Name of the client sampler strategy, should match the class name,
         ex: "default"
     - secagg_compatible(): boolean class property
         Indicate if the client sampler is compatible with secure
         aggregation
-    - cls_sample():
+    - _sample():
         Back-end of the sampling method.
     - update(results: Dict[str, Message]):
         Update clients metadata and sampler internal state.
@@ -65,12 +71,12 @@ class ClientSampler(metaclass=ABCMeta):
     -----------
     When a subclass inheriting from `ClientSampler` is declared, it is
     automatically registered under the "ClientSampler" group using its
-    class-attribute `name`. This can be prevented by adding `register=False`
+    class-attribute `strategy`. This can be prevented by adding `register=False`
     to the inheritance specs (e.g. `class MyCls(ClientSampler, register=False)`)
     See `declearn.utils.register_type` for details on types registration.
     """
 
-    name: ClassVar[str]
+    strategy: ClassVar[str]
     """Name identifier of the class, unique across ClientSampler classes."""
 
     def __init_subclass__(
@@ -83,12 +89,12 @@ class ClientSampler(metaclass=ABCMeta):
         # TODO : put the process below into a util function
         # and reuse it for other auto-registered abstract classes
         if register:
-            if not getattr(cls, "name", None):
+            if not getattr(cls, "strategy", None):
                 raise TypeError(
-                    f"{cls.__name__} must define a class attribute 'name'"
+                    f"{cls.__name__} must define a class attribute 'strategy'"
                 )
 
-            register_type(cls, cls.name, group="ClientSampler")
+            register_type(cls, cls.strategy, group="ClientSampler")
 
     def __init__(self):
         self.clients: Set[str] = {}
@@ -164,12 +170,12 @@ class ClientSampler(metaclass=ABCMeta):
                 f"of {self.clients}."
             )
 
-        return self.cls_sample(
+        return self._sample(
             eligible_clients if eligible_clients is not None else self.clients
         )
 
     @abstractmethod
-    def cls_sample(self, eligible_clients: Set[str]) -> Set[str]:
+    def _sample(self, eligible_clients: Set[str]) -> Set[str]:
         """
         Back-end of the sampling method.
         """
@@ -185,6 +191,21 @@ class ClientSampler(metaclass=ABCMeta):
             client_to_reply: dict[str, Message]
                 dictionary mapping each client to their training reply
         """
+
+    @staticmethod
+    def from_specs(strategy: str, **kwargs: Any) -> ClientSampler:
+        """
+        TODO
+        """
+        cls = access_registered(strategy, group="ClientSampler")
+        return cls._from_specs(**kwargs)
+
+    @classmethod
+    def _from_specs(cls, **kwargs: Any) -> ClientSampler:
+        """
+        TODO
+        """
+        return cls(**kwargs)
 
 
 class CompositionClientSampler(ClientSampler):
@@ -208,7 +229,7 @@ class CompositionClientSampler(ClientSampler):
 
     """
 
-    name = "composition"
+    strategy = "composition"
 
     def __init__(self, *samplers: ClientSampler):
         super().__init__()
@@ -227,7 +248,7 @@ class CompositionClientSampler(ClientSampler):
         for sampler in self.samplers:
             sampler.init_clients(clients)
 
-    def cls_sample(self, eligible_clients: Set[str]):
+    def _sample(self, eligible_clients: Set[str]):
         total_sampled_clients = set()
         for sampler in self.samplers:
             sampler_clients = sampler.sample(eligible_clients)
@@ -239,3 +260,23 @@ class CompositionClientSampler(ClientSampler):
     def update(self, results: Dict[str, TrainReply]):
         for sampler in self.samplers:
             sampler.update(results)
+
+    @classmethod
+    def _from_specs(cls, **kwargs: Any) -> ClientSampler:
+        """
+        TODO
+        """
+        samplers = kwargs["samplers"]
+        parsed_samplers = []
+        for sampler in samplers:
+            if isinstance(sampler, ClientSampler):
+                parsed_samplers.append(sampler)
+            elif isinstance(sampler, dict):
+                parsed_samplers.append(ClientSampler.from_specs(**sampler))
+            else:
+                raise ValueError(
+                    f"Unsupported sampler type '{type(sampler)}' in "
+                    "samplers list"
+                )
+        kwargs["samplers"] = parsed_samplers
+        return cls(*kwargs["samplers"])

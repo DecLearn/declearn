@@ -4,6 +4,7 @@ from abc import ABCMeta, abstractmethod
 from typing import (
     Any,
     Callable,
+    ClassVar,
     Dict,
     Literal,
     Optional,
@@ -14,12 +15,18 @@ from typing import (
 
 import numpy as np
 
-from ...messaging import TrainReply
-from .._base import ClientSampler
+from declearn.client_sampler._base import ClientSampler
+from declearn.messaging import TrainReply
+from declearn.utils import (
+    access_registered,
+    create_types_registry,
+    register_type,
+)
 
 MissingWeightPolicy = Literal["priority", "equal"]
 
 
+@create_types_registry(name="ClientSamplerCriterion")
 class Criterion(metaclass=ABCMeta):
     """
     Abstract class for client sampling criterion.
@@ -27,13 +34,35 @@ class Criterion(metaclass=ABCMeta):
     TODO details
     """
 
+    name: ClassVar[str]
+    """Name identifier of the class, unique across client sampler Criterion
+    classes.
+    """
+
+    def __init_subclass__(
+        cls,
+        register: bool = True,
+        **kwargs: Any,
+    ) -> None:
+        """Automatically type-register Criterion subclasses."""
+        super().__init_subclass__(**kwargs)
+        # TODO : put the process below into a util function
+        # and reuse it for other auto-registered abstract classes
+        if register:
+            if not getattr(cls, "name", None):
+                raise TypeError(
+                    f"{cls.__name__} must define a class attribute 'name'"
+                )
+            register_type(cls, cls.name, group="ClientSamplerCriterion")
+
     @abstractmethod
     def compute(
         self,
         client_to_reply: Dict[str, TrainReply],
     ) -> Dict[str, float]:
         """
-        Compute the criterion value for each client based on the train replies of clients.
+        Compute the criterion value for each client based on the train replies
+        of clients.
 
         Parameters
         ----------
@@ -96,11 +125,28 @@ class Criterion(metaclass=ABCMeta):
             float.__pow__, self, self.wrap(power), self.wrap(modulo)
         )
 
+    @staticmethod
+    def from_specs(name: str, **kwargs: Any) -> Criterion:
+        """
+        TODO
+        """
+        cls = access_registered(name, group="ClientSamplerCriterion")
+        return cls._from_specs(**kwargs)
+
+    @classmethod
+    def _from_specs(cls, **kwargs: Any) -> Criterion:
+        """
+        TODO
+        """
+        return cls(**kwargs)
+
 
 class CompositionCriterion(Criterion):
     """
     Allow to apply operations between criteria to compose them.
     """
+
+    name = "composition"
 
     def __init__(self, operation: Callable, *parents: Criterion):
         self.operation = operation
@@ -126,11 +172,39 @@ class CompositionCriterion(Criterion):
 
         return client_to_composed_val
 
+    @classmethod
+    def _from_specs(cls, **kwargs: Any) -> Criterion:
+        """
+        TODO
+        """
+        operation = kwargs["operation"]
+        if operation in ["add", "+"]:
+            operation = (lambda x, y: x + y,)
+        # TODO : other common operations
+        else:
+            raise NotImplementedError(f"Unsupported operation '{operation}'")
+
+        parsed_parents = []
+        for parent in kwargs["parents"]:
+            if isinstance(parent, Criterion):
+                parsed_parent = parent
+            elif isinstance(parent, dict):
+                parsed_parent = Criterion.from_specs(**parent)
+            else:
+                raise ValueError(
+                    f"Unsupported criterion type '{type(parent)}' "
+                    "in 'parents' list"
+                )
+            parsed_parents.append(parsed_parent)
+        return cls(operation, *parsed_parents)
+
 
 class ConstantCriterion(Criterion):
     """
     Wrap a native Python object (int, float, bool or None) in a Criterion.
     """
+
+    name = "constant"
 
     def __init__(self, value: Union[int, float, bool, None]):
         super().__init__()
@@ -146,6 +220,8 @@ class GradientNormCriterion(Criterion):
     """
     Retrieve the L2-norm of the gradients from the TrainReply message of clients.
     """
+
+    name = "gradient_norm"
 
     def compute(
         self, client_to_reply: Dict[str, TrainReply]
@@ -170,7 +246,7 @@ class CriterionClientSampler(ClientSampler):
     TODO doc
     """
 
-    name = "criterion"
+    strategy = "criterion"
 
     def __init__(
         self,
@@ -221,7 +297,7 @@ class CriterionClientSampler(ClientSampler):
             for client, weight in client_to_weight.items()
         }
 
-    def cls_sample(self, eligible_clients: Set[str]) -> Set[str]:
+    def _sample(self, eligible_clients: Set[str]) -> Set[str]:
         client_to_weight = self.convert_missing_weights()
 
         eligible_client_to_weight = {
@@ -246,3 +322,20 @@ class CriterionClientSampler(ClientSampler):
         updated_client_to_weight = self.criterion.compute(client_to_reply)
         for client, weight in updated_client_to_weight.items():
             self.client_to_metadata[client]["weight"] = weight
+
+    @classmethod
+    def _from_specs(cls, **kwargs: Any) -> ClientSampler:
+        """
+        TODO
+        """
+        criterion = kwargs["criterion"]
+        if isinstance(criterion, Criterion):
+            pass  # nothing to do
+        elif isinstance(criterion, dict):
+            kwargs["criterion"] = Criterion.from_specs(**criterion)
+        else:
+            raise ValueError(
+                f"Unsupported criterion type '{type(criterion)}' used as "
+                "'criterion' value"
+            )
+        return cls(**kwargs)
