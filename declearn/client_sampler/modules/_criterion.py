@@ -177,12 +177,28 @@ class CompositionCriterion(Criterion):
         """
         TODO
         """
-        operation = kwargs["operation"]
-        if operation in ["add", "+"]:
-            operation = (lambda x, y: x + y,)
-        # TODO : other common operations
-        else:
-            raise NotImplementedError(f"Unsupported operation '{operation}'")
+        operation_str = kwargs["operation"]
+
+        op_str_to_func = {
+            "add": float.__add__,
+            "+": float.__add__,
+            "sub": float.__sub__,
+            "-": float.__sub__,
+            "mul": float.__mul__,
+            "*": float.__mul__,
+            "div": float.__truediv__,
+            "truediv": float.__truediv__,
+            "/": float.__truediv__,
+            "radd": float.__radd__,
+            "rsub": float.__rsub__,
+            "rmul": float.__rmul__,
+            "rtruediv": float.__rtruediv__,
+            "pow": float.__pow__,
+        }
+
+        if operation_str not in op_str_to_func:
+            raise ValueError(f"Unsupported operation '{operation_str}'")
+        operation = op_str_to_func[operation_str]
 
         parsed_parents = []
         for parent in kwargs["parents"]:
