@@ -740,22 +740,7 @@ class FederatedServer:
         self,
     ) -> Set[str]:
         """Return the names of clients that should participate in the round."""
-        max_nb_retries = 5
-        nb_retries = 0
-        retry = True
-        while retry:
-            sampled_clients = self.client_sampler.sample()
-            if len(sampled_clients) > 0:
-                retry = False
-            elif nb_retries < max_nb_retries:
-                nb_retries += 1
-            else:  # no client sampled and max number of retries reached
-                self.logger.warning(
-                    f"No client was sampled after {max_nb_retries} attempts. "
-                    "Falling back to selecting all clients."
-                )
-                sampled_clients = self.netwk.client_names
-                retry = False
+        sampled_clients = self.client_sampler.sample()
 
         if not isinstance(self.client_sampler, DefaultClientSampler):
             self.logger.debug(

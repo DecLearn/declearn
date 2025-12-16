@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from abc import ABCMeta, abstractmethod
 from typing import (
     Any,
@@ -28,6 +29,8 @@ class ClientSampler(metaclass=ABCMeta):
     The aim of this abstraction is to enable implementing client
     sampling strategies, to sample a subset of clients at each
     round instead of selecting them all.
+
+    TODO info on max_retries
 
     Attributes
     ----------
@@ -96,9 +99,19 @@ class ClientSampler(metaclass=ABCMeta):
 
             register_type(cls, cls.strategy, group="ClientSampler")
 
-    def __init__(self):
+    def __init__(
+        self,
+        max_retries: int = 5,
+    ):
+        """
+        TODO
+        """
+        self.max_retries = max_retries
         self.clients: Set[str] = {}
         self.client_to_metadata: Dict[str, Dict[str, Any]] = {}
+        self.logger = logging.getLogger(
+            "client_sampler"
+        )  # FIXME to adapt during rework on the logging system
 
     @property
     @abstractmethod
@@ -128,11 +141,13 @@ class ClientSampler(metaclass=ABCMeta):
 
     def sample(
         self,
-        eligible_clients: Optional[Set[str]] = None,  # FIXME : better name ?
+        eligible_clients: Optional[Set[str]] = None,
     ) -> Set[str]:
         """
         Samples clients among the provided eligible clients, or among
         the full clients set
+
+        TODO info on retries
 
         Parameters:
         eligible_clients: optional subset of all clients among which the
@@ -170,9 +185,25 @@ class ClientSampler(metaclass=ABCMeta):
                 f"of {self.clients}."
             )
 
-        return self._sample(
-            eligible_clients if eligible_clients is not None else self.clients
-        )
+        if eligible_clients is None:
+            eligible_clients = self.clients
+
+        nb_retries = 0
+        retry = True
+        while retry:
+            sampled_clients = self._sample(eligible_clients)
+            if len(sampled_clients) > 0:
+                retry = False
+            elif nb_retries < self.max_retries:
+                nb_retries += 1
+            else:  # no client sampled and max number of retries reached
+                self.logger.warning(
+                    f"No client was sampled after {self.max_retries} attempts. "
+                    "Falling back to selecting all provided clients."
+                )
+                sampled_clients = eligible_clients
+                retry = False
+        return sampled_clients
 
     @abstractmethod
     def _sample(self, eligible_clients: Set[str]) -> Set[str]:
