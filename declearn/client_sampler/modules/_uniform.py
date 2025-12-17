@@ -20,6 +20,7 @@ class UniformClientSampler(ClientSampler):
         self,
         n_samples: int,
         seed: Optional[int] = None,
+        max_retries: int = ClientSampler.DEFAULT_MAX_RETRIES,
     ):
         """
         Instantiate the uniform client sampler.
@@ -32,7 +33,7 @@ class UniformClientSampler(ClientSampler):
         seed:
             Optional random state used for sampling, default to None.
         """
-        super().__init__()
+        super().__init__(max_retries=max_retries)
         self.n_samples = n_samples
         self.seed = seed
         self._rng = np.random.default_rng(seed)

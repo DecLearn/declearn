@@ -280,8 +280,9 @@ class CriterionClientSampler(ClientSampler):
         n_samples: int,
         criterion: Criterion,
         missing_weights_policy: Optional[MissingWeightPolicy] = "priority",
+        max_retries: int = ClientSampler.DEFAULT_MAX_RETRIES,
     ):
-        super().__init__()
+        super().__init__(max_retries=max_retries)
         if missing_weights_policy not in MissingWeightPolicy.__args__:
             raise NotImplementedError(
                 f"Missing weights policy {missing_weights_policy} "

@@ -98,7 +98,7 @@ class TestClientSampler:
             missing_weights_policy="priority",
         )
         unif_sampler = UniformClientSampler(n_samples=1)
-        compo_sampler = CompositionClientSampler(crit_sampler, unif_sampler)
+        compo_sampler = CompositionClientSampler([crit_sampler, unif_sampler])
 
         compo_sampler.init_clients(clients)
         # update the weights using the fake gradient norms

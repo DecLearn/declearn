@@ -79,6 +79,8 @@ class ClientSampler(metaclass=ABCMeta):
     See `declearn.utils.register_type` for details on types registration.
     """
 
+    DEFAULT_MAX_RETRIES = 5
+
     strategy: ClassVar[str]
     """Name identifier of the class, unique across ClientSampler classes."""
 
@@ -101,7 +103,7 @@ class ClientSampler(metaclass=ABCMeta):
 
     def __init__(
         self,
-        max_retries: int = 5,
+        max_retries: int = DEFAULT_MAX_RETRIES,
     ):
         """
         TODO
@@ -274,9 +276,13 @@ class CompositionClientSampler(ClientSampler):
 
     strategy = "composition"
 
-    def __init__(self, *samplers: ClientSampler):
-        super().__init__()
-        self.samplers: List[ClientSampler] = list(samplers)
+    def __init__(
+        self,
+        samplers: List[ClientSampler],
+        max_retries: int = ClientSampler.DEFAULT_MAX_RETRIES,
+    ):
+        super().__init__(max_retries=max_retries)
+        self.samplers = samplers
 
     @property
     def secagg_compatible(self) -> bool:
@@ -322,4 +328,4 @@ class CompositionClientSampler(ClientSampler):
                     "samplers list"
                 )
         kwargs["samplers"] = parsed_samplers
-        return cls(*kwargs["samplers"])
+        return cls(**kwargs)
