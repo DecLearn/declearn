@@ -187,8 +187,11 @@ class CompositionCriterion(Criterion):
     def _from_specs(cls, **kwargs: Any) -> Criterion:
         """
         TODO
+        raises ...
         """
         operation_str = kwargs["operation"]
+        if not isinstance(operation_str, str):
+            raise ValueError("Criterion 'operation' value must be a string")
 
         op_str_to_func = {
             "add": float.__add__,
@@ -208,7 +211,9 @@ class CompositionCriterion(Criterion):
         }
 
         if operation_str not in op_str_to_func:
-            raise ValueError(f"Unsupported operation '{operation_str}'")
+            raise ValueError(
+                f"Unsupported criterion operation '{operation_str}'"
+            )
         operation = op_str_to_func[operation_str]
 
         parsed_parents = []

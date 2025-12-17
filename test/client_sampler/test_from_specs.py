@@ -1,8 +1,12 @@
-"""Unit tests for the construction of client samplers from specs"""
+"""Unit tests for the construction of client samplers from specs / configs"""
 
 import pytest
 
-from declearn.client_sampler import ClientSampler, CompositionClientSampler
+from declearn.client_sampler import (
+    ClientSampler,
+    ClientSamplerConfig,
+    CompositionClientSampler,
+)
 from declearn.client_sampler.modules import (
     CompositionCriterion,
     ConstantCriterion,
@@ -28,6 +32,8 @@ OPERATIONS = [
     "rtruediv",
     "pow",
 ]
+
+## Tests of construction from specs as dictionnaries
 
 
 def test_from_specs_default():
@@ -223,6 +229,136 @@ def test_from_specs_criterion_composition(operation: str):
         "missing_weights_policy": "priority",
     }
     sampler = ClientSampler.from_specs(**specs)
+    assert isinstance(sampler, CriterionClientSampler)
+    assert sampler.n_samples == 2
+    assert sampler.missing_weights_policy == "priority"
+    assert isinstance(sampler.criterion, CompositionCriterion)
+    assert isinstance(sampler.criterion.parents[0], GradientNormCriterion)
+    assert isinstance(sampler.criterion.parents[1], ConstantCriterion)
+    assert sampler.criterion.parents[1].value == 1
+
+
+def test_from_specs_criterion_composition_wrong_operation():
+    specs = {
+        "strategy": "criterion",
+        "n_samples": 2,
+        "criterion": {
+            "name": "composition",
+            "operation": "wrong",
+            "parents": [
+                {
+                    "name": "gradient_norm",
+                },
+                {
+                    "name": "constant",
+                    "value": 1,
+                },
+            ],
+        },
+        "missing_weights_policy": "priority",
+    }
+    with pytest.raises(ValueError):
+        ClientSampler.from_specs(**specs)
+
+
+def test_from_specs_criterion_composition_wrong_operation_type():
+    specs = {
+        "strategy": "criterion",
+        "n_samples": 2,
+        "criterion": {
+            "name": "composition",
+            "operation": True,
+            "parents": [
+                {
+                    "name": "gradient_norm",
+                },
+                {
+                    "name": "constant",
+                    "value": 1,
+                },
+            ],
+        },
+        "missing_weights_policy": "priority",
+    }
+    with pytest.raises(ValueError):
+        ClientSampler.from_specs(**specs)
+
+
+## Tests of construction from specs in TomlConfig and TOML files
+
+
+def test_from_toml_config_simple(tmp_path):
+    toml_content = """
+    [client_sampler]
+    strategy = "uniform"
+
+    [client_sampler.params]
+    n_samples = 2
+    seed = 42
+    max_retries = 3
+    """
+
+    toml_file = tmp_path / "config.toml"
+    toml_file.write_text(toml_content)
+
+    sampler_config = ClientSamplerConfig.from_toml(
+        toml_file, False, "client_sampler"
+    )
+    sampler = sampler_config.build()
+
+    assert isinstance(sampler, UniformClientSampler)
+    assert sampler.n_samples == 2
+    assert sampler.seed == 42
+    assert sampler.max_retries == 3
+
+
+def test_from_toml_config_wrong(tmp_path):
+    toml_content = """
+    [client_sampler]
+    strategy = "uniform"
+
+    [client_sampler.params]
+    n_samples = 2
+    wrong = 1
+    """
+
+    toml_file = tmp_path / "config.toml"
+    toml_file.write_text(toml_content)
+
+    sampler_config = ClientSamplerConfig.from_toml(
+        toml_file, False, "client_sampler"
+    )
+    with pytest.raises(ValueError):
+        sampler_config.build()
+
+
+def test_from_toml_config_complex(tmp_path):
+    toml_content = """
+    [client_sampler]
+    strategy = "criterion"
+
+    [client_sampler.params]
+    n_samples = 2
+    missing_weights_policy = "priority"
+
+    [client_sampler.params.criterion]
+    name = "composition"
+    operation = "add"
+
+    [[client_sampler.params.criterion.parents]]
+    name = "gradient_norm"
+
+    [[client_sampler.params.criterion.parents]]
+    name = "constant"
+    value = 1
+    """
+
+    toml_file = tmp_path / "config.toml"
+    toml_file.write_text(toml_content)
+
+    config = ClientSamplerConfig.from_toml(toml_file, False, "client_sampler")
+    sampler = config.build()
+
     assert isinstance(sampler, CriterionClientSampler)
     assert sampler.n_samples == 2
     assert sampler.missing_weights_policy == "priority"

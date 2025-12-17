@@ -240,7 +240,7 @@ class ClientSampler(metaclass=ABCMeta):
 
         try:
             return cls._from_specs(**kwargs)
-        except TypeError as e:
+        except (TypeError, ValueError) as e:
             raise ValueError(
                 f"Invalid client sampler specifications: {e}"
             ) from e

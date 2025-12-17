@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import Any, Dict
 
 from declearn.client_sampler import ClientSampler
-from declearn.utils import TomlConfig, access_registered
+from declearn.utils import TomlConfig
 
 
 @dataclass
@@ -15,5 +15,4 @@ class ClientSamplerConfig(TomlConfig):
     params: Dict[str, Any]
 
     def build(self) -> ClientSampler:
-        cls = access_registered(self.strategy, group="ClientSampler")
-        return cls(**self.params)
+        return ClientSampler.from_specs(strategy=self.strategy, **self.params)
