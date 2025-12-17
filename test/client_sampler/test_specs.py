@@ -37,6 +37,16 @@ def test_from_specs_default():
     assert isinstance(sampler, DefaultClientSampler)
 
 
+def test_from_specs_unknown_strategy():
+    """
+    Test that we have an exception in case of a strategy value that
+    does not exist
+    """
+    specs = {"strategy": "unknown"}
+    with pytest.raises(ValueError):
+        ClientSampler.from_specs(**specs)
+
+
 def test_from_specs_uniform():
     specs = {
         "strategy": "uniform",
@@ -48,6 +58,24 @@ def test_from_specs_uniform():
     assert isinstance(sampler, UniformClientSampler)
     assert sampler.n_samples == 2
     assert sampler.seed == 42
+
+
+def test_from_specs_uniform_wrong_param():
+    specs = {
+        "strategy": "uniform",
+        "n_samples": 2,
+        "wrong": True,
+    }
+    with pytest.raises(ValueError):
+        ClientSampler.from_specs(**specs)
+
+
+def test_from_specs_uniform_missing_param():
+    specs = {
+        "strategy": "uniform",
+    }
+    with pytest.raises(ValueError):
+        ClientSampler.from_specs(**specs)
 
 
 def test_from_specs_composition():
@@ -124,6 +152,51 @@ def test_from_specs_criterion_constant():
     assert sampler.missing_weights_policy == "priority"
     assert isinstance(sampler.criterion, ConstantCriterion)
     assert sampler.criterion.value == 1
+
+
+def test_from_specs_criterion_unknown():
+    """
+    Test that we have an exception in case of a criterion name value that
+    does not exist
+    """
+    specs = {
+        "strategy": "criterion",
+        "n_samples": 2,
+        "criterion": {
+            "name": "unknown",
+        },
+        "missing_weights_policy": "priority",
+    }
+    with pytest.raises(ValueError):
+        ClientSampler.from_specs(**specs)
+
+
+def test_from_specs_criterion_constant_wrong_param():
+    specs = {
+        "strategy": "criterion",
+        "n_samples": 2,
+        "criterion": {
+            "name": "constant",
+            "value": 1,
+            "wrong": True,
+        },
+        "missing_weights_policy": "priority",
+    }
+    with pytest.raises(ValueError):
+        ClientSampler.from_specs(**specs)
+
+
+def test_from_specs_criterion_constant_missing_param():
+    specs = {
+        "strategy": "criterion",
+        "n_samples": 2,
+        "criterion": {
+            "name": "constant",
+        },
+        "missing_weights_policy": "priority",
+    }
+    with pytest.raises(ValueError):
+        ClientSampler.from_specs(**specs)
 
 
 @pytest.mark.parametrize(

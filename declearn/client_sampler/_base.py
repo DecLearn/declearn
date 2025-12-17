@@ -227,9 +227,21 @@ class ClientSampler(metaclass=ABCMeta):
     def from_specs(strategy: str, **kwargs: Any) -> ClientSampler:
         """
         TODO
+        Raises : ...
         """
-        cls = access_registered(strategy, group="ClientSampler")
-        return cls._from_specs(**kwargs)
+        try:
+            cls = access_registered(strategy, group="ClientSampler")
+        except KeyError as e:
+            raise ValueError(
+                f"Unknown client sampler strategy '{strategy}'"
+            ) from e
+
+        try:
+            return cls._from_specs(**kwargs)
+        except TypeError as e:
+            raise ValueError(
+                f"Invalid client sampler specifications: {e}"
+            ) from e
 
     @classmethod
     def _from_specs(cls, **kwargs: Any) -> ClientSampler:
