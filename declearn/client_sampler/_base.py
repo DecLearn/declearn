@@ -11,11 +11,13 @@ from typing import (
     List,
     Optional,
     Set,
+    Type,
 )
 
 from declearn.messaging import TrainReply
 from declearn.utils import (
     access_registered,
+    access_types_mapping,
     create_types_registry,
     register_type,
 )
@@ -329,3 +331,21 @@ class CompositionClientSampler(ClientSampler):
                 )
         kwargs["samplers"] = parsed_samplers
         return cls(**kwargs)
+
+
+def list_client_samplers() -> Dict[str, Type[ClientSampler]]:
+    """Return a mapping of registered ClientSampler subclasses.
+
+    This function aims at making it easy for end-users to list and access
+    all available ClientSampler classes at any given time.
+
+    Note that the mapping will include all declearn-provided client samplers,
+    but also registered one provided by user or third-party code.
+
+    Returns
+    -------
+    mapping:
+        Dictionary mapping unique str identifiers to `ClientSampler`
+        class constructors.
+    """
+    return access_types_mapping("ClientSampler")
