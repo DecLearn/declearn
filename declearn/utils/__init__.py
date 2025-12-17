@@ -42,6 +42,8 @@ Tools to map class constructors to (name, group) string tuples.
     Retrieve the name (and opt. group) under which a type is registered.
 * [access_types_mapping][declearn.utils.access_types_mapping]:
     Return a copy of the `{name: type}` mapping of a given group.
+* [register_from_attr][declearn.utils.register_from_attr]:
+    Register a type class using a class attribute.
 * [create_types_registry][declearn.utils.create_types_registry]:
     Create a types group from a base class (as a function or class-decorator).
 * [register_type][declearn.utils.register_type]:
@@ -135,6 +137,7 @@ from ._register import (
     access_registration_info,
     access_types_mapping,
     create_types_registry,
+    register_from_attr,
     register_type,
 )
 from ._serialize import (

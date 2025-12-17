@@ -19,7 +19,7 @@ from declearn.utils import (
     access_registered,
     access_types_mapping,
     create_types_registry,
-    register_type,
+    register_from_attr,
 )
 
 
@@ -91,17 +91,10 @@ class ClientSampler(metaclass=ABCMeta):
         register: bool = True,
         **kwargs: Any,
     ) -> None:
-        """Automatically type-register ClientSampler subclasses."""
+        """Automatically type-register ClientSampler subclasses if enabled."""
         super().__init_subclass__(**kwargs)
-        # TODO : put the process below into a util function
-        # and reuse it for other auto-registered abstract classes
         if register:
-            if not getattr(cls, "strategy", None):
-                raise TypeError(
-                    f"{cls.__name__} must define a class attribute 'strategy'"
-                )
-
-            register_type(cls, cls.strategy, group="ClientSampler")
+            register_from_attr(cls, "strategy", "ClientSampler")
 
     def __init__(
         self,

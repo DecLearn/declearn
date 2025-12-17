@@ -227,6 +227,37 @@ def register_type(
     return cls
 
 
+def register_from_attr(cls: Type, id_attr: str, group: str) -> None:
+    """
+    Register a class in a registry using an class attribute `id_attr`.
+
+    This function will register the class using the value of the provided
+    class attribute (the class identifier) as key in the registry.
+
+    Note: this function was created to facilitate the auto-registration process
+    implemented in a superclass to register its subclasses automatically when
+    they are defined, using the value of a given identifier class attribute.
+
+    Parameters
+    ----------
+    cls: type
+        Class that is to be registered.
+    id_attr: str
+        Name of the class attribute which acts as the class identifier.
+        I.e. the value of the attribute will be the name under which the type
+        should be registered, and hence retrievable from.
+    group: str
+        Name of the TypesRegistry to which the class should
+        be added (created using `create_types_registry`).
+    """
+    if not getattr(cls, id_attr, None):
+        raise TypeError(
+            f"{cls.__name__} must define a class attribute '{id_attr}'"
+            "to be auto-registered."
+        )
+    register_type(cls, getattr(cls, id_attr), group=group)
+
+
 def access_registered(
     name: str,
     group: Optional[str] = None,

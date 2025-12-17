@@ -20,7 +20,7 @@ from declearn.messaging import TrainReply
 from declearn.utils import (
     access_registered,
     create_types_registry,
-    register_type,
+    register_from_attr,
 )
 
 MissingWeightPolicy = Literal["priority", "equal"]
@@ -44,16 +44,10 @@ class Criterion(metaclass=ABCMeta):
         register: bool = True,
         **kwargs: Any,
     ) -> None:
-        """Automatically type-register Criterion subclasses."""
+        """Automatically type-register Criterion subclasses if enabled."""
         super().__init_subclass__(**kwargs)
-        # TODO : put the process below into a util function
-        # and reuse it for other auto-registered abstract classes
         if register:
-            if not getattr(cls, "name", None):
-                raise TypeError(
-                    f"{cls.__name__} must define a class attribute 'name'"
-                )
-            register_type(cls, cls.name, group="ClientSamplerCriterion")
+            register_from_attr(cls, "name", "ClientSamplerCriterion")
 
     @abstractmethod
     def compute(
