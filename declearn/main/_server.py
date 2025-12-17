@@ -37,7 +37,7 @@ from typing import (  # fmt: off
 import numpy as np
 
 from declearn import messaging
-from declearn.client_sampler import ClientSampler
+from declearn.client_sampler import ClientSampler, ClientSamplerConfig
 from declearn.client_sampler.modules import DefaultClientSampler
 from declearn.communication import NetworkServerConfig
 from declearn.communication.api import NetworkServer
@@ -84,14 +84,15 @@ class FederatedServer:
         optim: Union[FLOptimConfig, str, Dict[str, Any]],
         metrics: Union[MetricSet, List[MetricInputType], None] = None,
         client_sampler: Union[
-            ClientSampler, None
-        ] = None,  # TODO add other types
-        # TODO doc add arg
+            ClientSampler, ClientSamplerConfig, Dict[str, Any], None
+        ] = None,
         secagg: Union[SecaggConfigServer, Dict[str, Any], None] = None,
         checkpoint: Union[Checkpointer, Dict[str, Any], str, None] = None,
         logger: Union[logging.Logger, str, None] = None,
     ) -> None:
         """Instantiate the orchestrating server for a federated learning task.
+
+        # TODO add client_sampler param
 
         Parameters
         ----------
@@ -231,7 +232,9 @@ class FederatedServer:
 
     @staticmethod
     def _parse_clisamp(
-        client_sampler: Union[ClientSampler, None],  # TODO update
+        client_sampler: Union[
+            ClientSampler, ClientSamplerConfig, Dict[str, Any], None
+        ],
         logger: logging.Logger,
     ) -> ClientSampler:
         """
@@ -242,28 +245,30 @@ class FederatedServer:
         parsed_sampler = None
         if client_sampler is None:
             parsed_sampler = DefaultClientSampler()
-        if isinstance(client_sampler, ClientSampler):
+        elif isinstance(client_sampler, ClientSampler):
             parsed_sampler = client_sampler
-        # TODO add cases given input types
-
-        if parsed_sampler is not None:
-            if isinstance(parsed_sampler, DefaultClientSampler):
-                msg = (
-                    "Default client sampler selected, all clients "
-                    "will be involved in each round"
-                )
-            else:
-                msg = (
-                    "Selected client sampler is "
-                    f"'{parsed_sampler.__class__.__name__}'"
-                )
-            logger.info(msg)
-            return parsed_sampler
+        elif isinstance(client_sampler, ClientSamplerConfig):
+            parsed_sampler = client_sampler.build()
+        elif isinstance(client_sampler, dict):
+            parsed_sampler = ClientSampler.from_specs(**client_sampler)
         else:
             raise TypeError(
-                "'client_sampler' should be a 'ClientSampler' instance, "
-                f"not '{type(client_sampler)}'."
+                "'client_sampler' should be a 'ClientSampler' instance or the "
+                f"valid configuration of one, not '{type(client_sampler)}'."
             )
+
+        if isinstance(parsed_sampler, DefaultClientSampler):
+            msg = (
+                "Default client sampler selected, all clients will be involved "
+                "in each round"
+            )
+        else:
+            msg = (
+                "Selected client sampler is "
+                f"'{parsed_sampler.__class__.__name__}'"
+            )
+        logger.info(msg)
+        return parsed_sampler
 
     @staticmethod
     def _parse_secagg(
@@ -381,13 +386,13 @@ class FederatedServer:
                         round_i,
                         config.evaluate,
                         self.netwk.client_names,
-                        force_run=True,  # TODO: check which clients to use
+                        force_run=True,
                     )
                 await self.fairness_round(
                     round_i,
                     config.fairness,
                     self.netwk.client_names,
-                    force_run=True,  # TODO: check which clients to use
+                    force_run=True,
                 )
             # Interrupt training when time comes.
             self.logger.info("Stopping training.")

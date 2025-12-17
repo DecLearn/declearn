@@ -12,7 +12,11 @@ from typing import Dict, List, Tuple
 
 import pytest
 
-from declearn.client_sampler import ClientSampler, CompositionClientSampler
+from declearn.client_sampler import (
+    ClientSampler,
+    ClientSamplerConfig,
+    CompositionClientSampler,
+)
 from declearn.client_sampler.modules import (
     CriterionClientSampler,
     DefaultClientSampler,
@@ -162,27 +166,51 @@ async def run_declearn_experiment(
         return list(metrics.values())[-1]["accuracy"]
 
 
+def make_client_samplers():
+    """Create client samplers involved in the integration tests"""
+    return {
+        # ClientSampler objects
+        "Default": DefaultClientSampler(),
+        "Uniform": UniformClientSampler(n_samples=2),
+        "Criterion": CriterionClientSampler(
+            n_samples=2, criterion=GradientNormCriterion()
+        ),
+        "Composition": CompositionClientSampler(
+            [
+                CriterionClientSampler(
+                    n_samples=1, criterion=GradientNormCriterion()
+                ),
+                UniformClientSampler(n_samples=1),
+            ],
+        ),
+        # Dict object
+        "Uniform Dict": {
+            "strategy": "uniform",
+            "n_samples": 2,
+            "seed": 42,
+        },
+        # ClientSamplerConfig object
+        "Uniform Config": ClientSamplerConfig.from_params(
+            **{
+                "strategy": "uniform",
+                "params": {
+                    "n_samples": 2,
+                    "seed": 42,
+                },
+            }
+        ),
+    }
+
+
 #### TESTS ####
 
-# client samplers involved in the integration tests
-CLIENT_SAMPLERS: Dict[str, ClientSampler] = {
-    "Default": DefaultClientSampler(),
-    "Uniform": UniformClientSampler(n_samples=2),
-    "Criterion": CriterionClientSampler(
-        n_samples=2, criterion=GradientNormCriterion()
-    ),
-    "Composition": CompositionClientSampler(
-        CriterionClientSampler(n_samples=1, criterion=GradientNormCriterion()),
-        UniformClientSampler(n_samples=1),
-    ),
-}
-# TODO add tests with a config and a dict when supported, /!\ update typing
+CLIENT_SAMPLERS = make_client_samplers()
 
 
 @pytest.mark.parametrize(
     "client_sampler",
-    list(CLIENT_SAMPLERS.values()),
-    ids=list(CLIENT_SAMPLERS.keys()),
+    CLIENT_SAMPLERS.values(),
+    ids=CLIENT_SAMPLERS.keys(),
 )
 @pytest.mark.asyncio
 async def test_toy_classif_client_sampling(
