@@ -92,8 +92,6 @@ class FederatedServer:
     ) -> None:
         """Instantiate the orchestrating server for a federated learning task.
 
-        # TODO add client_sampler param
-
         Parameters
         ----------
         model: Model or dict or str
@@ -114,6 +112,9 @@ class FederatedServer:
             to wrap into one, defining evaluation metrics to compute in
             addition to the model's loss.
             If None, only compute and report the model's loss.
+        client_sampler: ClientSampler or ClientSamplerConfig or specification
+            dict or None (default). Specifies the client sampler to use in the
+            federated process to select clients involved at each round.
         secagg: SecaggConfigServer or dict or None, default=None
             Optional SecAgg config and setup controller
             or dict of kwargs to set one up.

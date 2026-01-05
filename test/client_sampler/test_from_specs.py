@@ -133,12 +133,12 @@ def test_from_specs_criterion_grad_norm():
         "criterion": {
             "name": "gradient_norm",
         },
-        "missing_weights_policy": "priority",
+        "missing_scores_policy": "priority",
     }
     sampler = ClientSampler.from_specs(**specs)
     assert isinstance(sampler, CriterionClientSampler)
     assert sampler.n_samples == 2
-    assert sampler.missing_weights_policy == "priority"
+    assert sampler.missing_scores_policy == "priority"
     assert isinstance(sampler.criterion, GradientNormCriterion)
 
 
@@ -150,12 +150,12 @@ def test_from_specs_criterion_constant():
             "name": "constant",
             "value": 1,
         },
-        "missing_weights_policy": "priority",
+        "missing_scores_policy": "priority",
     }
     sampler = ClientSampler.from_specs(**specs)
     assert isinstance(sampler, CriterionClientSampler)
     assert sampler.n_samples == 2
-    assert sampler.missing_weights_policy == "priority"
+    assert sampler.missing_scores_policy == "priority"
     assert isinstance(sampler.criterion, ConstantCriterion)
     assert sampler.criterion.value == 1
 
@@ -171,7 +171,7 @@ def test_from_specs_criterion_unknown():
         "criterion": {
             "name": "unknown",
         },
-        "missing_weights_policy": "priority",
+        "missing_scores_policy": "priority",
     }
     with pytest.raises(ValueError):
         ClientSampler.from_specs(**specs)
@@ -186,7 +186,7 @@ def test_from_specs_criterion_constant_wrong_param():
             "value": 1,
             "wrong": True,
         },
-        "missing_weights_policy": "priority",
+        "missing_scores_policy": "priority",
     }
     with pytest.raises(ValueError):
         ClientSampler.from_specs(**specs)
@@ -199,7 +199,7 @@ def test_from_specs_criterion_constant_missing_param():
         "criterion": {
             "name": "constant",
         },
-        "missing_weights_policy": "priority",
+        "missing_scores_policy": "priority",
     }
     with pytest.raises(ValueError):
         ClientSampler.from_specs(**specs)
@@ -226,12 +226,12 @@ def test_from_specs_criterion_composition(operation: str):
                 },
             ],
         },
-        "missing_weights_policy": "priority",
+        "missing_scores_policy": "priority",
     }
     sampler = ClientSampler.from_specs(**specs)
     assert isinstance(sampler, CriterionClientSampler)
     assert sampler.n_samples == 2
-    assert sampler.missing_weights_policy == "priority"
+    assert sampler.missing_scores_policy == "priority"
     assert isinstance(sampler.criterion, CompositionCriterion)
     assert isinstance(sampler.criterion.parents[0], GradientNormCriterion)
     assert isinstance(sampler.criterion.parents[1], ConstantCriterion)
@@ -255,7 +255,7 @@ def test_from_specs_criterion_composition_wrong_operation():
                 },
             ],
         },
-        "missing_weights_policy": "priority",
+        "missing_scores_policy": "priority",
     }
     with pytest.raises(ValueError):
         ClientSampler.from_specs(**specs)
@@ -278,7 +278,7 @@ def test_from_specs_criterion_composition_wrong_operation_type():
                 },
             ],
         },
-        "missing_weights_policy": "priority",
+        "missing_scores_policy": "priority",
     }
     with pytest.raises(ValueError):
         ClientSampler.from_specs(**specs)
@@ -339,7 +339,7 @@ def test_from_toml_config_complex(tmp_path):
 
     [client_sampler.params]
     n_samples = 2
-    missing_weights_policy = "priority"
+    missing_scores_policy = "priority"
 
     [client_sampler.params.criterion]
     name = "composition"
@@ -361,7 +361,7 @@ def test_from_toml_config_complex(tmp_path):
 
     assert isinstance(sampler, CriterionClientSampler)
     assert sampler.n_samples == 2
-    assert sampler.missing_weights_policy == "priority"
+    assert sampler.missing_scores_policy == "priority"
     assert isinstance(sampler.criterion, CompositionCriterion)
     assert isinstance(sampler.criterion.parents[0], GradientNormCriterion)
     assert isinstance(sampler.criterion.parents[1], ConstantCriterion)

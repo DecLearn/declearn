@@ -232,8 +232,7 @@ indent-width = 4
 target-version = "py311"
 
 [tool.ruff.lint]
-# 1. Rules to be taken into account
-# https://www.flake8rules.com/
+# Rules to be taken into account
 select = [
     "E4", "E7", "E9",  # pycodestyle
     "F",  # Pyflakes
@@ -247,7 +246,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-# ignores unused imports in __init__.py (these imports are re-exports)
+# Ignores unused imports in __init__.py (these imports are re-exports).
 "__init__.py" = ["F401"]
 
 [tool.ruff.format]

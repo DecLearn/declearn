@@ -12,6 +12,13 @@ class UniformClientSampler(ClientSampler):
     """
     Client sampler selecting a given number of clients among all
     at random with uniform probability.
+
+    Attributes
+    ----------
+    n_samples:
+        Number of clients to be sampled.
+    seed:
+        Optional random state used for sampling.
     """
 
     strategy = "uniform"
@@ -24,14 +31,6 @@ class UniformClientSampler(ClientSampler):
     ):
         """
         Instantiate the uniform client sampler.
-
-        Parameters
-        ----------
-        n_samples:
-            Number of clients to be sampled, must be less than the
-            total number of clients.
-        seed:
-            Optional random state used for sampling, default to None.
         """
         super().__init__(max_retries=max_retries)
         self.n_samples = n_samples
@@ -44,7 +43,11 @@ class UniformClientSampler(ClientSampler):
 
     def _sample(self, eligible_clients: Set[str]) -> Set[str]:
         """
-        TODO doc, precise that we sample min(n_samples, len(eligible_clients)) clients
+        Back-end of the sampling method for uniform client sampler.
+
+        If there are more than `n_samples` clients in `eligible_clients`, this
+        method samples this number of clients with uniform probability, without
+        replacement. Otherwise, they are all selected.
         """
         clients_list = list(eligible_clients)
         n_samples = min(self.n_samples, len(clients_list))

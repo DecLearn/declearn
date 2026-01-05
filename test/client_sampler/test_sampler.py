@@ -62,14 +62,14 @@ class TestClientSampler:
         sampler = CriterionClientSampler(
             n_samples=2,
             criterion=criterion,
-            missing_weights_policy="priority",
+            missing_scores_policy="priority",
         )
         sampler.init_clients(clients)
-        # update the weights using the fake gradient norms
+        # update the scores using the fake gradient norms
         sampler.update(train_replies)
         sampled_clients = sampler.sample()
         assert len(sampled_clients) == 2
-        # client 2 and 3 have the highest weights (2 and 3)
+        # client 2 and 3 have the highest scores (2 and 3)
         # so they must be chosen
         assert sampled_clients == {"client2", "client3"}
 
@@ -95,13 +95,13 @@ class TestClientSampler:
         crit_sampler = CriterionClientSampler(
             n_samples=1,
             criterion=criterion,
-            missing_weights_policy="priority",
+            missing_scores_policy="priority",
         )
         unif_sampler = UniformClientSampler(n_samples=1)
         compo_sampler = CompositionClientSampler([crit_sampler, unif_sampler])
 
         compo_sampler.init_clients(clients)
-        # update the weights using the fake gradient norms
+        # update the scores using the fake gradient norms
         compo_sampler.update(train_replies)
         sampled_clients = compo_sampler.sample()
 
