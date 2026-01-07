@@ -138,7 +138,7 @@ class ClientSampler(metaclass=ABCMeta):
 
         This method can be overriden by subclasses, but if so, it should
         ideally be extended (call to super().init_clients() at first, then add
-        new code)
+        new code).
 
         Parameters
         ----------

@@ -15,9 +15,9 @@ class UniformClientSampler(ClientSampler):
 
     Attributes
     ----------
-    n_samples:
+    n_samples: int
         Number of clients to be sampled.
-    seed:
+    seed: Optional[int]
         Optional random state used for sampling.
     """
 
@@ -43,12 +43,15 @@ class UniformClientSampler(ClientSampler):
 
     def _sample(self, eligible_clients: Set[str]) -> Set[str]:
         """
-        Back-end of the sampling method for uniform client sampler.
+        Back-end of the sampling method for the uniform client sampler.
 
         If there are more than `n_samples` clients in `eligible_clients`, this
         method samples this number of clients with uniform probability, without
         replacement. Otherwise, they are all selected.
         """
+        if self.n_samples >= len(eligible_clients):
+            return eligible_clients
+
         clients_list = list(eligible_clients)
         n_samples = min(self.n_samples, len(clients_list))
         sampled = self._rng.choice(clients_list, size=n_samples, replace=False)

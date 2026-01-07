@@ -333,11 +333,11 @@ class CriterionClientSampler(ClientSampler):
 
     Attributes
     ----------
-    n_samples:
+    n_samples: int
         Number of clients to be sampled.
-    criterion:
+    criterion: Criterion
         The criterion to be used to select the best clients.
-    missing_scores_policy:
+    missing_scores_policy:  Optional[MissingScorePolicy]
         String that identifies a missing scores policy, i.e. a strategy to
         attribute a criterion score to a client if it is missing (e.g. because
         of a missing train reply).
