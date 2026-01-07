@@ -1,5 +1,7 @@
 """Unit tests for the 'ClientSampler' subclasses."""
 
+import math
+from collections import Counter
 from typing import Set
 
 import pytest
@@ -10,6 +12,7 @@ from declearn.client_sampler.modules import (
     DefaultClientSampler,
     GradientNormCriterion,
     UniformClientSampler,
+    WeightedClientSampler,
 )
 from test.client_sampler.utils import FailClientSampler
 
@@ -36,13 +39,66 @@ class TestClientSampler:
         assert len(sampled_client) == n_samples
         assert sampled_client.issubset(clients)
 
+    def test_weighted_sampling(self, clients):
+        client_to_weight = {
+            "client1": 0,  # zero-valued weight, so should not be sampled
+            "client2": 1,
+            "client3": 2,
+        }
+        sampler = WeightedClientSampler(
+            n_samples=2, client_to_weight=client_to_weight
+        )
+        sampler.init_clients(clients)
+        sampled_clients = sampler.sample()
+        expected_clients = {"client2", "client3"}
+        assert sampled_clients == expected_clients
+
+    def test_weighted_sampling_check_proportions(self, clients):
+        """
+        In this test, we repeat many times the independent sampling of one
+        client and store the successive results in a list to check at the end
+        that the proportions of each client match approximately the
+        user-provided weights.
+        """
+        client_to_weight = {
+            "client1": 0,  # zero-valued weight, so should not be sampled
+            "client2": 2,
+            "client3": 8,
+        }
+        sampler = WeightedClientSampler(
+            n_samples=1, client_to_weight=client_to_weight
+        )
+        sampler.init_clients(clients)
+        sampled_clients = []
+        for _ in range(10_000):
+            sampled_client = sampler.sample().pop()
+            sampled_clients.append(sampled_client)
+        counts = Counter(sampled_clients)
+        total = counts.total()
+        proportions = {k: v / total for k, v in counts.items()}
+        assert "client1" not in counts
+        assert math.isclose(2 / 10, proportions["client2"], abs_tol=0.05)
+        assert math.isclose(8 / 10, proportions["client3"], abs_tol=0.05)
+
+    def test_weighted_sampling_inconsistent_clients(self, clients):
+        client_to_weight = {
+            "client1": 0,  # zero-valued weight, so should not be sampled
+            "client2": 1,
+            "client4": 2,
+        }
+        sampler = WeightedClientSampler(
+            n_samples=2, client_to_weight=client_to_weight
+        )
+        with pytest.raises(ValueError):
+            sampler.init_clients(clients)
+
     @pytest.mark.parametrize("framework", ["torch"])
     def test_criterion_sampling(self, clients, train_replies, monkeypatch):
         """
         Test gradient norm criterion client sampling
 
-        Notes: uses the train_replies fixture with one arbitrary fixed framework:
-        torch
+        Notes: uses the train_replies fixture with one arbitrary fixed
+        framework: torch.
         Overrides the "compute" method thanks to the pytest feature
         "monkeypatch"
         """

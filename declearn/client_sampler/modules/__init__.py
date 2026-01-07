@@ -9,6 +9,7 @@ from ._criterion import (
 )
 from ._default import DefaultClientSampler
 from ._uniform import UniformClientSampler
+from ._weighted import WeightedClientSampler
 
 __all__ = [
     "CompositionCriterion",
@@ -18,4 +19,5 @@ __all__ = [
     "DefaultClientSampler",
     "GradientNormCriterion",
     "UniformClientSampler",
+    "WeightedClientSampler",
 ]

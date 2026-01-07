@@ -4,8 +4,8 @@ from typing import Dict, Optional, Set
 
 import numpy as np
 
-from ...messaging import TrainReply
-from .._base import ClientSampler
+from declearn.client_sampler._base import ClientSampler
+from declearn.messaging import TrainReply
 
 
 class UniformClientSampler(ClientSampler):

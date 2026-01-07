@@ -8,7 +8,7 @@ import json
 import logging
 import os
 import tempfile
-from typing import Dict, List, Tuple
+from typing import List, Tuple
 
 import pytest
 
@@ -22,6 +22,7 @@ from declearn.client_sampler.modules import (
     DefaultClientSampler,
     GradientNormCriterion,
     UniformClientSampler,
+    WeightedClientSampler,
 )
 from declearn.communication import NetworkClientConfig, NetworkServerConfig
 from declearn.dataset import InMemoryDataset
@@ -172,6 +173,14 @@ def make_client_samplers():
         # ClientSampler objects
         "Default": DefaultClientSampler(),
         "Uniform": UniformClientSampler(n_samples=2),
+        "Weighted": WeightedClientSampler(
+            n_samples=2,
+            client_to_weight={
+                "client_0": 1,
+                "client_1": 3,
+                "client_2": 5,
+            },
+        ),
         "Criterion": CriterionClientSampler(
             n_samples=2, criterion=GradientNormCriterion()
         ),
