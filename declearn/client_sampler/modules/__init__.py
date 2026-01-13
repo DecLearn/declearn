@@ -6,6 +6,7 @@ from ._criterion import (
     Criterion,
     CriterionClientSampler,
     GradientNormCriterion,
+    NormalizedDivCriterion,
 )
 from ._default import DefaultClientSampler
 from ._uniform import UniformClientSampler
@@ -18,6 +19,7 @@ __all__ = [
     "CriterionClientSampler",
     "DefaultClientSampler",
     "GradientNormCriterion",
+    "NormalizedDivCriterion",
     "UniformClientSampler",
     "WeightedClientSampler",
 ]

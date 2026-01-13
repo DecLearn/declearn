@@ -21,6 +21,7 @@ from declearn.client_sampler.modules import (
     CriterionClientSampler,
     DefaultClientSampler,
     GradientNormCriterion,
+    NormalizedDivCriterion,
     UniformClientSampler,
     WeightedClientSampler,
 )
@@ -72,7 +73,7 @@ async def async_run_server(
     secagg_config = (
         MaskingSecaggConfigServer(bitsize=64, clipval=1e8) if secagg else None
     )
-    logger = get_logger("logger", logging.DEBUG)
+    logger = get_logger("FederatedServer", logging.DEBUG)
     server = FederatedServer(
         model=model,
         netwk=netwk,
@@ -181,8 +182,11 @@ def make_client_samplers():
                 "client_2": 5,
             },
         ),
-        "Criterion": CriterionClientSampler(
+        "GradientNormCriterion": CriterionClientSampler(
             n_samples=2, criterion=GradientNormCriterion()
+        ),
+        "NormalizedDivCriterion": CriterionClientSampler(
+            n_samples=2, criterion=NormalizedDivCriterion()
         ),
         "Composition": CompositionClientSampler(
             [
@@ -235,7 +239,7 @@ async def test_toy_classif_client_sampling(
         datasets=datasets,
         secagg=False,
     )
-    acc_threshold = 0.3
+    acc_threshold = 0.5
     assert acc is not None and acc > acc_threshold
 
 

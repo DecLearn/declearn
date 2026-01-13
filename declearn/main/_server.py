@@ -725,7 +725,7 @@ class FederatedServer:
             results = await self._collect_results(
                 clients, messaging.TrainReply, "training"
             )
-            self.client_sampler.update(results)
+            self.client_sampler.update(results, self.model)
         else:
             secagg_results = await self._collect_results(
                 clients, secagg_messaging.SecaggTrainReply, "training"
@@ -736,7 +736,7 @@ class FederatedServer:
             # in secagg case: we provide to the sampler each client that has
             # participated associated to the *aggregated* train reply
             self.client_sampler.update(
-                {client: aggregated_results for client in clients}
+                {client: aggregated_results for client in clients}, self.model
             )
         # Aggregate client-wise results and update the global model.
         self.logger.info("Conducting server-side optimization.")

@@ -9,6 +9,7 @@ import numpy as np
 
 from declearn.client_sampler._base import ClientSampler
 from declearn.messaging import TrainReply
+from declearn.model.api import Model
 
 
 class WeightedClientSampler(ClientSampler):
@@ -102,20 +103,7 @@ class WeightedClientSampler(ClientSampler):
         )
         return {str(client_np) for client_np in sampled}
 
-    def update(self, client_to_reply: Dict[str, TrainReply]) -> None:
+    def update(
+        self, client_to_reply: Dict[str, TrainReply], server_model: Model
+    ) -> None:
         pass
-
-    # @staticmethod
-    # def normalize_weights(
-    #     client_to_weight: Dict[str, float],
-    # ) -> Dict[str, float]:
-    #     """
-    #     Normalize client weights to probabilities.
-    #     Return the dictionary mapping each client to a probability of being
-    #     selected by the sampler.
-    #     """
-    #     weights_sum = sum(client_to_weight.values())
-    #     client_to_proba: Dict[str, float] = {}
-    #     for client, weight in client_to_weight.items():
-    #         client_to_proba[client] = weight / weights_sum
-    #     return client_to_proba

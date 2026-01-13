@@ -6,6 +6,7 @@ import numpy as np
 
 from declearn.client_sampler._base import ClientSampler
 from declearn.messaging import TrainReply
+from declearn.model.api import Model
 
 
 class UniformClientSampler(ClientSampler):
@@ -57,5 +58,7 @@ class UniformClientSampler(ClientSampler):
         sampled = self._rng.choice(clients_list, size=n_samples, replace=False)
         return {str(client_np) for client_np in sampled}
 
-    def update(self, client_to_reply: Dict[str, TrainReply]) -> None:
+    def update(
+        self, client_to_reply: Dict[str, TrainReply], server_model: Model
+    ) -> None:
         pass

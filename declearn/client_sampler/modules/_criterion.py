@@ -17,6 +17,7 @@ import numpy as np
 
 from declearn.client_sampler._base import ClientSampler
 from declearn.messaging import TrainReply
+from declearn.model.api import Model
 from declearn.utils import (
     access_registered,
     create_types_registry,
@@ -67,9 +68,9 @@ class Criterion(metaclass=ABCMeta):
 
     Key methods
     -----------
-    - compute(client_to_reply):
+    - compute(client_to_reply, server_model):
         Instance method that computes the criterion score for each client based
-        on the client train replies.
+        on the client train replies and server model.
     """
 
     name: ClassVar[str]
@@ -88,15 +89,21 @@ class Criterion(metaclass=ABCMeta):
     def compute(
         self,
         client_to_reply: Dict[str, TrainReply],
+        server_model: Model,
     ) -> Dict[str, float]:
         """
         Compute the criterion value (score) for each client based on the client
-        train replies.
+        train replies and the server model.
+
+        Note: The parameters must be considered read-only, do not modify them
+        when defining the concrete method.
 
         Parameters
         ----------
         client_to_reply:
             Dictionary mapping a client name to their reply.
+        server_model:
+            Central server model.
 
         Returns
         -------
@@ -213,7 +220,9 @@ class CompositionCriterion(Criterion):
         self.parents: Tuple[Criterion, ...] = parents
 
     def compute(
-        self, client_to_reply: Dict[str, TrainReply]
+        self,
+        client_to_reply: Dict[str, TrainReply],
+        server_model: Model,
     ) -> Dict[str, float]:
         if self.operation is None:
             raise ValueError(
@@ -221,7 +230,8 @@ class CompositionCriterion(Criterion):
             )
 
         cli_to_val_list = [
-            parent.compute(client_to_reply) for parent in self.parents
+            parent.compute(client_to_reply, server_model)
+            for parent in self.parents
         ]  # list of mappings between client and value for each parent
         client_to_composed_val = {}
         for client in client_to_reply.keys():
@@ -237,6 +247,8 @@ class CompositionCriterion(Criterion):
         """
         Backend of the from_specs method, specific to the
         `CompositionCriterion`.
+
+        TODO precise what operations are supported in specs
 
         Raises
         ------
@@ -298,7 +310,9 @@ class ConstantCriterion(Criterion):
         self.value = value
 
     def compute(
-        self, client_to_reply: Dict[str, TrainReply]
+        self,
+        client_to_reply: Dict[str, TrainReply],
+        server_model: Model,
     ) -> Dict[str, float]:
         return {client_name: self.value for client_name in client_to_reply}
 
@@ -306,25 +320,80 @@ class ConstantCriterion(Criterion):
 class GradientNormCriterion(Criterion):
     """
     Criterion subclass where the criterion value is the L2-norm of the client
-    gradient.
+    "gradients" (model updates).
     """
 
     name = "gradient_norm"
 
     def compute(
-        self, client_to_reply: Dict[str, TrainReply]
+        self,
+        client_to_reply: Dict[str, TrainReply],
+        server_model: Model,
     ) -> Dict[str, float]:
         client_to_norm: Dict[str, float] = {}
         for client, reply in client_to_reply.items():
-            flattened_gradients, _ = reply.updates.updates.flatten()
-            client_to_norm[client] = np.linalg.norm(flattened_gradients)
-
+            flattened_updates, _ = reply.updates.updates.flatten()
+            client_to_norm[client] = np.linalg.norm(flattened_updates).item()
         return client_to_norm
+
+
+class NormalizedDivCriterion(Criterion):
+    """
+    Criterion subclass where the criterion value is the normalized model
+    divergence (average difference between the model weights in client i
+    and the global model).
+
+    Note: Only the trainable weights are compared.
+
+    Raises
+    ------
+    ValueError:
+        If the number of trainable weights in server model and in a client
+        updates object are different.
+
+    Reference
+    ---------
+    [1] Fu et al., 2023.
+        Client Selection in Federated Learning: Principles, Challenges, and
+        Opportunities.
+        Section IV.A.2.
+        https://arxiv.org/abs/2211.01549
+    """
+
+    name = "normalized_divergence"
+
+    def compute(
+        self,
+        client_to_reply: Dict[str, TrainReply],
+        server_model: Model,
+    ) -> Dict[str, float]:
+        client_to_div: Dict[str, float] = {}
+        w_server = np.array(
+            server_model.get_weights(trainable=True).flatten()[0]
+        )  # server weights
+        size_w = len(w_server)  # model size (nb trainable parameters)
+        eps = 1e-8  # epsilon added to denominator to avoid zero-division error
+        for client, reply in client_to_reply.items():
+            w_updates = np.array(reply.updates.updates.flatten()[0])
+            # client weight updates
+            size_upd = len(w_updates)
+            if size_upd != size_w:
+                raise ValueError(
+                    f"Flattened server model weights size ({size_w}) and "
+                    f"client model updates size ({size_upd}) must be equal."
+                )
+            client_to_div[client] = (
+                1 / size_w * np.sum(np.abs(w_updates / (w_server + eps)))
+            ).item()
+        return client_to_div
 
 
 class CriterionClientSampler(ClientSampler):
     """
     Sample participants with the highest criterion score.
+
+    TODO : precise that criterion are on server weights / client updates
+    and why not compatible with secagg (uses client training info)
 
     This implementation sets and uses a client metadata named "score"
     to perform the sampling. A client score is the criterion value associated
@@ -445,16 +514,21 @@ class CriterionClientSampler(ClientSampler):
         best_clients = set(
             list(ordered_client_to_score.keys())[: self.n_samples]
         )
+        self._logger.debug(f"Client scores: {ordered_client_to_score}.")
         return best_clients
 
-    def update(self, client_to_reply: Dict[str, TrainReply]) -> None:
+    def update(
+        self, client_to_reply: Dict[str, TrainReply], server_model: Model
+    ) -> None:
         """
         Update clients metadata and sampler internal state according
-        to each client training reply.
+        to each client training reply and the server model.
 
         Concretely, compute and update each client criterion score.
         """
-        updated_client_to_score = self.criterion.compute(client_to_reply)
+        updated_client_to_score = self.criterion.compute(
+            client_to_reply, server_model
+        )
         for client, score in updated_client_to_score.items():
             self.client_to_metadata[client]["score"] = score
 

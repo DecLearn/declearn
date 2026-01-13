@@ -15,6 +15,7 @@ from typing import (
 )
 
 from declearn.messaging import TrainReply
+from declearn.model.api import Model
 from declearn.utils import (
     access_registered,
     access_types_mapping,
@@ -35,6 +36,9 @@ class ClientSampler(metaclass=ABCMeta):
     Attributes
     ----------
     - strategy: str class attribute
+        See details in the Abstract section.
+
+    - secagg_compatible: boolean read-only class property
         See details in the Abstract section.
 
     - clients: Set[str]
@@ -58,12 +62,12 @@ class ClientSampler(metaclass=ABCMeta):
         Name of the client sampler strategy, should match the class name and be
         unique accross `ClientSampler` classes,
         e.g. "default" for `DefaultClientSampler
-    - secagg_compatible(): boolean class property
+    - secagg_compatible(): boolean read-only class property
         Indicate if the client sampler is compatible with secure
         aggregation
     - _sample():
         Back-end of the sampling method.
-    - update(results: Dict[str, Message]):
+    - update(client_to_reply: Dict[str, Message], server_model: Model):
         Update clients metadata and sampler internal state.
 
     Overridable
@@ -121,14 +125,16 @@ class ClientSampler(metaclass=ABCMeta):
         self.client_to_metadata: Dict[str, Dict[str, Any]] = {}
         self.max_retries = max_retries
         self._logger = logging.getLogger(
-            "client_sampler"
+            "FederatedServer.client_sampler",
         )  # FIXME to adapt during rework on the logging system
+        # because for now, if the parent logger is not named "FederatedServer"
+        # this logger won't be attach to it
 
     @property
     @abstractmethod
     def secagg_compatible(self) -> bool:
         """
-        Property to indicate if the client sampler is compatible with secure
+        Class read-only property to indicate if the client sampler is compatible with secure
         aggregation.
         """
 
@@ -161,6 +167,8 @@ class ClientSampler(metaclass=ABCMeta):
         Note : If no client is selected after the sampling action, it is
         retried until at least one client is sampled or until the number of
         max_retries (instance attribute) is reached.
+
+        TODO explain when max retries reached, take them all (arbitrary choice)
 
         Parameters
         ----------
@@ -227,15 +235,23 @@ class ClientSampler(metaclass=ABCMeta):
         """
 
     @abstractmethod
-    def update(self, client_to_reply: Dict[str, TrainReply]) -> None:
+    def update(
+        self, client_to_reply: Dict[str, TrainReply], server_model: Model
+    ) -> None:
         """
         Update clients metadata and sampler internal state according
-        to each client training reply.
+        to each client training reply and the server model.
+
+        Note: The parameters must be considered read-only, do not modify them
+        when defining the concrete method.
 
         Parameters
         ----------
         client_to_reply: Dict[str, Message]
             Dictionary mapping each client to their training reply.
+
+        server_model: Model
+            Central server model.
         """
 
     @staticmethod
@@ -337,9 +353,11 @@ class CompositionClientSampler(ClientSampler):
 
         return total_sampled_clients
 
-    def update(self, results: Dict[str, TrainReply]):
+    def update(
+        self, client_to_reply: Dict[str, TrainReply], server_model: Model
+    ):
         for sampler in self.samplers:
-            sampler.update(results)
+            sampler.update(client_to_reply, server_model)
 
     @classmethod
     def _from_specs(cls, **kwargs: Any) -> ClientSampler:
