@@ -18,10 +18,10 @@ class WeightedClientSampler(ClientSampler):
     at random using the distribution formed by weights attributed to
     each client by the user.
 
-    Note : this sampler assumes that the user knows in advance the name of
+    Note : This sampler assumes that the user knows in advance the name of
     all clients that will be involved in the federated process, if the
-    anticipated client set and the actual one don't match, an error will
-    be raised.
+    anticipated client set is not a superand of the actual (= registered) one,
+    an error will be raised.
 
     Attributes
     ----------
@@ -60,21 +60,24 @@ class WeightedClientSampler(ClientSampler):
     def init_clients(self, clients: Set[str]) -> None:
         """
         Initialize clients common metadata, then check the consistency of
-        user-provided clients w.r.t. the actual clients.
+        user-provided clients w.r.t. the actual clients, i.e. clients provided
+        at the sampler construction must be a superset of actual clients
+        (this method parameter).
 
         Raises
         ------
         ValueError:
-            If the actual clients set `clients` do not match the clients set
-            provided by the user at the sampler construction.
+            If the anticipated clients set is not a superset of the actual
+            clients.
         """
         super().init_clients(clients)
         # check client sets match
-        provided_clients = set(self.client_to_weight.keys())
-        if provided_clients != clients:
+        anticipated_clients = set(self.client_to_weight.keys())
+        if not anticipated_clients.issuperset(clients):
             raise ValueError(
-                "Clients provided at the client sampler construction "
-                f"{provided_clients} do not match actual clients {clients}."
+                "Clients set provided at the client sampler construction "
+                f"{anticipated_clients} do not contain all actual clients "
+                f"{clients}."
             )
 
     def _sample(self, eligible_clients: Set[str]) -> Set[str]:

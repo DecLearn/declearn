@@ -10,7 +10,7 @@ from declearn.aggregator import ModelUpdates
 from declearn.messaging import TrainReply
 
 # from declearn.model.api import Model
-from declearn.model.api import Model, Vector
+from declearn.model.api import Model
 from declearn.test_utils import (
     FrameworkType,
     GradientsTestCase,

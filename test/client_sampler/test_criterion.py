@@ -40,6 +40,7 @@ class TestCriterion:
     def test_gradient_norm_criterion(
         self,
         client_to_reply: Dict[str, TrainReply],
+        server_model: Model,
     ) -> None:
         criterion = GradientNormCriterion()
 
@@ -49,7 +50,7 @@ class TestCriterion:
             "client_3": math.sqrt(10.25),
         }
 
-        scores = criterion.compute(client_to_reply, None)
+        scores = criterion.compute(client_to_reply, server_model)
         for client in scores:
             assert math.isclose(
                 expected_scores[client], scores[client], rel_tol=1e-6
@@ -59,6 +60,7 @@ class TestCriterion:
     def test_composition_criterion(
         self,
         client_to_reply: Dict[str, TrainReply],
+        server_model: Model,
     ) -> None:
         criterion = GradientNormCriterion() ** 2 / 2
 
@@ -68,7 +70,7 @@ class TestCriterion:
             "client_3": math.sqrt(10.25) ** 2 / 2,
         }
 
-        scores = criterion.compute(client_to_reply, None)
+        scores = criterion.compute(client_to_reply, server_model)
         for client in scores:
             assert math.isclose(
                 expected_scores[client], scores[client], rel_tol=1e-6
