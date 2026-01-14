@@ -246,7 +246,7 @@ class FederatedServer:
         If None provided, return the default client sampler
         (which selects all clients)
         """
-        parsed_sampler = None
+        parsed_sampler: ClientSampler
         if client_sampler is None:
             parsed_sampler = DefaultClientSampler()
         elif isinstance(client_sampler, ClientSampler):

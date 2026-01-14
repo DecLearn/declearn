@@ -157,7 +157,7 @@ class GradientsTestCase:
             {str(idx): self.convert(value) for idx, value in enumerate(values)}
         )
 
-    def mock_gradient_custom(self, values: List[np.array]) -> Vector:
+    def mock_gradient_custom(self, values: List[np.ndarray]) -> Vector:
         """Instantiate a Vector with custom user-provided values.
 
         Values are provided as a list of numpy arrays, each array representing

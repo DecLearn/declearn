@@ -136,7 +136,7 @@ class ClientSampler(metaclass=ABCMeta):
             Maximum number of consecutive retries performed by the sampler if
             the sampling fails (i.e. if no client is selected).
         """
-        self.clients: Set[str] = {}
+        self.clients: Set[str] = set()
         self.client_to_metadata: Dict[str, Dict[str, Any]] = {}
         self.max_retries = max_retries
         self._logger = logging.getLogger(
@@ -166,10 +166,9 @@ class ClientSampler(metaclass=ABCMeta):
         clients:
             Set of all clients involved in the federated process.
         """
-        self.clients: Set[str] = clients
-        self.client_to_metadata: Dict[str, Dict[str, Any]] = {
-            client: {} for client in clients
-        }
+        self.clients.update(clients)
+        for client in clients:
+            self.client_to_metadata[client] = {}
 
     def sample(
         self,

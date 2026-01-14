@@ -20,7 +20,7 @@
 derived from client training replies and the server model.
 """
 
-from typing import Any, Dict, Literal, Optional, Set
+from typing import Any, Dict, Literal, Optional, Set, get_args
 
 from declearn.client_sampler import ClientSampler
 from declearn.messaging import TrainReply
@@ -77,7 +77,7 @@ class CriterionClientSampler(ClientSampler):
             If the provided missing scores policy is not supported.
         """
         super().__init__(max_retries=max_retries)
-        if missing_scores_policy not in MissingScorePolicy.__args__:
+        if missing_scores_policy not in get_args(MissingScorePolicy):
             raise ValueError(
                 f"Missing scores policy {missing_scores_policy} "
                 f"is not supported."

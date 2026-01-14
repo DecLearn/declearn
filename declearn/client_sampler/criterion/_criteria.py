@@ -28,6 +28,7 @@ from typing import (
     Callable,
     ClassVar,
     Dict,
+    Optional,
     Tuple,
     Union,
 )
@@ -41,6 +42,8 @@ from declearn.utils import (
     create_types_registry,
     register_from_attr,
 )
+
+PrimitiveType = Union[int, float, bool, None]
 
 
 @create_types_registry(name="ClientSamplerCriterion")
@@ -105,7 +108,7 @@ class Criterion(metaclass=ABCMeta):
         self,
         client_to_reply: Dict[str, TrainReply],
         server_model: Model,
-    ) -> Dict[str, float]:
+    ) -> Dict[str, Optional[float]]:
         """
         Compute the criterion score for each client based on the client
         train replies and the server model.
@@ -126,7 +129,7 @@ class Criterion(metaclass=ABCMeta):
         """
 
     @staticmethod
-    def wrap(obj: Any):
+    def wrap(obj: Any) -> Criterion:
         """
         Make sure a native Python object is wrapped in a `Criterion`.
 
@@ -134,6 +137,11 @@ class Criterion(metaclass=ABCMeta):
         ----------
         obj:
             object to be wrapped in a `Criterion`.
+
+        Returns
+        -------
+        criterion:
+            `Criterion` wrapping the input object.
 
         Raises
         ------
@@ -223,15 +231,58 @@ class Criterion(metaclass=ABCMeta):
         return cls(**kwargs)
 
 
+class ConstantCriterion(Criterion):
+    """
+    `Criterion` implementation to wrap a native constant Python object
+    (int, float, bool or None) in a `Criterion` object.
+
+    Attributes
+    ----------
+    value: PrimitiveType
+        The native object value wrapped into the `ConstantCriterion` instance.
+    """
+
+    name = "constant"
+
+    def __init__(self, value: PrimitiveType):
+        super().__init__()
+        self.value = value
+
+    def compute(
+        self,
+        client_to_reply: Dict[str, TrainReply],
+        server_model: Model,
+    ) -> Dict[str, Optional[float]]:
+        if self.value is None:
+            value = None
+        else:
+            value = float(self.value)
+        return {client_name: value for client_name in client_to_reply}
+
+
 class CompositionCriterion(Criterion):
     """
     `Criterion` implementation that contains other `Criterion` objects, and allows
     to apply operations between criteria to compose them.
+
+    Attributes
+    ----------
+    operation: Callable[..., Optional[float]]
+        Operation function that will be used to build the composed criterion.
+        It must take one or more arguments of type PrimitiveType, and return
+        a float or None.
+    parents: Tuple[Criterion, ...]
+        Tuple of parent criteria, i.e. criteria whose computed values will be
+        composed using the `operation` attribute. Thus, the number of parents
+        must be compatible with the number of arguments accepted by the
+        operation.
     """
 
     name = "composition"
 
-    def __init__(self, operation: Callable, *parents: Criterion):
+    def __init__(
+        self, operation: Callable[..., Optional[float]], *parents: Criterion
+    ):
         self.operation = operation
         self.parents: Tuple[Criterion, ...] = parents
 
@@ -239,7 +290,7 @@ class CompositionCriterion(Criterion):
         self,
         client_to_reply: Dict[str, TrainReply],
         server_model: Model,
-    ) -> Dict[str, float]:
+    ) -> Dict[str, Optional[float]]:
         if self.operation is None:
             raise ValueError(
                 "Criterion value cannot be computed with no operation."
@@ -292,7 +343,7 @@ class CompositionCriterion(Criterion):
         if not isinstance(operation_str, str):
             raise ValueError("Criterion 'operation' value must be a string")
 
-        op_str_to_func = {
+        op_str_to_func: Dict[str, Callable] = {
             "add": float.__add__,
             "+": float.__add__,
             "sub": float.__sub__,
@@ -330,26 +381,6 @@ class CompositionCriterion(Criterion):
         return cls(operation, *parsed_parents)
 
 
-class ConstantCriterion(Criterion):
-    """
-    `Criterion` implementation to wrap a native constant Python object
-    (int, float, bool or None) in a `Criterion` object.
-    """
-
-    name = "constant"
-
-    def __init__(self, value: Union[int, float, bool, None]):
-        super().__init__()
-        self.value = value
-
-    def compute(
-        self,
-        client_to_reply: Dict[str, TrainReply],
-        server_model: Model,
-    ) -> Dict[str, float]:
-        return {client_name: self.value for client_name in client_to_reply}
-
-
 class GradientNormCriterion(Criterion):
     """
     `Criterion` implementation where the criterion score is the L2-norm of the
@@ -362,8 +393,8 @@ class GradientNormCriterion(Criterion):
         self,
         client_to_reply: Dict[str, TrainReply],
         server_model: Model,
-    ) -> Dict[str, float]:
-        client_to_norm: Dict[str, float] = {}
+    ) -> Dict[str, Optional[float]]:
+        client_to_norm: Dict[str, Optional[float]] = {}
         for client, reply in client_to_reply.items():
             flattened_updates, _ = reply.updates.updates.flatten()
             client_to_norm[client] = np.linalg.norm(flattened_updates).item()
@@ -399,8 +430,8 @@ class NormalizedDivCriterion(Criterion):
         self,
         client_to_reply: Dict[str, TrainReply],
         server_model: Model,
-    ) -> Dict[str, float]:
-        client_to_div: Dict[str, float] = {}
+    ) -> Dict[str, Optional[float]]:
+        client_to_div: Dict[str, Optional[float]] = {}
         w_server = np.array(
             server_model.get_weights(trainable=True).flatten()[0]
         )  # server weights
@@ -415,7 +446,8 @@ class NormalizedDivCriterion(Criterion):
                     f"Flattened server model weights size ({size_w}) and "
                     f"client model updates size ({size_upd}) must be equal."
                 )
-            client_to_div[client] = (
+            score = float(
                 1 / size_w * np.sum(np.abs(w_updates / (w_server + eps)))
-            ).item()
+            )
+            client_to_div[client] = score
         return client_to_div
