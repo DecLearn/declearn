@@ -21,6 +21,7 @@ from typing import Dict, Set
 
 from declearn.client_sampler import ClientSampler
 from declearn.messaging import TrainReply
+from declearn.model.api import Model
 
 
 class FailClientSampler(ClientSampler):
@@ -37,5 +38,7 @@ class FailClientSampler(ClientSampler):
     def _sample(self, eligible_clients: Set[str]) -> Set[str]:
         return set()
 
-    def update(self, client_to_reply: Dict[str, TrainReply]) -> None:
+    def update(
+        self, client_to_reply: Dict[str, TrainReply], server_model: Model
+    ) -> None:
         pass

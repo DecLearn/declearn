@@ -16,7 +16,8 @@
 # limitations under the License.
 
 """
-TODO
+Client sampling `Criterion` API and concrete subclasses used by
+`CriterionClientSampler`.
 """
 
 from __future__ import annotations
@@ -27,16 +28,12 @@ from typing import (
     Callable,
     ClassVar,
     Dict,
-    Literal,
-    Optional,
-    Set,
     Tuple,
     Union,
 )
 
 import numpy as np
 
-from declearn.client_sampler._base import ClientSampler
 from declearn.messaging import TrainReply
 from declearn.model.api import Model
 from declearn.utils import (
@@ -45,17 +42,16 @@ from declearn.utils import (
     register_from_attr,
 )
 
-MissingScorePolicy = Literal["priority", "equal"]
-
 
 @create_types_registry(name="ClientSamplerCriterion")
 class Criterion(metaclass=ABCMeta):
     """
     Abstract class for client sampling criterion.
 
-    Criterion objects are used by CriterionClientSampler objects to select the
-    best clients regarding the value of a criterion calculated on clients
-    (e.g. highest norm of gradient).
+    `Criterion` objects are used by `CriterionClientSampler` objects to select
+    the best clients regarding the value of a criterion score that can be
+    derived from clients replies and server model (e.g. highest norm of client
+    gradients).
 
     Attributes
     ----------
@@ -69,12 +65,16 @@ class Criterion(metaclass=ABCMeta):
 
     - name: str class attribute
         Identifier name of the criterion, should match the class name and be
-        unique across client sampler Criterion.
+        unique across client sampler `Criterion`,
         e.g. "constant" for `ConstantCriterion`.
+
+    - compute(client_to_reply, server_model):
+        Instance method that computes the criterion score for each client based
+        on the client train replies and server model.
 
     Overridable
     -----------
-    - _from_specs(cls, **kwargs: Any):
+    - _from_specs(cls, **kwargs):
         Class method, backend of the `from_specs` method, can be overriden by
         subclass if specific mechanisms are needed to allow a proper
         instanciation from specifications.
@@ -86,12 +86,6 @@ class Criterion(metaclass=ABCMeta):
     class-attribute `name`. This can be prevented by adding `register=False`
     to the inheritance specs (e.g. `class MyCls(Criterion, register=False)`)
     See `declearn.utils.register_type` for details on types registration.
-
-    Key methods
-    -----------
-    - compute(client_to_reply, server_model):
-        Instance method that computes the criterion score for each client based
-        on the client train replies and server model.
     """
 
     name: ClassVar[str]
@@ -101,7 +95,7 @@ class Criterion(metaclass=ABCMeta):
         register: bool = True,
         **kwargs: Any,
     ) -> None:
-        """Automatically type-register Criterion subclasses if enabled."""
+        """Automatically type-register `Criterion` subclasses if enabled."""
         super().__init_subclass__(**kwargs)
         if register:
             register_from_attr(cls, "name", "ClientSamplerCriterion")
@@ -113,7 +107,7 @@ class Criterion(metaclass=ABCMeta):
         server_model: Model,
     ) -> Dict[str, float]:
         """
-        Compute the criterion value (score) for each client based on the client
+        Compute the criterion score for each client based on the client
         train replies and the server model.
 
         Note: The parameters must be considered read-only, do not modify them
@@ -134,17 +128,17 @@ class Criterion(metaclass=ABCMeta):
     @staticmethod
     def wrap(obj: Any):
         """
-        Make sure a native Python object is wrapped in a Criterion.
+        Make sure a native Python object is wrapped in a `Criterion`.
 
         Parameters
         ----------
         obj:
-            object to be wrapped in a Criterion.
+            object to be wrapped in a `Criterion`.
 
         Raises
         ------
         ValueError
-            If object is not a bool, int, float or Criterion.
+            If object is not a bool, int, float or `Criterion`.
         """
         if obj is None or isinstance(obj, (int, float, bool)):
             return ConstantCriterion(value=obj)
@@ -185,12 +179,12 @@ class Criterion(metaclass=ABCMeta):
     @staticmethod
     def from_specs(name: str, **kwargs: Any) -> Criterion:
         """
-        Instantiate a 'Criterion' from its specifications.
+        Instantiate a `Criterion` from its specifications.
 
         Parameters
         ----------
         name:
-            Name of the criterion associated with the target Criterion subclass.
+            Name of the criterion associated with the target `Criterion` subclass.
         **kwargs:
             Any additional instantiation keyword argument (general or
             criterion-specific).
@@ -231,7 +225,8 @@ class Criterion(metaclass=ABCMeta):
 
 class CompositionCriterion(Criterion):
     """
-    Allow to apply operations between `Criterion` objects to compose them.
+    `Criterion` implementation that contains other `Criterion` objects, and allows
+    to apply operations between criteria to compose them.
     """
 
     name = "composition"
@@ -269,7 +264,24 @@ class CompositionCriterion(Criterion):
         Backend of the from_specs method, specific to the
         `CompositionCriterion`.
 
-        TODO precise what operations are supported in specs
+        Notes
+        -----
+        The supported operation strings in the specifications are the
+        following :
+            - "add", "+"
+            - "sub", "-"
+            - "mul", "*"
+            - "div", "truediv", "/"
+            - "radd"
+            - "rsub"
+            - "rmul"
+            - "rtruediv"
+            - "pow"
+
+        To use other operations in a CompositionClientSampler, you cannot
+        use specifications and the `from_specs` method. You must
+        instantiate the client sampler via the Python API, passing the
+        operation as a Callable.
 
         Raises
         ------
@@ -320,8 +332,8 @@ class CompositionCriterion(Criterion):
 
 class ConstantCriterion(Criterion):
     """
-    Wrap a native Python object (int, float, bool or None) in a `Criterion`
-    object.
+    `Criterion` implementation to wrap a native constant Python object
+    (int, float, bool or None) in a `Criterion` object.
     """
 
     name = "constant"
@@ -340,8 +352,8 @@ class ConstantCriterion(Criterion):
 
 class GradientNormCriterion(Criterion):
     """
-    Criterion subclass where the criterion value is the L2-norm of the client
-    "gradients" (model updates).
+    `Criterion` implementation where the criterion score is the L2-norm of the
+    client "gradients" (model updates).
     """
 
     name = "gradient_norm"
@@ -360,7 +372,7 @@ class GradientNormCriterion(Criterion):
 
 class NormalizedDivCriterion(Criterion):
     """
-    Criterion subclass where the criterion value is the normalized model
+    `Criterion` implementation where the criterion score is the normalized model
     divergence (average difference between the model weights in client i
     and the global model).
 
@@ -407,166 +419,3 @@ class NormalizedDivCriterion(Criterion):
                 1 / size_w * np.sum(np.abs(w_updates / (w_server + eps)))
             ).item()
         return client_to_div
-
-
-class CriterionClientSampler(ClientSampler):
-    """
-    Sample participants with the highest criterion score.
-
-    TODO : precise that criterion are on server weights / client updates
-    and why not compatible with secagg (uses client training info)
-
-    This implementation sets and uses a client metadata named "score"
-    to perform the sampling. A client score is the criterion value associated
-    to them if already computed ; otherwise, it is a default value depending on
-    the missing_scores_policy.
-
-    Attributes
-    ----------
-    n_samples: int
-        Number of clients to be sampled.
-    criterion: Criterion
-        The criterion to be used to select the best clients.
-    missing_scores_policy:  Optional[MissingScorePolicy]
-        String that identifies a missing scores policy, i.e. a strategy to
-        attribute a criterion score to a client if it is missing (e.g. because
-        of a missing train reply).
-        Supported values are :
-            "priority": prioritizes the clients with a missing score, by setting
-            the score to infinity.
-            "equal": sets the missing scores to 1 / number_of_clients.
-    """
-
-    strategy = "criterion"
-
-    def __init__(
-        self,
-        n_samples: int,
-        criterion: Criterion,
-        missing_scores_policy: Optional[MissingScorePolicy] = "priority",
-        max_retries: int = ClientSampler.DEFAULT_MAX_RETRIES,
-    ):
-        """
-        Instantiate the criterion client sampler.
-
-        Raises
-        ------
-        ValueError:
-            If the provided missing scores policy is not supported.
-        """
-        super().__init__(max_retries=max_retries)
-        if missing_scores_policy not in MissingScorePolicy.__args__:
-            raise ValueError(
-                f"Missing scores policy {missing_scores_policy} "
-                f"is not supported."
-            )
-        self.n_samples = n_samples
-        self.criterion = criterion
-        self.missing_scores_policy = missing_scores_policy
-
-    @property
-    def secagg_compatible(self) -> bool:
-        return False
-
-    def init_clients(self, clients: Set[str]) -> None:
-        """
-        Initialize clients common metadata and then set each client's criterion
-        score to None.
-        """
-        super().init_clients(clients)
-        for client in clients:
-            self.client_to_metadata[client].setdefault("score", None)
-
-    def convert_missing_scores(self) -> Dict[str, float]:
-        """
-        Access client scores in metadata, and convert missing scores such that
-        each client gets a non-None score.
-
-        Raises
-        ------
-        ValueError:
-            If the string identifying the missing score policy is not supported.
-        """
-        if self.missing_scores_policy == "priority":
-            replacement_score = float("inf")
-        elif self.missing_scores_policy == "equal":
-            replacement_score = 1 / len(self.clients)
-        else:
-            raise ValueError(
-                f"Missing scores policy {self.missing_scores_policy} "
-                f"is not supported."
-            )
-
-        client_to_score = {
-            client: self.client_to_metadata[client]["score"]
-            for client in self.client_to_metadata.keys()
-        }
-        return {
-            client: score if score is not None else replacement_score
-            for client, score in client_to_score.items()
-        }
-
-    def _sample(self, eligible_clients: Set[str]) -> Set[str]:
-        """
-        Back-end of the sampling method for criterion client sampler.
-
-        If there are more than `n_samples` clients in `eligible_clients`,
-        this method selects the `n_samples` clients with the highest criterion
-        scores. Otherwise, they are all selected.
-        """
-        if self.n_samples >= len(eligible_clients):
-            return eligible_clients
-
-        client_to_score = self.convert_missing_scores()
-
-        eligible_client_to_score = {
-            client: score
-            for client, score in client_to_score.items()
-            if client in eligible_clients
-        }
-
-        ordered_client_to_score = dict(
-            sorted(
-                eligible_client_to_score.items(),
-                key=lambda item: item[1],
-                reverse=True,
-            )
-        )  # ordered by highest criterion score
-        best_clients = set(
-            list(ordered_client_to_score.keys())[: self.n_samples]
-        )
-        self._logger.debug(f"Client scores: {ordered_client_to_score}.")
-        return best_clients
-
-    def update(
-        self, client_to_reply: Dict[str, TrainReply], server_model: Model
-    ) -> None:
-        """
-        Update clients metadata and sampler internal state according
-        to each client training reply and the server model.
-
-        Concretely, compute and update each client criterion score.
-        """
-        updated_client_to_score = self.criterion.compute(
-            client_to_reply, server_model
-        )
-        for client, score in updated_client_to_score.items():
-            self.client_to_metadata[client]["score"] = score
-
-    @classmethod
-    def _from_specs(cls, **kwargs: Any) -> ClientSampler:
-        """
-        Backend of the from_specs method, specific to
-        'CriterionClientSampler'.
-        """
-        criterion = kwargs["criterion"]
-        if isinstance(criterion, Criterion):
-            pass  # nothing to do
-        elif isinstance(criterion, dict):
-            kwargs["criterion"] = Criterion.from_specs(**criterion)
-        else:
-            raise ValueError(
-                f"Unsupported criterion type '{type(criterion)}' used as "
-                "'criterion' value"
-            )
-        return cls(**kwargs)

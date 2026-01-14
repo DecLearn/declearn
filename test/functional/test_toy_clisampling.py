@@ -33,14 +33,14 @@ from declearn.client_sampler import (
     ClientSampler,
     ClientSamplerConfig,
     CompositionClientSampler,
-)
-from declearn.client_sampler.modules import (
     CriterionClientSampler,
     DefaultClientSampler,
-    GradientNormCriterion,
-    NormalizedDivCriterion,
     UniformClientSampler,
     WeightedClientSampler,
+)
+from declearn.client_sampler.criterion import (
+    GradientNormCriterion,
+    NormalizedDivCriterion,
 )
 from declearn.communication import NetworkClientConfig, NetworkServerConfig
 from declearn.dataset import InMemoryDataset

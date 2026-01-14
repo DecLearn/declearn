@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Unit tests for the construction of client samplers from specs / configs"""
+"""Unit tests for the construction of client samplers from specs / configs."""
 
 import pytest
 
@@ -23,14 +23,14 @@ from declearn.client_sampler import (
     ClientSampler,
     ClientSamplerConfig,
     CompositionClientSampler,
-)
-from declearn.client_sampler.modules import (
-    CompositionCriterion,
-    ConstantCriterion,
     CriterionClientSampler,
     DefaultClientSampler,
-    GradientNormCriterion,
     UniformClientSampler,
+)
+from declearn.client_sampler.criterion import (
+    CompositionCriterion,
+    ConstantCriterion,
+    GradientNormCriterion,
 )
 
 OPERATIONS = [

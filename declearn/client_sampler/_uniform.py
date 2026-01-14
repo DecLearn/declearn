@@ -15,21 +15,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""ClientSampler implementation for uniform sampling."""
+"""`ClientSampler` implementation for uniform sampling."""
 
 from typing import Dict, Optional, Set
 
 import numpy as np
 
-from declearn.client_sampler._base import ClientSampler
+from declearn.client_sampler._api import ClientSampler
 from declearn.messaging import TrainReply
 from declearn.model.api import Model
 
 
 class UniformClientSampler(ClientSampler):
     """
-    Client sampler selecting a given number of clients among all
-    at random with uniform probability.
+    Client sampler selecting a given number of clients among all randomly with
+    uniform probability.
 
     Attributes
     ----------

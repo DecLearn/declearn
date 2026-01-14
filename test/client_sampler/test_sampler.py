@@ -23,14 +23,14 @@ from typing import Dict, Set
 
 import pytest
 
-from declearn.client_sampler import CompositionClientSampler
-from declearn.client_sampler.modules import (
+from declearn.client_sampler import (
+    CompositionClientSampler,
     CriterionClientSampler,
     DefaultClientSampler,
-    GradientNormCriterion,
     UniformClientSampler,
     WeightedClientSampler,
 )
+from declearn.client_sampler.criterion import GradientNormCriterion
 from declearn.messaging import TrainReply
 from declearn.model.api import Model
 from test.client_sampler.utils import FailClientSampler

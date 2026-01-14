@@ -15,9 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-TODO
-"""
+"""TOML-parsable configuration container for `ClientSampler`."""
 
 from dataclasses import dataclass
 from typing import Any, Dict
@@ -29,7 +27,7 @@ from declearn.utils import TomlConfig
 @dataclass
 class ClientSamplerConfig(TomlConfig):
     """
-    TOML-parsable configuration containers implementation for 'ClientSampler'
+    TOML-parsable configuration container implementation for `ClientSampler`.
     """
 
     strategy: str

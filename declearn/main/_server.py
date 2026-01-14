@@ -37,8 +37,11 @@ from typing import (  # fmt: off
 import numpy as np
 
 from declearn import messaging
-from declearn.client_sampler import ClientSampler, ClientSamplerConfig
-from declearn.client_sampler.modules import DefaultClientSampler
+from declearn.client_sampler import (
+    ClientSampler,
+    ClientSamplerConfig,
+    DefaultClientSampler,
+)
 from declearn.communication import NetworkServerConfig
 from declearn.communication.api import NetworkServer
 from declearn.main.config import (

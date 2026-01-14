@@ -1,0 +1,194 @@
+# coding: utf-8
+
+# Copyright 2025 Inria (Institut National de Recherche en Informatique
+# et Automatique)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""
+`ClientSampler` implementation that selects clients based on a criterion
+derived from client training replies and the server model.
+"""
+
+from typing import Any, Dict, Literal, Optional, Set
+
+from declearn.client_sampler import ClientSampler
+from declearn.messaging import TrainReply
+from declearn.model.api import Model
+
+from ._criteria import Criterion
+
+MissingScorePolicy = Literal["priority", "equal"]
+
+
+class CriterionClientSampler(ClientSampler):
+    """
+    Client sampler selecting participants with the highest criterion score.
+
+    The criterion score can be computed from clients training replies and/or the
+    server model.
+
+    This implementation sets and uses a client metadata named "score"
+    to perform the sampling. A client score is the criterion value associated
+    to them if already computed ; otherwise, it is a default value depending on
+    the missing_scores_policy.
+
+    Attributes
+    ----------
+    n_samples: int
+        Number of clients to be sampled.
+    criterion: Criterion
+        The criterion to be used to select the best clients.
+    missing_scores_policy:  Optional[MissingScorePolicy]
+        String that identifies a missing scores policy, i.e. a strategy to
+        attribute a criterion score to a client if it is missing (e.g. because
+        of a missing train reply).
+        Supported values are :
+            "priority": prioritizes the clients with a missing score, by setting
+            the score to infinity.
+            "equal": sets the missing scores to 1 / number_of_clients.
+    """
+
+    strategy = "criterion"
+
+    def __init__(
+        self,
+        n_samples: int,
+        criterion: Criterion,
+        missing_scores_policy: Optional[MissingScorePolicy] = "priority",
+        max_retries: int = ClientSampler.DEFAULT_MAX_RETRIES,
+    ):
+        """
+        Instantiate the criterion client sampler.
+
+        Raises
+        ------
+        ValueError:
+            If the provided missing scores policy is not supported.
+        """
+        super().__init__(max_retries=max_retries)
+        if missing_scores_policy not in MissingScorePolicy.__args__:
+            raise ValueError(
+                f"Missing scores policy {missing_scores_policy} "
+                f"is not supported."
+            )
+        self.n_samples = n_samples
+        self.criterion = criterion
+        self.missing_scores_policy = missing_scores_policy
+
+    @property
+    def secagg_compatible(self) -> bool:
+        return False
+
+    def init_clients(self, clients: Set[str]) -> None:
+        """
+        Initialize clients common metadata and then set each client's criterion
+        score to None.
+        """
+        super().init_clients(clients)
+        for client in clients:
+            self.client_to_metadata[client].setdefault("score", None)
+
+    def convert_missing_scores(self) -> Dict[str, float]:
+        """
+        Access client scores in metadata, and convert missing scores such that
+        each client gets a non-None score.
+
+        Raises
+        ------
+        ValueError:
+            If the string identifying the missing score policy is not supported.
+        """
+        if self.missing_scores_policy == "priority":
+            replacement_score = float("inf")
+        elif self.missing_scores_policy == "equal":
+            replacement_score = 1 / len(self.clients)
+        else:
+            raise ValueError(
+                f"Missing scores policy {self.missing_scores_policy} "
+                f"is not supported."
+            )
+
+        client_to_score = {
+            client: self.client_to_metadata[client]["score"]
+            for client in self.client_to_metadata.keys()
+        }
+        return {
+            client: score if score is not None else replacement_score
+            for client, score in client_to_score.items()
+        }
+
+    def _sample(self, eligible_clients: Set[str]) -> Set[str]:
+        """
+        Back-end of the sampling method for criterion client sampler.
+
+        If there are more than `n_samples` clients in `eligible_clients`,
+        this method selects the `n_samples` clients with the highest criterion
+        scores. Otherwise, they are all selected.
+        """
+        if self.n_samples >= len(eligible_clients):
+            return eligible_clients
+
+        client_to_score = self.convert_missing_scores()
+
+        eligible_client_to_score = {
+            client: score
+            for client, score in client_to_score.items()
+            if client in eligible_clients
+        }
+
+        ordered_client_to_score = dict(
+            sorted(
+                eligible_client_to_score.items(),
+                key=lambda item: item[1],
+                reverse=True,
+            )
+        )  # ordered by highest criterion score
+        best_clients = set(
+            list(ordered_client_to_score.keys())[: self.n_samples]
+        )
+        self._logger.debug(f"Client scores: {ordered_client_to_score}.")
+        return best_clients
+
+    def update(
+        self, client_to_reply: Dict[str, TrainReply], server_model: Model
+    ) -> None:
+        """
+        Update clients metadata and sampler internal state according
+        to each client training reply and the server model.
+
+        Concretely, compute and update each client criterion score.
+        """
+        updated_client_to_score = self.criterion.compute(
+            client_to_reply, server_model
+        )
+        for client, score in updated_client_to_score.items():
+            self.client_to_metadata[client]["score"] = score
+
+    @classmethod
+    def _from_specs(cls, **kwargs: Any) -> ClientSampler:
+        """
+        Backend of the from_specs method, specific to
+        `CriterionClientSampler`.
+        """
+        criterion = kwargs["criterion"]
+        if isinstance(criterion, Criterion):
+            pass  # nothing to do
+        elif isinstance(criterion, dict):
+            kwargs["criterion"] = Criterion.from_specs(**criterion)
+        else:
+            raise ValueError(
+                f"Unsupported criterion type '{type(criterion)}' used as "
+                "'criterion' value"
+            )
+        return cls(**kwargs)

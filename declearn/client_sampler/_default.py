@@ -15,20 +15,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""ClientSampler implementation for default sampling (select all clients)."""
+"""`ClientSampler` implementation for default sampling (select all clients)."""
 
 from typing import Dict, Set
 
-from declearn.client_sampler._base import ClientSampler
+from declearn.client_sampler._api import ClientSampler
 from declearn.messaging import TrainReply
 from declearn.model.api import Model
 
 
 class DefaultClientSampler(ClientSampler):
-    """
-    Default client sampler which actually don't sample, because
-    it selects all provided clients.
-    """
+    """Default client sampler selecting all provided clients."""
 
     strategy = "default"
 

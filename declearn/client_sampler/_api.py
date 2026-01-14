@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Client Sampler abstraction API"""
+"""Client sampler abstraction API."""
 
 from __future__ import annotations
 
@@ -25,7 +25,6 @@ from typing import (
     Any,
     ClassVar,
     Dict,
-    List,
     Optional,
     Set,
     Type,
@@ -80,11 +79,10 @@ class ClientSampler(metaclass=ABCMeta):
         unique accross `ClientSampler` classes,
         e.g. "default" for `DefaultClientSampler
     - secagg_compatible(): boolean read-only class property
-        Indicate if the client sampler is compatible with secure
-        aggregation
+        Indicate if the client sampler is compatible with secure aggregation
     - _sample():
         Back-end of the sampling method.
-    - update(client_to_reply: Dict[str, Message], server_model: Model):
+    - update(client_to_reply, server_model):
         Update clients metadata and sampler internal state.
 
     Overridable
@@ -111,7 +109,7 @@ class ClientSampler(metaclass=ABCMeta):
     """
 
     DEFAULT_MAX_RETRIES = 5
-    """Default maximum number of retries for the init method"""
+    """Default maximum number of retries for the init method."""
 
     strategy: ClassVar[str]
 
@@ -120,7 +118,7 @@ class ClientSampler(metaclass=ABCMeta):
         register: bool = True,
         **kwargs: Any,
     ) -> None:
-        """Automatically type-register ClientSampler subclasses if enabled."""
+        """Automatically type-register `ClientSampler` subclasses if enabled."""
         super().__init_subclass__(**kwargs)
         if register:
             register_from_attr(cls, "strategy", "ClientSampler")
@@ -134,7 +132,7 @@ class ClientSampler(metaclass=ABCMeta):
 
         Parameters
         ----------
-        max_retries: int
+        max_retries:
             Maximum number of consecutive retries performed by the sampler if
             the sampling fails (i.e. if no client is selected).
         """
@@ -151,8 +149,8 @@ class ClientSampler(metaclass=ABCMeta):
     @abstractmethod
     def secagg_compatible(self) -> bool:
         """
-        Class read-only property to indicate if the client sampler is compatible with secure
-        aggregation.
+        Class read-only property to indicate if the client sampler is compatible
+        with secure aggregation.
         """
 
     def init_clients(self, clients: Set[str]) -> None:
@@ -165,8 +163,8 @@ class ClientSampler(metaclass=ABCMeta):
 
         Parameters
         ----------
-        clients: Set[str]
-            Set of all clients involved in the federated process
+        clients:
+            Set of all clients involved in the federated process.
         """
         self.clients: Set[str] = clients
         self.client_to_metadata: Dict[str, Dict[str, Any]] = {
@@ -179,24 +177,26 @@ class ClientSampler(metaclass=ABCMeta):
     ) -> Set[str]:
         """
         Samples clients among the provided eligible clients, or among
-        the full clients set.
+        the full clients set if eligible_client is None.
 
-        Note : If no client is selected after the sampling action, it is
+        Notes
+        -----
+        If no client is selected after the sampling action, it is
         retried until at least one client is sampled or until the number of
         max_retries (instance attribute) is reached.
 
-        TODO explain when max retries reached, take them all (arbitrary choice)
+        Caution: If the number of max_retries is reached, all the clients
+        that have been registered in the federated process will be selected by
+        default (legacy behavior before the integration of client sampling).
 
         Parameters
         ----------
-        eligible_clients: Optional[Set[str]]
-            optional subset of all clients among which the
+        eligible_clients:
+            Optional subset of all clients among which the
             sampling has to be made, if None: all clients are considered.
 
             This parameter allows to constrain the sampling to a subset of
-            clients, e.g. useful if we use two samplers consecutively: the first
-            would sample among all clients, the second sampler among the clients
-            that have not been selected by the first sampler.
+            clients, which is useful for client sampler composition.
 
         Returns
         -------
@@ -211,7 +211,7 @@ class ClientSampler(metaclass=ABCMeta):
             If the provided clients set is not a subset of the 'clients'
             attribute.
         """
-        if self.clients == {}:
+        if self.clients == set():
             raise AttributeError(
                 "The clients set is empty, it must be initialized before "
                 "calling the sample method."
@@ -248,7 +248,7 @@ class ClientSampler(metaclass=ABCMeta):
     @abstractmethod
     def _sample(self, eligible_clients: Set[str]) -> Set[str]:
         """
-        Back-end of the sampling method.
+        Back-end of the sampling method, specific to subclass.
         """
 
     @abstractmethod
@@ -259,27 +259,29 @@ class ClientSampler(metaclass=ABCMeta):
         Update clients metadata and sampler internal state according
         to each client training reply and the server model.
 
-        Note: The parameters must be considered read-only, do not modify them
+        Notes
+        -----
+        The parameters must be considered read-only, do not modify them
         when defining the concrete method.
 
         Parameters
         ----------
-        client_to_reply: Dict[str, Message]
+        client_to_reply:
             Dictionary mapping each client to their training reply.
 
-        server_model: Model
+        server_model:
             Central server model.
         """
 
     @staticmethod
     def from_specs(strategy: str, **kwargs: Any) -> ClientSampler:
         """
-        Instantiate a 'ClientSampler' from its specifications.
+        Instantiate a `ClientSampler` from its specifications.
 
         Parameters
         ----------
         strategy:
-            Name of the strategy associated with the target ClientSampler
+            Name of the strategy associated with the target `ClientSampler`
             subclass.
         **kwargs:
             Any additional instantiation keyword argument (general or
@@ -321,92 +323,11 @@ class ClientSampler(metaclass=ABCMeta):
         return cls(**kwargs)
 
 
-class CompositionClientSampler(ClientSampler):
-    """
-    Class allowing the composition of a list of samplers, i.e. the use of
-    multiple samplers consecutively.
-
-    The composition mechanism works the following way: the first sampler
-    selects some client(s), then the second one selects other(s) among the
-    remaining ones, and so on.
-    At the end, the clients selected by the 'CompositionClientSampler' are the
-    union of client sets selected by each sampler, consecutively.
-
-    Attributes
-    ----------
-    samplers: List[ClientSampler, ...]
-        list of client samplers to be combined.
-    """
-
-    strategy = "composition"
-
-    def __init__(
-        self,
-        samplers: List[ClientSampler],
-        max_retries: int = ClientSampler.DEFAULT_MAX_RETRIES,
-    ):
-        super().__init__(max_retries=max_retries)
-        self.samplers = samplers
-
-    @property
-    def secagg_compatible(self) -> bool:
-        """
-        Composition client sampler is secagg-compatible if all of its
-        samplers are.
-        """
-        return all([sampler.secagg_compatible for sampler in self.samplers])
-
-    def init_clients(self, clients: Set[str]) -> None:
-        super().init_clients(clients)
-        for sampler in self.samplers:
-            sampler.init_clients(clients)
-
-    def _sample(self, eligible_clients: Set[str]):
-        total_sampled_clients = set()
-        for sampler in self.samplers:
-            sampler_clients = sampler.sample(eligible_clients)
-            total_sampled_clients.update(sampler_clients)
-            eligible_clients = eligible_clients - sampler_clients
-
-        return total_sampled_clients
-
-    def update(
-        self, client_to_reply: Dict[str, TrainReply], server_model: Model
-    ):
-        for sampler in self.samplers:
-            sampler.update(client_to_reply, server_model)
-
-    @classmethod
-    def _from_specs(cls, **kwargs: Any) -> ClientSampler:
-        """
-        Backend of the from_specs method, specific to
-        'CompositionClientSampler'.
-
-        Note: Each sampler composing the 'samplers' list can be either
-        a dictionnary of valid sampler specification, or an instance of
-        ClientSampler.
-        """
-        samplers = kwargs["samplers"]
-        parsed_samplers = []
-        for sampler in samplers:
-            if isinstance(sampler, ClientSampler):
-                parsed_samplers.append(sampler)
-            elif isinstance(sampler, dict):
-                parsed_samplers.append(ClientSampler.from_specs(**sampler))
-            else:
-                raise ValueError(
-                    f"Unsupported sampler type '{type(sampler)}' in "
-                    "samplers list"
-                )
-        kwargs["samplers"] = parsed_samplers
-        return cls(**kwargs)
-
-
 def list_client_samplers() -> Dict[str, Type[ClientSampler]]:
-    """Return a mapping of registered ClientSampler subclasses.
+    """Return a mapping of registered `ClientSampler` subclasses.
 
     This function aims at making it easy for end-users to list and access
-    all available ClientSampler classes at any given time.
+    all available `ClientSampler` classes at any given time.
 
     Note that the mapping will include all declearn-provided client samplers,
     but also registered one provided by user or third-party code.

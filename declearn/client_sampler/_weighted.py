@@ -16,28 +16,30 @@
 # limitations under the License.
 
 """
-ClientSampler implementation for weighted sampling (clients selected according
-to user-defined weights).
+`ClientSampler` implementation for weighted sampling, i.e. client selection
+based on user-defined weights.
 """
 
 from typing import Dict, Optional, Set
 
 import numpy as np
 
-from declearn.client_sampler._base import ClientSampler
+from declearn.client_sampler._api import ClientSampler
 from declearn.messaging import TrainReply
 from declearn.model.api import Model
 
 
 class WeightedClientSampler(ClientSampler):
     """
-    Client sampler selecting a given number of clients among all
-    at random using the distribution formed by weights attributed to
-    each client by the user.
+    Client sampler selecting a given number of clients among all randomly
+    using the distribution formed by weights attributed to each client by
+    the user.
 
-    Note : This sampler assumes that the user knows in advance the name of
-    all clients that will be involved in the federated process, if the
-    anticipated client set is not a superand of the actual (= registered) one,
+    Notes
+    -----
+    This sampler assumes that the user knows in advance the name of
+    all clients that will be involved in the federated process. If the
+    anticipated clients set is not a superset of the actual (= registered) one,
     an error will be raised.
 
     Attributes
@@ -46,7 +48,7 @@ class WeightedClientSampler(ClientSampler):
         Number of clients to be sampled.
     client_to_weight: Dict[str, float]
         Exhaustive mapping between each client and a weight, a higher weight
-        means a highest chance (proportionaly) to be selected by the sampler.
+        means a higher chance (proportionaly) to be selected by the sampler.
         The weights don't need to sum to one.
     seed: Optional[int]
         Optional random state used for sampling.

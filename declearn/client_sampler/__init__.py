@@ -15,23 +15,58 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Client Sampling API, methods and utils.
-TODO
+"""Client sampling API, methods and utils.
 
+A `ClientSampler` is aimed to be used by the central server during the federated
+process to select a subset of clients to participate in a federated
+round (e.g. a training round). Thus, each subclass of `ClientSampler` is
+characterized by its client selection strategy.
+
+API tools
+---------
+
+* [ClientSampler][declearn.client_sampler.ClientSampler]:
+    Abstract base class defining an API for client sampler.
+* [ClientSamplerConfig][declearn.client_sampler.ClientSamplerConfig]:
+    TOML-parsable configuration container implementation for ClientSampler.
+* [list_client_samplers][declearn.client_sampler.list_client_samplers]:
+    Return a mapping of registered ClientSampler subclasses.
+
+
+Concrete classes
+----------------
+
+* [CompositionClientSampler][declearn.client_sampler.CompositionClientSampler]:
+    ClientSampler subclass to perform composition of several client samplers.
+* [CriterionClientSampler][declearn.client_sampler.CriterionClientSampler]:
+    ClientSampler subclass performing selection based on a criterion derived
+    from client replies and server model.
+* [DefaultClientSampler][declearn.client_sampler.DefaultClientSampler]:
+    Default ClientSampler subclass selecting all clients.
+* [UniformClientSampler][declearn.client_sampler.UniformClientSampler]:
+    ClientSampler subclass performing selection based on uniform probability.
+* [WeightedClientSampler][declearn.client_sampler.WeightedClientSampler]:
+    ClientSampler subclass performing selection based on user-provided weights.
 """
 
-from . import modules
-from ._base import (
+from ._api import (
     ClientSampler,
-    CompositionClientSampler,
     list_client_samplers,
 )
+from ._composition import CompositionClientSampler
 from ._config import ClientSamplerConfig
+from ._default import DefaultClientSampler
+from ._uniform import UniformClientSampler
+from ._weighted import WeightedClientSampler
+from .criterion._sampler import CriterionClientSampler
 
 __all__ = [
-    "modules",
     "ClientSampler",
     "ClientSamplerConfig",
-    "list_client_samplers",
     "CompositionClientSampler",
+    "CriterionClientSampler",
+    "DefaultClientSampler",
+    "UniformClientSampler",
+    "WeightedClientSampler",
+    "list_client_samplers",
 ]

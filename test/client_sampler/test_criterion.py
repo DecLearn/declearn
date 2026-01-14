@@ -22,7 +22,7 @@ from typing import Dict
 
 import pytest
 
-from declearn.client_sampler.modules import (
+from declearn.client_sampler.criterion import (
     GradientNormCriterion,
     NormalizedDivCriterion,
 )
