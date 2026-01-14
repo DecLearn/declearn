@@ -113,7 +113,9 @@ class Criterion(metaclass=ABCMeta):
         Compute the criterion score for each client based on the client
         train replies and the server model.
 
-        Note: The parameters must be considered read-only, do not modify them
+        Notes
+        -----
+        The parameters must be considered read-only, do not modify them
         when defining the concrete method.
 
         Parameters
@@ -407,7 +409,9 @@ class NormalizedDivCriterion(Criterion):
     divergence (average difference between the model weights in client i
     and the global model).
 
-    Note: Only the trainable weights are compared.
+    Notes
+    -----
+    Only the trainable weights are compared.
 
     Raises
     ------
