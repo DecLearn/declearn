@@ -33,15 +33,15 @@ MissingScorePolicy = Literal["priority", "equal"]
 
 class CriterionClientSampler(ClientSampler):
     """
-    Client sampler selecting participants with the highest criterion score.
+    Client sampler selecting the n clients with the highest criterion score.
 
-    The criterion score can be computed from clients training replies and/or the
-    server model.
+    The criterion must be chosen by the user and passed to the sampler, it
+    defines how the criterion score is computed. It can be computed
+    using data from clients training replies and possibly from the server
+    model.
 
-    This implementation sets and uses a client metadata named "score"
-    to perform the sampling. A client score is the criterion value associated
-    to them if already computed ; otherwise, it is a default value depending on
-    the missing_scores_policy.
+    A client score is the criterion value if already computed ; otherwise,
+    it is a default value depending on the missing_scores_policy.
 
     Attributes
     ----------
@@ -49,6 +49,9 @@ class CriterionClientSampler(ClientSampler):
         Number of clients to be sampled.
     criterion: Criterion
         The criterion to be used to select the best clients.
+    client_to_score: Dict[str, Optional[float]]
+        Dictionary mapping each client to its criterion score (or None if not
+        computed).
     missing_scores_policy:  Optional[MissingScorePolicy]
         String that identifies a missing scores policy, i.e. a strategy to
         attribute a criterion score to a client if it is missing (e.g. because
@@ -84,6 +87,7 @@ class CriterionClientSampler(ClientSampler):
             )
         self.n_samples = n_samples
         self.criterion = criterion
+        self.client_to_score: Dict[str, Optional[float]] = {}
         self.missing_scores_policy = missing_scores_policy
 
     @property
@@ -97,7 +101,7 @@ class CriterionClientSampler(ClientSampler):
         """
         super().init_clients(clients)
         for client in clients:
-            self.client_to_metadata[client].setdefault("score", None)
+            self.client_to_score[client] = None
 
     def convert_missing_scores(self) -> Dict[str, float]:
         """
@@ -119,13 +123,9 @@ class CriterionClientSampler(ClientSampler):
                 f"is not supported."
             )
 
-        client_to_score = {
-            client: self.client_to_metadata[client]["score"]
-            for client in self.client_to_metadata.keys()
-        }
         return {
             client: score if score is not None else replacement_score
-            for client, score in client_to_score.items()
+            for client, score in self.client_to_score.items()
         }
 
     def _sample(self, eligible_clients: Set[str]) -> Set[str]:
@@ -173,7 +173,7 @@ class CriterionClientSampler(ClientSampler):
             client_to_reply, server_model
         )
         for client, score in updated_client_to_score.items():
-            self.client_to_metadata[client]["score"] = score
+            self.client_to_score[client] = score
 
     @classmethod
     def _from_specs(cls, **kwargs: Any) -> ClientSampler:

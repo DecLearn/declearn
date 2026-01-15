@@ -18,8 +18,8 @@
 """
 Criterion-based client sampling API and implementations.
 
-`CriterionClientSampler` instances select clients based on a criterion score that
-may be computed from client training replies and from the server model.
+`CriterionClientSampler` instances select clients based on a criterion score
+that may be computed from client training replies and from the server model.
 
 Abstractions
 ------------

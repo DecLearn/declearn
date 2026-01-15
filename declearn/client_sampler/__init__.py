@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Client sampling API, methods and utils.
+"""Client sampling API, implementations and utils.
 
 A `ClientSampler` is aimed to be used by the central server during the federated
 process to select a subset of clients to participate in a federated

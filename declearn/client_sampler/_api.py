@@ -60,11 +60,6 @@ class ClientSampler(metaclass=ABCMeta):
     - clients: Set[str]
         Set of clients among which sampling is done.
 
-    - client_to_metadata: Dict[str, Dict[str, Any]]
-        Dictionary mapping each client name with its metadata dictionary,
-        itself mapping the metadata name with its value (of arbitrary type).
-        This metadata could be used in a selection strategy.
-
     - max_retries: int
         Maximum number of consecutive retries performed by the sampler if
         the sampling fails (i.e. if no client is selected).
@@ -83,7 +78,7 @@ class ClientSampler(metaclass=ABCMeta):
     - _sample():
         Back-end of the sampling method.
     - update(client_to_reply, server_model):
-        Update clients metadata and sampler internal state.
+        Update sampler internal state.
 
     Overridable
     -----------
@@ -137,7 +132,6 @@ class ClientSampler(metaclass=ABCMeta):
             the sampling fails (i.e. if no client is selected).
         """
         self.clients: Set[str] = set()
-        self.client_to_metadata: Dict[str, Dict[str, Any]] = {}
         self.max_retries = max_retries
         self._logger = logging.getLogger(
             "FederatedServer.client_sampler",
@@ -155,7 +149,7 @@ class ClientSampler(metaclass=ABCMeta):
 
     def init_clients(self, clients: Set[str]) -> None:
         """
-        Initialize clients and their metadata in the sampler.
+        Initialize clients in the sampler.
 
         This method can be overriden by subclasses, but if so, it should
         ideally be extended (call to super().init_clients() at first, then add
@@ -167,8 +161,6 @@ class ClientSampler(metaclass=ABCMeta):
             Set of all clients involved in the federated process.
         """
         self.clients.update(clients)
-        for client in clients:
-            self.client_to_metadata[client] = {}
 
     def sample(
         self,
@@ -255,8 +247,8 @@ class ClientSampler(metaclass=ABCMeta):
         self, client_to_reply: Dict[str, TrainReply], server_model: Model
     ) -> None:
         """
-        Update clients metadata and sampler internal state according
-        to each client training reply and the server model.
+        Update sampler internal state (e.g. client metadata) according to each
+        client training reply and the server model.
 
         Notes
         -----
