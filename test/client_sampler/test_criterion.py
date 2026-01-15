@@ -25,6 +25,7 @@ import pytest
 from declearn.client_sampler.criterion import (
     GradientNormCriterion,
     NormalizedDivCriterion,
+    TrainTimeCriterion,
 )
 from declearn.messaging import TrainReply
 from declearn.model.api import Model
@@ -88,6 +89,46 @@ class TestCriterion:
             "client_1": 0,
             "client_2": 1 / 2,
             "client_3": 13 / 24,
+        }
+
+        scores = criterion.compute(client_to_reply, server_model)
+        for client in scores:
+            assert math.isclose(
+                expected_scores[client], scores[client], rel_tol=1e-6
+            )
+
+    @pytest.mark.parametrize("framework", ["torch"])
+    def test_train_time_criterion_lowest(
+        self,
+        client_to_reply: Dict[str, TrainReply],
+        server_model: Model,
+    ) -> None:
+        criterion = TrainTimeCriterion()
+
+        expected_scores = {
+            "client_1": -10.0,
+            "client_2": -20.0,
+            "client_3": -30.0,
+        }
+
+        scores = criterion.compute(client_to_reply, server_model)
+        for client in scores:
+            assert math.isclose(
+                expected_scores[client], scores[client], rel_tol=1e-6
+            )
+
+    @pytest.mark.parametrize("framework", ["torch"])
+    def test_train_time_criterion_highest(
+        self,
+        client_to_reply: Dict[str, TrainReply],
+        server_model: Model,
+    ) -> None:
+        criterion = TrainTimeCriterion(lower_is_better=False)
+
+        expected_scores = {
+            "client_1": 10.0,
+            "client_2": 20.0,
+            "client_3": 30.0,
         }
 
         scores = criterion.compute(client_to_reply, server_model)

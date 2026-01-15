@@ -66,11 +66,12 @@ def client_to_reply_fixture(
         ]
     )
     updates_list = [updates_1, updates_2, updates_3]
+    t_spent_list = [10.0, 20.0, 30.0]
     return {
         f"client_{idx + 1}": TrainReply(
             n_epoch=1,
             n_steps=10,
-            t_spent=0,
+            t_spent=t_spent_list[idx],
             updates=ModelUpdates(updates_list[idx], weights=1),
             aux_var={},
         )

@@ -38,6 +38,8 @@ Concrete classes
     Gradients L2-norm Criterion subclass.
 * [NormalizedDivCriterion][declearn.client_sampler.criterion.NormalizedDivCriterion]:
     Normalized model divergence Criterion subclass.
+* [TrainTimeCriterion][declearn.client_sampler.criterion.TrainTimeCriterion]:
+    Training time Criterion subclass.
 """
 
 from ._criteria import (
@@ -46,6 +48,7 @@ from ._criteria import (
     Criterion,
     GradientNormCriterion,
     NormalizedDivCriterion,
+    TrainTimeCriterion,
 )
 
 __all__ = [
@@ -54,4 +57,5 @@ __all__ = [
     "Criterion",
     "GradientNormCriterion",
     "NormalizedDivCriterion",
+    "TrainTimeCriterion",
 ]

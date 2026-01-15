@@ -455,3 +455,33 @@ class NormalizedDivCriterion(Criterion):
             )
             client_to_div[client] = score
         return client_to_div
+
+
+class TrainTimeCriterion(Criterion):
+    """
+    `Criterion` implementation where the criterion score is computed from the
+    training time spent (in seconds) by the client in the last round.
+
+    Attributes
+    ----------
+    lower_is_better: bool
+        If True (default), a lower time leads to a better score (score will be
+        `- time`). Otherwise, a higher time leads to a better score (score will
+        be `+ time` ).
+    """
+
+    name = "train_time"
+
+    def __init__(self, lower_is_better: bool = True):
+        self.lower_is_better = lower_is_better
+
+    def compute(
+        self,
+        client_to_reply: Dict[str, TrainReply],
+        server_model: Model,
+    ) -> Dict[str, Optional[float]]:
+        sign = -1 if self.lower_is_better else 1
+        return {
+            client: sign * reply.t_spent
+            for client, reply in client_to_reply.items()
+        }
