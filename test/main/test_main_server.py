@@ -69,6 +69,7 @@ from declearn.utils import serialize_object
 MOCK_MODEL = mock.create_autospec(Model, instance=True)
 MOCK_NETWK = mock.create_autospec(NetworkServer, instance=True)
 MOCK_NETWK.name = "server"
+MOCK_NETWK.client_names = {"client1", "client2"}
 MOCK_OPTIM = FLOptimConfig(
     client_opt=mock.create_autospec(Optimizer, instance=True),
     server_opt=mock.create_autospec(Optimizer, instance=True),
@@ -572,7 +573,9 @@ class TestFederatedServerRoutines:
             return_value=reply_msg,
         ) as patch_aggregate_secagg_messages:
             await server.training_round(
-                round_i=1, train_cfg=TrainingConfig(batch_size=8)
+                round_i=1,
+                train_cfg=TrainingConfig(batch_size=8),
+                clients=server.netwk.client_names,
             )
         # Verify that expected actions occured.
         # (a) optional secagg setup
@@ -631,7 +634,9 @@ class TestFederatedServerRoutines:
             return_value=reply_msg,
         ) as patch_aggregate_secagg_messages:
             await server.evaluation_round(
-                round_i=1, valid_cfg=EvaluateConfig(batch_size=8)
+                round_i=1,
+                valid_cfg=EvaluateConfig(batch_size=8),
+                clients=server.netwk.client_names,
             )
         # Verify that expected actions occured.
         # (a) optional secagg setup
@@ -675,6 +680,7 @@ class TestFederatedServerRoutines:
         await server.evaluation_round(
             round_i=1,
             valid_cfg=EvaluateConfig(batch_size=8, frequency=2),
+            clients=server.netwk.client_names,
         )
         # Assert that no message was sent (routine was skipped).
         server.netwk.broadcast_message.assert_not_called()
@@ -700,6 +706,7 @@ class TestFederatedServerRoutines:
         await server.fairness_round(
             round_i=0,
             fairness_cfg=FairnessConfig(),
+            clients=server.netwk.client_names,
         )
         # Verify that expected actions occured.
         # (a) optional secagg setup
@@ -741,6 +748,7 @@ class TestFederatedServerRoutines:
         await server.fairness_round(
             round_i=0,
             fairness_cfg=FairnessConfig(),
+            clients=server.netwk.client_names,
         )
         # Assert that no message was sent (routine was skipped).
         server.netwk.broadcast_message.assert_not_called()
@@ -759,6 +767,7 @@ class TestFederatedServerRoutines:
         await server.fairness_round(
             round_i=1,
             fairness_cfg=FairnessConfig(frequency=2),
+            clients=server.netwk.client_names,
         )
         # Assert that the round was skipped.
         server.fairness.run_fairness_round.assert_not_called()
@@ -894,13 +903,29 @@ class TestFederatedServerRun:
         # Verify that expected calls occured.
         patch_initialization.assert_called_once_with(config)
         patch_training.assert_has_calls(
-            [mock.call(idx, config.training) for idx in range(1, 11)]
+            [
+                mock.call(idx, config.training, server.netwk.client_names)
+                for idx in range(1, 11)
+            ]
         )
         patch_evaluation.assert_has_calls(
-            [mock.call(idx, config.evaluate) for idx in range(1, 11)]
+            [
+                mock.call(idx, config.evaluate, server.netwk.client_names)
+                for idx in range(1, 11)
+            ]
         )
         patch_fairness.assert_has_calls(
-            [mock.call(idx, config.fairness) for idx in range(0, 10)]
-            + [mock.call(10, config.fairness, force_run=True)]
+            [
+                mock.call(idx, config.fairness, server.netwk.client_names)
+                for idx in range(0, 10)
+            ]
+            + [
+                mock.call(
+                    10,
+                    config.fairness,
+                    server.netwk.client_names,
+                    force_run=True,
+                )
+            ]
         )
         patch_stop_training.assert_called_once_with(10)

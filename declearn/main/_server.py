@@ -369,21 +369,22 @@ class FederatedServer:
             round_i = 0
             while True:
                 clients_train = self._select_training_round_participants()
-                clients_evaluate = self._select_evaluation_round_participants()
+                clients_eval = self._select_evaluation_round_participants()
                 await self.fairness_round(
                     round_i, config.fairness, clients_train
-                )
+                )  # FIXME ? validate usage of clients_train here
                 round_i += 1
                 await self.training_round(
                     round_i, config.training, clients_train
                 )
                 await self.evaluation_round(
-                    round_i, config.evaluate, clients_evaluate
+                    round_i, config.evaluate, clients_eval
                 )
                 # Decide whether to keep training for at least one round.
                 if not self._keep_training(round_i, config.rounds, early_stop):
                     break
-            # When checkpointing, force evaluating the last model on all clients.
+            # When checkpointing, force evaluating last model on all clients.
+            # FIXME ? to be validated
             if self.ckptr is not None:
                 if round_i % config.evaluate.frequency:
                     await self.evaluation_round(
