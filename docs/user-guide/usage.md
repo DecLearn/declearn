@@ -58,9 +58,12 @@ details on this example and on how to run it, please refer to its own
       defines metrics to be computed by clients on their validation data.
     - Optionally provide the path to a folder where to write output files
       (model checkpoints and global loss history).
-    - Optionally parameterize and provide with a `SecaggConfigServer` or its
+    - Optionally parameterize and provide a `SecaggConfigServer` or its
       configuration, to set up and use secure aggregation for all quantities
       that support it (model weights, metrics and metadata).
+    - Optionally provide a `ClientSampler` or its configuration, to provide
+      your server with a strategy to select clients involved in each training
+      round. If not provided, all clients are always involved.
   - Instantiate a `declearn.main.config.FLRunConfig` to specify the process:
     - Maximum number of training and evaluation rounds to run.
     - Registration parameters: exact or min/max number of clients to have

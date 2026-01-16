@@ -6,3 +6,4 @@
 - [Local Differential Privacy capabilities](./local_dp.md)
 - [Secure Aggregation capabilities](./secagg.md)
 - [Fairness capabilities](./fairness.md)
+- [Client sampling capabilities](./client_sampling.md)

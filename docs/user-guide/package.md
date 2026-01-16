@@ -6,6 +6,8 @@ The package is organized into the following submodules:
 
 - `aggregator`:<br/>
   &emsp; Model updates aggregating API and implementations.
+- `client_sampler`:<br/>
+  &emsp; Client sampling API and implementations.
 - `communication`:<br/>
   &emsp; Client-Server network communications API and implementations.
 - `data_info`:<br/>
@@ -13,7 +15,7 @@ The package is organized into the following submodules:
 - `dataset`:<br/>
   &emsp; Data interfacing API and implementations.
 - `fairness`:<br/>
-  Processes and components for fairness-aware federated learning.
+  &emsp; Processes and components for fairness-aware federated learning.
 - `main`:<br/>
   &emsp; Main classes implementing a Federated Learning process.
 - `messaging`:<br/>
@@ -311,6 +313,37 @@ You may learn more about our (non-abstract) `Optimizer` API by reading our
 - Extend:
   - Simply inherit from `FairnessControllerClient` (registration is automated).
   - To avoid it, use `class MyClass(FairnessControllerClient, register=False)`.
+
+### Client sampling
+
+#### `ClientSampler`
+- Import: `declearn.client_sampler.ClientSampler`
+- Object: Define a client sampling strategy used by the server to sample
+  clients before each training round.
+- Usage: Used in the `FederatedServer` construction to set up its client
+  sampling strategy for training rounds.
+- Examples:
+    - `declearn.client_sampler.DefaultClientSampler`
+    - `declearn.client_sampler.UniformClientSampler`
+    - `declearn.client_sampler.CriterionClientSampler`
+- Extend:
+    - Simply inherit from `ClientSampler` (registration is automated).
+    - To avoid it, use `class MyClass(ClientSampler, register=False)`.
+
+#### `Criterion`
+- Import: `declearn.client_sampler.criterion.Criterion`
+- Object: Define a criterion to be used by a `CriterionClientSampler` in its
+  sampling strategy.
+- Usage: Used in the `CriterionClientSampler` construction to precise on which
+data (e.g. client replies, global model) and calculation the clients selection
+is made.
+- Examples:
+    - `declearn.client_sampler.criterion.GradientNormCriterion`
+    - `declearn.client_sampler.criterion.TrainTimeCriterion`
+- Extend:
+    - Simply inherit from `Criterion` (registration is automated).
+    - To avoid it, use `class MyClass(Criterion, register=False)`.
+
 
 ## Full API Reference
 

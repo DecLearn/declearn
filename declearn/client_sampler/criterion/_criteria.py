@@ -408,10 +408,17 @@ class GradientNormCriterion(Criterion):
 
 
 class NormalizedDivCriterion(Criterion):
-    """
+    r"""
     `Criterion` implementation where the criterion score is the normalized model
     divergence (average difference between the model weights in client i
-    and the global model).
+    and the global model) :
+
+    $$ \frac{1}{|w|} \sum_{j=1}^{|w|}
+      \left| \frac{w_{ij} - \bar{w}_j}{\bar{w}_j} \right| $$
+
+    Where $w$ represents the weights of a model, $\bar{w}$ represents the
+    weights of the global model, $w_{ij}$ and $\bar{w}_{j}$ are the $j$ th
+    weights of client $i$ and the global model, respectively.
 
     Notes
     -----
@@ -464,7 +471,7 @@ class NormalizedDivCriterion(Criterion):
 class TrainTimeCriterion(Criterion):
     """
     `Criterion` implementation where the criterion score is computed from the
-    last round training time (in seconds) spent by the client.
+    last performed round training time (in seconds) spent by the client.
 
     Attributes
     ----------
