@@ -19,7 +19,7 @@
 Criterion-based client sampling API and implementations.
 
 `CriterionClientSampler` instances select clients based on a criterion score
-that may be computed from client training replies and from the server model.
+that may be computed from client training replies and from the global model.
 
 Abstractions
 ------------
@@ -30,17 +30,21 @@ Abstractions
 Concrete classes
 ----------------
 
-* [CompositionCriterion][declearn.client_sampler.criterion.CompositionCriterion]:
+* [CompositionCriterion]\
+[declearn.client_sampler.criterion.CompositionCriterion]:
     Criterion subclass to perform composition of several criteria.
 * [ConstantCriterion][declearn.client_sampler.criterion.ConstantCriterion]:
     Constant-valued Criterion subclass.
-* [GradientNormCriterion][declearn.client_sampler.criterion.GradientNormCriterion]:
+* [GradientNormCriterion]\
+[declearn.client_sampler.criterion.GradientNormCriterion]:
     Gradients L2-norm Criterion subclass.
-* [NormalizedDivCriterion][declearn.client_sampler.criterion.NormalizedDivCriterion]:
+* [NormalizedDivCriterion]\
+[declearn.client_sampler.criterion.NormalizedDivCriterion]:
     Normalized model divergence Criterion subclass.
 * [TrainTimeCriterion][declearn.client_sampler.criterion.TrainTimeCriterion]:
     Last round training time Criterion subclass.
-* [TrainTimeHistoryCriterion][declearn.client_sampler.criterion.TrainTimeHistoryCriterion]:
+* [TrainTimeHistoryCriterion]\
+[declearn.client_sampler.criterion.TrainTimeHistoryCriterion]:
     Training time history (across all past rounds) Criterion subclass.
 """
 

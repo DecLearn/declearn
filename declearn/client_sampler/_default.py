@@ -37,6 +37,6 @@ class DefaultClientSampler(ClientSampler):
         return eligible_clients
 
     def update(
-        self, client_to_reply: Dict[str, TrainReply], server_model: Model
+        self, client_to_reply: Dict[str, TrainReply], global_model: Model
     ) -> None:
         pass

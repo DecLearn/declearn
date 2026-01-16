@@ -40,7 +40,7 @@ Concrete classes
     ClientSampler subclass to perform composition of several client samplers.
 * [CriterionClientSampler][declearn.client_sampler.CriterionClientSampler]:
     ClientSampler subclass performing selection based on a criterion derived
-    from client replies and server model.
+    from client replies and global model.
 * [DefaultClientSampler][declearn.client_sampler.DefaultClientSampler]:
     Default ClientSampler subclass selecting all clients.
 * [UniformClientSampler][declearn.client_sampler.UniformClientSampler]:

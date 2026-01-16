@@ -17,7 +17,7 @@
 
 """
 `ClientSampler` implementation that selects clients based on a criterion
-derived from client training replies and the server model.
+derived from client training replies and the global model.
 """
 
 from typing import Any, Dict, Literal, Optional, Set, get_args
@@ -161,16 +161,16 @@ class CriterionClientSampler(ClientSampler):
         return best_clients
 
     def update(
-        self, client_to_reply: Dict[str, TrainReply], server_model: Model
+        self, client_to_reply: Dict[str, TrainReply], global_model: Model
     ) -> None:
         """
         Update clients metadata and sampler internal state according
-        to each client training reply and the server model.
+        to each client training reply and the global model.
 
         Concretely, compute and update each client criterion score.
         """
         updated_client_to_score = self.criterion.compute(
-            client_to_reply, server_model
+            client_to_reply, global_model
         )
         for client, score in updated_client_to_score.items():
             self.client_to_score[client] = score

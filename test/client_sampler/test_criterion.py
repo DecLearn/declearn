@@ -43,7 +43,7 @@ class TestCriterion:
     def test_gradient_norm_criterion(
         self,
         client_to_reply: Dict[str, TrainReply],
-        server_model: Model,
+        global_model: Model,
     ) -> None:
         criterion = GradientNormCriterion()
 
@@ -53,7 +53,7 @@ class TestCriterion:
             "client_3": math.sqrt(10.25),
         }
 
-        scores = criterion.compute(client_to_reply, server_model)
+        scores = criterion.compute(client_to_reply, global_model)
         for client in scores:
             assert math.isclose(
                 expected_scores[client], scores[client], rel_tol=1e-6
@@ -63,7 +63,7 @@ class TestCriterion:
     def test_composition_criterion(
         self,
         client_to_reply: Dict[str, TrainReply],
-        server_model: Model,
+        global_model: Model,
     ) -> None:
         criterion = GradientNormCriterion() ** 2 / 2
 
@@ -73,7 +73,7 @@ class TestCriterion:
             "client_3": math.sqrt(10.25) ** 2 / 2,
         }
 
-        scores = criterion.compute(client_to_reply, server_model)
+        scores = criterion.compute(client_to_reply, global_model)
         for client in scores:
             assert math.isclose(
                 expected_scores[client], scores[client], rel_tol=1e-6
@@ -83,7 +83,7 @@ class TestCriterion:
     def test_normalized_div_criterion(
         self,
         client_to_reply: Dict[str, TrainReply],
-        server_model: Model,
+        global_model: Model,
     ) -> None:
         criterion = NormalizedDivCriterion()
 
@@ -93,7 +93,7 @@ class TestCriterion:
             "client_3": 13 / 24,
         }
 
-        scores = criterion.compute(client_to_reply, server_model)
+        scores = criterion.compute(client_to_reply, global_model)
         for client in scores:
             assert math.isclose(
                 expected_scores[client], scores[client], rel_tol=1e-6
@@ -103,7 +103,7 @@ class TestCriterion:
     def test_train_time_criterion_lowest(
         self,
         client_to_reply: Dict[str, TrainReply],
-        server_model: Model,
+        global_model: Model,
     ) -> None:
         criterion = TrainTimeCriterion()
 
@@ -113,7 +113,7 @@ class TestCriterion:
             "client_3": -30.0,
         }
 
-        scores = criterion.compute(client_to_reply, server_model)
+        scores = criterion.compute(client_to_reply, global_model)
         for client in scores:
             assert math.isclose(
                 expected_scores[client], scores[client], rel_tol=1e-6
@@ -123,7 +123,7 @@ class TestCriterion:
     def test_train_time_criterion_highest(
         self,
         client_to_reply: Dict[str, TrainReply],
-        server_model: Model,
+        global_model: Model,
     ) -> None:
         criterion = TrainTimeCriterion(lower_is_better=False)
 
@@ -133,7 +133,7 @@ class TestCriterion:
             "client_3": 30.0,
         }
 
-        scores = criterion.compute(client_to_reply, server_model)
+        scores = criterion.compute(client_to_reply, global_model)
         for client in scores:
             assert math.isclose(
                 expected_scores[client], scores[client], rel_tol=1e-6
@@ -144,7 +144,7 @@ class TestCriterion:
     def test_train_time_hist_criterion_lowest(
         self,
         agg: TrainTimeHistoryCriterion.AggregateFunc,
-        server_model: Model,
+        global_model: Model,
     ) -> None:
         DEFAULT_EPOCHS = 1
         DEFAULT_STEPS = 10
@@ -176,7 +176,7 @@ class TestCriterion:
             ),
         }
         # compute score after fake round 1
-        scores = criterion.compute(client_to_reply, server_model)
+        scores = criterion.compute(client_to_reply, global_model)
 
         # fake round 2, update only the training time
         client_to_reply = {
@@ -196,7 +196,7 @@ class TestCriterion:
             ),
         }
         # compute score after fake round 2
-        scores = criterion.compute(client_to_reply, server_model)
+        scores = criterion.compute(client_to_reply, global_model)
 
         # fake round 3, update sampled clients and training time
         client_to_reply = {
@@ -223,7 +223,7 @@ class TestCriterion:
             ),
         }
         # compute score after fake round 3
-        scores = criterion.compute(client_to_reply, server_model)
+        scores = criterion.compute(client_to_reply, global_model)
 
         expected_histories = {
             "client_1": [20.0, 50.0],

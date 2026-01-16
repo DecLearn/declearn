@@ -244,7 +244,7 @@ class FederatedServer:
         """
         Parse 'client_sampler' instantiation argument.
         If None provided, return the default client sampler
-        (which selects all clients)
+        (which selects all clients).
         """
         parsed_sampler: ClientSampler
         if client_sampler is None:
@@ -917,7 +917,7 @@ class FederatedServer:
         self,
     ) -> Set[str]:
         """Return the names of clients that should participate in the round."""
-        # FUTURE: implement client sampling for evaluation rounds
+        # FUTURE: implement client sampling for evaluation rounds ?
         return self.netwk.client_names
 
     async def _send_evaluation_instructions(

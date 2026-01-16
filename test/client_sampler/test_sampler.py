@@ -118,7 +118,7 @@ class TestClientSampler:
         self,
         clients: Set[str],
         client_to_reply: Dict[str, TrainReply],
-        server_model: Model,
+        global_model: Model,
         monkeypatch,
     ):
         """
@@ -149,7 +149,7 @@ class TestClientSampler:
         )
         sampler.init_clients(clients)
         # update the scores using the fake gradient norms
-        sampler.update(client_to_reply, server_model)
+        sampler.update(client_to_reply, global_model)
         sampled_clients = sampler.sample()
         assert len(sampled_clients) == 2
         # client 2 and 3 have the highest scores (2 and 3)
@@ -161,7 +161,7 @@ class TestClientSampler:
         self,
         clients: Set[str],
         client_to_reply: Dict[str, TrainReply],
-        server_model: Model,
+        global_model: Model,
         monkeypatch,
     ):
         """
@@ -189,7 +189,7 @@ class TestClientSampler:
 
         compo_sampler.init_clients(clients)
         # update the scores using the fake gradient norms
-        compo_sampler.update(client_to_reply, server_model)
+        compo_sampler.update(client_to_reply, global_model)
         sampled_clients = compo_sampler.sample()
 
         # first, the criterion sampler should have selected client3 and then

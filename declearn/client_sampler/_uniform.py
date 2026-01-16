@@ -76,6 +76,6 @@ class UniformClientSampler(ClientSampler):
         return {str(client_np) for client_np in sampled}
 
     def update(
-        self, client_to_reply: Dict[str, TrainReply], server_model: Model
+        self, client_to_reply: Dict[str, TrainReply], global_model: Model
     ) -> None:
         pass

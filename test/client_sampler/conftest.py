@@ -78,8 +78,8 @@ def client_to_reply_fixture(
     }
 
 
-@pytest.fixture(name="server_model")
-def server_model_fixture(
+@pytest.fixture(name="global_model")
+def global_model_fixture(
     framework: FrameworkType,
 ) -> Model:
     """

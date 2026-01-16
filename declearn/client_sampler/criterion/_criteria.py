@@ -56,7 +56,7 @@ class Criterion(metaclass=ABCMeta):
 
     `Criterion` objects are used by `CriterionClientSampler` objects to select
     the best clients regarding the value of a criterion score that can be
-    derived from clients replies and server model (e.g. highest norm of client
+    derived from clients replies and global model (e.g. highest norm of client
     gradients).
 
     Attributes
@@ -74,9 +74,9 @@ class Criterion(metaclass=ABCMeta):
         unique across client sampler `Criterion`,
         e.g. "constant" for `ConstantCriterion`.
 
-    - compute(client_to_reply, server_model):
+    - compute(client_to_reply, global_model):
         Instance method that computes the criterion score for each client based
-        on the client train replies and server model.
+        on the client train replies and global model.
 
     Overridable
     -----------
@@ -110,12 +110,12 @@ class Criterion(metaclass=ABCMeta):
     def compute(
         self,
         client_to_reply: Dict[str, TrainReply],
-        server_model: Model,
+        global_model: Model,
     ) -> Dict[str, Optional[float]]:
         """
         Compute the criterion score for each client listed in `client_to_reply`.
         The score can be derived from information in the client train replies
-        and the server model.
+        and the global model.
 
         Notes
         -----
@@ -126,8 +126,8 @@ class Criterion(metaclass=ABCMeta):
         ----------
         client_to_reply:
             Dictionary mapping a client name to their reply.
-        server_model:
-            Central server model.
+        global_model:
+            Global model hold by the server.
 
         Returns
         -------
@@ -257,7 +257,7 @@ class ConstantCriterion(Criterion):
     def compute(
         self,
         client_to_reply: Dict[str, TrainReply],
-        server_model: Model,
+        global_model: Model,
     ) -> Dict[str, Optional[float]]:
         if self.value is None:
             value = None
@@ -295,7 +295,7 @@ class CompositionCriterion(Criterion):
     def compute(
         self,
         client_to_reply: Dict[str, TrainReply],
-        server_model: Model,
+        global_model: Model,
     ) -> Dict[str, Optional[float]]:
         if self.operation is None:
             raise ValueError(
@@ -303,7 +303,7 @@ class CompositionCriterion(Criterion):
             )
 
         cli_to_val_list = [
-            parent.compute(client_to_reply, server_model)
+            parent.compute(client_to_reply, global_model)
             for parent in self.parents
         ]  # list of mappings between client and value for each parent
         client_to_composed_val = {}
@@ -398,7 +398,7 @@ class GradientNormCriterion(Criterion):
     def compute(
         self,
         client_to_reply: Dict[str, TrainReply],
-        server_model: Model,
+        global_model: Model,
     ) -> Dict[str, Optional[float]]:
         client_to_norm: Dict[str, Optional[float]] = {}
         for client, reply in client_to_reply.items():
@@ -420,7 +420,7 @@ class NormalizedDivCriterion(Criterion):
     Raises
     ------
     ValueError:
-        If the number of trainable weights in server model and in a client
+        If the number of trainable weights in the global model and in a client
         updates object are different.
 
     Reference
@@ -437,11 +437,11 @@ class NormalizedDivCriterion(Criterion):
     def compute(
         self,
         client_to_reply: Dict[str, TrainReply],
-        server_model: Model,
+        global_model: Model,
     ) -> Dict[str, Optional[float]]:
         client_to_div: Dict[str, Optional[float]] = {}
         w_server = np.array(
-            server_model.get_weights(trainable=True).flatten()[0]
+            global_model.get_weights(trainable=True).flatten()[0]
         )  # server weights
         size_w = len(w_server)  # model size (nb trainable parameters)
         eps = 1e-8  # epsilon added to denominator to avoid zero-division error
@@ -451,7 +451,7 @@ class NormalizedDivCriterion(Criterion):
             size_upd = len(w_updates)
             if size_upd != size_w:
                 raise ValueError(
-                    f"Flattened server model weights size ({size_w}) and "
+                    f"Flattened global model weights size ({size_w}) and "
                     f"client model updates size ({size_upd}) must be equal."
                 )
             score = float(
@@ -482,7 +482,7 @@ class TrainTimeCriterion(Criterion):
     def compute(
         self,
         client_to_reply: Dict[str, TrainReply],
-        server_model: Model,
+        global_model: Model,
     ) -> Dict[str, Optional[float]]:
         sign = -1 if self.lower_is_better else 1
         return {
@@ -539,7 +539,7 @@ class TrainTimeHistoryCriterion(Criterion):
     def compute(
         self,
         client_to_reply: Dict[str, TrainReply],
-        server_model: Model,
+        global_model: Model,
     ) -> Dict[str, Optional[float]]:
         sign = -1 if self.lower_is_better else 1
         for client, reply in client_to_reply.items():

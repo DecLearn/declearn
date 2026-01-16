@@ -77,7 +77,7 @@ class ClientSampler(metaclass=ABCMeta):
         Indicate if the client sampler is compatible with secure aggregation
     - _sample():
         Back-end of the sampling method.
-    - update(client_to_reply, server_model):
+    - update(client_to_reply, global_model):
         Update sampler internal state.
 
     Overridable
@@ -244,11 +244,11 @@ class ClientSampler(metaclass=ABCMeta):
 
     @abstractmethod
     def update(
-        self, client_to_reply: Dict[str, TrainReply], server_model: Model
+        self, client_to_reply: Dict[str, TrainReply], global_model: Model
     ) -> None:
         """
         Update sampler internal state (e.g. client metadata) according to each
-        client training reply and the server model.
+        client training reply and the global model.
 
         Notes
         -----
@@ -260,8 +260,8 @@ class ClientSampler(metaclass=ABCMeta):
         client_to_reply:
             Dictionary mapping each client to their training reply.
 
-        server_model:
-            Central server model.
+        global_model:
+            Global model hold by the server.
         """
 
     @staticmethod

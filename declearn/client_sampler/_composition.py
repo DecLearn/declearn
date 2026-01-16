@@ -74,10 +74,10 @@ class CompositionClientSampler(ClientSampler):
         return total_sampled_clients
 
     def update(
-        self, client_to_reply: Dict[str, TrainReply], server_model: Model
+        self, client_to_reply: Dict[str, TrainReply], global_model: Model
     ) -> None:
         for sampler in self.samplers:
-            sampler.update(client_to_reply, server_model)
+            sampler.update(client_to_reply, global_model)
 
     @classmethod
     def _from_specs(cls, **kwargs: Any) -> ClientSampler:
