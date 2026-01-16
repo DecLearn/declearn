@@ -28,9 +28,12 @@ from typing import (
     Callable,
     ClassVar,
     Dict,
+    List,
+    Literal,
     Optional,
     Tuple,
     Union,
+    get_args,
 )
 
 import numpy as np
@@ -110,8 +113,9 @@ class Criterion(metaclass=ABCMeta):
         server_model: Model,
     ) -> Dict[str, Optional[float]]:
         """
-        Compute the criterion score for each client based on the client
-        train replies and the server model.
+        Compute the criterion score for each client listed in `client_to_reply`.
+        The score can be derived from information in the client train replies
+        and the server model.
 
         Notes
         -----
@@ -460,14 +464,14 @@ class NormalizedDivCriterion(Criterion):
 class TrainTimeCriterion(Criterion):
     """
     `Criterion` implementation where the criterion score is computed from the
-    training time spent (in seconds) by the client in the last round.
+    last round training time (in seconds) spent by the client.
 
     Attributes
     ----------
     lower_is_better: bool
         If True (default), a lower time leads to a better score (score will be
         `- time`). Otherwise, a higher time leads to a better score (score will
-        be `+ time` ).
+        be `+ time`).
     """
 
     name = "train_time"
@@ -484,4 +488,77 @@ class TrainTimeCriterion(Criterion):
         return {
             client: sign * reply.t_spent
             for client, reply in client_to_reply.items()
+        }
+
+
+class TrainTimeHistoryCriterion(Criterion):
+    """
+    `Criterion` implementation where the criterion score is computed from the
+    history of all past rounds' training times (in seconds) spent by the client.
+
+    Attributes
+    ----------
+    lower_is_better: bool
+        If True (default), a lower value for aggregated times leads to a better
+        score (score will be `- aggregated_times`). Otherwise, a higher value
+        for aggregated times of leads to a better score (score will be
+        `+ aggregated_times`).
+    agg: AggregateFunc
+        Name of a method to aggregate the history values into a float, e.g.
+        average, sum.
+    history: Dict[str, List[float]], read-only instance property
+        Dictionary mapping each client to its training time history (time values
+        for all past training rounds).
+
+    Notes
+    -----
+    Beware that the time history will be updated every time a call to `compute`
+    is made, assuming that this call matches a new training round.
+    Thus, you should only call this class' `compute` method once per round
+    (passing the new round client replies as argument).
+    """
+
+    name = "train_time_history"
+
+    AggregateFunc = Literal["average", "sum"]
+
+    def __init__(
+        self, lower_is_better: bool = True, agg: AggregateFunc = "average"
+    ):
+        if agg not in get_args(self.AggregateFunc):
+            raise ValueError(f"Unsupported aggregate function '{agg}'.")
+
+        self.lower_is_better = lower_is_better
+        self.agg = agg
+        self._history: Dict[str, List[float]] = {}
+
+    @property
+    def history(self):
+        return self._history
+
+    def compute(
+        self,
+        client_to_reply: Dict[str, TrainReply],
+        server_model: Model,
+    ) -> Dict[str, Optional[float]]:
+        sign = -1 if self.lower_is_better else 1
+        for client, reply in client_to_reply.items():
+            if client in self._history:
+                self._history[client].append(reply.t_spent)
+            else:
+                self._history[client] = [reply.t_spent]  # init history
+
+        # aggregate all times in each client history
+        if self.agg == "average":
+
+            def agg_fn(hist):
+                return sum(hist) / len(hist)
+        elif self.agg == "sum":
+            agg_fn = sum
+        else:
+            raise ValueError(f"Unsupported aggregate function '{self.agg}'.")
+
+        return {
+            client: sign * agg_fn(self._history[client])
+            for client in client_to_reply
         }

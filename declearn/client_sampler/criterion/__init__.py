@@ -39,7 +39,9 @@ Concrete classes
 * [NormalizedDivCriterion][declearn.client_sampler.criterion.NormalizedDivCriterion]:
     Normalized model divergence Criterion subclass.
 * [TrainTimeCriterion][declearn.client_sampler.criterion.TrainTimeCriterion]:
-    Training time Criterion subclass.
+    Last round training time Criterion subclass.
+* [TrainTimeHistoryCriterion][declearn.client_sampler.criterion.TrainTimeHistoryCriterion]:
+    Training time history (across all past rounds) Criterion subclass.
 """
 
 from ._criteria import (
@@ -49,6 +51,7 @@ from ._criteria import (
     GradientNormCriterion,
     NormalizedDivCriterion,
     TrainTimeCriterion,
+    TrainTimeHistoryCriterion,
 )
 
 __all__ = [
@@ -58,4 +61,5 @@ __all__ = [
     "GradientNormCriterion",
     "NormalizedDivCriterion",
     "TrainTimeCriterion",
+    "TrainTimeHistoryCriterion",
 ]

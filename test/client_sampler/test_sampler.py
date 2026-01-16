@@ -36,11 +36,6 @@ from declearn.model.api import Model
 from test.client_sampler.utils import FailClientSampler
 
 
-@pytest.fixture
-def clients() -> Set[str]:
-    return set(["client1", "client2", "client3"])
-
-
 class TestClientSampler:
     """Shared unit tests suite for 'ClientSampler' subclasses."""
 
@@ -49,6 +44,12 @@ class TestClientSampler:
         sampler.init_clients(clients)
         sampled_clients = sampler.sample()
         assert clients == sampled_clients
+
+    def test_sampling_fail(self, clients: Set[str]):
+        fail_sampler = FailClientSampler()
+        fail_sampler.init_clients(clients)
+        sampled_clients = fail_sampler.sample()
+        assert sampled_clients == clients
 
     @pytest.mark.parametrize("n_samples", [1, 2])
     def test_uniform_sampling(self, n_samples: int, clients: Set[str]):
@@ -195,9 +196,3 @@ class TestClientSampler:
         # the uniform sampler should have picked randomly one among the others
         assert len(sampled_clients) == 2
         assert "client3" in sampled_clients
-
-    def test_sampling_fail(self, clients: Set[str]):
-        fail_sampler = FailClientSampler()
-        fail_sampler.init_clients(clients)
-        sampled_clients = fail_sampler.sample()
-        assert sampled_clients == clients

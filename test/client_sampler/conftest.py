@@ -17,7 +17,7 @@
 
 """Shared pytest fixtures for client sampler testing."""
 
-from typing import Dict
+from typing import Dict, Set
 from unittest.mock import MagicMock
 
 import numpy as np
@@ -25,16 +25,16 @@ import pytest
 
 from declearn.aggregator import ModelUpdates
 from declearn.messaging import TrainReply
-
-# from declearn.model.api import Model
 from declearn.model.api import Model
 from declearn.test_utils import (
     FrameworkType,
     GradientsTestCase,
 )
-from declearn.utils import set_device_policy
 
-# from test.model.model_testing import ModelTestCase
+
+@pytest.fixture
+def clients() -> Set[str]:
+    return set(["client1", "client2", "client3"])
 
 
 @pytest.fixture(name="client_to_reply")
@@ -46,7 +46,6 @@ def client_to_reply_fixture(
     Build a dictionary of client replies (messages) from updates that we define
     as vectors with custom value.
     """
-    set_device_policy(gpu=False)
     updates_1 = GradientsTestCase(framework).mock_gradient_custom(
         [
             np.array([0, 0, 0, 0]),

@@ -41,6 +41,8 @@ from declearn.client_sampler import (
 from declearn.client_sampler.criterion import (
     GradientNormCriterion,
     NormalizedDivCriterion,
+    TrainTimeCriterion,
+    TrainTimeHistoryCriterion,
 )
 from declearn.communication import NetworkClientConfig, NetworkServerConfig
 from declearn.dataset import InMemoryDataset
@@ -204,6 +206,12 @@ def make_client_samplers():
         ),
         "NormalizedDivCriterion": CriterionClientSampler(
             n_samples=2, criterion=NormalizedDivCriterion()
+        ),
+        "TrainTimeCriterion": CriterionClientSampler(
+            n_samples=2, criterion=TrainTimeCriterion()
+        ),
+        "TrainTimeHistCriterion": CriterionClientSampler(
+            n_samples=2, criterion=TrainTimeHistoryCriterion()
         ),
         "Composition": CompositionClientSampler(
             [

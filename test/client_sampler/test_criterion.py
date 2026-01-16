@@ -22,14 +22,16 @@ from typing import Dict
 
 import pytest
 
+from declearn.aggregator import ModelUpdates
 from declearn.client_sampler.criterion import (
     GradientNormCriterion,
     NormalizedDivCriterion,
     TrainTimeCriterion,
+    TrainTimeHistoryCriterion,
 )
 from declearn.messaging import TrainReply
 from declearn.model.api import Model
-from declearn.test_utils import list_available_frameworks
+from declearn.test_utils import GradientsTestCase, list_available_frameworks
 
 VECTOR_FRAMEWORKS = list_available_frameworks()
 
@@ -136,3 +138,119 @@ class TestCriterion:
             assert math.isclose(
                 expected_scores[client], scores[client], rel_tol=1e-6
             )
+
+    @pytest.mark.parametrize("agg", ["average", "sum"])
+    @pytest.mark.parametrize("framework", ["torch"])
+    def test_train_time_hist_criterion_lowest(
+        self,
+        agg: TrainTimeHistoryCriterion.AggregateFunc,
+        server_model: Model,
+    ) -> None:
+        DEFAULT_EPOCHS = 1
+        DEFAULT_STEPS = 10
+        DEFAULT_GRAD = ModelUpdates(
+            GradientsTestCase("torch").mock_ones,
+            weights=1,
+        )
+
+        criterion = TrainTimeHistoryCriterion(
+            lower_is_better=True,
+            agg=agg,
+        )
+
+        # 1st fake round results
+        client_to_reply = {
+            "client_1": TrainReply(
+                n_epoch=DEFAULT_EPOCHS,
+                n_steps=DEFAULT_STEPS,
+                t_spent=20.0,
+                updates=DEFAULT_GRAD,
+                aux_var={},
+            ),
+            "client_2": TrainReply(
+                n_epoch=DEFAULT_EPOCHS,
+                n_steps=DEFAULT_STEPS,
+                t_spent=10.0,
+                updates=DEFAULT_GRAD,
+                aux_var={},
+            ),
+        }
+        # compute score after fake round 1
+        scores = criterion.compute(client_to_reply, server_model)
+
+        # fake round 2, update only the training time
+        client_to_reply = {
+            "client_2": TrainReply(
+                n_epoch=DEFAULT_EPOCHS,
+                n_steps=DEFAULT_STEPS,
+                t_spent=40.0,
+                updates=DEFAULT_GRAD,
+                aux_var={},
+            ),
+            "client_3": TrainReply(
+                n_epoch=DEFAULT_EPOCHS,
+                n_steps=DEFAULT_STEPS,
+                t_spent=30.0,
+                updates=DEFAULT_GRAD,
+                aux_var={},
+            ),
+        }
+        # compute score after fake round 2
+        scores = criterion.compute(client_to_reply, server_model)
+
+        # fake round 3, update sampled clients and training time
+        client_to_reply = {
+            "client_1": TrainReply(
+                n_epoch=DEFAULT_EPOCHS,
+                n_steps=DEFAULT_STEPS,
+                t_spent=50.0,
+                updates=DEFAULT_GRAD,
+                aux_var={},
+            ),
+            "client_2": TrainReply(
+                n_epoch=DEFAULT_EPOCHS,
+                n_steps=DEFAULT_STEPS,
+                t_spent=70.0,
+                updates=DEFAULT_GRAD,
+                aux_var={},
+            ),
+            "client_3": TrainReply(
+                n_epoch=DEFAULT_EPOCHS,
+                n_steps=DEFAULT_STEPS,
+                t_spent=60.0,
+                updates=DEFAULT_GRAD,
+                aux_var={},
+            ),
+        }
+        # compute score after fake round 3
+        scores = criterion.compute(client_to_reply, server_model)
+
+        expected_histories = {
+            "client_1": [20.0, 50.0],
+            "client_2": [10.0, 40.0, 70.0],
+            "client_3": [30.0, 60.0],
+        }
+
+        agg_to_expected_scores = {
+            "average": {
+                "client_1": -35.0,
+                "client_2": -40.0,
+                "client_3": -45.0,
+            },
+            "sum": {
+                "client_1": -70.0,
+                "client_2": -120.0,
+                "client_3": -90.0,
+            },
+        }
+
+        # check history is correct
+        for client, expected_history in expected_histories.items():
+            history = criterion.history[client]
+            assert len(expected_history) == len(history)
+            for expected, value in zip(expected_history, history, strict=True):
+                assert math.isclose(expected, value, rel_tol=1e-6)
+
+        # check score is correctly computed from history
+        for client, expected_score in agg_to_expected_scores[agg].items():
+            assert math.isclose(expected_score, scores[client], rel_tol=1e-6)
