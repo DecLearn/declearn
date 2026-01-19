@@ -10,8 +10,8 @@ participate in each training round of the global federated process.
 
 ### General capabilities
 
-In DecLearn, this process is handled by a ClientSampler attributed to the
-FederatedServer.
+In DecLearn, this process is handled by a `ClientSampler` attributed to the
+`FederatedServer`.
 
 In the running phase of the server, the client sampler is called before each
 training round to select the client that will be involved. If no client sampler
@@ -70,14 +70,14 @@ See examples below.
 ### Available client sampling strategies
 
 - `DefaultClientSampler` : client sampler that always select all registered
-  clients
+  clients.
 
 - `UniformClientSampler` : client sampler that randomly selects n clients among
   all following the uniform probability law.
 
 - `WeightedClientSampler` : client sampler that randomly selects n clients among
   all following a probability law built from user-provided weights (if there are
-  two clients and client 1 has a weight of 1 and client 2 has a weight of 2 :
+  two clients, and client 1 has a weight of 1 where client 2 has a weight of 2 :
   then client 2 is twice as likely to be selected).
 
 - `CriterionClientSampler` : client sampler that selects the n clients that have
@@ -88,7 +88,7 @@ See examples below.
   from the global model.  
   Available `Criterion` subclasses :
     - `GradientNormCriterion` : the criterion score is the L2-norm of the client
-    "gradients" (updates)
+    "gradients" (updates).
 
     - `NormalizedDivCriterion` : the criterion score is the client "normalized 
     model divergence" computed from client updates and global server weights :
@@ -108,22 +108,21 @@ See examples below.
     be computed from the sum or the average of all past times. By default, a 
     lower aggregated time means a higher criterion score.
 
-    - Arithmetic on criteria is made possible thanks to the subclasses 
+    - Composition with math operators is made possible thanks to the subclasses 
     `ConstantCriterion` and `CompositionCriterion`, meaning that it is possible 
     to define a criterion like : 
     `(GradientNormCriterion() + NormalizedDivCriterion())**2 / 2` in a 
     straightforward way.
 
-- `CompositionClientSampler` : client sampler that contains other ones and 
-allow to compose the strategies to select clients. Thus, assuming that we have 
+- `CompositionClientSampler` : client sampler that contains others, allowing to compose the strategies to select clients. For instance, assuming that we have 
 5 registered clients, it is possible to define a client sampler performing the 
 following selection before each training round :
     - first, selects 2 clients over the 5 based on a deterministic criterion
     - then, selects randomly 1 client over the 3 that remains
 
 To achieve this, we just need to create a `CompositionClientSampler` containing 
-a `CriterionClientSampler` and a `UniformClientSampler`. See the composition 
-example section below for precise implementation.
+a `CriterionClientSampler` and a `UniformClientSampler`. See the "composition 
+example section" below for precise implementation.
 
 
 ### Examples
@@ -164,10 +163,9 @@ To know how to run a complete experiment, please refer to the
 DecLearn API supports the use of specifications to build client sampler
 instances (thanks to the ClientSampler `from_specs` method) without importing
 and using directly the Python objects. You just need to define a dictionary of
-valid client sampler specifications and use it at server's construction.  
+valid client sampler specifications and pass it at server's construction.  
 
-Thus, to instantiate the same client sampler as before, but using a dictionary,
-see the code below :
+Thus, to instantiate the same client sampler as in previous example, but using a dictionary :
 ```python
 from declearn.main import FederatedServer
 
@@ -192,11 +190,11 @@ server = FederatedServer(
 )
 ```
 
-Note that the `strategy` key is mandatory in specifications, it allows to decide
+Note that the `strategy` key is mandatory in all specifications, it allows to decide
 which ClientSampler subclass will be instantiated.
 To know which value matches your desired sampler, refer to the value of the
 `strategy` class attribute (in the class definition). This attribute has to be
-defined for each ClientSampler subclass.
+defined for each `ClientSampler` subclass.
 
 ##### Instantiate from a TOML configuration file
 
@@ -241,9 +239,8 @@ server = FederatedServer(
 
 #### Criterion-based example
 
-In this section, you can find an example of how to use a `ClientSampler` object
-and a `Criterion` object to build a criterion client sampler. Here we use the 
-L2-norm of the client gradients as criterion :
+In this section, you can find an example of how to use a 
+`ClientSampler` object and a `Criterion` object to build a criterion client sampler. Here we use the  L2-norm of the client gradients as criterion :
 
 ```python
 from declearn.client_sampler import CriterionClientSampler
@@ -325,8 +322,6 @@ but only a new `Criterion` subclass (integrated into the existing
 
 The two sections below detail the two approaches.
 
-### Implementing a new ClientSampler
-
 ### Implementing a new Criterion to be used by CriterionClientSampler
 
 #### When is it needed ?
@@ -336,21 +331,22 @@ if your selection strategy matches the properties below :
 derived from its last / past local training(s), and optionnaly using the global
 model metadata (e.g. weights).  
 - if you are able to define your criterion (e.g. through a math formula)
-and compute a float-valued score from it (a higher score = a better client)
+and compute a float-valued score from it (a higher score = a better client).
 
-To understand what is possible with a `Criterion`, a useful resource can be to
-refer to the documentation and code of the existing `Criterion` subclasses.
+To understand what is possible with a `Criterion`, the documentation and code of the existing `Criterion` subclasses may be valuable resources.
 
 #### Inheriting from `Criterion`
 To define your own criterion, you must create a subclass of `Criterion`. When
 doing so, the following steps are mandatory :
 - Defining a string class attribute `name` with a value matching your class 
-name, e.g. `train_time` for the class `TrainTimeCriterion`.
+name, e.g. `"train_time"` for the class `TrainTimeCriterion`.
 - Implementing the method `compute` in which your criterion-based selection
-logic will be defined.
+logic is defined.
 
 See the `Criterion` API reference and subclasses implementation for more 
 details.
+
+### Implementing a new ClientSampler
 
 #### When is it needed ?
 You may need to define your own client sampler if you want a specific strategy
@@ -364,17 +360,17 @@ APIs.
 To define your own client sampler, you must create a subclass of
 `ClientSampler`. When doing so, the following steps are mandatory :
 - Defining a string class attribute `strategy` with a value matching your class
-name, e.g. `uniform` for the class `UniformClientSampler`.
-- Defining the boolean class property `secagg_compatible` (returning True or
-False) to precise if your strategy is compatible with secure aggregation.
+name, e.g. `"uniform"` for the class `UniformClientSampler`.
+- Defining the boolean class property `secagg_compatible` (just returning True
+or False) to precise if your strategy is compatible with secure aggregation.
 - Implementing the method `_sample` (do not forget the underscore !) in which
-your custom client sampling logic will be defined.
+your custom client sampling logic is defined.
 - Implementing the method `update` in which you optionally update the sampler
 internal state (e.g. criterion score computation). This method is called
 by the `FederatedServer` at each global round, after collecting all involved
-clients reply.  
-Note : if no update is needed for your sampler, just write an empty body in
-this method (with the `pass` keyword).
+clients' reply.  
+Note : if no update is needed for your sampler, just write the `pass` keyword
+in the method body.
 
 See the `ClientSampler` API reference and subclasses implementation for more
 details.
