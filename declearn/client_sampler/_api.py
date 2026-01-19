@@ -75,7 +75,7 @@ class ClientSampler(metaclass=ABCMeta):
         e.g. "default" for `DefaultClientSampler
     - secagg_compatible(): boolean read-only class property
         Indicate if the client sampler is compatible with secure aggregation
-    - _sample():
+    - _sample(eligible_clients):
         Back-end of the sampling method.
     - update(client_to_reply, global_model):
         Update sampler internal state.
