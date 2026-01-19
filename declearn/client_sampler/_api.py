@@ -51,16 +51,16 @@ class ClientSampler(metaclass=ABCMeta):
 
     Attributes
     ----------
-    - strategy: str class attribute
+    strategy: str class attribute
         See details in the Abstract section.
 
-    - secagg_compatible: boolean read-only class property
+    secagg_compatible: boolean read-only class property
         See details in the Abstract section.
 
-    - clients: Set[str]
+    clients: Set[str]
         Set of clients among which sampling is done.
 
-    - max_retries: int
+    max_retries: int
         Maximum number of consecutive retries performed by the sampler if
         the sampling fails (i.e. if no client is selected).
 

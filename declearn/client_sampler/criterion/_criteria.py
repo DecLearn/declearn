@@ -61,7 +61,7 @@ class Criterion(metaclass=ABCMeta):
 
     Attributes
     ----------
-    - name: str class attribute
+    name: str class attribute
         See details in the Abstract section.
 
     Abstract
