@@ -138,7 +138,7 @@ class Checkpointer:
         prefix: str
             Prefix based on which to filter files under `self.folder`.
         """
-        if self.folder and self.max_history:
+        if self.folder and self.max_history is not None:
             files = self.sort_matching_files(prefix)
             for idx in range(0, len(files) - self.max_history):
                 os.remove(os.path.join(self.folder, files[idx]))
