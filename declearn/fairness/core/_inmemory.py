@@ -181,20 +181,22 @@ class FairnessInMemoryDataset(FairnessDataset, InMemoryDataset):
         sensitive: Union[DataArray, str, List[int], List[str]],
     ) -> pd.DataFrame:
         """Process inputs to `set_sensitive_data` into a data array."""
+        sensi_data: Optional[DataArray] = None
+
         # Handle cases when 'sensitive' is a file path of columns list.
         if isinstance(sensitive, str):
-            sensitive = load_data_array(sensitive)
+            sensi_data = load_data_array(sensitive)
         elif isinstance(sensitive, list):
             if isinstance(self.data, pd.DataFrame) and all(
                 col in self.data.columns for col in sensitive
             ):
-                sensitive = self.data[sensitive]
+                sensi_data = self.data[sensitive]
             elif all(
                 isinstance(col, int) and (col <= self.data.shape[1])
                 for col in sensitive
             ):
-                sensitive = (
-                    self.data.iloc[:, sensitive]  # type: ignore[index]
+                sensi_data = (
+                    self.data.iloc[:, sensitive]  # type: ignore
                     if isinstance(self.data, pd.DataFrame)
                     else self.data[:, sensitive]  # type: ignore[index]
                 )
@@ -203,13 +205,15 @@ class FairnessInMemoryDataset(FairnessDataset, InMemoryDataset):
                     "'sensitive' was passed as a list, but matches neither"
                     " data column names nor indices."
                 )
+        else:
+            sensi_data = sensitive
         # Type-check and optionally convert sensitive attributes to pandas.
-        if isinstance(sensitive, pd.DataFrame):
-            return sensitive
-        if isinstance(sensitive, np.ndarray):
-            return pd.DataFrame(sensitive)
-        if isinstance(sensitive, scipy.sparse.spmatrix):
-            return pd.DataFrame(sensitive.toarray())  # type: ignore
+        if isinstance(sensi_data, pd.DataFrame):
+            return sensi_data
+        if isinstance(sensi_data, np.ndarray):
+            return pd.DataFrame(sensi_data)
+        if isinstance(sensi_data, scipy.sparse.spmatrix):
+            return pd.DataFrame(sensi_data.toarray())  # type: ignore
         raise TypeError(
             "'sensitive' should be a numpy array, scipy matrix, pandas"
             " DataFrame, path to such a structure's file dump, or list"
@@ -224,7 +228,13 @@ class FairnessInMemoryDataset(FairnessDataset, InMemoryDataset):
     def get_sensitive_group_counts(
         self,
     ) -> Dict[Tuple[Any, ...], int]:
-        return self.sensitive.value_counts().sort_index().to_dict()
+        return {
+            (k if isinstance(k, tuple) else (k,)): v
+            for k, v in self.sensitive.value_counts()
+            .sort_index()
+            .to_dict()
+            .items()
+        }
 
     def get_sensitive_group_subset(
         self,
