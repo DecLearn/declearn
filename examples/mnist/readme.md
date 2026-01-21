@@ -113,7 +113,15 @@ We then sequentially run the server then the clients on separate terminals.
 
    Alternatively, `declearn.test_utils.gen_ssl_certificates` may be used to
    generate a self-signed CA and a signed certificate for a given domain name
-   or IP address.
+   or IP address.  
+   To achieve this easily with the provided example script, update 
+   `generate_ssl.py` so that it calls the `generate_ssl_certificates` function
+   with a value passed to the `alt_ips` argument (to allow IP address(es)) or to
+   the `alt_dns` argument (to allow domain name(s)) 
+
+   Example : `generate_ssl_certificates(FILEDIR, alt_ips=["192.0.2.1"])` if your
+   server machine's IP is 192.0.2.1.
+
 
 3. **Run the server**:<br/>
    Open a terminal and launch the server script for the desired number of
