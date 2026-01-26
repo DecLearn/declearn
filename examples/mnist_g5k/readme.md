@@ -54,6 +54,17 @@ reserved for the experiment :
 run by the server machine.
 - the `run_client.py` script will be run by each client machine.
 
+#### Notes on default deployment
+In the script `run_grid5k.py`, with default configuration, we run an
+experiment with a server and 3 clients, using 3 machine clusters :  
+- `nova` (Lyon)
+- `dahu` (Grenoble)
+- `econome` (Nantes)
+
+The server runs on `nova`, one client runs on `dahu` and two clients run on two
+distinct `econome` machines.
+
+
 
 ## Deploy the experiment on Grid5000
 
@@ -70,7 +81,7 @@ git clone git@gitlab.inria.fr:magnet/declearn/declearn2.git declearn
 - Install declearn in it from the local repo :
 
 ```bash
-cd declearn && pip install .[g5k] && cd ..
+cd declearn && pip install ".[g5k]" && cd ..
 ```
 
 - Set up your

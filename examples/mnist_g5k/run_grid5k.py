@@ -37,7 +37,7 @@ downloaded.
 DATA_SCHEME = "iid"
 """Data splitting scheme to use, see prepare_data.py for details."""
 
-WALLTIME = "00:59:00"
+WALLTIME = "01:59:00"
 """Maximum real execution time reserved to run an experiment on Grid5000."""
 
 SERVER_CLUSTER = "nova"
