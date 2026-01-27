@@ -326,9 +326,6 @@ class TorchModel(Model):
             self._loss_history.append(float(loss.cpu().numpy().mean()))
         return TorchVector(grads)
 
-    # TODO: move usage of lru_cache to prevent memory leaks
-    # (see: https://docs.astral.sh/ruff/rules/cached-instance-method/)
-    @functools.lru_cache  # noqa: B019
     def _build_samplewise_grads_fn(
         self,
         inputs: int,
@@ -337,9 +334,7 @@ class TorchModel(Model):
     ) -> GetGradientsFunction:
         """Build an optimizer sample-wise gradients-computation function.
 
-        This function is cached, i.e. repeated calls with the same parameters
-        will return the same object - enabling to reduce runtime costs due to
-        building and (when available) compiling the output function.
+        This method calls a cached function outside of the class.
 
         Returns
         -------
@@ -348,8 +343,7 @@ class TorchModel(Model):
             wrt trainable model parameters based on a batch of inputs, with
             opt. clipping based on a maximum l2-norm value `clip`.
         """
-        # NOTE: torch.func is not compatible with torch.compile yet
-        return build_samplewise_grads_fn(
+        return _build_samplewise_grads_fn_cached(
             self._raw_model, self._loss_fn, inputs, y_true, s_wght
         )
 
@@ -425,3 +419,40 @@ class TorchModel(Model):
         # Place the wrapped model and loss function modules on that device.
         self._model.set_device(device)
         self._loss_fn.set_device(device)
+
+
+@functools.lru_cache
+def _build_samplewise_grads_fn_cached(
+    raw_model: torch.nn.Module,
+    loss_fn: torch.nn.Module,
+    inputs: int,
+    y_true: bool,
+    s_wght: bool,
+) -> GetGradientsFunction:
+    """Build an optimizer sample-wise gradients-computation function.
+
+    This function is cached, i.e. repeated calls with the same parameters
+    will return the same object - enabling to reduce runtime costs due to
+    building and (when available) compiling the output function.
+
+    Notes
+    -----
+    - This function is defined outside the class to prevent memory leaks that
+    can be caused by the usage of cache on class methods.
+    For more details, see
+    https://docs.astral.sh/ruff/rules/cached-instance-method/
+
+    - For `raw_model` and `loss_fn` (type `torch.nn.Module`), the cache uses
+    object IDs as keys rather than the model structure or weights.
+
+    Returns
+    -------
+    grads_fn: callable[[inputs, y_true, s_wght, clip], grads]
+        Function to efficiently compute and return sample-wise gradients
+        wrt trainable model parameters based on a batch of inputs, with
+        opt. clipping based on a maximum l2-norm value `clip`.
+    """
+    # NOTE: torch.func is not compatible with torch.compile yet
+    return build_samplewise_grads_fn(
+        raw_model, loss_fn, inputs, y_true, s_wght
+    )
