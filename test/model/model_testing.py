@@ -106,9 +106,10 @@ class ModelTestSuite:
         model = test_case.model
         batch = test_case.dataset[0]
         # Check that gradients computation works.
-        w_srt = model.get_weights()
+        w_srt = model.get_weights(trainable=True)
         grads = model.compute_batch_gradients(batch)
-        w_end = model.get_weights()
+        w_end = model.get_weights(trainable=True)
+        # Check that gradient computation has not altered trainable weights.
         assert w_srt == w_end
         assert isinstance(grads, test_case.vector_cls)
         # Check that gradients and weights share the same labeling.

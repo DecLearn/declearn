@@ -69,7 +69,7 @@ class FlattenCNNOutput(torch.nn.Module):
         return inputs.view(*shape)
 
 
-Kind = Literal["MLP", "MLP-tune", "MLP-compile", "RNN", "CNN"]
+Kind = Literal["MLP", "MLP-tune", "MLP-compile", "RNN", "CNN", "BN"]
 
 
 class TorchTestCase(ModelTestCase):
@@ -121,7 +121,7 @@ class TorchTestCase(ModelTestCase):
         """Suited toy binary-classification dataset."""
         # false-positives; pylint: disable=no-member
         rng = torch.random.default_generator.manual_seed(0)
-        if self.kind.startswith("MLP"):
+        if self.kind.startswith("MLP") or self.kind.startswith("BN"):
             inputs = torch.randn((2, 32, 64), generator=rng)
         elif self.kind == "RNN":
             inputs = torch.randint(0, 100, (2, 32, 128), generator=rng)
@@ -150,6 +150,16 @@ class TorchTestCase(ModelTestCase):
             ]
             if self.kind == "MLP-tune":
                 stack[0].requires_grad_(False)
+        elif self.kind == "BN":  # MLP with a BatchNorm1d layer
+            stack = [
+                torch.nn.Linear(64, 32),
+                torch.nn.BatchNorm1d(32),
+                torch.nn.ReLU(),
+                torch.nn.Linear(32, 16),
+                torch.nn.ReLU(),
+                torch.nn.Linear(16, 1),
+                torch.nn.Sigmoid(),
+            ]
         elif self.kind == "RNN":
             stack = [
                 torch.nn.Embedding(100, 32),
@@ -285,6 +295,11 @@ class TestTorchModel(ModelTestSuite):
                 pytest.skip(
                     "skipping test due to lack of RNN support in functorch"
                 )
+        elif getattr(test_case, "kind", "") == "BN":
+            pytest.skip(
+                "Skipping test because sample-wise gradient is "
+                "incompatible with BatchNorm layers."
+            )
         else:
             super().test_compute_batch_gradients_clipped(test_case)
 
@@ -299,11 +314,12 @@ class TestTorchModel(ModelTestSuite):
         w_all = model.get_weights()
         w_trn = model.get_weights(trainable=True)
         assert set(w_trn.coefs).issubset(w_all.coefs)  # check on keys
+        n_weights = len(ptmod.state_dict())
         n_params = sum(1 for _ in ptmod.parameters())
         n_frozen = sum(not p.requires_grad for p in ptmod.parameters())
         assert n_frozen >= 1  # at least the one frozen for this test
         assert len(w_trn.coefs) == n_params - n_frozen
-        assert len(w_all.coefs) == n_params
+        assert len(w_all.coefs) == n_weights
 
     def test_set_frozen_weights(
         self,

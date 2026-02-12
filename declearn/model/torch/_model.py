@@ -178,11 +178,13 @@ class TorchModel(Model):
         self,
         trainable: bool = False,
     ) -> TorchVector:
-        params = self._raw_model.named_parameters()
         if trainable:
+            params = self._raw_model.named_parameters()
             weights = {k: p.data for k, p in params if p.requires_grad}
         else:
-            weights = {k: p.data for k, p in params}
+            # Get all weights (parameters and buffers, if any).
+            state_dict = self._raw_model.state_dict()
+            weights = {k: p.data for k, p in state_dict.items()}
         # Note: calling `tensor.clone()` to return a copy rather than a view.
         return TorchVector({k: t.detach().clone() for k, t in weights.items()})
 
@@ -224,9 +226,13 @@ class TorchModel(Model):
             In case some expected keys are missing, or additional keys
             are present. Be verbose about the identified mismatch(es).
         """
-        params = self._raw_model.named_parameters()
         received = set(vector.coefs)
-        expected = {n for n, p in params if (not trainable) or p.requires_grad}
+        if trainable:
+            params = self._raw_model.named_parameters()
+            expected = {n for n, p in params if p.requires_grad}
+        else:
+            expected = set(self._raw_model.state_dict().keys())
+
         raise_on_stringsets_mismatch(
             received, expected, context="model weights"
         )
