@@ -28,6 +28,7 @@ import declearn
 # Do not remove the following "unused" import,
 # it is necessary for type registration
 import declearn.model.tensorflow
+from declearn.utils import config_client_loggers
 
 FILEDIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_CERT = os.path.join(FILEDIR, "ca-cert.pem")
@@ -69,16 +70,11 @@ def run_client(
     # Set up logger and checkpointer
     stamp = datetime.datetime.now().strftime("%y-%m-%d_%H-%M")
     checkpoint = os.path.join(FILEDIR, f"result_{stamp}", client_name)
-    logger = declearn.utils.get_logger(
-        name=client_name,
+    config_client_loggers(
+        client_name=client_name,
+        level=logging.INFO,
         fpath=os.path.join(checkpoint, "logs.txt"),
     )
-
-    # Reduce logger verbosity
-    if not verbose:
-        for handler in logger.handlers:
-            if isinstance(handler, logging.StreamHandler):
-                handler.setLevel(declearn.utils.LOGGING_LEVEL_MAJOR)
 
     ### (1-2) Interface training and optional validation data.
 
@@ -116,7 +112,6 @@ def run_client(
         train_data=train,
         valid_data=valid,
         checkpoint=checkpoint,
-        logger=logger,
         verbose=verbose,
     )
     client.run()

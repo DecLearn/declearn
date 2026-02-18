@@ -22,7 +22,7 @@ import dataclasses
 import logging
 import os
 import warnings
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any, Dict, Optional, Union
 
 import numpy as np
 
@@ -40,7 +40,6 @@ from declearn.secagg import messaging as secagg_messaging
 from declearn.secagg import parse_secagg_config_client
 from declearn.secagg.api import Encrypter, SecaggConfigClient, SecaggSetupQuery
 from declearn.training import TrainingManager
-from declearn.utils import LOGGING_LEVEL_MAJOR, get_logger
 
 __all__ = [
     "FederatedClient",
@@ -48,10 +47,18 @@ __all__ = [
 
 
 class FederatedClient:
-    """Client-side Federated Learning orchestrating class."""
+    """Client-side Federated Learning orchestrating class.
+
+    Notes
+    -----
+    You can access and configure the logger of each instance of this class using
+    `logger = logging.getLogger("declearn.client-MY_CLIENT_NAME")`, and then
+    adjust it as needed (e.g. `logger.setLevel(...)`).
+    """
 
     # one-too-many attribute; pylint: disable=too-many-instance-attributes
     # pylint: disable-next=too-many-positional-arguments
+    # TODO for 2.10 : remove deprecated "logger" argument
     def __init__(  # noqa: PLR0913
         self,
         netwk: Union[NetworkClient, NetworkClientConfig, Dict[str, Any], str],
@@ -93,27 +100,26 @@ class FederatedClient:
             This may prevent information leakage, e.g. as to the
             local distribution of target labels or values.
         logger: logging.Logger or str or None, default=None,
-            Logger to use, or name of a logger to set up with
-            `declearn.utils.get_logger`.
-            If None, use `type(self):netwk.name`.
+            Deprecated in v2.8, removed in v2.10.
+            Not used anymore.
         verbose: bool, default=True
             Whether to verbose about ongoing operations.
             If True, display progress bars during training and validation
-            rounds. If False and `logger is None`, set the logger's level
-            to filter off most routine information.
+            rounds.
         """
         # arguments serve modularity; pylint: disable=too-many-arguments
         # Assign the wrapped NetworkClient.
-        self.netwk, replace_netwk_logger = self._parse_netwk(netwk)
-        # Assign the logger and optionally replace that of the network client.
-        if not isinstance(logger, logging.Logger):
-            logger = get_logger(
-                name=logger or f"{type(self).__name__}-{self.netwk.name}",
-                level=logging.INFO if verbose else LOGGING_LEVEL_MAJOR,
+        if logger is not None:
+            warnings.warn(
+                "Argument 'logger' is deprecated and useless now, it will be "
+                "removed in 2.10. "
+                "To customize the instance logger, you may use instead logging "
+                "utils from `declearn.utils` or the 'logging' Python module.",
+                DeprecationWarning,
+                stacklevel=2,
             )
-        self.logger = logger
-        if replace_netwk_logger:
-            self.netwk.logger = self.logger
+        self.netwk = self._parse_netwk(netwk)
+        self.logger = logging.getLogger(f"declearn.client-{self.netwk.name}")
         # Assign the wrapped training dataset.
         if not isinstance(train_data, Dataset):
             raise TypeError("'train_data' should be a Dataset.")
@@ -144,23 +150,19 @@ class FederatedClient:
         self.fairness: Optional[FairnessControllerClient] = None
 
     @staticmethod
-    def _parse_netwk(netwk) -> Tuple[NetworkClient, bool]:
-        """Parse 'netwrk' instantiation argument.
-
-        Return both a 'NetworkClient' instance and a bool indicating
-        whether that instance's logger should be replaced with that
-        of the client (set up at a latter step).
+    def _parse_netwk(netwk) -> NetworkClient:
+        """Parse 'netwk' instantiation argument and return 'NetworkClient'
+        instance.
         """
         # Case when a NetworkClient instance is provided: return.
         if isinstance(netwk, NetworkClient):
-            return netwk, False
+            return netwk
         # Case when a NetworkClientConfig is expected: verify or parse.
         if isinstance(netwk, NetworkClientConfig):
             config = netwk
         elif isinstance(netwk, str):
             config = NetworkClientConfig.from_toml(netwk)
         elif isinstance(netwk, dict):
-            replace_netwk_logger = netwk.get("logger", None) is None
             config = NetworkClientConfig.from_params(**netwk)
         else:
             raise TypeError(
@@ -168,8 +170,7 @@ class FederatedClient:
                 f"configuration of one, not '{type(netwk)}'"
             )
         # Instantiate from the (parsed) config.
-        replace_netwk_logger = config.logger is None
-        return config.build_client(), replace_netwk_logger
+        return config.build_client()
 
     @staticmethod
     def _parse_secagg(
@@ -396,7 +397,8 @@ class FederatedClient:
             self.make_private(message)
         except Exception as exc:  # pylint: disable=broad-except
             self.logger.error(
-                "Exception encountered in `make_private`: %s", exc
+                "Exception encountered in `make_private`: %s",
+                exc,
             )
             await self.netwk.send_message(messaging.Error(repr(exc)))
             raise RuntimeError("DP-SGD initialization failed.") from exc
@@ -436,7 +438,7 @@ class FederatedClient:
             train_data=self.trainmanager.train_data,
             valid_data=self.trainmanager.valid_data,
             metrics=self.trainmanager.metrics,
-            logger=self.trainmanager.logger,
+            logger=self.logger,
             verbose=self.trainmanager.verbose,
         )
         self.trainmanager.make_private(message)

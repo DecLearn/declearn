@@ -31,7 +31,7 @@ from declearn.communication import (
 )
 from declearn.communication.api import NetworkServer
 from declearn.communication.api.backend import MessagesHandler, actions, flags
-from declearn.utils import access_types_mapping, get_logger
+from declearn.utils import access_types_mapping
 from declearn.version import VERSION
 
 SERVER_CLASSES = access_types_mapping("NetworkServer")
@@ -88,13 +88,6 @@ class TestNetworkServerInit:
                 certificate=None,
                 private_key="private-key",
             )
-
-    def test_init_logger(self, protocol: str) -> None:
-        """Test that the 'logger' argument is properly parsed."""
-        cls = SERVER_CLASSES[protocol]
-        logger = get_logger(f"{cls.__name__}Test")
-        srv = cls("127.0.0.1", 8765, logger=logger)
-        assert srv.logger is logger
 
     def test_uri(self, protocol: str) -> None:
         """Test that the `uri` property can properly be accessed."""

@@ -17,7 +17,6 @@
 
 """Unit tests for 'FederatedServer'."""
 
-import logging
 import math
 import os
 from typing import Dict, List, Optional, Type
@@ -344,39 +343,6 @@ class TestFederatedServerInit:  # pylint: disable=too-many-public-methods
             )
         patched.assert_called_once_with(specs)
         assert server.ckptr is patched.return_value
-
-    # Tests for the 'logger' argument.
-
-    def test_logger_instance(self) -> None:
-        """Test specifying 'logger' as a Logger instance."""
-        logger = logging.Logger("mock-server-logger")
-        server = FederatedServer(
-            MOCK_MODEL, MOCK_NETWK, MOCK_OPTIM, logger=logger
-        )
-        assert server.logger is logger
-
-    def test_logger_str(self) -> None:
-        """Test specifying 'logger' as a logger name."""
-        logger = "mock-client-logger"
-        server = FederatedServer(
-            MOCK_MODEL, MOCK_NETWK, MOCK_OPTIM, logger=logger
-        )
-        assert isinstance(server.logger, logging.Logger)
-        assert server.logger.name == logger
-
-    def test_logger_none(self) -> None:
-        """Test specifying 'logger' as None."""
-        server = FederatedServer(
-            MOCK_MODEL, MOCK_NETWK, MOCK_OPTIM, logger=None
-        )
-        assert isinstance(server.logger, logging.Logger)
-
-    def test_logger_invalid(self) -> None:
-        """Test specifying 'logger' with a wrong type."""
-        with pytest.raises(TypeError):
-            FederatedServer(
-                MOCK_MODEL, MOCK_NETWK, MOCK_OPTIM, logger=mock.MagicMock()
-            )
 
 
 class TestFederatedServerRoutines:
