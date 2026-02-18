@@ -38,7 +38,7 @@ from declearn.communication.api.backend.actions import (
     parse_action_from_string,
 )
 from declearn.messaging import Message, SerializedMessage
-from declearn.utils import create_types_registry, get_logger, register_type
+from declearn.utils import create_types_registry, register_type
 from declearn.version import VERSION
 
 __all__ = [
@@ -77,11 +77,17 @@ class NetworkClient(metaclass=abc.ABCMeta):
     >>>     ...
     ```
 
-    Note that a declearn `NetworkServer` manages an allow-list of
+    Notes
+    -----
+    A declearn `NetworkServer` manages an allow-list of
     clients, which is defined during a registration phase of limited
     time, based on requests emitted through the `NetworkClient.register`
     method. Any message emitted using `NetworkClient.send_message` will
     probably be rejected by the server if the client has not registered.
+
+    You can access and configure the logger of each instance of this class using
+    `logger = logging.getLogger("declearn.client-MY_CLIENT_NAME.network")`,
+    and then adjust it as needed (e.g. `logger.setLevel(...)`).
     """
 
     protocol: ClassVar[str] = NotImplemented
@@ -97,6 +103,7 @@ class NetworkClient(metaclass=abc.ABCMeta):
         if register:
             register_type(cls, cls.protocol, group="NetworkClient")
 
+    # TODO for 2.10 : remove deprecated "logger" argument
     def __init__(
         self,
         server_uri: str,
@@ -117,16 +124,22 @@ class NetworkClient(metaclass=abc.ABCMeta):
             Path to a certificate (publickey) PEM file, to use SSL/TLS
             communcations encryption.
         logger: logging.Logger or str or None, default=None,
-            Logger to use, or name of a logger to set up using
-            `declearn.utils.get_logger`. If None, use `type(self)-name`.
+            Deprecated in v2.8, removed in v2.10.
+            Not used anymore.
         """
+        if logger is not None:
+            warnings.warn(
+                "Argument 'logger' is deprecated and useless now, it will be "
+                "removed in 2.10. "
+                "To customize the instance logger, you may use instead logging "
+                "utils from `declearn.utils` or the 'logging' Python module.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
         self.server_uri = server_uri
         self.name = name
         self._ssl = self._setup_ssl_context(certificate)
-        if isinstance(logger, logging.Logger):
-            self.logger = logger
-        else:
-            self.logger = get_logger(logger or f"{type(self).__name__}-{name}")
+        self.logger = logging.getLogger(f"declearn.client-{name}.network")
 
     @staticmethod
     @abc.abstractmethod

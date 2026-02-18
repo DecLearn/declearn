@@ -18,7 +18,10 @@
 """Script to run a federated server on the MNIST example."""
 
 import datetime
+import logging
 import os
+
+from declearn.utils import config_server_loggers
 
 # set env variable to prevent the whole gpu allocation by tensorflow
 os.environ["TF_FORCE_GPU_ALLOW_GROWTH"] = "true"
@@ -78,9 +81,8 @@ def run_server(
     stamp = datetime.datetime.now().strftime("%y-%m-%d_%H-%M")
     checkpoint = os.path.join(FILEDIR, f"result_{stamp}", "server")
     # Set up a logger, records from which will go to a file.
-    logger = declearn.utils.get_logger(
-        name="Server",
-        fpath=os.path.join(checkpoint, "logs.txt"),
+    config_server_loggers(
+        level=logging.INFO, fpath=os.path.join(checkpoint, "logs.txt")
     )
 
     ### (1) Define a model
@@ -148,7 +150,6 @@ def run_server(
         optim=optim,
         metrics=metrics,
         checkpoint=checkpoint,
-        logger=logger,
     )
 
     # Set up the experiment's hyper-parameters.

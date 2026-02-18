@@ -24,6 +24,8 @@ only re-exported for retro-compatibility. It will be removed in DecLearn 2.8.
     TrainingManager subclass implementing Differential Privacy mechanisms.
 """
 
+# TODO for 2.8: remove module
+
 # pragma: no cover
 
 import warnings

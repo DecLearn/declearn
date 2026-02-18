@@ -41,7 +41,7 @@ from declearn.training._constraints import (
     TimeoutConstraint,
 )
 from declearn.typing import Batch
-from declearn.utils import LOGGING_LEVEL_MAJOR, get_logger
+from declearn.utils import LOGGING_LEVEL_MAJOR
 
 __all__ = [
     "TrainingManager",
@@ -49,7 +49,14 @@ __all__ = [
 
 
 class TrainingManager:
-    """Class wrapping the logic for local training and evaluation rounds."""
+    """Class wrapping the logic for local training and evaluation rounds.
+
+    Notes
+    -----
+    You can access and configure the logger of each instance of this class using
+    `logger = logging.getLogger("declearn.client-MY_CLIENT_NAME.train_manager")`
+    and then adjust it as needed (e.g. `logger.setLevel(...)`).
+    """
 
     # one too-many attribute; pylint: disable=too-many-instance-attributes
     # pylint: disable-next=too-many-positional-arguments
@@ -86,9 +93,9 @@ class TrainingManager:
             addition to the model's loss.
             If None, only compute and report the model's loss.
         logger: logging.Logger or str or None, default=None,
-            Logger to use, or name of a logger to set up with
-            `declearn.utils.get_logger`.
-            If None, use `type(self).__name__`.
+            The parent logger from which this instance inherits its name,
+            ensuring consistent logger naming.
+            If None, use `declearn.type(self).__name__`.
         verbose: bool, default=True
             Whether to display progress bars when running training
             and validation rounds.
@@ -100,9 +107,12 @@ class TrainingManager:
         self.train_data = train_data
         self.valid_data = valid_data
         self.metrics = self._prepare_metrics(metrics)
-        if not isinstance(logger, logging.Logger):
-            logger = get_logger(logger or f"{type(self).__name__}")
-        self.logger = logger
+        if isinstance(logger, logging.Logger):
+            self.logger = logging.getLogger(f"{logger.name}.train_manager")
+        elif isinstance(logger, str):
+            self.logger = logging.getLogger(f"{logger}.train_manager")
+        else:
+            self.logger = logging.getLogger("declearn.client.train_manager")
         self.verbose = verbose
 
     def _prepare_metrics(

@@ -20,6 +20,7 @@
 import asyncio
 import logging
 import ssl
+import warnings
 from typing import Any, ClassVar, Dict, Optional, Union
 
 import websockets as ws
@@ -43,6 +44,7 @@ class WebsocketsClient(NetworkClient):
     protocol: ClassVar[str] = "websockets"
 
     # pylint: disable-next=too-many-positional-arguments
+    # TODO for 2.10 : remove deprecated "logger" argument
     def __init__(
         self,
         server_uri: str,
@@ -65,8 +67,8 @@ class WebsocketsClient(NetworkClient):
             Path to a certificate (publickey) PEM file, to use SSL/TLS
             communcations encryption.
         logger: logging.Logger or str or None, default=None,
-            Logger to use, or name of a logger to set up using
-            `declearn.utils.get_logger`. If None, use `type(self)-name`.
+            Deprecated in v2.8, removed in v2.10.
+            Not used anymore.
         headers: dict[str, str] or None, default=None
             Optional non-default HTTP headers to use when connecting to
             the server, during the handshake. This may be required when
@@ -74,7 +76,16 @@ class WebsocketsClient(NetworkClient):
             RFC 6455 (https://tools.ietf.org/html/rfc6455#section-1.2).
         """
         # arguments serve modularity; pylint: disable=too-many-arguments
-        super().__init__(server_uri, name, certificate, logger)
+        if logger is not None:
+            warnings.warn(
+                "Argument 'logger' is deprecated and useless now, it will be "
+                "removed in 2.10. "
+                "To customize the instance logger, you may use instead logging "
+                "utils from `declearn.utils` or the 'logging' Python module.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+        super().__init__(server_uri, name, certificate)
         self.headers = headers
         self._socket: Optional[WebSocketClientProtocol] = None
 

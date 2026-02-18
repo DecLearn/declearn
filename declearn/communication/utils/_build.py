@@ -18,6 +18,7 @@
 """Communication endpoints generic instantiation utils."""
 
 import logging
+import warnings
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 from declearn.communication.api import NetworkClient, NetworkServer
@@ -55,6 +56,7 @@ def raise_if_installable(
         ) from exc
 
 
+# TODO for 2.10 : remove deprecated "logger" argument
 def build_client(
     protocol: str,
     server_uri: str,
@@ -79,8 +81,8 @@ def build_client(
         Path to a certificate (publickey) PEM file, to use SSL/TLS
         communcations encryption.
     logger: logging.Logger or str or None, default=None,
-        Logger to use, or name of a logger to set up using
-        `declearn.utils.get_logger`. If None, use `type(client)-name`.
+        Deprecated in v2.8, removed in v2.10.
+        Not used anymore.
     **kwargs:
         Any valid additional keyword parameter may be passed as well.
         Refer to the target `NetworkClient` subclass for details.
@@ -90,6 +92,15 @@ def build_client(
     client: NetworkClient
         NetworkClient communication endpoint instance.
     """
+    if logger is not None:
+        warnings.warn(
+            "Argument 'logger' is deprecated and useless now, it will be "
+            "removed in 2.10. "
+            "To customize the instance logger, you may use instead logging "
+            "utils from `declearn.utils` or the 'logging' Python module.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
     protocol = protocol.strip().lower()
     try:
         cls = access_registered(name=protocol, group="NetworkClient")
@@ -104,12 +115,12 @@ def build_client(
         server_uri=server_uri,
         name=name,
         certificate=certificate,
-        logger=logger,
         **kwargs,
     )
 
 
 # pylint: disable-next=too-many-positional-arguments
+# TODO for 2.10 : remove deprecated "logger" argument
 def build_server(  # noqa: PLR0913
     protocol: str,
     host: str,
@@ -147,8 +158,8 @@ def build_server(  # noqa: PLR0913
         Delay (in seconds) between verifications when checking for a
         message having beend received from or collected by a client.
     logger: logging.Logger or str or None, default=None,
-        Logger to use, or name of a logger to set up with
-        `declearn.utils.get_logger`. If None, use `type(server)`.
+        Deprecated in v2.8, removed in v2.10.
+        Not used anymore.
     **kwargs:
         Any valid additional keyword parameter may be passed as well.
         Refer to the target `NetworkServer` subclass for details.
@@ -158,6 +169,15 @@ def build_server(  # noqa: PLR0913
     server: NetworkServer
         NetworkServer communication endpoint instance.
     """
+    if logger is not None:
+        warnings.warn(
+            "Argument 'logger' is deprecated and useless now, it will be "
+            "removed in 2.10. "
+            "To customize the instance logger, you may use instead logging "
+            "utils from `declearn.utils` or the 'logging' Python module.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
     # inherited signature; pylint: disable=too-many-arguments
     protocol = protocol.strip().lower()
     try:

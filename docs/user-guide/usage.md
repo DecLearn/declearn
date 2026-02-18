@@ -130,15 +130,80 @@ details on this example and on how to run it, please refer to its own
 
 ## Logging
 
-Note that this section and the quickstart example both left apart the option
-to configure logging associated with the federated client and server, and/or
-the network communication handlers they make use of. One may simply set up
-custom `logging.Logger` instances and pass them as arguments to the class
-constructors to replace the default, console-only, loggers.
+Note that the previous section and the quickstart example both left apart the
+option to configure logging associated with the federated client and server, or
+any of the components they use (e.g. network communication handlers, training
+manager).
 
-The `declearn.utils.get_logger` function may be used to facilitate the setup
-of such logger instances, defining their name, verbosity level, and whether
-messages should be logged to the console and/or to an output file.
+In Declearn, loggers are mainly defined at the class level for classes that are
+only instantiated once in an FL experiment (e.g. FederatedServer, 
+NetworkServer), or at the instance level for classes instantiated several times
+(e.g. client-related instances, FederatedClient, NetworkClient, 
+TrainingManager).
+
+### Easy configuration
+The `declearn.utils.config_server_loggers` and 
+`declearn.utils.config_client_loggers` functions may be used (before launching
+the FL experiment) to facilitate the setup of server-related loggers and 
+specific client-related loggers, respectively. 
+
+These functions allow basic configuration, i.e. defining loggers
+verbosity level, format, and whether messages should be logged to the console
+and/or to an output file.
+
+You can also specifically use `declearn.utils.config_logger` in the same way for
+any logger whose name you know.
+
+Notes :  
+- Declearn logger names follow hierarchical naming, they are all prefixed with
+`declearn.`. Thus, if you want to apply a configuration to all loggers in the
+experiment, you can use `declearn.utils.config_logger` with "declearn" as
+`name` argument.
+- Each class concerned by logging should normally indicate the name of its
+associated logger in its docstring.
+
+### Advanced configuration
+Because it relies on Python’s global logging registry, each class/instance
+logger can be retrieved and configured from anywhere in your code using the same
+name. It means that if you want to customize one logger configuration in detail,
+instead of using Declearn logging utils, you can absolutely retrieve one logger
+and configure it this way:
+```python
+import logging
+
+logger = logging.getLogger("declearn.server.network")
+logger.setLevel(logging.DEBUG)
+```
+
+In this example, we configure the class logger named "declearn.server.network",
+i.e. the logger from the `declearn.communication.api.NetworkServer` class.
+
+Another example with an instance-level logger :
+```python
+import logging
+
+logger = logging.getLogger("declearn.client-cli_0.train_manager")
+logger.setLevel(logging.DEBUG)
+```
+
+Here, we configure the logger of the `declearn.training.TrainingManager`
+instance that belongs to the client named "cli_0".
+
+### Adding logs
+If you use Declearn from its sources in editable mode, you may want to add logs
+directly in the code to debug or print some information during the experiment. If so, the easiest way to integrate new logs and make them
+displayable is to :
+- Go to the file in which you want to add logs.
+- At the top of it, after imports, define `logger = logging.getLogger(__name__)`
+- Add logging lines in the file, e.g. `logger.info(...)`
+- Before running the experiment, configure Declearn’s root logger named
+"declearn" (using utils or the logging module). Since the new logger is prefixed
+with "declearn." (because it uses the module `__name__`), configuring "declearn"
+will also configure it.
+
+If you want to add an instance-level logger, refer as example to the code that
+implements existing one (e.g. `declearn.main.FederatedClient`).
+
 
 ## Support for GPU acceleration
 

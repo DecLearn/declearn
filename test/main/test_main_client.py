@@ -18,7 +18,6 @@
 """Unit tests for 'FederatedClient'."""
 
 import contextlib
-import logging
 from typing import Any, Iterator, Optional, Tuple, Type
 from unittest import mock
 
@@ -36,7 +35,6 @@ from declearn.model.api import Model
 from declearn.secagg import messaging as secagg_messaging
 from declearn.secagg.api import SecaggConfigClient, SecaggSetupQuery
 from declearn.training import TrainingManager
-from declearn.utils import LOGGING_LEVEL_MAJOR
 
 try:
     from declearn.training.dp import DPTrainingManager
@@ -267,41 +265,6 @@ class TestFederatedClientInit:  # pylint: disable=too-many-public-methods
                 MOCK_NETWK, MOCK_DATASET, share_metrics=False, secagg=secagg
             )
 
-    # Tests for the 'logger' argument.
-
-    def test_logger_instance(self) -> None:
-        """Test specifying 'logger' as a Logger instance."""
-        logger = logging.Logger("mock-client-logger")
-        client = FederatedClient(
-            netwk=MOCK_NETWK, train_data=MOCK_DATASET, logger=logger
-        )
-        assert client.logger is logger
-
-    def test_logger_str(self) -> None:
-        """Test specifying 'logger' as a logger name."""
-        logger = "mock-client-logger"
-        client = FederatedClient(
-            netwk=MOCK_NETWK, train_data=MOCK_DATASET, logger=logger
-        )
-        assert isinstance(client.logger, logging.Logger)
-        assert client.logger.name == logger
-
-    def test_logger_none(self) -> None:
-        """Test specifying 'logger' as None."""
-        client = FederatedClient(
-            netwk=MOCK_NETWK, train_data=MOCK_DATASET, logger=None
-        )
-        assert isinstance(client.logger, logging.Logger)
-
-    def test_logger_invalid(self) -> None:
-        """Test specifying 'logger' with a wrong type."""
-        with pytest.raises(TypeError):
-            FederatedClient(
-                netwk=MOCK_NETWK,
-                train_data=MOCK_DATASET,
-                logger=mock.MagicMock(),
-            )
-
     # Tests for the 'verbose' argument.
 
     def test_verbose_true(self) -> None:
@@ -310,7 +273,6 @@ class TestFederatedClientInit:  # pylint: disable=too-many-public-methods
             netwk=MOCK_NETWK, train_data=MOCK_DATASET, verbose=True
         )
         assert client.verbose is True
-        assert client.logger.level is logging.INFO
 
     def test_verbose_false(self) -> None:
         """Test that 'verbose=False' is recorded and sets proper logging."""
@@ -318,7 +280,6 @@ class TestFederatedClientInit:  # pylint: disable=too-many-public-methods
             netwk=MOCK_NETWK, train_data=MOCK_DATASET, verbose=False
         )
         assert client.verbose is False
-        assert client.logger.level is LOGGING_LEVEL_MAJOR
 
 
 class TestFederatedClientInitialize:
@@ -555,7 +516,7 @@ class TestFederatedClientInitialize:
             train_data=patch_tm.return_value.train_data,
             valid_data=patch_tm.return_value.valid_data,
             metrics=patch_tm.return_value.metrics,
-            logger=patch_tm.return_value.logger,
+            logger=client.logger,
             verbose=patch_tm.return_value.verbose,
         )
         patch_dp.return_value.make_private.assert_called_once_with(dp_query)

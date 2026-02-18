@@ -85,7 +85,13 @@ Logging utils
 Utils to set up and configure loggers:
 
 * [get_logger][declearn.utils.get_logger]:
-    Access or create a logger, automating basic handlers' configuration.
+    (DEPRECATED) Access or create a logger, automating basic handlers' configuration.
+* [config_logger][declearn.utils.config_logger]:
+    Easily configure an existing logger, automating basic handlers' configuration.
+* [config_server_loggers][declearn.utils.config_server_loggers]:
+    Easily configure all federated server-related loggers.
+* [config_client_loggers][declearn.utils.config_client_loggers]:
+    Easily configure all loggers related to a provided federated client.
 * [LOGGING_LEVEL_MAJOR][declearn.utils.LOGGING_LEVEL_MAJOR]:
     Custom "MAJOR" severity level, between stdlib "INFO" and "WARNING".
 
@@ -121,8 +127,13 @@ from ._json import (
     json_pack,
     json_unpack,
 )
+
+# TODO for 2.10: remove get_logger + remove from docstring above
 from ._logging import (
     LOGGING_LEVEL_MAJOR,
+    config_client_loggers,
+    config_logger,
+    config_server_loggers,
     get_logger,
 )
 from ._multiprocess import run_as_processes

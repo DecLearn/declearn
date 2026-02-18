@@ -19,6 +19,7 @@
 
 import logging
 import os
+import warnings
 from typing import Optional
 
 __all__ = [
@@ -32,10 +33,10 @@ LOGGING_LEVEL_MAJOR = (logging.WARNING + logging.INFO) // 2
 """Custom "MAJOR" severity level, between stdlib "INFO" and "WARNING"."""
 logging.addLevelName(level=LOGGING_LEVEL_MAJOR, levelName="MAJOR")
 
-
 DEFAULT_FORMAT = "%(asctime)s:%(name)s:%(levelname)s: %(message)s"
 
 
+# TODO for 2.10: deprecated, remove function
 def get_logger(
     name: str,
     level: int = logging.INFO,
@@ -43,6 +44,8 @@ def get_logger(
     s_fmt: Optional[str] = None,
 ) -> logging.Logger:
     """Create or access a logging.Logger instance with pre-set handlers.
+
+    Deprecated since v2.8, will be removed in v2.10
 
     Parameters
     ----------
@@ -63,6 +66,11 @@ def get_logger(
         Retrieved or created Logger, with a StreamHandler, opt.
         a FileHandler, and possibly more (if pre-existing).
     """
+    warnings.warn(
+        "get_logger() is deprecated and will be removed in 2.10",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     # Create or access the logger. Set its filtering level.
     logger = logging.getLogger(name)
     logger.setLevel(level)
@@ -85,3 +93,82 @@ def get_logger(
         logger.addHandler(handler)
     # Return the logger instance.
     return logger
+
+
+def config_logger(
+    name: str,
+    level: Optional[int] = None,
+    fpath: Optional[str] = None,
+    s_fmt: Optional[str] = None,
+) -> None:
+    """Util function to easily get the logger with the provided named and setup
+    it with a basic configuration and pre-set handlers.
+
+    Add a stream handler (logs on standard error output) if none exists for the
+    provided logger name.
+
+    Parameters
+    ----------
+    name: str
+        Name of the logger to configure.
+    level: int or None
+        New logging level to apply.
+    fpath: str or None
+        Optional file to log messages to.
+    s_fmt: str or None
+        Optional format string for all handlers.
+        If None, use the default format set by Declearn.
+    """
+    logger = logging.getLogger(name)
+
+    if level is not None:
+        logger.setLevel(level)
+
+    formatter = logging.Formatter(s_fmt or DEFAULT_FORMAT)
+
+    # Update existing stream handlers.
+    for handler in logger.handlers:
+        if isinstance(handler, logging.StreamHandler):
+            handler.setFormatter(formatter)
+
+    # Add a stream handler if none exist.
+    if not any(isinstance(h, logging.StreamHandler) for h in logger.handlers):
+        sh = logging.StreamHandler()
+        sh.setFormatter(formatter)
+        logger.addHandler(sh)
+
+    # Add a file handler if requested and not already present.
+    if fpath and not any(
+        isinstance(h, logging.FileHandler)
+        and getattr(h, "baseFilename", None) == os.path.abspath(fpath)
+        for h in logger.handlers
+    ):
+        os.makedirs(os.path.dirname(os.path.abspath(fpath)), exist_ok=True)
+        fh = logging.FileHandler(fpath, mode="a", encoding="utf-8")
+        fh.setFormatter(formatter)
+        logger.addHandler(fh)
+
+
+def config_server_loggers(
+    level: Optional[int] = None,
+    fpath: Optional[str] = None,
+    s_fmt: Optional[str] = None,
+):
+    """Util function to easy apply the same simple configuration to all
+    loggers related to the federated server.
+    """
+    config_logger("declearn.server", level=level, fpath=fpath, s_fmt=s_fmt)
+
+
+def config_client_loggers(
+    client_name: str,
+    level: Optional[int] = None,
+    fpath: Optional[str] = None,
+    s_fmt: Optional[str] = None,
+):
+    """Util function to easy apply the same simple configuration to all
+    loggers related to the client that match the provided client name.
+    """
+    config_logger(
+        f"declearn.client-{client_name}", level=level, fpath=fpath, s_fmt=s_fmt
+    )

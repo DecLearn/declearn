@@ -21,6 +21,7 @@ import abc
 import asyncio
 import logging
 import types
+import warnings
 from typing import (  # fmt: off
     Any,
     ClassVar,
@@ -37,7 +38,7 @@ from typing import (  # fmt: off
 
 from declearn.communication.api.backend import MessagesHandler
 from declearn.messaging import Message, SerializedMessage
-from declearn.utils import create_types_registry, get_logger, register_type
+from declearn.utils import create_types_registry, register_type
 
 __all__ = [
     "NetworkServer",
@@ -77,10 +78,16 @@ class NetworkServer(metaclass=abc.ABCMeta):
     >>>     ...
     ```
 
-    Note that a `NetworkServer` manages an allow-list of clients,
+    Notes
+    -----
+    A `NetworkServer` manages an allow-list of clients,
     which is defined based on `NetworkClient.register(...)`-emitted
     requests during a registration phase restricted to the context
     of the awaitable `wait_for_clients` method.
+
+    You can access and configure this class logger using
+    `logger = logging.getLogger("declearn.server.network")`, and then adjust it
+    as needed (e.g. `logger.setLevel(...)`).
     """
 
     protocol: ClassVar[str] = NotImplemented
@@ -97,6 +104,7 @@ class NetworkServer(metaclass=abc.ABCMeta):
             register_type(cls, cls.protocol, group="NetworkServer")
 
     # pylint: disable-next=too-many-positional-arguments
+    # TODO for 2.10 : remove deprecated "logger" argument
     def __init__(  # noqa: PLR0913
         self,
         host: str,
@@ -130,17 +138,24 @@ class NetworkServer(metaclass=abc.ABCMeta):
             Delay (in seconds) between verifications when checking for a
             message having beend received from or collected by a client.
         logger: logging.Logger or str or None, default=None,
-            Logger to use, or name of a logger to set up with
-            `declearn.utils.get_logger`. If None, use `type(self)`.
+            Deprecated in v2.8, removed in v2.10.
+            Not used anymore.
         """
         # arguments serve modularity; pylint: disable=too-many-arguments
+        if logger is not None:
+            warnings.warn(
+                "Argument 'logger' is deprecated and useless now, it will be "
+                "removed in 2.10. "
+                "To customize the instance logger, you may use instead logging "
+                "utils from `declearn.utils` or the 'logging' Python module.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
         self.host = host
         self.port = port
         self._ssl = self._setup_ssl(certificate, private_key, password)
-        if isinstance(logger, logging.Logger):
-            self.logger = logger
-        else:
-            self.logger = get_logger(logger or f"{type(self).__name__}")
+        self.logger = logging.getLogger("declearn.server.network")
+        # TODO for 2.10: remove "logger" argument below
         self.handler = MessagesHandler(logger=self.logger, heartbeat=heartbeat)
 
     @property

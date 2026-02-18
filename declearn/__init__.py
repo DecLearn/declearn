@@ -62,6 +62,8 @@ The package is organized into the following submodules:
     DecLearn version information, as hard-coded constants.
 """
 
+import logging
+
 from . import (
     aggregator,
     communication,
@@ -79,5 +81,12 @@ from . import (
     utils,
     version,
 )
+from .utils import config_logger
 
 __version__ = version.VERSION
+
+# Init default configuration for Declearn root logger.
+# By default, the logs are written nowhere (because of the null handler).
+# Indeed, logging configuration is left to the user.
+main_logger = logging.getLogger("declearn")
+main_logger.addHandler(logging.NullHandler())
