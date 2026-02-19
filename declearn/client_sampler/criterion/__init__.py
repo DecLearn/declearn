@@ -15,8 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-Criterion-based client sampling API and implementations.
+"""Criterion-based client sampling API and implementations.
 
 `CriterionClientSampler` instances select clients based on a criterion score
 that may be computed from client training replies and from the global model.

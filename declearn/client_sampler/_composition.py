@@ -25,8 +25,7 @@ from declearn.model.api import Model
 
 
 class CompositionClientSampler(ClientSampler):
-    """
-    Class allowing the composition of a list of samplers, i.e. the use of
+    """Class allowing the composition of a list of samplers, i.e. the use of
     multiple samplers consecutively.
 
     The composition mechanism works the following way: the first sampler
@@ -53,8 +52,7 @@ class CompositionClientSampler(ClientSampler):
 
     @property
     def secagg_compatible(self) -> bool:
-        """
-        Composition client sampler is secagg-compatible if all of its
+        """Composition client sampler is secagg-compatible if all of its
         samplers are.
         """
         return all([sampler.secagg_compatible for sampler in self.samplers])
@@ -81,8 +79,7 @@ class CompositionClientSampler(ClientSampler):
 
     @classmethod
     def _from_specs(cls, **kwargs: Any) -> ClientSampler:
-        """
-        Backend of the from_specs method, specific to
+        """Backend of the from_specs method, specific to
         `CompositionClientSampler`.
 
         Notes

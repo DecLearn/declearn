@@ -15,8 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-`ClientSampler` implementation that selects clients based on a criterion
+"""`ClientSampler` implementation that selects clients based on a criterion
 derived from client training replies and the global model.
 """
 
@@ -32,8 +31,7 @@ MissingScorePolicy = Literal["priority", "equal"]
 
 
 class CriterionClientSampler(ClientSampler):
-    """
-    Client sampler selecting the n clients with the highest criterion score.
+    """Client sampler selecting the n clients with the highest criterion score.
 
     The criterion must be chosen by the user and passed to the sampler, it
     defines how the criterion score is computed. It can be computed
@@ -71,8 +69,7 @@ class CriterionClientSampler(ClientSampler):
         missing_scores_policy: Optional[MissingScorePolicy] = "priority",
         max_retries: int = ClientSampler.DEFAULT_MAX_RETRIES,
     ):
-        """
-        Instantiate the criterion client sampler.
+        """Instantiate the criterion client sampler.
 
         Raises
         ------
@@ -95,18 +92,16 @@ class CriterionClientSampler(ClientSampler):
         return False
 
     def init_clients(self, clients: Set[str]) -> None:
-        """
-        Initialize clients common metadata and then set each client's criterion
-        score to None.
+        """Initialize clients common metadata and then set each client's
+        criterion score to None.
         """
         super().init_clients(clients)
         for client in clients:
             self.client_to_score[client] = None
 
     def convert_missing_scores(self) -> Dict[str, float]:
-        """
-        Access client scores in metadata, and convert missing scores such that
-        each client gets a non-None score.
+        """Access client scores in metadata, and convert missing scores such
+        that each client gets a non-None score.
 
         Raises
         ------
@@ -129,8 +124,7 @@ class CriterionClientSampler(ClientSampler):
         }
 
     def _sample(self, eligible_clients: Set[str]) -> Set[str]:
-        """
-        Back-end of the sampling method for criterion client sampler.
+        """Back-end of the sampling method for criterion client sampler.
 
         If there are more than `n_samples` clients in `eligible_clients`,
         this method selects the `n_samples` clients with the highest criterion
@@ -163,8 +157,7 @@ class CriterionClientSampler(ClientSampler):
     def update(
         self, client_to_reply: Dict[str, TrainReply], global_model: Model
     ) -> None:
-        """
-        Update clients metadata and sampler internal state according
+        """Update clients metadata and sampler internal state according
         to each client training reply and the global model.
 
         Concretely, compute and update each client criterion score.
@@ -177,8 +170,7 @@ class CriterionClientSampler(ClientSampler):
 
     @classmethod
     def _from_specs(cls, **kwargs: Any) -> ClientSampler:
-        """
-        Backend of the from_specs method, specific to
+        """Backend of the from_specs method, specific to
         `CriterionClientSampler`.
         """
         criterion = kwargs["criterion"]

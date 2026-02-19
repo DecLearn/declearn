@@ -42,8 +42,7 @@ from declearn.utils import (
 
 @create_types_registry
 class ClientSampler(metaclass=ABCMeta):
-    """
-    Abstract base class for client sampler.
+    """Abstract base class for client sampler.
 
     The aim of this abstraction is to enable implementing client
     sampling strategies, to sample a subset of clients at each
@@ -132,8 +131,7 @@ class ClientSampler(metaclass=ABCMeta):
         self,
         max_retries: int = DEFAULT_MAX_RETRIES,
     ):
-        """
-        Instantiate a client sampler.
+        """Instantiate a client sampler.
 
         Parameters
         ----------
@@ -150,14 +148,12 @@ class ClientSampler(metaclass=ABCMeta):
     @property
     @abstractmethod
     def secagg_compatible(self) -> bool:
-        """
-        Class read-only property to indicate if the client sampler is compatible
-        with secure aggregation.
+        """Class read-only property to indicate if the client sampler is
+        compatible with secure aggregation.
         """
 
     def init_clients(self, clients: Set[str]) -> None:
-        """
-        Initialize clients in the sampler.
+        """Initialize clients in the sampler.
 
         This method can be overriden by subclasses, but if so, it should
         ideally be extended (call to super().init_clients() at first, then add
@@ -174,8 +170,7 @@ class ClientSampler(metaclass=ABCMeta):
         self,
         eligible_clients: Optional[Set[str]] = None,
     ) -> Set[str]:
-        """
-        Samples clients among the provided eligible clients, or among
+        """Samples clients among the provided eligible clients, or among
         the full clients set if eligible_client is None.
 
         Notes
@@ -246,17 +241,14 @@ class ClientSampler(metaclass=ABCMeta):
 
     @abstractmethod
     def _sample(self, eligible_clients: Set[str]) -> Set[str]:
-        """
-        Back-end of the sampling method, specific to subclass.
-        """
+        """Back-end of the sampling method, specific to subclass."""
 
     @abstractmethod
     def update(
         self, client_to_reply: Dict[str, TrainReply], global_model: Model
     ) -> None:
-        """
-        Update sampler internal state (e.g. client metadata) according to each
-        client training reply and the global model.
+        """Update sampler internal state (e.g. client metadata) according to
+        each client training reply and the global model.
 
         Notes
         -----
@@ -274,8 +266,7 @@ class ClientSampler(metaclass=ABCMeta):
 
     @staticmethod
     def from_specs(strategy: str, **kwargs: Any) -> ClientSampler:
-        """
-        Instantiate a `ClientSampler` from its specifications.
+        """Instantiate a `ClientSampler` from its specifications.
 
         Parameters
         ----------
@@ -313,8 +304,7 @@ class ClientSampler(metaclass=ABCMeta):
 
     @classmethod
     def _from_specs(cls, **kwargs: Any) -> ClientSampler:
-        """
-        Backend of the from_specs method, specific to the subclass.
+        """Backend of the from_specs method, specific to the subclass.
 
         Can be overriden by subclass if specific mechanisms are needed to
         allow a proper instanciation from specifications.

@@ -30,8 +30,7 @@ from declearn.model.api import Model
 
 
 class WeightedClientSampler(ClientSampler):
-    """
-    Client sampler selecting a given number of clients among all randomly
+    """Client sampler selecting a given number of clients among all randomly
     using the distribution formed by weights attributed to each client by
     the user.
 
@@ -77,8 +76,7 @@ class WeightedClientSampler(ClientSampler):
         return True
 
     def init_clients(self, clients: Set[str]) -> None:
-        """
-        Initialize clients common metadata, then check the consistency of
+        """Initialize clients common metadata, then check the consistency of
         user-provided clients w.r.t. the actual clients, i.e. clients provided
         at the sampler construction must be a superset of actual clients
         (this method parameter).
@@ -100,8 +98,7 @@ class WeightedClientSampler(ClientSampler):
             )
 
     def _sample(self, eligible_clients: Set[str]) -> Set[str]:
-        """
-        Back-end of the sampling method for the weighted client sampler.
+        """Back-end of the sampling method for the weighted client sampler.
 
         If there are more than `n_samples` clients in `eligible_clients`, this
         method samples this number of clients with probability computed from

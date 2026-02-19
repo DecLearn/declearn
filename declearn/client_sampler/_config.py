@@ -26,9 +26,7 @@ from declearn.utils import TomlConfig
 
 @dataclass
 class ClientSamplerConfig(TomlConfig):
-    """
-    TOML-parsable configuration container implementation for `ClientSampler`.
-    """
+    """TOML-parsable configuration container implementation for `ClientSampler`."""
 
     strategy: str
     params: Dict[str, Any]

@@ -15,8 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-Client sampling `Criterion` API and concrete subclasses used by
+"""Client sampling `Criterion` API and concrete subclasses used by
 `CriterionClientSampler`.
 """
 
@@ -51,8 +50,7 @@ PrimitiveType = Union[int, float, bool, None]
 
 @create_types_registry(name="ClientSamplerCriterion")
 class Criterion(metaclass=ABCMeta):
-    """
-    Abstract class for client sampling criterion.
+    """Abstract class for client sampling criterion.
 
     `Criterion` objects are used by `CriterionClientSampler` objects to select
     the best clients regarding the value of a criterion score that can be
@@ -112,8 +110,7 @@ class Criterion(metaclass=ABCMeta):
         client_to_reply: Dict[str, TrainReply],
         global_model: Model,
     ) -> Dict[str, Optional[float]]:
-        """
-        Compute the criterion score for each client listed in `client_to_reply`.
+        """Compute the criterion score for each client listed in `client_to_reply`.
         The score can be derived from information in the client train replies
         and the global model.
 
@@ -136,8 +133,7 @@ class Criterion(metaclass=ABCMeta):
 
     @staticmethod
     def wrap(obj: Any) -> Criterion:
-        """
-        Make sure a native Python object is wrapped in a `Criterion`.
+        """Make sure a native Python object is wrapped in a `Criterion`.
 
         Parameters
         ----------
@@ -192,13 +188,13 @@ class Criterion(metaclass=ABCMeta):
 
     @staticmethod
     def from_specs(name: str, **kwargs: Any) -> Criterion:
-        """
-        Instantiate a `Criterion` from its specifications.
+        """Instantiate a `Criterion` from its specifications.
 
         Parameters
         ----------
         name:
-            Name of the criterion associated with the target `Criterion` subclass.
+            Name of the criterion associated with the target `Criterion`
+            subclass.
         **kwargs:
             Any additional instantiation keyword argument (general or
             criterion-specific).
@@ -230,16 +226,14 @@ class Criterion(metaclass=ABCMeta):
 
     @classmethod
     def _from_specs(cls, **kwargs: Any) -> Criterion:
-        """
-        Backend of the from_specs method, specific to the subclass.
+        """Backend of the from_specs method, specific to the subclass.
         Can be overriden.
         """
         return cls(**kwargs)
 
 
 class ConstantCriterion(Criterion):
-    """
-    `Criterion` implementation to wrap a native constant Python object
+    """`Criterion` implementation to wrap a native constant Python object
     (int, float, bool or None) in a `Criterion` object.
 
     Attributes
@@ -267,9 +261,8 @@ class ConstantCriterion(Criterion):
 
 
 class CompositionCriterion(Criterion):
-    """
-    `Criterion` implementation that contains other `Criterion` objects, and allows
-    to apply operations between criteria to compose them.
+    """`Criterion` implementation that contains other `Criterion` objects, and
+    allows to apply operations between criteria to compose them.
 
     Attributes
     ----------
@@ -317,8 +310,7 @@ class CompositionCriterion(Criterion):
 
     @classmethod
     def _from_specs(cls, **kwargs: Any) -> Criterion:
-        """
-        Backend of the from_specs method, specific to the
+        """Backend of the from_specs method, specific to the
         `CompositionCriterion`.
 
         Notes
@@ -388,9 +380,8 @@ class CompositionCriterion(Criterion):
 
 
 class GradientNormCriterion(Criterion):
-    """
-    `Criterion` implementation where the criterion score is the L2-norm of the
-    client "gradients" (model updates).
+    """`Criterion` implementation where the criterion score is the L2-norm of
+    the client "gradients" (model updates).
     """
 
     name = "gradient_norm"
@@ -408,9 +399,8 @@ class GradientNormCriterion(Criterion):
 
 
 class NormalizedDivCriterion(Criterion):
-    r"""
-    `Criterion` implementation where the criterion score is the normalized model
-    divergence (average difference between the model weights in client i
+    r"""`Criterion` implementation where the criterion score is the normalized
+    model divergence (average difference between the model weights in client i
     and the global model) :
 
     $$ \frac{1}{|w|} \sum_{j=1}^{|w|}
@@ -469,8 +459,7 @@ class NormalizedDivCriterion(Criterion):
 
 
 class TrainTimeCriterion(Criterion):
-    """
-    `Criterion` implementation where the criterion score is computed from the
+    """`Criterion` implementation where the criterion score is computed from the
     last performed round training time (in seconds) spent by the client.
 
     Attributes
@@ -499,8 +488,7 @@ class TrainTimeCriterion(Criterion):
 
 
 class TrainTimeHistoryCriterion(Criterion):
-    """
-    `Criterion` implementation where the criterion score is computed from the
+    """`Criterion` implementation where the criterion score is computed from the
     history of all past rounds' training times (in seconds) spent by the client.
 
     Attributes
