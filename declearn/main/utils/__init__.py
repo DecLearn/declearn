@@ -37,44 +37,7 @@ Backend utils to aggregate clients' dataset information:
     Validate and aggregate clients' data-info dictionaries.
 * [AggregationError][declearn.main.utils.AggregationError]:
     Custom exception that may be raised by `aggregate_clients_data_info`.
-
-
-DEPRECATED TrainingManager
---------------------------
-This class has been moved to `declearn.training.TrainingManager` as of
-DecLearn 2.6. It is re-exported merely for retro-compatibility purposes,
-but this import path will be removed in DecLearn 2.8.
-
-* [TrainingManager][declearn.training.TrainingManager]:
-    Class wrapping the logic for local training and evaluation rounds.
-
-
-DEPRECATED Backend: effort constraints
---------------------------------------
-
-Backend utils that are used to specify and articulate effort constraints
-for training and evaluation rounds:
-
-* [Constraint][declearn.main.utils.Constraint]:
-    Base class to implement effort constraints.
-* [ConstraintSet][declearn.main.utils.ConstraintSet]:
-    Utility class to wrap sets of Constraint instances.
-* [TimeoutConstraint][declearn.main.utils.TimeoutConstraint]:
-    Class implementing a simple time-based constraint.
-
-The following components have been moved elsewhere and made private as of
-DecLearn 2.6. They are re-exported from this module for retro-compatibility
-but will be removed in DecLearn 2.8.
-**If you are using them, let us know so that we may amend this decision.**
 """
-
-# Deprecated re-exports. FUTURE: remove these (DecLearn >=2.8)
-from declearn.training import TrainingManager
-from declearn.training._constraints import (
-    Constraint,
-    ConstraintSet,
-    TimeoutConstraint,
-)
 
 from ._checkpoint import Checkpointer
 from ._data_info import AggregationError, aggregate_clients_data_info

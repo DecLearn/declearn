@@ -62,8 +62,8 @@ class FederatedClient:
     def __init__(  # noqa: PLR0913
         self,
         netwk: Union[NetworkClient, NetworkClientConfig, Dict[str, Any], str],
-        train_data: Union[Dataset, str],
-        valid_data: Optional[Union[Dataset, str]] = None,
+        train_data: Dataset,
+        valid_data: Optional[Dataset] = None,
         checkpoint: Union[Checkpointer, Dict[str, Any], str, None] = None,
         secagg: Union[SecaggConfigClient, Dict[str, Any], None] = None,
         share_metrics: bool = True,
@@ -81,11 +81,9 @@ class FederatedClient:
             to that of this `FederatedClient`.
         train_data: Dataset or str
             Dataset instance wrapping the training data.
-            (DEPRECATED) May be a path to a JSON dump file.
         valid_data: Dataset or str or None
             Optional Dataset instance wrapping validation data.
             If None, run evaluation rounds over `train_data`.
-            (DEPRECATED) May be a path to a JSON dump file.
         checkpoint: Checkpointer or dict or str or None, default=None
             Optional Checkpointer instance or instantiation dict to be
             used so as to save round-wise model, optimizer and metrics.
