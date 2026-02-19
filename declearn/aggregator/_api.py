@@ -59,7 +59,12 @@ class ModelUpdates(Aggregate, base_cls=True, register=True):
     """
 
     updates: Vector
+    """Numerical update of model parameters produced locally."""
+
     weights: Union[int, float]
+    """Scalar coefficient associated with the updates, used during aggregation
+    in a way that depends on the concrete aggregation strategy.
+    """
 
     _group_key = "ModelUpdates"
 

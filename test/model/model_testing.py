@@ -110,6 +110,9 @@ class ModelTestSuite:
         grads = model.compute_batch_gradients(batch)
         w_end = model.get_weights(trainable=True)
         # Check that gradient computation has not altered trainable weights.
+        # We specifically precise "trainable" weights because some buffers
+        # (like statistical parameters in BatchNorm layers) can be altered
+        # by a call to `compute_batch_gradients`.
         assert w_srt == w_end
         assert isinstance(grads, test_case.vector_cls)
         # Check that gradients and weights share the same labeling.

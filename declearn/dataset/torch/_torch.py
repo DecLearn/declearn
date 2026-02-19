@@ -66,7 +66,7 @@ class TorchDataset(Dataset):
         Parameters
         ----------
         dataset: torch.utils.data.Dataset
-            An torch Dataset instance built by the user, to be wrapped in
+            A torch Dataset instance built by the user, to be wrapped in
             declearn. The dataset's `__getitem__` method is expected to
             return either a single torch.Tensor (the model inputs) or a
             tuple of (model inputs, optional label, optional sample weights)

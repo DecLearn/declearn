@@ -200,7 +200,7 @@ class AdamModule(OptiModule):
             state_v = beta_2*state_v + (1-beta_2)*(grads**2)
             m_hat = state_m / (1 - beta_1**step)
             v_hat = state_v / (1 - beta_2**step)
-            grads = state_m / (sqrt(v_hat) + eps)
+            grads = m_hat / (sqrt(v_hat) + eps)
 
     In other words, gradients are first momentum-corrected, as
     is the accumulated sum of squared past gradients. Both are
@@ -345,7 +345,7 @@ class YogiModule(AdamModule):
             state_v = state_v + sign_uv*(1-beta_2)*(grads**2)
             m_hat = state_m / (1 - beta_1**step)
             v_hat = state_v / (1 - beta_2**step)
-            grads = state_m / (sqrt(v_hat) + eps)
+            grads = m_hat / (sqrt(v_hat) + eps)
 
     In other words, Yogi [1] implements the Adam [2] algorithm,
     but modifies the update rule of the 'v' state variable that

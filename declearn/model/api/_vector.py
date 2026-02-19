@@ -526,7 +526,7 @@ class Vector(Generic[T], metaclass=ABCMeta):  # noqa : PLW1641 (because mutable 
         that zero-valued coefficients *are* part of the output values, as
         the (un)flattening methods are aimed at enabling SecAgg features,
         that may involve summing up tensors with distinct sparsity, which
-        cannot be easily anticipated in a decentralized fashin.
+        cannot be easily anticipated in a decentralized fashion.
 
         Returns
         -------
