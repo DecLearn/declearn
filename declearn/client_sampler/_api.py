@@ -64,6 +64,10 @@ class ClientSampler(metaclass=ABCMeta):
         Maximum number of consecutive retries performed by the sampler if
         the sampling fails (i.e. if no client is selected).
 
+    logger: logging.Logger
+        The logger associated to this class. By default, it is named
+        "declearn.server.client_sampler" for any ClientSampler instance.
+
     Abstract
     --------
     The following attributes and methods must be implemented by any
@@ -101,6 +105,12 @@ class ClientSampler(metaclass=ABCMeta):
     class-attribute `strategy`. This can be prevented by adding `register=False`
     to the inheritance specs (e.g. `class MyCls(ClientSampler, register=False)`)
     See `declearn.utils.register_type` for details on types registration.
+
+    Notes
+    -----
+    You can access and configure this class logger using
+    `logger = logging.getLogger("declearn.server.client_sampler")`, and then
+    adjust it as needed (e.g. `logger.setLevel(...)`).
     """
 
     DEFAULT_MAX_RETRIES = 5
@@ -133,11 +143,9 @@ class ClientSampler(metaclass=ABCMeta):
         """
         self.clients: Set[str] = set()
         self.max_retries = max_retries
-        self._logger = logging.getLogger(
-            "FederatedServer.client_sampler",
-        )  # FIXME to adapt during rework on the logging system
-        # because for now, if the parent logger is not named "FederatedServer"
-        # this logger won't be attach to it
+        self.logger = logging.getLogger(
+            "declearn.server.client_sampler",
+        )
 
     @property
     @abstractmethod
@@ -228,7 +236,7 @@ class ClientSampler(metaclass=ABCMeta):
             elif nb_retries < self.max_retries:
                 nb_retries += 1
             else:  # no client sampled and max number of retries reached
-                self._logger.warning(
+                self.logger.warning(
                     f"No client was sampled after {self.max_retries} attempts. "
                     "Falling back to selecting all provided clients."
                 )

@@ -157,7 +157,7 @@ class CriterionClientSampler(ClientSampler):
         best_clients = set(
             list(ordered_client_to_score.keys())[: self.n_samples]
         )
-        self._logger.debug(f"Client scores: {ordered_client_to_score}.")
+        self.logger.debug(f"Client scores: {ordered_client_to_score}.")
         return best_clients
 
     def update(
