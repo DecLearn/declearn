@@ -85,6 +85,24 @@ from .utils import config_logger
 
 __version__ = version.VERSION
 
+__all__ = [
+    "aggregator",
+    "communication",
+    "data_info",
+    "dataset",
+    "fairness",
+    "main",
+    "messaging",
+    "metrics",
+    "model",
+    "optimizer",
+    "secagg",
+    "training",
+    "typing",
+    "utils",
+    "version",
+]
+
 # Init default configuration for Declearn root logger.
 # By default, the logs are written nowhere (because of the null handler).
 # Indeed, logging configuration is left to the user.

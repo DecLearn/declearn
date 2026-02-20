@@ -181,7 +181,7 @@ def _generate_private_submodules_content_doc(
             continue
         path = os.path.join(docdir, f"{obj.name}.md")
         with open(path, "w", encoding="utf-8") as file:
-            file.write(f"#`{obj.path}`\n::: {obj.path}")
+            file.write(f"::: {obj.path}")
         pub_obj[key] = f"{obj.name}.md"
     return pub_obj
 
