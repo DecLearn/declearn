@@ -159,8 +159,10 @@ class FederatedServer:
         self.secagg = self._parse_secagg(secagg)
         self._decrypter: Optional[Decrypter] = None
         self._secagg_peers: Set[str] = set()
-        # Set up private attributes to record the loss values and best weights.
+        # Set up a private attribute to record the loss values.
         self._losses: List[float] = []
+        # Set up a private attribute to record the best trainable weights
+        # (i.e. the one that have lead to the lowest evaluation loss).
         self._best: Optional[Vector] = None
         # Set up a private attribute to prevent redundant weights sharing.
         self._clients_holding_latest_model: Set[str] = set()
@@ -811,10 +813,10 @@ class FederatedServer:
             self._checkpoint_after_evaluation(
                 metrics, results if len(results) > 1 else {}
             )
-        # Record the global loss, and update the kept "best" weights.
+        # Record the global loss, and update the kept "best" trainable weights.
         self._losses.append(loss)
         if loss == min(self._losses):
-            self._best = self.model.get_weights()
+            self._best = self.model.get_weights(trainable=True)
 
     def _select_evaluation_round_participants(
         self,
@@ -982,7 +984,7 @@ class FederatedServer:
         """
         self.logger.info("Recovering weights that yielded the lowest loss.")
         message = messaging.StopTraining(
-            weights=self._best or self.model.get_weights(),
+            weights=self._best or self.model.get_weights(trainable=True),
             loss=min(self._losses, default=float("nan")),
             rounds=rounds,
         )
@@ -991,5 +993,5 @@ class FederatedServer:
         if self.ckptr:
             path = f"{self.ckptr.folder}/model_state_best.json"
             self.logger.info("Checkpointing final weights under %s.", path)
-            self.model.set_weights(message.weights)
+            self.model.set_weights(message.weights, trainable=True)
             self.ckptr.save_model(self.model, timestamp="best")

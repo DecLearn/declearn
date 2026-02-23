@@ -690,7 +690,9 @@ class FederatedClient:
             path = os.path.join(self.ckptr.folder, "model_state_best.json")
             self.logger.info("Checkpointing final weights under %s.", path)
             assert self.trainmanager is not None  # for mypy
-            self.trainmanager.model.set_weights(message.weights)
+            self.trainmanager.model.set_weights(
+                message.weights, trainable=True
+            )
             self.ckptr.save_model(self.trainmanager.model, timestamp="best")
 
     async def cancel_training(
