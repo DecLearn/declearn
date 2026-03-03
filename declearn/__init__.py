@@ -32,6 +32,8 @@ The package is organized into the following submodules:
 
 * [aggregator][declearn.aggregator]:
     Model updates aggregating API and implementations.
+* [client_sampler][declearn.client_sampler]:
+    Client sampling API and implementations.
 * [communication][declearn.communication]:
     Client-Server network communications API and implementations.
 * [data_info][declearn.data_info]:
@@ -64,6 +66,7 @@ The package is organized into the following submodules:
 
 from . import (
     aggregator,
+    client_sampler,
     communication,
     data_info,
     dataset,
@@ -81,3 +84,22 @@ from . import (
 )
 
 __version__ = version.VERSION
+
+__all__ = [
+    "aggregator",
+    "client_sampler",
+    "communication",
+    "data_info",
+    "dataset",
+    "fairness",
+    "main",
+    "messaging",
+    "metrics",
+    "model",
+    "optimizer",
+    "secagg",
+    "training",
+    "typing",
+    "utils",
+    "version",
+]
