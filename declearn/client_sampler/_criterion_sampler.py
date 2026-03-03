@@ -22,11 +22,9 @@ derived from client training replies and the global model.
 from typing import Any, Dict, Literal, Optional, Set, get_args
 
 from declearn.client_sampler import ClientSampler
-from declearn.client_sampler.criterion import instantiate_criterion
+from declearn.client_sampler.criterion import Criterion, instantiate_criterion
 from declearn.messaging import TrainReply
 from declearn.model.api import Model
-
-from ._criteria import Criterion
 
 MissingScorePolicy = Literal["priority", "equal"]
 

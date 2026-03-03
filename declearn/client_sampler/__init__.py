@@ -59,10 +59,10 @@ from ._api import (
 )
 from ._composition import CompositionClientSampler
 from ._config import ClientSamplerConfig
+from ._criterion_sampler import CriterionClientSampler
 from ._default import DefaultClientSampler
 from ._uniform import UniformClientSampler
 from ._weighted import WeightedClientSampler
-from .criterion._sampler import CriterionClientSampler
 
 __all__ = [
     "ClientSampler",
