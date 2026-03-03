@@ -21,6 +21,8 @@ derived from client training replies and the global model.
 
 from typing import Any, Dict, Literal, Optional, Set, get_args
 
+import pandas as pd
+
 from declearn.client_sampler import ClientSampler
 from declearn.client_sampler.criterion import Criterion, instantiate_criterion
 from declearn.messaging import TrainReply
@@ -132,25 +134,21 @@ class CriterionClientSampler(ClientSampler):
         if self.n_samples >= len(eligible_clients):
             return eligible_clients
 
-        client_to_score = self.convert_missing_scores()
-
-        eligible_client_to_score = {
+        cli_to_score = self.convert_missing_scores()
+        eligible_cli_to_score = {
             client: score
-            for client, score in client_to_score.items()
+            for client, score in cli_to_score.items()
             if client in eligible_clients
         }
 
-        ordered_client_to_score = dict(
-            sorted(
-                eligible_client_to_score.items(),
-                key=lambda item: item[1],
-                reverse=True,
-            )
-        )  # ordered by highest criterion score
-        best_clients = set(
-            list(ordered_client_to_score.keys())[: self.n_samples]
+        ordered_cli_to_score = pd.Series(eligible_cli_to_score).sort_values(
+            ascending=False
         )
-        self.logger.debug(f"Client scores: {ordered_client_to_score}.")
+        self.logger.debug(
+            "Client scores: %s", ordered_cli_to_score.astype(float).to_dict()
+        )
+
+        best_clients = set(ordered_cli_to_score[: self.n_samples].index)
         return best_clients
 
     def update(
