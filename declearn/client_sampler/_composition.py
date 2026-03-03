@@ -19,7 +19,10 @@
 
 from typing import Any, Dict, List, Set
 
-from declearn.client_sampler._api import ClientSampler
+from declearn.client_sampler._api import (
+    ClientSampler,
+    instantiate_client_sampler,
+)
 from declearn.messaging import TrainReply
 from declearn.model.api import Model
 
@@ -62,7 +65,7 @@ class CompositionClientSampler(ClientSampler):
         for sampler in self.samplers:
             sampler.init_clients(clients)
 
-    def _sample(self, eligible_clients: Set[str]) -> Set[str]:
+    def cls_sample(self, eligible_clients: Set[str]) -> Set[str]:
         total_sampled_clients = set()
         for sampler in self.samplers:
             sampler_clients = sampler.sample(eligible_clients)
@@ -78,8 +81,8 @@ class CompositionClientSampler(ClientSampler):
             sampler.update(client_to_reply, global_model)
 
     @classmethod
-    def _from_specs(cls, **kwargs: Any) -> ClientSampler:
-        """Backend of the from_specs method, specific to
+    def from_specs(cls, **kwargs: Any) -> ClientSampler:
+        """Back-end of the from_specs method, specific to
         `CompositionClientSampler`.
 
         Notes
@@ -94,7 +97,7 @@ class CompositionClientSampler(ClientSampler):
             if isinstance(sampler, ClientSampler):
                 parsed_samplers.append(sampler)
             elif isinstance(sampler, dict):
-                parsed_samplers.append(ClientSampler.from_specs(**sampler))
+                parsed_samplers.append(instantiate_client_sampler(**sampler))
             else:
                 raise ValueError(
                     f"Unsupported sampler type '{type(sampler)}' in "

@@ -67,6 +67,13 @@ class ClientSampler(metaclass=ABCMeta):
         The logger associated to this class. By default, it is named
         "declearn.server.client_sampler" for any ClientSampler instance.
 
+    Key methods
+    -----------
+    - sample(eligible_clients):
+        Perform the client sampling.
+    - update(client_to_reply, global_model):
+        Update sampler internal state.
+
     Abstract
     --------
     The following attributes and methods must be implemented by any
@@ -78,8 +85,8 @@ class ClientSampler(metaclass=ABCMeta):
         e.g. "default" for `DefaultClientSampler
     - secagg_compatible(): boolean read-only class property
         Indicate if the client sampler is compatible with secure aggregation
-    - _sample(eligible_clients):
-        Back-end of the sampling method.
+    - cls_sample(eligible_clients):
+        Class-specific back-end of the common sampling method `sample`.
     - update(client_to_reply, global_model):
         Update sampler internal state.
 
@@ -92,9 +99,9 @@ class ClientSampler(metaclass=ABCMeta):
         some metadata used in the strategy of the sampler
         subclass.
 
-    - _from_specs(cls, **kwargs):
-        Class method, backend of the `from_specs` method, can be overriden by
-        subclass if specific mechanisms are needed to allow a proper
+    - from_specs(cls, **kwargs):
+        Class method, create an instance from specifications, can be overriden
+        by subclass if specific mechanisms are needed to allow a proper
         instanciation from specifications.
 
     Inheritance
@@ -173,6 +180,9 @@ class ClientSampler(metaclass=ABCMeta):
         """Samples clients among the provided eligible clients, or among
         the full clients set if eligible_client is None.
 
+        Entrypoint method for the client sampling, including mechanisms
+        common to all client samplers (e.g. retry capability).
+
         Notes
         -----
         If no client is selected after the sampling action, it is
@@ -225,7 +235,7 @@ class ClientSampler(metaclass=ABCMeta):
         nb_retries = 0
         retry = True
         while retry:
-            sampled_clients = self._sample(eligible_clients)
+            sampled_clients = self.cls_sample(eligible_clients)
             if len(sampled_clients) > 0:
                 retry = False
             elif nb_retries < self.max_retries:
@@ -240,8 +250,12 @@ class ClientSampler(metaclass=ABCMeta):
         return sampled_clients
 
     @abstractmethod
-    def _sample(self, eligible_clients: Set[str]) -> Set[str]:
-        """Back-end of the sampling method, specific to subclass."""
+    def cls_sample(self, eligible_clients: Set[str]) -> Set[str]:
+        """Class-specific back-end of the `sample` method.
+
+        Implementation of the precise client sampling algorithm, specific to
+        the subclass.
+        """
 
     @abstractmethod
     def update(
@@ -264,47 +278,10 @@ class ClientSampler(metaclass=ABCMeta):
             Global model hold by the server.
         """
 
-    @staticmethod
-    def from_specs(strategy: str, **kwargs: Any) -> ClientSampler:
-        """Instantiate a `ClientSampler` from its specifications.
-
-        Parameters
-        ----------
-        strategy:
-            Name of the strategy associated with the target `ClientSampler`
-            subclass.
-        **kwargs:
-            Any additional instantiation keyword argument (general or
-            strategy-specific).
-
-        Returns
-        -------
-        client_sampler:
-            `ClientSampler` instance matching input specifications.
-
-        Raises
-        ------
-        ValueError
-            If `strategy` does not match any registered `ClientSampler` type,
-            or more generally if specifications are invalid.
-        """
-        try:
-            cls = access_registered(strategy, group="ClientSampler")
-        except KeyError as e:
-            raise ValueError(
-                f"Unknown client sampler strategy '{strategy}'."
-            ) from e
-
-        try:
-            return cls._from_specs(**kwargs)
-        except (TypeError, ValueError) as e:
-            raise ValueError(
-                f"Invalid client sampler specifications: {e}."
-            ) from e
-
     @classmethod
-    def _from_specs(cls, **kwargs: Any) -> ClientSampler:
-        """Backend of the from_specs method, specific to the subclass.
+    def from_specs(cls, **kwargs: Any) -> ClientSampler:
+        """Instantiate a client sampler of the given class from its
+        specifications.
 
         Can be overriden by subclass if specific mechanisms are needed to
         allow a proper instanciation from specifications.
@@ -328,3 +305,39 @@ def list_client_samplers() -> Dict[str, Type[ClientSampler]]:
         class constructors.
     """
     return access_types_mapping("ClientSampler")
+
+
+def instantiate_client_sampler(strategy: str, **kwargs: Any) -> ClientSampler:
+    """Instantiate a `ClientSampler` from its specifications.
+
+    Parameters
+    ----------
+    strategy:
+        Name of the strategy associated with the target `ClientSampler`
+        subclass.
+    **kwargs:
+        Any additional instantiation keyword argument (general or
+        strategy-specific).
+
+    Returns
+    -------
+    client_sampler:
+        `ClientSampler` instance matching input specifications.
+
+    Raises
+    ------
+    ValueError
+        If `strategy` does not match any registered `ClientSampler` type,
+        or more generally if specifications are invalid.
+    """
+    try:
+        cls = access_registered(strategy, group="ClientSampler")
+    except KeyError as e:
+        raise ValueError(
+            f"Unknown client sampler strategy '{strategy}'."
+        ) from e
+
+    try:
+        return cls.from_specs(**kwargs)
+    except (TypeError, ValueError) as e:
+        raise ValueError(f"Invalid client sampler specifications: {e}.") from e

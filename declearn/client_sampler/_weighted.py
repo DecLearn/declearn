@@ -97,7 +97,7 @@ class WeightedClientSampler(ClientSampler):
                 f"{clients}."
             )
 
-    def _sample(self, eligible_clients: Set[str]) -> Set[str]:
+    def cls_sample(self, eligible_clients: Set[str]) -> Set[str]:
         """Back-end of the sampling method for the weighted client sampler.
 
         If there are more than `n_samples` clients in `eligible_clients`, this

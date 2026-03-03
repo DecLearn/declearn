@@ -58,7 +58,7 @@ class UniformClientSampler(ClientSampler):
     def secagg_compatible(self) -> bool:
         return True
 
-    def _sample(self, eligible_clients: Set[str]) -> Set[str]:
+    def cls_sample(self, eligible_clients: Set[str]) -> Set[str]:
         """
         Back-end of the sampling method for the uniform client sampler.
 

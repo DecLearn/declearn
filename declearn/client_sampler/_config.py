@@ -20,7 +20,7 @@
 from dataclasses import dataclass
 from typing import Any, Dict
 
-from declearn.client_sampler import ClientSampler
+from declearn.client_sampler import ClientSampler, instantiate_client_sampler
 from declearn.utils import TomlConfig
 
 
@@ -33,4 +33,6 @@ class ClientSamplerConfig(TomlConfig):
 
     def build(self) -> ClientSampler:
         """Build a 'ClientSampler' instance for the configuration."""
-        return ClientSampler.from_specs(strategy=self.strategy, **self.params)
+        return instantiate_client_sampler(
+            strategy=self.strategy, **self.params
+        )

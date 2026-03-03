@@ -33,7 +33,7 @@ class DefaultClientSampler(ClientSampler):
     def secagg_compatible(self) -> bool:
         return True
 
-    def _sample(self, eligible_clients: Set[str]) -> Set[str]:
+    def cls_sample(self, eligible_clients: Set[str]) -> Set[str]:
         return eligible_clients
 
     def update(

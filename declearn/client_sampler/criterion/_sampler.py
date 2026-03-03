@@ -22,6 +22,7 @@ derived from client training replies and the global model.
 from typing import Any, Dict, Literal, Optional, Set, get_args
 
 from declearn.client_sampler import ClientSampler
+from declearn.client_sampler.criterion import instantiate_criterion
 from declearn.messaging import TrainReply
 from declearn.model.api import Model
 
@@ -123,7 +124,7 @@ class CriterionClientSampler(ClientSampler):
             for client, score in self.client_to_score.items()
         }
 
-    def _sample(self, eligible_clients: Set[str]) -> Set[str]:
+    def cls_sample(self, eligible_clients: Set[str]) -> Set[str]:
         """Back-end of the sampling method for criterion client sampler.
 
         If there are more than `n_samples` clients in `eligible_clients`,
@@ -169,15 +170,13 @@ class CriterionClientSampler(ClientSampler):
             self.client_to_score[client] = score
 
     @classmethod
-    def _from_specs(cls, **kwargs: Any) -> ClientSampler:
-        """Backend of the from_specs method, specific to
-        `CriterionClientSampler`.
-        """
+    def from_specs(cls, **kwargs: Any) -> ClientSampler:
+        """Instantiate a `CriterionClientSampler` from specifications."""
         criterion = kwargs["criterion"]
         if isinstance(criterion, Criterion):
             pass  # nothing to do
         elif isinstance(criterion, dict):
-            kwargs["criterion"] = Criterion.from_specs(**criterion)
+            kwargs["criterion"] = instantiate_criterion(**criterion)
         else:
             raise ValueError(
                 f"Unsupported criterion type '{type(criterion)}' used as "

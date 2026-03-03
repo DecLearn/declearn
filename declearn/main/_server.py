@@ -41,6 +41,7 @@ from declearn.client_sampler import (
     ClientSampler,
     ClientSamplerConfig,
     DefaultClientSampler,
+    instantiate_client_sampler,
 )
 from declearn.communication import NetworkServerConfig
 from declearn.communication.api import NetworkServer
@@ -254,7 +255,7 @@ class FederatedServer:
         elif isinstance(client_sampler, ClientSamplerConfig):
             parsed_sampler = client_sampler.build()
         elif isinstance(client_sampler, dict):
-            parsed_sampler = ClientSampler.from_specs(**client_sampler)
+            parsed_sampler = instantiate_client_sampler(**client_sampler)
         else:
             raise TypeError(
                 "'client_sampler' should be a 'ClientSampler' instance or the "

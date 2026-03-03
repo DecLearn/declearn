@@ -20,11 +20,14 @@
 `CriterionClientSampler` instances select clients based on a criterion score
 that may be computed from client training replies and from the global model.
 
-Abstractions
-------------
+API Tools
+---------
 
 * [Criterion][declearn.client_sampler.criterion.Criterion]:
     Abstract base class defining an API for a client sampler criterion.
+* [instantiate_criterion]\
+[declearn.client_sampler.criterion.instantiate_criterion]
+    Instantiate a `Criterion` from its specifications.
 
 Concrete classes
 ----------------
@@ -47,10 +50,13 @@ Concrete classes
     Training time history (across all past rounds) Criterion subclass.
 """
 
-from ._criteria import (
+from ._api import (
     CompositionCriterion,
     ConstantCriterion,
     Criterion,
+    instantiate_criterion,
+)
+from ._criteria import (
     GradientNormCriterion,
     NormalizedDivCriterion,
     TrainTimeCriterion,
@@ -62,6 +68,7 @@ __all__ = [
     "ConstantCriterion",
     "Criterion",
     "GradientNormCriterion",
+    "instantiate_criterion",
     "NormalizedDivCriterion",
     "TrainTimeCriterion",
     "TrainTimeHistoryCriterion",

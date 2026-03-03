@@ -20,12 +20,12 @@
 import pytest
 
 from declearn.client_sampler import (
-    ClientSampler,
     ClientSamplerConfig,
     CompositionClientSampler,
     CriterionClientSampler,
     DefaultClientSampler,
     UniformClientSampler,
+    instantiate_client_sampler,
 )
 from declearn.client_sampler.criterion import (
     CompositionCriterion,
@@ -56,7 +56,7 @@ OPERATIONS = [
 def test_from_specs_default():
     specs = {"strategy": "default"}
 
-    sampler = ClientSampler.from_specs(**specs)
+    sampler = instantiate_client_sampler(**specs)
     assert isinstance(sampler, DefaultClientSampler)
 
 
@@ -67,7 +67,7 @@ def test_from_specs_unknown_strategy():
     """
     specs = {"strategy": "unknown"}
     with pytest.raises(ValueError):
-        ClientSampler.from_specs(**specs)
+        instantiate_client_sampler(**specs)
 
 
 def test_from_specs_uniform():
@@ -77,7 +77,7 @@ def test_from_specs_uniform():
         "seed": 42,
     }
 
-    sampler = ClientSampler.from_specs(**specs)
+    sampler = instantiate_client_sampler(**specs)
     assert isinstance(sampler, UniformClientSampler)
     assert sampler.n_samples == 2
     assert sampler.seed == 42
@@ -90,7 +90,7 @@ def test_from_specs_uniform_wrong_param():
         "wrong": True,
     }
     with pytest.raises(ValueError):
-        ClientSampler.from_specs(**specs)
+        instantiate_client_sampler(**specs)
 
 
 def test_from_specs_uniform_missing_param():
@@ -98,7 +98,7 @@ def test_from_specs_uniform_missing_param():
         "strategy": "uniform",
     }
     with pytest.raises(ValueError):
-        ClientSampler.from_specs(**specs)
+        instantiate_client_sampler(**specs)
 
 
 def test_from_specs_composition():
@@ -115,7 +115,7 @@ def test_from_specs_composition():
             },
         ],
     }
-    sampler = ClientSampler.from_specs(**specs)
+    sampler = instantiate_client_sampler(**specs)
     assert isinstance(sampler, CompositionClientSampler)
     sampler1 = sampler.samplers[0]
     sampler2 = sampler.samplers[1]
@@ -133,7 +133,7 @@ def test_from_specs_composition_with_objects():
             DefaultClientSampler(),
         ],
     }
-    sampler = ClientSampler.from_specs(**specs)
+    sampler = instantiate_client_sampler(**specs)
     assert isinstance(sampler, CompositionClientSampler)
     sampler1 = sampler.samplers[0]
     sampler2 = sampler.samplers[1]
@@ -152,7 +152,7 @@ def test_from_specs_criterion_grad_norm():
         },
         "missing_scores_policy": "priority",
     }
-    sampler = ClientSampler.from_specs(**specs)
+    sampler = instantiate_client_sampler(**specs)
     assert isinstance(sampler, CriterionClientSampler)
     assert sampler.n_samples == 2
     assert sampler.missing_scores_policy == "priority"
@@ -169,7 +169,7 @@ def test_from_specs_criterion_constant():
         },
         "missing_scores_policy": "priority",
     }
-    sampler = ClientSampler.from_specs(**specs)
+    sampler = instantiate_client_sampler(**specs)
     assert isinstance(sampler, CriterionClientSampler)
     assert sampler.n_samples == 2
     assert sampler.missing_scores_policy == "priority"
@@ -191,7 +191,7 @@ def test_from_specs_criterion_unknown():
         "missing_scores_policy": "priority",
     }
     with pytest.raises(ValueError):
-        ClientSampler.from_specs(**specs)
+        instantiate_client_sampler(**specs)
 
 
 def test_from_specs_criterion_constant_wrong_param():
@@ -206,7 +206,7 @@ def test_from_specs_criterion_constant_wrong_param():
         "missing_scores_policy": "priority",
     }
     with pytest.raises(ValueError):
-        ClientSampler.from_specs(**specs)
+        instantiate_client_sampler(**specs)
 
 
 def test_from_specs_criterion_constant_missing_param():
@@ -219,7 +219,7 @@ def test_from_specs_criterion_constant_missing_param():
         "missing_scores_policy": "priority",
     }
     with pytest.raises(ValueError):
-        ClientSampler.from_specs(**specs)
+        instantiate_client_sampler(**specs)
 
 
 @pytest.mark.parametrize(
@@ -245,7 +245,7 @@ def test_from_specs_criterion_composition(operation: str):
         },
         "missing_scores_policy": "priority",
     }
-    sampler = ClientSampler.from_specs(**specs)
+    sampler = instantiate_client_sampler(**specs)
     assert isinstance(sampler, CriterionClientSampler)
     assert sampler.n_samples == 2
     assert sampler.missing_scores_policy == "priority"
@@ -275,7 +275,7 @@ def test_from_specs_criterion_composition_wrong_operation():
         "missing_scores_policy": "priority",
     }
     with pytest.raises(ValueError):
-        ClientSampler.from_specs(**specs)
+        instantiate_client_sampler(**specs)
 
 
 def test_from_specs_criterion_composition_wrong_operation_type():
@@ -298,7 +298,7 @@ def test_from_specs_criterion_composition_wrong_operation_type():
         "missing_scores_policy": "priority",
     }
     with pytest.raises(ValueError):
-        ClientSampler.from_specs(**specs)
+        instantiate_client_sampler(**specs)
 
 
 ## Tests of construction from specs in TomlConfig and TOML files

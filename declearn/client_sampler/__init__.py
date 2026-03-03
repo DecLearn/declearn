@@ -31,6 +31,9 @@ API tools
     TOML-parsable configuration container implementation for ClientSampler.
 * [list_client_samplers][declearn.client_sampler.list_client_samplers]:
     Return a mapping of registered ClientSampler subclasses.
+* [instantiate_client_sampler]\
+[declearn.client_sampler.instantiate_client_sampler]:
+    Instantiate a `ClientSampler` from its specifications.
 
 
 Concrete classes
@@ -51,6 +54,7 @@ Concrete classes
 
 from ._api import (
     ClientSampler,
+    instantiate_client_sampler,
     list_client_samplers,
 )
 from ._composition import CompositionClientSampler
@@ -66,6 +70,7 @@ __all__ = [
     "CompositionClientSampler",
     "CriterionClientSampler",
     "DefaultClientSampler",
+    "instantiate_client_sampler",
     "UniformClientSampler",
     "WeightedClientSampler",
     "list_client_samplers",

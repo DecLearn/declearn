@@ -5,8 +5,8 @@
 ### What is Client Sampling ?
 
 In federated learning, client sampling (also known as client selection or
-participant selection) is the process used to decide which clients are chosen to
-participate in each training round of the global federated process.
+participant selection) is the process used to decide which clients are chosen
+to participate in each training round of the global federated process.
 
 ### General capabilities
 
@@ -38,16 +38,16 @@ In the FederatedServer, the ClientSampler :
 - is called before each training round to select clients that will participate
   to it
 - is called in each training round, after receiving client replies, to update
-  its internal state (e.g. compute the value of a selection score for next round
-  sampling). This update uses information from the last client replies and from
-  the global model (before this round global update).
+  its internal state (e.g. compute the value of a selection score for next
+  round sampling). This update uses information from the last client replies
+  and from the global model (before this round global update).
 
 Each implemented client sampler must indicate if it is compatible with secure
 aggregation (secagg).  
 For instance, a client sampler that uses in its selection strategy a quantity
 computed from clients gradients is logically not compatible with secure
-aggregation, as client gradients are obfuscated from the server's perspective by
-secagg. If a secagg-incompatible client sampler is instantiated in a secagg
+aggregation, as client gradients are obfuscated from the server's perspective
+by secagg. If a secagg-incompatible client sampler is instantiated in a secagg
 context, an error will be raised.
 
 ### Caveats
@@ -62,8 +62,8 @@ To allow client sampling in your federated learning experiment :
 
 - Instantiate a `ClientSampler` or use a valid client sampler configuration
   (`ClientSamplerConfig` or dictionary with the proper keys)
-- Pass it as the `client_sampler` argument in the `FederatedServer` used in your
-  experiment
+- Pass it as the `client_sampler` argument in the `FederatedServer` used in
+  your experiment
 
 See examples below.
 
@@ -75,20 +75,21 @@ See examples below.
 - `UniformClientSampler` : client sampler that randomly selects n clients among
   all following the uniform probability law.
 
-- `WeightedClientSampler` : client sampler that randomly selects n clients among
-  all following a probability law built from user-provided weights (if there are
-  two clients, and client 1 has a weight of 1 where client 2 has a weight of 2 :
-  then client 2 is twice as likely to be selected).
+- `WeightedClientSampler` : client sampler that randomly selects n clients
+  among all following a probability law built from user-provided weights (if
+  there are two clients, and client 1 has a weight of 1 where client 2 has a
+  weight of 2 : then client 2 is twice as likely to be selected).
 
-- `CriterionClientSampler` : client sampler that selects the n clients that have
-  the highest score, according to a specific criterion (often deterministic).
+- `CriterionClientSampler` : client sampler that selects the n clients that
+  have the highest score, according to a specific criterion (often
+  deterministic).
   The criterion has to be specified by the user through an instance of a
   `Criterion` subclass, passed to the sampler at construction. The criterion
   score is usually computed from information in the client training replies and
   from the global model.  
   Available `Criterion` subclasses :
-    - `GradientNormCriterion` : the criterion score is the L2-norm of the client
-    "gradients" (updates).
+    - `GradientNormCriterion` : the criterion score is the L2-norm of the
+    client "gradients" (updates).
 
     - `NormalizedDivCriterion` : the criterion score is the client "normalized 
     model divergence" computed from client updates and global server weights :
@@ -114,7 +115,8 @@ See examples below.
     `(GradientNormCriterion() + NormalizedDivCriterion())**2 / 2` in a 
     straightforward way.
 
-- `CompositionClientSampler` : client sampler that contains others, allowing to compose the strategies to select clients. For instance, assuming that we have 
+- `CompositionClientSampler` : client sampler that contains others, allowing to
+compose the strategies to select clients. For instance, assuming that we have 
 5 registered clients, it is possible to define a client sampler performing the 
 following selection before each training round :
     - first, selects 2 clients over the 5 based on a deterministic criterion
@@ -129,8 +131,8 @@ example section" below for precise implementation.
 
 #### Basic example
 
-Instantiate a client sampler that randomly selects 2 clients among all following
-a uniform probability law (seeded with 42) :
+Instantiate a client sampler that randomly selects 2 clients among all
+following a uniform probability law (seeded with 42) :
 
 ```python
 from declearn.main import FederatedServer
@@ -165,7 +167,8 @@ instances (thanks to the ClientSampler `from_specs` method) without importing
 and using directly the Python objects. You just need to define a dictionary of
 valid client sampler specifications and pass it at server's construction.  
 
-Thus, to instantiate the same client sampler as in previous example, but using a dictionary :
+Thus, to instantiate the same client sampler as in previous example, but using
+a dictionary :
 ```python
 from declearn.main import FederatedServer
 
@@ -190,8 +193,8 @@ server = FederatedServer(
 )
 ```
 
-Note that the `strategy` key is mandatory in all specifications, it allows to decide
-which ClientSampler subclass will be instantiated.
+Note that the `strategy` key is mandatory in all specifications, it allows to
+decide which ClientSampler subclass will be instantiated.
 To know which value matches your desired sampler, refer to the value of the
 `strategy` class attribute (in the class definition). This attribute has to be
 defined for each `ClientSampler` subclass.
@@ -240,7 +243,8 @@ server = FederatedServer(
 #### Criterion-based example
 
 In this section, you can find an example of how to use a 
-`ClientSampler` object and a `Criterion` object to build a criterion client sampler. Here we use the  L2-norm of the client gradients as criterion :
+`ClientSampler` object and a `Criterion` object to build a criterion client
+sampler. Here we use the  L2-norm of the client gradients as criterion :
 
 ```python
 from declearn.client_sampler import CriterionClientSampler
@@ -333,7 +337,8 @@ model metadata (e.g. weights).
 - if you are able to define your criterion (e.g. through a math formula)
 and compute a float-valued score from it (a higher score = a better client).
 
-To understand what is possible with a `Criterion`, the documentation and code of the existing `Criterion` subclasses may be valuable resources.
+To understand what is possible with a `Criterion`, the documentation and code
+of the existing `Criterion` subclasses may be valuable resources.
 
 #### Inheriting from `Criterion`
 To define your own criterion, you must create a subclass of `Criterion`. When
@@ -350,8 +355,8 @@ details.
 
 #### When is it needed ?
 You may need to define your own client sampler if you want a specific strategy
-involving for example randomness with currently unsupported probability law ; or
-any complex strategies that cannot be implemented with the existing DecLearn
+involving for example randomness with currently unsupported probability law ;
+or any complex strategies that cannot be implemented with the existing DecLearn
 client sampling bricks, typically the `CriterionClientSampler` and `Criterion`
 APIs. 
 
@@ -363,8 +368,8 @@ To define your own client sampler, you must create a subclass of
 name, e.g. `"uniform"` for the class `UniformClientSampler`.
 - Defining the boolean class property `secagg_compatible` (just returning True
 or False) to precise if your strategy is compatible with secure aggregation.
-- Implementing the method `_sample` (do not forget the underscore !) in which
-your custom client sampling logic is defined.
+- Implementing the method `cls_sample` in which your custom client sampling
+logic is defined.
 - Implementing the method `update` in which you optionally update the sampler
 internal state (e.g. criterion score computation). This method is called
 by the `FederatedServer` at each global round, after collecting all involved
