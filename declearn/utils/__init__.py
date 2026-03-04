@@ -87,9 +87,11 @@ Logging utils
 Utils to set up and configure loggers:
 
 * [get_logger][declearn.utils.get_logger]:
-    (DEPRECATED) Access or create a logger, automating basic handlers' configuration.
+    (DEPRECATED) Access or create a logger, automating basic handlers'
+    configuration.
 * [config_logger][declearn.utils.config_logger]:
-    Easily configure an existing logger, automating basic handlers' configuration.
+    Easily configure an existing logger, automating basic handlers'
+    configuration.
 * [config_server_loggers][declearn.utils.config_server_loggers]:
     Easily configure all federated server-related loggers.
 * [config_client_loggers][declearn.utils.config_client_loggers]:

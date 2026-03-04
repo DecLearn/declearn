@@ -51,7 +51,8 @@ class FederatedClient:
 
     Notes
     -----
-    You can access and configure the logger of each instance of this class using
+    You can access and configure the logger of each instance of this class
+    using
     `logger = logging.getLogger("declearn.client-MY_CLIENT_NAME")`, and then
     adjust it as needed (e.g. `logger.setLevel(...)`).
     """
@@ -111,8 +112,9 @@ class FederatedClient:
             warnings.warn(
                 "Argument 'logger' is deprecated and useless now, it will be "
                 "removed in 2.10. "
-                "To customize the instance logger, you may use instead logging "
-                "utils from `declearn.utils` or the 'logging' Python module.",
+                "To customize the instance logger, you may use instead "
+                "logging utils from `declearn.utils` or the 'logging' Python "
+                "module.",
                 DeprecationWarning,
                 stacklevel=2,
             )

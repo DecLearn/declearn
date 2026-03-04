@@ -69,8 +69,8 @@ class AdaGradModule(OptiModule):
             Numerical-stability improvement term, added
             to the (divisor) adapative scaling term.
         round_reset: bool, default=False
-            Flag to indicate if we reset the internal state to its initial value
-            every time a new round starts.
+            Flag to indicate if we reset the internal state to its initial
+            value every time a new round starts.
         """
         self.eps = eps
         self.state: Union[Vector, float] = 0.0
@@ -105,7 +105,9 @@ class AdaGradModule(OptiModule):
     def on_round_start(
         self,
     ) -> None:
-        """Reset internal state (if enabled) at the start of a training round."""
+        """Reset internal state (if enabled) at the start of a training
+        round.
+        """
         if self.round_reset:
             self.state = 0.0
 
@@ -151,8 +153,8 @@ class RMSPropModule(OptiModule):
             Numerical-stability improvement term, added
             to the (divisor) adapative scaling term.
         round_reset: bool, default=False
-            Flag to indicate if we reset the internal state to its initial value
-            every time a new round starts.
+            Flag to indicate if we reset the internal state to its initial
+            value every time a new round starts.
         """
         self.ewma = EWMAModule(beta=beta, round_reset=round_reset)
         self.eps = eps
@@ -396,8 +398,8 @@ class YogiModule(AdamModule):
             Numerical-stability improvement term, added
             to the (divisor) adapative scaling term.
         round_reset: bool, default=False
-            Flag to indicate if we reset the internal state to its initial value
-            every time a new round starts.
+            Flag to indicate if we reset the internal state to its initial
+            value every time a new round starts.
         """
         super().__init__(
             beta_1, beta_2, amsgrad=amsgrad, eps=eps, round_reset=round_reset

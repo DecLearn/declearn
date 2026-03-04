@@ -53,8 +53,9 @@ class TrainingManager:
 
     Notes
     -----
-    You can access and configure the logger of each instance of this class using
-    `logger = logging.getLogger("declearn.client-MY_CLIENT_NAME.train_manager")`
+    You can access and configure the logger of each instance of this class
+    using
+    `logger = logging.getLogger("declearn.client-MYCLIENT_NAME.train_manager")`
     and then adjust it as needed (e.g. `logger.setLevel(...)`).
     """
 
