@@ -35,8 +35,8 @@ from declearn.model.api import Model
 
 
 class GradientNormCriterion(Criterion):
-    """`Criterion` implementation where the criterion score is the L2-norm of
-    the client "gradients" (model updates).
+    """Criterion where the score is the L2-norm of the client "gradients"
+    (model updates).
     """
 
     name = "gradient_norm"
@@ -54,9 +54,10 @@ class GradientNormCriterion(Criterion):
 
 
 class NormalizedDivCriterion(Criterion):
-    r"""`Criterion` implementation where the criterion score is the normalized
-    model divergence (average difference between the model weights in client i
-    and the global model) :
+    r"""Criterion where the score is the normalized model divergence.
+
+    Normalized model divergence is the average difference between the model
+    weights in client i and the global model) :
 
     $$ \frac{1}{|w|} \sum_{j=1}^{|w|}
       \left| \frac{w_{ij} - \bar{w}_j}{\bar{w}_j} \right| $$
@@ -114,8 +115,8 @@ class NormalizedDivCriterion(Criterion):
 
 
 class TrainTimeCriterion(Criterion):
-    """`Criterion` implementation where the criterion score is computed from
-    the last performed round training time (in seconds) spent by the client.
+    """Criterion where the score is computed from the last round client's
+    training time (in seconds).
 
     Attributes
     ----------
@@ -143,9 +144,8 @@ class TrainTimeCriterion(Criterion):
 
 
 class TrainTimeHistoryCriterion(Criterion):
-    """`Criterion` implementation where the criterion score is computed from
-    the history of all past rounds' training times (in seconds) spent by the
-    client.
+    """Criterion where the score is computed from all past rounds client's
+    training time (in seconds).
 
     Attributes
     ----------

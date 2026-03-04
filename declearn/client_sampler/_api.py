@@ -180,11 +180,12 @@ class ClientSampler(metaclass=ABCMeta):
         self,
         eligible_clients: Optional[Set[str]] = None,
     ) -> Set[str]:
-        """Samples clients among the provided eligible clients, or among
-        the full clients set if eligible_client is None.
+        """Sample clients among the provided eligible clients.
 
-        Entrypoint method for the client sampling, including mechanisms
-        common to all client samplers (e.g. retry capability).
+        It is the entrypoint method for the client sampling, including
+        mechanisms common to all client samplers (e.g. retry capability).
+
+        If eligible_client is None, samples among the full clients set.
 
         Notes
         -----
@@ -264,8 +265,8 @@ class ClientSampler(metaclass=ABCMeta):
     def update(
         self, client_to_reply: Dict[str, TrainReply], global_model: Model
     ) -> None:
-        """Update sampler internal state (e.g. client metadata) according to
-        each client training reply and the global model.
+        """Update sampler internal state using clients training reply and
+        the global model.
 
         Notes
         -----

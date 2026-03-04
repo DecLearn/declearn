@@ -25,7 +25,7 @@ from declearn.model.api import Model
 
 
 class DefaultClientSampler(ClientSampler):
-    """Default client sampler selecting all provided clients."""
+    """Default client sampler, selecting all provided clients."""
 
     strategy = "default"
 

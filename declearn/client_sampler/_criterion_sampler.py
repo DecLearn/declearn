@@ -93,8 +93,8 @@ class CriterionClientSampler(ClientSampler):
         return False
 
     def init_clients(self, clients: Set[str]) -> None:
-        """Initialize clients common metadata and then set each client's
-        criterion score to None.
+        """Initialize clients common metadata and set each client's criterion
+        score to None.
         """
         super().init_clients(clients)
         for client in clients:

@@ -104,6 +104,7 @@ class Criterion(metaclass=ABCMeta):
     ) -> Dict[str, Optional[float]]:
         """Compute the criterion score for each client listed in
         `client_to_reply`.
+
         The score can be derived from information in the client train replies
         and the global model.
 
@@ -186,8 +187,9 @@ class Criterion(metaclass=ABCMeta):
 
 
 class ConstantCriterion(Criterion):
-    """`Criterion` implementation to wrap a native constant Python object
-    (int, float, bool or None) in a `Criterion` object.
+    """Criterion to wrap a native constant Python object.
+
+    Native constant Python objects are: int, float, bool or None.
 
     Attributes
     ----------
@@ -214,8 +216,10 @@ class ConstantCriterion(Criterion):
 
 
 class CompositionCriterion(Criterion):
-    """`Criterion` implementation that contains other `Criterion` objects, and
-    allows to apply operations between criteria to compose them.
+    """Criterion that composes multiple criteria into one.
+
+    The result is computed by applying `operation` to the values of each
+    child `Criterion` in `parents` (e.g. summing or multiplying them).
 
     Attributes
     ----------

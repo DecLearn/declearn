@@ -27,7 +27,7 @@ from declearn.model.api import Model
 
 
 class UniformClientSampler(ClientSampler):
-    """Client sampler selecting a given number of clients among all randomly
+    """Client sampler selecting randomly a given number of clients among all
     with uniform probability.
 
     Attributes
