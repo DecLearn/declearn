@@ -150,32 +150,32 @@ class Criterion(metaclass=ABCMeta):
         raise ValueError(f"Criterion cannot wrap {type(obj)}.")
 
     def __add__(self, other: Any) -> Criterion:
-        return CompositionCriterion(float.__add__, self, self.wrap(other))
+        return CompositionCriterion("add", self, self.wrap(other))
 
     def __radd__(self, other: Any) -> Criterion:
-        return CompositionCriterion(float.__radd__, self, self.wrap(other))
+        return CompositionCriterion("radd", self, self.wrap(other))
 
     def __sub__(self, other: Any) -> Criterion:
-        return CompositionCriterion(float.__sub__, self, self.wrap(other))
+        return CompositionCriterion("sub", self, self.wrap(other))
 
     def __rsub__(self, other: Any) -> Criterion:
-        return CompositionCriterion(float.__rsub__, self, self.wrap(other))
+        return CompositionCriterion("rsub", self, self.wrap(other))
 
     def __mul__(self, other: Any) -> Criterion:
-        return CompositionCriterion(float.__mul__, self, self.wrap(other))
+        return CompositionCriterion("mul", self, self.wrap(other))
 
     def __rmul__(self, other: Any) -> Criterion:
-        return CompositionCriterion(float.__rmul__, self, self.wrap(other))
+        return CompositionCriterion("rmul", self, self.wrap(other))
 
     def __truediv__(self, other: Any) -> Criterion:
-        return CompositionCriterion(float.__truediv__, self, self.wrap(other))
+        return CompositionCriterion("truediv", self, self.wrap(other))
 
     def __rtruediv__(self, other: Any) -> Criterion:
-        return CompositionCriterion(float.__rtruediv__, self, self.wrap(other))
+        return CompositionCriterion("rtruediv", self, self.wrap(other))
 
     def __pow__(self, power, modulo=None):
         return CompositionCriterion(
-            float.__pow__, self, self.wrap(power), self.wrap(modulo)
+            "pow", self, self.wrap(power), self.wrap(modulo)
         )
 
     @classmethod
@@ -231,10 +231,58 @@ class CompositionCriterion(Criterion):
 
     name = "composition"
 
-    def __init__(
-        self, operation: Callable[..., Optional[float]], *parents: Criterion
-    ):
-        self.operation = operation
+    OP_STR_TO_FUNC: Dict[str, Callable] = {
+        "add": float.__add__,
+        "+": float.__add__,
+        "sub": float.__sub__,
+        "-": float.__sub__,
+        "mul": float.__mul__,
+        "*": float.__mul__,
+        "div": float.__truediv__,
+        "truediv": float.__truediv__,
+        "/": float.__truediv__,
+        "radd": float.__radd__,
+        "rsub": float.__rsub__,
+        "rmul": float.__rmul__,
+        "rtruediv": float.__rtruediv__,
+        "pow": float.__pow__,
+    }
+    """Dictionnary mapping supported operation strings to the matching
+    operation function.
+    """
+
+    def __init__(self, operation: str, *parents: Criterion):
+        """Initialize a `CompositionCriterion`.
+
+        Parameters
+        ----------
+        operation:
+            Operation string used to build the composition criterion.
+        parents:
+            Parent criteria that will be composed.
+
+        Notes
+        -----
+        The supported operation strings are the following :
+            - "add", "+"
+            - "sub", "-"
+            - "mul", "*"
+            - "div", "truediv", "/"
+            - "radd"
+            - "rsub"
+            - "rmul"
+            - "rtruediv"
+            - "pow"
+        """
+        if operation not in self.OP_STR_TO_FUNC.keys():
+            raise ValueError(
+                f"Operation string '{operation}' not supported in composition "
+                "criterion. Valid operation strings are : "
+                f"{', '.join(self.OP_STR_TO_FUNC.keys())}."
+            )
+        self.operation: Callable[..., Optional[float]] = self.OP_STR_TO_FUNC[
+            operation
+        ]
         self.parents: Tuple[Criterion, ...] = parents
 
     def compute(
@@ -264,56 +312,14 @@ class CompositionCriterion(Criterion):
     def from_specs(cls, **kwargs: Any) -> Criterion:
         """Instantiate a `CompositionCriterion` from specifications.
 
-        Notes
-        -----
-        The supported operation strings in the specifications are the
-        following :
-            - "add", "+"
-            - "sub", "-"
-            - "mul", "*"
-            - "div", "truediv", "/"
-            - "radd"
-            - "rsub"
-            - "rmul"
-            - "rtruediv"
-            - "pow"
-
-        To use other operations in a CompositionClientSampler, you cannot
-        use specifications and the `from_specs` method. You must
-        instantiate the client sampler via the Python API, passing the
-        operation as a Callable.
-
         Raises
         ------
         ValueError
             If specifications are invalid.
         """
-        operation_str = kwargs["operation"]
-        if not isinstance(operation_str, str):
+        operation = kwargs["operation"]
+        if not isinstance(operation, str):
             raise ValueError("Criterion 'operation' value must be a string")
-
-        op_str_to_func: Dict[str, Callable] = {
-            "add": float.__add__,
-            "+": float.__add__,
-            "sub": float.__sub__,
-            "-": float.__sub__,
-            "mul": float.__mul__,
-            "*": float.__mul__,
-            "div": float.__truediv__,
-            "truediv": float.__truediv__,
-            "/": float.__truediv__,
-            "radd": float.__radd__,
-            "rsub": float.__rsub__,
-            "rmul": float.__rmul__,
-            "rtruediv": float.__rtruediv__,
-            "pow": float.__pow__,
-        }
-
-        if operation_str not in op_str_to_func:
-            raise ValueError(
-                f"Unsupported criterion operation '{operation_str}'"
-            )
-        operation = op_str_to_func[operation_str]
 
         parsed_parents = []
         for parent in kwargs["parents"]:

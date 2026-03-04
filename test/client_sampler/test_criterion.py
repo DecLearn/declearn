@@ -24,6 +24,8 @@ import pytest
 
 from declearn.aggregator import ModelUpdates
 from declearn.client_sampler.criterion import (
+    CompositionCriterion,
+    ConstantCriterion,
     GradientNormCriterion,
     NormalizedDivCriterion,
     TrainTimeCriterion,
@@ -78,6 +80,14 @@ class TestCriterion:
             assert math.isclose(
                 expected_scores[client], scores[client], rel_tol=1e-6
             )
+
+    def test_composition_criterion_invalid(
+        self,
+    ) -> None:
+        criterion1 = GradientNormCriterion()
+        criterion2 = ConstantCriterion(1)
+        with pytest.raises(ValueError):
+            _ = CompositionCriterion("my_operator", criterion1, criterion2)
 
     @pytest.mark.parametrize("framework", VECTOR_FRAMEWORKS)
     def test_normalized_div_criterion(
