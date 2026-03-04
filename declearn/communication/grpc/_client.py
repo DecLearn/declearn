@@ -18,6 +18,7 @@
 """Client-side communication endpoint implementation using gRPC"""
 
 import logging
+import warnings
 from typing import Any, ClassVar, Dict, Optional, Union
 
 import grpc  # type: ignore
@@ -41,6 +42,7 @@ class GrpcClient(NetworkClient):
 
     protocol: ClassVar[str] = "grpc"
 
+    # TODO for 2.10 : remove deprecated "logger" argument
     def __init__(
         self,
         server_uri: str,
@@ -62,10 +64,19 @@ class GrpcClient(NetworkClient):
             Path to a certificate (publickey) PEM file, to use SSL/TLS
             communcations encryption.
         logger: logging.Logger or str or None, default=None,
-            Logger to use, or name of a logger to set up using
-            `declearn.utils.get_logger`. If None, use `type(self)-name`.
+            Deprecated in v2.8, removed in v2.10.
+            Not used anymore.
         """
-        super().__init__(server_uri, name, certificate, logger)
+        if logger is not None:
+            warnings.warn(
+                "Argument 'logger' is deprecated and useless now, it will be "
+                "removed in 2.10. "
+                "To customize the instance logger, you may use instead logging "
+                "utils from `declearn.utils` or the 'logging' Python module.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+        super().__init__(server_uri, name, certificate)
         self._channel: Optional[grpc.Channel] = None
         self._service: Optional[MessageBoardStub] = None
 

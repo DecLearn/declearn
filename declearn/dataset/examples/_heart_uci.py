@@ -129,7 +129,7 @@ def preprocess_heart_uci_dataframe(
         "thalach", "exang", "oldpeak", "slope", "ca", "thal", "num",
     ]
     # fmt: on
-    data = data.set_axis(columns, axis=1, copy=False)
+    data = data.set_axis(columns, axis=1, copy=False)  # type: ignore[call-arg]
     # Drop unused columns and rows with missing values.
     data.drop(columns=["ca", "chol", "fbs", "slope", "thal"], inplace=True)
     data.dropna(inplace=True)

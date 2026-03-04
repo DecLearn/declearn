@@ -53,7 +53,8 @@ from declearn.quickrun._parser import parse_data_folder
 from declearn.test_utils import make_importable
 from declearn.utils import (
     LOGGING_LEVEL_MAJOR,
-    get_logger,
+    config_client_loggers,
+    config_server_loggers,
     set_device_policy,
 )
 
@@ -104,7 +105,10 @@ async def run_server(  # noqa: PLR0913
     model = get_model(folder, model_config)
     checkpoint = get_checkpoint(folder, expe_config)
     checkpoint = os.path.join(checkpoint, "server")
-    logger = get_logger("Server", fpath=os.path.join(checkpoint, "logger.txt"))
+    config_server_loggers(
+        level=logging.INFO, fpath=os.path.join(checkpoint, "logs.txt")
+    )
+
     server = FederatedServer(
         model=model,
         netwk=network,
@@ -112,7 +116,6 @@ async def run_server(  # noqa: PLR0913
         metrics=expe_config.metrics,
         secagg=None,
         checkpoint=checkpoint,
-        logger=logger,
     )
     await server.async_run(config)
 
@@ -133,10 +136,16 @@ async def run_client(
     checkpoint = get_checkpoint(folder, expe_config)
     checkpoint = os.path.join(checkpoint, name)
     # Set up a logger: write everything to file, but filter console outputs.
-    logger = get_logger(name, fpath=os.path.join(checkpoint, "logs.txt"))
-    for handler in logger.handlers:
+    config_client_loggers(
+        client_name=name,
+        level=logging.INFO,
+        fpath=os.path.join(checkpoint, "logs.txt"),
+    )
+
+    for handler in logging.getLogger(f"declearn.client-{name}").handlers:
         if isinstance(handler, logging.StreamHandler):
             handler.setLevel(LOGGING_LEVEL_MAJOR)
+
     # Wrap train and validation data as Dataset objects.
     train = InMemoryDataset(
         paths.get("train_data"),  # type: ignore
@@ -154,7 +163,6 @@ async def run_client(
         checkpoint=checkpoint,
         secagg=None,
         share_metrics=True,
-        logger=logger,
         verbose=False,
     )
     await client.async_run()

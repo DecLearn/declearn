@@ -20,6 +20,7 @@
 import asyncio
 import logging
 import math
+import warnings
 from typing import Any, Dict, Optional, Set, Union
 
 from declearn.communication.api.backend import flags
@@ -40,15 +41,32 @@ from declearn.version import VERSION
 
 
 class MessagesHandler:
-    """Minimal protocol-agnostic server-side messages handler."""
+    """Minimal protocol-agnostic server-side messages handler.
 
+    Notes
+    -----
+    You can access and configure this class logger using
+    `logger = logging.getLogger("declearn.server.messages_handler")`, and then
+    adjust it as needed (e.g. `logger.setLevel(...)`).
+    """
+
+    # TODO for 2.10 : remove deprecated "logger" argument
     def __init__(
         self,
         logger: logging.Logger,
         heartbeat: float = 1.0,
     ) -> None:
+        if logger is not None:
+            warnings.warn(
+                "Argument 'logger' is deprecated and useless now, it will be "
+                "removed in 2.10. "
+                "To customize the instance logger, you may use instead logging "
+                "utils from `declearn.utils` or the 'logging' Python module.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
         # Assign parameters as attributes.
-        self.logger = logger
+        self.logger = logging.getLogger("declearn.server.messages_handler")
         self.heartbeat = heartbeat
         # Set up containers for client identifiers and pending messages.
         self.registered_clients: Dict[Any, str] = {}

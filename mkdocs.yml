@@ -9,6 +9,37 @@ theme:
   name: material
   icon:
     repo: fontawesome/brands/git-alt
+  palette:
+    # Palette toggle for automatic mode
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to light mode
+    # Palette toggle for light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default 
+      primary: indigo
+      accent: orange
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    # Palette toggle for dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: orange
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to system preference
+  features:
+    - content.code.copy
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.indexes
+    - navigation.top
+    - search.highlight
+    - toc.follow
 
 repo_url: https://gitlab.inria.fr/magnet/declearn/declearn2
 repo_name: magnet/declearn
@@ -42,6 +73,17 @@ plugins:
           disable_private: true
           docstring_style: numpy
           docstring_section_style: "table"
+          separate_signature: true
           show_if_no_docstring: false
+          show_root_heading: true
           show_root_toc_entry: true
           show_signature_annotations: false
+          show_symbol_type_heading: true
+          show_symbol_type_toc: true
+          signature_crossrefs: true
+        inventories:
+          - https://docs.python.org/3/objects.inv
+          - https://typing-extensions.readthedocs.io/en/latest/objects.inv
+          - https://pillow.readthedocs.io/en/stable/objects.inv
+          - https://numpy.org/doc/stable/objects.inv
+          - https://pytorch.org/docs/stable/objects.inv

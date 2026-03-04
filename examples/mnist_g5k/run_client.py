@@ -15,38 +15,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Script to run a federated client on the FLamby dataset-playground,
-through which we use the TCGA-BRCA dataset.
-"""
+"""Script to run a federated client on the MNIST example."""
 
 import datetime
 import logging
 import os
 
 import fire  # type: ignore
-from flamby.datasets.fed_tcga_brca import FedTcgaBrca as TcgaBrcaDataset
-from torch.utils.data import random_split
-
-# Do not remove the following "unused" import,
-# it is necessary for type registration
-import declearn.model.torch
-from declearn.test_utils import make_importable
-from declearn.utils import config_client_loggers
-
-# Do not remove the following "unused" import,
-# it is necessary for type registration
-with make_importable(os.path.dirname(__file__)):
-    from metric import CIndexMetric
 
 import declearn
-from declearn.dataset.torch import TorchDataset
+
+# Do not remove the following "unused" import,
+# it is necessary for type registration
+import declearn.model.tensorflow
+from declearn.utils import config_client_loggers
 
 FILEDIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_CERT = os.path.join(FILEDIR, "ca-cert.pem")
 
 
 def run_client(
-    client_idx: int,
+    client_name: str,
+    data_folder: str,
     ca_cert: str = DEFAULT_CERT,
     protocol: str = "websockets",
     serv_uri: str = "wss://localhost:8765",
@@ -56,8 +46,10 @@ def run_client(
 
     Parameters
     ---------
-    client_idx: int
-        Id of the client (i.e. center data from which to use).
+    client_name: str
+        Name of the client (i.e. center data from which to use).
+    data_folder: str
+        The parent folder of this client's data
     ca_cert: str, default="./ca-cert.pem"
         Path to the certificate authority file that was used to
         sign the server's SSL certificate.
@@ -69,8 +61,6 @@ def run_client(
         Whether to log everything to the console, or filter out most non-error
         information.
     """
-    if client_idx < 0 or client_idx > 5:
-        raise ValueError("Client idx for this dataset must be between 0 and 5")
 
     ### Optional: some convenience settings
 
@@ -78,7 +68,6 @@ def run_client(
     declearn.utils.set_device_policy(gpu=False)
 
     # Set up logger and checkpointer
-    client_name = f"client_{client_idx}"
     stamp = datetime.datetime.now().strftime("%y-%m-%d_%H-%M")
     checkpoint = os.path.join(FILEDIR, f"result_{stamp}", client_name)
     config_client_loggers(
@@ -89,15 +78,18 @@ def run_client(
 
     ### (1-2) Interface training and optional validation data.
 
-    # Use TCGA-BRCA dataset from center/region 'client_idx'
-    dataset = TcgaBrcaDataset(center=client_idx)
-    valid_prop = 0.33
-    train_set, valid_set = random_split(
-        dataset, lengths=[1 - valid_prop, valid_prop]
-    )
+    # Target the proper dataset (specific to our MNIST setup).
+    data_folder = os.path.join(FILEDIR, data_folder, client_name)
 
-    train = TorchDataset(train_set)
-    valid = TorchDataset(valid_set)
+    # Interface the data through the generic `InMemoryDataset` class.
+    train = declearn.dataset.InMemoryDataset(
+        os.path.join(data_folder, "train_data.npy"),
+        os.path.join(data_folder, "train_target.npy"),
+    )
+    valid = declearn.dataset.InMemoryDataset(
+        os.path.join(data_folder, "valid_data.npy"),
+        os.path.join(data_folder, "valid_target.npy"),
+    )
 
     ### (3) Define network communication parameters.
 
@@ -106,7 +98,7 @@ def run_client(
     network = declearn.communication.build_client(
         protocol=protocol,
         server_uri=serv_uri,
-        name=f"client_{client_idx}",
+        name=client_name,
         certificate=ca_cert,
     )
 

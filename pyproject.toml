@@ -88,6 +88,11 @@ nlp = [
     "transformers ~= 4.57",
 ]
 
+g5k = [
+    "enoslib ~= 10.5",
+]
+
+
 # docs-building dependencies
 docs = [
     "griffe ~= 1.0",

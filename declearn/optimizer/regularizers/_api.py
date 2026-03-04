@@ -75,7 +75,7 @@ class Regularizer(metaclass=ABCMeta):
     - on_round_start() -> None:
         Perform any required operation (e.g. resetting a state variable)
         at the start of a training round. By default, this method has no
-        effect and mey thus be safely ignored when no behavior is needed.
+        effect and may thus be safely ignored when no behavior is needed.
 
     Inheritance
     -----------

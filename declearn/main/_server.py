@@ -21,6 +21,7 @@ import asyncio
 import copy
 import dataclasses
 import logging
+import warnings
 from typing import (  # fmt: off
     Any,
     Dict,
@@ -66,7 +67,7 @@ from declearn.optimizer.modules import AuxVar
 from declearn.secagg import messaging as secagg_messaging
 from declearn.secagg import parse_secagg_config_server
 from declearn.secagg.api import Decrypter, SecaggConfigServer
-from declearn.utils import deserialize_object, get_logger
+from declearn.utils import deserialize_object
 
 __all__ = [
     "FederatedServer",
@@ -77,10 +78,18 @@ MessageT = TypeVar("MessageT", bound=messaging.Message)
 
 
 class FederatedServer:
-    """Server-side Federated Learning orchestrating class."""
+    """Server-side Federated Learning orchestrating class.
+
+    Notes
+    -----
+    You can access and configure this class logger using
+    `logger = logging.getLogger("declearn.server")`, and then adjust it as
+    needed (e.g. `logger.setLevel(...)`).
+    """
 
     # one-too-many attribute; pylint: disable=too-many-instance-attributes
     # pylint: disable-next=too-many-positional-arguments
+    # TODO for 2.10 : remove deprecated "logger" argument
     def __init__(  # noqa: PLR0913
         self,
         model: Union[Model, str, Dict[str, Any]],
@@ -128,18 +137,25 @@ class FederatedServer:
             If a single string is provided, treat it as the checkpoint
             folder path and use default values for other parameters.
         logger: logging.Logger or str or None, default=None,
-            Logger to use, or name of a logger to set up with
-            `declearn.utils.get_logger`. If None, use `type(self)`.
+            Deprecated in v2.8, removed in v2.10.
+            Not used anymore.
         """
         # arguments serve modularity; pylint: disable=too-many-arguments
-        # Assign the logger.
-        if not isinstance(logger, logging.Logger):
-            logger = get_logger(logger or type(self).__name__)
-        self.logger = logger
+        if logger is not None:
+            warnings.warn(
+                "Argument 'logger' is deprecated and useless now, it will be "
+                "removed in 2.10. "
+                "To customize the instance logger, you may use instead logging "
+                "utils from `declearn.utils` or the 'logging' Python module.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+        # Init class logger.
+        self.logger = logging.getLogger("declearn.server")
         # Assign the wrapped Model.
         self.model = self._parse_model(model)
         # Assign the wrapped NetworkServer.
-        self.netwk = self._parse_netwk(netwk, logger=self.logger)
+        self.netwk = self._parse_netwk(netwk)
         # Assign the wrapped FLOptimConfig.
         optim = self._parse_optim(optim)
         self.aggrg = optim.aggregator
@@ -161,8 +177,10 @@ class FederatedServer:
         self._check_clisamp_secagg_compat()
         self._decrypter: Optional[Decrypter] = None
         self._secagg_peers: Set[str] = set()
-        # Set up private attributes to record the loss values and best weights.
+        # Set up a private attribute to record the loss values.
         self._losses: List[float] = []
+        # Set up a private attribute to record the best trainable weights
+        # (i.e. the one that have lead to the lowest evaluation loss).
         self._best: Optional[Vector] = None
         # Set up a private attribute to prevent redundant weights sharing.
         self._clients_holding_latest_model: Set[str] = set()
@@ -195,7 +213,6 @@ class FederatedServer:
     @staticmethod
     def _parse_netwk(
         netwk: Union[NetworkServer, NetworkServerConfig, Dict[str, Any], str],
-        logger: logging.Logger,
     ) -> NetworkServer:
         """Parse 'netwk' instantiation argument."""
         # Case when a NetworkServer instance is provided: return.
@@ -214,8 +231,6 @@ class FederatedServer:
                 f"configuration of one, not '{type(netwk)}'."
             )
         # Instantiate from the (parsed) config.
-        if config.logger is None:
-            config.logger = logger
         return config.build_server()
 
     @staticmethod
@@ -909,10 +924,10 @@ class FederatedServer:
             self._checkpoint_after_evaluation(
                 metrics, results if len(results) > 1 else {}
             )
-        # Record the global loss, and update the kept "best" weights.
+        # Record the global loss, and update the kept "best" trainable weights.
         self._losses.append(loss)
         if loss == min(self._losses):
-            self._best = self.model.get_weights()
+            self._best = self.model.get_weights(trainable=True)
 
     def _select_evaluation_round_participants(
         self,
@@ -1081,7 +1096,7 @@ class FederatedServer:
         """
         self.logger.info("Recovering weights that yielded the lowest loss.")
         message = messaging.StopTraining(
-            weights=self._best or self.model.get_weights(),
+            weights=self._best or self.model.get_weights(trainable=True),
             loss=min(self._losses, default=float("nan")),
             rounds=rounds,
         )
@@ -1090,5 +1105,5 @@ class FederatedServer:
         if self.ckptr:
             path = f"{self.ckptr.folder}/model_state_best.json"
             self.logger.info("Checkpointing final weights under %s.", path)
-            self.model.set_weights(message.weights)
+            self.model.set_weights(message.weights, trainable=True)
             self.ckptr.save_model(self.model, timestamp="best")

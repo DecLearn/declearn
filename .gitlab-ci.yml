@@ -26,7 +26,7 @@ stages:
 # - keep the small venv where pip and tox are installed
 variables:
   TOX_CACHE_DIR: "$CI_PROJECT_DIR/.tox"
-  GIT_CLEAN_FLAGS: -ffdx -e .pip -e .tox -e venv
+  GIT_CLEAN_FLAGS: -ffdx -e .pip -e .tox -e /venv
 
 # Shared configuration elements between all jobs.
 default:
@@ -80,7 +80,7 @@ clean-tox-cache-full:
   stage: test
   # Activate venv with pip and tox installed.
   before_script:
-    - source venv/bin/activate
+    - source /venv/bin/activate # /venv creation is defined in ci/Dockerfile
   # Configure coverage export and collection.
   artifacts:
     reports:

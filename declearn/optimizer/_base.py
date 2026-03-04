@@ -462,14 +462,17 @@ class Optimizer:
         """Perform any required action at the start of a training round.
 
         This method calls the `on_round_start` callback of each and every
-        wrapped `Regularizer` which may be used to regulate some internal
-        state variables, as well as that of the `Scheduler` objects that
-        regulate the evolution of the learning and weight decay rates.
+        wrapped `Regularizer` and `OptiModule` which may be used to regulate
+        some internal state variables, as well as that of the `Scheduler`
+        objects that regulate the evolution of the learning and weight decay
+        rates.
         """
         self._lrate_scheduler.on_round_start()
         self._wrate_scheduler.on_round_start()
         for regularizer in self.regularizers:
             regularizer.on_round_start()
+        for module in self.modules:
+            module.on_round_start()
 
     def run_train_step(
         self,

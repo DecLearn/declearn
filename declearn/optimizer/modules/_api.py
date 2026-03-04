@@ -100,6 +100,10 @@ class OptiModule(Generic[AuxVarT], metaclass=abc.ABCMeta):
     As defined at `OptiModule` level, they have no effect and may thus
     be safely ignored when implementing self-contained algorithms.
 
+    - on_round_start() -> None:
+        Perform any required operation (e.g. resetting a state variable)
+        at the start of a training round. By default, this method has no
+        effect and may thus be safely ignored when no behavior is needed.
     - collect_aux_var() -> Optional[AuxVar]:
         Emit an `AuxVar` instance holding auxiliary variables,
         that may be shared with peers, aggregated across them,
@@ -172,6 +176,12 @@ class OptiModule(Generic[AuxVarT], metaclass=abc.ABCMeta):
             fully compatible with the input one - only the values
             of the wrapped coefficients may have changed.
         """
+
+    def on_round_start(
+        self,
+    ) -> None:
+        """Perform any required action at the start of a training round."""
+        return None
 
     def collect_aux_var(
         self,

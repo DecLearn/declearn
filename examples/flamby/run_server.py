@@ -19,6 +19,7 @@
 through which we use the TCGA-BRCA dataset."""
 
 import datetime
+import logging
 import os
 
 import fire  # type: ignore
@@ -33,6 +34,7 @@ from flamby.datasets.fed_tcga_brca import (
 import declearn
 from declearn.model.torch import TorchModel
 from declearn.test_utils import make_importable
+from declearn.utils import config_server_loggers
 
 # Perform local imports.
 with make_importable(os.path.dirname(__file__)):
@@ -82,8 +84,8 @@ def run_server(
     stamp = datetime.datetime.now().strftime("%y-%m-%d_%H-%M")
     checkpoint = os.path.join(FILEDIR, f"result_{stamp}", "server")
     # Set up a logger, records from which will go to a file.
-    logger = declearn.utils.get_logger(
-        name="Server",
+    config_server_loggers(
+        level=logging.INFO,
         fpath=os.path.join(checkpoint, "logs.txt"),
     )
 
@@ -144,7 +146,6 @@ def run_server(
         optim=optim,
         metrics=metrics,
         checkpoint=checkpoint,
-        logger=logger,
     )
 
     # Set up the experiment's hyper-parameters.

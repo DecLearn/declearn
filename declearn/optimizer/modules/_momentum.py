@@ -72,6 +72,7 @@ class MomentumModule(OptiModule):
         self,
         beta: float = 0.9,
         nesterov: bool = False,
+        round_reset: bool = False,
     ) -> None:
         """Instantiate the Momentum gradients-adaptation module.
 
@@ -81,6 +82,9 @@ class MomentumModule(OptiModule):
             Momentum coefficient parameterizing the weight of the velocity.
         nesterov : bool, default=False
             Whether to use Nesterov-accelerated momentum.
+        round_reset: bool, default=False
+            Flag to indicate if we reset the internal state (velocity) to its
+            initial value every time a new round starts.
         """
         if not isinstance(beta, float):
             raise TypeError("'beta' should be of type float.")
@@ -89,6 +93,7 @@ class MomentumModule(OptiModule):
         self.beta = beta
         self.nesterov = nesterov
         self.velocity: Union[Vector, float] = 0.0
+        self.round_reset = round_reset
 
     def get_config(
         self,
@@ -117,6 +122,13 @@ class MomentumModule(OptiModule):
             raise KeyError("Missing required state variable 'velocity'.")
         self.velocity = state["velocity"]
 
+    def on_round_start(
+        self,
+    ) -> None:
+        """Reset velocity (if enabled) at the start of a training round."""
+        if self.round_reset:
+            self.velocity = 0.0
+
 
 class EWMAModule(OptiModule):
     """Exponentially Weighted Moving Average module.
@@ -138,6 +150,7 @@ class EWMAModule(OptiModule):
     def __init__(
         self,
         beta: float = 0.9,
+        round_reset: bool = False,
     ) -> None:
         """Instantiate the EWMA gradients-adaptation module.
 
@@ -146,6 +159,9 @@ class EWMAModule(OptiModule):
         beta: float, default=0.9
             Coefficient parameterizing the (exponentially-
             decaying) moving average of input gradients.
+        round_reset: bool, default=False
+            Flag to indicate if we reset the internal state to its initial value
+            every time a new round starts.
         """
         if not isinstance(beta, float):
             raise TypeError("'beta' should be of type float.")
@@ -153,6 +169,7 @@ class EWMAModule(OptiModule):
             raise ValueError("'beta' value should be in [0, 1[.")
         self.beta = beta
         self.state: Union[Vector, float] = 0.0
+        self.round_reset = round_reset
 
     def get_config(
         self,
@@ -178,6 +195,13 @@ class EWMAModule(OptiModule):
         if "state" not in state:
             raise KeyError("Missing required state variable 'state'.")
         self.state = state["state"]
+
+    def on_round_start(
+        self,
+    ) -> None:
+        """Reset internal state (if enabled) at the start of a training round."""
+        if self.round_reset:
+            self.state = 0.0
 
 
 class YogiMomentumModule(EWMAModule):

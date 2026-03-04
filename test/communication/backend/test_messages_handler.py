@@ -41,6 +41,7 @@ from declearn.version import VERSION
 @pytest.fixture(name="handler")
 def fixture_handler() -> MessagesHandler:
     """Setup a MessagesHandler with a mock logger and a 0.1 heartbeat."""
+    # TODO for 2.10: remove "logger" argument below
     logger = mock.create_autospec(logging.Logger)
     return MessagesHandler(logger, heartbeat=0.1)
 
@@ -230,11 +231,12 @@ class TestMessagesHandler:
         handler: MessagesHandler,
     ) -> None:
         """Test posting a message that overwrites another pending one."""
-        handler.registered_clients = {"context": "client"}
-        handler.outgoing_messages["client"] = "pending"
-        handler.post_message("message", "client")
-        handler.logger.warning.assert_called_once()  # type: ignore
-        assert handler.outgoing_messages["client"] == "message"
+        with mock.patch.object(handler.logger, "warning") as mock_warning:
+            handler.registered_clients = {"context": "client"}
+            handler.outgoing_messages["client"] = "pending"
+            handler.post_message("message", "client")
+            mock_warning.assert_called_once()  # type: ignore
+            assert handler.outgoing_messages["client"] == "message"
 
     async def test_post_message_invalid_client(
         self,

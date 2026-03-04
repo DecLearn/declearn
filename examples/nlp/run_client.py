@@ -32,6 +32,7 @@ import declearn
 import declearn.model.torch
 from declearn.dataset.torch import TorchDataset
 from declearn.test_utils import make_importable
+from declearn.utils import config_client_loggers
 
 # Perform local imports.
 with make_importable(os.path.dirname(__file__)):
@@ -72,22 +73,17 @@ def run_client(
 
     ### Optional: some convenience settings
 
-    # Set GPU as prefered device
+    # Set GPU as prefered device.
     declearn.utils.set_device_policy(gpu=True)
 
-    # Set up logger and checkpointer
+    # Set up logger and checkpointer.
     stamp = datetime.datetime.now().strftime("%y-%m-%d_%H-%M")
     checkpoint = os.path.join(FILEDIR, f"result_{stamp}", client_name)
-    logger = declearn.utils.get_logger(
-        name=client_name,
+    config_client_loggers(
+        client_name=client_name,
+        level=logging.INFO,
         fpath=os.path.join(checkpoint, "logs.txt"),
     )
-
-    # Reduce logger verbosity
-    if not verbose:
-        for handler in logger.handlers:
-            if isinstance(handler, logging.StreamHandler):
-                handler.setLevel(declearn.utils.LOGGING_LEVEL_MAJOR)
 
     ### (1-2) Interface training and optional validation data.
 
@@ -125,7 +121,6 @@ def run_client(
         train_data=train,
         valid_data=valid,
         checkpoint=checkpoint,
-        logger=logger,
         verbose=verbose,
     )
     client.run()

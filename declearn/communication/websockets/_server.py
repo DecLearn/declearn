@@ -20,6 +20,7 @@
 import logging
 import os
 import ssl
+import warnings
 from typing import Optional, Union
 
 import websockets as ws
@@ -44,6 +45,7 @@ class WebsocketsServer(NetworkServer):
     protocol = "websockets"
 
     # pylint: disable-next=too-many-positional-arguments
+    # TODO for 2.10 : remove deprecated "logger" argument
     def __init__(  # noqa: PLR0913
         self,
         host: str = "localhost",
@@ -77,12 +79,21 @@ class WebsocketsServer(NetworkServer):
             Delay (in seconds) between verifications when checking for a
             message having beend received from or collected by a client.
         logger: logging.Logger or str or None, default=None,
-            Logger to use, or name of a logger to set up with
-            `declearn.utils.get_logger`. If None, use `type(self)`.
+            Deprecated in v2.8, removed in v2.10.
+            Not used anymore.
         """
         # inherited signature; pylint: disable=too-many-arguments
+        if logger is not None:
+            warnings.warn(
+                "Argument 'logger' is deprecated and useless now, it will be "
+                "removed in 2.10. "
+                "To customize the instance logger, you may use instead logging "
+                "utils from `declearn.utils` or the 'logging' Python module.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
         super().__init__(
-            host, port, certificate, private_key, password, heartbeat, logger
+            host, port, certificate, private_key, password, heartbeat
         )
         self._server: Optional[WebSocketServer] = None
 

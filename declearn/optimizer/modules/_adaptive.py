@@ -59,6 +59,7 @@ class AdaGradModule(OptiModule):
     def __init__(
         self,
         eps: float = 1e-7,
+        round_reset: bool = False,
     ) -> None:
         """Instantiate the Adagrad gradients-adaptation module.
 
@@ -67,9 +68,13 @@ class AdaGradModule(OptiModule):
         eps: float, default=1e-7
             Numerical-stability improvement term, added
             to the (divisor) adapative scaling term.
+        round_reset: bool, default=False
+            Flag to indicate if we reset the internal state to its initial value
+            every time a new round starts.
         """
         self.eps = eps
         self.state: Union[Vector, float] = 0.0
+        self.round_reset = round_reset
 
     def get_config(
         self,
@@ -96,6 +101,13 @@ class AdaGradModule(OptiModule):
         if "state" not in state:
             raise KeyError("Missing required state variable 'state'.")
         self.state = state["state"]
+
+    def on_round_start(
+        self,
+    ) -> None:
+        """Reset internal state (if enabled) at the start of a training round."""
+        if self.round_reset:
+            self.state = 0.0
 
 
 class RMSPropModule(OptiModule):
@@ -126,6 +138,7 @@ class RMSPropModule(OptiModule):
         self,
         beta: float = 0.9,
         eps: float = 1e-7,
+        round_reset: bool = False,
     ) -> None:
         """Instantiate the RMSProp gradients-adaptation module.
 
@@ -137,8 +150,11 @@ class RMSPropModule(OptiModule):
         eps: float, default=1e-7
             Numerical-stability improvement term, added
             to the (divisor) adapative scaling term.
+        round_reset: bool, default=False
+            Flag to indicate if we reset the internal state to its initial value
+            every time a new round starts.
         """
-        self.ewma = EWMAModule(beta=beta)
+        self.ewma = EWMAModule(beta=beta, round_reset=round_reset)
         self.eps = eps
 
     def get_config(
@@ -165,6 +181,11 @@ class RMSPropModule(OptiModule):
     ) -> None:
         self.ewma.set_state(state)
 
+    def on_round_start(
+        self,
+    ) -> None:
+        self.ewma.on_round_start()
+
 
 class AdamModule(OptiModule):
     """Adaptive Moment Estimation (Adam) module.
@@ -179,7 +200,7 @@ class AdamModule(OptiModule):
             state_v = beta_2*state_v + (1-beta_2)*(grads**2)
             m_hat = state_m / (1 - beta_1**step)
             v_hat = state_v / (1 - beta_2**step)
-            grads = state_m / (sqrt(v_hat) + eps)
+            grads = m_hat / (sqrt(v_hat) + eps)
 
     In other words, gradients are first momentum-corrected, as
     is the accumulated sum of squared past gradients. Both are
@@ -214,6 +235,7 @@ class AdamModule(OptiModule):
         beta_2: float = 0.99,
         amsgrad: bool = False,
         eps: float = 1e-7,
+        round_reset: bool = False,
     ) -> None:
         """Instantiate the Adam gradients-adaptation module.
 
@@ -231,13 +253,17 @@ class AdamModule(OptiModule):
         eps: float, default=1e-7
             Numerical-stability improvement term, added
             to the (divisor) adapative scaling term.
+        round_reset: bool, default=False
+            Flag to indicate if we reset the internal states to their initial
+            value every time a new round starts.
         """
-        self.ewma_1 = EWMAModule(beta=beta_1)
-        self.ewma_2 = EWMAModule(beta=beta_2)
+        self.ewma_1 = EWMAModule(beta=beta_1, round_reset=round_reset)
+        self.ewma_2 = EWMAModule(beta=beta_2, round_reset=round_reset)
         self.steps = 0
         self.eps = eps
         self.amsgrad = amsgrad
         self.vmax: Optional[Vector] = None
+        self.round_reset = round_reset
 
     def get_config(
         self,
@@ -292,6 +318,18 @@ class AdamModule(OptiModule):
         self.steps = state["steps"]
         self.vmax = state["vmax"]
 
+    def on_round_start(
+        self,
+    ) -> None:
+        """Call submodules' `on_round_start` and reset internal states
+        (if enabled) at the start of a training round.
+        """
+        self.ewma_1.on_round_start()
+        self.ewma_2.on_round_start()
+        if self.round_reset:
+            self.steps = 0
+            self.v_max = None
+
 
 class YogiModule(AdamModule):
     """Yogi additive adaptive moment estimation module.
@@ -307,7 +345,7 @@ class YogiModule(AdamModule):
             state_v = state_v + sign_uv*(1-beta_2)*(grads**2)
             m_hat = state_m / (1 - beta_1**step)
             v_hat = state_v / (1 - beta_2**step)
-            grads = state_m / (sqrt(v_hat) + eps)
+            grads = m_hat / (sqrt(v_hat) + eps)
 
     In other words, Yogi [1] implements the Adam [2] algorithm,
     but modifies the update rule of the 'v' state variable that
@@ -339,6 +377,7 @@ class YogiModule(AdamModule):
         beta_2: float = 0.99,
         amsgrad: bool = False,
         eps: float = 1e-7,
+        round_reset: bool = False,
     ) -> None:
         """Instantiate the Yogi gradients-adaptation module.
 
@@ -356,6 +395,13 @@ class YogiModule(AdamModule):
         eps: float, default=1e-7
             Numerical-stability improvement term, added
             to the (divisor) adapative scaling term.
+        round_reset: bool, default=False
+            Flag to indicate if we reset the internal state to its initial value
+            every time a new round starts.
         """
-        super().__init__(beta_1, beta_2, amsgrad=amsgrad, eps=eps)
-        self.ewma_2 = YogiMomentumModule(beta=beta_2)
+        super().__init__(
+            beta_1, beta_2, amsgrad=amsgrad, eps=eps, round_reset=round_reset
+        )
+        self.ewma_2 = YogiMomentumModule(
+            beta=beta_2, round_reset=self.round_reset
+        )

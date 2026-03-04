@@ -64,12 +64,11 @@ class MockNetworkServer(NetworkServer, register=False):
         private_key: Optional[str] = None,
         password: Optional[str] = None,
         heartbeat: float = 0.1,
-        logger: Union[logging.Logger, str, None] = None,
     ) -> None:
         # inherited signature; pylint: disable=too-many-arguments
         # abstract parent method; pylint: disable=useless-parent-delegation
         super().__init__(
-            host, port, certificate, private_key, password, heartbeat, logger
+            host, port, certificate, private_key, password, heartbeat
         )
 
     @property

@@ -40,7 +40,18 @@ from typing import Type
 import pytest
 
 from declearn.optimizer import list_optim_modules
-from declearn.optimizer.modules import AuxVar, NoiseModule, OptiModule
+from declearn.optimizer.modules import (
+    AdaGradModule,
+    AdamModule,
+    AuxVar,
+    EWMAModule,
+    MomentumModule,
+    NoiseModule,
+    OptiModule,
+    RMSPropModule,
+    YogiModule,
+    YogiMomentumModule,
+)
 from declearn.test_utils import (
     FrameworkType,
     GradientsTestCase,
@@ -162,3 +173,73 @@ class OptiModuleTestSuite(PluginTestBase):
 )
 class TestOptiModule(OptiModuleTestSuite):
     """Unit tests for declearn.optimizer.modules.OptiModule subclasses."""
+
+
+# Tests related to "on round start state reset"
+ROUND_RESET_OPTIMODULES = {
+    "adagrad": AdaGradModule,
+    "adam": AdamModule,
+    "ewma": EWMAModule,
+    "momentum": MomentumModule,
+    "rmsprop": RMSPropModule,
+    "yogi": YogiModule,
+    "yogi-momentum": YogiMomentumModule,
+}
+
+RR_MODULES_TO_INIT_STATE = {
+    "adagrad": {
+        "state": 0.0,
+    },
+    "adam": {
+        "steps": 0,
+        "vmax": None,
+        "momentum": {"state": 0.0},
+        "velocity": {"state": 0.0},
+    },
+    "ewma": {
+        "state": 0.0,
+    },
+    "momentum": {
+        "velocity": 0.0,
+    },
+    "rmsprop": {
+        "state": 0.0,
+    },
+    "yogi": {
+        "steps": 0,
+        "vmax": None,
+        "momentum": {"state": 0.0},
+        "velocity": {"state": 0.0},
+    },
+    "yogi-momentum": {
+        "state": 0.0,
+    },
+}
+
+
+@pytest.mark.parametrize(
+    "cls", ROUND_RESET_OPTIMODULES.values(), ids=ROUND_RESET_OPTIMODULES.keys()
+)
+class TestRoundResetModule:
+    """Unit tests specific to declearn.optimizer.modules.OptiModules
+    subclasses that implements an optional reset of internal state(s) on round
+    start.
+    """
+
+    def test_on_round_start_no_reset(self, cls: Type[OptiModule]):
+        module = cls()
+        gradients = GradientsTestCase("numpy").mock_gradient
+        module.run(gradients)
+        state1 = module.get_state()
+        module.on_round_start()
+        state2 = module.get_state()
+        assert state1 == state2
+
+    def test_on_round_start_reset(self, cls: Type[OptiModule]):
+        module = cls(round_reset=True)
+        init_state = RR_MODULES_TO_INIT_STATE[cls.name]
+        gradients = GradientsTestCase("numpy").mock_gradient
+        module.run(gradients)
+        assert module.get_state() != init_state
+        module.on_round_start()
+        assert module.get_state() == init_state

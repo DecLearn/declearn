@@ -325,7 +325,7 @@ On the server side, a `declearn.fairness.api.FairnessControllerServer` subclass
 must be selected, instantiated and plugged into the `FLOptimConfig` object (or
 dict input as `optim` instantiation parameter to `FederatedServer`).
 
-For instance, to merely measure the model's fairness wihtout altering the
+For instance, to merely measure the model's fairness without altering the
 training process (typically to assess the fairness of a baseline approach),
 one may edit step 2 of the initial
 [server script](https://gitlab.inria.fr/magnet/declearn/declearn2/-/tree/develop/examples/heart-uci/server.py)

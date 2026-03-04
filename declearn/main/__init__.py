@@ -36,11 +36,6 @@ This module also implements the following submodules, used by the former:
     implements client-side training and evaluation routines, and may
     therefore be leveraged in a non-FL setting or to implement other
     FL process routines than the centralized one defined here.
-
-Finally, the [privacy][declearn.main.privacy] submodule is DEPRECATED as of
-DecLearn 2.6 and will be removed in DecLearn 2.8. It was moved and renamed
-to [declearn.training.dp][]. It can still be manually imported under its
-deprecated name (containing re-exports of moved contents).
 """
 
 from . import config, utils
