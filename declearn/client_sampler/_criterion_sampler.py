@@ -56,8 +56,8 @@ class CriterionClientSampler(ClientSampler):
         attribute a criterion score to a client if it is missing (e.g. because
         of a missing train reply).
         Supported values are :
-            "priority": prioritizes the clients with a missing score, by setting
-            the score to infinity.
+            "priority": prioritizes the clients with a missing score, by
+            setting the score to infinity.
             "equal": sets the missing scores to 1 / number_of_clients.
     """
 
@@ -107,7 +107,8 @@ class CriterionClientSampler(ClientSampler):
         Raises
         ------
         ValueError:
-            If the string identifying the missing score policy is not supported.
+            If the string identifying the missing score policy is not
+            supported.
         """
         if self.missing_scores_policy == "priority":
             replacement_score = float("inf")
@@ -154,8 +155,8 @@ class CriterionClientSampler(ClientSampler):
     def update(
         self, client_to_reply: Dict[str, TrainReply], global_model: Model
     ) -> None:
-        """Update clients metadata and sampler internal state according
-        to each client training reply and the global model.
+        """Update clients metadata and sampler internal state according to each
+        client training reply and the global model.
 
         Concretely, compute and update each client criterion score.
         """

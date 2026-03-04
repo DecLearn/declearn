@@ -102,7 +102,8 @@ class Criterion(metaclass=ABCMeta):
         client_to_reply: Dict[str, TrainReply],
         global_model: Model,
     ) -> Dict[str, Optional[float]]:
-        """Compute the criterion score for each client listed in `client_to_reply`.
+        """Compute the criterion score for each client listed in
+        `client_to_reply`.
         The score can be derived from information in the client train replies
         and the global model.
 

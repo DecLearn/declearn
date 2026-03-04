@@ -235,6 +235,7 @@ target-version = "py311"
 # Rules to be taken into account
 select = [
     "E4", "E7", "E9",  # pycodestyle
+    "E501", # line-too-long
     "F",  # Pyflakes
     "B",  # flake8-bugbear
     "I",  # isort
@@ -248,6 +249,9 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 # Ignores unused imports in __init__.py (these imports are re-exports).
 "__init__.py" = ["F401"]
+
+[tool.ruff.lint.pycodestyle]
+max-doc-length = 79
 
 [tool.ruff.format]
 # Like Black, use double quotes for strings.

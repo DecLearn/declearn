@@ -264,8 +264,8 @@ class FederatedServer:
 
         if isinstance(parsed_sampler, DefaultClientSampler):
             msg = (
-                "Default client sampler selected, all clients will be involved "
-                "in each round"
+                "Default client sampler selected, all clients will be "
+                "involved in each round"
             )
         else:
             msg = (

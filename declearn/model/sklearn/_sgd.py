@@ -564,7 +564,10 @@ class SklearnSGDModel(Model):
             # Wrap it to support batched inputs.
             def loss_1d(y_true: np.ndarray, y_pred: np.ndarray) -> np.ndarray:
                 return np.array(
-                    [loss_smp(*smp) for smp in zip(y_pred, y_true, strict=False)]
+                    [
+                        loss_smp(*smp) 
+                        for smp in zip(y_pred, y_true, strict=False)
+                    ]
                 )
 
         # For multiclass classifiers, further wrap to support 2d predictions.

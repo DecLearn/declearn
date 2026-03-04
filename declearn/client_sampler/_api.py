@@ -108,8 +108,9 @@ class ClientSampler(metaclass=ABCMeta):
     -----------
     When a subclass inheriting from `ClientSampler` is declared, it is
     automatically registered under the "ClientSampler" group using its
-    class-attribute `strategy`. This can be prevented by adding `register=False`
-    to the inheritance specs (e.g. `class MyCls(ClientSampler, register=False)`)
+    class-attribute `strategy`. This can be prevented by adding
+    `register=False` to the inheritance specs
+    (e.g. `class MyCls(ClientSampler, register=False)`).
     See `declearn.utils.register_type` for details on types registration.
 
     Notes
@@ -129,7 +130,9 @@ class ClientSampler(metaclass=ABCMeta):
         register: bool = True,
         **kwargs: Any,
     ) -> None:
-        """Automatically type-register `ClientSampler` subclasses if enabled."""
+        """Automatically type-register `ClientSampler` subclasses if
+        enabled.
+        """
         super().__init_subclass__(**kwargs)
         if register:
             register_from_attr(cls, "strategy", "ClientSampler")
@@ -242,8 +245,8 @@ class ClientSampler(metaclass=ABCMeta):
                 nb_retries += 1
             else:  # no client sampled and max number of retries reached
                 self.logger.warning(
-                    f"No client was sampled after {self.max_retries} attempts. "
-                    "Falling back to selecting all provided clients."
+                    f"No client was sampled after {self.max_retries} "
+                    "attempts. Falling back to selecting all provided clients."
                 )
                 sampled_clients = eligible_clients
                 retry = False

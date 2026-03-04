@@ -26,6 +26,9 @@ import cryptography.hazmat.primitives.asymmetric.rsa
 import cryptography.hazmat.primitives.hashes
 import cryptography.hazmat.primitives.serialization as crypto_serialization
 from cryptography import x509
+from cryptography.hazmat.primitives.serialization import (
+    KeySerializationEncryption,
+)
 from cryptography.x509.oid import NameOID
 
 __all__ = [
@@ -118,7 +121,9 @@ def generate_private_key(
         key_size=key_size,
     )
     if password is None:
-        encryption_algorithm: crypto_serialization.KeySerializationEncryption = crypto_serialization.NoEncryption()
+        encryption_algorithm: KeySerializationEncryption = (
+            crypto_serialization.NoEncryption()
+        )
     else:
         encryption_algorithm = crypto_serialization.BestAvailableEncryption(
             password.encode("utf-8")

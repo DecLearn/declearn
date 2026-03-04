@@ -114,8 +114,8 @@ class NormalizedDivCriterion(Criterion):
 
 
 class TrainTimeCriterion(Criterion):
-    """`Criterion` implementation where the criterion score is computed from the
-    last performed round training time (in seconds) spent by the client.
+    """`Criterion` implementation where the criterion score is computed from
+    the last performed round training time (in seconds) spent by the client.
 
     Attributes
     ----------
@@ -143,8 +143,9 @@ class TrainTimeCriterion(Criterion):
 
 
 class TrainTimeHistoryCriterion(Criterion):
-    """`Criterion` implementation where the criterion score is computed from the
-    history of all past rounds' training times (in seconds) spent by the client.
+    """`Criterion` implementation where the criterion score is computed from
+    the history of all past rounds' training times (in seconds) spent by the
+    client.
 
     Attributes
     ----------
@@ -157,8 +158,8 @@ class TrainTimeHistoryCriterion(Criterion):
         Name of a method to aggregate the history values into a float, e.g.
         average, sum.
     history: Dict[str, List[float]], read-only instance property
-        Dictionary mapping each client to its training time history (time values
-        for all past training rounds).
+        Dictionary mapping each client to its training time history (time
+        values for all past training rounds).
 
     Notes
     -----
