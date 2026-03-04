@@ -148,7 +148,8 @@ This round only occurs when a fairness controller was set up, and may be
 configured to be periodically skipped.
 If fairness is set up, the first fairness round will always occur.
 If checkpointing is set up on the server side, the last model will undergo
-a fairness round, to evaluate its fairness prior to ending the FL process.
+a fairness round involving *all clients*, to evaluate its fairness prior to
+ending the FL process.
 
 - Server:
     - send a query to clients, including computational effort constraints,
@@ -184,7 +185,7 @@ a fairness round, to evaluate its fairness prior to ending the FL process.
 
 This round may be configured to be periodically skipped.
 If checkpointing is set up on the server side, the last model will always be
-evaluated prior to ending the FL process.
+evaluated on *all clients* prior to ending the FL process.
 
 - Server:
     - send data-batching parameters and effort constraints

@@ -385,7 +385,6 @@ class FederatedServer:
                 if not self._keep_training(round_i, config.rounds, early_stop):
                     break
             # When checkpointing, force evaluating last model on all clients.
-            # FIXME ? to be validated
             if self.ckptr is not None:
                 if round_i % config.evaluate.frequency:
                     await self.evaluation_round(
