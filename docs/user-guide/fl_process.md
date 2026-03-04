@@ -20,13 +20,15 @@ exposed here.
       (secure aggregation, differential privacy and/or group fairness)
 - Iteratively:
     - sample clients involved in the following training round
-    - (optionally) perform a fairness-related round
+    - (optionally) perform a fairness-related round on all clients (as of
+      today)
     - perform a training round
-    - (optionally) perform an evaluation round
+    - (optionally) perform an evaluation round on all clients (as of today)
     - decide whether to continue, based on the number of
       rounds taken or on the evolution of the global loss
 - Finally:
-    - (optionally) evaluate the last model, if it was not already done
+    - (optionally) evaluate the last model on all clients (as of today)
+    if it was not already done
     - restore the model weights that yielded the lowest global validation loss
     - notify clients that training is over, so they can disconnect
       and run their final routine (e.g. save the "best" model)

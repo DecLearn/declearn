@@ -371,9 +371,10 @@ class FederatedServer:
             while True:
                 clients_train = self._select_training_round_participants()
                 clients_eval = self._select_evaluation_round_participants()
+                # Fairness round is made on all clients.
                 await self.fairness_round(
-                    round_i, config.fairness, clients_train
-                )  # FIXME ? validate usage of clients_train here
+                    round_i, config.fairness, self.netwk.client_names
+                )
                 round_i += 1
                 await self.training_round(
                     round_i, config.training, clients_train
