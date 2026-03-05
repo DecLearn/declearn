@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Shared utils for client sampler's unit tests."""
+"""Shared utils for client sampler's testing."""
 
 from typing import Dict, Set
 

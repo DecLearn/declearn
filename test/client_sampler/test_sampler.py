@@ -33,7 +33,7 @@ from declearn.client_sampler import (
 from declearn.client_sampler.criterion import GradientNormCriterion
 from declearn.messaging import TrainReply
 from declearn.model.api import Model
-from test.client_sampler.utils import FailClientSampler
+from declearn.test_utils import FailClientSampler
 
 
 class TestClientSampler:
