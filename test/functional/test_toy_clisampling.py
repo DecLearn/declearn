@@ -52,7 +52,7 @@ from declearn.main.utils import IncompatibleConfigsError
 from declearn.model.sklearn import SklearnSGDModel
 from declearn.secagg.masking import MaskingSecaggConfigServer
 from declearn.test_utils import make_importable
-from declearn.utils import get_logger
+from declearn.utils import config_logger
 
 with make_importable(os.path.dirname(__file__)):
     from test_toy_clf_secagg import generate_toy_dataset
@@ -92,7 +92,7 @@ async def async_run_server(
     secagg_config = (
         MaskingSecaggConfigServer(bitsize=64, clipval=1e8) if secagg else None
     )
-    logger = get_logger("FederatedServer", logging.DEBUG)
+    config_logger("declearn.server", level=logging.DEBUG)
     server = FederatedServer(
         model=model,
         netwk=netwk,
@@ -101,7 +101,6 @@ async def async_run_server(
         client_sampler=client_sampler,
         secagg=secagg_config,
         checkpoint={"folder": folder, "max_history": 1},
-        logger=logger,
     )
     # Set up hyper-parameters and run training.
     config = FLRunConfig.from_params(
