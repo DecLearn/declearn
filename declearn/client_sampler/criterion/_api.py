@@ -19,6 +19,7 @@
 
 from __future__ import annotations
 
+import operator
 from abc import ABCMeta, abstractmethod
 from typing import (
     Any,
@@ -37,8 +38,6 @@ from declearn.utils import (
     create_types_registry,
     register_from_attr,
 )
-
-PrimitiveType = Union[int, float, bool, None]
 
 
 @create_types_registry(name="ClientSamplerCriterion")
@@ -127,7 +126,12 @@ class Criterion(metaclass=ABCMeta):
 
     @staticmethod
     def wrap(obj: Any) -> Criterion:
-        """Make sure a native Python object is wrapped in a `Criterion`.
+        """Make sure the input object is wrapped in a `Criterion`.
+
+        If the input object is numeric (int or float), it will be wrapped in
+        a `ConstantCriterion`.
+        If it is already a `Criterion`, no action is needed.
+        In other cases, an error will be raised.
 
         Parameters
         ----------
@@ -142,43 +146,28 @@ class Criterion(metaclass=ABCMeta):
         Raises
         ------
         ValueError
-            If object is not a bool, int, float or `Criterion`.
+            If object is not an int, float or `Criterion`.
         """
-        if obj is None or isinstance(obj, (int, float, bool)):
+        if isinstance(obj, (int, float)):
             return ConstantCriterion(value=obj)
         if isinstance(obj, Criterion):
             return obj
-
-        raise ValueError(f"Criterion cannot wrap {type(obj)}.")
+        raise ValueError(f"Criterion cannot wrap type '{type(obj)}'.")
 
     def __add__(self, other: Any) -> Criterion:
         return CompositionCriterion("add", self, self.wrap(other))
 
-    def __radd__(self, other: Any) -> Criterion:
-        return CompositionCriterion("radd", self, self.wrap(other))
-
     def __sub__(self, other: Any) -> Criterion:
         return CompositionCriterion("sub", self, self.wrap(other))
-
-    def __rsub__(self, other: Any) -> Criterion:
-        return CompositionCriterion("rsub", self, self.wrap(other))
 
     def __mul__(self, other: Any) -> Criterion:
         return CompositionCriterion("mul", self, self.wrap(other))
 
-    def __rmul__(self, other: Any) -> Criterion:
-        return CompositionCriterion("rmul", self, self.wrap(other))
-
     def __truediv__(self, other: Any) -> Criterion:
         return CompositionCriterion("truediv", self, self.wrap(other))
 
-    def __rtruediv__(self, other: Any) -> Criterion:
-        return CompositionCriterion("rtruediv", self, self.wrap(other))
-
-    def __pow__(self, power, modulo=None):
-        return CompositionCriterion(
-            "pow", self, self.wrap(power), self.wrap(modulo)
-        )
+    def __pow__(self, power):
+        return CompositionCriterion("pow", self, self.wrap(power))
 
     @classmethod
     def from_specs(cls, **kwargs: Any) -> Criterion:
@@ -187,20 +176,22 @@ class Criterion(metaclass=ABCMeta):
 
 
 class ConstantCriterion(Criterion):
-    """Criterion to wrap a native constant Python object.
-
-    Native constant Python objects are: int, float, bool or None.
+    """Criterion to wrap a numeric value.
 
     Attributes
     ----------
-    value: PrimitiveType
-        The native object value wrapped into the `ConstantCriterion` instance.
+    value: Union[int, float]
+        The numeric value wrapped into the `ConstantCriterion` instance.
     """
 
     name = "constant"
 
-    def __init__(self, value: PrimitiveType):
+    def __init__(self, value: Union[int, float]):
         super().__init__()
+        if not isinstance(value, (int, float)):
+            raise ValueError(
+                f"ConstantCriterion cannot wrap type '{type(value)}'."
+            )
         self.value = value
 
     def compute(
@@ -208,10 +199,7 @@ class ConstantCriterion(Criterion):
         client_to_reply: Dict[str, TrainReply],
         global_model: Model,
     ) -> Dict[str, Optional[float]]:
-        if self.value is None:
-            value = None
-        else:
-            value = float(self.value)
+        value = float(self.value)
         return {client_name: value for client_name in client_to_reply}
 
 
@@ -223,10 +211,8 @@ class CompositionCriterion(Criterion):
 
     Attributes
     ----------
-    operation: Callable[..., Optional[float]]
+    operation: Callable
         Operation function that will be used to build the composed criterion.
-        It must take one or more arguments of type PrimitiveType, and return
-        a float or None.
     parents: Tuple[Criterion, ...]
         Tuple of parent criteria, i.e. criteria whose computed values will be
         composed using the `operation` attribute. Thus, the number of parents
@@ -237,20 +223,16 @@ class CompositionCriterion(Criterion):
     name = "composition"
 
     OP_STR_TO_FUNC: Dict[str, Callable] = {
-        "add": float.__add__,
-        "+": float.__add__,
-        "sub": float.__sub__,
-        "-": float.__sub__,
-        "mul": float.__mul__,
-        "*": float.__mul__,
-        "div": float.__truediv__,
-        "truediv": float.__truediv__,
-        "/": float.__truediv__,
-        "radd": float.__radd__,
-        "rsub": float.__rsub__,
-        "rmul": float.__rmul__,
-        "rtruediv": float.__rtruediv__,
-        "pow": float.__pow__,
+        "add": operator.add,
+        "+": operator.add,
+        "sub": operator.sub,
+        "-": operator.sub,
+        "mul": operator.mul,
+        "*": operator.mul,
+        "div": operator.truediv,
+        "truediv": operator.truediv,
+        "/": operator.truediv,
+        "pow": operator.pow,
     }
     """Dictionnary mapping supported operation strings to the matching
     operation function.
@@ -273,10 +255,6 @@ class CompositionCriterion(Criterion):
             - "sub", "-"
             - "mul", "*"
             - "div", "truediv", "/"
-            - "radd"
-            - "rsub"
-            - "rmul"
-            - "rtruediv"
             - "pow"
         """
         if operation not in self.OP_STR_TO_FUNC.keys():
@@ -343,6 +321,9 @@ class CompositionCriterion(Criterion):
 
 def instantiate_criterion(name: str, **kwargs: Any) -> Criterion:
     """Instantiate a `Criterion` from its specifications.
+
+    The value of the `name` argument identifies which subclass to instantiate,
+    by matching against each subclass's `name` class variable.
 
     Parameters
     ----------

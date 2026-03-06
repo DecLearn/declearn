@@ -314,6 +314,9 @@ def list_client_samplers() -> Dict[str, Type[ClientSampler]]:
 def instantiate_client_sampler(strategy: str, **kwargs: Any) -> ClientSampler:
     """Instantiate a `ClientSampler` from its specifications.
 
+    The value of the `strategy` argument identifies which subclass to
+    instantiate, by matching against each subclass's `strategy` class variable.
+
     Parameters
     ----------
     strategy:

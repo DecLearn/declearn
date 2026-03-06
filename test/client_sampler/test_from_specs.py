@@ -43,10 +43,6 @@ OPERATIONS = [
     "div",
     "truediv",
     "/",
-    "radd",
-    "rsub",
-    "rmul",
-    "rtruediv",
     "pow",
 ]
 
