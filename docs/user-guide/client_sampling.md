@@ -370,12 +370,15 @@ name, e.g. `"uniform"` for the class `UniformClientSampler`.
 or False) to precise if your strategy is compatible with secure aggregation.
 - Implementing the method `cls_sample` in which your custom client sampling
 logic is defined.
-- Implementing the method `update` in which you optionally update the sampler
+
+Optionally, if your sampler needs to update its internal state after each
+round : 
+- You can implement the method `update` in which you update the sampler
 internal state (e.g. criterion score computation). This method is called
 by the `FederatedServer` at each global round, after collecting all involved
 clients' reply.  
-Note : if no update is needed for your sampler, just write the `pass` keyword
-in the method body.
+> Note : if no update is needed for your sampler, you don't need to override the
+`update` method.
 
 See the `ClientSampler` API reference and subclasses implementation for more
 details.

@@ -87,8 +87,6 @@ class ClientSampler(metaclass=ABCMeta):
         Indicate if the client sampler is compatible with secure aggregation
     - cls_sample(eligible_clients):
         Class-specific back-end of the common sampling method `sample`.
-    - update(client_to_reply, global_model):
-        Update sampler internal state.
 
     Overridable
     -----------
@@ -98,6 +96,11 @@ class ClientSampler(metaclass=ABCMeta):
         Can be overriden (or extended) to precisely initialize
         some metadata used in the strategy of the sampler
         subclass.
+
+    - update(client_to_reply, global_model):
+        Instance method that update the sampler internal state.
+        Can be overriden to update internal states that are specific to the
+        client sampler subclass.
 
     - from_specs(cls, **kwargs):
         Class method, create an instance from specifications, can be overriden
@@ -261,17 +264,20 @@ class ClientSampler(metaclass=ABCMeta):
         the subclass.
         """
 
-    @abstractmethod
     def update(
         self, client_to_reply: Dict[str, TrainReply], global_model: Model
     ) -> None:
         """Update sampler internal state using clients training reply and
         the global model.
 
+        By default, this method does nothing. If your concrete client sampler
+        subclass needs to update its internal state, override it with a
+        proper implementation.
+
         Notes
         -----
         The parameters must be considered read-only, do not modify them
-        when defining the concrete method.
+        if you override this method.
 
         Parameters
         ----------
@@ -281,6 +287,7 @@ class ClientSampler(metaclass=ABCMeta):
         global_model:
             Global model hold by the server.
         """
+        return None
 
     @classmethod
     def from_specs(cls, **kwargs: Any) -> ClientSampler:

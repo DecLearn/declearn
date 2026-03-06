@@ -25,8 +25,6 @@ from typing import Dict, Optional, Set
 import numpy as np
 
 from declearn.client_sampler._api import ClientSampler
-from declearn.messaging import TrainReply
-from declearn.model.api import Model
 
 
 class WeightedClientSampler(ClientSampler):
@@ -121,8 +119,3 @@ class WeightedClientSampler(ClientSampler):
             clients_list, size=n_samples, replace=False, p=probas
         )
         return {str(client_np) for client_np in sampled}
-
-    def update(
-        self, client_to_reply: Dict[str, TrainReply], global_model: Model
-    ) -> None:
-        pass

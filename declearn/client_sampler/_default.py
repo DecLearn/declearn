@@ -17,11 +17,9 @@
 
 """`ClientSampler` implementation for default sampling (select all clients)."""
 
-from typing import Dict, Set
+from typing import Set
 
 from declearn.client_sampler._api import ClientSampler
-from declearn.messaging import TrainReply
-from declearn.model.api import Model
 
 
 class DefaultClientSampler(ClientSampler):
@@ -35,8 +33,3 @@ class DefaultClientSampler(ClientSampler):
 
     def cls_sample(self, eligible_clients: Set[str]) -> Set[str]:
         return eligible_clients
-
-    def update(
-        self, client_to_reply: Dict[str, TrainReply], global_model: Model
-    ) -> None:
-        pass
