@@ -18,6 +18,8 @@
 """Unit tests for 'declearn.utils._register' tools."""
 
 import time
+from abc import ABCMeta
+from typing import ClassVar
 
 import pytest
 
@@ -26,6 +28,7 @@ from declearn.utils import (
     access_registration_info,
     access_types_mapping,
     create_types_registry,
+    register_from_attr,
     register_type,
 )
 
@@ -114,6 +117,46 @@ def test_access_registered() -> None:
         access_registered(name_2, group=None)  # invalid name under any group
     with pytest.raises(KeyError):
         access_registered(name, group=name_2)  # non-existing group
+
+
+def test_register_from_attr() -> None:
+    """Unit tests for 'register_from_attr' using valid logic."""
+
+    # Define abstract class with class variable.
+    class AbstractClass(metaclass=ABCMeta):
+        identifier: ClassVar[str]
+
+    # Define a child class with setting a value for the class variable.
+    class ChildClass(AbstractClass):
+        identifier = "child"
+
+    # Create a registry.
+    group = f"test_{time.time_ns()}"
+    create_types_registry(AbstractClass, group)
+    # Register ChildClass.
+    register_from_attr(ChildClass, "identifier", group=group)
+
+    # Check correct registration.
+    assert access_registered("child", group) is ChildClass
+
+
+def test_register_from_attr_fails() -> None:
+    """Unit tests for 'register_from_attr' using invalid logic."""
+
+    # Define abstract class with class variable.
+    class AbstractClass(metaclass=ABCMeta):
+        identifier: ClassVar[str]
+
+    # Define a child class without setting a value for the class variable.
+    class ChildClass(AbstractClass):
+        pass
+
+    # Create a registry.
+    group = f"test_{time.time_ns()}"
+    create_types_registry(AbstractClass, group)
+    # Try to register ChildClass.
+    with pytest.raises(TypeError):
+        register_from_attr(ChildClass, "identifier", group=group)
 
 
 def test_register_unspecified_group() -> None:

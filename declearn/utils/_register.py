@@ -255,8 +255,8 @@ def register_from_attr(cls: Type, id_attr: str, group: str) -> None:
     """
     if not getattr(cls, id_attr, None):
         raise TypeError(
-            f"{cls.__name__} must define a class attribute '{id_attr}'"
-            "to be auto-registered."
+            f"{cls.__name__} must define a class attribute '{id_attr}' "
+            "with a value to be auto-registered."
         )
     register_type(cls, getattr(cls, id_attr), group=group)
 
