@@ -13,18 +13,22 @@ exposed here.
 - Initially:
     - the clients connect to the server and register for training
     - the server may collect targetted metadata from clients when required
-    - the server sets up the model, optimizers, aggregator and metrics
+    - the server sets up the model, optimizers, aggregator, client sampler and
+      metrics
     - all clients receive instructions to set up these objects as well
     - additional setup phases optionally occur to set up advanced features
       (secure aggregation, differential privacy and/or group fairness)
 - Iteratively:
-    - (optionally) perform a fairness-related round
+    - sample clients involved in the following training round
+    - (optionally) perform a fairness-related round on all clients (as of
+      today)
     - perform a training round
-    - (optionally) perform an evaluation round
+    - (optionally) perform an evaluation round on all clients (as of today)
     - decide whether to continue, based on the number of
       rounds taken or on the evolution of the global loss
 - Finally:
-    - (optionally) evaluate the last model, if it was not already done
+    - (optionally) evaluate the last model on all clients (as of today)
+    if it was not already done
     - restore the model weights that yielded the lowest global validation loss
     - notify clients that training is over, so they can disconnect
       and run their final routine (e.g. save the "best" model)
@@ -65,7 +69,8 @@ for dataset information (typically, features shape and/or dtype).
 #### Initialization of the federated optimization problem
 
 - Server:
-    - set up the model, local and global optimizer, aggregator and metrics
+    - set up the model, local and global optimizer, aggregator, client sampler
+      and metrics
     - send specs to the clients so that they set up local counterpart objects
 - Client:
     - instantiate the model, optimizer, aggregator and metrics based on specs
@@ -145,7 +150,8 @@ This round only occurs when a fairness controller was set up, and may be
 configured to be periodically skipped.
 If fairness is set up, the first fairness round will always occur.
 If checkpointing is set up on the server side, the last model will undergo
-a fairness round, to evaluate its fairness prior to ending the FL process.
+a fairness round involving *all clients*, to evaluate its fairness prior to
+ending the FL process.
 
 - Server:
     - send a query to clients, including computational effort constraints,
@@ -159,7 +165,6 @@ a fairness round, to evaluate its fairness prior to ending the FL process.
 ### Training round
 
 - Server:
-    - select clients that are to participate
     - send data-batching and effort constraints parameters
     - send current shared model trainable weights (to clients that do not
       already hold them) and optimizer auxiliary variables (if any)
@@ -171,6 +176,8 @@ a fairness round, to evaluate its fairness prior to ending the FL process.
       auxiliary variables
 - messaging: (TrainRequest <-> TrainReply)
 - Server:
+    - update the internal state of the client sampler (if needed) from client
+      replies information and from the current global model
     - unpack and aggregate clients' model weights updates into global updates
     - unpack and process clients' optimizer auxiliary variables
     - run global updates through the server's optimizer to modify and finally
@@ -180,10 +187,9 @@ a fairness round, to evaluate its fairness prior to ending the FL process.
 
 This round may be configured to be periodically skipped.
 If checkpointing is set up on the server side, the last model will always be
-evaluated prior to ending the FL process.
+evaluated on *all clients* prior to ending the FL process.
 
 - Server:
-    - select clients that are to participate
     - send data-batching parameters and effort constraints
     - send shared model trainable weights
 - Client:

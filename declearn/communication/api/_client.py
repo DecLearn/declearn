@@ -85,7 +85,8 @@ class NetworkClient(metaclass=abc.ABCMeta):
     method. Any message emitted using `NetworkClient.send_message` will
     probably be rejected by the server if the client has not registered.
 
-    You can access and configure the logger of each instance of this class using
+    You can access and configure the logger of each instance of this class
+    using
     `logger = logging.getLogger("declearn.client-MY_CLIENT_NAME.network")`,
     and then adjust it as needed (e.g. `logger.setLevel(...)`).
     """
@@ -131,8 +132,9 @@ class NetworkClient(metaclass=abc.ABCMeta):
             warnings.warn(
                 "Argument 'logger' is deprecated and useless now, it will be "
                 "removed in 2.10. "
-                "To customize the instance logger, you may use instead logging "
-                "utils from `declearn.utils` or the 'logging' Python module.",
+                "To customize the instance logger, you may use instead "
+                "logging utils from `declearn.utils` or the 'logging' Python "
+                "module.",
                 DeprecationWarning,
                 stacklevel=2,
             )

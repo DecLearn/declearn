@@ -145,7 +145,8 @@ class TorchModel(Model):
         self,
     ) -> Dict[str, Any]:
         warnings.warn(
-            "PyTorch JSON serialization relies on pickle, which may be unsafe.",
+            "PyTorch JSON serialization relies on pickle, which may be "
+            "unsafe.",
             stacklevel=2,
         )
         with io.BytesIO() as buffer:

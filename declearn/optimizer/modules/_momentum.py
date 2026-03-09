@@ -160,8 +160,8 @@ class EWMAModule(OptiModule):
             Coefficient parameterizing the (exponentially-
             decaying) moving average of input gradients.
         round_reset: bool, default=False
-            Flag to indicate if we reset the internal state to its initial value
-            every time a new round starts.
+            Flag to indicate if we reset the internal state to its initial
+            value every time a new round starts.
         """
         if not isinstance(beta, float):
             raise TypeError("'beta' should be of type float.")
@@ -199,7 +199,9 @@ class EWMAModule(OptiModule):
     def on_round_start(
         self,
     ) -> None:
-        """Reset internal state (if enabled) at the start of a training round."""
+        """Reset internal state (if enabled) at the start of a training
+        round.
+        """
         if self.round_reset:
             self.state = 0.0
 

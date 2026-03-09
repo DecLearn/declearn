@@ -20,3 +20,5 @@ This guide is structured this way:
     Description of the SecAgg features of declearn.
 - [Fairness capabilities](./fairness.md):<br/>
     Description of the fairness-aware federated learning features of declearn.
+- [Client sampling capabilities](./client_sampling.md):<br/>
+    Description of the client sampling features of declearn.

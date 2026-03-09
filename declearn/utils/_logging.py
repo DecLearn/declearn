@@ -22,9 +22,13 @@ import os
 import warnings
 from typing import Optional
 
+# TODO for 2.10: remove get_logger from list
 __all__ = [
     "get_logger",
     "LOGGING_LEVEL_MAJOR",
+    "config_logger",
+    "config_server_loggers",
+    "config_client_loggers",
 ]
 
 

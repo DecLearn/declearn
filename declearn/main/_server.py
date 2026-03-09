@@ -38,6 +38,12 @@ from typing import (  # fmt: off
 import numpy as np
 
 from declearn import messaging
+from declearn.client_sampler import (
+    ClientSampler,
+    ClientSamplerConfig,
+    DefaultClientSampler,
+    instantiate_client_sampler,
+)
 from declearn.communication import NetworkServerConfig
 from declearn.communication.api import NetworkServer
 from declearn.main.config import (
@@ -51,6 +57,7 @@ from declearn.main.utils import (
     AggregationError,
     Checkpointer,
     EarlyStopping,
+    IncompatibleConfigsError,
     aggregate_clients_data_info,
 )
 from declearn.metrics import MetricInputType, MetricSet
@@ -89,6 +96,9 @@ class FederatedServer:
         netwk: Union[NetworkServer, NetworkServerConfig, Dict[str, Any], str],
         optim: Union[FLOptimConfig, str, Dict[str, Any]],
         metrics: Union[MetricSet, List[MetricInputType], None] = None,
+        client_sampler: Union[
+            ClientSampler, ClientSamplerConfig, Dict[str, Any], None
+        ] = None,
         secagg: Union[SecaggConfigServer, Dict[str, Any], None] = None,
         checkpoint: Union[Checkpointer, Dict[str, Any], str, None] = None,
         logger: Union[logging.Logger, str, None] = None,
@@ -115,6 +125,9 @@ class FederatedServer:
             to wrap into one, defining evaluation metrics to compute in
             addition to the model's loss.
             If None, only compute and report the model's loss.
+        client_sampler: ClientSampler or ClientSamplerConfig or specification
+            dict or None (default). Specifies the client sampler to use in the
+            federated process to select clients involved at each round.
         secagg: SecaggConfigServer or dict or None, default=None
             Optional SecAgg config and setup controller
             or dict of kwargs to set one up.
@@ -132,8 +145,9 @@ class FederatedServer:
             warnings.warn(
                 "Argument 'logger' is deprecated and useless now, it will be "
                 "removed in 2.10. "
-                "To customize the instance logger, you may use instead logging "
-                "utils from `declearn.utils` or the 'logging' Python module.",
+                "To customize the instance logger, you may use instead "
+                "logging utils from `declearn.utils` or the 'logging' Python "
+                "module.",
                 DeprecationWarning,
                 stacklevel=2,
             )
@@ -151,12 +165,17 @@ class FederatedServer:
         self.fairness = optim.fairness  # note: optional
         # Assign the wrapped MetricSet.
         self.metrics = MetricSet.from_specs(metrics)
+        # Assign a client sampler
+        self.client_sampler = self._parse_clisamp(
+            client_sampler, logger=self.logger
+        )
         # Assign an optional checkpointer.
         if checkpoint is not None:
             checkpoint = Checkpointer.from_specs(checkpoint)
         self.ckptr = checkpoint
         # Assign the optional SecAgg config and declare a Decrypter slot.
         self.secagg = self._parse_secagg(secagg)
+        self._check_clisamp_secagg_compat()
         self._decrypter: Optional[Decrypter] = None
         self._secagg_peers: Set[str] = set()
         # Set up a private attribute to record the loss values.
@@ -233,6 +252,46 @@ class FederatedServer:
         )
 
     @staticmethod
+    def _parse_clisamp(
+        client_sampler: Union[
+            ClientSampler, ClientSamplerConfig, Dict[str, Any], None
+        ],
+        logger: logging.Logger,
+    ) -> ClientSampler:
+        """
+        Parse 'client_sampler' instantiation argument.
+        If None provided, return the default client sampler
+        (which selects all clients).
+        """
+        parsed_sampler: ClientSampler
+        if client_sampler is None:
+            parsed_sampler = DefaultClientSampler()
+        elif isinstance(client_sampler, ClientSampler):
+            parsed_sampler = client_sampler
+        elif isinstance(client_sampler, ClientSamplerConfig):
+            parsed_sampler = client_sampler.build()
+        elif isinstance(client_sampler, dict):
+            parsed_sampler = instantiate_client_sampler(**client_sampler)
+        else:
+            raise TypeError(
+                "'client_sampler' should be a 'ClientSampler' instance or the "
+                f"valid configuration of one, not '{type(client_sampler)}'."
+            )
+
+        if isinstance(parsed_sampler, DefaultClientSampler):
+            msg = (
+                "Default client sampler selected, all clients will be "
+                "involved in each round"
+            )
+        else:
+            msg = (
+                "Selected client sampler is "
+                f"'{parsed_sampler.__class__.__name__}'"
+            )
+        logger.info(msg)
+        return parsed_sampler
+
+    @staticmethod
     def _parse_secagg(
         secagg: Union[SecaggConfigServer, Dict[str, Any], None],
     ) -> Optional[SecaggConfigServer]:
@@ -250,6 +309,25 @@ class FederatedServer:
             "'secagg' should be a 'SecaggConfigServer' instance or a dict "
             f"of keyword arguments to set one up, not '{type(secagg)}'."
         )
+
+    def _check_clisamp_secagg_compat(self) -> None:
+        """Check if instantiated client sampler config and secure aggregation
+        config are compatible, if not: raises an exception
+
+        Raises
+        ------
+        IncompatibleConfigsError
+            In case the server client sampler and secure aggregation configs
+            are incompatible
+        """
+        if (
+            self.secagg is not None
+            and not self.client_sampler.secagg_compatible
+        ):
+            raise IncompatibleConfigsError(
+                "Secure aggregation is enabled, but the selected client "
+                "sampler is not compatible with secure aggregation."
+            )
 
     def run(
         self,
@@ -301,26 +379,42 @@ class FederatedServer:
         async with self.netwk:
             # Conduct the initialization phase.
             await self.initialization(config)
+            self.client_sampler.init_clients(self.netwk.client_names)
             if self.ckptr:
                 self.ckptr.checkpoint(self.model, self.optim, first_call=True)
             # Iteratively run training and evaluation rounds.
             round_i = 0
             while True:
-                await self.fairness_round(round_i, config.fairness)
+                clients_train = self._select_training_round_participants()
+                clients_eval = self._select_evaluation_round_participants()
+                # Fairness round is made on all clients.
+                await self.fairness_round(
+                    round_i, config.fairness, self.netwk.client_names
+                )
                 round_i += 1
-                await self.training_round(round_i, config.training)
-                await self.evaluation_round(round_i, config.evaluate)
+                await self.training_round(
+                    round_i, config.training, clients_train
+                )
+                await self.evaluation_round(
+                    round_i, config.evaluate, clients_eval
+                )
                 # Decide whether to keep training for at least one round.
                 if not self._keep_training(round_i, config.rounds, early_stop):
                     break
-            # When checkpointing, force evaluating the last model.
+            # When checkpointing, force evaluating last model on all clients.
             if self.ckptr is not None:
                 if round_i % config.evaluate.frequency:
                     await self.evaluation_round(
-                        round_i, config.evaluate, force_run=True
+                        round_i,
+                        config.evaluate,
+                        self.netwk.client_names,
+                        force_run=True,
                     )
                 await self.fairness_round(
-                    round_i, config.fairness, force_run=True
+                    round_i,
+                    config.fairness,
+                    self.netwk.client_names,
+                    force_run=True,
                 )
             # Interrupt training when time comes.
             self.logger.info("Stopping training.")
@@ -569,6 +663,7 @@ class FederatedServer:
         self,
         round_i: int,
         fairness_cfg: FairnessConfig,
+        clients: Set[str],
         force_run: bool = False,
     ) -> None:
         """Orchestrate a fairness round, when configured to do so.
@@ -584,6 +679,8 @@ class FederatedServer:
             FairnessConfig dataclass instance wrapping data-batching
             and computational effort constraints hyper-parameters for
             fairness evaluation.
+        clients:
+            Set of clients taking part to this fairness round.
         force_run:
             Whether to disregard `fairness_cfg.frequency` and run the
             round (provided a fairness controller is setup).
@@ -595,7 +692,6 @@ class FederatedServer:
             return
         # Run SecAgg setup when needed.
         self.logger.info("Initiating fairness-enforcing round %s", round_i)
-        clients = self.netwk.client_names  # FUTURE: enable sampling(?)
         if self.secagg is not None and clients.difference(self._secagg_peers):
             await self.setup_secagg(clients)
         # Send a query to clients, including model weights when required.
@@ -625,6 +721,7 @@ class FederatedServer:
         self,
         round_i: int,
         train_cfg: TrainingConfig,
+        clients: Set[str],
     ) -> None:
         """Orchestrate a training round.
 
@@ -635,10 +732,11 @@ class FederatedServer:
         train_cfg: TrainingConfig
             TrainingConfig dataclass instance wrapping data-batching
             and computational effort constraints hyper-parameters.
+        clients:
+            Set of clients taking part to this training round.
         """
         # Select participating clients. Run SecAgg setup when needed.
         self.logger.info("Initiating training round %s", round_i)
-        clients = self._select_training_round_participants()
         if self.secagg is not None and clients.difference(self._secagg_peers):
             await self.setup_secagg(clients)
         # Send training instructions and await results.
@@ -648,13 +746,19 @@ class FederatedServer:
             results = await self._collect_results(
                 clients, messaging.TrainReply, "training"
             )
+            self.client_sampler.update(results, self.model)
         else:
             secagg_results = await self._collect_results(
                 clients, secagg_messaging.SecaggTrainReply, "training"
             )
-            results = {
-                "aggregated": self._aggregate_secagg_replies(secagg_results)
-            }
+            aggregated_results = self._aggregate_secagg_replies(secagg_results)
+            results = {"aggregated": aggregated_results}
+
+            # in secagg case: we provide to the sampler each client that has
+            # participated associated to the *aggregated* train reply
+            self.client_sampler.update(
+                {client: aggregated_results for client in clients}, self.model
+            )
         # Aggregate client-wise results and update the global model.
         self.logger.info("Conducting server-side optimization.")
         self._conduct_global_update(results)
@@ -663,7 +767,13 @@ class FederatedServer:
         self,
     ) -> Set[str]:
         """Return the names of clients that should participate in the round."""
-        return self.netwk.client_names
+        sampled_clients = self.client_sampler.sample()
+
+        if not isinstance(self.client_sampler, DefaultClientSampler):
+            self.logger.debug(
+                f"Sampled clients for train round are : {sampled_clients}"
+            )
+        return sampled_clients
 
     async def _send_training_instructions(
         self,
@@ -758,6 +868,7 @@ class FederatedServer:
         self,
         round_i: int,
         valid_cfg: EvaluateConfig,
+        clients: Set[str],
         force_run: bool = False,
     ) -> None:
         """Orchestrate an evaluation round, when configured to do so.
@@ -772,13 +883,14 @@ class FederatedServer:
         valid_cfg: EvaluateConfig
             EvaluateConfig dataclass instance wrapping data-batching
             and computational effort constraints hyper-parameters.
+        clients:
+            Set of clients used for evaluation during the round.
         """
         # Early exit when the evaluation round is to be skipped.
         if (round_i % valid_cfg.frequency) and not force_run:
             return
         # Select participating clients. Run SecAgg setup when needed.
         self.logger.info("Initiating evaluation round %s", round_i)
-        clients = self._select_evaluation_round_participants()
         if self.secagg is not None and clients.difference(self._secagg_peers):
             await self.setup_secagg(clients)
         # Send evaluation requests and collect clients' replies.
@@ -822,6 +934,7 @@ class FederatedServer:
         self,
     ) -> Set[str]:
         """Return the names of clients that should participate in the round."""
+        # FUTURE: implement client sampling for evaluation rounds ?
         return self.netwk.client_names
 
     async def _send_evaluation_instructions(

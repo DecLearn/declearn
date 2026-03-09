@@ -42,3 +42,16 @@ Backend utils to aggregate clients' dataset information:
 from ._checkpoint import Checkpointer
 from ._data_info import AggregationError, aggregate_clients_data_info
 from ._early_stop import EarlyStopConfig, EarlyStopping
+from ._error import IncompatibleConfigsError
+
+__all__ = [
+    "Constraint",
+    "ConstraintSet",
+    "TimeoutConstraint",
+    "Checkpointer",
+    "AggregationError",
+    "aggregate_clients_data_info",
+    "EarlyStopConfig",
+    "EarlyStopping",
+    "IncompatibleConfigsError",
+]

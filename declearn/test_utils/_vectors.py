@@ -54,7 +54,7 @@ def list_available_frameworks() -> List[FrameworkType]:
 class GradientsTestCase:
     """Framework-parametrized Vector instances provider for testing purposes.
 
-    This class aims at providing with seeded random or zero-valued Vector
+    This class aims at providing with seeded random or valued-by-user Vector
     instances (with deterministic specifications) that may be used in the
     context of unit tests.
     """
@@ -153,6 +153,17 @@ class GradientsTestCase:
         """
         shapes = [(5, 5), (4,), (1,)]
         values = [np.zeros(shape) for shape in shapes]
+        return self.vector_cls(
+            {str(idx): self.convert(value) for idx, value in enumerate(values)}
+        )
+
+    def mock_gradient_custom(self, values: List[np.ndarray]) -> Vector:
+        """Instantiate a Vector with custom user-provided values.
+
+        Values are provided as a list of numpy arrays, each array representing
+        a collection of parameters, each collection is named with its index in
+        the list.
+        """
         return self.vector_cls(
             {str(idx): self.convert(value) for idx, value in enumerate(values)}
         )
