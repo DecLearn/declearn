@@ -37,7 +37,7 @@ from declearn.utils import (
     Aggregate,
     access_registered,
     create_types_registry,
-    register_type,
+    register_from_attr,
 )
 
 __all__ = [
@@ -264,7 +264,7 @@ class Metric(Generic[MetricStateT], metaclass=abc.ABCMeta):
         """Automatically type-register Metric subclasses."""
         super().__init_subclass__(**kwargs)
         if register:
-            register_type(cls, name=cls.name, group="Metric")
+            register_from_attr(cls, "name", group="Metric")
 
     def get_config(
         self,

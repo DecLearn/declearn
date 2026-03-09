@@ -26,7 +26,7 @@ from declearn.utils import (
     Aggregate,
     access_types_mapping,
     create_types_registry,
-    register_type,
+    register_from_attr,
 )
 
 __all__ = [
@@ -135,7 +135,7 @@ class Aggregator(Generic[ModelUpdatesT], metaclass=abc.ABCMeta):
         """Automatically type-register Aggregator subclasses."""
         super().__init_subclass__(**kwargs)
         if register:
-            register_type(cls, cls.name, group="Aggregator")
+            register_from_attr(cls, "name", group="Aggregator")
 
     @abc.abstractmethod
     def prepare_for_sharing(

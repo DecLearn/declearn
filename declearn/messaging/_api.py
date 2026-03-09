@@ -27,7 +27,7 @@ from declearn.utils import (
     create_types_registry,
     json_pack,
     json_unpack,
-    register_type,
+    register_from_attr,
 )
 
 __all__ = [
@@ -65,7 +65,7 @@ class Message(metaclass=ABCMeta):
     ) -> None:
         """Automatically type-register subclasses."""
         if register:
-            register_type(cls, name=cls.typekey, group="Message")
+            register_from_attr(cls, "typekey", group="Message")
 
     def to_kwargs(self) -> Dict[str, Any]:
         """Return a JSON-serializable dict representation of this message."""

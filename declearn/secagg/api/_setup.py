@@ -26,7 +26,11 @@ from declearn.messaging import Message, SerializedMessage
 from declearn.secagg.api._decrypt import Decrypter
 from declearn.secagg.api._encrypt import Encrypter
 from declearn.secagg.utils import IdentityKeys
-from declearn.utils import TomlConfig, create_types_registry, register_type
+from declearn.utils import (
+    TomlConfig,
+    create_types_registry,
+    register_from_attr,
+)
 
 __all__ = [
     "SecaggConfigClient",
@@ -97,7 +101,7 @@ class SecaggConfigClient(
         register: bool = True,
     ) -> None:
         if register:
-            register_type(cls, cls.secagg_type, group="SecaggConfigClient")
+            register_from_attr(cls, "secagg_type", group="SecaggConfigClient")
 
     @abc.abstractmethod
     async def setup_encrypter(
@@ -177,7 +181,7 @@ class SecaggConfigServer(
         register: bool = True,
     ) -> None:
         if register:
-            register_type(cls, cls.secagg_type, group="SecaggConfigServer")
+            register_from_attr(cls, "secagg_type", group="SecaggConfigServer")
 
     async def setup_decrypter(
         self,

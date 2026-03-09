@@ -38,7 +38,7 @@ from typing import (  # fmt: off
 
 from declearn.communication.api.backend import MessagesHandler
 from declearn.messaging import Message, SerializedMessage
-from declearn.utils import create_types_registry, register_type
+from declearn.utils import create_types_registry, register_from_attr
 
 __all__ = [
     "NetworkServer",
@@ -101,7 +101,7 @@ class NetworkServer(metaclass=abc.ABCMeta):
         """Automate the type-registration of NetworkServer subclasses."""
         super().__init_subclass__(**kwargs)
         if register:
-            register_type(cls, cls.protocol, group="NetworkServer")
+            register_from_attr(cls, "protocol", group="NetworkServer")
 
     # pylint: disable-next=too-many-positional-arguments
     # TODO for 2.10 : remove deprecated "logger" argument

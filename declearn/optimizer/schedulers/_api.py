@@ -23,7 +23,7 @@ from typing import Any, ClassVar, Dict, Self
 from declearn.utils import (
     access_registered,
     create_types_registry,
-    register_type,
+    register_from_attr,
 )
 
 __all__ = [
@@ -128,7 +128,7 @@ class Scheduler(metaclass=abc.ABCMeta):
     ) -> None:
         """Automatically type-register subclasses."""
         if register:
-            register_type(cls, name=cls.name, group="Scheduler")
+            register_from_attr(cls, "name", group="Scheduler")
 
     def get_next_rate(
         self,

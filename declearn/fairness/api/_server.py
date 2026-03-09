@@ -42,7 +42,7 @@ from declearn.secagg.messaging import (
 from declearn.utils import (
     access_registered,
     create_types_registry,
-    register_type,
+    register_from_attr,
 )
 
 __all__ = [
@@ -112,7 +112,9 @@ class FairnessControllerServer(metaclass=abc.ABCMeta):
     ) -> None:
         """Automatically type-register subclasses."""
         if register:
-            register_type(cls, cls.algorithm, group="FairnessControllerServer")
+            register_from_attr(
+                cls, "algorithm", group="FairnessControllerServer"
+            )
 
     def __init__(
         self,

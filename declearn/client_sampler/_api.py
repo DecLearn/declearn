@@ -138,7 +138,7 @@ class ClientSampler(metaclass=ABCMeta):
         """
         super().__init_subclass__(**kwargs)
         if register:
-            register_from_attr(cls, "strategy", "ClientSampler")
+            register_from_attr(cls, "strategy", group="ClientSampler")
 
     def __init__(
         self,

@@ -26,7 +26,7 @@ from declearn.utils import (
     Aggregate,
     access_registered,
     create_types_registry,
-    register_type,
+    register_from_attr,
 )
 
 __all__ = [
@@ -151,7 +151,7 @@ class OptiModule(Generic[AuxVarT], metaclass=abc.ABCMeta):
         """Automatically type-register OptiModule subclasses."""
         super().__init_subclass__(**kwargs)
         if register:
-            register_type(cls, cls.name, group="OptiModule")
+            register_from_attr(cls, "name", group="OptiModule")
 
     @abc.abstractmethod
     def run(

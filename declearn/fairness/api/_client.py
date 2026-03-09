@@ -45,7 +45,7 @@ from declearn.training import TrainingManager
 from declearn.utils import (
     access_registered,
     create_types_registry,
-    register_type,
+    register_from_attr,
 )
 
 __all__ = [
@@ -124,7 +124,9 @@ class FairnessControllerClient(metaclass=abc.ABCMeta):
     ) -> None:
         """Automatically type-register subclasses."""
         if register:
-            register_type(cls, cls.algorithm, group="FairnessControllerClient")
+            register_from_attr(
+                cls, "algorithm", group="FairnessControllerClient"
+            )
 
     def __init__(
         self,

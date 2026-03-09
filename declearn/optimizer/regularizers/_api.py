@@ -24,7 +24,7 @@ from declearn.model.api import Vector
 from declearn.utils import (
     access_registered,
     create_types_registry,
-    register_type,
+    register_from_attr,
 )
 
 __all__ = [
@@ -97,7 +97,7 @@ class Regularizer(metaclass=ABCMeta):
         """Automatically type-register Regularizer subclasses."""
         super().__init_subclass__(**kwargs)
         if register:
-            register_type(cls, cls.name, group="Regularizer")
+            register_from_attr(cls, "name", group="Regularizer")
 
     def __init__(
         self,

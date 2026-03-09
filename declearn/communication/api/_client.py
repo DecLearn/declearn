@@ -38,7 +38,7 @@ from declearn.communication.api.backend.actions import (
     parse_action_from_string,
 )
 from declearn.messaging import Message, SerializedMessage
-from declearn.utils import create_types_registry, register_type
+from declearn.utils import create_types_registry, register_from_attr
 from declearn.version import VERSION
 
 __all__ = [
@@ -102,7 +102,7 @@ class NetworkClient(metaclass=abc.ABCMeta):
         """Automate the type-registration of NetworkClient subclasses."""
         super().__init_subclass__(**kwargs)
         if register:
-            register_type(cls, cls.protocol, group="NetworkClient")
+            register_from_attr(cls, "protocol", group="NetworkClient")
 
     # TODO for 2.10 : remove deprecated "logger" argument
     def __init__(

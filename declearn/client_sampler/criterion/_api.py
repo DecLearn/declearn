@@ -93,7 +93,7 @@ class Criterion(metaclass=ABCMeta):
         """Automatically type-register `Criterion` subclasses if enabled."""
         super().__init_subclass__(**kwargs)
         if register:
-            register_from_attr(cls, "name", "ClientSamplerCriterion")
+            register_from_attr(cls, "name", group="ClientSamplerCriterion")
 
     @abstractmethod
     def compute(
