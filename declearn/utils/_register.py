@@ -229,14 +229,17 @@ def register_type(
 
 def register_from_attr(cls: Type, id_attr: str, group: str) -> None:
     """
-    Register a class in a registry using an class attribute `id_attr`.
+    Register a class in a registry using a class attribute `id_attr`.
 
     This function will register the class using the value of the provided
     class attribute (the class identifier) as key in the registry.
 
-    Note: this function was created to facilitate the auto-registration process
-    implemented in a superclass to register its subclasses automatically when
-    they are defined, using the value of a given identifier class attribute.
+    Notes
+    -----
+    This function was created to facilitate (and control) the auto-registration
+    process implemented in a superclass to register its subclasses
+    automatically when they are defined, using the value of a given identifier
+    class attribute.
 
     Parameters
     ----------
