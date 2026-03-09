@@ -61,7 +61,7 @@ async def run_client_routine(
 ) -> Dict[bytes, bytes]:
     """Prepare for and run the client-side setup routine."""
     async with MockNetworkClient(name=name) as netwk:
-        await netwk.register({})
+        await netwk.register()
         s_keys = await run_x3dh_setup_client(netwk, prv_key, trusted)
     return s_keys
 
@@ -111,7 +111,7 @@ async def run_client_routine_sending_error(
 ) -> None:
     """Run faulty client code, sending an Error message out of the blue."""
     async with MockNetworkClient(name=name) as netwk:
-        await netwk.register({})
+        await netwk.register()
         await netwk.recv_message()  # receive x3dh-init request
         await netwk.send_message(Error("test-error"))
 
@@ -122,7 +122,7 @@ async def run_client_routine_sending_wrong_type(
 ) -> SerializedMessage:
     """Run faulty client code, sending a message with wrong type."""
     async with MockNetworkClient(name=name) as netwk:
-        await netwk.register({})
+        await netwk.register()
         await netwk.recv_message()  # receive x3dh-init request
         await netwk.send_message(GenericMessage(action="stub", params={}))
         return await netwk.recv_message()
@@ -134,7 +134,7 @@ async def run_client_routine_raising_x3dh_error(
 ) -> None:
     """Run faulty client code, sending an Error due to X3DH failure."""
     async with MockNetworkClient(name=name) as netwk:
-        await netwk.register({})
+        await netwk.register()
         await run_x3dh_setup_client(netwk, prv_key=id_key, trusted=[])
 
 

@@ -19,7 +19,7 @@
 
 import logging
 import warnings
-from typing import Any, ClassVar, Dict, Optional, Union
+from typing import ClassVar, Optional, Union
 
 import grpc  # type: ignore
 
@@ -130,12 +130,9 @@ class GrpcClient(NetworkClient):
             buffer += chunk.message
         return buffer
 
-    async def register(
-        self,
-        data_info: Optional[Dict[str, Any]] = None,
-    ) -> bool:
+    async def register(self) -> bool:
         try:
-            return await super().register(data_info)
+            return await super().register()
         except grpc.aio.AioRpcError as err:
             self.logger.error(
                 "Connection failed during registration: %s %s",

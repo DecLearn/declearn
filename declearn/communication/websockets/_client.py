@@ -21,7 +21,7 @@ import asyncio
 import logging
 import ssl
 import warnings
-from typing import Any, ClassVar, Dict, Optional, Union
+from typing import ClassVar, Dict, Optional, Union
 
 import websockets as ws
 from websockets.client import WebSocketClientProtocol
@@ -155,12 +155,9 @@ class WebsocketsClient(NetworkClient):
             message=answer, socket=self._socket, allow_chunks=True
         )
 
-    async def register(
-        self,
-        data_info: Optional[Dict[str, Any]] = None,
-    ) -> bool:
+    async def register(self) -> bool:
         try:
-            return await super().register(data_info)
+            return await super().register()
         except (ConnectionClosedOK, ConnectionClosedError) as err:
             self.logger.error("Connection closed during registration: %s", err)
             self.logger.info("Reconnecting to the server.")

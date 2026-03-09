@@ -22,7 +22,7 @@ import asyncio
 import logging
 import types
 import warnings
-from typing import Any, ClassVar, Dict, Optional, Self, Type, Union
+from typing import Any, ClassVar, Optional, Self, Type, Union
 
 from declearn.communication.api.backend import flags
 
@@ -218,10 +218,7 @@ class NetworkClient(metaclass=abc.ABCMeta):
             self.logger.critical(error)
             raise RuntimeError(error) from exc
 
-    async def register(
-        self,
-        data_info: Optional[Dict[str, Any]] = None,
-    ) -> bool:
+    async def register(self) -> bool:
         """Register to the server as a client.
 
         Returns
@@ -235,14 +232,6 @@ class NetworkClient(metaclass=abc.ABCMeta):
             If the server does not return a valid message.
             This is a failsafe and should never happen.
         """
-        if data_info:
-            warnings.warn(
-                "Sending dataset information is no longer part of the client "
-                "registration process. The argument was ignored, and will be "
-                "removed in DecLearn version 2.4 and/or 3.0.",
-                DeprecationWarning,
-                stacklevel=2,
-            )
         query = Join(name=self.name, version=VERSION)
         reply = await self._exchange_action_messages(query)
         # Case when registration was accepted.

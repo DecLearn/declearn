@@ -88,7 +88,7 @@ class SecaggSetupTestCase(metaclass=abc.ABCMeta):
             id_keys={"prv_key": prv_key, "trusted": trusted}, **kwargs
         )
         async with MockNetworkClient(name=name) as netwk:
-            await netwk.register({})
+            await netwk.register()
             msg = await netwk.recv_message()
             encrypter = await config.setup_encrypter(netwk, msg)
         return encrypter

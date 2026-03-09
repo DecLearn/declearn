@@ -311,7 +311,7 @@ async def test_client_with_insecure_server(
     client = insecure_declearn_client
     server = insecure_declearn_server
     await asyncio.gather(
-        server.wait_for_clients(1, timeout=5), client.register({})
+        server.wait_for_clients(1, timeout=5), client.register()
     )
     await client.send_message(StubMessage())
 
@@ -326,7 +326,7 @@ async def test_secure_client_with_secure_server(
     client = secure_declearn_client
     server = secure_declearn_server
     await asyncio.gather(
-        server.wait_for_clients(1, timeout=5), client.register({})
+        server.wait_for_clients(1, timeout=5), client.register()
     )
     await client.send_message(StubMessage())
 
