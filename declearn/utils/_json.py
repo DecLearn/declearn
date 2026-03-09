@@ -95,7 +95,7 @@ def add_json_support(
         JSON-serializable object or structure.
     unpack: func(any) -> cls
         Function used to unpack objects of type `cls` from the object
-        or structure ouput by the `pack` function.
+        or structure output by the `pack` function.
     name: str
         Keyword to use as a marker for serialized instances of type `cls`
         (based on which their deserialization scheme will be retrieved).

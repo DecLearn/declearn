@@ -127,7 +127,7 @@ class TestFairfedValueComputer:
         )
         computer.initialize(list(fairness))
         value = computer.compute_synthetic_fairness_value(fairness)
-        # Verify that the ouput value matches expectations.
+        # Verify that the output value matches expectations.
         if strict:
             expected = fairness[(1, 0)] - fairness[(1, 1)]
         else:
@@ -151,6 +151,6 @@ class TestFairfedValueComputer:
         )
         computer.initialize(list(fairness))
         value = computer.compute_synthetic_fairness_value(fairness)
-        # Verify that the ouput value matches expectations.
+        # Verify that the output value matches expectations.
         expected = sum(fairness.values()) / len(fairness)
         assert value == expected
