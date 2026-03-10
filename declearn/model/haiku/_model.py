@@ -36,7 +36,7 @@ from declearn.model.api import Model
 from declearn.model.haiku._vector import JaxNumpyVector
 from declearn.model.haiku.utils import select_device
 from declearn.typing import Batch
-from declearn.utils import DevicePolicy, get_device_policy, register_type
+from declearn.utils import DevicePolicy, get_device_policy
 
 __all__ = [
     "HaikuModel",
@@ -47,7 +47,6 @@ __all__ = [
 JaxBatch = Tuple[List[jax.Array], Optional[jax.Array], Optional[jax.Array]]
 
 
-@register_type(name="HaikuModel", group="Model")
 class HaikuModel(Model):
     """Model wrapper for Haiku Model instances.
 
@@ -72,7 +71,7 @@ class HaikuModel(Model):
       instance by accessing its `device_policy` property.
     """
 
-    # pylint: disable=too-many-instance-attributes
+    typekey = "haiku"
 
     def __init__(
         self,

@@ -30,7 +30,7 @@ from sklearn.datasets import load_svmlight_file  # type: ignore
 from declearn.dataset._base import Dataset, DataSpecs
 from declearn.dataset.utils import load_data_array, save_data_array
 from declearn.typing import Batch, DataArray
-from declearn.utils import json_dump, json_load, register_type
+from declearn.utils import json_dump, json_load
 
 __all__ = [
     "InMemoryDataset",
@@ -40,7 +40,6 @@ __all__ = [
 DATA_ARRAY_TYPES = typing.get_args(DataArray)
 
 
-@register_type(group="Dataset")
 class InMemoryDataset(Dataset):
     """Dataset subclass serving numpy(-like) memory-loaded data arrays.
 
@@ -67,6 +66,8 @@ class InMemoryDataset(Dataset):
         Optional subset of `data` columns to restrict yielded
         input features (i.e. batches' first array) to which.
     """
+
+    typekey = "in_memory"
 
     # attributes serve clarity; pylint: disable=too-many-instance-attributes
     # arguments serve modularity; pylint: disable=too-many-arguments

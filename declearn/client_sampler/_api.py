@@ -82,7 +82,7 @@ class ClientSampler(metaclass=ABCMeta):
     - strategy: str class attribute
         Name of the client sampler strategy, should match the class name and be
         unique accross `ClientSampler` classes,
-        e.g. "default" for `DefaultClientSampler
+        e.g. "default" for `DefaultClientSampler`.
     - secagg_compatible(): boolean read-only class property
         Indicate if the client sampler is compatible with secure aggregation
     - cls_sample(eligible_clients):

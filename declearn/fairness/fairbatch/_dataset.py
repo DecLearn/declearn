@@ -77,6 +77,8 @@ class FairbatchDataset(FairnessDataset):
     for some groups.
     """
 
+    typekey = "fairbatch"
+
     def __init__(
         self,
         base: FairnessDataset,

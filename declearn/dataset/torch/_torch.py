@@ -25,14 +25,12 @@ import torch
 from declearn.dataset._base import Dataset, DataSpecs
 from declearn.dataset.torch._utils import PoissonSampler
 from declearn.typing import Batch
-from declearn.utils import register_type
 
 __all__ = [
     "TorchDataset",
 ]
 
 
-@register_type(group="Dataset")
 class TorchDataset(Dataset):
     """Dataset subclass serving torch Datasets.
 
@@ -44,6 +42,8 @@ class TorchDataset(Dataset):
     * loading the source data from which batches are derived
       using the provided torch.dataset
     """
+
+    typekey = "torch"
 
     def __init__(
         self,

@@ -48,6 +48,8 @@ class FairnessInMemoryDataset(FairnessDataset, InMemoryDataset):
     which samples belong.
     """
 
+    typekey = "fairness_in_memory"
+
     def __init__(  # noqa: PLR0913
         self,
         data: Union[DataArray, str],

@@ -41,14 +41,13 @@ from declearn.model.tensorflow.utils import (
     select_device,
 )
 from declearn.typing import Batch
-from declearn.utils import DevicePolicy, get_device_policy, register_type
+from declearn.utils import DevicePolicy, get_device_policy
 
 __all__ = [
     "TensorflowModel",
 ]
 
 
-@register_type(name="TensorflowModel", group="Model")
 class TensorflowModel(Model):
     """Model wrapper for TensorFlow Model instances.
 
@@ -72,6 +71,8 @@ class TensorflowModel(Model):
     - You may consult the device policy enforced by a TensorflowModel
       instance by accessing its `device_policy` property.
     """
+
+    typekey = "tensorflow"
 
     def __init__(
         self,

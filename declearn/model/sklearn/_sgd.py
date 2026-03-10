@@ -48,7 +48,7 @@ from declearn.data_info import aggregate_data_info
 from declearn.model.api import Model
 from declearn.model.sklearn._np_vec import NumpyVector
 from declearn.typing import Batch
-from declearn.utils import DevicePolicy, register_type
+from declearn.utils import DevicePolicy
 
 __all__ = [
     "SklearnSGDModel",
@@ -124,7 +124,6 @@ def _get_dtype_name(
     raise TypeError("'dtype' should be a str, np.dtype or np.number type.")
 
 
-@register_type(name="SklearnSGDModel", group="Model")
 class SklearnSGDModel(Model):
     """Model wrapper for Scikit-Learn SGDClassifier and SGDRegressor.
 
@@ -140,6 +139,8 @@ class SklearnSGDModel(Model):
       raises a UserWarning if a GPU-targetting policy is passed to
       it directly.
     """
+
+    typekey = "sklearn_sgd"
 
     def __init__(
         self,

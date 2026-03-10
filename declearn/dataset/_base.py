@@ -19,10 +19,10 @@
 
 import abc
 import dataclasses
-from typing import Any, Iterator, List, Optional, Set, Tuple, Union
+from typing import Any, ClassVar, Iterator, List, Optional, Set, Tuple, Union
 
 from declearn.typing import Batch
-from declearn.utils import create_types_registry
+from declearn.utils import create_types_registry, register_from_attr
 
 __all__ = [
     "DataSpecs",
@@ -55,7 +55,34 @@ class Dataset(metaclass=abc.ABCMeta):
     storage and loading architectures, even implementing their
     own subclass if needed, while ensuring that data access is
     straightforward to specify as part of FL algorithms.
+
+    Inheritance
+    -----------
+    When a subclass inheriting from `Dataset` is declared, it is
+    automatically registered under the "Dataset" group using its
+    class-attribute `typekey`. This can be prevented by adding
+    `register=False` to the inheritance specs
+    (e.g. `class MyCls(Dataset, register=False)`).
+    See `declearn.utils.register_type` for details on types registration.
     """
+
+    typekey: ClassVar[str]
+    """Identifier of the dataset type, should match the class name and be
+    unique accross `Dataset` subclasses, e.g. "in_memory" for 
+    `InMemoryDataset`. Used for type-registration.
+    """
+
+    def __init_subclass__(
+        cls,
+        register: bool = True,
+        **kwargs: Any,
+    ) -> None:
+        """Automatically type-register `Dataset` subclasses if registration
+        is enabled.
+        """
+        super().__init_subclass__(**kwargs)
+        if register:
+            register_from_attr(cls, "typekey", group="Dataset")
 
     @abc.abstractmethod
     def get_data_specs(

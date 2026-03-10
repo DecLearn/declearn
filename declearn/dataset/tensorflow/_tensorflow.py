@@ -35,7 +35,6 @@ import tensorflow as tf  # type: ignore
 
 from declearn.dataset._base import Dataset, DataSpecs
 from declearn.typing import Batch
-from declearn.utils import register_type
 
 __all__ = [
     "TensorflowDataset",
@@ -45,9 +44,10 @@ __all__ = [
 BatchMode = Literal["default", "padded", "ragged"]
 
 
-@register_type(group="Dataset")
 class TensorflowDataset(Dataset):
     """Dataset subclass to wrap up 'tensorflow.data.Dataset' instances."""
+
+    typekey = "tensorflow"
 
     def __init__(
         self,

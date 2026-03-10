@@ -20,6 +20,7 @@
 from abc import ABCMeta, abstractmethod
 from typing import (
     Any,
+    ClassVar,
     Dict,
     Generic,
     List,
@@ -34,7 +35,11 @@ import numpy as np
 
 from declearn.model.api._vector import Vector
 from declearn.typing import Batch
-from declearn.utils import DevicePolicy, create_types_registry
+from declearn.utils import (
+    DevicePolicy,
+    create_types_registry,
+    register_from_attr,
+)
 
 __all__ = [
     "Model",
@@ -62,7 +67,34 @@ class Model(Generic[VectorT], metaclass=ABCMeta):
     required framework-specific instruction to adequately pick
     the device to use and ensure the wrapped model, input data
     and interfaced computations are placed there.
+
+    Inheritance
+    -----------
+    When a subclass inheriting from `Model` is declared, it is
+    automatically registered under the "Model" group using its
+    class-attribute `typekey`. This can be prevented by adding
+    `register=False` to the inheritance specs
+    (e.g. `class MyCls(Model, register=False)`).
+    See `declearn.utils.register_type` for details on types registration.
     """
+
+    typekey: ClassVar[str]
+    """Identifier of the model type, should match the class name and be
+    unique accross `Model` subclasses, e.g. "torch" for `TorchModel`. 
+    Used for type-registration.
+    """
+
+    def __init_subclass__(
+        cls,
+        register: bool = True,
+        **kwargs: Any,
+    ) -> None:
+        """Automatically type-register `Model` subclasses if registration
+        is enabled.
+        """
+        super().__init_subclass__(**kwargs)
+        if register:
+            register_from_attr(cls, "typekey", group="Model")
 
     def __init__(
         self,
@@ -149,7 +181,7 @@ class Model(Generic[VectorT], metaclass=ABCMeta):
         self,
         trainable: bool = False,
     ) -> VectorT:
-        """Return the model's weights, optionally excluding frozen ones.
+        """Return the model's weights, optionally excluding non-trainable ones.
 
         Parameters
         ----------
@@ -175,9 +207,8 @@ class Model(Generic[VectorT], metaclass=ABCMeta):
         """Assign values to the model's weights.
 
         This method can only be used to update the values of *all*
-        model weights, with the optional exception of frozen (i.e.
-        non-trainable) ones. It cannot be used to alter the values
-        of a subset of weight tensors.
+        model weights, with the optional exception of non-trainable ones.
+        It cannot be used to alter the values of a subset of weight tensors.
 
         Parameters
         ----------

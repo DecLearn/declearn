@@ -215,7 +215,7 @@ class TestVectorErrors:
             names=["a", "b"],
             shapes={"a": (1,), "b": (1,)},
             dtypes={"a": "float", "b": "float"},
-            v_type=("SklearnSGDModel", "Model"),  # not a Vector subclass
+            v_type=("sklearn_sgd", "Model"),  # not a Vector subclass
         )
         with pytest.raises(TypeError):
             Vector.build_from_specs([0.0, 1.0], specs)

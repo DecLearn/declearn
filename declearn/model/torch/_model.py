@@ -34,14 +34,13 @@ from declearn.model.torch._samplewise import (
 from declearn.model.torch._vector import TorchVector
 from declearn.model.torch.utils import AutoDeviceModule, select_device
 from declearn.typing import Batch
-from declearn.utils import DevicePolicy, get_device_policy, register_type
+from declearn.utils import DevicePolicy, get_device_policy
 
 __all__ = [
     "TorchModel",
 ]
 
 
-@register_type(name="TorchModel", group="Model")
 class TorchModel(Model):
     """Model wrapper for PyTorch Model instances.
 
@@ -83,6 +82,8 @@ class TorchModel(Model):
       into issues and/or have requests or advice on that topic, feel free
       to let us know by contacting us via mail or GitLab.
     """
+
+    typekey = "torch"
 
     def __init__(
         self,

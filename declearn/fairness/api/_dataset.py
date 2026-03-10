@@ -37,6 +37,8 @@ class FairnessDataset(Dataset, metaclass=ABCMeta):
     weights based on the sensitive group to which they belong.
     """
 
+    typekey = "fairness"
+
     @abstractmethod
     def get_sensitive_group_definitions(
         self,
