@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2025 Inria (Institut National de Recherche en Informatique
+# Copyright 2026 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -27,7 +27,6 @@ from declearn.dataset import InMemoryDataset
 from declearn.dataset.examples import load_heart_uci
 from declearn.main import FederatedClient
 from declearn.test_utils import setup_client_argparse
-
 
 FILEDIR = os.path.dirname(__file__)
 

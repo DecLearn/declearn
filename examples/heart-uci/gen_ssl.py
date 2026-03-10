@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2025 Inria (Institut National de Recherche en Informatique
+# Copyright 2026 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,7 +20,6 @@
 import os
 
 from declearn.test_utils import generate_ssl_certificates
-
 
 if __name__ == "__main__":
     FILEDIR = os.path.dirname(os.path.abspath(__file__))

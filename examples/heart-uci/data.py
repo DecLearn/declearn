@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2025 Inria (Institut National de Recherche en Informatique
+# Copyright 2026 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,7 +21,6 @@ import argparse
 import os
 
 from declearn.dataset.examples import load_heart_uci
-
 
 DATADIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
 NAMES = ("cleveland", "hungarian", "switzerland", "va")

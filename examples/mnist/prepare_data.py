@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2025 Inria (Institut National de Recherche en Informatique
+# Copyright 2026 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -27,7 +27,6 @@ from declearn.dataset.utils import (
     save_data_array,
     split_multi_classif_dataset,
 )
-
 
 DATADIR = os.path.join(os.path.dirname(__file__), "data")
 

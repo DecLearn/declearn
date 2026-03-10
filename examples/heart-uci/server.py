@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Copyright 2025 Inria (Institut National de Recherche en Informatique
+# Copyright 2026 Inria (Institut National de Recherche en Informatique
 # et Automatique)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,6 @@ from declearn.main import FederatedServer
 from declearn.main.config import FLOptimConfig, FLRunConfig
 from declearn.model.sklearn import SklearnSGDModel
 from declearn.test_utils import setup_server_argparse
-
 
 FILEDIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -112,9 +111,11 @@ def run_server(
     # evaluation rounds.
     server = FederatedServer(
         # fmt: off
-        model, network, optim,
+        model,
+        network,
+        optim,
         metrics=["binary-classif", "binary-roc"],
-        checkpoint=f"{FILEDIR}/results/server"
+        checkpoint=f"{FILEDIR}/results/server",
     )
 
     # Here, we set up 20 rounds of training, with 30 samples per batch
