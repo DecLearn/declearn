@@ -21,7 +21,7 @@ theme:
       primary: indigo
       accent: orange
       toggle:
-        icon: material/weather-night
+        icon: material/weather-sunny
         name: Switch to dark mode
     # Palette toggle for dark mode
     - media: "(prefers-color-scheme: dark)"
@@ -29,7 +29,7 @@ theme:
       primary: indigo
       accent: orange
       toggle:
-        icon: material/weather-sunny
+        icon: material/weather-night
         name: Switch to system preference
   features:
     - content.code.copy
