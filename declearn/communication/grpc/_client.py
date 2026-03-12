@@ -109,8 +109,8 @@ class GrpcClient(NetworkClient):
 
     async def _send_message(
         self,
-        message: str,
-    ) -> str:
+        message: bytes,
+    ) -> bytes:
         """Send a message to the server and return the obtained reply."""
         if self._service is None:
             raise RuntimeError("Cannot send messages while not connected.")
@@ -125,10 +125,10 @@ class GrpcClient(NetworkClient):
             )
             replies = self._service.send_stream(chunks)
         # Collect the reply from a stream of message chunks.
-        buffer = ""
+        reply_chunks = []
         async for chunk in replies:
-            buffer += chunk.message
-        return buffer
+            reply_chunks.append(chunk.message)
+        return b"".join(reply_chunks)
 
     async def register(self) -> bool:
         try:

@@ -18,7 +18,6 @@
 """Shared backend utils for Websockets communication endpoints."""
 
 import sys
-from typing import Union
 
 from websockets.legacy.protocol import WebSocketCommonProtocol
 
@@ -40,15 +39,15 @@ class StreamRefusedError(Exception):
 
 
 async def receive_websockets_message(
-    message: Union[str, bytes],
+    message: bytes,
     socket: WebSocketCommonProtocol,
     allow_chunks: bool = False,
-) -> str:
+) -> bytes:
     """Process a message received from an open socket.
 
     Parameters
     ----------
-    message : Union[str, bytes]
+    message : bytes
         Initial message received through `socket`.
     socket : WebSocketCommonProtocol
         Open socket through which `message` was received
@@ -59,12 +58,10 @@ async def receive_websockets_message(
 
     Returns
     -------
-    message: str
+    message: bytes
         The received message, which may be `message` or the result
         of a chunks-streaming operation.
     """
-    if isinstance(message, bytes):
-        message = message.decode("utf-8")
     if message == FLAG_STREAM_START:
         if not allow_chunks:
             await socket.send(FLAG_STREAM_BLOCK)
@@ -72,31 +69,30 @@ async def receive_websockets_message(
                 "Received a disallowed request to stream a chunked message."
             )
         await socket.send(FLAG_STREAM_ALLOW)
-        buffer = ""
-        message = ""
-        while buffer != FLAG_STREAM_CLOSE:
-            message += buffer
-            chunk = await socket.recv()
-            buffer = (
-                chunk.decode("utf-8") if isinstance(chunk, bytes) else chunk
-            )
+        chunks = []
+        while True:
+            buffer = socket.recv()
+            if buffer == FLAG_STREAM_CLOSE:
+                break
+            chunks.append(buffer)
+        message = b"".join(chunks)
     return message
 
 
 async def send_websockets_message(
-    message: str,
+    message: bytes,
     socket: WebSocketCommonProtocol,
 ) -> None:
     """Send a message through an open socket.
 
     Parameters
     ----------
-    message : str
-        String content to send.
+    message : bytes
+        Binary content to send.
     socket : WebSocketCommonProtocol
         Open socket through which `message` is to be sent.
     """
-    if socket.max_size and (sys.getsizeof(message) > socket.max_size):
+    if socket.max_size and (len(message) > socket.max_size):
         chunk_len = socket.max_size - sys.getsizeof("") - 1
         await socket.send(FLAG_STREAM_START)
         if await socket.recv() != FLAG_STREAM_ALLOW:

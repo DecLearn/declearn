@@ -37,8 +37,11 @@ import dataclasses
 import json
 from typing import Optional
 
+import msgpack
+
 from declearn.version import VERSION
 
+# TODO remove deleted methods ?
 __all__ = [
     "Accept",
     "ActionMessage",
@@ -62,6 +65,7 @@ class LegacyMessageError(Exception):
 class ActionMessage(metaclass=abc.ABCMeta):  # noqa: B024
     """Abstract base class for fundamental messages."""
 
+    # TODO : remove ?
     def to_string(
         self,
     ) -> str:
@@ -69,6 +73,14 @@ class ActionMessage(metaclass=abc.ABCMeta):  # noqa: B024
         data = dataclasses.asdict(self)
         data["action"] = self.__class__.__name__.lower()
         return json.dumps(data)
+
+    def to_bytes(
+        self,
+    ) -> bytes:
+        """Serialize this 'ActionMessage' to bytes."""
+        data = dataclasses.asdict(self)
+        data["action"] = self.__class__.__name__.lower()
+        return msgpack.packb(data)
 
 
 @dataclasses.dataclass
@@ -116,7 +128,7 @@ class Reject(ActionMessage):
 class Send(ActionMessage):
     """Action message to post content to or receive content from the server."""
 
-    content: str
+    content: bytes  # TODO : voir où Send instancié pour voir si type bytes iso
 
 
 _ACTION_CLASSES = [
@@ -131,6 +143,7 @@ _ACTION_CLASSES = [
 ACTION_MESSAGES = {cls.__name__.lower(): cls for cls in _ACTION_CLASSES}
 
 
+# TODO : remove ?
 def parse_action_from_string(
     string: str,
 ) -> ActionMessage:
@@ -178,6 +191,48 @@ def parse_action_from_string(
     return cls(**data)
 
 
+def parse_action_from_bytes(
+    bin_data: bytes,
+) -> ActionMessage:
+    """Parse a serialized `ActionMessage` from bytes.
+
+    Parameters
+    ----------
+    bin_data:
+        Serialized `ActionMessage` instance bytes.
+
+    Returns
+    -------
+    action:
+        `ActionMessage` recovered from `bin_data`.
+
+    Raises
+    ------
+    KeyError
+        If the bytes cannot be mapped to an `ActionMessage` class.
+    ValueError
+        If the bytes cannot be parsed properly.
+    """
+    try:
+        data = msgpack.unpackb(bin_data)
+    except json.JSONDecodeError as exc:
+        raise ValueError("Failed to parse 'ActionMessage' bytes.") from exc
+    if "action" not in data:
+        raise ValueError(
+            "Failed to parse 'ActionMessage' bytes: no 'action' key."
+        )
+    action = data.pop("action")
+    cls = ACTION_MESSAGES.get(action, None)
+    if cls is None:
+        raise KeyError(
+            "Failed to parse 'ActionMessage' bytes: no class matches "
+            f"'{data['action']}' key."
+        )
+    return cls(**data)
+
+
+# TODO : remove / adapt for binary ?
+# handle transition string / bytes ?
 @dataclasses.dataclass
 class LegacyReject(ActionMessage):
     """Server action to reject a legacy client's (registration) message.
@@ -186,6 +241,7 @@ class LegacyReject(ActionMessage):
     legacy message parser, but not with the current one.
     """
 
+    # TODO : remove ?
     def to_string(
         self,
     ) -> str:

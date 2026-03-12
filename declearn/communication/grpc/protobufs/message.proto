@@ -6,7 +6,7 @@ message Empty {
 }
 
 message Message {
-  string message = 1;
+  bytes message = 1;
 }
 
 service MessageBoard {

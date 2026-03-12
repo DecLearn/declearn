@@ -275,7 +275,7 @@ class NetworkServer(metaclass=abc.ABCMeta):
             If `timeout` is set and is reached while the message is
             yet to be collected by the client.
         """
-        await self.handler.send_message(message.to_string(), client, timeout)
+        await self.handler.send_message(message.to_bytes(), client, timeout)
 
     async def send_messages(
         self,
@@ -314,7 +314,7 @@ class NetworkServer(metaclass=abc.ABCMeta):
 
         Parameters
         ----------
-        message: str
+        message: Message
             Message instance that is to be delivered to the clients.
         clients: set[str] or None, default=None
             Optional subset of registered clients, messages from
@@ -357,8 +357,8 @@ class NetworkServer(metaclass=abc.ABCMeta):
         routines = [self.handler.recv_message(client) for client in clients]
         received = await asyncio.gather(*routines, return_exceptions=False)
         return {
-            client: SerializedMessage.from_message_string(string)
-            for client, string in zip(clients, received, strict=False)
+            client: SerializedMessage.from_message_bytes(bin_data)
+            for client, bin_data in zip(clients, received, strict=False)
         }
 
     async def wait_for_messages_with_timeout(
@@ -400,7 +400,5 @@ class NetworkServer(metaclass=abc.ABCMeta):
             elif isinstance(output, BaseException):
                 raise output
             else:
-                messages[client] = SerializedMessage.from_message_string(
-                    output
-                )
+                messages[client] = SerializedMessage.from_message_bytes(output)
         return messages, timeouts

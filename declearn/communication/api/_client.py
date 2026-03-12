@@ -35,7 +35,7 @@ from declearn.communication.api.backend.actions import (
     Recv,
     Reject,
     Send,
-    parse_action_from_string,
+    parse_action_from_bytes,
 )
 from declearn.messaging import Message, SerializedMessage
 from declearn.utils import create_types_registry, register_from_attr
@@ -189,13 +189,11 @@ class NetworkClient(metaclass=abc.ABCMeta):
     ) -> None:
         await self.stop()
 
-    # pylint: enable=duplicate-code
-
     @abc.abstractmethod
     async def _send_message(
         self,
-        message: str,
-    ) -> str:
+        message: bytes,
+    ) -> bytes:
         """Send a message to the server and return the obtained reply.
 
         This method should be defined by concrete NetworkClient child
@@ -209,10 +207,10 @@ class NetworkClient(metaclass=abc.ABCMeta):
         message: ActionMessage,
     ) -> ActionMessage:
         """Send an `ActionMessage` to the server and await its response."""
-        query = message.to_string()
+        query = message.to_bytes()
         reply = await self._send_message(query)
         try:
-            return parse_action_from_string(reply)
+            return parse_action_from_bytes(reply)
         except Exception as exc:
             error = "Failed to decode a reply from the server."
             self.logger.critical(error)
@@ -274,7 +272,7 @@ class NetworkClient(metaclass=abc.ABCMeta):
         The message sent here is designed to be received using the
         `NetworkServer.wait_for_messages` method.
         """
-        query = Send(message.to_string())
+        query = Send(message.to_bytes())
         reply = await self._exchange_action_messages(query)
         if isinstance(reply, Ping):
             return None
@@ -327,7 +325,7 @@ class NetworkClient(metaclass=abc.ABCMeta):
         query = Recv(timeout)
         reply = await self._exchange_action_messages(query)
         if isinstance(reply, Send):
-            return SerializedMessage.from_message_string(reply.content)
+            return SerializedMessage.from_message_bytes(reply.content)
         # Handle the various kinds of failures and raise accordingly.
         if isinstance(reply, Reject):
             if reply.flag == flags.CHECK_MESSAGE_TIMEOUT:

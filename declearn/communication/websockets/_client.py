@@ -144,8 +144,8 @@ class WebsocketsClient(NetworkClient):
 
     async def _send_message(
         self,
-        message: str,
-    ) -> str:
+        message: bytes,
+    ) -> bytes:
         """Send a message to the server and return the obtained reply."""
         if self._socket is None:
             raise RuntimeError("Cannot communicate while not connected.")

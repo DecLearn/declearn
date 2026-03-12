@@ -35,7 +35,7 @@ from declearn.communication.api.backend.actions import (
     Recv,
     Reject,
     Send,
-    parse_action_from_string,
+    parse_action_from_bytes,
 )
 from declearn.version import VERSION
 
@@ -71,8 +71,8 @@ class MessagesHandler:
         self.heartbeat = heartbeat
         # Set up containers for client identifiers and pending messages.
         self.registered_clients: Dict[Any, str] = {}
-        self.outgoing_messages: Dict[str, str] = {}
-        self.incoming_messages: Dict[str, str] = {}
+        self.outgoing_messages: Dict[str, bytes] = {}
+        self.incoming_messages: Dict[str, bytes] = {}
         # Mark client-registration as unopened.
         self.registration_status = flags.REGISTRATION_UNSTARTED
 
@@ -96,15 +96,15 @@ class MessagesHandler:
 
     async def handle_message(
         self,
-        string: str,
+        bin_data: bytes,
         context: Any,
     ) -> ActionMessage:
         """Handle an incoming message from a client.
 
         Parameters
         ----------
-        string: str
-            Received message, as a string that can be parsed back
+        bin_data: bytes
+            Received message, as bytes that can be parsed back
             into an `ActionMessage` instance.
         context: hashable
             Communications-protocol-specific hashable object that
@@ -120,7 +120,7 @@ class MessagesHandler:
         """
         # Parse the incoming message. If it is incorrect, reject it.
         try:
-            message = parse_action_from_string(string)
+            message = parse_action_from_bytes(bin_data)
         except (KeyError, TypeError, ValueError) as exc:
             self.logger.info(
                 "Exception encountered while parsing received message: %s",
@@ -271,15 +271,15 @@ class MessagesHandler:
 
     def post_message(
         self,
-        message: str,
+        message: bytes,
         client: str,
     ) -> None:
         """Post a message to be requested by a given client.
 
         Parameters
         ----------
-        message: str
-            Message string that is to be posted for the client to collect.
+        message: bytes
+            Message bytes that is to be posted for the client to collect.
         client: str
             Name of the client to whom the message is addressed.
 
@@ -301,7 +301,7 @@ class MessagesHandler:
 
     async def send_message(
         self,
-        message: str,
+        message: bytes,
         client: str,
         timeout: Optional[float] = None,
     ) -> None:
@@ -309,8 +309,8 @@ class MessagesHandler:
 
         Parameters
         ----------
-        message: str
-            Message string that is to be posted for the client to collect.
+        message: bytes
+            Message bytes that is to be posted for the client to collect.
         client: str
             Name of the client to whom the message is addressed.
         timeout: float or None, default=None
@@ -345,7 +345,7 @@ class MessagesHandler:
     def check_message(
         self,
         client: str,
-    ) -> Optional[str]:
+    ) -> Optional[bytes]:
         """Check whether a message was received from a given client.
 
         Parameters
@@ -355,7 +355,7 @@ class MessagesHandler:
 
         Returns
         -------
-        message:
+        message: bytes
             Collected message that was sent by `client`, if any.
             In case no message is available, return None.
 
@@ -372,7 +372,7 @@ class MessagesHandler:
         self,
         client: str,
         timeout: Optional[float] = None,
-    ) -> str:
+    ) -> bytes:
         """Wait for a message to be received from a given client.
 
         Parameters
@@ -391,7 +391,7 @@ class MessagesHandler:
 
         Returns
         -------
-        message:
+        message: bytes
             Collected message that was sent by `client`.
 
         Notes
