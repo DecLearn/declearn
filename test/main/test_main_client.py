@@ -360,7 +360,7 @@ class TestFederatedClientInitialize:
         netwk = mock.create_autospec(NetworkClient, instance=True)
         netwk.name = "client"
         msg_data: messaging.SerializedMessage[messaging.MetadataQuery] = (
-            messaging.SerializedMessage.from_message_string(
+            messaging.SerializedMessage.from_message_string(  # FIXME
                 messaging.MetadataQuery(fields=["n_samples"]).to_string()
             )
         )
@@ -396,7 +396,7 @@ class TestFederatedClientInitialize:
         netwk = mock.create_autospec(NetworkClient, instance=True)
         netwk.name = "client"
         msg_data: messaging.SerializedMessage[messaging.MetadataQuery] = (
-            messaging.SerializedMessage.from_message_string(
+            messaging.SerializedMessage.from_message_string(  # FIXME
                 messaging.MetadataQuery(fields=["invalid"]).to_string()
             )
         )
@@ -1133,7 +1133,7 @@ class TestFederatedClientMisc:
         client = FederatedClient(netwk=netwk, train_data=MOCK_DATASET)
         # Have it process a CancelTraining message.
         message: messaging.SerializedMessage[messaging.CancelTraining] = (
-            messaging.SerializedMessage.from_message_string(
+            messaging.SerializedMessage.from_message_string(  # FIXME
                 messaging.CancelTraining(reason="mock-reason").to_string()
             )
         )
@@ -1149,7 +1149,7 @@ class TestFederatedClientMisc:
         client = FederatedClient(netwk=netwk, train_data=MOCK_DATASET)
         # Have it process an Error message.
         message: messaging.SerializedMessage[messaging.Error] = (
-            messaging.SerializedMessage.from_message_string(
+            messaging.SerializedMessage.from_message_string(  # FIXME
                 messaging.Error(message="error-message").to_string()
             )
         )

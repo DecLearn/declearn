@@ -127,7 +127,7 @@ class TestNetworkServerRegister:
     async def test_server_early_request(self, server: NetworkServer) -> None:
         """Test that early 'JoinRequest' are adequately rejected."""
         ctx = mock.MagicMock()
-        req = actions.Join(name="mock", version=VERSION).to_string()
+        req = actions.Join(name="mock", version=VERSION).to_bytes()
         rep = await server.handler.handle_message(req, context=ctx)
         assert isinstance(rep, actions.Reject)
         assert rep.flag == flags.REGISTRATION_UNSTARTED
@@ -140,7 +140,7 @@ class TestNetworkServerRegister:
         )
         join_request = actions.Join(name="mock", version=VERSION)
         server_reply = asyncio.create_task(
-            server.handler.handle_message(join_request.to_string(), context=0)
+            server.handler.handle_message(join_request.to_bytes(), context=0)
         )
         await wait_for_clients
         reply = await server_reply
@@ -169,7 +169,7 @@ class TestNetworkServerRegister:
         )
         join_replies = []
         for idx in range(3):
-            req = actions.Join(name="mock", version=VERSION).to_string()
+            req = actions.Join(name="mock", version=VERSION).to_bytes()
             ctx = min(idx, 1)  # first and second contexts will be the same
             join_replies.append(server.handler.handle_message(req, ctx))
         # Run the former routines concurrently. Verify server-side results.
@@ -203,7 +203,7 @@ class TestNetworkServerSend:
         msg = messaging.GenericMessage(action="test", params={})
         await server.broadcast_message(msg)
         assert handler.send_message.await_count == 3
-        dump = msg.to_string()
+        dump = msg.to_bytes()
         handler.send_message.assert_has_awaits(
             [mock.call(dump, client, None) for client in ("a", "b", "c")],
             any_order=True,
@@ -221,7 +221,7 @@ class TestNetworkServerSend:
         msg = messaging.GenericMessage(action="test", params={})
         await server.broadcast_message(msg, clients={"a", "b"})
         assert handler.send_message.await_count == 2
-        dump = msg.to_string()
+        dump = msg.to_bytes()
         handler.send_message.assert_has_awaits(
             [mock.call(dump, client, None) for client in ("a", "b")],
             any_order=True,
@@ -242,7 +242,7 @@ class TestNetworkServerSend:
         assert handler.send_message.await_count == 3
         handler.send_message.assert_has_awaits(
             [
-                mock.call(msg.to_string(), clt, None)
+                mock.call(msg.to_bytes(), clt, None)
                 for clt, msg in messages.items()
             ],
             any_order=True,
@@ -266,14 +266,14 @@ class TestNetworkServerSend:
         server.handler.registered_clients = {0: "mock.0", 1: "mock.1"}
         msg = messaging.GenericMessage(action="test", params={})
         # Create tasks to send a message and let the client collect it.
-        req = actions.Recv().to_string()
+        req = actions.Recv().to_bytes()
         send = server.send_message(msg, client="mock.0")
         recv = server.handler.handle_message(req, 0)
         # Check that the send routine works, as does the collection one.
         outpt, reply = await asyncio.gather(send, recv)
         assert outpt is None
         assert isinstance(reply, actions.Send)
-        assert reply.content == msg.to_string()
+        assert reply.content == msg.to_bytes()
 
     @pytest.mark.asyncio
     async def test_send_message_errors(self, server: NetworkServer) -> None:
@@ -292,7 +292,7 @@ class TestNetworkServerSend:
         """Test that 'send_message' properly handles clients' identity."""
         server.handler.registered_clients = {0: "mock.0", 1: "mock.1"}
         msg = messaging.GenericMessage(action="test", params={})
-        req = actions.Recv(timeout=1).to_string()
+        req = actions.Recv(timeout=1).to_bytes()
         # Create tasks to send a message and have another client request one.
         send = server.send_message(msg, client="mock.0", timeout=1)
         recv = server.handler.handle_message(req, 1)
@@ -315,11 +315,11 @@ class TestNetworkServerRecv:
         """Test that 'wait_for_messages' works correctly."""
         server.handler.registered_clients = {0: "mock.0", 1: "mock.1"}
         msg = messaging.GenericMessage(action="test", params={})
-        act = actions.Send(msg.to_string())
+        act = actions.Send(msg.to_bytes())
         # Create tasks to wait for messages, and receive them.
         wait = server.wait_for_messages_with_timeout(2)
-        recv_0 = server.handler.handle_message(act.to_string(), context=0)
-        recv_1 = server.handler.handle_message(act.to_string(), context=1)
+        recv_0 = server.handler.handle_message(act.to_bytes(), context=0)
+        recv_1 = server.handler.handle_message(act.to_bytes(), context=1)
         # Await all tasks and assert that results match expectations.
         outp, reply_0, reply_1 = await asyncio.gather(wait, recv_0, recv_1)
         assert isinstance(outp[1], list) and not outp[1]
@@ -344,7 +344,7 @@ class TestNetworkServerRecv:
             timeout=2, clients={"mock.1"}
         )
         recv = server.handler.handle_message(
-            actions.Send(msg.to_string()).to_string(), context=1
+            actions.Send(msg.to_bytes()).to_bytes(), context=1
         )
         # Await all tasks and assert that results match expectations.
         outp, reply = await asyncio.gather(wait, recv)
@@ -377,10 +377,10 @@ class TestNetworkServerRecv:
         wait_0 = server.wait_for_messages(clients={"mock.0"})
         wait_1 = server.wait_for_messages(clients={"mock.1"})
         recv_1 = server.handler.handle_message(
-            actions.Send(msg_1.to_string()).to_string(), context=1
+            actions.Send(msg_1.to_bytes()).to_bytes(), context=1
         )
         recv_0 = server.handler.handle_message(
-            actions.Send(msg_0.to_string()).to_string(), context=0
+            actions.Send(msg_0.to_bytes()).to_bytes(), context=0
         )
         # Await all tasks and assert that results match expectations.
         outp_0, outp_1, reply_1, reply_0 = await asyncio.gather(

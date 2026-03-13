@@ -20,7 +20,7 @@
 import dataclasses
 import json
 from abc import ABCMeta
-from typing import Any, ClassVar, Dict, Generic, Self, Type, TypeVar
+from typing import Any, ClassVar, Dict, Generic, Self, Tuple, Type, TypeVar
 
 import msgpack  # type: ignore
 
@@ -102,10 +102,33 @@ class Message(metaclass=ABCMeta):
         deserialization control system.
         """
         data = self.to_kwargs()
-        payload = msgpack.packb(data, default=msgpack_pack)  # TODO
+        payload = msgpack.packb(data, default=msgpack_pack)
         typekey_bytes = self.typekey.encode("utf-8")
         len_tk_byte = len(typekey_bytes).to_bytes(1, "big")
         return len_tk_byte + typekey_bytes + payload
+
+    # TODO : perf ! optimize / change header system to avoid message copy
+    @staticmethod
+    def parse_typekey_header(bin_data: bytes) -> Tuple[str, bytes]:
+        """Split a binary message into its typekey header and remaining
+        payload.
+
+        Parameters
+        ----------
+        bin_data:
+            Binary message with format:
+            [1-byte length][typekey string][payload].
+
+        Returns
+        -------
+        Tuple[str, bytes]
+            - `typekey`: message type identifier.
+            - `payload`: binary data with the header stripped.
+        """
+        typekey_len = bin_data[0]
+        typekey = bin_data[1 : 1 + typekey_len].decode("utf-8")
+        payload = bin_data[1 + typekey_len :]
+        return typekey, payload
 
 
 MessageT = TypeVar("MessageT", bound=Message)
@@ -148,9 +171,7 @@ class SerializedMessage(Generic[MessageT]):
     ) -> MessageT:
         """Deserialize this message into a 'self.message_cls' instance."""
         try:
-            data = msgpack.unpackb(
-                self.bin_data, object_hook=msgpack_unpack
-            )  # TODO
+            data = msgpack.unpackb(self.bin_data, object_hook=msgpack_unpack)
         except (msgpack.UnpackException, msgpack.ExtraData) as exc:
             raise ValueError(
                 f"Failed to decode MessagePack dump of '{self.message_cls}' "
@@ -165,9 +186,7 @@ class SerializedMessage(Generic[MessageT]):
     ) -> Self:
         """Parse a serialized message bytes into a 'SerializedMessage'."""
         try:
-            typekey_len = bin_data[0]
-            typekey = bin_data[1 : 1 + typekey_len].decode("utf-8")
-            payload = bin_data[1 + typekey_len :]
+            typekey, payload = Message.parse_typekey_header(bin_data)
         except (IndexError, UnicodeDecodeError) as exc:
             raise TypeError(
                 "Input string appears not to be a Message dump."
