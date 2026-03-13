@@ -153,9 +153,11 @@ class TorchModel(Model):
         with io.BytesIO() as buffer:
             torch.save(self._raw_model.module, buffer)
             model = buffer.getbuffer().hex()
+            # FIXME : keep for json serialization, change for bin serialization
         with io.BytesIO() as buffer:
             torch.save(self._loss_fn.module, buffer)
             loss = buffer.getbuffer().hex()
+            # FIXME : keep for json serialization, change for bin serialization
         return {
             "model": model,
             "loss": loss,

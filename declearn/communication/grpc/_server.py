@@ -72,6 +72,8 @@ class GrpcServer(NetworkServer):
 
     protocol = "grpc"
 
+    handler: MessagesHandler
+
     # pylint: disable-next=too-many-positional-arguments
     # TODO for 2.10 : remove deprecated "logger" argument
     def __init__(  # noqa: PLR0913

@@ -171,9 +171,11 @@ class HaikuModel(Model):
         with io.BytesIO() as buffer:
             joblib.dump(self._model_fn, buffer)
             model = buffer.getbuffer().hex()
+            # FIXME : keep for json serialization, change for bin serialization
         with io.BytesIO() as buffer:
             joblib.dump(self._loss_fn, buffer)
             loss = buffer.getbuffer().hex()
+            # FIXME : keep for json serialization, change for bin serialization
         return {
             "model": model,
             "loss": loss,

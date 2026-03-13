@@ -71,6 +71,8 @@ And examples of pre-registered (de)serialization functions:
   and [serialize_numpy][declearn.utils.serialize_numpy]:
     Pair of functions to (un)pack a numpy ndarray as JSON-serializable data.
 
+# TODO : MsgPack serialization
+
 Device-policy utils
 -------------------
 Utils to access or update parameters defining a global device-selection policy.
@@ -139,6 +141,13 @@ from ._logging import (
     config_logger,
     config_server_loggers,
     get_logger,
+)
+from ._msgpack import (
+    add_msgpack_support,
+    msgpack_dump,
+    msgpack_load,
+    msgpack_pack,
+    msgpack_unpack,
 )
 from ._multiprocess import run_as_processes
 from ._numpy import (

@@ -35,6 +35,7 @@ def serialize_numpy(array: np.ndarray) -> Tuple[str, str, List[int]]:
     Inverse operation of `declearn.utils.deserialize_numpy`.
     """
     return (array.tobytes().hex(), array.dtype.char, list(array.shape))
+    # FIXME : keep for json serialization, change for bin serialization
 
 
 def deserialize_numpy(data: Tuple[str, str, List[int]]) -> np.ndarray:
@@ -43,6 +44,7 @@ def deserialize_numpy(data: Tuple[str, str, List[int]]) -> np.ndarray:
     Inverse operation of `declearn.utils.serialize_numpy`.
     """
     buffer = bytes.fromhex(data[0])
+    # FIXME : keep for json serialization, change for bin serialization
     array = np.frombuffer(buffer, dtype=data[1])
     return array.reshape(data[2]).copy()  # copy makes the array writable
 

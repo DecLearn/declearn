@@ -37,7 +37,7 @@ import dataclasses
 import json
 from typing import Optional
 
-import msgpack
+import msgpack  # type: ignore
 
 from declearn.version import VERSION
 

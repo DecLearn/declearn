@@ -176,12 +176,12 @@ class MockNetworkClient(NetworkClient, register=False):
 
     async def _send_message(
         self,
-        message: str,
-    ) -> str:
+        message: bytes,
+    ) -> bytes:
         coro = self.handler.handle_message(message, context=self._uuid)
         # Force the use of a timeout, to prevent tests from being stuck.
         action = await asyncio.wait_for(coro, timeout=5)
-        return action.to_string()
+        return action.to_bytes()
 
     async def recv_message(
         self,

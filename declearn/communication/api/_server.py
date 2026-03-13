@@ -93,6 +93,8 @@ class NetworkServer(metaclass=abc.ABCMeta):
     protocol: ClassVar[str] = NotImplemented
     """Protocol name identifier, unique across NetworkServer classes."""
 
+    handler: MessagesHandler
+
     def __init_subclass__(
         cls,
         register: bool = True,

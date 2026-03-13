@@ -22,12 +22,14 @@ import json
 from abc import ABCMeta
 from typing import Any, ClassVar, Dict, Generic, Self, Type, TypeVar
 
-import msgpack
+import msgpack  # type: ignore
 
 from declearn.utils import (
     access_registered,
     create_types_registry,
     json_pack,
+    msgpack_pack,
+    msgpack_unpack,
     register_from_attr,
 )
 
