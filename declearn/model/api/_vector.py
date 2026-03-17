@@ -42,6 +42,7 @@ from declearn.utils import (
     access_registered,
     access_registration_info,
     add_json_support,
+    add_msgpack_support,
     create_types_registry,
     register_type,
 )
@@ -88,7 +89,15 @@ class VectorSpec:
     kwargs: Dict[str, Any] = dataclasses.field(default_factory=dict)
 
 
+# Add (de)serialization support.
 add_json_support(
+    cls=VectorSpec,
+    pack=dataclasses.asdict,
+    unpack=lambda x: VectorSpec(**x),
+    name="VectorSpec",
+)
+
+add_msgpack_support(
     cls=VectorSpec,
     pack=dataclasses.asdict,
     unpack=lambda x: VectorSpec(**x),
@@ -644,6 +653,7 @@ class Vector(Generic[T], metaclass=ABCMeta):  # noqa : PLW1641 (because mutable 
         return cls.unflatten(values, v_spec)
 
 
+# FIXME : doc "add_json_support" only
 def register_vector_type(
     v_type: Type[Any],
     *types: Type[Any],
@@ -655,7 +665,7 @@ def register_vector_type(
 
     * Add the class to registered type (in the "Vector" group).
       See `declearn.utils.register_type` for details.
-    * Make instances of that class JSON-serializable, embarking
+    * Make instances of that class serializable, embarking
       the wrapped data by using the `pack` and `unpack` methods
       of the class. See `declearn.utils.add_json_support`.
     * Make the subclass buildable through `Vector.build(coefs)`,
@@ -688,8 +698,9 @@ def register_vector_type(
             name = cls.__name__
         # Register the Vector type. Note: this type-checks cls.
         register_type(cls, name=name, group="Vector")
-        # Add support for JSON (de)serialization, relying on (un)pack.
+        # Add support for (de)serialization, relying on (un)pack.
         add_json_support(cls, cls.pack, cls.unpack, name=name)
+        add_msgpack_support(cls, cls.pack, cls.unpack, name=name)
         # Make the subclass buildable through `Vector.build(coefs)`.
         for v_typ in v_types:
             VECTOR_TYPES[v_typ] = cls

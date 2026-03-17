@@ -151,8 +151,8 @@ from ._msgpack import (
 )
 from ._multiprocess import run_as_processes
 from ._numpy import (
-    deserialize_numpy,
-    serialize_numpy,
+    deserialize_numpy_str,
+    serialize_numpy_str,
 )
 from ._register import (
     access_registered,

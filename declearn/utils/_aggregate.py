@@ -22,6 +22,7 @@ import dataclasses
 from typing import Any, ClassVar, Dict, Optional, Self, Tuple
 
 from declearn.utils._json import add_json_support
+from declearn.utils._msgpack import add_msgpack_support
 from declearn.utils._register import create_types_registry, register_type
 
 __all__ = [
@@ -29,6 +30,7 @@ __all__ = [
 ]
 
 
+# FIXME : doc serialization
 @dataclasses.dataclass
 class Aggregate(metaclass=abc.ABCMeta):
     """Abstract base dataclass for cross-peers data aggregation containers.
@@ -102,6 +104,9 @@ class Aggregate(metaclass=abc.ABCMeta):
         if register:
             name = f"{cls._group_key}>{cls.__name__}"
             add_json_support(
+                cls, pack=cls.to_dict, unpack=cls.from_dict, name=name
+            )
+            add_msgpack_support(
                 cls, pack=cls.to_dict, unpack=cls.from_dict, name=name
             )
             register_type(cls, name=cls.__name__, group=cls._group_key)
