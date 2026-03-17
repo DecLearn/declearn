@@ -256,7 +256,7 @@ class NetworkClient(metaclass=abc.ABCMeta):
 
         Parameters
         ----------
-        message: str
+        message: Message
             Message instance that is to be delivered to the server.
 
         Raises

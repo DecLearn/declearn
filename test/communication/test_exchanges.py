@@ -269,7 +269,6 @@ class TestNetworkExchanges:
             for client, reply in zip(clients, replies, strict=False)
         )
 
-    # FIXME : test never ends and allocates a lot of memory
     async def clients_to_server_large(
         self,
         agents: Tuple[NetworkServer, List[NetworkClient]],
@@ -277,7 +276,7 @@ class TestNetworkExchanges:
         """Test that the clients can send large messages to the server."""
         server, clients = agents
         coros = []
-        large = secrets.token_bytes(2**22).hex()
+        large = secrets.token_bytes(2**22)
         for idx, client in enumerate(clients):
             msg = messaging.GenericMessage(
                 action="test", params={"idx": idx, "content": large}

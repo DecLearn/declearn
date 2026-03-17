@@ -134,6 +134,8 @@ class WebsocketsServer(NetworkServer):
             logger=self.logger,
             ssl=self._ssl,
             ping_timeout=None,  # disable timeout on keep-alive pings
+            max_size=None,
+            # disable websockets max_size because app-level chunking is used
         )
         # Run the websockets server.
         self.logger.info("Server is now starting...")

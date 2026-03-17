@@ -263,7 +263,7 @@ class NetworkServer(metaclass=abc.ABCMeta):
 
         Parameters
         ----------
-        message: str
+        message: Message
             Message instance that is to be delivered to the client.
         client: str
             Identifier of the client to whom the message is addressed.

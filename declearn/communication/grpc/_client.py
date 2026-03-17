@@ -34,7 +34,7 @@ __all__ = [
 ]
 
 
-CHUNK_LENGTH = 2**22 - 50  # 2**22 - sys.getsizeof("") - 1
+CHUNK_LENGTH = 2**22 - 16  # max_size - protobuf overhead with a safety margin
 
 
 class GrpcClient(NetworkClient):

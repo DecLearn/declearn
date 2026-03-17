@@ -119,6 +119,8 @@ class WebsocketsClient(NetworkClient):
                 else None
             ),
             "ping_timeout": None,  # disable timeout on keep-alive pings
+            "max_size": None,
+            # disable websockets max_size because app-level chunking is used
         }
         # If connection fails, retry after 1 second - at most 10 times.
         idx = 0
