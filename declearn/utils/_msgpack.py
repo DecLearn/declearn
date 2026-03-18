@@ -211,3 +211,41 @@ add_msgpack_support(
     unpack=set,
     name="set",
 )
+
+
+# Add MessagePack support for int, to cover the case of large integers
+# (> 64 bits) not natively handled by MessagePack.
+# Note: the (un)pack_int methods should logically be called for large int only.
+def pack_int(x: int) -> bytes:
+    """Serialize an arbitrary-size integer into a minimal-length big-endian
+    byte representation using signed two's complement.
+
+    This function ensures that positive integers -whose most significant bit
+    would otherwise be interpreted as a sign bit- are encoded with an extra
+    leading bit to avoid sign ambiguity.
+    """
+    if x == 0:
+        return b"\x00"
+
+    bits = x.bit_length()
+    if x > 0:
+        # +1 bit to avoid sign ambiguity
+        bits += 1
+
+    length = (bits + 7) // 8
+    return x.to_bytes(length, "big", signed=True)
+
+
+def unpack_int(b: bytes) -> int:
+    """Deserialize a big-endian signed byte representation to an arbitrary-size
+    integer.
+    """
+    return int.from_bytes(b, "big", signed=True)
+
+
+add_msgpack_support(
+    cls=int,
+    pack=pack_int,
+    unpack=unpack_int,
+    name="int",
+)

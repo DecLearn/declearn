@@ -206,10 +206,9 @@ class TestNetworkExchanges:
         agents: Tuple[NetworkServer, List[NetworkClient]],
     ) -> None:
         """Run all tests with the same fixture-provided agents."""
-        # FIXME uncomment
-        # await self.clients_to_server(agents)
-        # await self.server_to_clients_broadcast(agents)
-        # await self.server_to_clients_individual(agents)
+        await self.clients_to_server(agents)
+        await self.server_to_clients_broadcast(agents)
+        await self.server_to_clients_individual(agents)
         await self.clients_to_server_large(agents)
 
     async def clients_to_server(

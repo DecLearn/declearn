@@ -18,7 +18,6 @@
 """Base API to define messages for DecLearn processes."""
 
 import dataclasses
-import json
 from abc import ABCMeta
 from typing import Any, ClassVar, Dict, Generic, Self, Tuple, Type, TypeVar
 
@@ -27,7 +26,6 @@ import msgpack  # type: ignore
 from declearn.utils import (
     access_registered,
     create_types_registry,
-    json_pack,
     msgpack_pack,
     msgpack_unpack,
     register_from_attr,
@@ -82,13 +80,6 @@ class Message(metaclass=ABCMeta):
         # NOTE: override this method to de-serialize attributes
         #       that are not handled by declearn.utils.json_pack
         return cls(**kwargs)
-
-    # TODO : remove ?
-    def to_string(self) -> str:
-        """Convert the message to a JSON-serialized string."""
-        data = self.to_kwargs()
-        dump = json.dumps(data, default=json_pack)
-        return self.typekey + "\n" + dump
 
     def to_bytes(self) -> bytes:
         """Convert the message to MessagePack-serialized bytes.

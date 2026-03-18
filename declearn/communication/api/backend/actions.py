@@ -65,15 +65,6 @@ class LegacyMessageError(Exception):
 class ActionMessage(metaclass=abc.ABCMeta):  # noqa: B024
     """Abstract base class for fundamental messages."""
 
-    # TODO : remove ?
-    def to_string(
-        self,
-    ) -> str:
-        """Serialize this 'ActionMessage' to a string."""
-        data = dataclasses.asdict(self)
-        data["action"] = self.__class__.__name__.lower()
-        return json.dumps(data)
-
     def to_bytes(
         self,
     ) -> bytes:
