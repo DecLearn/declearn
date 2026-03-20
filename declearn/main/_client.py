@@ -459,7 +459,7 @@ class FederatedClient:
                 received: SerializedMessage = await self.netwk.recv_message()
                 await self.setup_secagg(received)
             # Await and deserialize a FairnessSetupQuery.
-            received: SerializedMessage = await self.netwk.recv_message()
+            received = await self.netwk.recv_message()
             query = await verify_server_message_validity(
                 self.netwk, received, expected=messaging.FairnessSetupQuery
             )
