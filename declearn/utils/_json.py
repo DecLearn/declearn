@@ -36,7 +36,7 @@ __all__ = [
 JSON_PACK_REGISTRY: Dict[Type[Any], SerializeSpec] = {}
 JSON_UNPACK_REGISTRY: Dict[str, SerializeSpec] = {}
 
-JsonPackWrapper = TypedDict("JsonPack", {"__type__": str, "dump": Any})
+JsonPackWrapper = TypedDict("JsonPackWrapper", {"__type__": str, "dump": Any})
 
 
 @dataclasses.dataclass

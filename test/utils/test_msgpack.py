@@ -15,15 +15,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import msgpack  # type: ignore
 import pytest
 
 from declearn.utils._msgpack import (
-    msgpack_pack,
-    msgpack_unpack,
+    msgpack_deserialize,
+    msgpack_serialize,
     pack_int,
     unpack_int,
 )
+
+# TODO : tests for all msgpack functions
 
 
 @pytest.mark.parametrize(
@@ -43,11 +44,10 @@ def test_pack_unpack_int(x: int):
     [0, 1000, 2**65, -1000, -(2**65)],
     ids=["0", "1000", "2**65", "-1000", "-2**65"],
 )
-def test_support_msgpack_int(x: int):
+def test_msgpack_de_serialize_int(x: int):
     """Test that msgpack support for ints (lower and upper than 64 bits) is
-    functionnal when calling msgpack.(un)packb with custom pack/unpack
-    callbacks.
+    functionnal when calling msgpack_(de)serialize.
     """
-    packed = msgpack.packb(x, default=msgpack_pack)
-    unpacked = msgpack.unpackb(packed, object_hook=msgpack_unpack)
+    packed = msgpack_serialize(x)
+    unpacked = msgpack_deserialize(packed)
     assert unpacked == x

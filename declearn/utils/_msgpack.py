@@ -29,10 +29,10 @@ import msgpack  # type: ignore
 
 __all__ = [
     "add_msgpack_support",
+    "msgpack_deserialize",
     "msgpack_dump",
     "msgpack_load",
-    "msgpack_pack",
-    "msgpack_unpack",
+    "msgpack_serialize",
 ]
 
 
@@ -40,6 +40,16 @@ PACK_REGISTRY: Dict[Type[Any], MsgPackSerializeSpec] = {}
 UNPACK_REGISTRY: Dict[str, MsgPackSerializeSpec] = {}
 
 MsgPackWrapper = TypedDict("MsgPackWrapper", {"__type__": str, "dump": Any})
+
+
+def msgpack_serialize(obj: Any) -> bytes:
+    """Serialize object to binary data using MessagePack."""
+    return msgpack.packb(obj, default=msgpack_pack)
+
+
+def msgpack_deserialize(bin_data: bytes):
+    """Deserialize binary data to object using MessagePack."""
+    return msgpack.unpackb(bin_data, object_hook=msgpack_unpack)
 
 
 # FIXME : refactor with SerializeSpec (json)

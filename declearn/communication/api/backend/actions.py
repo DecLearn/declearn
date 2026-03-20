@@ -41,6 +41,7 @@ from typing import Optional
 
 import msgpack  # type: ignore
 
+from declearn.utils import msgpack_deserialize, msgpack_serialize
 from declearn.version import VERSION
 
 # TODO remove deleted methods ?
@@ -72,7 +73,7 @@ class ActionMessage(metaclass=abc.ABCMeta):  # noqa: B024
         """Serialize this `ActionMessage` to bytes."""
         data = dataclasses.asdict(self)
         data["action"] = self.__class__.__name__.lower()
-        return msgpack.packb(data)
+        return msgpack_serialize(data)
 
     @staticmethod
     def deserialize(
@@ -98,7 +99,7 @@ class ActionMessage(metaclass=abc.ABCMeta):  # noqa: B024
             If the bytes cannot be parsed properly.
         """
         try:
-            data = msgpack.unpackb(bin_msg)
+            data = msgpack_deserialize(bin_msg)
         except (msgpack.UnpackException, msgpack.ExtraData, TypeError) as exc:
             raise ValueError("Failed to parse 'ActionMessage' bytes.") from exc
         if "action" not in data:

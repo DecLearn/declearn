@@ -144,10 +144,10 @@ from ._logging import (
 )
 from ._msgpack import (
     add_msgpack_support,
+    msgpack_deserialize,
     msgpack_dump,
     msgpack_load,
-    msgpack_pack,
-    msgpack_unpack,
+    msgpack_serialize,
 )
 from ._multiprocess import run_as_processes
 from ._numpy import (

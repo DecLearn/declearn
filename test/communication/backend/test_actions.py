@@ -19,7 +19,6 @@
 
 import dataclasses
 
-import msgpack  # type: ignore
 import pytest
 
 from declearn.communication.api.backend import flags
@@ -33,6 +32,7 @@ from declearn.communication.api.backend.actions import (
     Reject,
     Send,
 )
+from declearn.utils import msgpack_serialize
 
 
 def assert_action_is_serializable(
@@ -102,12 +102,12 @@ class TestParseActionErrors:
 
     def test_no_action_key(self) -> None:
         """Test that a ValueError is raised on invalid bytes dump."""
-        bin_msg = msgpack.packb({"data": "stub"})
+        bin_msg = msgpack_serialize({"data": "stub"})
         with pytest.raises(ValueError):
             ActionMessage.deserialize(bin_msg)
 
     def test_invalid_action_key(self) -> None:
         """Test that a KeyError is raised on invalid action key."""
-        bin_msg = msgpack.packb({"action": "stub-action"})
+        bin_msg = msgpack_serialize({"action": "stub-action"})
         with pytest.raises(KeyError):
             ActionMessage.deserialize(bin_msg)

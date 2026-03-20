@@ -26,8 +26,8 @@ import msgpack  # type: ignore
 from declearn.utils import (
     access_registered,
     create_types_registry,
-    msgpack_pack,
-    msgpack_unpack,
+    msgpack_deserialize,
+    msgpack_serialize,
     register_from_attr,
 )
 
@@ -93,7 +93,7 @@ class Message(metaclass=ABCMeta):
         deserialization control system.
         """
         data = self.to_kwargs()
-        payload = msgpack.packb(data, default=msgpack_pack)
+        payload = msgpack_serialize(data)
         typekey_bytes = self.typekey.encode("utf-8")
         len_tk_byte = len(typekey_bytes).to_bytes(1, "big")
         return len_tk_byte + typekey_bytes + payload
@@ -162,7 +162,7 @@ class SerializedMessage(Generic[MessageT]):
     ) -> MessageT:
         """Deserialize this message into a 'self.message_cls' instance."""
         try:
-            data = msgpack.unpackb(self.bin_data, object_hook=msgpack_unpack)
+            data = msgpack_deserialize(self.bin_data)
         except (msgpack.UnpackException, msgpack.ExtraData, TypeError) as exc:
             raise ValueError(
                 f"Failed to decode MessagePack dump of '{self.message_cls}' "
