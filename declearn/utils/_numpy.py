@@ -25,48 +25,112 @@ from declearn.utils._json import add_json_support
 from declearn.utils._msgpack import add_msgpack_support
 
 __all__ = [
-    "deserialize_numpy_bin",
-    "deserialize_numpy_str",
-    "serialize_numpy_bin",
-    "serialize_numpy_str",
+    "unpack_numpy_bin",
+    "unpack_numpy_str",
+    "pack_numpy_bin",
+    "pack_numpy_str",
 ]
 
 
-# FIXME : doc
-def serialize_numpy_str(array: np.ndarray) -> Tuple[str, str, List[int]]:
-    """Transform a numpy array into a JSON-serializable tuple.
+def pack_numpy_str(array: np.ndarray) -> Tuple[str, str, List[int]]:
+    """Transform a numpy array into a serializable (hex, dtype, shape) tuple.
 
-    Inverse operation of `declearn.utils.deserialize_numpy`.
+    The array data is encoded as a hexadecimal string, making it compatible
+    with text-based serialization formats such as JSON.
+
+    Parameters
+    ----------
+    array:
+        NumPy array to serialize.
+
+    Returns
+    -------
+    A tuple (hex_data, dtype, shape) where:
+        - hex_data:  array bytes encoded as a hex string.
+        - dtype: single-character dtype code (e.g. 'f', 'd', 'i').
+        - shape: list of dimension sizes.
+
+    See also
+    --------
+    `declearn.utils.unpack_numpy_str`: inverse operation.
     """
     return (array.tobytes().hex(), array.dtype.char, list(array.shape))
 
 
-# FIXME : doc
-def deserialize_numpy_str(data: Tuple[str, str, List[int]]) -> np.ndarray:
-    """Return a numpy array based on serialized information.
+def unpack_numpy_str(data: Tuple[str, str, List[int]]) -> np.ndarray:
+    """Transform a serializable (hex, dtype, shape) tuple into a numpy array.
 
-    Inverse operation of `declearn.utils.serialize_numpy`.
+    Parameters
+    ----------
+    data:
+        A tuple (hex_data, dtype, shape) where:
+            - hex_data:  array bytes encoded as a hex string.
+            - dtype: single-character dtype code (e.g. 'f', 'd', 'i').
+            - shape: list of dimension sizes.
+
+    Returns
+    -------
+    array:
+        Deserialized NumPy array.
+
+    See also
+    --------
+    `declearn.utils.pack_numpy_str`: inverse operation.
     """
     buffer = bytes.fromhex(data[0])
     array = np.frombuffer(buffer, dtype=data[1])
     return array.reshape(data[2]).copy()  # copy makes the array writable
 
 
-# FIXME : doc
-def serialize_numpy_bin(array: np.ndarray) -> Tuple[bytes, str, List[int]]:
+def pack_numpy_bin(array: np.ndarray) -> Tuple[bytes, str, List[int]]:
+    """Transform a numpy array into a serializable (bin, dtype, shape) tuple.
+
+    The array data is stored as raw bytes, making it compatible with
+    binary serialization formats such as MessagePack.
+
+    Parameters
+    ----------
+    array:
+        NumPy array to serialize.
+
+    Returns
+    -------
+    A tuple (bin_data, dtype, shape) where:
+        - bin_data:  array raw bytes.
+        - dtype: single-character dtype code (e.g. 'f', 'd', 'i').
+        - shape: list of dimension sizes.
+
+    See also
+    --------
+    `declearn.utils.unpack_numpy_bin`: inverse operation.
+    """
     return (array.tobytes(), array.dtype.char, list(array.shape))
 
 
-# FIXME : doc
-def deserialize_numpy_bin(data: Tuple[bytes, str, List[int]]) -> np.ndarray:
+def unpack_numpy_bin(data: Tuple[bytes, str, List[int]]) -> np.ndarray:
+    """Transform a serializable (bin, dtype, shape) tuple into a numpy array.
+
+    Parameters
+    ----------
+    data:
+        A tuple (bin_data, dtype, shape) where:
+            - bin_data:  raw array bytes.
+            - dtype: single-character dtype code (e.g. 'f', 'd', 'i').
+            - shape: list of dimension sizes.
+
+    Returns
+    -------
+    array:
+        Deserialized NumPy array.
+
+    See also
+    --------
+    `declearn.utils.pack_numpy_bin`: inverse operation.
+    """
     buffer = data[0]
     array = np.frombuffer(buffer, dtype=data[1])
     return array.reshape(data[2]).copy()  # copy makes the array writable
 
 
-add_json_support(
-    np.ndarray, serialize_numpy_str, deserialize_numpy_str, "np.ndarray"
-)
-add_msgpack_support(
-    np.ndarray, serialize_numpy_bin, deserialize_numpy_bin, "np.ndarray"
-)
+add_json_support(np.ndarray, pack_numpy_str, unpack_numpy_str, "np.ndarray")
+add_msgpack_support(np.ndarray, pack_numpy_bin, unpack_numpy_bin, "np.ndarray")
