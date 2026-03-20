@@ -35,7 +35,6 @@ from declearn.communication.api.backend.actions import (
     Recv,
     Reject,
     Send,
-    parse_action_from_bytes,
 )
 from declearn.version import VERSION
 
@@ -120,7 +119,7 @@ class MessagesHandler:
         """
         # Parse the incoming message. If it is incorrect, reject it.
         try:
-            message = parse_action_from_bytes(bin_data)
+            message = ActionMessage.deserialize(bin_data)
         except (KeyError, TypeError, ValueError) as exc:
             self.logger.info(
                 "Exception encountered while parsing received message: %s",

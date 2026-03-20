@@ -35,7 +35,6 @@ from declearn.communication.api.backend.actions import (
     Recv,
     Reject,
     Send,
-    parse_action_from_bytes,
 )
 from declearn.messaging import Message, SerializedMessage
 from declearn.utils import create_types_registry, register_from_attr
@@ -207,10 +206,10 @@ class NetworkClient(metaclass=abc.ABCMeta):
         message: ActionMessage,
     ) -> ActionMessage:
         """Send an `ActionMessage` to the server and await its response."""
-        query = message.to_bytes()
+        query = message.serialize()
         reply = await self._send_message(query)
         try:
-            return parse_action_from_bytes(reply)
+            return ActionMessage.deserialize(reply)
         except Exception as exc:
             error = "Failed to decode a reply from the server."
             self.logger.critical(error)

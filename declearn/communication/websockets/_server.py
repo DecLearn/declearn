@@ -163,7 +163,7 @@ class WebsocketsServer(NetworkServer):
                     break
                 # Handle the received message and produce an answer.
                 reply = await self.handler.handle_message(message, socket)
-                await send_websockets_message(reply.to_bytes(), socket)
+                await send_websockets_message(reply.serialize(), socket)
                 if socket not in self.handler.registered_clients:
                     break
         except (ConnectionClosedOK, ConnectionClosedError) as exc:

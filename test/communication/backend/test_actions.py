@@ -32,7 +32,6 @@ from declearn.communication.api.backend.actions import (
     Recv,
     Reject,
     Send,
-    parse_action_from_bytes,
 )
 
 
@@ -40,9 +39,9 @@ def assert_action_is_serializable(
     action: ActionMessage,
 ) -> None:
     """Test that a given 'ActionMessage' is (un)serializable."""
-    bin_data = action.to_bytes()
+    bin_data = action.serialize()
     assert isinstance(bin_data, bytes)
-    result = parse_action_from_bytes(bin_data)
+    result = ActionMessage.deserialize(bin_data)
     assert isinstance(result, action.__class__)
     assert dataclasses.asdict(result) == dataclasses.asdict(action)
 
@@ -92,23 +91,23 @@ class TestParseActionErrors:
     def test_invalid_type(self) -> None:
         """Test that a ValueError is raised on invalid input type (string)."""
         with pytest.raises(ValueError):
-            parse_action_from_bytes("invalid")
+            ActionMessage.deserialize("invalid")
 
     def test_invalid_content(self) -> None:
         """Test that a ValueError is raised on invalid binary-serialized
         content.
         """
         with pytest.raises(ValueError):
-            parse_action_from_bytes(b"{invalid}")
+            ActionMessage.deserialize(b"{invalid}")
 
     def test_no_action_key(self) -> None:
         """Test that a ValueError is raised on invalid bytes dump."""
         bin_data = msgpack.packb({"data": "stub"})
         with pytest.raises(ValueError):
-            parse_action_from_bytes(bin_data)
+            ActionMessage.deserialize(bin_data)
 
     def test_invalid_action_key(self) -> None:
         """Test that a KeyError is raised on invalid action key."""
         bin_data = msgpack.packb({"action": "stub-action"})
         with pytest.raises(KeyError):
-            parse_action_from_bytes(bin_data)
+            ActionMessage.deserialize(bin_data)

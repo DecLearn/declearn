@@ -211,7 +211,7 @@ class GrpcServicer(MessageBoardServicer):
     ) -> AsyncIterator[message_pb2.Message]:  # type: ignore
         """Handle a received message and send back the (chunked) reply."""
         reply = await self.handler.handle_message(message, context.peer())
-        bin_data = reply.to_bytes()
+        bin_data = reply.serialize()
         for srt in range(0, len(bin_data), CHUNK_LENGTH):
             end = srt + CHUNK_LENGTH
             yield message_pb2.Message(message=bin_data[srt:end])
@@ -241,7 +241,7 @@ class GrpcServicer(MessageBoardServicer):
                 "Refused a chunks-streaming request from client %s",
                 context.peer(),
             )
-            yield message_pb2.Message(message=error.to_bytes())
+            yield message_pb2.Message(message=error.serialize())
         # Otherwise, assemble the message for streamed chunks, then reply.
         else:
             req_chunks = []

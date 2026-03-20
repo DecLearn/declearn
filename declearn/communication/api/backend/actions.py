@@ -32,6 +32,8 @@ other points of the application, leaving network communications
 with the mere job to transmit strings across the network.
 """
 
+from __future__ import annotations
+
 import abc
 import dataclasses
 import json
@@ -53,7 +55,6 @@ __all__ = [
     "Recv",
     "Reject",
     "Send",
-    "parse_action_from_bytes",
 ]
 
 
@@ -65,13 +66,53 @@ class LegacyMessageError(Exception):
 class ActionMessage(metaclass=abc.ABCMeta):  # noqa: B024
     """Abstract base class for fundamental messages."""
 
-    def to_bytes(
+    def serialize(
         self,
     ) -> bytes:
-        """Serialize this 'ActionMessage' to bytes."""
+        """Serialize this `ActionMessage` to bytes."""
         data = dataclasses.asdict(self)
         data["action"] = self.__class__.__name__.lower()
         return msgpack.packb(data)
+
+    @staticmethod
+    def deserialize(
+        bin_data: bytes,
+    ) -> ActionMessage:
+        """Parse a serialized `ActionMessage` from bytes.
+
+        Parameters
+        ----------
+        bin_data:
+            Serialized `ActionMessage` instance bytes.
+
+        Returns
+        -------
+        action:
+            `ActionMessage` recovered from `bin_data`.
+
+        Raises
+        ------
+        KeyError
+            If the bytes cannot be mapped to an `ActionMessage` class.
+        ValueError
+            If the bytes cannot be parsed properly.
+        """
+        try:
+            data = msgpack.unpackb(bin_data)
+        except (msgpack.UnpackException, msgpack.ExtraData, TypeError) as exc:
+            raise ValueError("Failed to parse 'ActionMessage' bytes.") from exc
+        if "action" not in data:
+            raise ValueError(
+                "Failed to parse 'ActionMessage' bytes: no 'action' key."
+            )
+        action = data.pop("action")
+        cls = ACTION_MESSAGES.get(action, None)
+        if cls is None:
+            raise KeyError(
+                "Failed to parse 'ActionMessage' bytes: no class matches "
+                f"'{action}' key."
+            )
+        return cls(**data)
 
 
 @dataclasses.dataclass
@@ -133,46 +174,6 @@ _ACTION_CLASSES = [
     Send,
 ]
 ACTION_MESSAGES = {cls.__name__.lower(): cls for cls in _ACTION_CLASSES}
-
-
-def parse_action_from_bytes(
-    bin_data: bytes,
-) -> ActionMessage:
-    """Parse a serialized `ActionMessage` from bytes.
-
-    Parameters
-    ----------
-    bin_data:
-        Serialized `ActionMessage` instance bytes.
-
-    Returns
-    -------
-    action:
-        `ActionMessage` recovered from `bin_data`.
-
-    Raises
-    ------
-    KeyError
-        If the bytes cannot be mapped to an `ActionMessage` class.
-    ValueError
-        If the bytes cannot be parsed properly.
-    """
-    try:
-        data = msgpack.unpackb(bin_data)
-    except (msgpack.UnpackException, msgpack.ExtraData, TypeError) as exc:
-        raise ValueError("Failed to parse 'ActionMessage' bytes.") from exc
-    if "action" not in data:
-        raise ValueError(
-            "Failed to parse 'ActionMessage' bytes: no 'action' key."
-        )
-    action = data.pop("action")
-    cls = ACTION_MESSAGES.get(action, None)
-    if cls is None:
-        raise KeyError(
-            "Failed to parse 'ActionMessage' bytes: no class matches "
-            f"'{data['action']}' key."
-        )
-    return cls(**data)
 
 
 # TODO : remove when handle version / byte-string incompatibilities
