@@ -107,7 +107,7 @@ class Aggregate(metaclass=abc.ABCMeta):
                 cls, pack=cls.to_dict, unpack=cls.from_dict, name=name
             )
             add_msgpack_support(
-                cls, pack=cls.to_dict, unpack=cls.from_dict, name=name
+                cls, encode=cls.to_dict, decode=cls.from_dict, name=name
             )
             register_type(cls, name=cls.__name__, group=cls._group_key)
 

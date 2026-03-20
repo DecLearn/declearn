@@ -116,7 +116,10 @@ class SecureAggregate(Generic[AggregateT], metaclass=abc.ABCMeta):
             cls=cls, pack=cls.to_dict, unpack=cls.from_dict, name=cls.__name__
         )
         add_msgpack_support(
-            cls=cls, pack=cls.to_dict, unpack=cls.from_dict, name=cls.__name__
+            cls=cls,
+            encode=cls.to_dict,
+            decode=cls.from_dict,
+            name=cls.__name__,
         )
 
     def aggregate(

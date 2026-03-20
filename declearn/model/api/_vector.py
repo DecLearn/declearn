@@ -99,8 +99,8 @@ add_json_support(
 
 add_msgpack_support(
     cls=VectorSpec,
-    pack=dataclasses.asdict,
-    unpack=lambda x: VectorSpec(**x),
+    encode=dataclasses.asdict,
+    decode=lambda x: VectorSpec(**x),
     name="VectorSpec",
 )
 

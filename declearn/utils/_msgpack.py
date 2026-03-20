@@ -36,20 +36,13 @@ __all__ = [
 ]
 
 
-PACK_REGISTRY: Dict[Type[Any], MsgPackSerializeSpec] = {}
-UNPACK_REGISTRY: Dict[str, MsgPackSerializeSpec] = {}
+REGISTRY: Dict[Type[Any], MsgPackSerializeSpec] = {}
+"""Dictionary mapping a type to its serialization spec."""
+
+REVERSE_REGISTRY: Dict[str, MsgPackSerializeSpec] = {}
+"""Dictionary mapping a type name/key to its serialization spec."""
 
 MsgPackWrapper = TypedDict("MsgPackWrapper", {"__type__": str, "dump": Any})
-
-
-def msgpack_serialize(obj: Any) -> bytes:
-    """Serialize object to binary data using MessagePack."""
-    return msgpack.packb(obj, default=msgpack_pack)
-
-
-def msgpack_deserialize(bin_data: bytes):
-    """Deserialize binary data to object using MessagePack."""
-    return msgpack.unpackb(bin_data, object_hook=msgpack_unpack)
 
 
 # FIXME : refactor with SerializeSpec (json)
@@ -59,40 +52,47 @@ class MsgPackSerializeSpec:
 
     cls: Type[Any]
     name: str
-    pack: Callable[[Any], Any]  # cls -> any
-    unpack: Callable[[Any], Any]  # any -> cls
+    encoder: Callable[[Any], Any]  # cls -> any
+    decoder: Callable[[Any], Any]  # any -> cls
 
     def register(self, repl: bool = False) -> None:
-        """Register the wrapped type and (un)packing protocols for use.
+        """Register the wrapped type and (de)coding protocols for use.
 
-        Calling this method ensures that the (un)packing protocols
-        are added to the `msgpack_pack` and `msgpack_unpack` hooks which
+        Calling this method ensures that the (de)coding protocols
+        are added to the `encode` and `decode` hooks which
         declearn makes use of when (de)serializing objects to and
         from MessagePack, effectively adding support for `self.cls`.
-
-        Note that these hooks are also made public, enabling their
-        use as part of users' custom code.
         """
         if not repl:
-            if self.cls in PACK_REGISTRY:
+            if self.cls in REGISTRY:
                 raise KeyError(
                     f"Type '{self.cls}' already has a registered "
                     "MessagePack (de-)serialization specification."
                 )
-            if self.name in UNPACK_REGISTRY:
+            if self.name in REVERSE_REGISTRY:
                 raise KeyError(
                     f"Name '{self.name}' is already in use for the "
                     "MessagePack (de-)serialization specification of type "
-                    f"'{UNPACK_REGISTRY[self.name].cls}'."
+                    f"'{REVERSE_REGISTRY[self.name].cls}'."
                 )
-        PACK_REGISTRY[self.cls] = self
-        UNPACK_REGISTRY[self.name] = self
+        REGISTRY[self.cls] = self
+        REVERSE_REGISTRY[self.name] = self
+
+
+def msgpack_serialize(obj: Any) -> bytes:
+    """Serialize object to binary data using MessagePack."""
+    return msgpack.packb(obj, default=encode)
+
+
+def msgpack_deserialize(bin_data: bytes):
+    """Deserialize binary data to object using MessagePack."""
+    return msgpack.unpackb(bin_data, object_hook=decode)
 
 
 def add_msgpack_support(
     cls: Type[Any],
-    pack: Callable[[Any], Any],
-    unpack: Callable[[Any], Any],
+    encode: Callable[[Any], Any],
+    decode: Callable[[Any], Any],
     name: Optional[str] = None,
     repl: bool = False,
 ) -> None:
@@ -103,12 +103,12 @@ def add_msgpack_support(
     cls: type
         Type for which to add (or modify) MessagePack (de)serialization
         support.
-    pack: func(cls) -> any
-        Function used to pack objects of type `cls` into an arbitrary
+    encode: func(cls) -> any
+        Function used to encode objects of type `cls` into an arbitrary
         MessagePack-serializable object or structure.
-    unpack: func(any) -> cls
-        Function used to unpack objects of type `cls` from the object
-        or structure output by the `pack` function.
+    decode: func(any) -> cls
+        Function used to decode objects of type `cls` from the object
+        or structure output by the `encode` function.
     name: str
         Keyword to use as a marker for serialized instances of type `cls`
         (based on which their deserialization scheme will be retrieved).
@@ -120,19 +120,19 @@ def add_msgpack_support(
     """
     if name is None:
         name = f"{cls.__module__}.{cls.__name__}"
-    spec = MsgPackSerializeSpec(cls, name, pack, unpack)
+    spec = MsgPackSerializeSpec(cls, name, encode, decode)
     spec.register(repl)
 
 
-def msgpack_pack(obj: Any) -> MsgPackWrapper:
+def encode(obj: Any) -> MsgPackWrapper:
     """Pack an object of non-standard type for MessagePack serialization.
 
     This function is designed to be passed as `default` parameter
     to the `msgpack.packb` function. It provides support for object
-    types with custom (un)packing protocols registered as part of
+    types with custom (de)coding protocols registered as part of
     declearn or using `declearn.utils.add_msgpack_support`.
     """
-    spec = PACK_REGISTRY.get(type(obj))
+    spec = REGISTRY.get(type(obj))
     if spec is None:
         raise TypeError(
             f"Object of type '{type(obj)}' is not MessagePack-serializable.\n"
@@ -142,13 +142,13 @@ def msgpack_pack(obj: Any) -> MsgPackWrapper:
     return {"__type__": spec.name, "dump": spec.pack(obj)}
 
 
-def msgpack_unpack(obj: Dict[str, Any]) -> Any:
+def decode(obj: Dict[str, Any]) -> Any:
     """Unpack an object of non-standard type as part of MessagePack
     deserialization.
 
     This function is designed to be passed as `object_hook` parameter
     to the `msgpack.unpackb` function. It provides support for object
-    types with custom (un)packing protocols registered as part of
+    types with custom (de)coding protocols registered as part of
     declearn or using `declearn.utils.add_msgpack_support`.
     """
     # If 'obj' does not conform to JsonPack format, return it as-is.
@@ -156,7 +156,7 @@ def msgpack_unpack(obj: Dict[str, Any]) -> Any:
         return obj
     # If 'obj' is MsgPackWrapper but spec is not found,
     # warn before returning as-is.
-    spec = UNPACK_REGISTRY.get(obj["__type__"])
+    spec = REVERSE_REGISTRY.get(obj["__type__"])
     if spec is None:
         warnings.warn(
             "MessagePack deserializer received a seemingly-packed object "
@@ -175,12 +175,6 @@ def msgpack_dump(
 ) -> None:
     """Dump a given object to a MessagePack file, using extended types support.
 
-    This function is merely a shortcut to run the following code:
-    ```
-    >>> with open(path, "wb") as file:
-    >>>     msgpack.dump(obj, file, default=declearn.utils.msgpack_pack)
-    ```
-
     See `declearn.utils.add_msgpack_support` to extend the behaviour
     of MessagePack (de)serialization to non-standard types, that will be
     used as part of this function.
@@ -188,21 +182,13 @@ def msgpack_dump(
     See `declearn.utils.msgpack_load` for the counterpart method.
     """
     with open(path, "wb") as file:
-        msgpack.dump(obj, file, default=msgpack_pack)
+        msgpack.dump(obj, file, default=encode)
 
 
 def msgpack_load(
     path: str,
 ) -> Any:
     """Load data from a MessagePack file, using extended types support.
-
-    This function is merely a shortcut to run the following code:
-    ```
-    >>> with open(path, "rb") as file:
-    >>>     return msgpack.load(
-    >>>         file, object_hook=declearn.utils.msgpack_unpack
-    >>>     )
-    ```
 
     See `declearn.utils.add_msgpack_support` to extend the behaviour
     of MessagePack (de)serialization to non-standard types, that will be
@@ -211,14 +197,14 @@ def msgpack_load(
     See `declearn.utils.msgpack_dump` for the counterpart method.
     """
     with open(path, "rb") as file:
-        return msgpack.load(file, object_hook=msgpack_unpack)
+        return msgpack.load(file, object_hook=decode)
 
 
 # Add MessagePack support for built-in set objects.
 add_msgpack_support(
     cls=set,
-    pack=list,
-    unpack=set,
+    encode=list,
+    decode=set,
     name="set",
 )
 
@@ -255,7 +241,7 @@ def unpack_int(b: bytes) -> int:
 
 add_msgpack_support(
     cls=int,
-    pack=pack_int,
-    unpack=unpack_int,
+    encode=pack_int,
+    decode=unpack_int,
     name="int",
 )
