@@ -95,14 +95,14 @@ class MessagesHandler:
 
     async def handle_message(
         self,
-        bin_data: bytes,
+        bin_msg: bytes,
         context: Any,
     ) -> ActionMessage:
         """Handle an incoming message from a client.
 
         Parameters
         ----------
-        bin_data: bytes
+        bin_msg: bytes
             Received message, as bytes that can be parsed back
             into an `ActionMessage` instance.
         context: hashable
@@ -119,7 +119,7 @@ class MessagesHandler:
         """
         # Parse the incoming message. If it is incorrect, reject it.
         try:
-            message = ActionMessage.deserialize(bin_data)
+            message = ActionMessage.deserialize(bin_msg)
         except (KeyError, TypeError, ValueError) as exc:
             self.logger.info(
                 "Exception encountered while parsing received message: %s",
@@ -270,14 +270,14 @@ class MessagesHandler:
 
     def post_message(
         self,
-        message: bytes,
+        bin_msg: bytes,
         client: str,
     ) -> None:
         """Post a message to be requested by a given client.
 
         Parameters
         ----------
-        message: bytes
+        bin_msg: bytes
             Message bytes that is to be posted for the client to collect.
         client: str
             Name of the client to whom the message is addressed.
@@ -296,11 +296,11 @@ class MessagesHandler:
                 "Overwriting pending message uncollected by client '%s'.",
                 client,
             )
-        self.outgoing_messages[client] = message
+        self.outgoing_messages[client] = bin_msg
 
     async def send_message(
         self,
-        message: bytes,
+        bin_msg: bytes,
         client: str,
         timeout: Optional[float] = None,
     ) -> None:
@@ -308,7 +308,7 @@ class MessagesHandler:
 
         Parameters
         ----------
-        message: bytes
+        bin_msg: bytes
             Message bytes that is to be posted for the client to collect.
         client: str
             Name of the client to whom the message is addressed.
@@ -328,7 +328,7 @@ class MessagesHandler:
         and move on without guarantees that it was collected.
         """
         # Post the message. Wait for it to have been collected.
-        self.post_message(message, client)
+        self.post_message(bin_msg, client)
         countdown = (
             max(math.ceil(timeout / self.heartbeat), 1) if timeout else -1
         )
@@ -354,7 +354,7 @@ class MessagesHandler:
 
         Returns
         -------
-        message: bytes
+        bin_msg: bytes
             Collected message that was sent by `client`, if any.
             In case no message is available, return None.
 
@@ -390,7 +390,7 @@ class MessagesHandler:
 
         Returns
         -------
-        message: bytes
+        bin_msg: bytes
             Collected message that was sent by `client`.
 
         Notes
@@ -402,9 +402,9 @@ class MessagesHandler:
             max(math.ceil(timeout / self.heartbeat), 1) if timeout else -1
         )
         while countdown:
-            message = self.check_message(client)
-            if message is not None:
-                return message
+            bin_msg = self.check_message(client)
+            if bin_msg is not None:
+                return bin_msg
             await asyncio.sleep(self.heartbeat)
             countdown -= 1
         raise asyncio.TimeoutError(

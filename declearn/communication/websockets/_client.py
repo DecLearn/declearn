@@ -146,15 +146,15 @@ class WebsocketsClient(NetworkClient):
 
     async def _send_message(
         self,
-        message: bytes,
+        bin_msg: bytes,
     ) -> bytes:
         """Send a message to the server and return the obtained reply."""
         if self._socket is None:
             raise RuntimeError("Cannot communicate while not connected.")
-        await send_websockets_message(message, self._socket)
+        await send_websockets_message(bin_msg, self._socket)
         answer = await self._socket.recv()
         return await receive_websockets_message(
-            message=answer, socket=self._socket, allow_chunks=True
+            bin_msg=answer, socket=self._socket, allow_chunks=True
         )
 
     async def register(self) -> bool:

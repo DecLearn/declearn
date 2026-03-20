@@ -350,7 +350,7 @@ class NetworkServer(metaclass=abc.ABCMeta):
 
         Returns
         -------
-        messages:
+        ser_messages:
             A dictionary mapping clients' names to the serialized
             messages they sent to the server.
         """
@@ -359,8 +359,8 @@ class NetworkServer(metaclass=abc.ABCMeta):
         routines = [self.handler.recv_message(client) for client in clients]
         received = await asyncio.gather(*routines, return_exceptions=False)
         return {
-            client: SerializedMessage.from_message_bytes(bin_data)
-            for client, bin_data in zip(clients, received, strict=False)
+            client: SerializedMessage.from_bin_message(bin_msg)
+            for client, bin_msg in zip(clients, received, strict=False)
         }
 
     async def wait_for_messages_with_timeout(
@@ -381,9 +381,9 @@ class NetworkServer(metaclass=abc.ABCMeta):
 
         Returns
         -------
-        messages: dict[str, Message]
+        ser_msgs: dict[str, SerializedMessage]
             A dictionary where the keys are the clients' names and
-            the values are Message objects they sent to the server.
+            the values are SerializedMessage objects they sent to the server.
         timeouts: list[str]
             List of names of clients that failed to send a message
             prior to `timeout` being reached.
@@ -394,7 +394,7 @@ class NetworkServer(metaclass=abc.ABCMeta):
             self.handler.recv_message(client, timeout) for client in clients
         ]
         received = await asyncio.gather(*routines, return_exceptions=True)
-        messages: Dict[str, SerializedMessage] = {}
+        ser_msgs: Dict[str, SerializedMessage] = {}
         timeouts: List[str] = []
         for client, output in zip(clients, received, strict=False):
             if isinstance(output, asyncio.TimeoutError):
@@ -402,5 +402,5 @@ class NetworkServer(metaclass=abc.ABCMeta):
             elif isinstance(output, BaseException):
                 raise output
             else:
-                messages[client] = SerializedMessage.from_message_bytes(output)
-        return messages, timeouts
+                ser_msgs[client] = SerializedMessage.from_bin_message(output)
+        return ser_msgs, timeouts

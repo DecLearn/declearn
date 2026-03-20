@@ -100,13 +100,13 @@ class Message(metaclass=ABCMeta):
 
     # TODO : perf ! optimize / change header system to avoid message copy
     @staticmethod
-    def parse_typekey_header(bin_data: bytes) -> Tuple[str, bytes]:
+    def parse_typekey_header(bin_msg: bytes) -> Tuple[str, bytes]:
         """Split a binary message into its typekey header and remaining
         payload.
 
         Parameters
         ----------
-        bin_data:
+        bin_msg:
             Binary message with format:
             [1-byte length][typekey string][payload].
 
@@ -116,9 +116,9 @@ class Message(metaclass=ABCMeta):
             - `typekey`: message type identifier.
             - `payload`: binary data with the header stripped.
         """
-        typekey_len = bin_data[0]
-        typekey = bin_data[1 : 1 + typekey_len].decode("utf-8")
-        payload = bin_data[1 + typekey_len :]
+        typekey_len = bin_msg[0]
+        typekey = bin_msg[1 : 1 + typekey_len].decode("utf-8")
+        payload = bin_msg[1 + typekey_len :]
         return typekey, payload
 
 
@@ -137,7 +137,7 @@ class SerializedMessage(Generic[MessageT]):
 
     Usage:
     ```
-    >>> proto = SerializedMessage.from_message_bytes(bin_data)
+    >>> proto = SerializedMessage.from_bin_message(bin_msg)
     >>> assert issubclass(proto.message_cls, ExpectedMessageType)
     >>> message = proto.deserialize()  # type: `proto.message_cls`
     ```
@@ -171,13 +171,13 @@ class SerializedMessage(Generic[MessageT]):
         return self.message_cls.from_kwargs(**data)
 
     @classmethod
-    def from_message_bytes(
+    def from_bin_message(
         cls,
-        bin_data: bytes,
+        bin_msg: bytes,
     ) -> Self:
-        """Parse a serialized message bytes into a 'SerializedMessage'."""
+        """Parse a binary-serialized message into a `SerializedMessage`."""
         try:
-            typekey, payload = Message.parse_typekey_header(bin_data)
+            typekey, payload = Message.parse_typekey_header(bin_msg)
         except (IndexError, UnicodeDecodeError) as exc:
             raise TypeError(
                 "Input string appears not to be a Message dump."

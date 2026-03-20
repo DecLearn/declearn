@@ -323,12 +323,12 @@ class FairnessControllerTestSuite:
                 for idx, (cli, msg) in enumerate(replies.items())
             }
             netwk.wait_for_messages.return_value = {
-                cli: SerializedMessage.from_message_bytes(msg.serialize())
+                cli: SerializedMessage.from_bin_message(msg.serialize())
                 for cli, msg in secagg_replies.items()
             }
         else:
             netwk.wait_for_messages.return_value = {
-                cli: SerializedMessage.from_message_bytes(msg.serialize())
+                cli: SerializedMessage.from_bin_message(msg.serialize())
                 for cli, msg in replies.items()
             }
         # Run the reception and (secure-)aggregation of these replies.

@@ -152,7 +152,7 @@ class WebsocketsServer(NetworkServer):
                 # Receive the message (covering chunked-message case).
                 known = socket in self.handler.registered_clients
                 try:
-                    message = await receive_websockets_message(
+                    bin_msg = await receive_websockets_message(
                         frame, socket, allow_chunks=known
                     )
                 except StreamRefusedError:
@@ -162,7 +162,7 @@ class WebsocketsServer(NetworkServer):
                     )
                     break
                 # Handle the received message and produce an answer.
-                reply = await self.handler.handle_message(message, socket)
+                reply = await self.handler.handle_message(bin_msg, socket)
                 await send_websockets_message(reply.serialize(), socket)
                 if socket not in self.handler.registered_clients:
                     break

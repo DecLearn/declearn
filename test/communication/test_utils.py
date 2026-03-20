@@ -44,8 +44,8 @@ class SimpleMessage(Message, register=False):  # type: ignore[call-arg]
 def test_message_parse_typekey_header():
     """Test 'Message.parse_typekey_header' static method."""
     message = SimpleMessage("Hello World !")
-    bin_data = message.serialize()
-    typekey, payload = Message.parse_typekey_header(bin_data)
+    bin_msg = message.serialize()
+    typekey, payload = Message.parse_typekey_header(bin_msg)
     assert typekey == "simple"
     srm = SerializedMessage(type(message), payload)
     assert srm.deserialize() == message

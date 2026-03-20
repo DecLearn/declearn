@@ -39,9 +39,9 @@ def assert_action_is_serializable(
     action: ActionMessage,
 ) -> None:
     """Test that a given 'ActionMessage' is (un)serializable."""
-    bin_data = action.serialize()
-    assert isinstance(bin_data, bytes)
-    result = ActionMessage.deserialize(bin_data)
+    bin_msg = action.serialize()
+    assert isinstance(bin_msg, bytes)
+    result = ActionMessage.deserialize(bin_msg)
     assert isinstance(result, action.__class__)
     assert dataclasses.asdict(result) == dataclasses.asdict(action)
 
@@ -102,12 +102,12 @@ class TestParseActionErrors:
 
     def test_no_action_key(self) -> None:
         """Test that a ValueError is raised on invalid bytes dump."""
-        bin_data = msgpack.packb({"data": "stub"})
+        bin_msg = msgpack.packb({"data": "stub"})
         with pytest.raises(ValueError):
-            ActionMessage.deserialize(bin_data)
+            ActionMessage.deserialize(bin_msg)
 
     def test_invalid_action_key(self) -> None:
         """Test that a KeyError is raised on invalid action key."""
-        bin_data = msgpack.packb({"action": "stub-action"})
+        bin_msg = msgpack.packb({"action": "stub-action"})
         with pytest.raises(KeyError):
-            ActionMessage.deserialize(bin_data)
+            ActionMessage.deserialize(bin_msg)

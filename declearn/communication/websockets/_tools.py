@@ -38,7 +38,7 @@ class StreamRefusedError(Exception):
 
 
 async def receive_websockets_message(
-    message: bytes,
+    bin_msg: bytes,
     socket: WebSocketCommonProtocol,
     allow_chunks: bool = False,
 ) -> bytes:
@@ -46,7 +46,7 @@ async def receive_websockets_message(
 
     Parameters
     ----------
-    message : bytes
+    bin_msg : bytes
         Initial message received through `socket`.
     socket : WebSocketCommonProtocol
         Open socket through which `message` was received
@@ -57,11 +57,11 @@ async def receive_websockets_message(
 
     Returns
     -------
-    message: bytes
+    bin_msg: bytes
         The received message, which may be `message` or the result
         of a chunks-streaming operation.
     """
-    if message == FLAG_STREAM_START:
+    if bin_msg == FLAG_STREAM_START:
         if not allow_chunks:
             await socket.send(FLAG_STREAM_BLOCK)
             raise StreamRefusedError(
@@ -74,24 +74,24 @@ async def receive_websockets_message(
             if buffer == FLAG_STREAM_CLOSE:
                 break
             chunks.append(buffer)
-        message = b"".join(chunks)
-    return message
+        bin_msg = b"".join(chunks)
+    return bin_msg
 
 
 async def send_websockets_message(
-    message: bytes,
+    bin_msg: bytes,
     socket: WebSocketCommonProtocol,
 ) -> None:
     """Send a message through an open socket.
 
     Parameters
     ----------
-    message : bytes
+    bin_msg : bytes
         Binary content to send.
     socket : WebSocketCommonProtocol
         Open socket through which `message` is to be sent.
     """
-    if len(message) > CHUNK_LENGTH:
+    if len(bin_msg) > CHUNK_LENGTH:
         # subtract overhead size with a safety margin
         await socket.send(FLAG_STREAM_START)
         if await socket.recv() != FLAG_STREAM_ALLOW:
@@ -99,9 +99,9 @@ async def send_websockets_message(
                 "Message required chunking, but chunks-streaming was "
                 "disallowed by the remote endpoint."
             )
-        for srt in range(0, len(message), CHUNK_LENGTH):
+        for srt in range(0, len(bin_msg), CHUNK_LENGTH):
             end = srt + CHUNK_LENGTH
-            await socket.send(message[srt:end])  # FIXME: perf / copy ?
+            await socket.send(bin_msg[srt:end])  # FIXME: perf / copy ?
         await socket.send(FLAG_STREAM_CLOSE)
     else:
-        await socket.send(message)
+        await socket.send(bin_msg)

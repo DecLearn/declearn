@@ -206,15 +206,15 @@ class GrpcServicer(MessageBoardServicer):
 
     async def _handle_and_reply(
         self,
-        message: bytes,
+        bin_msg: bytes,
         context: grpc.ServicerContext,
     ) -> AsyncIterator[message_pb2.Message]:  # type: ignore
         """Handle a received message and send back the (chunked) reply."""
-        reply = await self.handler.handle_message(message, context.peer())
-        bin_data = reply.serialize()
-        for srt in range(0, len(bin_data), CHUNK_LENGTH):
+        reply = await self.handler.handle_message(bin_msg, context.peer())
+        bin_reply = reply.serialize()
+        for srt in range(0, len(bin_reply), CHUNK_LENGTH):
             end = srt + CHUNK_LENGTH
-            yield message_pb2.Message(message=bin_data[srt:end])
+            yield message_pb2.Message(message=bin_reply[srt:end])
 
     async def send(
         self,
@@ -223,8 +223,8 @@ class GrpcServicer(MessageBoardServicer):
     ) -> AsyncIterator[message_pb2.Message]:  # type: ignore
         """Handle a Message-sending request from a client."""
         # async is needed; pylint: disable=invalid-overridden-method
-        message = request.message  # type: ignore
-        async for chunk in self._handle_and_reply(message, context):
+        bin_msg = request.message  # type: ignore
+        async for chunk in self._handle_and_reply(bin_msg, context):
             yield chunk
 
     async def send_stream(
@@ -247,6 +247,6 @@ class GrpcServicer(MessageBoardServicer):
             req_chunks = []
             async for request in request_iterator:
                 req_chunks.append(request.message)
-            message = b"".join(req_chunks)
-            async for chunk in self._handle_and_reply(message, context):
+            bin_msg = b"".join(req_chunks)
+            async for chunk in self._handle_and_reply(bin_msg, context):
                 yield chunk

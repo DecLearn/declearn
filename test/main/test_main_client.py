@@ -360,7 +360,7 @@ class TestFederatedClientInitialize:
         netwk = mock.create_autospec(NetworkClient, instance=True)
         netwk.name = "client"
         msg_data: messaging.SerializedMessage[messaging.MetadataQuery] = (
-            messaging.SerializedMessage.from_message_bytes(
+            messaging.SerializedMessage.from_bin_message(
                 messaging.MetadataQuery(fields=["n_samples"]).serialize()
             )
         )
@@ -396,7 +396,7 @@ class TestFederatedClientInitialize:
         netwk = mock.create_autospec(NetworkClient, instance=True)
         netwk.name = "client"
         msg_data: messaging.SerializedMessage[messaging.MetadataQuery] = (
-            messaging.SerializedMessage.from_message_bytes(
+            messaging.SerializedMessage.from_bin_message(
                 messaging.MetadataQuery(fields=["invalid"]).serialize()
             )
         )
@@ -1133,7 +1133,7 @@ class TestFederatedClientMisc:
         client = FederatedClient(netwk=netwk, train_data=MOCK_DATASET)
         # Have it process a CancelTraining message.
         message: messaging.SerializedMessage[messaging.CancelTraining] = (
-            messaging.SerializedMessage.from_message_bytes(
+            messaging.SerializedMessage.from_bin_message(
                 messaging.CancelTraining(reason="mock-reason").serialize()
             )
         )
@@ -1149,7 +1149,7 @@ class TestFederatedClientMisc:
         client = FederatedClient(netwk=netwk, train_data=MOCK_DATASET)
         # Have it process an Error message.
         message: messaging.SerializedMessage[messaging.Error] = (
-            messaging.SerializedMessage.from_message_bytes(
+            messaging.SerializedMessage.from_bin_message(
                 messaging.Error(message="error-message").serialize()
             )
         )

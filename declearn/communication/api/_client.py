@@ -191,7 +191,7 @@ class NetworkClient(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     async def _send_message(
         self,
-        message: bytes,
+        bin_msg: bytes,
     ) -> bytes:
         """Send a message to the server and return the obtained reply.
 
@@ -301,7 +301,7 @@ class NetworkClient(metaclass=abc.ABCMeta):
 
         Returns
         -------
-        message: SerializedMessage
+        ser_msg: SerializedMessage
             Serialized message received from the server.
 
         Note
@@ -324,7 +324,7 @@ class NetworkClient(metaclass=abc.ABCMeta):
         query = Recv(timeout)
         reply = await self._exchange_action_messages(query)
         if isinstance(reply, Send):
-            return SerializedMessage.from_message_bytes(reply.content)
+            return SerializedMessage.from_bin_message(reply.content)
         # Handle the various kinds of failures and raise accordingly.
         if isinstance(reply, Reject):
             if reply.flag == flags.CHECK_MESSAGE_TIMEOUT:

@@ -76,19 +76,19 @@ class ActionMessage(metaclass=abc.ABCMeta):  # noqa: B024
 
     @staticmethod
     def deserialize(
-        bin_data: bytes,
+        bin_msg: bytes,
     ) -> ActionMessage:
         """Parse a serialized `ActionMessage` from bytes.
 
         Parameters
         ----------
-        bin_data:
+        bin_msg:
             Serialized `ActionMessage` instance bytes.
 
         Returns
         -------
         action:
-            `ActionMessage` recovered from `bin_data`.
+            `ActionMessage` recovered from binary data.
 
         Raises
         ------
@@ -98,7 +98,7 @@ class ActionMessage(metaclass=abc.ABCMeta):  # noqa: B024
             If the bytes cannot be parsed properly.
         """
         try:
-            data = msgpack.unpackb(bin_data)
+            data = msgpack.unpackb(bin_msg)
         except (msgpack.UnpackException, msgpack.ExtraData, TypeError) as exc:
             raise ValueError("Failed to parse 'ActionMessage' bytes.") from exc
         if "action" not in data:
