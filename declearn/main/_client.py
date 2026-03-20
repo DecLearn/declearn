@@ -308,7 +308,7 @@ class FederatedClient:
         """
         # Await initialization instructions.
         self.logger.info("Awaiting initialization instructions from server.")
-        received = await self.netwk.recv_message()
+        received: SerializedMessage = await self.netwk.recv_message()
         # If a MetadataQuery is received, process it, then await InitRequest.
         if issubclass(received.message_cls, messaging.MetadataQuery):
             await self._collect_and_send_metadata(received.deserialize())

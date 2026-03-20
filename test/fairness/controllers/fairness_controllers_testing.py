@@ -317,19 +317,19 @@ class FairnessControllerTestSuite:
         }
         if encrypters:
             secagg_replies = {
-                key: SecaggFairnessReply.from_cleartext_message(
-                    cleartext=val, encrypter=encrypters[idx]
+                cli: SecaggFairnessReply.from_cleartext_message(
+                    cleartext=msg, encrypter=encrypters[idx]
                 )
-                for idx, (key, val) in enumerate(replies.items())
+                for idx, (cli, msg) in enumerate(replies.items())
             }
             netwk.wait_for_messages.return_value = {
-                key: SerializedMessage.from_message_bytes(val.to_bytes())
-                for key, val in secagg_replies.items()
+                cli: SerializedMessage.from_message_bytes(msg.serialize())
+                for cli, msg in secagg_replies.items()
             }
         else:
             netwk.wait_for_messages.return_value = {
-                key: SerializedMessage.from_message_bytes(val.to_bytes())
-                for key, val in replies.items()
+                cli: SerializedMessage.from_message_bytes(msg.serialize())
+                for cli, msg in replies.items()
             }
         # Run the reception and (secure-)aggregation of these replies.
         aggregated = await server.receive_and_aggregate_fairness_measures(

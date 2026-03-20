@@ -271,7 +271,7 @@ class NetworkClient(metaclass=abc.ABCMeta):
         The message sent here is designed to be received using the
         `NetworkServer.wait_for_messages` method.
         """
-        query = Send(message.to_bytes())
+        query = Send(message.serialize())
         reply = await self._exchange_action_messages(query)
         if isinstance(reply, Ping):
             return None

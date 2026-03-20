@@ -61,16 +61,6 @@ class TestMessagesHandler:
         assert isinstance(reply, Reject)
         assert reply.flag == flags.INVALID_MESSAGE
 
-    # FIXME: remove ?
-    # async def test_handle_legacy_message(
-    #     self,
-    #     handler: MessagesHandler,
-    # ) -> None:
-    #     """Test that an invalid message is rejected."""
-    #     query = LegacyReject().to_bytes()
-    #     reply = await handler.handle_message(query, context=mock.MagicMock())
-    #     assert isinstance(reply, LegacyReject)
-
     async def test_handle_join_open(
         self,
         handler: MessagesHandler,

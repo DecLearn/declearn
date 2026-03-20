@@ -361,7 +361,7 @@ class TestFederatedClientInitialize:
         netwk.name = "client"
         msg_data: messaging.SerializedMessage[messaging.MetadataQuery] = (
             messaging.SerializedMessage.from_message_bytes(
-                messaging.MetadataQuery(fields=["n_samples"]).to_bytes()
+                messaging.MetadataQuery(fields=["n_samples"]).serialize()
             )
         )
         msg_init = self._setup_mock_init_request()
@@ -397,7 +397,7 @@ class TestFederatedClientInitialize:
         netwk.name = "client"
         msg_data: messaging.SerializedMessage[messaging.MetadataQuery] = (
             messaging.SerializedMessage.from_message_bytes(
-                messaging.MetadataQuery(fields=["invalid"]).to_bytes()
+                messaging.MetadataQuery(fields=["invalid"]).serialize()
             )
         )
         netwk.recv_message.return_value = msg_data
@@ -1134,7 +1134,7 @@ class TestFederatedClientMisc:
         # Have it process a CancelTraining message.
         message: messaging.SerializedMessage[messaging.CancelTraining] = (
             messaging.SerializedMessage.from_message_bytes(
-                messaging.CancelTraining(reason="mock-reason").to_bytes()
+                messaging.CancelTraining(reason="mock-reason").serialize()
             )
         )
         with pytest.raises(RuntimeError, match=".*mock-reason"):
@@ -1150,7 +1150,7 @@ class TestFederatedClientMisc:
         # Have it process an Error message.
         message: messaging.SerializedMessage[messaging.Error] = (
             messaging.SerializedMessage.from_message_bytes(
-                messaging.Error(message="error-message").to_bytes()
+                messaging.Error(message="error-message").serialize()
             )
         )
         with pytest.raises(ValueError):

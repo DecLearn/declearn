@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import msgpack
+import msgpack  # type: ignore
 import pytest
 
 from declearn.utils._msgpack import (

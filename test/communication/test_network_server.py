@@ -203,7 +203,7 @@ class TestNetworkServerSend:
         msg = messaging.GenericMessage(action="test", params={})
         await server.broadcast_message(msg)
         assert handler.send_message.await_count == 3
-        dump = msg.to_bytes()
+        dump = msg.serialize()
         handler.send_message.assert_has_awaits(
             [mock.call(dump, client, None) for client in ("a", "b", "c")],
             any_order=True,
@@ -221,7 +221,7 @@ class TestNetworkServerSend:
         msg = messaging.GenericMessage(action="test", params={})
         await server.broadcast_message(msg, clients={"a", "b"})
         assert handler.send_message.await_count == 2
-        dump = msg.to_bytes()
+        dump = msg.serialize()
         handler.send_message.assert_has_awaits(
             [mock.call(dump, client, None) for client in ("a", "b")],
             any_order=True,
@@ -242,7 +242,7 @@ class TestNetworkServerSend:
         assert handler.send_message.await_count == 3
         handler.send_message.assert_has_awaits(
             [
-                mock.call(msg.to_bytes(), clt, None)
+                mock.call(msg.serialize(), clt, None)
                 for clt, msg in messages.items()
             ],
             any_order=True,
@@ -273,7 +273,7 @@ class TestNetworkServerSend:
         outpt, reply = await asyncio.gather(send, recv)
         assert outpt is None
         assert isinstance(reply, actions.Send)
-        assert reply.content == msg.to_bytes()
+        assert reply.content == msg.serialize()
 
     @pytest.mark.asyncio
     async def test_send_message_errors(self, server: NetworkServer) -> None:
@@ -315,7 +315,7 @@ class TestNetworkServerRecv:
         """Test that 'wait_for_messages' works correctly."""
         server.handler.registered_clients = {0: "mock.0", 1: "mock.1"}
         msg = messaging.GenericMessage(action="test", params={})
-        act = actions.Send(msg.to_bytes())
+        act = actions.Send(msg.serialize())
         # Create tasks to wait for messages, and receive them.
         wait = server.wait_for_messages_with_timeout(2)
         recv_0 = server.handler.handle_message(act.serialize(), context=0)
@@ -344,7 +344,7 @@ class TestNetworkServerRecv:
             timeout=2, clients={"mock.1"}
         )
         recv = server.handler.handle_message(
-            actions.Send(msg.to_bytes()).serialize(), context=1
+            actions.Send(msg.serialize()).serialize(), context=1
         )
         # Await all tasks and assert that results match expectations.
         outp, reply = await asyncio.gather(wait, recv)
@@ -377,10 +377,10 @@ class TestNetworkServerRecv:
         wait_0 = server.wait_for_messages(clients={"mock.0"})
         wait_1 = server.wait_for_messages(clients={"mock.1"})
         recv_1 = server.handler.handle_message(
-            actions.Send(msg_1.to_bytes()).serialize(), context=1
+            actions.Send(msg_1.serialize()).serialize(), context=1
         )
         recv_0 = server.handler.handle_message(
-            actions.Send(msg_0.to_bytes()).serialize(), context=0
+            actions.Send(msg_0.serialize()).serialize(), context=0
         )
         # Await all tasks and assert that results match expectations.
         outp_0, outp_1, reply_1, reply_0 = await asyncio.gather(

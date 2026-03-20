@@ -81,7 +81,7 @@ class Message(metaclass=ABCMeta):
         #       that are not handled by declearn.utils.json_pack
         return cls(**kwargs)
 
-    def to_bytes(self) -> bytes:
+    def serialize(self) -> bytes:
         """Convert the message to MessagePack-serialized bytes.
 
         A header is added to the MessagePack payload:

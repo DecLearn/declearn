@@ -60,6 +60,7 @@ from declearn.main.utils import (
     IncompatibleConfigsError,
     aggregate_clients_data_info,
 )
+from declearn.messaging import SerializedMessage
 from declearn.metrics import MetricInputType, MetricSet
 from declearn.metrics._mean import MeanState
 from declearn.model.api import Model, Vector
@@ -561,6 +562,7 @@ class FederatedServer:
             Client-wise collected messages.
         """
         # Await clients' responses and type-check them.
+        replies: Dict[str, SerializedMessage]
         replies = await self.netwk.wait_for_messages(clients)
         results: Dict[str, MessageT] = {}
         errors: Dict[str, str] = {}

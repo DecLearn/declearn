@@ -19,7 +19,7 @@
 
 import dataclasses
 
-import msgpack
+import msgpack  # type: ignore
 import pytest
 
 from declearn.communication.api.backend import flags

@@ -277,7 +277,7 @@ class NetworkServer(metaclass=abc.ABCMeta):
             If `timeout` is set and is reached while the message is
             yet to be collected by the client.
         """
-        await self.handler.send_message(message.to_bytes(), client, timeout)
+        await self.handler.send_message(message.serialize(), client, timeout)
 
     async def send_messages(
         self,
