@@ -33,12 +33,10 @@ __all__ = [
 ]
 
 
-JSON_PACK: Dict[Type[Any], SerializeSpec] = {}
-JSON_UNPACK: Dict[str, SerializeSpec] = {}
+JSON_PACK_REGISTRY: Dict[Type[Any], SerializeSpec] = {}
+JSON_UNPACK_REGISTRY: Dict[str, SerializeSpec] = {}
 
-JsonPack = TypedDict(  # pylint: disable=invalid-name
-    "JsonPack", {"__type__": str, "dump": Any}
-)
+JsonPackWrapper = TypedDict("JsonPack", {"__type__": str, "dump": Any})
 
 
 @dataclasses.dataclass
@@ -62,19 +60,19 @@ class SerializeSpec:
         use as part of users' custom code.
         """
         if not repl:
-            if self.cls in JSON_PACK:
+            if self.cls in JSON_PACK_REGISTRY:
                 raise KeyError(
                     f"Type '{self.cls}' already has a registered "
                     "JSON (de-)serialization specification."
                 )
-            if self.name in JSON_UNPACK:
+            if self.name in JSON_UNPACK_REGISTRY:
                 raise KeyError(
                     f"Name '{self.name}' is already in use for the "
                     "JSON (de-)serialization specification of type "
-                    f"'{JSON_UNPACK[self.name].cls}'."
+                    f"'{JSON_UNPACK_REGISTRY[self.name].cls}'."
                 )
-        JSON_PACK[self.cls] = self
-        JSON_UNPACK[self.name] = self
+        JSON_PACK_REGISTRY[self.cls] = self
+        JSON_UNPACK_REGISTRY[self.name] = self
 
 
 def add_json_support(
@@ -111,7 +109,7 @@ def add_json_support(
     spec.register(repl)
 
 
-def json_pack(obj: Any) -> JsonPack:
+def json_pack(obj: Any) -> JsonPackWrapper:
     """Pack an object of non-standard type for JSON serialization.
 
     This function is designed to be passed as `default` parameter
@@ -119,7 +117,7 @@ def json_pack(obj: Any) -> JsonPack:
     types with custom (un)packing protocols registered as part of
     declearn or using `declearn.utils.add_json_support`.
     """
-    spec = JSON_PACK.get(type(obj))
+    spec = JSON_PACK_REGISTRY.get(type(obj))
     if spec is None:
         raise TypeError(
             f"Object of type '{type(obj)}' is not JSON-serializable.\n"
@@ -140,7 +138,7 @@ def json_unpack(obj: Dict[str, Any]) -> Any:
     if not isinstance(obj, dict) or (set(obj.keys()) != {"__type__", "dump"}):
         return obj
     # If 'obj' is JsonPack but spec is not found, warn before returning as-is.
-    spec = JSON_UNPACK.get(obj["__type__"])
+    spec = JSON_UNPACK_REGISTRY.get(obj["__type__"])
     if spec is None:
         warnings.warn(
             "JSON deserializer received a seemingly-packed object "
