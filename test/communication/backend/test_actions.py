@@ -18,7 +18,6 @@
 """Unit tests for 'declearn.communication.api.backend.actions'."""
 
 import dataclasses
-import json
 
 import msgpack
 import pytest
