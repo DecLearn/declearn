@@ -163,7 +163,7 @@ class SerializedMessage(Generic[MessageT]):
         """Deserialize this message into a 'self.message_cls' instance."""
         try:
             data = msgpack.unpackb(self.bin_data, object_hook=msgpack_unpack)
-        except (msgpack.UnpackException, msgpack.ExtraData) as exc:
+        except (msgpack.UnpackException, msgpack.ExtraData, TypeError) as exc:
             raise ValueError(
                 f"Failed to decode MessagePack dump of '{self.message_cls}' "
                 "message."

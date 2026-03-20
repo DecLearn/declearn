@@ -20,6 +20,7 @@
 import dataclasses
 import json
 
+import msgpack
 import pytest
 
 from declearn.communication.api.backend import flags
@@ -28,8 +29,6 @@ from declearn.communication.api.backend.actions import (
     ActionMessage,
     Drop,
     Join,
-    LegacyMessageError,
-    LegacyReject,
     Ping,
     Recv,
     Reject,
@@ -88,36 +87,29 @@ class TestActionMessage:
         assert_action_is_serializable(action)
 
 
-# FIXME : migrate to bytes-analogous tests
-# class TestParseActionErrors:
-#     """Unit tests for exception-raising action string parsing."""
+class TestParseActionErrors:
+    """Unit tests for exception-raising serialized action parsing."""
 
-#     def test_invalid_json(self) -> None:
-#         """Test that a ValueError is raised on invalid action string."""
-#         with pytest.raises(ValueError):
-#             parse_action_from_string("{invalid-json}")
+    def test_invalid_type(self) -> None:
+        """Test that a ValueError is raised on invalid input type (string)."""
+        with pytest.raises(ValueError):
+            parse_action_from_bytes("invalid")
 
-#     def test_no_action_key(self) -> None:
-#         """Test that a ValueError is raised on invalid json dump."""
-#         string = json.dumps({"data": "stub"})
-#         with pytest.raises(ValueError):
-#             parse_action_from_string(string)
+    def test_invalid_content(self) -> None:
+        """Test that a ValueError is raised on invalid binary-serialized
+        content.
+        """
+        with pytest.raises(ValueError):
+            parse_action_from_bytes(b"{invalid}")
 
-#     def test_invalid_action_key(self) -> None:
-#         """Test that a KeyError is raised on invalid action key."""
-#         string = json.dumps({"action": "stub-action"})
-#         with pytest.raises(KeyError):
-#             parse_action_from_string(string)
+    def test_no_action_key(self) -> None:
+        """Test that a ValueError is raised on invalid bytes dump."""
+        bin_data = msgpack.packb({"data": "stub"})
+        with pytest.raises(ValueError):
+            parse_action_from_bytes(bin_data)
 
-#     def test_legacy_message(self) -> None:
-#         """Test that a LegacyMessageError is raised on Message dump."""
-#         string = json.dumps({"typekey": "stub", "data": "stub-data"})
-#         with pytest.raises(LegacyMessageError):
-#             parse_action_from_string(string)
-
-#     def test_parse_legacy_reject_action(self) -> None:
-#         """Test that a 'LegacyReject' action cannot be properly parsed."""
-#         action = LegacyReject()
-#         string = action.to_string()
-#         with pytest.raises(LegacyMessageError):
-#             parse_action_from_string(string)
+    def test_invalid_action_key(self) -> None:
+        """Test that a KeyError is raised on invalid action key."""
+        bin_data = msgpack.packb({"action": "stub-action"})
+        with pytest.raises(KeyError):
+            parse_action_from_bytes(bin_data)
