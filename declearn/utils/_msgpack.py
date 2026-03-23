@@ -139,7 +139,7 @@ def encode(obj: Any) -> MsgPackWrapper:
             "Consider using `declearn.utils.add_msgpack_support` to make it "
             "so."
         )
-    return {"__type__": spec.name, "dump": spec.pack(obj)}
+    return {"__type__": spec.name, "dump": spec.encoder(obj)}
 
 
 def decode(obj: Dict[str, Any]) -> Any:
@@ -166,7 +166,7 @@ def decode(obj: Dict[str, Any]) -> Any:
         )
         return obj
     # Otherwise, use the recovered spec to unpack the object.
-    return spec.unpack(obj["dump"])
+    return spec.decoder(obj["dump"])
 
 
 def msgpack_dump(
