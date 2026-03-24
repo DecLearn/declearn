@@ -19,12 +19,15 @@
 
 import abc
 import dataclasses
+from copy import copy
 from typing import Any, ClassVar, Dict, Generic, Self, Type, TypeVar, Union
 
 from declearn.model.api import Vector
 from declearn.utils import (
     Aggregate,
+    access_registered,
     access_types_mapping,
+    add_msgpack_support,
     create_types_registry,
     register_from_attr,
 )
@@ -136,6 +139,12 @@ class Aggregator(Generic[ModelUpdatesT], metaclass=abc.ABCMeta):
         super().__init_subclass__(**kwargs)
         if register:
             register_from_attr(cls, "name", group="Aggregator")
+            add_msgpack_support(
+                cls,
+                lambda obj: obj.get_config(),
+                lambda obj: cls.from_config(obj),
+                cls.__name__,
+            )
 
     @abc.abstractmethod
     def prepare_for_sharing(
@@ -173,19 +182,40 @@ class Aggregator(Generic[ModelUpdatesT], metaclass=abc.ABCMeta):
             resulting from peers' shared instances' sum-aggregation.
         """
 
+    # FIXME : rename to_serializable ? if so rename also in doc
     def get_config(
         self,
     ) -> Dict[str, Any]:
-        """Return a JSON-serializable dict with this object's parameters."""
-        return {}  # pragma: no cover
+        """Return a JSON-serializable dict with this object's parameters.
 
+        Notes
+        -----
+        When overriding this method, subclasses must call super().get_config()
+        to include the following base config in their config dictionary.
+        """
+        return {"name": self.name}  # pragma: no cover
+
+    # FIXME : rename from_serializable ?
     @classmethod
     def from_config(
         cls,
         config: Dict[str, Any],
     ) -> Self:
-        """Instantiate an Aggregator from its configuration dict."""
-        return cls(**config)
+        """Instantiate an Aggregator from its configuration dict.
+
+        Raises
+        ------
+        ValueError:
+            If the config dictionary does not contain a 'name' field.
+        """
+        if "name" not in config:
+            raise ValueError(
+                "Aggregator configuration must contain a 'name' field."
+            )
+        kwargs = copy(config)  # Copy to avoid side effect on input config.
+        name = kwargs.pop("name")
+        subclass = access_registered(name, group="Aggregator")
+        return subclass(**kwargs)
 
 
 def list_aggregators() -> Dict[str, Type[Aggregator]]:

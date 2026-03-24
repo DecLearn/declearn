@@ -56,9 +56,9 @@ class AveragingAggregator(Aggregator[ModelUpdates]):
     def get_config(
         self,
     ) -> Dict[str, Any]:
-        return {
-            "steps_weighted": self.steps_weighted,
-        }
+        config = super().get_config()
+        config["steps_weighted"] = self.steps_weighted
+        return config
 
     def prepare_for_sharing(
         self,

@@ -26,7 +26,6 @@ from declearn.metrics import MetricInputType, MetricState
 from declearn.model.api import Model, Vector
 from declearn.optimizer import Optimizer
 from declearn.optimizer.modules import AuxVar
-from declearn.utils import deserialize_object, serialize_object
 
 __all__ = [
     "CancelTraining",
@@ -126,9 +125,7 @@ class InitRequest(Message):
         data: Dict[str, Any] = {}
         data["model"] = self.model
         data["optim"] = self.optim.get_config()  # FIXME
-        data["aggrg"] = serialize_object(
-            self.aggrg, "Aggregator"
-        ).to_dict()  # FIXME
+        data["aggrg"] = self.aggrg
         data["metrics"] = self.metrics
         data["dpsgd"] = self.dpsgd
         data["secagg"] = self.secagg
@@ -140,7 +137,7 @@ class InitRequest(Message):
     def from_kwargs(cls, **kwargs: Any) -> Self:
         kwargs["model"] = kwargs["model"]
         kwargs["optim"] = Optimizer.from_config(kwargs["optim"])  # FIXME
-        kwargs["aggrg"] = deserialize_object(kwargs["aggrg"])  # FIXME
+        kwargs["aggrg"] = kwargs["aggrg"]
         return cls(**kwargs)
 
 
