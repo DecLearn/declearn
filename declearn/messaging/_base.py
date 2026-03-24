@@ -18,7 +18,7 @@
 """Messages for the default Federated Learning process of DecLearn."""
 
 import dataclasses
-from typing import Any, Dict, List, Optional, Self, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from declearn.aggregator import Aggregator, ModelUpdates
 from declearn.messaging._api import Message
@@ -120,25 +120,16 @@ class InitRequest(Message):
     secagg: Optional[str] = None
     fairness: bool = False
 
-    # FIXME : remove ?
     def to_kwargs(self) -> Dict[str, Any]:
-        data: Dict[str, Any] = {}
-        data["model"] = self.model
-        data["optim"] = self.optim.get_config()  # FIXME
-        data["aggrg"] = self.aggrg
-        data["metrics"] = self.metrics
-        data["dpsgd"] = self.dpsgd
-        data["secagg"] = self.secagg
-        data["fairness"] = self.fairness
-        return data
-
-    # FIXME: remove ?
-    @classmethod
-    def from_kwargs(cls, **kwargs: Any) -> Self:
-        kwargs["model"] = kwargs["model"]
-        kwargs["optim"] = Optimizer.from_config(kwargs["optim"])  # FIXME
-        kwargs["aggrg"] = kwargs["aggrg"]
-        return cls(**kwargs)
+        kwargs: Dict[str, Any] = {}
+        kwargs["model"] = self.model
+        kwargs["optim"] = self.optim
+        kwargs["aggrg"] = self.aggrg
+        kwargs["metrics"] = self.metrics
+        kwargs["dpsgd"] = self.dpsgd
+        kwargs["secagg"] = self.secagg
+        kwargs["fairness"] = self.fairness
+        return kwargs
 
 
 @dataclasses.dataclass

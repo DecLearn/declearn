@@ -70,15 +70,11 @@ class Message(metaclass=ABCMeta):
 
     def to_kwargs(self) -> Dict[str, Any]:
         """Return a JSON-serializable dict representation of this message."""
-        # NOTE: override this method to serialize attributes
-        #       that are not handled by declearn.utils.json_unpack
         return dataclasses.asdict(self)
 
     @classmethod
     def from_kwargs(cls, **kwargs: Any) -> Self:
         """Parse the message from JSON-deserialized attributes."""
-        # NOTE: override this method to de-serialize attributes
-        #       that are not handled by declearn.utils.json_pack
         return cls(**kwargs)
 
     def serialize(self) -> bytes:
