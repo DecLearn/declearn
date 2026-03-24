@@ -20,7 +20,7 @@
 import functools
 import io
 import warnings
-from typing import Any, Dict, List, Optional, Self, Set, Tuple
+from typing import Any, Dict, List, Optional, Self, Set, Tuple, Union
 
 import numpy as np
 import torch
@@ -154,6 +154,7 @@ class TorchModel(Model):
         base_config = super().get_config()
         with io.BytesIO() as buffer:
             torch.save(self._raw_model.module, buffer)
+            model: Union[str, bytes]
             if allow_bin:
                 model = buffer.getbuffer().tobytes()
                 # FIXME : perf, memoryview -> bytes, copy ?
@@ -161,6 +162,7 @@ class TorchModel(Model):
                 model = buffer.getbuffer().hex()
         with io.BytesIO() as buffer:
             torch.save(self._loss_fn.module, buffer)
+            loss: Union[str, bytes]
             if allow_bin:
                 loss = buffer.getbuffer().tobytes()
                 # FIXME : perf, memoryview -> bytes, copy ?

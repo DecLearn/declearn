@@ -172,6 +172,7 @@ class HaikuModel(Model):
         base_config = super().get_config()
         with io.BytesIO() as buffer:
             joblib.dump(self._model_fn, buffer)
+            model: Union[str, bytes]
             if allow_bin:
                 model = buffer.getbuffer().tobytes()
                 # FIXME : perf, memoryview -> bytes, copy ?
@@ -179,6 +180,7 @@ class HaikuModel(Model):
                 model = buffer.getbuffer().hex()
         with io.BytesIO() as buffer:
             joblib.dump(self._loss_fn, buffer)
+            loss: Union[str, bytes]
             if allow_bin:
                 loss = buffer.getbuffer().tobytes()
                 # FIXME : perf, memoryview -> bytes, copy ?
