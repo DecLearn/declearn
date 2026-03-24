@@ -68,7 +68,7 @@ from declearn.optimizer.modules import AuxVar
 from declearn.secagg import messaging as secagg_messaging
 from declearn.secagg import parse_secagg_config_server
 from declearn.secagg.api import Decrypter, SecaggConfigServer
-from declearn.utils import deserialize_object
+from declearn.utils import json_load
 
 __all__ = [
     "FederatedServer",
@@ -194,19 +194,22 @@ class FederatedServer:
         """Parse 'model' instantiation argument."""
         if isinstance(model, Model):
             return model
-        if isinstance(model, (str, dict)):
+        if isinstance(model, str):  # Path to model config JSON file.
             try:
-                output = deserialize_object(model)  # type: ignore[arg-type]
+                model = json_load(model)
             except Exception as exc:
                 raise TypeError(
-                    "'model' input deserialization failed."
+                    "JSON-deserialization of 'model' file path failed."
                 ) from exc
-            if isinstance(output, Model):
-                return output
-            raise TypeError(
-                f"'model' input was deserialized into '{type(output)}', "
-                "whereas a declearn 'Model' instance was expected."
-            )
+        if isinstance(model, dict):  # Model config dictionary.
+            try:
+                return Model.from_config(model, allow_bin=False)
+            except Exception as exc:
+                raise TypeError(
+                    "Model construction from 'model' configuration dictionary "
+                    "failed."
+                ) from exc
+
         raise TypeError(
             "'model' should be a declearn Model, optionally in serialized "
             f"form, not '{type(model)}'"

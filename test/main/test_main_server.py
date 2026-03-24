@@ -63,7 +63,7 @@ from declearn.secagg.messaging import (
     SecaggEvaluationReply,
     SecaggTrainReply,
 )
-from declearn.utils import serialize_object
+from declearn.utils import json_dump
 
 MOCK_MODEL = mock.create_autospec(Model, instance=True)
 MOCK_NETWK = mock.create_autospec(NetworkServer, instance=True)
@@ -92,9 +92,9 @@ class TestFederatedServerInit:  # pylint: disable=too-many-public-methods
     def test_model_serialized(self) -> None:
         """Test specifying 'model' as a serialized 'Model'."""
         model = SklearnSGDModel.from_parameters(kind="regressor")
-        serialized = dict(serialize_object(model).to_dict())
+        config = model.get_config(allow_bin=False)
         server = FederatedServer(
-            model=serialized, netwk=MOCK_NETWK, optim=MOCK_OPTIM
+            model=config, netwk=MOCK_NETWK, optim=MOCK_OPTIM
         )
         assert isinstance(server.model, SklearnSGDModel)
         assert server.model.get_config() == model.get_config()
@@ -102,8 +102,9 @@ class TestFederatedServerInit:  # pylint: disable=too-many-public-methods
     def test_model_json_path(self, tmp_path: str) -> None:
         """Test specifying 'model' as a serialized 'Model' file path."""
         model = SklearnSGDModel.from_parameters(kind="regressor")
+        config = model.get_config(allow_bin=False)
         path = os.path.join(tmp_path, "model.json")
-        serialize_object(model).to_json(path)
+        json_dump(config, path)
         server = FederatedServer(
             model=path, netwk=MOCK_NETWK, optim=MOCK_OPTIM
         )

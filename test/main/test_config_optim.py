@@ -153,7 +153,7 @@ class TestFLOptimConfig:
     def test_parse_aggregator_dict(self) -> None:
         """Test parsing 'aggregator' from a dict."""
         field = FIELDS["aggregator"]
-        config = {"name": "averaging", "config": {"steps_weighted": False}}
+        config = {"name": "averaging", "steps_weighted": False}
         aggregator = FLOptimConfig.parse_aggregator(field, config)
         assert isinstance(aggregator, AveragingAggregator)
         assert not aggregator.steps_weighted

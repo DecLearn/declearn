@@ -24,7 +24,7 @@ from typing import Any, Dict, Optional, Union
 from declearn.aggregator import Aggregator, AveragingAggregator
 from declearn.fairness.api import FairnessControllerServer
 from declearn.optimizer import Optimizer
-from declearn.utils import TomlConfig, access_registered, deserialize_object
+from declearn.utils import TomlConfig, access_registered
 
 __all__ = [
     "FLOptimConfig",
@@ -188,23 +188,13 @@ class FLOptimConfig(TomlConfig):
             return agg_cls()
         # Case when provided with a dict: check/fix formatting and deserialize.
         if isinstance(inputs, dict):
-            if "name" not in inputs:
+            try:
+                return Aggregator.from_config(inputs)
+            except Exception as exc:
                 raise TypeError(
-                    "Wrong format for Aggregator serialized config: missing "
-                    "'name' field."
-                )
-            inputs.setdefault("group", "Aggregator")
-            inputs.setdefault("config", {})
-            for key in list(inputs):
-                if key not in ("name", "group", "config"):
-                    inputs["config"][key] = inputs.pop(key)
-            obj = deserialize_object(inputs)  # type: ignore
-            if not isinstance(obj, Aggregator):
-                raise TypeError(
-                    "Input specifications for 'aggregator' resulted in a non-"
-                    f"Aggregator object with type '{type(obj)}'."
-                )
-            return obj
+                    "Aggregator construction from 'inputs' configuration "
+                    "dictionary failed."
+                ) from exc
         # Otherwise, raise a TypeError as inputs are unsupported.
         raise TypeError("Unsupported inputs type for field 'aggregator'.")
 

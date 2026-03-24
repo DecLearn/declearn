@@ -111,7 +111,7 @@ class Aggregator(Generic[ModelUpdatesT], metaclass=abc.ABCMeta):
     - updates_cls: type[ModelUpdates] class attribute
         Type of 'ModelUpdates' data structure used by this Aggregator class.
     - get_config() -> Dict[str, Any]:
-        Return a JSON-serializable configuration dict of an instance.
+        Return a serializable configuration dict of an instance.
     - from_config(Dict[str, Any]) -> Aggregator:
         Classmethod to instantiate an Aggregator from a config dict.
 

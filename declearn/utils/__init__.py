@@ -15,10 +15,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# TODO : remove or deprecate Config serialization exports ?
+# (given that the serialization formats involved have changed)
 """Shared utils used across declearn.
 
 The functions and classes exposed by this submodule are listed below,
 grouped thematically.
+
 
 Config serialization
 --------------------
@@ -164,6 +167,8 @@ from ._register import (
     register_from_attr,
     register_type,
 )
+
+# TODO : remove or deprecate Config serialization exports ?
 from ._serialize import (
     ObjectConfig,
     deserialize_object,
