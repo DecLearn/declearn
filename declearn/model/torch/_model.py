@@ -144,21 +144,30 @@ class TorchModel(Model):
 
     def get_config(
         self,
+        allow_bin: bool = False,
     ) -> Dict[str, Any]:
         warnings.warn(
             "PyTorch JSON serialization relies on pickle, which may be "
             "unsafe.",
             stacklevel=2,
         )
+        base_config = super().get_config()
         with io.BytesIO() as buffer:
             torch.save(self._raw_model.module, buffer)
-            model = buffer.getbuffer().hex()
-            # FIXME : keep for json serialization, change for bin serialization
+            if allow_bin:
+                model = buffer.getbuffer().tobytes()
+                # FIXME : perf, memoryview -> bytes, copy ?
+            else:
+                model = buffer.getbuffer().hex()
         with io.BytesIO() as buffer:
             torch.save(self._loss_fn.module, buffer)
-            loss = buffer.getbuffer().hex()
-            # FIXME : keep for json serialization, change for bin serialization
+            if allow_bin:
+                loss = buffer.getbuffer().tobytes()
+                # FIXME : perf, memoryview -> bytes, copy ?
+            else:
+                loss = buffer.getbuffer().hex()
         return {
+            **base_config,
             "model": model,
             "loss": loss,
             "compile": self._raw_model is not self._model,
@@ -168,11 +177,18 @@ class TorchModel(Model):
     def from_config(
         cls,
         config: Dict[str, Any],
+        allow_bin: bool = False,
     ) -> Self:
         """Instantiate a TorchModel from a configuration dict."""
-        with io.BytesIO(bytes.fromhex(config["model"])) as buffer:
+        if allow_bin:
+            bin_model = config["model"]
+            bin_loss = config["loss"]
+        else:
+            bin_model = bytes.fromhex(config["model"])
+            bin_loss = bytes.fromhex(config["loss"])
+        with io.BytesIO(bin_model) as buffer:
             model = torch.load(buffer, weights_only=False)
-        with io.BytesIO(bytes.fromhex(config["loss"])) as buffer:
+        with io.BytesIO(bin_loss) as buffer:
             loss = torch.load(buffer, weights_only=False)
         if config.get("compile", False) and hasattr(torch, "compile"):
             model = torch.compile(model)

@@ -121,22 +121,26 @@ class InitRequest(Message):
     secagg: Optional[str] = None
     fairness: bool = False
 
+    # FIXME : remove ?
     def to_kwargs(self) -> Dict[str, Any]:
         data: Dict[str, Any] = {}
-        data["model"] = serialize_object(self.model, group="Model").to_dict()
-        data["optim"] = self.optim.get_config()
-        data["aggrg"] = serialize_object(self.aggrg, "Aggregator").to_dict()
+        data["model"] = self.model
+        data["optim"] = self.optim.get_config()  # FIXME
+        data["aggrg"] = serialize_object(
+            self.aggrg, "Aggregator"
+        ).to_dict()  # FIXME
         data["metrics"] = self.metrics
         data["dpsgd"] = self.dpsgd
         data["secagg"] = self.secagg
         data["fairness"] = self.fairness
         return data
 
+    # FIXME: remove ?
     @classmethod
     def from_kwargs(cls, **kwargs: Any) -> Self:
-        kwargs["model"] = deserialize_object(kwargs["model"])
-        kwargs["optim"] = Optimizer.from_config(kwargs["optim"])
-        kwargs["aggrg"] = deserialize_object(kwargs["aggrg"])
+        kwargs["model"] = kwargs["model"]
+        kwargs["optim"] = Optimizer.from_config(kwargs["optim"])  # FIXME
+        kwargs["aggrg"] = deserialize_object(kwargs["aggrg"])  # FIXME
         return cls(**kwargs)
 
 

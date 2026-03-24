@@ -32,7 +32,7 @@ __all__ = [
     "json_unpack",
 ]
 
-
+# FIXME : remove the registry pattern (should be possible)
 JSON_PACK_REGISTRY: Dict[Type[Any], SerializeSpec] = {}
 JSON_UNPACK_REGISTRY: Dict[str, SerializeSpec] = {}
 

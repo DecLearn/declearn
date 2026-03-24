@@ -156,16 +156,26 @@ class TensorflowModel(Model):
 
     def get_config(
         self,
+        allow_bin: bool = False,
     ) -> Dict[str, Any]:
+        """Return the model architecture as a serializable dict.
+
+        Notes
+        -----
+        TensorflowModel `get_config` does not serialize model parameters, but
+        only the model architecture.
+        """
+        base_config = super().get_config()
         config: Dict[str, Any] = tf_keras.layers.serialize(self._model)
         kwargs = deepcopy(self._kwargs)
         loss = tf_keras.losses.serialize(kwargs.pop("loss"))
-        return {"model": config, "loss": loss, "kwargs": kwargs}
+        return {**base_config, "model": config, "loss": loss, "kwargs": kwargs}
 
     @classmethod
     def from_config(
         cls,
         config: Dict[str, Any],
+        allow_bin: bool = False,
     ) -> Self:
         """Instantiate a TensorflowModel from a configuration dict."""
         for key in ("model", "loss", "kwargs"):
