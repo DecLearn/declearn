@@ -29,6 +29,7 @@ try:
 except ModuleNotFoundError:
     pytest.skip("PyTorch is unavailable", allow_module_level=True)
 
+from declearn.model.api import Model
 from declearn.model.torch import TorchModel, TorchVector
 from declearn.test_utils import make_importable
 from declearn.typing import Batch
@@ -245,22 +246,27 @@ class TestTorchModel(ModelTestSuite):
         super().test_get_config(test_case)
 
     @pytest.mark.filterwarnings("ignore: PyTorch JSON serialization")
+    @pytest.mark.parametrize(
+        "allow_bin", [False, True], ids=["forbid_bin", "allow_bin"]
+    )
     def test_from_config(
         self,
         test_case: ModelTestCase,
+        allow_bin: bool,
     ) -> None:
         if getattr(test_case, "kind", "") == "RNN":
             try:
-                self._test_from_config(test_case)
+                self._test_from_config(test_case, allow_bin)
             except AssertionError:
                 pytest.skip(
                     "skipping failed test due to custom nn.Module pickling"
                 )
-        self._test_from_config(test_case)
+        self._test_from_config(test_case, allow_bin)
 
     def _test_from_config(
         self,
         test_case: ModelTestCase,
+        allow_bin: bool,
     ) -> None:
         """Check that the model can be instantiated from its config.
 
@@ -268,10 +274,10 @@ class TestTorchModel(ModelTestSuite):
         """
         # Same setup as in parent test: a model and a config-based other.
         model = test_case.model
-        config = model.get_config()
-        other = model.from_config(copy.deepcopy(config))
+        config = model.get_config(allow_bin=allow_bin)
+        other = Model.from_config(copy.deepcopy(config), allow_bin=allow_bin)
         # Verify that both models have the same config and device policy.
-        assert other.get_config() == config
+        assert other.get_config(allow_bin=allow_bin) == config
         assert model.device_policy == other.device_policy
         # Verify that both models have a similar structure of modules.
         mod_a = list(model.get_wrapped_model().modules())

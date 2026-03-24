@@ -22,6 +22,7 @@ import json
 from typing import Any, Generic, List, Protocol, Tuple, Type, TypeVar, Union
 
 import numpy as np
+import pytest
 
 from declearn.model.api import Model, Vector
 from declearn.test_utils import assert_json_serializable_dict, to_numpy
@@ -66,18 +67,24 @@ class ModelTestSuite:
     ) -> None:
         """Check that the model's config is JSON-serializable."""
         model = test_case.model
-        config = model.get_config()
+        config = model.get_config(allow_bin=False)
         assert_json_serializable_dict(config)
 
+    @pytest.mark.parametrize(
+        "allow_bin", [False, True], ids=["forbid_bin", "allow_bin"]
+    )
     def test_from_config(
         self,
         test_case: ModelTestCase,
+        allow_bin: bool,
     ) -> None:
         """Check that the model can be instantiated from its config."""
         model = test_case.model
-        config = model.get_config()
-        other = model.from_config(copy.deepcopy(config))
-        assert model.get_config() == other.get_config()
+        config = model.get_config(allow_bin=allow_bin)
+        other = Model.from_config(copy.deepcopy(config), allow_bin=allow_bin)
+        model_config = model.get_config(allow_bin=allow_bin)
+        other_config = other.get_config(allow_bin=allow_bin)
+        assert model_config == other_config
         assert model.device_policy == other.device_policy
 
     def test_get_set_weights(

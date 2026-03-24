@@ -253,11 +253,15 @@ class TestHaikuModel(ModelTestSuite):
         super().test_get_config(test_case)
 
     @pytest.mark.filterwarnings("ignore: Our custom Haiku serialization")
+    @pytest.mark.parametrize(
+        "allow_bin", [False, True], ids=["forbid_bin", "allow_bin"]
+    )
     def test_from_config(
         self,
         test_case: ModelTestCase,
+        allow_bin: bool,
     ) -> None:
-        super().test_from_config(test_case)
+        super().test_from_config(test_case, allow_bin)
 
     @pytest.mark.parametrize(
         "criterion_type", ["names", "pytree", "predicate"]
