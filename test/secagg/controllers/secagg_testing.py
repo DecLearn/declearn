@@ -34,11 +34,16 @@ from declearn.secagg.api import Decrypter, Encrypter, SecureAggregate
 from declearn.test_utils import (
     FrameworkType,
     GradientsTestCase,
-    assert_json_serializable_dict,
+    assert_msgpack_serializable_dict,
     list_available_frameworks,
     to_numpy,
 )
-from declearn.utils import Aggregate, json_dump, json_load, set_device_policy
+from declearn.utils import (
+    Aggregate,
+    msgpack_dump,
+    msgpack_load,
+    set_device_policy,
+)
 
 
 @dataclasses.dataclass
@@ -500,20 +505,22 @@ class SecureAggregateTestSuite(metaclass=abc.ABCMeta):
         """Test that dict-serialization of a SecureAggregate works properly."""
         sec_agg = self.setup_secure_aggregate()
         sec_dict = sec_agg.to_dict()
-        assert_json_serializable_dict(sec_dict)
+        assert_msgpack_serializable_dict(sec_dict)
         agg_bis = type(sec_agg).from_dict(sec_dict)
         assert isinstance(agg_bis, type(sec_agg))
         assert agg_bis.to_dict() == sec_dict
 
-    def test_json_serialization(
+    def test_msgpack_serialization(
         self,
         tmp_path: str,
     ) -> None:
-        """Test that JSON-serialization of a SecureAggregate works properly."""
+        """Test that MessagePack-serialization of a SecureAggregate works
+        properly.
+        """
         sec_agg = self.setup_secure_aggregate()
         path = os.path.join(tmp_path, "agg.json")
-        json_dump(sec_agg, path)
-        agg_bis = json_load(path)
+        msgpack_dump(sec_agg, path)
+        agg_bis = msgpack_load(path)
         assert isinstance(agg_bis, type(sec_agg))
         assert agg_bis.to_dict() == sec_agg.to_dict()
 

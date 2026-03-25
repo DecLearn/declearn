@@ -27,7 +27,7 @@ from declearn.test_utils import (
     FrameworkType,
     GradientsTestCase,
     assert_dict_equal,
-    assert_json_serializable_dict,
+    assert_msgpack_serializable_dict,
     list_available_frameworks,
 )
 from declearn.utils import set_device_policy
@@ -71,7 +71,7 @@ class TestAggregator:
         shared_upd = aggregator.prepare_for_sharing(updates["0"], n_steps=10)
         assert issubclass(aggregator.updates_cls, ModelUpdates)
         assert isinstance(shared_upd, aggregator.updates_cls)
-        assert_json_serializable_dict(shared_upd.to_dict())
+        assert_msgpack_serializable_dict(shared_upd.to_dict())
         assert shared_upd == aggregator.updates_cls(**shared_upd.to_dict())
 
     @pytest.mark.parametrize("framework", VECTOR_FRAMEWORKS)
@@ -99,7 +99,7 @@ class TestAggregator:
         """Test that the 'get_config' method works properly."""
         aggregator = agg_cls()
         agg_config = aggregator.get_config()
-        assert_json_serializable_dict(agg_config)
+        assert_msgpack_serializable_dict(agg_config)
 
     def test_from_config(self, agg_cls: Type[Aggregator]) -> None:
         """Test that the 'from_config' method works properly."""

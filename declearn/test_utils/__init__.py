@@ -34,6 +34,7 @@ from ._assertions import (
     assert_dict_equal,
     assert_json_serializable_dict,
     assert_list_equal,
+    assert_msgpack_serializable_dict,
 )
 from ._client_sampler import FailClientSampler
 from ._convert import to_numpy

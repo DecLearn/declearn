@@ -195,12 +195,3 @@ def json_load(
     """
     with open(path, "r", encoding=encoding) as file:
         return json.load(file, object_hook=json_unpack)
-
-
-# Add JSON support for built-in set objects.
-add_json_support(
-    cls=set,
-    pack=list,
-    unpack=set,
-    name="set",
-)

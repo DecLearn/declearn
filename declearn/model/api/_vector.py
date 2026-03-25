@@ -90,13 +90,6 @@ class VectorSpec:
 
 
 # Add (de)serialization support.
-add_json_support(
-    cls=VectorSpec,
-    pack=dataclasses.asdict,
-    unpack=lambda x: VectorSpec(**x),
-    name="VectorSpec",
-)
-
 add_msgpack_support(
     cls=VectorSpec,
     encode=dataclasses.asdict,

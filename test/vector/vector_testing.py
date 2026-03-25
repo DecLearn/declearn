@@ -24,7 +24,7 @@ from typing import Any, Callable, ClassVar, Dict, Generic, Type, TypeVar
 import numpy as np
 
 from declearn.model.api import Vector, VectorSpec
-from declearn.test_utils import assert_json_serializable_dict, to_numpy
+from declearn.test_utils import assert_msgpack_serializable_dict, to_numpy
 
 __all__ = [
     "VectorFactory",
@@ -129,7 +129,7 @@ class VectorSelfOpTests:
         """Test that a Vector can be (de)serialized to, then from, a dict."""
         vector = factory.make_vector(seed=0)
         data = vector.pack()
-        assert_json_serializable_dict(data)
+        assert_msgpack_serializable_dict(data)
         vecbis = type(vector).unpack(data)
         assert vector == vecbis
 

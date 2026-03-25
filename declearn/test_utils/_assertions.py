@@ -25,7 +25,12 @@ import numpy as np
 from numpy.testing import assert_array_equal
 
 from declearn.test_utils._convert import to_numpy
-from declearn.utils import json_pack, json_unpack
+from declearn.utils import (
+    json_pack,
+    json_unpack,
+    msgpack_deserialize,
+    msgpack_serialize,
+)
 
 __all__ = [
     "assert_dict_equal",
@@ -63,6 +68,36 @@ def assert_json_serializable_dict(sdict: Dict[str, Any]) -> None:
     assert isinstance(sdict, dict)
     dump = json.dumps(sdict, default=json_pack)
     load = json.loads(dump, object_hook=json_unpack)
+    assert isinstance(load, dict)
+    assert_dict_equal(load, sdict)
+
+
+def assert_msgpack_serializable_dict(sdict: Dict[str, Any]) -> None:
+    """Assert that an input is MessagePack-serializable using declearn msgpack
+    utils.
+
+    This function tries to dump the input dict into MessagePack binary data,
+    then to reload it. It also asserts that the recovered dict is similar to
+    the initial one, using the `assert_dict_equal` util.
+
+    Parameters
+    ----------
+    sdict: Dict[str, Any]
+        Dictionary, the MessagePack-serializability of which to assert.
+
+    Raises
+    ------
+    AssertionError
+        If `sdict` or the MessagePack-reloaded object is not a dict, or
+        if the latter has different keys and/or values compared
+        to the former.
+    Exception
+        Other exceptions may be raised if the MessagePack encoding (or
+        decoding) operation goes wrong.
+    """
+    assert isinstance(sdict, dict)
+    dump = msgpack_serialize(sdict)
+    load = msgpack_deserialize(dump)
     assert isinstance(load, dict)
     assert_dict_equal(load, sdict)
 

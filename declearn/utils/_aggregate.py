@@ -21,7 +21,6 @@ import abc
 import dataclasses
 from typing import Any, ClassVar, Dict, Optional, Self, Tuple
 
-from declearn.utils._json import add_json_support
 from declearn.utils._msgpack import add_msgpack_support
 from declearn.utils._register import create_types_registry, register_type
 
@@ -103,9 +102,6 @@ class Aggregate(metaclass=abc.ABCMeta):
             create_types_registry(cls, name=cls._group_key)
         if register:
             name = f"{cls._group_key}>{cls.__name__}"
-            add_json_support(
-                cls, pack=cls.to_dict, unpack=cls.from_dict, name=name
-            )
             add_msgpack_support(
                 cls, encode=cls.to_dict, decode=cls.from_dict, name=name
             )
@@ -114,7 +110,7 @@ class Aggregate(metaclass=abc.ABCMeta):
     def to_dict(
         self,
     ) -> Dict[str, Any]:
-        """Return a JSON-serializable dict representation of this instance."""
+        """Return a serializable dict representation of this instance."""
         return dataclasses.asdict(self)
 
     @classmethod

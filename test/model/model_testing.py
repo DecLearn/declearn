@@ -18,7 +18,6 @@
 """Shared testing code for TensorFlow and Torch models' unit tests."""
 
 import copy
-import json
 from typing import Any, Generic, List, Protocol, Tuple, Type, TypeVar, Union
 
 import numpy as np
@@ -27,7 +26,10 @@ import pytest
 from declearn.model.api import Model, Vector
 from declearn.test_utils import assert_json_serializable_dict, to_numpy
 from declearn.typing import Batch
-from declearn.utils import json_pack, json_unpack
+from declearn.utils import (
+    msgpack_deserialize,
+    msgpack_serialize,
+)
 
 VectorT = TypeVar("VectorT", bound=Vector)
 
@@ -213,9 +215,9 @@ class ModelTestSuite:
         model = test_case.model
         batch = test_case.dataset[0]
         grads = model.compute_batch_gradients(batch)
-        gdump = json.dumps(grads, default=json_pack)
-        assert isinstance(gdump, str)
-        other = json.loads(gdump, object_hook=json_unpack)
+        gdump = msgpack_serialize(grads)
+        assert isinstance(gdump, bytes)
+        other = msgpack_deserialize(gdump)
         assert grads == other
 
     def test_compute_batch_predictions(
