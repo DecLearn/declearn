@@ -154,10 +154,8 @@ from ._msgpack import (
 )
 from ._multiprocess import run_as_processes
 from ._numpy import (
-    pack_numpy_bin,
-    pack_numpy_str,
-    unpack_numpy_bin,
-    unpack_numpy_str,
+    pack_numpy,
+    unpack_numpy,
 )
 from ._register import (
     access_registered,

@@ -17,7 +17,7 @@
 
 """Numpy-related declearn utils."""
 
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 import numpy as np
 
@@ -25,112 +25,60 @@ from declearn.utils._json import add_json_support
 from declearn.utils._msgpack import add_msgpack_support
 
 __all__ = [
-    "unpack_numpy_bin",
-    "unpack_numpy_str",
-    "pack_numpy_bin",
-    "pack_numpy_str",
+    "unpack_numpy",
+    "pack_numpy",
 ]
 
 
-def pack_numpy_str(array: np.ndarray) -> Tuple[str, str, List[int]]:
-    """Transform a numpy array into a serializable (hex, dtype, shape) tuple.
-
-    The array data is encoded as a hexadecimal string, making it compatible
-    with text-based serialization formats such as JSON.
-
-    Parameters
-    ----------
-    array:
-        NumPy array to serialize.
-
-    Returns
-    -------
-    A tuple (hex_data, dtype, shape) where:
-        - hex_data:  array bytes encoded as a hex string.
-        - dtype: single-character dtype code (e.g. 'f', 'd', 'i').
-        - shape: list of dimension sizes.
-
-    See also
-    --------
-    `declearn.utils.unpack_numpy_str`: inverse operation.
-    """
-    return (array.tobytes().hex(), array.dtype.char, list(array.shape))
-
-
-def unpack_numpy_str(data: Tuple[str, str, List[int]]) -> np.ndarray:
-    """Transform a serializable (hex, dtype, shape) tuple into a numpy array.
+def pack_numpy(
+    array: np.ndarray, allow_bin: bool = False
+) -> Tuple[Union[str, bytes], str, List[int]]:
+    """Serialize a numpy array to (data, dtype, shape).
 
     Parameters
     ----------
-    data:
-        A tuple (hex_data, dtype, shape) where:
-            - hex_data:  array bytes encoded as a hex string.
-            - dtype: single-character dtype code (e.g. 'f', 'd', 'i').
-            - shape: list of dimension sizes.
+    array : np.ndarray
+    allow_bin : bool
+        If True, use raw bytes. Otherwise, use hex string.
 
     Returns
     -------
-    array:
-        Deserialized NumPy array.
-
-    See also
-    --------
-    `declearn.utils.pack_numpy_str`: inverse operation.
+    (data, dtype, shape)
     """
-    buffer = bytes.fromhex(data[0])
+    raw = array.tobytes()
+    data = raw if allow_bin else raw.hex()
+    return (data, array.dtype.char, list(array.shape))
+
+
+def unpack_numpy(
+    data: Tuple[Union[str, bytes], str, List[int]], allow_bin: bool = False
+) -> np.ndarray:
+    """Deserialize (data, dtype, shape) into a numpy array.
+
+    Parameters
+    ----------
+    data : tuple
+    allow_bin : bool
+        If True, interpret data as raw bytes. Otherwise, as hex string.
+
+    Returns
+    -------
+    np.ndarray
+    """
+    buffer = data[0] if allow_bin else bytes.fromhex(data[0])
     array = np.frombuffer(buffer, dtype=data[1])
-    return array.reshape(data[2]).copy()  # copy makes the array writable
+    return array.reshape(data[2]).copy()
 
 
-def pack_numpy_bin(array: np.ndarray) -> Tuple[bytes, str, List[int]]:
-    """Transform a numpy array into a serializable (bin, dtype, shape) tuple.
-
-    The array data is stored as raw bytes, making it compatible with
-    binary serialization formats such as MessagePack.
-
-    Parameters
-    ----------
-    array:
-        NumPy array to serialize.
-
-    Returns
-    -------
-    A tuple (bin_data, dtype, shape) where:
-        - bin_data:  array raw bytes.
-        - dtype: single-character dtype code (e.g. 'f', 'd', 'i').
-        - shape: list of dimension sizes.
-
-    See also
-    --------
-    `declearn.utils.unpack_numpy_bin`: inverse operation.
-    """
-    return (array.tobytes(), array.dtype.char, list(array.shape))
-
-
-def unpack_numpy_bin(data: Tuple[bytes, str, List[int]]) -> np.ndarray:
-    """Transform a serializable (bin, dtype, shape) tuple into a numpy array.
-
-    Parameters
-    ----------
-    data:
-        A tuple (bin_data, dtype, shape) where:
-            - bin_data:  raw array bytes.
-            - dtype: single-character dtype code (e.g. 'f', 'd', 'i').
-            - shape: list of dimension sizes.
-
-    Returns
-    -------
-    array:
-        Deserialized NumPy array.
-
-    See also
-    --------
-    `declearn.utils.pack_numpy_bin`: inverse operation.
-    """
-    buffer = data[0]
-    array = np.frombuffer(buffer, dtype=data[1])
-    return array.reshape(data[2]).copy()  # copy makes the array writable
-
-
-add_json_support(np.ndarray, pack_numpy_str, unpack_numpy_str, "np.ndarray")
-add_msgpack_support(np.ndarray, pack_numpy_bin, unpack_numpy_bin, "np.ndarray")
+add_json_support(
+    np.ndarray,
+    lambda a: pack_numpy(a, allow_bin=False),
+    lambda d: unpack_numpy(d, allow_bin=False),
+    "np.ndarray",
+)
+add_msgpack_support(
+    np.ndarray,
+    lambda a: pack_numpy(a, allow_bin=True),
+    lambda d: unpack_numpy(d, allow_bin=True),
+    "np.ndarray",
+)
