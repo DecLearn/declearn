@@ -31,10 +31,12 @@ from declearn.utils.serialize._json import (
     _json_encode,
     json_deserialize,
     json_serialize,
+    list_json_serializable,
 )
 from declearn.utils.serialize._msgpack import (
     _msgpack_decode,
     _msgpack_encode,
+    list_msgpack_serializable,
     msgpack_deserialize,
     msgpack_serialize,
     pack_int,
@@ -293,6 +295,18 @@ class TestSerialization:
 class TestMsgPackSerialization:
     """Shared unit tests suite for MessagePack-specific serialization utils."""
 
+    def test_list_msgpack_serializable(self):
+        serializables = list_msgpack_serializable()
+        type_names = [name for name, _ in serializables]
+        # Check that some classic types and DecLearn objects are listed
+        # (not exhaustive).
+        assert "np.ndarray" in type_names
+        assert "set" in type_names
+        assert "int" in type_names
+        assert "NumpyVector" in type_names
+        assert "SklearnSGDModel" in type_names
+        assert "Optimizer" in type_names
+
     @pytest.mark.parametrize(
         "x",
         [0, 1000, 2**65, -1000, -(2**65)],
@@ -316,3 +330,16 @@ class TestMsgPackSerialization:
         packed = msgpack_serialize(x)
         unpacked = msgpack_deserialize(packed)
         assert unpacked == x
+
+
+class TestJsonSerialization:
+    """Shared unit tests suite for MessagePack-specific serialization utils."""
+
+    def test_list_json_serializable(self):
+        serializables = list_json_serializable()
+        type_names = [name for name, _ in serializables]
+        # Check that some classic types and DecLearn objects are listed
+        # (not exhaustive).
+        assert "NumpyVector" in type_names
+        assert "np.ndarray" in type_names
+        assert "set" in type_names
