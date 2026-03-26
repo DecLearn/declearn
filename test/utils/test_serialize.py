@@ -20,7 +20,7 @@
 import json
 import time
 import warnings
-from typing import Any
+from typing import Any, Type
 
 import msgpack  # type: ignore
 import pytest
@@ -140,6 +140,7 @@ class TestSerialization:
 
     def test_serialize(self, fmt: SerialFmt) -> None:
         """Unit tests for `{fmt}_serialize` with custom-specified objects."""
+        serial_type: Type
         if fmt == "json":
             serialize = json_serialize
             serial_type = str
