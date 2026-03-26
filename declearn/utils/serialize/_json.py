@@ -19,12 +19,13 @@
 """Tools for JSON-(de)serialization."""
 
 import json
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional, Tuple, Type
 
 from declearn.utils.serialize._base import (
     SerialWrapper,
     _decode,
     _encode,
+    _list_serializable,
     add_serialization_support,
 )
 
@@ -37,7 +38,7 @@ __all__ = [
 
 
 # MsgPack serialization utils
-def json_serialize(obj: Any) -> bytes:
+def json_serialize(obj: Any) -> str:
     """Serialize object to JSON string.
 
     See `declearn.utils.serialize.json_deserialize` for the counterpart method.
@@ -94,6 +95,20 @@ def _json_encode(obj: Any) -> SerialWrapper:
 
 def _json_decode(obj: Dict[str, Any]) -> Any:
     return _decode(obj, fmt="json")
+
+
+def list_json_serializable() -> List[Tuple[str, Type]]:
+    """Return all types that have a custom JSON-(de)serialization support
+    in DecLearn.
+
+    Note that natively serializable types are not listed.
+
+    Returns
+    -------
+        Alphabetically sorted list of (name, type) pairs, where `name` is the
+        type's identifier in the serialization registry.
+    """
+    return _list_serializable("json")
 
 
 # Add JSON support for built-in set objects.

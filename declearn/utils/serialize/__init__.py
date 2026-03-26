@@ -23,6 +23,8 @@ __all__ = [
     "json_dump",
     "json_load",
     "json_serialize",
+    "list_json_serializable",
+    "list_msgpack_serializable",
     "msgpack_deserialize",
     "msgpack_dump",
     "msgpack_load",
@@ -36,8 +38,10 @@ from ._json import (
     json_dump,
     json_load,
     json_serialize,
+    list_json_serializable,
 )
 from ._msgpack import (
+    list_msgpack_serializable,
     msgpack_deserialize,
     msgpack_dump,
     msgpack_load,

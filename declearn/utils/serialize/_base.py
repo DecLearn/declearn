@@ -26,8 +26,10 @@ from typing import (
     Callable,
     Dict,
     Generic,
+    List,
     Literal,
     Optional,
+    Tuple,
     Type,
     TypedDict,
     TypeVar,
@@ -108,7 +110,7 @@ def add_serialization_support(  # noqa: PLR0913
         Type for which to add (or overwrite) `fmt`-(de)serialization
         support.
     fmt: SerialFmt
-        The serialization format matching the `encode` and `decode` functions.
+        The serialization format for which the support is added.
     encode: func(cls) -> any
         Function used to encode objects of type `cls` into an arbitrary
         `fmt`-serializable object or structure.
@@ -200,3 +202,26 @@ def _decode(obj: Dict[str, Any], fmt: SerialFmt) -> Any:
         return obj
     # Otherwise, use the recovered spec to decode the object.
     return spec.decoder(obj["dump"])
+
+
+def _list_serializable(fmt: SerialFmt) -> List[Tuple[str, Type]]:
+    """Return all types that have a custom `fmt`-(de)serialization support
+    in DecLearn.
+
+    Note that natively serializable types are not listed.
+
+    Parameters
+    ----------
+    fmt: SerialFmt
+        Target serialization format.
+
+    Returns
+    -------
+        Alphabetically sorted list of (name, type) pairs, where `name` is the
+        type's identifier in the serialization registry.
+    """
+    registry = _DESERIAL_REGISTRY[fmt]
+    ser_types = []
+    for name in sorted(registry.keys()):
+        ser_types.append((name, registry[name].cls))
+    return ser_types

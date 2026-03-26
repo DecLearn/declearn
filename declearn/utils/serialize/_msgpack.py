@@ -17,14 +17,15 @@
 
 """Tools for MessagePack-(de)serialization."""
 
-from typing import Any, Dict
+from typing import Any, Dict, List, Tuple, Type
 
-import msgpack
+import msgpack  # type: ignore
 
 from declearn.utils.serialize._base import (
     SerialWrapper,
     _decode,
     _encode,
+    _list_serializable,
     add_serialization_support,
 )
 
@@ -92,6 +93,20 @@ def _msgpack_encode(obj: Any) -> SerialWrapper:
 
 def _msgpack_decode(obj: Dict[str, Any]) -> Any:
     return _decode(obj, fmt="msgpack")
+
+
+def list_msgpack_serializable() -> List[Tuple[str, Type]]:
+    """Return all types that have a custom MessagePack-(de)serialization
+    support in DecLearn.
+
+    Note that natively serializable types are not listed.
+
+    Returns
+    -------
+        Alphabetically sorted list of (name, type) pairs, where `name` is the
+        type's identifier in the serialization registry.
+    """
+    return _list_serializable("msgpack")
 
 
 # Add MessagePack support for built-in set objects.
