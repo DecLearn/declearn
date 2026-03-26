@@ -41,7 +41,6 @@ from typing import (  # fmt: off
 from declearn.utils import (
     access_registered,
     access_registration_info,
-    add_json_support,
     add_serialization_support,
     create_types_registry,
     register_type,
@@ -290,8 +289,7 @@ class Vector(Generic[T], metaclass=ABCMeta):  # noqa : PLW1641 (because mutable 
         """Return a JSON-serializable dict representation of this Vector.
 
         This method must return a dict that can be serialized to and from
-        JSON using the JSON-extending declearn hooks (see `json_pack` and
-        `json_unpack` functions from the `declearn.utils` module).
+        JSON / MessagePack using declearn (de)serialization utils.
 
         The counterpart `unpack` method may be used to re-create a Vector
         from its "packed" dict representation.
@@ -299,9 +297,8 @@ class Vector(Generic[T], metaclass=ABCMeta):  # noqa : PLW1641 (because mutable 
         Returns
         -------
         packed: dict[str, any]
-            Dict with str keys, that may be serialized to and from JSON
-            using the `declearn.utils.json_pack` and `json_unpack` util
-            functions.
+            Dict with str keys, that may be serialized to and from JSON /
+            MessagePack using the declearn (de)serialization utils.
         """
         return self.coefs
 
@@ -647,7 +644,6 @@ class Vector(Generic[T], metaclass=ABCMeta):  # noqa : PLW1641 (because mutable 
         return cls.unflatten(values, v_spec)
 
 
-# FIXME : doc "add_json_support" only
 def register_vector_type(
     v_type: Type[Any],
     *types: Type[Any],
@@ -661,7 +657,7 @@ def register_vector_type(
       See `declearn.utils.register_type` for details.
     * Make instances of that class serializable, embarking
       the wrapped data by using the `pack` and `unpack` methods
-      of the class. See `declearn.utils.add_json_support`.
+      of the class.
     * Make the subclass buildable through `Vector.build(coefs)`,
       based on the analysis of wrapped coefficients' type.
 
@@ -672,8 +668,8 @@ def register_vector_type(
     *types: type
         Additional `v_type` alternatives for wrapped data.
     name: str or None, default=None
-        Optional name under which to register the type, shared
-        by `register_type` and `add_json_support`.
+        Optional name under which to register the type in the type
+        and serialization registries.
         If None, use `cls.__name__`.
 
     Returns
@@ -693,7 +689,7 @@ def register_vector_type(
         # Register the Vector type. Note: this type-checks cls.
         register_type(cls, name=name, group="Vector")
         # Add support for (de)serialization, relying on (un)pack.
-        add_json_support(cls, cls.pack, cls.unpack, name=name)
+        add_serialization_support(cls, "json", cls.pack, cls.unpack, name=name)
         add_serialization_support(
             cls, "msgpack", cls.pack, cls.unpack, name=name
         )

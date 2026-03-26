@@ -17,7 +17,6 @@
 
 """Custom "assert" functions commonly used in declearn tests."""
 
-import json
 from collections.abc import Generator, Sequence
 from typing import Any, Dict, List, Optional, Tuple, Type, Union
 
@@ -26,8 +25,8 @@ from numpy.testing import assert_array_equal
 
 from declearn.test_utils._convert import to_numpy
 from declearn.utils import (
-    json_pack,
-    json_unpack,
+    json_deserialize,
+    json_serialize,
     msgpack_deserialize,
     msgpack_serialize,
 )
@@ -44,10 +43,8 @@ def assert_json_serializable_dict(sdict: Dict[str, Any]) -> None:
     """Assert that an input is JSON-serializable using declearn hooks.
 
     This function tries to dump the input dict into a JSON string,
-    then to reload it. It does so using `declearn.utils.json_pack`
-    and `json_unpack` functions to extend JSON (en|de)coding. It
-    also asserts that the recovered dict is similar to the initial
-    one, using the `assert_dict_equal` util (which tolerates list-
+    then to reload it. It also asserts that the recovered dict is similar to
+    the initial one, using the `assert_dict_equal` util (which tolerates list-
     to-tuple conversions induced by JSON).
 
     Parameters
@@ -66,8 +63,8 @@ def assert_json_serializable_dict(sdict: Dict[str, Any]) -> None:
         decoding) operation goes wrong.
     """
     assert isinstance(sdict, dict)
-    dump = json.dumps(sdict, default=json_pack)
-    load = json.loads(dump, object_hook=json_unpack)
+    dump = json_serialize(sdict)
+    load = json_deserialize(dump)
     assert isinstance(load, dict)
     assert_dict_equal(load, sdict)
 

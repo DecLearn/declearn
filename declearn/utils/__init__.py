@@ -58,16 +58,11 @@ JSON-serialization
 ------------------
 Tools to add support for 3rd-party or custom types in JSON files.
 
-* [add_json_support][declearn.utils.add_json_support]:
-    Register a (pack, unpack) pair of functions to use on a given type.
 * [json_dump][declearn.utils.json_dump]:
-    Function to dump data to a JSON file, automatically using `json_pack`.
+    Function to dump data to a JSON file.
 * [json_load][declearn.utils.json_load]:
-    Function to load data from a JSON file, automatically using `json_unpack`.
-* [json_pack][declearn.utils.json_pack]:
-    Function to use as `default` parameter in `json.dump` to extend it.
-* [json_unpack][declearn.utils.json_unpack]:
-    Function to use as `object_hook` parameter in `json.load` to extend it.
+    Function to load data from a JSON file.
+
 
 And examples of pre-registered (de)serialization functions:
 
@@ -129,11 +124,10 @@ from ._device_policy import (
     set_device_policy,
 )
 from ._json import (
-    add_json_support,
+    json_deserialize,
     json_dump,
     json_load,
-    json_pack,
-    json_unpack,
+    json_serialize,
 )
 
 # TODO for 2.10: remove get_logger + remove from docstring above

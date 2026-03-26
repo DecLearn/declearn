@@ -17,8 +17,6 @@
 
 """Tools for MessagePack-(de)serialization."""
 
-from __future__ import annotations
-
 from typing import Any, Dict
 
 import msgpack
@@ -40,13 +38,19 @@ __all__ = [
 
 # MsgPack serialization utils
 def msgpack_serialize(obj: Any) -> bytes:
-    """Serialize object to binary data using MessagePack."""
+    """Serialize object to binary data using MessagePack.
+
+    See `declearn.utils.msgpack_deserialize` for the counterpart method.
+    """
     return msgpack.packb(obj, default=_msgpack_encode)
 
 
-def msgpack_deserialize(bin_data: bytes):
-    """Deserialize binary data to object using MessagePack."""
-    return msgpack.unpackb(bin_data, object_hook=_msgpack_decode)
+def msgpack_deserialize(data: bytes):
+    """Deserialize binary data to object using MessagePack.
+
+    See `declearn.utils.msgpack_serialize` for the counterpart method.
+    """
+    return msgpack.unpackb(data, object_hook=_msgpack_decode)
 
 
 def msgpack_dump(
@@ -55,7 +59,7 @@ def msgpack_dump(
 ) -> None:
     """Dump a given object to a MessagePack file, using extended types support.
 
-    See `declearn.utils.add_msgpack_support` to extend the behaviour
+    See `declearn.utils.add_serialization_support` to extend the behaviour
     of MessagePack (de)serialization to non-standard types, that will be
     used as part of this function.
 
@@ -70,7 +74,7 @@ def msgpack_load(
 ) -> Any:
     """Load data from a MessagePack file, using extended types support.
 
-    See `declearn.utils.add_msgpack_support` to extend the behaviour
+    See `declearn.utils.add_serialization_support` to extend the behaviour
     of MessagePack (de)serialization to non-standard types, that will be
     used as part of this function.
 

@@ -74,10 +74,10 @@ class Aggregate(metaclass=abc.ABCMeta):
 
     Serialization
     -------------
-
+    # FIXME : path of serialization util
     By default, subclasses will be made (de)serializable to and from
-    JSON, using `declearn.utils.add_json_support` and the `to_dict`
-    and `from_dict` methods. They will also be type-registered using
+    MessagePack, using `declearn.utils.add_serialization_support` and the
+    `to_dict` and `from_dict` methods. They will also be type-registered using
     `declearn.utils.register_type`. This may be prevented by passing
     the `register=False` keyword argument at inheritance time, i.e.
     `class MyAggregate(Aggregate, register=False):`.

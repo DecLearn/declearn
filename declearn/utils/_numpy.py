@@ -21,7 +21,6 @@ from typing import List, Tuple, Union
 
 import numpy as np
 
-from declearn.utils._json import add_json_support
 from declearn.utils._ser_backend import add_serialization_support
 
 __all__ = [
@@ -71,8 +70,9 @@ def unpack_numpy(
     return array.reshape(data[2]).copy()
 
 
-add_json_support(
+add_serialization_support(
     np.ndarray,
+    "json",
     lambda a: pack_numpy(a, allow_bin=False),
     lambda d: unpack_numpy(d, allow_bin=False),
     "np.ndarray",
