@@ -37,7 +37,7 @@ __all__ = [
 ]
 
 
-# MsgPack serialization utils
+# JSON serialization utils
 def json_serialize(obj: Any) -> str:
     """Serialize object to JSON string.
 
