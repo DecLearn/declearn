@@ -157,7 +157,7 @@ def _encode(obj: Any, fmt: SerialFmt) -> SerialWrapper:
     This function is designed to be used by an encoding hook in
     a serialization function (e.g. msgpack.packb). It provides support for
     object types with custom (de)coding protocols registered (for the `fmt`
-    format) using `declearn.utils.add_serialization_support`.
+    format) using `declearn.utils.serialize.add_serialization_support`.
 
     Returns
     -------
@@ -168,7 +168,8 @@ def _encode(obj: Any, fmt: SerialFmt) -> SerialWrapper:
     if spec is None:
         raise TypeError(
             f"Object of type '{type(obj)}' is not {fmt}-serializable.\n"
-            "Consider using `declearn.utils.add_serialization_support` to "
+            "Consider using "
+            "`declearn.utils.serialize.add_serialization_support` to "
             "make it so."
         )
     return {"__type__": spec.name, "dump": spec.encoder(obj)}
@@ -181,7 +182,7 @@ def _decode(obj: Dict[str, Any], fmt: SerialFmt) -> Any:
     This function is designed to be used by a decoding hook in
     a deserialization function (e.g. msgpack.unpackb). It provides support
     for object types with custom (de)coding protocols registered (for the `fmt`
-    format) using `declearn.utils.add_serialization_support`.
+    format) using `declearn.utils.serialize.add_serialization_support`.
     """
     # If 'obj' does not conform to SerialWrapper format, return it as-is.
     if not isinstance(obj, dict) or (set(obj.keys()) != {"__type__", "dump"}):

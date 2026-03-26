@@ -17,7 +17,7 @@
 
 import pytest
 
-from declearn.utils._msgpack import (
+from declearn.utils.serialize._msgpack import (
     msgpack_deserialize,
     msgpack_serialize,
     pack_int,

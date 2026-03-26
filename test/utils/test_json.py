@@ -24,10 +24,10 @@ from typing import Any
 
 import pytest
 
-from declearn.utils import (
+from declearn.utils.serialize import (
     add_serialization_support,
 )
-from declearn.utils._json import (
+from declearn.utils.serialize._json import (
     _json_decode,
     _json_encode,
     json_deserialize,

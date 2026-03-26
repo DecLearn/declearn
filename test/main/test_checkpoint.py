@@ -32,7 +32,7 @@ from declearn.main.utils import Checkpointer
 from declearn.model.api import Model
 from declearn.model.sklearn import SklearnSGDModel
 from declearn.optimizer import Optimizer
-from declearn.utils import json_load
+from declearn.utils.serialize import json_load
 
 # Fixtures and utils
 

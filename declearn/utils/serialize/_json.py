@@ -21,7 +21,7 @@
 import json
 from typing import Any, Dict, Optional
 
-from declearn.utils._ser_backend import (
+from declearn.utils.serialize._base import (
     SerialWrapper,
     _decode,
     _encode,
@@ -40,7 +40,7 @@ __all__ = [
 def json_serialize(obj: Any) -> bytes:
     """Serialize object to JSON string.
 
-    See `declearn.utils.json_deserialize` for the counterpart method.
+    See `declearn.utils.serialize.json_deserialize` for the counterpart method.
     """
     return json.dumps(obj, default=_json_encode)
 
@@ -48,7 +48,7 @@ def json_serialize(obj: Any) -> bytes:
 def json_deserialize(data: str):
     """Deserialize JSON string to object.
 
-    See `declearn.utils.json_serialize` for the counterpart method.
+    See `json_serialize` for the counterpart method.
     """
     return json.loads(data, object_hook=_json_decode)
 
@@ -61,11 +61,11 @@ def json_dump(
 ) -> None:
     """Dump a given object to a JSON file, using extended types support.
 
-    See `declearn.utils.add_serialization_support` to extend the behaviour
-    of JSON (de)serialization to non-standard types, that will be
+    See `declearn.utils.serialize.add_serialization_support` to extend the
+    behaviour of JSON (de)serialization to non-standard types, that will be
     used as part of this function.
 
-    See `declearn.utils.json_load` for the counterpart method.
+    See `json_load` for the counterpart method.
     """
     with open(path, "w", encoding=encoding) as file:
         json.dump(obj, file, default=_json_encode, indent=indent)
@@ -77,11 +77,11 @@ def json_load(
 ) -> Any:
     """Load data from a JSON file, using extended types support.
 
-    See `declearn.utils.add_serialization_support` to extend the behaviour
-    of JSON (de)serialization to non-standard types, that will be
+    See `declearn.utils.serialize.add_serialization_support` to extend the
+    behaviour of JSON (de)serialization to non-standard types, that will be
     used as part of this function.
 
-    See `declearn.utils.json_dump` for the counterpart method.
+    See `json_dump` for the counterpart method.
     """
 
     with open(path, "r", encoding=encoding) as file:

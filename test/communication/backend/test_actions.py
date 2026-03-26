@@ -32,7 +32,7 @@ from declearn.communication.api.backend.actions import (
     Reject,
     Send,
 )
-from declearn.utils import msgpack_serialize
+from declearn.utils.serialize import msgpack_serialize
 
 
 def assert_action_is_serializable(

@@ -21,7 +21,7 @@ from typing import Any, Dict
 
 import msgpack
 
-from declearn.utils._ser_backend import (
+from declearn.utils.serialize._base import (
     SerialWrapper,
     _decode,
     _encode,
@@ -40,7 +40,8 @@ __all__ = [
 def msgpack_serialize(obj: Any) -> bytes:
     """Serialize object to binary data using MessagePack.
 
-    See `declearn.utils.msgpack_deserialize` for the counterpart method.
+    See `msgpack_deserialize` for the counterpart
+    method.
     """
     return msgpack.packb(obj, default=_msgpack_encode)
 
@@ -48,7 +49,8 @@ def msgpack_serialize(obj: Any) -> bytes:
 def msgpack_deserialize(data: bytes):
     """Deserialize binary data to object using MessagePack.
 
-    See `declearn.utils.msgpack_serialize` for the counterpart method.
+    See `msgpack_serialize` for the counterpart
+    method.
     """
     return msgpack.unpackb(data, object_hook=_msgpack_decode)
 
@@ -59,11 +61,11 @@ def msgpack_dump(
 ) -> None:
     """Dump a given object to a MessagePack file, using extended types support.
 
-    See `declearn.utils.add_serialization_support` to extend the behaviour
-    of MessagePack (de)serialization to non-standard types, that will be
-    used as part of this function.
+    See `declearn.utils.serialize.add_serialization_support` to extend the
+    behaviour of MessagePack (de)serialization to non-standard types, that will
+    be used as part of this function.
 
-    See `declearn.utils.msgpack_load` for the counterpart method.
+    See `msgpack_load` for the counterpart method.
     """
     with open(path, "wb") as file:
         msgpack.dump(obj, file, default=_msgpack_encode)
@@ -74,11 +76,11 @@ def msgpack_load(
 ) -> Any:
     """Load data from a MessagePack file, using extended types support.
 
-    See `declearn.utils.add_serialization_support` to extend the behaviour
-    of MessagePack (de)serialization to non-standard types, that will be
-    used as part of this function.
+    See `declearn.utils.serialize.add_serialization_support` to extend the
+    behaviour of MessagePack (de)serialization to non-standard types, that will
+    be used as part of this function.
 
-    See `declearn.utils.msgpack_dump` for the counterpart method.
+    See `msgpack_dump` for the counterpart method.
     """
     with open(path, "rb") as file:
         return msgpack.load(file, object_hook=_msgpack_decode)

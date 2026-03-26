@@ -24,7 +24,7 @@ import numpy as np
 from numpy.testing import assert_array_equal
 
 from declearn.test_utils._convert import to_numpy
-from declearn.utils import (
+from declearn.utils.serialize import (
     json_deserialize,
     json_serialize,
     msgpack_deserialize,

@@ -26,9 +26,11 @@ import msgpack  # type: ignore
 from declearn.utils import (
     access_registered,
     create_types_registry,
+    register_from_attr,
+)
+from declearn.utils.serialize import (
     msgpack_deserialize,
     msgpack_serialize,
-    register_from_attr,
 )
 
 __all__ = [

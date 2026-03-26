@@ -68,7 +68,7 @@ from declearn.optimizer.modules import AuxVar
 from declearn.secagg import messaging as secagg_messaging
 from declearn.secagg import parse_secagg_config_server
 from declearn.secagg.api import Decrypter, SecaggConfigServer
-from declearn.utils import json_load
+from declearn.utils.serialize import json_load
 
 __all__ = [
     "FederatedServer",

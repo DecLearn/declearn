@@ -27,10 +27,10 @@ from declearn.utils import (
     Aggregate,
     access_registered,
     access_types_mapping,
-    add_serialization_support,
     create_types_registry,
     register_from_attr,
 )
+from declearn.utils.serialize import add_serialization_support
 
 __all__ = [
     "Aggregator",

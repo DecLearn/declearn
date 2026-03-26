@@ -37,8 +37,8 @@ from declearn.utils import (
     Aggregate,
     access_registered,
     access_registration_info,
-    add_serialization_support,
 )
+from declearn.utils.serialize import add_serialization_support
 
 __all__ = [
     "ArraySpec",

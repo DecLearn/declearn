@@ -41,10 +41,10 @@ from typing import (  # fmt: off
 from declearn.utils import (
     access_registered,
     access_registration_info,
-    add_serialization_support,
     create_types_registry,
     register_type,
 )
+from declearn.utils.serialize import add_serialization_support
 
 __all__ = [
     "Vector",

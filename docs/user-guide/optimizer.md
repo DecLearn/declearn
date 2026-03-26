@@ -119,8 +119,9 @@ An `Optimizer` has a configuration and a state, that may be (de)serialized:
   (made recursively of those of its plug-ins).
 - `optim.set_state` may be used to reset the states of an optimizer to given
   values.
-- The `declearn.utils.json_load` and `json_dump` utils may be used to save and
-  load the configuration and state dictionaries to and from JSON files.
+- The `declearn.utils.serialize.json_load` and `json_dump` utils may be used to
+  save and load the configuration and state dictionaries to and from JSON
+  files.
 
 ### Framework agnosticity
 

@@ -21,7 +21,7 @@ from typing import List, Tuple, Union
 
 import numpy as np
 
-from declearn.utils._ser_backend import add_serialization_support
+from declearn.utils.serialize._base import add_serialization_support
 
 __all__ = [
     "unpack_numpy",

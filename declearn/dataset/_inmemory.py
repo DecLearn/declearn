@@ -30,7 +30,7 @@ from sklearn.datasets import load_svmlight_file  # type: ignore
 from declearn.dataset._base import Dataset, DataSpecs
 from declearn.dataset.utils import load_data_array, save_data_array
 from declearn.typing import Batch, DataArray
-from declearn.utils import json_dump, json_load
+from declearn.utils.serialize import json_dump, json_load
 
 __all__ = [
     "InMemoryDataset",

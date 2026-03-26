@@ -22,7 +22,7 @@ import dataclasses
 from typing import Any, ClassVar, Dict, Optional, Self, Tuple
 
 from declearn.utils._register import create_types_registry, register_type
-from declearn.utils._ser_backend import add_serialization_support
+from declearn.utils.serialize._base import add_serialization_support
 
 __all__ = [
     "Aggregate",
@@ -76,9 +76,9 @@ class Aggregate(metaclass=abc.ABCMeta):
     -------------
     # FIXME : path of serialization util
     By default, subclasses will be made (de)serializable to and from
-    MessagePack, using `declearn.utils.add_serialization_support` and the
-    `to_dict` and `from_dict` methods. They will also be type-registered using
-    `declearn.utils.register_type`. This may be prevented by passing
+    MessagePack, using `declearn.utils.serialize.add_serialization_support` and
+    the `to_dict` and `from_dict` methods. They will also be type-registered
+    using `declearn.utils.register_type`. This may be prevented by passing
     the `register=False` keyword argument at inheritance time, i.e.
     `class MyAggregate(Aggregate, register=False):`.
 

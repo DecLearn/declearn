@@ -63,7 +63,7 @@ from declearn.secagg.messaging import (
     SecaggEvaluationReply,
     SecaggTrainReply,
 )
-from declearn.utils import json_dump
+from declearn.utils.serialize import json_dump
 
 MOCK_MODEL = mock.create_autospec(Model, instance=True)
 MOCK_NETWK = mock.create_autospec(NetworkServer, instance=True)

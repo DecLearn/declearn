@@ -26,7 +26,7 @@ import pytest
 from declearn.model.api import Model, Vector
 from declearn.test_utils import assert_json_serializable_dict, to_numpy
 from declearn.typing import Batch
-from declearn.utils import (
+from declearn.utils.serialize import (
     msgpack_deserialize,
     msgpack_serialize,
 )

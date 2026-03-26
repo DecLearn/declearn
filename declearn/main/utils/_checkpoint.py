@@ -28,7 +28,7 @@ import pandas as pd
 
 from declearn.model.api import Model
 from declearn.optimizer import Optimizer
-from declearn.utils import (
+from declearn.utils.serialize import (
     json_dump,
     json_load,
     msgpack_dump,

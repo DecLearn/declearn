@@ -21,11 +21,11 @@ import dataclasses
 from typing import Any, Dict, Optional, Self, Type, TypedDict, Union
 
 from declearn.typing import SupportsConfig
-from declearn.utils._json import json_dump, json_load
 from declearn.utils._register import (
     access_registered,
     access_registration_info,
 )
+from declearn.utils.serialize._json import json_dump, json_load
 
 __all__ = [
     "ObjectConfig",

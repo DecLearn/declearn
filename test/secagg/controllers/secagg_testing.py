@@ -40,9 +40,11 @@ from declearn.test_utils import (
 )
 from declearn.utils import (
     Aggregate,
+    set_device_policy,
+)
+from declearn.utils.serialize import (
     msgpack_dump,
     msgpack_load,
-    set_device_policy,
 )
 
 

@@ -38,10 +38,10 @@ from declearn.typing import Batch
 from declearn.utils import (
     DevicePolicy,
     access_registered,
-    add_serialization_support,
     create_types_registry,
     register_from_attr,
 )
+from declearn.utils.serialize import add_serialization_support
 
 __all__ = [
     "Model",

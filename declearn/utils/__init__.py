@@ -53,7 +53,7 @@ Tools to map class constructors to (name, group) string tuples.
 * [register_type][declearn.utils.register_type]:
     Register a type class (as a function or class-decorator).
 
-
+# FIXME move
 JSON-serialization
 ------------------
 Tools to add support for 3rd-party or custom types in JSON files.
@@ -123,12 +123,6 @@ from ._device_policy import (
     get_device_policy,
     set_device_policy,
 )
-from ._json import (
-    json_deserialize,
-    json_dump,
-    json_load,
-    json_serialize,
-)
 
 # TODO for 2.10: remove get_logger + remove from docstring above
 from ._logging import (
@@ -137,12 +131,6 @@ from ._logging import (
     config_logger,
     config_server_loggers,
     get_logger,
-)
-from ._msgpack import (
-    msgpack_deserialize,
-    msgpack_dump,
-    msgpack_load,
-    msgpack_serialize,
 )
 from ._multiprocess import run_as_processes
 from ._numpy import (
@@ -157,7 +145,6 @@ from ._register import (
     register_from_attr,
     register_type,
 )
-from ._ser_backend import add_serialization_support
 
 # TODO : remove or deprecate Config serialization exports ?
 from ._serialize import (

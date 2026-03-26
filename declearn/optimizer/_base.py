@@ -35,7 +35,7 @@ from declearn.optimizer.modules import AuxVar, OptiModule
 from declearn.optimizer.regularizers import Regularizer
 from declearn.optimizer.schedulers import Scheduler
 from declearn.typing import Batch
-from declearn.utils import add_serialization_support
+from declearn.utils.serialize import add_serialization_support
 
 __all__ = [
     "Optimizer",
