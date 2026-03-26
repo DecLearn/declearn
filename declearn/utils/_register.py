@@ -15,7 +15,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Generic types-registration system backing some (de)serialization utils."""
+"""Generic type registration system used to organize concrete implementations
+into logical groups derived from a common abstract base class.
+
+Each group represents an abstract type (e.g., a `Model`) and maps string
+identifiers (e.g., "sklearn_sgd") to their corresponding concrete
+implementations (e.g., `SklearnSGDModel`). This provides a structured way to
+reflect inheritance relationships and retrieve implementations by key within
+a given group.
+"""
 
 from __future__ import annotations
 
@@ -141,7 +149,8 @@ def create_types_registry(
     base: Optional[Type] = None,
     name: Optional[str] = None,
 ) -> Type:
-    """Create a TypesRegistry backing generic (de)serialization utils.
+    """Create a TypesRegistry to store implementations that inherit from the
+    `base` type.
 
     Note: this function may either be used to create a registry with
           an existing type as base through functional syntax, or be
@@ -181,7 +190,7 @@ def register_type(
     name: Optional[str] = None,
     group: Optional[str] = None,
 ) -> Type:
-    """Register a class in a registry, to ease its (de)serialization.
+    """Register a class in a registry.
 
     Note: this function may either be used to register an existing
           type through functional syntax, or placed as a decorator
