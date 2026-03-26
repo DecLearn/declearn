@@ -22,7 +22,7 @@ from typing import List, Tuple, Union
 import numpy as np
 
 from declearn.utils._json import add_json_support
-from declearn.utils._msgpack import add_msgpack_support
+from declearn.utils._ser_backend import add_serialization_support
 
 __all__ = [
     "unpack_numpy",
@@ -65,7 +65,8 @@ def unpack_numpy(
     -------
     np.ndarray
     """
-    buffer = data[0] if allow_bin else bytes.fromhex(data[0])
+    dump: Union[str, bytes] = data[0]
+    buffer = dump if allow_bin else bytes.fromhex(dump)  # type: ignore
     array = np.frombuffer(buffer, dtype=data[1])
     return array.reshape(data[2]).copy()
 
@@ -76,8 +77,9 @@ add_json_support(
     lambda d: unpack_numpy(d, allow_bin=False),
     "np.ndarray",
 )
-add_msgpack_support(
+add_serialization_support(
     np.ndarray,
+    "msgpack",
     lambda a: pack_numpy(a, allow_bin=True),
     lambda d: unpack_numpy(d, allow_bin=True),
     "np.ndarray",

@@ -37,7 +37,7 @@ from declearn.utils import (
     Aggregate,
     access_registered,
     access_registration_info,
-    add_msgpack_support,
+    add_serialization_support,
 )
 
 __all__ = [
@@ -111,8 +111,9 @@ class SecureAggregate(Generic[AggregateT], metaclass=abc.ABCMeta):
         register: bool = True,
     ) -> None:
         """Automatically add JSON support for subclasses."""
-        add_msgpack_support(
+        add_serialization_support(
             cls=cls,
+            fmt="msgpack",
             encode=cls.to_dict,
             decode=cls.from_dict,
             name=cls.__name__,

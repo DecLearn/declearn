@@ -21,8 +21,8 @@ import abc
 import dataclasses
 from typing import Any, ClassVar, Dict, Optional, Self, Tuple
 
-from declearn.utils._msgpack import add_msgpack_support
 from declearn.utils._register import create_types_registry, register_type
+from declearn.utils._ser_backend import add_serialization_support
 
 __all__ = [
     "Aggregate",
@@ -102,8 +102,12 @@ class Aggregate(metaclass=abc.ABCMeta):
             create_types_registry(cls, name=cls._group_key)
         if register:
             name = f"{cls._group_key}>{cls.__name__}"
-            add_msgpack_support(
-                cls, encode=cls.to_dict, decode=cls.from_dict, name=name
+            add_serialization_support(
+                cls,
+                fmt="msgpack",
+                encode=cls.to_dict,
+                decode=cls.from_dict,
+                name=name,
             )
             register_type(cls, name=cls.__name__, group=cls._group_key)
 

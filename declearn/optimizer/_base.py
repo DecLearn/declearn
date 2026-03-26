@@ -35,7 +35,7 @@ from declearn.optimizer.modules import AuxVar, OptiModule
 from declearn.optimizer.regularizers import Regularizer
 from declearn.optimizer.schedulers import Scheduler
 from declearn.typing import Batch
-from declearn.utils import add_msgpack_support
+from declearn.utils import add_serialization_support
 
 __all__ = [
     "Optimizer",
@@ -615,8 +615,9 @@ class Optimizer:
             mod.set_state(state)
 
 
-add_msgpack_support(
+add_serialization_support(
     Optimizer,
+    "msgpack",
     lambda obj: obj.get_config(),
     lambda obj: Optimizer.from_config(obj),
     "Optimizer",

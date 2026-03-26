@@ -17,6 +17,7 @@
 
 # TODO : remove or deprecate Config serialization exports ?
 # (given that the serialization formats involved have changed)
+# FIXME : fix doc on serialization
 """Shared utils used across declearn.
 
 The functions and classes exposed by this submodule are listed below,
@@ -73,8 +74,6 @@ And examples of pre-registered (de)serialization functions:
 * [deserialize_numpy][declearn.utils.deserialize_numpy]
   and [serialize_numpy][declearn.utils.serialize_numpy]:
     Pair of functions to (un)pack a numpy ndarray as JSON-serializable data.
-
-# TODO : MsgPack serialization
 
 Device-policy utils
 -------------------
@@ -146,7 +145,6 @@ from ._logging import (
     get_logger,
 )
 from ._msgpack import (
-    add_msgpack_support,
     msgpack_deserialize,
     msgpack_dump,
     msgpack_load,
@@ -165,6 +163,7 @@ from ._register import (
     register_from_attr,
     register_type,
 )
+from ._ser_backend import add_serialization_support
 
 # TODO : remove or deprecate Config serialization exports ?
 from ._serialize import (

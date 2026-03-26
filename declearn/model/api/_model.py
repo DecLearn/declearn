@@ -38,7 +38,7 @@ from declearn.typing import Batch
 from declearn.utils import (
     DevicePolicy,
     access_registered,
-    add_msgpack_support,
+    add_serialization_support,
     create_types_registry,
     register_from_attr,
 )
@@ -97,8 +97,9 @@ class Model(Generic[VectorT], metaclass=ABCMeta):
         super().__init_subclass__(**kwargs)
         if register:
             register_from_attr(cls, "typekey", group="Model")
-            add_msgpack_support(
+            add_serialization_support(
                 cls,
+                "msgpack",
                 lambda obj: obj.get_config(allow_bin=True),
                 lambda obj: cls.from_config(obj, allow_bin=True),
                 cls.__name__,

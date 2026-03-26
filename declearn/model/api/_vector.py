@@ -42,7 +42,7 @@ from declearn.utils import (
     access_registered,
     access_registration_info,
     add_json_support,
-    add_msgpack_support,
+    add_serialization_support,
     create_types_registry,
     register_type,
 )
@@ -90,8 +90,9 @@ class VectorSpec:
 
 
 # Add (de)serialization support.
-add_msgpack_support(
+add_serialization_support(
     cls=VectorSpec,
+    fmt="msgpack",
     encode=dataclasses.asdict,
     decode=lambda x: VectorSpec(**x),
     name="VectorSpec",
@@ -693,7 +694,9 @@ def register_vector_type(
         register_type(cls, name=name, group="Vector")
         # Add support for (de)serialization, relying on (un)pack.
         add_json_support(cls, cls.pack, cls.unpack, name=name)
-        add_msgpack_support(cls, cls.pack, cls.unpack, name=name)
+        add_serialization_support(
+            cls, "msgpack", cls.pack, cls.unpack, name=name
+        )
         # Make the subclass buildable through `Vector.build(coefs)`.
         for v_typ in v_types:
             VECTOR_TYPES[v_typ] = cls

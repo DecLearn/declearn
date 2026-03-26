@@ -27,7 +27,7 @@ from declearn.utils import (
     Aggregate,
     access_registered,
     access_types_mapping,
-    add_msgpack_support,
+    add_serialization_support,
     create_types_registry,
     register_from_attr,
 )
@@ -139,8 +139,9 @@ class Aggregator(Generic[ModelUpdatesT], metaclass=abc.ABCMeta):
         super().__init_subclass__(**kwargs)
         if register:
             register_from_attr(cls, "name", group="Aggregator")
-            add_msgpack_support(
+            add_serialization_support(
                 cls,
+                "msgpack",
                 lambda obj: obj.get_config(),
                 lambda obj: cls.from_config(obj),
                 cls.__name__,
