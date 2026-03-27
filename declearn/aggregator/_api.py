@@ -187,7 +187,7 @@ class Aggregator(Generic[ModelUpdatesT], metaclass=abc.ABCMeta):
     def get_config(
         self,
     ) -> Dict[str, Any]:
-        """Return a JSON-serializable dict with this object's parameters.
+        """Return a serializable dict with this object's parameters.
 
         Notes
         -----

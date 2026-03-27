@@ -60,7 +60,7 @@ class TorchVector(Vector):  # noqa : PLW1641
       `gpu + cpu = gpu` while `cpu + gpu = cpu`. In both cases, a
       warning will be emitted to prevent silent un-optimized copies.
     - When deserializing a `TorchVector` (either by directly using
-      `TorchVector.unpack` or loading one from a JSON dump), loaded
+      `TorchVector.unpack` or loading one from a dump), loaded
       tensors are placed based on the global device-placement policy
       (accessed via `declearn.utils.get_device_policy`). Thus it may
       have a different device-placement schema than at dump time but

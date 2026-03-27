@@ -130,7 +130,7 @@ class Encrypter(metaclass=abc.ABCMeta):
             Encrypted values, as a list of large integers.
         specs:
             Tuple storing array shape and dtype metadata,
-            in cleartext and JSON-serializable format.
+            in cleartext and serializable format.
 
         Raises
         ------

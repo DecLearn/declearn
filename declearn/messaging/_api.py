@@ -44,7 +44,7 @@ class Message(metaclass=ABCMeta):
     """Abstract base dataclass to define parsable messages.
 
     A 'Message' is merely an arbitrary data structure that implements
-    conversion to and from a JSON-serializable dict, and is associated
+    conversion to and from a serializable dict, and is associated
     with a unique `typekey` string class attribute under which it is
     type-registered.
 
@@ -71,12 +71,12 @@ class Message(metaclass=ABCMeta):
             register_from_attr(cls, "typekey", group="Message")
 
     def to_kwargs(self) -> Dict[str, Any]:
-        """Return a JSON-serializable dict representation of this message."""
+        """Return a serializable dict representation of this message."""
         return dataclasses.asdict(self)
 
     @classmethod
     def from_kwargs(cls, **kwargs: Any) -> Self:
-        """Parse the message from JSON-deserialized attributes."""
+        """Parse the message from deserialized attributes."""
         return cls(**kwargs)
 
     def serialize(self) -> bytes:

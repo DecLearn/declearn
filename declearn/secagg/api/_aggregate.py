@@ -110,7 +110,7 @@ class SecureAggregate(Generic[AggregateT], metaclass=abc.ABCMeta):
         cls,
         register: bool = True,
     ) -> None:
-        """Automatically add JSON support for subclasses."""
+        """Automatically add serialization support for subclasses."""
         add_serialization_support(
             cls=cls,
             fmt="msgpack",

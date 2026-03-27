@@ -55,6 +55,7 @@ used to annotate some dataset-interfacing tools under [declearn.dataset][].
 """
 
 
+# FIXME : remove ? (not used anymore)
 class SupportsConfig(Protocol, metaclass=ABCMeta):
     """Protocol for type annotation of objects with get/from_config methods.
 
@@ -65,7 +66,7 @@ class SupportsConfig(Protocol, metaclass=ABCMeta):
 
     @abstractmethod
     def get_config(self) -> Dict[str, Any]:
-        """Return a JSON-serializable config dict representing this object."""
+        """Return a serializable config dict representing this object."""
         return {}
 
     @classmethod
@@ -73,5 +74,5 @@ class SupportsConfig(Protocol, metaclass=ABCMeta):
         cls,
         config: Dict[str, Any],
     ) -> Self:
-        """Instantiate an object from its JSON-serializable config dict."""
+        """Instantiate an object from its serializable config dict."""
         return cls(**config)

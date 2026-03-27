@@ -273,7 +273,7 @@ You may learn more about our (non-abstract) `Optimizer` API by reading our
     - `declearn.secagg.masking.MaskedAggregate`
 - Extend:
     - Simply inherit from `SecureAggregate` (registration is automated,
-      and is about making the class JSON-serializable).
+      and is about making the class serializable).
     - To avoid it, use `class MyClass(SecureAggregate, register=False)`.
 
 ### Fairness

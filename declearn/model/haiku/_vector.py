@@ -81,7 +81,7 @@ class JaxNumpyVector(Vector):  # noqa : PLW1641
       `gpu + cpu = gpu` while `cpu + gpu = cpu`. In both cases, a
       warning will be emitted to prevent silent un-optimized copies.
     - When deserializing a `JaxNumpyVector` (either by directly using
-      `JaxNumpyVector.unpack` or loading one from a JSON dump), loaded
+      `JaxNumpyVector.unpack` or loading one from a dump), loaded
       arrays are placed based on the global device-placement policy
       (accessed via `declearn.utils.get_device_policy`). Thus it may
       have a different device-placement schema than at dump time but

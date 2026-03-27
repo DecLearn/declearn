@@ -64,7 +64,7 @@ class TestAggregator:
         """Test that 'prepare_for_sharing' returns a proper-type instance.
 
         Also test that the output:
-            - is JSON-serializable in dict representation
+            - is serializable in dict representation
             - can properly be recovered from its dict representation
         """
         aggregator = agg_cls()

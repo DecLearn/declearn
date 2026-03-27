@@ -123,7 +123,7 @@ class TensorflowVector(Vector):  # noqa : PLW1641
       `gpu + cpu = gpu` while `cpu + gpu = cpu`. In both cases, a
       warning will be emitted to prevent silent un-optimized copies.
     - When deserializing a `TensorflowVector` (either by directly using
-      `TensorflowVector.unpack` or loading one from a JSON dump), loaded
+      `TensorflowVector.unpack` or loading one from a dump), loaded
       tensors are placed based on the global device-placement policy
       (accessed via `declearn.utils.get_device_policy`). Thus it may
       have a different device-placement schema than at dump time but
@@ -214,7 +214,7 @@ class TensorflowVector(Vector):  # noqa : PLW1641
         cls,
         tensor: Union[tf.Tensor, tf.IndexedSlices],
     ) -> Any:
-        """Convert a Tensor to a JSON-serializable object."""
+        """Convert a Tensor to a serializable object."""
         if isinstance(tensor, tf.IndexedSlices):
             val = cls._pack_tensor(tensor.values)
             ind = cls._pack_tensor(tensor.indices)
@@ -227,7 +227,7 @@ class TensorflowVector(Vector):  # noqa : PLW1641
         cls,
         data: Any,
     ) -> Union[tf.Tensor, tf.IndexedSlices]:
-        """Re-create a Tensor from a JSON-unpacked object."""
+        """Re-create a Tensor from a unpacked object."""
         if isinstance(data, list) and (data[0] == "slices"):
             val = cls._unpack_tensor(data[1])
             ind = cls._unpack_tensor(data[2])

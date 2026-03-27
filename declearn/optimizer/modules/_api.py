@@ -258,7 +258,7 @@ class OptiModule(Generic[AuxVarT], metaclass=abc.ABCMeta):
     def get_config(
         self,
     ) -> Dict[str, Any]:
-        """Return a JSON-serializable dict with this module's parameters.
+        """Return a serializable dict with this module's parameters.
 
         The counterpart to this method is the `from_config` classmethod.
         To access the module's inner states, see the `get_state` method.
@@ -266,7 +266,7 @@ class OptiModule(Generic[AuxVarT], metaclass=abc.ABCMeta):
         Returns
         -------
         config: Dict[str, Any]
-            JSON-serializable dict storing this module's instantiation
+            Serializable dict storing this module's instantiation
             configuration.
         """
         return {}
@@ -318,14 +318,14 @@ class OptiModule(Generic[AuxVarT], metaclass=abc.ABCMeta):
     def get_state(
         self,
     ) -> Dict[str, Any]:
-        """Return a JSON-serializable dict with this module's state(s).
+        """Return a Serializable dict with this module's state(s).
 
         The counterpart to this method is the `set_state` one.
 
         Returns
         -------
         state: Dict[str, Any]
-            JSON-serializable dict storing this module's inner state
+            Serializable dict storing this module's inner state
             variables.
         """
         return {}

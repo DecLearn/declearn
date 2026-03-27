@@ -286,7 +286,7 @@ class Vector(Generic[T], metaclass=ABCMeta):  # noqa : PLW1641 (because mutable 
     def pack(
         self,
     ) -> Dict[str, Any]:
-        """Return a JSON-serializable dict representation of this Vector.
+        """Return a serializable dict representation of this Vector.
 
         This method must return a dict that can be serialized to and from
         JSON / MessagePack using declearn (de)serialization utils.

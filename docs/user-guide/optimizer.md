@@ -112,7 +112,7 @@ The syntax to set up an `Optimizer` instance is:
 
 An `Optimizer` has a configuration and a state, that may be (de)serialized:
 
-- `optim.get_config` may be used to return a JSON-serializable configuration.
+- `optim.get_config` may be used to return a serializable configuration.
 - `Optimizer.from_config` may be used to instantiate an optimizer from its
   configuration dict.
 - `optim.get_state` may be used to access the current states of an optimizer

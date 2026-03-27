@@ -23,7 +23,7 @@
 The functions and classes exposed by this submodule are listed below,
 grouped thematically.
 
-
+# FIXME : remove / deprecate
 Config serialization
 --------------------
 Tools to create JSON config dumps of objects and instantiate from them.
@@ -66,6 +66,7 @@ Tools to add support for 3rd-party or custom types in JSON files.
 
 And examples of pre-registered (de)serialization functions:
 
+# FIXME : name pack/unpack_numpy
 * [deserialize_numpy][declearn.utils.deserialize_numpy]
   and [serialize_numpy][declearn.utils.serialize_numpy]:
     Pair of functions to (un)pack a numpy ndarray as JSON-serializable data.
