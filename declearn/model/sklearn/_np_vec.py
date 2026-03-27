@@ -29,7 +29,7 @@ __all__ = [
 ]
 
 
-@register_vector_type(np.ndarray)
+@register_vector_type(np.ndarray, name="numpy")
 class NumpyVector(Vector):  # noqa : PLW1641
     """Vector subclass to store numpy.ndarray coefficients.
 

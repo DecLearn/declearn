@@ -85,7 +85,12 @@ tf_op_sqre = enhance_tf_op(tf.square, inplc=True)
 tf_op_sqrt = enhance_tf_op(tf.sqrt, inplc=True)
 
 
-@register_vector_type(tf.Tensor, EagerTensor, tf.IndexedSlices)
+@register_vector_type(
+    tf.Tensor,
+    EagerTensor,
+    tf.IndexedSlices,
+    name="tensorflow",
+)
 class TensorflowVector(Vector):  # noqa : PLW1641
     """Vector subclass to store tensorflow tensors.
 

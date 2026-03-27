@@ -33,7 +33,7 @@ __all__ = [
 ]
 
 
-@register_vector_type(torch.Tensor)
+@register_vector_type(torch.Tensor, name="torch")
 class TorchVector(Vector):  # noqa : PLW1641
     """Vector subclass to store PyTorch tensors.
 
