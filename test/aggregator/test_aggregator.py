@@ -31,6 +31,7 @@ from declearn.test_utils import (
     list_available_frameworks,
 )
 from declearn.utils import set_device_policy
+from declearn.utils.serialize import msgpack_deserialize, msgpack_serialize
 
 AGGREGATOR_CLASSES = list_aggregators()
 VECTOR_FRAMEWORKS = list_available_frameworks()
@@ -142,3 +143,16 @@ class TestAggregator:
         result = aggregator.finalize_updates(output)
         expect = aggregator.finalize_updates(updates_a + updates_b)
         assert result == expect
+
+    def test_msgpack_serialization(
+        self,
+        agg_cls: Type[Aggregator],
+    ) -> None:
+        """Test that MessagePack-serialization of an Aggregator works
+        properly.
+        """
+        aggregator = agg_cls()
+        dump = msgpack_serialize(aggregator)
+        aggrg_bis = msgpack_deserialize(dump)
+        assert isinstance(aggrg_bis, type(aggregator))
+        assert aggrg_bis.get_config() == aggregator.get_config()

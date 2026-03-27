@@ -20,7 +20,6 @@
 import abc
 import copy
 import dataclasses
-import os
 import secrets
 from typing import Any, Collection, Dict, Optional, Tuple, Union
 from unittest import mock
@@ -43,8 +42,8 @@ from declearn.utils import (
     set_device_policy,
 )
 from declearn.utils.serialize import (
-    msgpack_dump,
-    msgpack_load,
+    msgpack_deserialize,
+    msgpack_serialize,
 )
 
 
@@ -514,15 +513,13 @@ class SecureAggregateTestSuite(metaclass=abc.ABCMeta):
 
     def test_msgpack_serialization(
         self,
-        tmp_path: str,
     ) -> None:
         """Test that MessagePack-serialization of a SecureAggregate works
         properly.
         """
         sec_agg = self.setup_secure_aggregate()
-        path = os.path.join(tmp_path, "agg.json")
-        msgpack_dump(sec_agg, path)
-        agg_bis = msgpack_load(path)
+        dump = msgpack_serialize(sec_agg)
+        agg_bis = msgpack_deserialize(dump)
         assert isinstance(agg_bis, type(sec_agg))
         assert agg_bis.to_dict() == sec_agg.to_dict()
 

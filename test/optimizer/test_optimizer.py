@@ -31,6 +31,7 @@ from declearn.optimizer.modules import AuxVar, OptiModule
 from declearn.optimizer.regularizers import Regularizer
 from declearn.optimizer.schedulers import Scheduler
 from declearn.test_utils import assert_json_serializable_dict
+from declearn.utils.serialize import msgpack_deserialize, msgpack_serialize
 
 
 class MockOptiModule(OptiModule):
@@ -199,6 +200,21 @@ class TestOptimizer:
         assert len(opti_b.modules) == 1
         assert isinstance(opti_b.modules[0], MockOptiModule)
         assert opti_b.modules[0].kwargs == {"arg": "optimodule"}
+
+    def test_msgpack_serialization(self) -> None:
+        """Test that MessagePack-serialization of an Optimizer works
+        properly.
+        """
+        opti = Optimizer(
+            lrate=0.001,
+            w_decay=0.005,
+            regularizers=[MockRegularizer(arg="regularizer")],
+            modules=[MockOptiModule(arg="optimodule")],
+        )
+        dump = msgpack_serialize(opti)
+        opti_bis = msgpack_deserialize(dump)
+        assert isinstance(opti_bis, type(opti))
+        assert opti_bis.get_config() == opti.get_config()
 
     def test_compute_updates_from_gradients(self) -> None:
         """Test, using mocks, that updates are computed with expected calls."""

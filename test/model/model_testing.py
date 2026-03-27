@@ -24,7 +24,11 @@ import numpy as np
 import pytest
 
 from declearn.model.api import Model, Vector
-from declearn.test_utils import assert_json_serializable_dict, to_numpy
+from declearn.test_utils import (
+    assert_dict_equal,
+    assert_json_serializable_dict,
+    to_numpy,
+)
 from declearn.typing import Batch
 from declearn.utils.serialize import (
     msgpack_deserialize,
@@ -154,6 +158,17 @@ class ModelTestSuite:
         )
         assert max_err < 1e-7
 
+    def test_msgpack_serialization(
+        self,
+        test_case: ModelTestCase,
+    ) -> None:
+        """Test that MessagePack-serialization of a Model works properly."""
+        model = test_case.model
+        dump = msgpack_serialize(model)
+        model_bis = msgpack_deserialize(dump)
+        assert isinstance(model_bis, type(model))
+        assert_dict_equal(model.get_config(), model_bis.get_config())
+
     def test_compute_batch_gradients_clipped(
         self,
         test_case: ModelTestCase,
@@ -211,7 +226,7 @@ class ModelTestSuite:
         self,
         test_case: ModelTestCase,
     ) -> None:
-        """Test that computed gradients can be (de)serialized as strings."""
+        """Test that computed gradients can be (de)serialized."""
         model = test_case.model
         batch = test_case.dataset[0]
         grads = model.compute_batch_gradients(batch)
