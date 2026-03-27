@@ -98,7 +98,8 @@ def add_serialization_support(  # noqa: PLR0913
     name: Optional[str] = None,
     overwrite: bool = False,
 ) -> None:
-    """Add or update a (de)serialization support for a custom type.
+    """Register or update (de)serialization support for a custom type under a
+    given serialization format.
 
     Adding (de)serialization support means registering the function used to
     encode objects of the `cls` class to a `fmt`-serializable structure ; and

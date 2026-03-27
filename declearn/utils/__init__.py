@@ -15,10 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# TODO : remove or deprecate Config serialization exports ?
-# (given that the serialization formats involved have changed)
-# FIXME : fix doc on serialization
-"""Shared utils used across declearn.
+"""Shared general utils used across DecLearn.
 
 The functions and classes exposed by this submodule are listed below,
 grouped thematically.
@@ -34,7 +31,6 @@ Tools to create JSON config dumps of objects and instantiate from them.
     Instantiate an object from an ObjectConfig or a JSON file.
 * [serialize_object][declearn.utils.serialize_object]:
     Return an ObjectConfig wrapping a given (supported) object.
-
 
 Types-registration
 ------------------
@@ -53,7 +49,8 @@ Tools to map class constructors to (name, group) string tuples.
 * [register_type][declearn.utils.register_type]:
     Register a type class (as a function or class-decorator).
 
-# FIXME move
+
+# FIXME move / deprecate ?
 JSON-serialization
 ------------------
 Tools to add support for 3rd-party or custom types in JSON files.
@@ -62,14 +59,6 @@ Tools to add support for 3rd-party or custom types in JSON files.
     Function to dump data to a JSON file.
 * [json_load][declearn.utils.json_load]:
     Function to load data from a JSON file.
-
-
-And examples of pre-registered (de)serialization functions:
-
-# FIXME : name pack/unpack_numpy
-* [deserialize_numpy][declearn.utils.deserialize_numpy]
-  and [serialize_numpy][declearn.utils.serialize_numpy]:
-    Pair of functions to (un)pack a numpy ndarray as JSON-serializable data.
 
 Device-policy utils
 -------------------
@@ -106,6 +95,9 @@ Miscellaneous
     Abstract base dataclass for cross-peers data aggregation containers.
 * [TomlConfig][declearn.utils.TomlConfig]:
     Abstract base class to define TOML-parsable configuration containers.
+* [pack_numpy][declearn.utils.pack_numpy]
+  and [unpack_numpy][declearn.utils.unpack_numpy]:
+    Pair of functions to (un)pack a numpy ndarray as serializable data.
 * [dataclass_from_func][declearn.utils.dataclass_from_func]:
     Automatically build a dataclass matching a function's signature.
 * [dataclass_from_init][declearn.utils.dataclass_from_init]:

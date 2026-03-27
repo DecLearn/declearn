@@ -39,7 +39,7 @@ __all__ = [
 
 # JSON serialization utils
 def json_serialize(obj: Any) -> str:
-    """Serialize object to JSON string.
+    """Serialize object to JSON string, using extended types support.
 
     See `declearn.utils.serialize.json_deserialize` for the counterpart method.
     """
@@ -47,7 +47,7 @@ def json_serialize(obj: Any) -> str:
 
 
 def json_deserialize(data: str):
-    """Deserialize JSON string to object.
+    """Deserialize JSON string to object, using extended types support.
 
     See `json_serialize` for the counterpart method.
     """

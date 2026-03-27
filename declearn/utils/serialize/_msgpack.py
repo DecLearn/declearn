@@ -39,7 +39,8 @@ __all__ = [
 
 # MsgPack serialization utils
 def msgpack_serialize(obj: Any) -> bytes:
-    """Serialize object to binary data using MessagePack.
+    """Serialize object to binary data using MessagePack, using extended
+    types support.
 
     See `msgpack_deserialize` for the counterpart
     method.
@@ -48,7 +49,8 @@ def msgpack_serialize(obj: Any) -> bytes:
 
 
 def msgpack_deserialize(data: bytes):
-    """Deserialize binary data to object using MessagePack.
+    """Deserialize binary data to object using MessagePack, using extended
+    types support.
 
     See `msgpack_serialize` for the counterpart
     method.
