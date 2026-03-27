@@ -29,7 +29,6 @@ __all__ = [
 ]
 
 
-# FIXME : doc serialization
 @dataclasses.dataclass
 class Aggregate(metaclass=abc.ABCMeta):
     """Abstract base dataclass for cross-peers data aggregation containers.

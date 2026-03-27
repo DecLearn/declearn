@@ -44,7 +44,6 @@ import msgpack  # type: ignore
 from declearn.utils.serialize import msgpack_deserialize, msgpack_serialize
 from declearn.version import VERSION
 
-# TODO remove deleted methods ?
 __all__ = [
     "Accept",
     "ActionMessage",
