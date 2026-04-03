@@ -28,7 +28,6 @@ from scipy.sparse import spmatrix  # type: ignore
 __all__ = [
     "Batch",
     "DataArray",
-    "SupportsConfig",
 ]
 
 
@@ -53,26 +52,3 @@ This alias covers types supported by [declearn.dataset.utils.save_data_array][]
 and its counterpart [declearn.dataset.utils.load_data_array][], and is hence
 used to annotate some dataset-interfacing tools under [declearn.dataset][].
 """
-
-
-# FIXME : remove ? (not used anymore)
-class SupportsConfig(Protocol, metaclass=ABCMeta):
-    """Protocol for type annotation of objects with get/from_config methods.
-
-    This class is primarily designed to be used for type annotation,
-    but may also be used to implement `get_config` and `from_config`
-    the former of which requires overriding.
-    """
-
-    @abstractmethod
-    def get_config(self) -> Dict[str, Any]:
-        """Return a serializable config dict representing this object."""
-        return {}
-
-    @classmethod
-    def from_config(
-        cls,
-        config: Dict[str, Any],
-    ) -> Self:
-        """Instantiate an object from its serializable config dict."""
-        return cls(**config)

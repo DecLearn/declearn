@@ -20,18 +20,6 @@
 The functions and classes exposed by this submodule are listed below,
 grouped thematically.
 
-# FIXME : remove / deprecate
-Config serialization
---------------------
-Tools to create JSON config dumps of objects and instantiate from them.
-
-* [ObjectConfig][declearn.utils.ObjectConfig]:
-    Dataclass to wrap objects' config and interface JSON dumps.
-* [deserialize_object][declearn.utils.deserialize_object]:
-    Instantiate an object from an ObjectConfig or a JSON file.
-* [serialize_object][declearn.utils.serialize_object]:
-    Return an ObjectConfig wrapping a given (supported) object.
-
 Types-registration
 ------------------
 Tools to map class constructors to (name, group) string tuples.
@@ -48,17 +36,6 @@ Tools to map class constructors to (name, group) string tuples.
     Create a types group from a base class (as a function or class-decorator).
 * [register_type][declearn.utils.register_type]:
     Register a type class (as a function or class-decorator).
-
-
-# FIXME move / deprecate ?
-JSON-serialization
-------------------
-Tools to add support for 3rd-party or custom types in JSON files.
-
-* [json_dump][declearn.utils.json_dump]:
-    Function to dump data to a JSON file.
-* [json_load][declearn.utils.json_load]:
-    Function to load data from a JSON file.
 
 Device-policy utils
 -------------------
@@ -90,7 +67,6 @@ Utils to set up and configure loggers:
 
 Miscellaneous
 -------------
-
 * [Aggregate][declearn.utils.Aggregate]:
     Abstract base dataclass for cross-peers data aggregation containers.
 * [TomlConfig][declearn.utils.TomlConfig]:
@@ -127,9 +103,6 @@ __all__ = [
     "create_types_registry",
     "register_from_attr",
     "register_type",
-    "ObjectConfig",
-    "deserialize_object",
-    "serialize_object",
     "TomlConfig",
 ]
 
@@ -164,12 +137,5 @@ from ._register import (
     create_types_registry,
     register_from_attr,
     register_type,
-)
-
-# TODO : remove or deprecate Config serialization exports ?
-from ._serialize import (
-    ObjectConfig,
-    deserialize_object,
-    serialize_object,
 )
 from ._toml_config import TomlConfig
