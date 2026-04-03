@@ -183,7 +183,6 @@ class Aggregator(Generic[ModelUpdatesT], metaclass=abc.ABCMeta):
             resulting from peers' shared instances' sum-aggregation.
         """
 
-    # FIXME : rename to_serializable ? if so rename also in doc
     def get_config(
         self,
     ) -> Dict[str, Any]:
@@ -196,7 +195,6 @@ class Aggregator(Generic[ModelUpdatesT], metaclass=abc.ABCMeta):
         """
         return {"name": self.name}  # pragma: no cover
 
-    # FIXME : rename from_serializable ?
     @classmethod
     def from_config(
         cls,

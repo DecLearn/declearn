@@ -101,7 +101,7 @@ async def send_websockets_message(
             )
         for srt in range(0, len(bin_msg), CHUNK_LENGTH):
             end = srt + CHUNK_LENGTH
-            await socket.send(bin_msg[srt:end])  # FIXME: perf / copy ?
+            await socket.send(bin_msg[srt:end])  # FIXME: perf, avoid copy ?
         await socket.send(FLAG_STREAM_CLOSE)
     else:
         await socket.send(bin_msg)

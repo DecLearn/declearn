@@ -171,7 +171,6 @@ class Model(Generic[VectorT], metaclass=ABCMeta):
         from client-wise dict.
         """
 
-    # FIXME : rename to_serializable ?
     def get_config(
         self,
         allow_bin: bool = False,
@@ -192,7 +191,6 @@ class Model(Generic[VectorT], metaclass=ABCMeta):
         """
         return {"typekey": self.typekey}
 
-    # FIXME : rename from_serializable ?
     @classmethod
     def from_config(
         cls,

@@ -96,7 +96,7 @@ class Message(metaclass=ABCMeta):
         len_tk_byte = len(typekey_bytes).to_bytes(1, "big")
         return len_tk_byte + typekey_bytes + payload
 
-    # TODO : perf ! optimize / change header system to avoid message copy
+    # TODO : perf, optimize / change header system to avoid message copy
     @staticmethod
     def parse_typekey_header(bin_msg: bytes) -> Tuple[str, bytes]:
         """Split a binary message into its typekey header and remaining
