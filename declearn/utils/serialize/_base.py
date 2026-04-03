@@ -55,8 +55,6 @@ _DESERIAL_REGISTRY: Dict[SerialFmt, Dict[str, SerialSpec]] = {
 name (key in the registry) to its serialization spec.
 """
 
-T = TypeVar("T")
-
 
 class SerialWrapper(TypedDict):
     __type__: str
@@ -64,6 +62,9 @@ class SerialWrapper(TypedDict):
 
     dump: Any
     """Serializable dump of the object."""
+
+
+T = TypeVar("T")
 
 
 @dataclasses.dataclass

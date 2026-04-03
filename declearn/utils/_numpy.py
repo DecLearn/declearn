@@ -32,13 +32,14 @@ __all__ = [
 def pack_numpy(
     array: np.ndarray, allow_bin: bool = False
 ) -> Tuple[Union[str, bytes], str, List[int]]:
-    """Serialize a numpy array to (data, dtype, shape).
+    """Pack a numpy array to a serializable tuple (data, dtype, shape).
 
     Parameters
     ----------
     array : np.ndarray
     allow_bin : bool
-        If True, use raw bytes. Otherwise, use hex string.
+        If True, encode data in raw bytes in the packed tuple.
+        Otherwise, encode data in hexadecimal string.
 
     Returns
     -------
@@ -50,24 +51,24 @@ def pack_numpy(
 
 
 def unpack_numpy(
-    data: Tuple[Union[str, bytes], str, List[int]], allow_bin: bool = False
+    packed: Tuple[Union[str, bytes], str, List[int]], allow_bin: bool = False
 ) -> np.ndarray:
-    """Deserialize (data, dtype, shape) into a numpy array.
+    """Unpack a serializable tuple (data, dtype, shape) into a numpy array.
 
     Parameters
     ----------
-    data : tuple
+    packed : tuple
     allow_bin : bool
-        If True, interpret data as raw bytes. Otherwise, as hex string.
+        If True, interpret data as raw bytes. Otherwise, as hexadecimal string.
 
     Returns
     -------
     np.ndarray
     """
-    dump: Union[str, bytes] = data[0]
+    dump: Union[str, bytes] = packed[0]
     buffer = dump if allow_bin else bytes.fromhex(dump)  # type: ignore
-    array = np.frombuffer(buffer, dtype=data[1])
-    return array.reshape(data[2]).copy()
+    array = np.frombuffer(buffer, dtype=packed[1])
+    return array.reshape(packed[2]).copy()
 
 
 add_serialization_support(

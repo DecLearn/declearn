@@ -179,7 +179,7 @@ class Checkpointer:
         """Save a Model's configuration and/or weights to files.
 
         Configuration is saved to a JSON file.
-        States/weights are saved in a MessagePack file.
+        States/weights are saved to a MessagePack file.
 
         Also garbage-collect existing files based on self.max_history.
 
@@ -218,7 +218,10 @@ class Checkpointer:
         state: bool = True,
         timestamp: Optional[str] = None,
     ) -> Optional[str]:
-        """Save an Optimizer's configuration and/or state to JSON files.
+        """Save an Optimizer's configuration and/or state to files.
+
+        Configuration is saved to a JSON file.
+        State is saved to a MessagePack file.
 
         Parameters
         ----------
@@ -242,7 +245,7 @@ class Checkpointer:
             config=optimizer.get_config() if config else None,
             states=optimizer.get_state() if state else None,
             timestamp=timestamp,
-            fmt_states="json",
+            fmt_states="msgpack",
         )
 
     def _save_object(
