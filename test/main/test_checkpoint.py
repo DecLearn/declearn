@@ -213,7 +213,7 @@ class TestCheckpointer:
         if state:
             assert isinstance(timestamp, str)
             state_path = os.path.join(
-                checkpointer.folder, f"optimizer_state_{timestamp}.json"
+                checkpointer.folder, f"optimizer_state_{timestamp}.mpk"
             )
             assert Path(state_path).is_file()
         else:
@@ -285,7 +285,7 @@ class TestCheckpointer:
         # Verify that state and metric files exist as expected.
         path = os.path.join(tmp_path, f"model_state_{timestamp}.mpk")
         assert os.path.isfile(path)
-        path = os.path.join(tmp_path, f"optimizer_state_{timestamp}.json")
+        path = os.path.join(tmp_path, f"optimizer_state_{timestamp}.mpk")
         assert os.path.isfile(path)
         assert os.path.isfile(os.path.join(tmp_path, "metrics.csv"))
         assert os.path.isfile(os.path.join(tmp_path, "metrics.json"))

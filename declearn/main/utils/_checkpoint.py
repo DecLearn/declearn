@@ -442,6 +442,8 @@ class Checkpointer:
     ) -> Model:
         """Instantiate a Model and/or reset its weights from a save file.
 
+        If `load_state`, state is expected to be in the MessagePack format.
+
         Parameters
         ----------
         model: Model or None, default=None
@@ -485,6 +487,8 @@ class Checkpointer:
     ) -> Optimizer:
         """Instantiate an Optimizer and/or reset its state from a save file.
 
+        If `load_state`, state is expected to be in the MessagePack format.
+
         Parameters
         ----------
         optimizer: Optimizer or None, default=None
@@ -511,7 +515,7 @@ class Checkpointer:
         # Load the optimizer state and assign it.
         if load_state:
             state = self._load_state(
-                "optimizer", timestamp=timestamp, fmt_states="json"
+                "optimizer", timestamp=timestamp, fmt_states="msgpack"
             )
             optimizer.set_state(state)
         return optimizer
