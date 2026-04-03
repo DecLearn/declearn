@@ -689,9 +689,11 @@ def register_vector_type(
         # Register the Vector type. Note: this type-checks cls.
         register_type(cls, name=name, group="Vector")
         # Add support for (de)serialization, relying on (un)pack.
-        add_serialization_support(cls, "json", cls.pack, cls.unpack, name=name)
         add_serialization_support(
-            cls, "msgpack", cls.pack, cls.unpack, name=name
+            cls, "json", cls.pack, cls.unpack, name=cls.__name__
+        )
+        add_serialization_support(
+            cls, "msgpack", cls.pack, cls.unpack, name=cls.__name__
         )
         # Make the subclass buildable through `Vector.build(coefs)`.
         for v_typ in v_types:
