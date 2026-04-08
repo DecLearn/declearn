@@ -1109,7 +1109,7 @@ class FederatedServer:
         self.logger.info("Notifying clients that training is over.")
         await self.netwk.broadcast_message(message)
         if self.ckptr:
-            path = f"{self.ckptr.folder}/model_state_best.json"
+            path = f"{self.ckptr.folder}/model_state_best.mpk"
             self.logger.info("Checkpointing final weights under %s.", path)
             self.model.set_weights(message.weights, trainable=True)
             self.ckptr.save_model(self.model, timestamp="best")

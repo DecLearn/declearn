@@ -689,7 +689,7 @@ class FederatedClient:
             message.loss,
         )
         if self.ckptr:
-            path = os.path.join(self.ckptr.folder, "model_state_best.json")
+            path = os.path.join(self.ckptr.folder, "model_state_best.mpk")
             self.logger.info("Checkpointing final weights under %s.", path)
             assert self.trainmanager is not None  # for mypy
             self.trainmanager.model.set_weights(
