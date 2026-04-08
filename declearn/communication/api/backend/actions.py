@@ -36,30 +36,22 @@ from __future__ import annotations
 
 import abc
 import dataclasses
-import json
 from typing import Optional
 
 import msgpack  # type: ignore
 
 from declearn.utils.serialize import msgpack_deserialize, msgpack_serialize
-from declearn.version import VERSION
 
 __all__ = [
     "Accept",
     "ActionMessage",
     "Drop",
     "Join",
-    "LegacyReject",
-    "LegacyMessageError",
     "Ping",
     "Recv",
     "Reject",
     "Send",
 ]
-
-
-class LegacyMessageError(Exception):
-    """Custom exception to denote legacy Message being received."""
 
 
 @dataclasses.dataclass
@@ -99,8 +91,18 @@ class ActionMessage(metaclass=abc.ABCMeta):  # noqa: B024
         """
         try:
             data = msgpack_deserialize(bin_msg)
-        except (msgpack.UnpackException, msgpack.ExtraData, TypeError) as exc:
+        except (msgpack.UnpackException, msgpack.ExtraData) as exc:
             raise ValueError("Failed to parse 'ActionMessage' bytes.") from exc
+        except TypeError as exc:
+            err_msg = "Failed to parse 'ActionMessage'."
+            if not isinstance(bin_msg, bytes):
+                err_msg += f" Bytes expected, not '{type(bin_msg).__name__}'."
+            if isinstance(bin_msg, str):
+                err_msg += (
+                    " Make sure to use the same DecLearn version everywhere."
+                )
+            raise ValueError(err_msg) from exc
+
         if "action" not in data:
             raise ValueError(
                 "Failed to parse 'ActionMessage' bytes: no 'action' key."
@@ -174,23 +176,3 @@ _ACTION_CLASSES = [
     Send,
 ]
 ACTION_MESSAGES = {cls.__name__.lower(): cls for cls in _ACTION_CLASSES}
-
-
-# TODO : remove when handle version / byte-string incompatibilities
-@dataclasses.dataclass
-class LegacyReject(ActionMessage):
-    """Server action to reject a legacy client's (registration) message.
-
-    This message will be serialized in a way that is compatible with the
-    legacy message parser, but not with the current one.
-    """
-
-    # TODO : remove ?
-    def to_string(
-        self,
-    ) -> str:
-        message = (
-            "Cannot communicate due to the DecLearn version in use. "
-            f"Please update to `declearn ~= {VERSION}`."
-        )
-        return json.dumps({"typekey": "error", "message": message})

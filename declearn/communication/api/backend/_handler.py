@@ -29,8 +29,6 @@ from declearn.communication.api.backend.actions import (
     ActionMessage,
     Drop,
     Join,
-    LegacyMessageError,
-    LegacyReject,
     Ping,
     Recv,
     Reject,
@@ -126,9 +124,6 @@ class MessagesHandler:
                 repr(exc),
             )
             return Reject(flags.INVALID_MESSAGE)
-        except LegacyMessageError as exc:
-            self.logger.info(repr(exc))
-            return LegacyReject()
         # Case: join request from a (new) client. Handle it.
         if isinstance(message, Join):
             return await self._handle_join_request(message, context)
