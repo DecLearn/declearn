@@ -99,9 +99,11 @@ async def send_websockets_message(
                 "Message required chunking, but chunks-streaming was "
                 "disallowed by the remote endpoint."
             )
+        # Create a memoryview to chunk without allocating new byte copies.
+        view = memoryview(bin_msg)
         for srt in range(0, len(bin_msg), CHUNK_LENGTH):
             end = srt + CHUNK_LENGTH
-            await socket.send(bin_msg[srt:end])  # FIXME: perf, avoid copy ?
+            await socket.send(view[srt:end])
         await socket.send(FLAG_STREAM_CLOSE)
     else:
         await socket.send(bin_msg)
