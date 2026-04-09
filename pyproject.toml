@@ -164,7 +164,7 @@ dev = [
 
 [project.urls]
 homepage = "https://magnet.gitlabpages.inria.fr/declearn/docs"
-repository = "https://gitlab.inria.fr/magnet/declearn/declearn2.git"
+repository = "https://gitlab.inria.fr/magnet/declearn/declearn.git"
 
 [project.scripts]
 declearn-quickrun = "declearn.quickrun._run:main"
