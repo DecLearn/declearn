@@ -17,7 +17,7 @@
 
 """Tools for MessagePack-(de)serialization."""
 
-from typing import Any, Dict, List, Tuple, Type
+from typing import Any, Dict, List, Tuple, Type, Union
 
 import msgpack  # type: ignore
 
@@ -48,7 +48,7 @@ def msgpack_serialize(obj: Any) -> bytes:
     return msgpack.packb(obj, default=_msgpack_encode)
 
 
-def msgpack_deserialize(data: bytes):
+def msgpack_deserialize(data: Union[bytes, memoryview]):
     """Deserialize binary data to object using MessagePack, using extended
     types support.
 

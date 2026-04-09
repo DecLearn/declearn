@@ -94,13 +94,13 @@ class Message(metaclass=ABCMeta):
         payload = msgpack_serialize(data)
         typekey_bytes = self.typekey.encode("utf-8")
         len_tk_byte = len(typekey_bytes).to_bytes(1, "big")
-        return len_tk_byte + typekey_bytes + payload
+        return b"".join((len_tk_byte, typekey_bytes, payload))
 
-    # TODO : perf, optimize / change header system to avoid message copy
     @staticmethod
-    def parse_typekey_header(bin_msg: bytes) -> Tuple[str, bytes]:
-        """Split a binary message into its typekey header and remaining
-        payload.
+    def parse_typekey_header(bin_msg: bytes) -> Tuple[str, int]:
+        """Parse the typekey header of a binary message.
+
+        Also return the index at which the payload starts in the binary data.
 
         Parameters
         ----------
@@ -110,14 +110,14 @@ class Message(metaclass=ABCMeta):
 
         Returns
         -------
-        Tuple[str, bytes]
+        Tuple[str, int]
             - `typekey`: message type identifier.
-            - `payload`: binary data with the header stripped.
+            - `payload_start`: payload starting index.
         """
         typekey_len = bin_msg[0]
-        typekey = bin_msg[1 : 1 + typekey_len].decode("utf-8")
-        payload = bin_msg[1 + typekey_len :]
-        return typekey, payload
+        payload_start = 1 + typekey_len
+        typekey = bin_msg[1:payload_start].decode("utf-8")
+        return typekey, payload_start
 
 
 MessageT = TypeVar("MessageT", bound=Message)
@@ -133,7 +133,18 @@ class SerializedMessage(Generic[MessageT]):
     non-trivial time and memory usage, assignment of data on a GPU,
     etc.).
 
-    Usage:
+    Attributes
+    ----------
+    message_cls: Type[MessageT]
+        Type of the wrapped message, must be a `Message` subclass.
+    bin_data: bytes
+        Binary data containing the serialized message (header and payload).
+    payload_start: int
+        Index at which the payload starts in the binary data.
+        Used to efficiently deserialize the payload directly from `bin_data`.
+
+    Usage
+    -----
     ```
     >>> proto = SerializedMessage.from_bin_message(bin_msg)
     >>> assert issubclass(proto.message_cls, ExpectedMessageType)
@@ -145,10 +156,12 @@ class SerializedMessage(Generic[MessageT]):
         self,
         message_cls: Type[MessageT],
         bin_data: bytes,
+        payload_start: int,
     ) -> None:
         """Instantiate the serialized message container."""
         self.message_cls = message_cls
         self.bin_data = bin_data
+        self.payload_start = payload_start
 
     @property
     def typekey(self) -> str:
@@ -160,7 +173,10 @@ class SerializedMessage(Generic[MessageT]):
     ) -> MessageT:
         """Deserialize this message into a 'self.message_cls' instance."""
         try:
-            data = msgpack_deserialize(self.bin_data)
+            # Use a memoryview to avoid allocating byte copies when extracting
+            # the payload.
+            view = memoryview(self.bin_data)
+            data = msgpack_deserialize(view[self.payload_start :])
         except (msgpack.UnpackException, msgpack.ExtraData, TypeError) as exc:
             raise ValueError(
                 f"Failed to decode MessagePack dump of '{self.message_cls}' "
@@ -175,7 +191,7 @@ class SerializedMessage(Generic[MessageT]):
     ) -> Self:
         """Parse a binary-serialized message into a `SerializedMessage`."""
         try:
-            typekey, payload = Message.parse_typekey_header(bin_msg)
+            typekey, payload_start = Message.parse_typekey_header(bin_msg)
         except (IndexError, UnicodeDecodeError) as exc:
             raise TypeError(
                 "Input string appears not to be a Message dump."
@@ -193,5 +209,6 @@ class SerializedMessage(Generic[MessageT]):
             )
         return cls(
             message_cls=message_cls,  # type: ignore
-            bin_data=payload,
+            bin_data=bin_msg,
+            payload_start=payload_start,
         )
