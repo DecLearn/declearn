@@ -157,7 +157,6 @@ class TorchModel(Model):
             model: Union[str, bytes]
             if allow_bin:
                 model = buffer.getbuffer().tobytes()
-                # FIXME : perf, avoid bytes copy ?
             else:
                 model = buffer.getbuffer().hex()
         with io.BytesIO() as buffer:
@@ -165,7 +164,6 @@ class TorchModel(Model):
             loss: Union[str, bytes]
             if allow_bin:
                 loss = buffer.getbuffer().tobytes()
-                # FIXME : perf, avoid bytes copy ?
             else:
                 loss = buffer.getbuffer().hex()
         return {
