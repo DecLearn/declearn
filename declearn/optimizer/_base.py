@@ -619,6 +619,6 @@ add_serialization_support(
     Optimizer,
     "msgpack",
     lambda obj: obj.get_config(),
-    lambda obj: Optimizer.from_config(obj),
+    Optimizer.from_config,
     "Optimizer",
 )

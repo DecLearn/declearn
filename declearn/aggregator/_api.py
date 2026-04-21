@@ -143,7 +143,7 @@ class Aggregator(Generic[ModelUpdatesT], metaclass=abc.ABCMeta):
                 cls,
                 "msgpack",
                 lambda obj: obj.get_config(),
-                lambda obj: cls.from_config(obj),
+                cls.from_config,
                 cls.__name__,
             )
 

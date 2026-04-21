@@ -374,13 +374,13 @@ class Vector(Generic[T], metaclass=ABCMeta):  # noqa : PLW1641 (because mutable 
         """
         # Case when operating on two Vector objects.
         if isinstance(other, tuple(self.compatible_vector_types)):
-            if self.coefs.keys() != other.coefs.keys():
+            if self.coefs.keys() != other.coefs.keys():  # type: ignore
                 raise KeyError(
                     f"Cannot {func.__name__} Vectors "
                     "with distinct coefficient names."
                 )
             coefs = {
-                key: func(self.coefs[key], other.coefs[key])
+                key: func(self.coefs[key], other.coefs[key])  # type: ignore
                 for key in self.coefs
             }
             return type(self)(coefs)
