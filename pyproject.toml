@@ -47,7 +47,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-all = [  # all non-dev and non-example extra dependencies
+# All optional dependencies for Declearn usage
+# (does not include development and example-related dependencies)
+all = [
     "dm-haiku >= 0.0.15",
     "flax ~= 0.12",
     "grpcio >= 1.45",
@@ -55,8 +57,7 @@ all = [  # all non-dev and non-example extra dependencies
     "opacus ~= 1.4",
     "protobuf >= 3.19",
     "tensorflow ~= 2.12",
-    "torch >= 2.0, < 2.11",
-    # upper bound because torch 2.11 sets cuda 13 as the default version
+    "torch ~= 2.0",
     "websockets >= 10.1, < 14.0",
 ]
 # thematically grouped dependencies (part of "all")
@@ -77,8 +78,7 @@ tensorflow = [
     "tensorflow ~= 2.12",
 ]
 torch = [
-    "torch >= 2.0, < 2.11",
-    # upper bound because torch 2.11 sets cuda 13 as the default version
+    "torch ~= 2.0",
 ]
 websockets = [
     "websockets >= 10.1, < 14.0",
