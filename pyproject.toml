@@ -76,7 +76,8 @@ tensorflow = [
     "tensorflow ~= 2.12",
 ]
 torch = [
-    "torch ~= 2.0",
+    "torch >= 2.0, < 2.11",
+    # starting from torch 2.11, default cuda version is cuda 13
 ]
 websockets = [
     "websockets >= 10.1, < 14.0",
