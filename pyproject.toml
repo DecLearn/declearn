@@ -55,7 +55,8 @@ all = [  # all non-dev and non-example extra dependencies
     "opacus ~= 1.4",
     "protobuf >= 3.19",
     "tensorflow ~= 2.12",
-    "torch ~= 2.0",
+    "torch >= 2.0, < 2.11",
+    # upper bound because torch 2.11 sets cuda 13 as the default version
     "websockets >= 10.1, < 14.0",
 ]
 # thematically grouped dependencies (part of "all")
@@ -77,7 +78,7 @@ tensorflow = [
 ]
 torch = [
     "torch >= 2.0, < 2.11",
-    # starting from torch 2.11, default cuda version is cuda 13
+    # upper bound because torch 2.11 sets cuda 13 as the default version
 ]
 websockets = [
     "websockets >= 10.1, < 14.0",
