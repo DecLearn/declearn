@@ -109,6 +109,13 @@ class Aggregate(metaclass=abc.ABCMeta):
                 decode=cls.from_dict,
                 name=name,
             )
+            add_serialization_support(
+                cls,
+                fmt="json",
+                encode=cls.to_dict,
+                decode=cls.from_dict,
+                name=name,
+            )
             register_type(cls, name=cls.__name__, group=cls._group_key)
 
     def to_dict(
