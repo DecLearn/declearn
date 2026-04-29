@@ -159,9 +159,10 @@ def _encode(obj: Any, fmt: SerialFmt) -> SerialWrapper:
     format.
 
     This function is designed to be used by an encoding hook in
-    a serialization function (e.g. msgpack.packb). It provides support for
-    object types with custom (de)coding protocols registered (for the `fmt`
-    format) using `declearn.utils.serialize.add_serialization_support`.
+    a serialization function.
+    It provides support for object types with custom (de)coding protocols
+    registered (for the `fmt` format) using
+    `declearn.utils.serialize.add_serialization_support`.
 
     Returns
     -------
@@ -184,9 +185,10 @@ def _decode(obj: Dict[str, Any], fmt: SerialFmt) -> Any:
     the given format.
 
     This function is designed to be used by a decoding hook in
-    a deserialization function (e.g. msgpack.unpackb). It provides support
-    for object types with custom (de)coding protocols registered (for the `fmt`
-    format) using `declearn.utils.serialize.add_serialization_support`.
+    a deserialization function.
+    It provides support for object types with custom (de)coding protocols
+    registered (for the `fmt` format) using
+    `declearn.utils.serialize.add_serialization_support`.
     """
     # If 'obj' does not conform to SerialWrapper format, return it as-is.
     if not isinstance(obj, dict) or (set(obj.keys()) != {"__type__", "dump"}):

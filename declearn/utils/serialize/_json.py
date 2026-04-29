@@ -90,10 +90,20 @@ def json_load(
 
 
 def _json_encode(obj: Any) -> SerialWrapper:
+    """Encode an object of non-standard type for JSON serialization.
+
+    This function is designed to be used as the `default` encoding hook in
+    the `json.dump` function.
+    """
     return _encode(obj, fmt="json")
 
 
 def _json_decode(obj: Dict[str, Any]) -> Any:
+    """Decode an object of non-standard type as part of JSON deserialization.
+
+    This function is designed to be used as the `object_hook` decoding hook in
+    the `json.load` function.
+    """
     return _decode(obj, fmt="json")
 
 

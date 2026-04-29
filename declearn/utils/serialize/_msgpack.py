@@ -90,10 +90,21 @@ def msgpack_load(
 
 
 def _msgpack_encode(obj: Any) -> SerialWrapper:
+    """Encode an object of non-standard type for MessagePack serialization.
+
+    This function is designed to be used as the `default` encoding hook in
+    the `msgpack.packb` function.
+    """
     return _encode(obj, fmt="msgpack")
 
 
 def _msgpack_decode(obj: Dict[str, Any]) -> Any:
+    """Decode an object of non-standard type as part of MessagePack
+    deserialization.
+
+    This function is designed to be used as the `object_hook` decoding hook in
+    the `msgpack.unpackb` function.
+    """
     return _decode(obj, fmt="msgpack")
 
 
