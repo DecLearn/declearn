@@ -176,7 +176,7 @@ client_idx = int(client_name.rsplit("_", 1)[-1])
 secagg = parse_secagg_config_client(
     secagg_type="masking",
     id_keys=IdentityKeys(
-        prv_key=f"client_{client_idx}.pem",
+        prv_key=f"private_{client_idx}.pem",
         trusted="trusted_public.keys",
     )
 )

@@ -48,7 +48,7 @@ dependencies = [
 
 [project.optional-dependencies]
 # All optional dependencies for Declearn usage
-# (does not include development and example-related dependencies)
+# (does not include development and example-related dependencies).
 all = [
     "dm-haiku >= 0.0.15",
     "flax ~= 0.12",
@@ -60,7 +60,8 @@ all = [
     "torch ~= 2.0",
     "websockets >= 10.1, < 14.0",
 ]
-# thematically grouped dependencies (part of "all")
+
+# Thematically grouped dependencies (part of "all").
 dp = [
     "opacus ~= 1.4",
 ]
@@ -84,19 +85,17 @@ websockets = [
     "websockets >= 10.1, < 14.0",
 ]
 
-# examples-related dependencies
+# Examples-related dependencies.
+g5k = [
+    "enoslib ~= 10.5",
+]
 
 nlp = [
     "datasets ~= 4.0",
     "transformers ~= 4.57",
 ]
 
-g5k = [
-    "enoslib ~= 10.5",
-]
-
-
-# docs-building dependencies
+# Docs-building dependencies.
 docs = [
     "griffe ~= 1.0",
     "mkdocstrings[python] ~= 0.8",
@@ -105,7 +104,7 @@ docs = [
     "mkdocs-material ~= 9.1",
 ]
 
-# test-specific dependencies
+# Test-specific dependencies.
 tests = [
     "mypy ~= 1.0",
     "pytest ~= 8.4",
@@ -115,7 +114,7 @@ tests = [
     "tox ~= 4.31",
 ]
 
-# all dev dependencies : lint, test, doc, build
+# All dev dependencies : lint, test, doc, build.
 dev = [
     "build>=1.3.0",
     "griffe ~= 1.0",
@@ -137,7 +136,7 @@ dev = [
 [dependency-groups]
 # (note : dependency groups are usable with pip >= 25.1 and uv)
 
-# all dev dependencies : lint, test, doc, build
+# All dev dependencies : lint, test, doc, build.
 dev = [
     "build>=1.3.0",
     "griffe ~= 1.0",
@@ -153,7 +152,8 @@ dev = [
     "pytest-cov ~= 7.0",
     "ruff ~= 0.14",
     "tox ~= 4.31",
-    # python stubs for mypy (when using uv, it is easier to install them explicitly, rather than via mypy)
+    # Python stubs for mypy (when using uv, it is easier to install them
+    # explicitly, rather than via mypy).
     "pandas-stubs",
     "scipy-stubs",
     "types-grpcio",
@@ -174,11 +174,11 @@ declearn-split = "declearn.dataset._split_data:main"
 
 # TOOLS
 [tool.coverage.run]
-# enable coverage collection within multiprocessing
+# Enable coverage collection within multiprocessing.
 concurrency = ["multiprocessing"]
 parallel = true
 sigterm = true
-# define rules to select the code files that need covering
+# Define rules to select the code files that need covering.
 source_pkgs = ["declearn"]
 omit = [
     "**/grpc/protobufs/*.py",  # auto-generated protobuf code files
@@ -230,18 +230,18 @@ exclude = [
     "node_modules",
     "site-packages",
     "venv",
-    "*_pb2*py" # auto-generated protobuf code files
+    "*_pb2*py", # auto-generated protobuf code files
 ]
 
 # Same as Black.
 line-length = 79
 indent-width = 4
 
-# Assume Python 3.11
+# Assume Python 3.11.
 target-version = "py311"
 
 [tool.ruff.lint]
-# Rules to be taken into account
+# Rules to be taken into account.
 select = [
     "E4", "E7", "E9",  # pycodestyle
     "E501", # line-too-long

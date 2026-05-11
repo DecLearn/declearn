@@ -70,7 +70,7 @@ conda activate declearn
 _Note: at the moment, conda installation is not recommended, because the
 package's installation is made slightly harder due to some dependencies being
 installable via conda while other are only available via pip/pypi, which
-caninstall lead to dependency-tracking trouble._
+can install lead to dependency-tracking trouble._
 
 ## Installation
 
