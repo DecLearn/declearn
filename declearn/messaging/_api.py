@@ -18,16 +18,19 @@
 """Base API to define messages for DecLearn processes."""
 
 import dataclasses
-import json
 from abc import ABCMeta
-from typing import Any, ClassVar, Dict, Generic, Self, Type, TypeVar
+from typing import Any, ClassVar, Dict, Generic, Self, Tuple, Type, TypeVar
+
+import msgpack  # type: ignore
 
 from declearn.utils import (
     access_registered,
     create_types_registry,
-    json_pack,
-    json_unpack,
     register_from_attr,
+)
+from declearn.utils.serialize import (
+    msgpack_deserialize,
+    msgpack_serialize,
 )
 
 __all__ = [
@@ -41,7 +44,7 @@ class Message(metaclass=ABCMeta):
     """Abstract base dataclass to define parsable messages.
 
     A 'Message' is merely an arbitrary data structure that implements
-    conversion to and from a JSON-serializable dict, and is associated
+    conversion to and from a serializable dict, and is associated
     with a unique `typekey` string class attribute under which it is
     type-registered.
 
@@ -68,23 +71,53 @@ class Message(metaclass=ABCMeta):
             register_from_attr(cls, "typekey", group="Message")
 
     def to_kwargs(self) -> Dict[str, Any]:
-        """Return a JSON-serializable dict representation of this message."""
-        # NOTE: override this method to serialize attributes
-        #       that are not handled by declearn.utils.json_unpack
+        """Return a serializable dict representation of this message."""
         return dataclasses.asdict(self)
 
     @classmethod
     def from_kwargs(cls, **kwargs: Any) -> Self:
-        """Parse the message from JSON-deserialized attributes."""
-        # NOTE: override this method to de-serialize attributes
-        #       that are not handled by declearn.utils.json_pack
+        """Parse the message from deserialized attributes."""
         return cls(**kwargs)
 
-    def to_string(self) -> str:
-        """Convert the message to a JSON-serialized string."""
+    def serialize(self) -> bytes:
+        """Convert the message to MessagePack-serialized bytes.
+
+        A header is added to the MessagePack payload:
+        - one byte to encode the length of the binary-encoded typekey
+        - the binary-encoded typekey
+
+        This header will allow to retrieve the Message's typekey value without
+        the need to fully deserialize the Message. Which is useful in our
+        deserialization control system.
+        """
         data = self.to_kwargs()
-        dump = json.dumps(data, default=json_pack)
-        return self.typekey + "\n" + dump
+        payload = msgpack_serialize(data)
+        typekey_bytes = self.typekey.encode("utf-8")
+        len_tk_byte = len(typekey_bytes).to_bytes(1, "big")
+        return b"".join((len_tk_byte, typekey_bytes, payload))
+
+    @staticmethod
+    def parse_typekey_header(bin_msg: bytes) -> Tuple[str, int]:
+        """Parse the typekey header of a binary message.
+
+        Also return the index at which the payload starts in the binary data.
+
+        Parameters
+        ----------
+        bin_msg:
+            Binary message with format:
+            [1-byte length][typekey string][payload].
+
+        Returns
+        -------
+        Tuple[str, int]
+            - `typekey`: message type identifier.
+            - `payload_start`: payload starting index.
+        """
+        typekey_len = bin_msg[0]
+        payload_start = 1 + typekey_len
+        typekey = bin_msg[1:payload_start].decode("utf-8")
+        return typekey, payload_start
 
 
 MessageT = TypeVar("MessageT", bound=Message)
@@ -100,9 +133,20 @@ class SerializedMessage(Generic[MessageT]):
     non-trivial time and memory usage, assignment of data on a GPU,
     etc.).
 
-    Usage:
+    Attributes
+    ----------
+    message_cls: Type[MessageT]
+        Type of the wrapped message, must be a `Message` subclass.
+    bin_data: bytes
+        Binary data containing the serialized message (header and payload).
+    payload_start: int
+        Index at which the payload starts in the binary data.
+        Used to efficiently deserialize the payload directly from `bin_data`.
+
+    Usage
+    -----
     ```
-    >>> proto = SerializedMessage.from_message_string(string)
+    >>> proto = SerializedMessage.from_bin_message(bin_msg)
     >>> assert issubclass(proto.message_cls, ExpectedMessageType)
     >>> message = proto.deserialize()  # type: `proto.message_cls`
     ```
@@ -111,11 +155,13 @@ class SerializedMessage(Generic[MessageT]):
     def __init__(
         self,
         message_cls: Type[MessageT],
-        string_data: str,
+        bin_data: bytes,
+        payload_start: int,
     ) -> None:
         """Instantiate the serialized message container."""
         self.message_cls = message_cls
-        self.string_data = string_data
+        self.bin_data = bin_data
+        self.payload_start = payload_start
 
     @property
     def typekey(self) -> str:
@@ -127,22 +173,26 @@ class SerializedMessage(Generic[MessageT]):
     ) -> MessageT:
         """Deserialize this message into a 'self.message_cls' instance."""
         try:
-            data = json.loads(self.string_data, object_hook=json_unpack)
-        except json.JSONDecodeError as exc:
+            # Use a memoryview to avoid allocating byte copies when extracting
+            # the payload.
+            view = memoryview(self.bin_data)
+            data = msgpack_deserialize(view[self.payload_start :])
+        except (msgpack.UnpackException, msgpack.ExtraData, TypeError) as exc:
             raise ValueError(
-                f"Failed to decode JSON dump of '{self.message_cls}' message."
+                f"Failed to decode MessagePack dump of '{self.message_cls}' "
+                "message."
             ) from exc
         return self.message_cls.from_kwargs(**data)
 
     @classmethod
-    def from_message_string(
+    def from_bin_message(
         cls,
-        string: str,
+        bin_msg: bytes,
     ) -> Self:
-        """Parse a serialized message string into a 'SerializedMessage'."""
+        """Parse a binary-serialized message into a `SerializedMessage`."""
         try:
-            typekey, string_data = string.split("\n", 1)
-        except ValueError as exc:
+            typekey, payload_start = Message.parse_typekey_header(bin_msg)
+        except (IndexError, UnicodeDecodeError) as exc:
             raise TypeError(
                 "Input string appears not to be a Message dump."
             ) from exc
@@ -159,5 +209,6 @@ class SerializedMessage(Generic[MessageT]):
             )
         return cls(
             message_cls=message_cls,  # type: ignore
-            string_data=string_data,
+            bin_data=bin_msg,
+            payload_start=payload_start,
         )

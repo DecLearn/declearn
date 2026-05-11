@@ -338,7 +338,9 @@ class SklearnSGDModel(Model):
 
     def get_config(
         self,
+        allow_bin: bool = False,
     ) -> Dict[str, Any]:
+        base_config = super().get_config()
         is_clf = isinstance(self._model, SGDClassifier)
         data_info: Optional[Dict[str, Any]] = None
         if hasattr(self._model, "coef_"):
@@ -350,6 +352,7 @@ class SklearnSGDModel(Model):
         else:
             dtype = self._dtype
         return {
+            **base_config,
             "kind": "classifier" if is_clf else "regressor",
             "params": self._model.get_params(),
             "data_info": data_info,
@@ -360,6 +363,7 @@ class SklearnSGDModel(Model):
     def from_config(
         cls,
         config: Dict[str, Any],
+        allow_bin: bool = False,
     ) -> Self:
         """Instantiate a SklearnSGDModel from a configuration dict."""
         for key in ("kind", "params"):

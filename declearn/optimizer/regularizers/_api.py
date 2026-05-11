@@ -146,7 +146,7 @@ class Regularizer(metaclass=ABCMeta):
     def get_config(
         self,
     ) -> Dict[str, Any]:
-        """Return the regularizer's JSON-serializable dict configuration."""
+        """Return the regularizer's serializable dict configuration."""
         return {"alpha": self.alpha}
 
     @classmethod

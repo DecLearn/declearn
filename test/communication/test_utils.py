@@ -41,16 +41,27 @@ class SimpleMessage(Message, register=False):  # type: ignore[call-arg]
     content: str
 
 
+def test_message_parse_typekey_header():
+    """Test 'Message.parse_typekey_header' static method."""
+    message = SimpleMessage("Hello World !")
+    bin_msg = message.serialize()
+    typekey, payload_start = Message.parse_typekey_header(bin_msg)
+    assert typekey == "simple"
+    srm = SerializedMessage(type(message), bin_msg, payload_start)
+    assert srm.deserialize() == message
+
+
 @pytest.mark.asyncio
 async def test_verify_client_messages_validity_expected_simple():
     """Test 'verify_client_messages_validity' with valid messages."""
     # Setup simple messages and have the server except them.
     netwk = mock.create_autospec(NetworkServer, instance=True)
     messages = {f"client_{i}": SimpleMessage(f"message_{i}") for i in range(3)}
-    received = {
-        key: SerializedMessage(type(val), val.to_string().split("\n", 1)[1])
-        for key, val in messages.items()
-    }
+    received = {}
+    for cli, msg in messages.items():
+        bin_msg = msg.serialize()
+        payload_start = Message.parse_typekey_header(bin_msg)[1]
+        received[cli] = SerializedMessage(type(msg), bin_msg, payload_start)
     results = await verify_client_messages_validity(
         netwk=netwk, received=received, expected=SimpleMessage
     )
@@ -66,10 +77,11 @@ async def test_verify_client_messages_validity_expected_error():
     # Setup simple messages and have the server except them.
     netwk = mock.create_autospec(NetworkServer, instance=True)
     messages = {f"client_{i}": Error(f"message_{i}") for i in range(3)}
-    received = {
-        key: SerializedMessage(type(val), val.to_string().split("\n", 1)[1])
-        for key, val in messages.items()
-    }
+    received = {}
+    for cli, msg in messages.items():
+        bin_msg = msg.serialize()
+        payload_start = Message.parse_typekey_header(bin_msg)[1]
+        received[cli] = SerializedMessage(type(msg), bin_msg, payload_start)
     results = await verify_client_messages_validity(
         netwk=netwk, received=received, expected=Error
     )
@@ -85,10 +97,11 @@ async def test_verify_client_messages_validity_unexpected_types():
     # Setup simple messages, but have the server except Error messages.
     netwk = mock.create_autospec(NetworkServer, instance=True)
     messages = {f"client_{i}": SimpleMessage(f"message_{i}") for i in range(3)}
-    received = {
-        key: SerializedMessage(type(val), val.to_string().split("\n", 1)[1])
-        for key, val in messages.items()
-    }
+    received = {}
+    for cli, msg in messages.items():
+        bin_msg = msg.serialize()
+        payload_start = Message.parse_typekey_header(bin_msg)[1]
+        received[cli] = SerializedMessage(type(msg), bin_msg, payload_start)
     # Assert that an exception is raised.
     with pytest.raises(MessageTypeException):
         await verify_client_messages_validity(
@@ -107,10 +120,11 @@ async def test_verify_client_messages_validity_unexpected_error():
     netwk = mock.create_autospec(NetworkServer, instance=True)
     messages = {f"client_{i}": SimpleMessage(f"message_{i}") for i in range(2)}
     messages["client_2"] = Error("error_message")
-    received = {
-        key: SerializedMessage(type(val), val.to_string().split("\n", 1)[1])
-        for key, val in messages.items()
-    }
+    received = {}
+    for cli, msg in messages.items():
+        bin_msg = msg.serialize()
+        payload_start = Message.parse_typekey_header(bin_msg)[1]
+        received[cli] = SerializedMessage(type(msg), bin_msg, payload_start)
     # Assert that an exception is raised.
     with pytest.raises(ErrorMessageException):
         await verify_client_messages_validity(
@@ -128,9 +142,9 @@ async def test_verify_server_message_validity_expected_simple():
     # Setup a simple message matching client expectations.
     netwk = mock.create_autospec(NetworkClient, instance=True)
     message = SimpleMessage("message")
-    received = SerializedMessage(
-        SimpleMessage, message.to_string().split("\n", 1)[1]
-    )
+    bin_msg = message.serialize()
+    payload_start = Message.parse_typekey_header(bin_msg)[1]
+    received = SerializedMessage(SimpleMessage, bin_msg, payload_start)
     result = await verify_server_message_validity(
         netwk=netwk, received=received, expected=SimpleMessage
     )
@@ -146,7 +160,9 @@ async def test_verify_server_message_validity_expected_error():
     # Setup a simple message matching client expectations.
     netwk = mock.create_autospec(NetworkClient, instance=True)
     message = Error("message")
-    received = SerializedMessage(Error, message.to_string().split("\n", 1)[1])
+    bin_msg = message.serialize()
+    payload_start = Message.parse_typekey_header(bin_msg)[1]
+    received = SerializedMessage(Error, bin_msg, payload_start)
     result = await verify_server_message_validity(
         netwk=netwk, received=received, expected=Error
     )
@@ -162,9 +178,9 @@ async def test_verify_server_message_validity_unexpected_type():
     # Setup a simple message, but have the client except an Error one.
     netwk = mock.create_autospec(NetworkClient, instance=True)
     message = SimpleMessage("message")
-    received = SerializedMessage(
-        SimpleMessage, message.to_string().split("\n", 1)[1]
-    )
+    bin_msg = message.serialize()
+    payload_start = Message.parse_typekey_header(bin_msg)[1]
+    received = SerializedMessage(SimpleMessage, bin_msg, payload_start)
     # Assert that an exception is raised.
     with pytest.raises(MessageTypeException):
         await verify_server_message_validity(
@@ -180,7 +196,9 @@ async def test_verify_server_message_validity_unexpected_error():
     # Setup an unexpected Error message.
     netwk = mock.create_autospec(NetworkClient, instance=True)
     message = Error("message")
-    received = SerializedMessage(Error, message.to_string().split("\n", 1)[1])
+    bin_msg = message.serialize()
+    payload_start = Message.parse_typekey_header(bin_msg)[1]
+    received = SerializedMessage(Error, bin_msg, payload_start)
     # Assert that an exception is raised.
     with pytest.raises(ErrorMessageException):
         await verify_server_message_validity(

@@ -60,6 +60,7 @@ from declearn.main.utils import (
     IncompatibleConfigsError,
     aggregate_clients_data_info,
 )
+from declearn.messaging import SerializedMessage
 from declearn.metrics import MetricInputType, MetricSet
 from declearn.metrics._mean import MeanState
 from declearn.model.api import Model, Vector
@@ -67,7 +68,7 @@ from declearn.optimizer.modules import AuxVar
 from declearn.secagg import messaging as secagg_messaging
 from declearn.secagg import parse_secagg_config_server
 from declearn.secagg.api import Decrypter, SecaggConfigServer
-from declearn.utils import deserialize_object
+from declearn.utils.serialize import json_load
 
 __all__ = [
     "FederatedServer",
@@ -193,19 +194,22 @@ class FederatedServer:
         """Parse 'model' instantiation argument."""
         if isinstance(model, Model):
             return model
-        if isinstance(model, (str, dict)):
+        if isinstance(model, str):  # Path to model config JSON file.
             try:
-                output = deserialize_object(model)  # type: ignore[arg-type]
+                model = json_load(model)
             except Exception as exc:
                 raise TypeError(
-                    "'model' input deserialization failed."
+                    "JSON-deserialization of 'model' file path failed."
                 ) from exc
-            if isinstance(output, Model):
-                return output
-            raise TypeError(
-                f"'model' input was deserialized into '{type(output)}', "
-                "whereas a declearn 'Model' instance was expected."
-            )
+        if isinstance(model, dict):  # Model config dictionary.
+            try:
+                return Model.from_config(model, allow_bin=False)
+            except Exception as exc:
+                raise TypeError(
+                    "Model construction from 'model' configuration dictionary "
+                    "failed."
+                ) from exc
+
         raise TypeError(
             "'model' should be a declearn Model, optionally in serialized "
             f"form, not '{type(model)}'"
@@ -561,6 +565,7 @@ class FederatedServer:
             Client-wise collected messages.
         """
         # Await clients' responses and type-check them.
+        replies: Dict[str, SerializedMessage]
         replies = await self.netwk.wait_for_messages(clients)
         results: Dict[str, MessageT] = {}
         errors: Dict[str, str] = {}
@@ -1104,7 +1109,7 @@ class FederatedServer:
         self.logger.info("Notifying clients that training is over.")
         await self.netwk.broadcast_message(message)
         if self.ckptr:
-            path = f"{self.ckptr.folder}/model_state_best.json"
+            path = f"{self.ckptr.folder}/model_state_best.mpk"
             self.logger.info("Checkpointing final weights under %s.", path)
             self.model.set_weights(message.weights, trainable=True)
             self.ckptr.save_model(self.model, timestamp="best")

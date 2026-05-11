@@ -1,7 +1,7 @@
 # Dockerfile to build CI/CD environment
 
 # Build from an image containing needed cuda libs
-FROM nvidia/cuda:12.8.1-cudnn-devel-ubuntu22.04
+FROM nvidia/cuda:12.6.3-cudnn-devel-ubuntu22.04
 
 # Prevent interactive prompts during apt install
 ENV DEBIAN_FRONTEND=noninteractive

@@ -138,10 +138,10 @@ class Metric(Generic[MetricStateT], metaclass=abc.ABCMeta):
         Replace current state variables with a copy of inputs.
 
     Finally, depending on the hyper-parameters defined by the subclass's
-    `__init__`, one should adjust JSON-configuration-interfacing methods:
+    `__init__`, one should adjust configuration-interfacing methods:
 
     - get_config() -> dict[str, any]:
-        Return a JSON-serializable configuration dict for this Metric.
+        Return a serializable configuration dict for this Metric.
     - from_config(config: dict[str, any]) -> Self:
         Instantiate a Metric from its configuration dict.
 
@@ -269,7 +269,7 @@ class Metric(Generic[MetricStateT], metaclass=abc.ABCMeta):
     def get_config(
         self,
     ) -> Dict[str, Any]:
-        """Return a JSON-serializable configuration dict for this Metric."""
+        """Return a serializable configuration dict for this Metric."""
         return {}
 
     @classmethod

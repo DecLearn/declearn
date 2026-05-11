@@ -15,155 +15,332 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Unit tests for `declearn.utils._serialize` tools.
+"""Unit tests for generic and format-specific serialization tools."""
 
-Note: some of these tests require `declearn.utils._register` tools
-      (which are tested in a separate script) to work as expected.
-"""
-
-import os
-import tempfile
+import json
 import time
-from typing import Any, Dict, Optional, Tuple, Type
+import warnings
+from typing import Any, Type
 
+import msgpack  # type: ignore
 import pytest
 
-from declearn.utils import (
-    ObjectConfig,
-    create_types_registry,
-    deserialize_object,
-    register_type,
-    serialize_object,
+from declearn.utils.serialize._base import SerialFmt, add_serialization_support
+from declearn.utils.serialize._json import (
+    _json_decode,
+    _json_encode,
+    json_deserialize,
+    json_serialize,
+    list_json_serializable,
+)
+from declearn.utils.serialize._msgpack import (
+    _msgpack_decode,
+    _msgpack_encode,
+    list_msgpack_serializable,
+    msgpack_deserialize,
+    msgpack_serialize,
+    pack_int,
+    unpack_int,
 )
 
 
-class MockClass:  # noqa: PLW1641
-    """Mock class implementing get/from config used for testing purposes."""
+class CustomType:  # noqa: PLW1641
+    """Mock custom type used for testing purposes."""
 
     def __init__(self, val: int = 42) -> None:
+        """Instantiate the object."""
         self.val = val
-
-    def get_config(self) -> Dict[str, Any]:
-        """Return the object's configuration dict."""
-        return {"val": self.val}
-
-    @classmethod
-    def from_config(cls, config: Dict[str, Any]) -> "MockClass":
-        """Instantiate from a configuration dict."""
-        return cls(**config)
 
     def __eq__(self, other: Any) -> bool:
         return isinstance(other, type(self)) and (self.val == other.val)
 
 
-@pytest.fixture(name="registered_class")
-def fixture_registered_class() -> Tuple[Type[MockClass], str]:
-    """Provide with a type-registered MockClass subclass."""
-
-    # Declare a subtype to avoid side effects between tests.
-    class SubClass(MockClass):  # pylint: disable=all
-        pass
-
-    # Create a test-specific types registry and add the type to it.
-    group = str(time.time_ns())
-    create_types_registry(MockClass, group)
-    register_type(SubClass, name="mock", group=group)
-    # Return both the class constructor and its registration group.
-    return SubClass, group
+def pack_custom(obj: CustomType) -> Any:
+    """CustomType-to-serializable function."""
+    return [obj.val]
 
 
-def test_object_config() -> None:
-    """Unit tests for `ObjectConfig`."""
-    # Instantiate a mock ObjectConfig instance and its expected dict form.
-    config = ObjectConfig(
-        name="lorem", group="ipsum", config={"a": 0, "b": [1, 2]}
-    )
-    c_dict = {
-        "name": "lorem",
-        "group": "ipsum",
-        "config": {"a": 0, "b": [1, 2]},
-    }
-    # Test that conversion to and from dict works.
-    assert ObjectConfig(**c_dict) == config  # type: ignore
-    assert config.to_dict() == c_dict
-    # Test that conversion to and from JSON works.
-    with tempfile.TemporaryDirectory() as folder:
-        path = os.path.join(folder, "config.json")
-        assert not os.path.isfile(path)
-        config.to_json(path)
-        assert os.path.isfile(path)
-        assert config.from_json(path) == config
+def unpack_custom(dat: Any) -> CustomType:
+    """Serializable-to-CustomType function."""
+    assert isinstance(dat, list) and (len(dat) == 1)
+    assert isinstance(dat[0], int)
+    return CustomType(val=dat[0])
 
 
-def test_serialize_unregistered() -> None:
-    """Unit tests for `serialize_object` with an un-registered type."""
-    obj = MockClass()
-    with pytest.raises(KeyError):
-        serialize_object(obj)
-    cfg = serialize_object(obj, allow_unregistered=True)
-    assert isinstance(cfg, ObjectConfig)
-    assert cfg.name == "MockClass"
-    assert cfg.group is None
-    assert cfg.config == obj.get_config()
+# Enable parametrization of the tests by the serialization format using the
+# `fmt` fixture.
+@pytest.fixture(name="fmt", params=["json", "msgpack"])
+def fmt_fixture(request):
+    return request.param
 
 
-def test_serialize_registered(
-    registered_class: Tuple[Type[MockClass], str],
-) -> None:
-    """Unit tests for `serialize_object` with a registered type."""
-    cls, group = registered_class
-    obj = cls()
-    # This should fail due to unproper group specification.
-    with pytest.raises(KeyError):
-        serialize_object(obj, group=str(time.time_ns()))
-    # This should work, whether the group is specified or not.
-    for gkey in (group, None):
-        cfg = serialize_object(obj, group=gkey)
-        assert isinstance(cfg, ObjectConfig)
-        assert cfg.name == "mock"
-        assert cfg.group == group
-        assert cfg.config == obj.get_config()
+class TestSerialization:
+    def test_add_serialization_support(self, fmt: SerialFmt) -> None:
+        """Unit tests for `add_serialization_support`.
 
+        Note: this only tests that calls pass or fail as expected,
+        not that the associated mechanics perform well.
+        """
 
-def _setup_config_inputs(
-    obj: MockClass, group: Optional[str], folder: str
-) -> Tuple[Dict[str, Any], ObjectConfig, str]:
-    """Create three alternative input formats to `deserialize_object`."""
-    cfg_dict = {"name": "mock", "group": group, "config": obj.get_config()}
-    cfg_objc = ObjectConfig(**cfg_dict)  # type: ignore
-    cfg_path = os.path.join(folder, "config.json")
-    cfg_objc.to_json(cfg_path)
-    return cfg_dict, cfg_objc, cfg_path
+        # Declare a second, empty custom type for this test only.
+        class OtherType:  # pylint: disable=all
+            pass
 
-
-@pytest.mark.parametrize(
-    "index", [0, 1, 2], ids=["dict", "ObjectConfig", "JSON path"]
-)
-def test_deserialize_unregistered(index: int) -> None:
-    """Unit tests from `deserialize_object` with an unregistered type."""
-    # Test that unproper inputs raise a TypeError.
-    with pytest.raises(TypeError):
-        deserialize_object({"lorem": "ipsum"})  # type: ignore
-    # Set up a mock instance and a 'custom' type-mapping dict.
-    obj = MockClass()
-    group = str(time.time_ns())  # avoid other tests' side effects
-    custom = {"mock": MockClass}
-    with tempfile.TemporaryDirectory() as folder:
-        config = _setup_config_inputs(obj, group, folder)[index]
+        # Test that registration does not fail.
+        add_serialization_support(
+            CustomType, fmt, pack_custom, unpack_custom, "custom"
+        )
+        # Test that registering twice (wrt type OR name) fails.
         with pytest.raises(KeyError):
-            deserialize_object(config)  # type: ignore
-        assert deserialize_object(config, custom) == obj  # type: ignore
+            add_serialization_support(
+                CustomType, fmt, pack_custom, unpack_custom, None
+            )
+        with pytest.raises(KeyError):
+            add_serialization_support(
+                OtherType, fmt, pack_custom, unpack_custom, "custom"
+            )
+        # Test that `overwrite=True` works.
+        add_serialization_support(
+            CustomType,
+            fmt,
+            pack_custom,
+            unpack_custom,
+            None,
+            overwrite=True,
+        )
+        add_serialization_support(
+            OtherType,
+            fmt,
+            pack_custom,
+            unpack_custom,
+            "custom",
+            overwrite=True,
+        )
+
+    def test_encode(self, fmt: SerialFmt) -> None:
+        """Unit tests for `_{fmt}_encode` with custom-specified objects."""
+        if fmt == "json":
+            encode = _json_encode
+        elif fmt == "msgpack":
+            encode = _msgpack_encode
+        else:
+            pytest.fail(f"Unsupported serialization format '{fmt}'")
+
+        # Define a subtype of CustomType (to ensure it is not supported).
+        class SubType(CustomType):
+            pass
+
+        # Test that an object of that type cannot be properly packed.
+        obj = SubType()
+        add_serialization_support(
+            SubType, fmt, pack_custom, unpack_custom, name="subtype"
+        )
+        expected = {"__type__": "subtype", "dump": pack_custom(obj)}
+        assert encode(obj) == expected
+
+    def test_serialize(self, fmt: SerialFmt) -> None:
+        """Unit tests for `{fmt}_serialize` with custom-specified objects."""
+        serial_type: Type
+        if fmt == "json":
+            serialize = json_serialize
+            serial_type = str
+        elif fmt == "msgpack":
+            serialize = msgpack_serialize
+            serial_type = bytes
+        else:
+            pytest.fail(f"Unsupported serialization format '{fmt}'")
+
+        # Define a subtype of CustomType (to ensure it is not supported).
+        class SubType(CustomType):
+            pass
+
+        # Test that an object of that type cannot be properly packed.
+        obj = SubType()
+        with pytest.raises(TypeError):
+            serialize(obj)
+        # Add support for the type and test that it can now be packed.
+        add_serialization_support(
+            SubType,
+            fmt,
+            pack_custom,
+            unpack_custom,
+            name="subtype",
+            overwrite=True,
+        )
+        assert isinstance(serialize(obj), serial_type)
+
+    def test_decode_unknown(self, fmt: SerialFmt) -> None:
+        """Unit tests for `_{fmt}_decode` with un-specified objects."""
+        if fmt == "json":
+            decode = _json_decode
+        elif fmt == "msgpack":
+            decode = _msgpack_decode
+        else:
+            pytest.fail(f"Unsupported serialization format '{fmt}'")
+
+        # Declare objects that should pass as-is, with and without warnings.
+        obj_warn = {"__type__": str(time.time_ns()), "dump": ["lorem ipsum"]}
+        obj_pass = {"foo": "foo", "bar": ["lorem ipsum"]}
+        # Test that the expected behavior occurs.
+        with pytest.warns(UserWarning):
+            assert decode(obj_warn) is obj_warn
+        with warnings.catch_warnings():  # i.e. assert no warning
+            warnings.simplefilter("error")
+            assert decode(obj_pass) is obj_pass
+
+    def test_decode_known(self, fmt: SerialFmt) -> None:
+        """Unit tests for `_{fmt}_decode` with custom-specified objects."""
+        if fmt == "json":
+            decode = _json_decode
+        elif fmt == "msgpack":
+            decode = _msgpack_decode
+        else:
+            pytest.fail(f"Unsupported serialization format '{fmt}'")
+
+        # Ensure CustomType has been submitted for support.
+        add_serialization_support(
+            CustomType,
+            fmt,
+            pack_custom,
+            unpack_custom,
+            "custom",
+            overwrite=True,
+        )
+        # Test that unpacking is performed as expected.
+        obj = CustomType()
+        msg = {"__type__": "custom", "dump": pack_custom(obj)}
+        assert decode(msg) == obj
+
+    def test_deserialize_unknown(self, fmt: SerialFmt) -> None:
+        """Unit tests for `{fmt}_deserialize` with un-specified objects."""
+        # Declare objects that should pass as-is, with and without warnings.
+        obj_warn = {"__type__": str(time.time_ns()), "dump": ["lorem ipsum"]}
+        obj_pass = {"foo": "foo", "bar": ["lorem ipsum"]}
+        # Test that the expected behavior occurs.
+        struct = {"warn": obj_warn, "pass": obj_pass}
+
+        if fmt == "json":
+            data = json.dumps(struct)
+            deserialize = json_deserialize
+        elif fmt == "msgpack":
+            data = msgpack.packb(struct)
+            deserialize = msgpack_deserialize
+        else:
+            pytest.fail(f"Unsupported serialization format '{fmt}'")
+
+        with pytest.warns(UserWarning):
+            assert deserialize(data) == struct
+
+    def test_deserialize_known(self, fmt: SerialFmt) -> None:
+        """Unit tests for `{fmt}_deserialize` with custom-specified objects."""
+        # Ensure CustomType has been submitted for support.
+        add_serialization_support(
+            CustomType,
+            fmt,
+            pack_custom,
+            unpack_custom,
+            "custom",
+            overwrite=True,
+        )
+        # Test that the deserialization works as expected.
+        obj = CustomType()
+        msg = {"__type__": "custom", "dump": pack_custom(obj)}
+
+        if fmt == "json":
+            data = json.dumps(msg)
+            deserialize = json_deserialize
+        elif fmt == "msgpack":
+            data = msgpack.packb(msg)
+            deserialize = msgpack_deserialize
+        else:
+            pytest.fail(f"Unsupported serialization format '{fmt}'")
+
+        assert deserialize(data) == obj
+
+    def test_serial_deserial(self, fmt: SerialFmt) -> None:
+        """Test the full register-serialize-deserialize pipeline for
+        CustomType.
+        """
+        if fmt == "json":
+            dumps = json.dumps
+            loads = json.loads
+            serialize = json_serialize
+            deserialize = json_deserialize
+        elif fmt == "msgpack":
+            dumps = msgpack.packb
+            loads = msgpack.unpackb
+            serialize = msgpack_serialize
+            deserialize = msgpack_deserialize
+        else:
+            pytest.fail(f"Unsupported serialization format '{fmt}'")
+
+        # Ensure CustomType has been submitted for support.
+        add_serialization_support(
+            CustomType,
+            fmt,
+            pack_custom,
+            unpack_custom,
+            "custom",
+            overwrite=True,
+        )
+        # Test that serialization works.
+        struct = {"lorem": "ipsum", "objects": [CustomType(0), CustomType(1)]}
+        with pytest.raises(TypeError):
+            dumps(struct)
+        string = serialize(struct)
+        # Test that deserialization works.
+        assert loads(string) != struct
+        assert deserialize(string) == struct
 
 
-@pytest.mark.parametrize(
-    "index", [0, 1, 2], ids=["dict", "ObjectConfig", "JSON path"]
-)
-def test_deserialize_registered(
-    registered_class: Tuple[Type[MockClass], str], index: int
-) -> None:
-    """Unit tests from `deserialize_object` with a registered type."""
-    cls, group = registered_class
-    obj = cls()
-    with tempfile.TemporaryDirectory() as folder:
-        config = _setup_config_inputs(obj, group, folder)[index]
-        assert deserialize_object(config) == obj  # type: ignore
+class TestMsgPackSerialization:
+    """Shared unit tests suite for MessagePack-specific serialization utils."""
+
+    def test_list_msgpack_serializable(self):
+        serializables = list_msgpack_serializable()
+        type_names = [name for name, _ in serializables]
+        # Check that some classic types and DecLearn objects are listed
+        # (not exhaustive).
+        assert "np.ndarray" in type_names
+        assert "set" in type_names
+        assert "int" in type_names
+        assert "NumpyVector" in type_names
+        assert "SklearnSGDModel" in type_names
+        assert "Optimizer" in type_names
+
+    @pytest.mark.parametrize(
+        "x",
+        [0, 1000, 2**65, -1000, -(2**65)],
+        ids=["0", "1000", "2**65", "-1000", "-2**65"],
+    )
+    def test_pack_unpack_int(self, x: int):
+        """Test for pack_int and unpack_int."""
+        packed = pack_int(x)
+        unpacked = unpack_int(packed)
+        assert unpacked == x
+
+    @pytest.mark.parametrize(
+        "x",
+        [0, 1000, 2**65, -1000, -(2**65)],
+        ids=["0", "1000", "2**65", "-1000", "-2**65"],
+    )
+    def test_msgpack_de_serialize_int(self, x: int):
+        """Test that msgpack support for ints (lower and upper than 64 bits) is
+        functionnal when calling msgpack_(de)serialize.
+        """
+        packed = msgpack_serialize(x)
+        unpacked = msgpack_deserialize(packed)
+        assert unpacked == x
+
+
+class TestJsonSerialization:
+    """Shared unit tests suite for MessagePack-specific serialization utils."""
+
+    def test_list_json_serializable(self):
+        serializables = list_json_serializable()
+        type_names = [name for name, _ in serializables]
+        # Check that some classic types and DecLearn objects are listed
+        # (not exhaustive).
+        assert "NumpyVector" in type_names
+        assert "np.ndarray" in type_names
+        assert "set" in type_names

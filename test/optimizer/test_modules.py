@@ -56,7 +56,7 @@ from declearn.test_utils import (
     FrameworkType,
     GradientsTestCase,
     assert_dict_equal,
-    assert_json_serializable_dict,
+    assert_msgpack_serializable_dict,
     make_importable,
 )
 
@@ -84,13 +84,13 @@ class OptiModuleTestSuite(PluginTestBase):
         aux_var = module.collect_aux_var()
         assert (aux_var is None) or isinstance(aux_var, AuxVar)
         if isinstance(aux_var, AuxVar):
-            assert_json_serializable_dict(aux_var.to_dict())
+            assert_msgpack_serializable_dict(aux_var.to_dict())
 
     def test_get_state_initial(self, cls: Type[OptiModule]) -> None:
         """Test an OptiModule's get_state method at instanciation."""
         module = cls()
         states = module.get_state()
-        assert_json_serializable_dict(states)
+        assert_msgpack_serializable_dict(states)
 
     def test_get_state_updated(
         self, cls: Type[OptiModule], framework: FrameworkType
@@ -101,7 +101,7 @@ class OptiModuleTestSuite(PluginTestBase):
             test_case = GradientsTestCase(framework)
             module.run(test_case.mock_gradient)
             states = module.get_state()
-            assert_json_serializable_dict(states)
+            assert_msgpack_serializable_dict(states)
 
     def test_set_state_initial(
         self, cls: Type[OptiModule], framework: FrameworkType

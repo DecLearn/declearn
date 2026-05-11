@@ -53,6 +53,7 @@ def get_array_device(array: jax.Array) -> jax.Device:  # type: ignore
 @register_vector_type(
     jax.Array,
     jaxlib.xla_client.ArrayImpl,
+    name="jax_numpy",
 )
 class JaxNumpyVector(Vector):  # noqa : PLW1641
     """Vector subclass to store jax.numpy.ndarray coefficients.
@@ -81,7 +82,7 @@ class JaxNumpyVector(Vector):  # noqa : PLW1641
       `gpu + cpu = gpu` while `cpu + gpu = cpu`. In both cases, a
       warning will be emitted to prevent silent un-optimized copies.
     - When deserializing a `JaxNumpyVector` (either by directly using
-      `JaxNumpyVector.unpack` or loading one from a JSON dump), loaded
+      `JaxNumpyVector.unpack` or loading one from a dump), loaded
       arrays are placed based on the global device-placement policy
       (accessed via `declearn.utils.get_device_policy`). Thus it may
       have a different device-placement schema than at dump time but

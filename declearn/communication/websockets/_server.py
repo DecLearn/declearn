@@ -28,6 +28,7 @@ from websockets.exceptions import ConnectionClosedError, ConnectionClosedOK
 from websockets.server import WebSocketServer, WebSocketServerProtocol
 
 from declearn.communication.api import NetworkServer
+from declearn.communication.api.backend import MessagesHandler
 from declearn.communication.websockets._tools import (
     StreamRefusedError,
     receive_websockets_message,
@@ -43,6 +44,8 @@ class WebsocketsServer(NetworkServer):
     """Server-side communication endpoint using WebSockets."""
 
     protocol = "websockets"
+
+    handler: MessagesHandler
 
     # pylint: disable-next=too-many-positional-arguments
     # TODO for 2.10 : remove deprecated "logger" argument
@@ -131,6 +134,8 @@ class WebsocketsServer(NetworkServer):
             logger=self.logger,
             ssl=self._ssl,
             ping_timeout=None,  # disable timeout on keep-alive pings
+            max_size=None,
+            # disable websockets max_size because app-level chunking is used
         )
         # Run the websockets server.
         self.logger.info("Server is now starting...")
@@ -147,7 +152,7 @@ class WebsocketsServer(NetworkServer):
                 # Receive the message (covering chunked-message case).
                 known = socket in self.handler.registered_clients
                 try:
-                    message = await receive_websockets_message(
+                    bin_msg = await receive_websockets_message(
                         frame, socket, allow_chunks=known
                     )
                 except StreamRefusedError:
@@ -157,8 +162,8 @@ class WebsocketsServer(NetworkServer):
                     )
                     break
                 # Handle the received message and produce an answer.
-                reply = await self.handler.handle_message(message, socket)
-                await send_websockets_message(reply.to_string(), socket)
+                reply = await self.handler.handle_message(bin_msg, socket)
+                await send_websockets_message(reply.serialize(), socket)
                 if socket not in self.handler.registered_clients:
                     break
         except (ConnectionClosedOK, ConnectionClosedError) as exc:

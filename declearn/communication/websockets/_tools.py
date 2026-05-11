@@ -17,9 +17,6 @@
 
 """Shared backend utils for Websockets communication endpoints."""
 
-import sys
-from typing import Union
-
 from websockets.legacy.protocol import WebSocketCommonProtocol
 
 __all__ = [
@@ -28,11 +25,12 @@ __all__ = [
     "send_websockets_message",
 ]
 
+CHUNK_LENGTH = 2**20 - 16  # websocket max_size - overhead with a safety margin
 
-FLAG_STREAM_START = "STREAM_START"
-FLAG_STREAM_CLOSE = "STREAM_CLOSE"
-FLAG_STREAM_ALLOW = "STREAM_ALLOW"
-FLAG_STREAM_BLOCK = "STREAM_BLOCK"
+FLAG_STREAM_START = b"STREAM_START"
+FLAG_STREAM_CLOSE = b"STREAM_CLOSE"
+FLAG_STREAM_ALLOW = b"STREAM_ALLOW"
+FLAG_STREAM_BLOCK = b"STREAM_BLOCK"
 
 
 class StreamRefusedError(Exception):
@@ -40,15 +38,15 @@ class StreamRefusedError(Exception):
 
 
 async def receive_websockets_message(
-    message: Union[str, bytes],
+    bin_msg: bytes,
     socket: WebSocketCommonProtocol,
     allow_chunks: bool = False,
-) -> str:
+) -> bytes:
     """Process a message received from an open socket.
 
     Parameters
     ----------
-    message : Union[str, bytes]
+    bin_msg : bytes
         Initial message received through `socket`.
     socket : WebSocketCommonProtocol
         Open socket through which `message` was received
@@ -59,54 +57,53 @@ async def receive_websockets_message(
 
     Returns
     -------
-    message: str
+    bin_msg: bytes
         The received message, which may be `message` or the result
         of a chunks-streaming operation.
     """
-    if isinstance(message, bytes):
-        message = message.decode("utf-8")
-    if message == FLAG_STREAM_START:
+    if bin_msg == FLAG_STREAM_START:
         if not allow_chunks:
             await socket.send(FLAG_STREAM_BLOCK)
             raise StreamRefusedError(
                 "Received a disallowed request to stream a chunked message."
             )
         await socket.send(FLAG_STREAM_ALLOW)
-        buffer = ""
-        message = ""
-        while buffer != FLAG_STREAM_CLOSE:
-            message += buffer
-            chunk = await socket.recv()
-            buffer = (
-                chunk.decode("utf-8") if isinstance(chunk, bytes) else chunk
-            )
-    return message
+        chunks = []
+        while True:
+            buffer = await socket.recv()
+            if buffer == FLAG_STREAM_CLOSE:
+                break
+            chunks.append(buffer)
+        bin_msg = b"".join(chunks)
+    return bin_msg
 
 
 async def send_websockets_message(
-    message: str,
+    bin_msg: bytes,
     socket: WebSocketCommonProtocol,
 ) -> None:
     """Send a message through an open socket.
 
     Parameters
     ----------
-    message : str
-        String content to send.
+    bin_msg : bytes
+        Binary content to send.
     socket : WebSocketCommonProtocol
         Open socket through which `message` is to be sent.
     """
-    if socket.max_size and (sys.getsizeof(message) > socket.max_size):
-        chunk_len = socket.max_size - sys.getsizeof("") - 1
+    if len(bin_msg) > CHUNK_LENGTH:
+        # subtract overhead size with a safety margin
         await socket.send(FLAG_STREAM_START)
         if await socket.recv() != FLAG_STREAM_ALLOW:
             raise StreamRefusedError(
                 "Message required chunking, but chunks-streaming was "
                 "disallowed by the remote endpoint."
             )
-        for srt in range(0, len(message), chunk_len):
-            end = srt + chunk_len
-            await socket.send(message[srt:end])
+        # Create a memoryview to chunk without allocating new byte copies.
+        view = memoryview(bin_msg)
+        for srt in range(0, len(bin_msg), CHUNK_LENGTH):
+            end = srt + CHUNK_LENGTH
+            await socket.send(view[srt:end])
         await socket.send(FLAG_STREAM_CLOSE)
     else:
-        await socket.send(message)
+        await socket.send(bin_msg)

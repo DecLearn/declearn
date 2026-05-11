@@ -162,19 +162,30 @@ class HaikuModel(Model):
 
     def get_config(
         self,
+        allow_bin: bool = False,
     ) -> Dict[str, Any]:
         warnings.warn(
             "Our custom Haiku serialization relies on pickle,"
             "which may be unsafe.",
             stacklevel=2,
         )
+        base_config = super().get_config()
         with io.BytesIO() as buffer:
             joblib.dump(self._model_fn, buffer)
-            model = buffer.getbuffer().hex()
+            model: Union[str, bytes]
+            if allow_bin:
+                model = buffer.getbuffer().tobytes()
+            else:
+                model = buffer.getbuffer().hex()
         with io.BytesIO() as buffer:
             joblib.dump(self._loss_fn, buffer)
-            loss = buffer.getbuffer().hex()
+            loss: Union[str, bytes]
+            if allow_bin:
+                loss = buffer.getbuffer().tobytes()
+            else:
+                loss = buffer.getbuffer().hex()
         return {
+            **base_config,
             "model": model,
             "loss": loss,
             "data_info": self.data_info,
@@ -184,10 +195,17 @@ class HaikuModel(Model):
     def from_config(
         cls,
         config: Dict[str, Any],
+        allow_bin: bool = False,
     ) -> Self:
-        with io.BytesIO(bytes.fromhex(config["model"])) as buffer:
+        if allow_bin:
+            bin_model = config["model"]
+            bin_loss = config["loss"]
+        else:
+            bin_model = bytes.fromhex(config["model"])
+            bin_loss = bytes.fromhex(config["loss"])
+        with io.BytesIO(bin_model) as buffer:
             model = joblib.load(buffer)
-        with io.BytesIO(bytes.fromhex(config["loss"])) as buffer:
+        with io.BytesIO(bin_loss) as buffer:
             loss = joblib.load(buffer)
         model = cls(model=model, loss=loss)
         if config.get("data_info"):

@@ -17,34 +17,71 @@
 
 """Numpy-related declearn utils."""
 
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 import numpy as np
 
-from declearn.utils._json import add_json_support
+from declearn.utils.serialize._base import add_serialization_support
 
 __all__ = [
-    "deserialize_numpy",
-    "serialize_numpy",
+    "unpack_numpy",
+    "pack_numpy",
 ]
 
 
-def serialize_numpy(array: np.ndarray) -> Tuple[str, str, List[int]]:
-    """Transform a numpy array into a JSON-serializable tuple.
+def pack_numpy(
+    array: np.ndarray, allow_bin: bool = False
+) -> Tuple[Union[str, bytes], str, List[int]]:
+    """Pack a numpy array to a serializable tuple (data, dtype, shape).
 
-    Inverse operation of `declearn.utils.deserialize_numpy`.
+    Parameters
+    ----------
+    array : np.ndarray
+    allow_bin : bool
+        If True, encode data in raw bytes in the packed tuple.
+        Otherwise, encode data in hexadecimal string.
+
+    Returns
+    -------
+    (data, dtype, shape)
     """
-    return (array.tobytes().hex(), array.dtype.char, list(array.shape))
+    raw = array.tobytes()
+    data = raw if allow_bin else raw.hex()
+    return (data, array.dtype.char, list(array.shape))
 
 
-def deserialize_numpy(data: Tuple[str, str, List[int]]) -> np.ndarray:
-    """Return a numpy array based on serialized information.
+def unpack_numpy(
+    packed: Tuple[Union[str, bytes], str, List[int]], allow_bin: bool = False
+) -> np.ndarray:
+    """Unpack a serializable tuple (data, dtype, shape) into a numpy array.
 
-    Inverse operation of `declearn.utils.serialize_numpy`.
+    Parameters
+    ----------
+    packed : tuple
+    allow_bin : bool
+        If True, interpret data as raw bytes. Otherwise, as hexadecimal string.
+
+    Returns
+    -------
+    np.ndarray
     """
-    buffer = bytes.fromhex(data[0])
-    array = np.frombuffer(buffer, dtype=data[1])
-    return array.reshape(data[2]).copy()  # copy makes the array writable
+    dump: Union[str, bytes] = packed[0]
+    buffer = dump if allow_bin else bytes.fromhex(dump)  # type: ignore
+    array = np.frombuffer(buffer, dtype=packed[1])
+    return array.reshape(packed[2]).copy()
 
 
-add_json_support(np.ndarray, serialize_numpy, deserialize_numpy, "np.ndarray")
+add_serialization_support(
+    np.ndarray,
+    "json",
+    lambda a: pack_numpy(a, allow_bin=False),
+    lambda d: unpack_numpy(d, allow_bin=False),
+    "np.ndarray",
+)
+add_serialization_support(
+    np.ndarray,
+    "msgpack",
+    lambda a: pack_numpy(a, allow_bin=True),
+    lambda d: unpack_numpy(d, allow_bin=True),
+    "np.ndarray",
+)

@@ -18,25 +18,29 @@
 """Model and metrics checkpointing util."""
 
 import json
+import logging
 import os
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Self, Union
+from typing import Any, Dict, List, Literal, Optional, Self, Union
 
 import numpy as np
 import pandas as pd
 
 from declearn.model.api import Model
 from declearn.optimizer import Optimizer
-from declearn.utils import (
-    deserialize_object,
+from declearn.utils.serialize import (
     json_dump,
     json_load,
-    serialize_object,
+    msgpack_dump,
+    msgpack_load,
 )
 
 __all__ = [
     "Checkpointer",
 ]
+
+MODEL_CONFIG_FILE = "model_config.json"
+logger = logging.getLogger("declearn.checkpointer")
 
 
 class Checkpointer:
@@ -172,7 +176,10 @@ class Checkpointer:
         state: bool = True,
         timestamp: Optional[str] = None,
     ) -> Optional[str]:
-        """Save a Model's configuration and/or weights to JSON files.
+        """Save a Model's configuration and/or weights to files.
+
+        Configuration is saved to a JSON file.
+        States/weights are saved to a MessagePack file.
 
         Also garbage-collect existing files based on self.max_history.
 
@@ -194,15 +201,14 @@ class Checkpointer:
             If `states is None`, return None.
         """
         model_config = (
-            None
-            if not config
-            else (serialize_object(model, allow_unregistered=True).to_dict())
+            None if not config else model.get_config(allow_bin=False)
         )
         return self._save_object(
             prefix="model",
             config=model_config,
             states=model.get_weights() if state else None,
             timestamp=timestamp,
+            fmt_states="msgpack",
         )
 
     def save_optimizer(
@@ -212,7 +218,10 @@ class Checkpointer:
         state: bool = True,
         timestamp: Optional[str] = None,
     ) -> Optional[str]:
-        """Save an Optimizer's configuration and/or state to JSON files.
+        """Save an Optimizer's configuration and/or state to files.
+
+        Configuration is saved to a JSON file.
+        State is saved to a MessagePack file.
 
         Parameters
         ----------
@@ -236,6 +245,7 @@ class Checkpointer:
             config=optimizer.get_config() if config else None,
             states=optimizer.get_state() if state else None,
             timestamp=timestamp,
+            fmt_states="msgpack",
         )
 
     def _save_object(
@@ -244,8 +254,12 @@ class Checkpointer:
         config: Any = None,
         states: Any = None,
         timestamp: Optional[str] = None,
+        fmt_states: Literal["json", "msgpack"] = "json",
     ) -> Optional[str]:
         """Shared backend for `save_model` and `save_optimizer`.
+
+        Configuration are always saved in a JSON file.
+        States can be saved to file in the JSON or MessagePack format.
 
         Parameters
         ----------
@@ -254,13 +268,15 @@ class Checkpointer:
             Also used to garbage-collect state files.
         config: object or None, default=None
             Optional JSON-serializable config to save.
-            Output file will be named "{prefix}.json".
+            Output file will be named "{prefix}_config.json".
         states: object or None, default=None
-            Optional JSON-serializable data to save.
-            Output file will be named "{prefix}_{timestamp}.json".
+            Optional JSON- or MessagePack-serializable data to save.
+            Output file will be named "{prefix}_state_{timestamp}.{json|mpk}".
         timestamp: str or None, default=None
             Optional preset timestamp to add as state file suffix.
             If None, generate a timestamp to use.
+        fmt_states: Literal["json", "msgpack"], default="json"
+            Data format in which the states are serialized and dumped to file.
 
         Returns
         -------
@@ -268,6 +284,20 @@ class Checkpointer:
             Timestamp string labeling the output states file, if any.
             If `states is None`, return None.
         """
+        if fmt_states not in ["json", "msgpack"]:
+            logger.warning(
+                f"Unsupported format '{fmt_states}' to save states. "
+                f"Fall back to json for these '{prefix}' states checkpointing."
+            )
+            fmt_states = "json"
+
+        if fmt_states == "msgpack":
+            dump_states = msgpack_dump
+            extension = "mpk"
+        else:  # json
+            dump_states = json_dump
+            extension = "json"
+
         if config:
             fpath = os.path.join(self.folder, f"{prefix}_config.json")
             json_dump(config, fpath)
@@ -275,9 +305,9 @@ class Checkpointer:
             if timestamp is None:
                 timestamp = datetime.now().strftime("%y-%m-%d_%H-%M-%S")
             fpath = os.path.join(
-                self.folder, f"{prefix}_state_{timestamp}.json"
+                self.folder, f"{prefix}_state_{timestamp}.{extension}"
             )
-            json_dump(states, fpath)
+            dump_states(states, fpath)
             self.garbage_collect(f"{prefix}_state")
             return timestamp
         return None
@@ -382,7 +412,7 @@ class Checkpointer:
                 model, config=first_call, state=True, timestamp=timestamp
             )
         elif first_call:
-            remove.append(os.path.join(self.folder, "model_config.json"))
+            remove.append(os.path.join(self.folder, MODEL_CONFIG_FILE))
         if optimizer:
             self.save_optimizer(
                 optimizer, config=first_call, state=True, timestamp=timestamp
@@ -412,6 +442,8 @@ class Checkpointer:
     ) -> Model:
         """Instantiate a Model and/or reset its weights from a save file.
 
+        If `load_state`, state is expected to be in the MessagePack format.
+
         Parameters
         ----------
         model: Model or None, default=None
@@ -426,12 +458,13 @@ class Checkpointer:
         """
         # Type-check or reload the Model from a config file.
         if model is None:
-            fpath = os.path.join(self.folder, "model_config.json")
+            fpath = os.path.join(self.folder, MODEL_CONFIG_FILE)
             if not os.path.isfile(fpath):
                 raise FileNotFoundError(
                     "Cannot reload Model: config file not found."
                 )
-            model = deserialize_object(fpath)  # type: ignore
+            config = json_load(fpath)
+            model = Model.from_config(config, allow_bin=False)
             if not isinstance(model, Model):
                 raise TypeError(
                     f"The object reloaded from {fpath} is not a Model."
@@ -440,7 +473,9 @@ class Checkpointer:
             raise TypeError("'model' should be a Model or None.")
         # Load the model weights and assign them.
         if load_state:
-            weights = self._load_state("model", timestamp=timestamp)
+            weights = self._load_state(
+                "model", timestamp=timestamp, fmt_states="msgpack"
+            )
             model.set_weights(weights)
         return model
 
@@ -451,6 +486,8 @@ class Checkpointer:
         load_state: bool = True,
     ) -> Optimizer:
         """Instantiate an Optimizer and/or reset its state from a save file.
+
+        If `load_state`, state is expected to be in the MessagePack format.
 
         Parameters
         ----------
@@ -477,7 +514,9 @@ class Checkpointer:
             raise TypeError("'optimizer' should be an Optimizer or None.")
         # Load the optimizer state and assign it.
         if load_state:
-            state = self._load_state("optimizer", timestamp=timestamp)
+            state = self._load_state(
+                "optimizer", timestamp=timestamp, fmt_states="msgpack"
+            )
             optimizer.set_state(state)
         return optimizer
 
@@ -485,6 +524,7 @@ class Checkpointer:
         self,
         prefix: str,
         timestamp: Optional[str] = None,
+        fmt_states: Literal["json", "msgpack"] = "json",
     ) -> Any:
         """Reload data from a state checkpoint file.
 
@@ -495,9 +535,25 @@ class Checkpointer:
         timestamp: str or None, default=None
             Optional timestamp string labeling the state to reload.
             If None, use the state with the most recent timestamp.
+        fmt_states: Literal["json", "msgpack"], default="json"
+            Data format in which the states are serialized and dumped to file.
         """
+        if fmt_states not in ["json", "msgpack"]:
+            logger.warning(
+                f"Unsupported format '{fmt_states}' to load states. "
+                f"Fall back to json for these '{prefix}' states loading."
+            )
+            fmt_states = "json"
+
+        if fmt_states == "msgpack":
+            load = msgpack_load
+            extension = "mpk"
+        else:  # json
+            load = json_load
+            extension = "json"
+
         if isinstance(timestamp, str):
-            fname = f"{prefix}_state_{timestamp}.json"
+            fname = f"{prefix}_state_{timestamp}.{extension}"
         else:
             files = self.sort_matching_files(f"{prefix}_state")
             if not files:
@@ -505,7 +561,7 @@ class Checkpointer:
                     f"Cannot reload {prefix} state: no state file found."
                 )
             fname = files[-1]
-        return json_load(os.path.join(self.folder, fname))
+        return load(os.path.join(self.folder, fname))
 
     def load_metrics(
         self,

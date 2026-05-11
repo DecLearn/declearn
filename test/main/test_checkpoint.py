@@ -32,7 +32,7 @@ from declearn.main.utils import Checkpointer
 from declearn.model.api import Model
 from declearn.model.sklearn import SklearnSGDModel
 from declearn.optimizer import Optimizer
-from declearn.utils import json_load
+from declearn.utils.serialize import json_load
 
 # Fixtures and utils
 
@@ -184,11 +184,11 @@ class TestCheckpointer:
             assert Path(cfg_path).is_file()
         else:
             assert not Path(cfg_path).is_file()
-        # Vertify weights save file's existence.
+        # Verify weights save file's existence.
         if state:  # test state file save
             assert isinstance(timestamp, str)
             state_path = os.path.join(
-                checkpointer.folder, f"model_state_{timestamp}.json"
+                checkpointer.folder, f"model_state_{timestamp}.mpk"
             )
             assert Path(state_path).is_file()
         else:
@@ -213,7 +213,7 @@ class TestCheckpointer:
         if state:
             assert isinstance(timestamp, str)
             state_path = os.path.join(
-                checkpointer.folder, f"optimizer_state_{timestamp}.json"
+                checkpointer.folder, f"optimizer_state_{timestamp}.mpk"
             )
             assert Path(state_path).is_file()
         else:
@@ -283,9 +283,9 @@ class TestCheckpointer:
             assert not os.path.isfile(m_cfg)
             assert not os.path.isfile(o_cfg)
         # Verify that state and metric files exist as expected.
-        path = os.path.join(tmp_path, f"model_state_{timestamp}.json")
+        path = os.path.join(tmp_path, f"model_state_{timestamp}.mpk")
         assert os.path.isfile(path)
-        path = os.path.join(tmp_path, f"optimizer_state_{timestamp}.json")
+        path = os.path.join(tmp_path, f"optimizer_state_{timestamp}.mpk")
         assert os.path.isfile(path)
         assert os.path.isfile(os.path.join(tmp_path, "metrics.csv"))
         assert os.path.isfile(os.path.join(tmp_path, "metrics.json"))

@@ -70,7 +70,7 @@ class Scheduler(metaclass=abc.ABCMeta):
     The following methods may (and often should) be overloaded by subclasses:
 
     - get_config() -> Dict[str, Any]:
-        Return a JSON-serializable config dict to this instance.
+        Return a serializable config dict to this instance.
         This should be overloaded to add algorithm-specific parameters.
     - from_config(Dict[str, Any]) -> Self:
         Instantiate from a config dict.
@@ -89,7 +89,7 @@ class Scheduler(metaclass=abc.ABCMeta):
     - on_round_start() -> None:
         Mark that a new training round starts, incrementing `rounds`.
     - get_state() -> Dict[str, Any]:
-        Return a JSON-serializable dict of inner state variables.
+        Return a serializable dict of inner state variables.
         This contains `steps` and `rounds` by default.
     - set_state(Dict[str, Any]) -> None:
         Assign inner state variables.
@@ -186,12 +186,12 @@ class Scheduler(metaclass=abc.ABCMeta):
     def get_config(
         self,
     ) -> Dict[str, Any]:
-        """Return a JSON-serializable configuration dict to this instance.
+        """Return a serializable configuration dict to this instance.
 
         Returns
         -------
         config:
-            JSON-serializable dict of parameters to this instance.
+            Serializable dict of parameters to this instance.
         """
         return {"base": self.base}
 
@@ -242,14 +242,14 @@ class Scheduler(metaclass=abc.ABCMeta):
     def get_state(
         self,
     ) -> Dict[str, Any]:
-        """Return a JSON-serializable dict with this module's state(s).
+        """Return a serializable dict with this module's state(s).
 
         The counterpart to this method is the `set_state` one.
 
         Returns
         -------
         state: Dict[str, Any]
-            JSON-serializable dict storing this module's inner state
+            Serializable dict storing this module's inner state
             variables.
         """
         return {"steps": self.steps, "rounds": self.rounds}

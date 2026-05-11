@@ -29,7 +29,6 @@ from declearn.communication.api.backend.actions import (
     Accept,
     Drop,
     Join,
-    LegacyReject,
     Ping,
     Recv,
     Reject,
@@ -57,19 +56,10 @@ class TestMessagesHandler:
         handler: MessagesHandler,
     ) -> None:
         """Test that an invalid message is rejected."""
-        query = "invalid-action-string"
+        query = b"invalid-action-string"
         reply = await handler.handle_message(query, context=mock.MagicMock())
         assert isinstance(reply, Reject)
         assert reply.flag == flags.INVALID_MESSAGE
-
-    async def test_handle_legacy_message(
-        self,
-        handler: MessagesHandler,
-    ) -> None:
-        """Test that an invalid message is rejected."""
-        query = LegacyReject().to_string()
-        reply = await handler.handle_message(query, context=mock.MagicMock())
-        assert isinstance(reply, LegacyReject)
 
     async def test_handle_join_open(
         self,
@@ -77,7 +67,7 @@ class TestMessagesHandler:
     ) -> None:
         """Test Join action handling with open registration."""
         handler.open_clients_registration()
-        query = Join(name="name", version=VERSION).to_string()
+        query = Join(name="name", version=VERSION).serialize()
         reply = await handler.handle_message(query, context="context")
         assert isinstance(reply, Accept)
         assert reply.flag == flags.REGISTERED_WELCOME
@@ -89,7 +79,7 @@ class TestMessagesHandler:
     ) -> None:
         """Test Join action handling with close registration."""
         handler.close_clients_registration()
-        query = Join(name="name", version=VERSION).to_string()
+        query = Join(name="name", version=VERSION).serialize()
         reply = await handler.handle_message(query, context="context")
         assert isinstance(reply, Reject)
         assert reply.flag == flags.REGISTRATION_CLOSED
@@ -101,7 +91,7 @@ class TestMessagesHandler:
     ) -> None:
         """Test Join action handling with declearn version mismatch."""
         handler.open_clients_registration()
-        query = Join(name="name", version="mock.version.string").to_string()
+        query = Join(name="name", version="mock.version.string").serialize()
         reply = await handler.handle_message(query, context="context")
         assert isinstance(reply, Reject)
         assert reply.flag == flags.REJECT_INCOMPATIBLE_VERSION
@@ -114,7 +104,7 @@ class TestMessagesHandler:
         """Test Join action handling for a pre-registered client."""
         # Register the client a first time and close registration.
         handler.open_clients_registration()
-        query = Join(name="name", version=VERSION).to_string()
+        query = Join(name="name", version=VERSION).serialize()
         reply = await handler.handle_message(query, context="context")
         assert isinstance(reply, Accept)
         assert reply.flag == flags.REGISTERED_WELCOME
@@ -130,7 +120,7 @@ class TestMessagesHandler:
     ) -> None:
         """Test handling of a non-Join action from an unregistered client."""
         handler.close_clients_registration()
-        query = Ping().to_string()
+        query = Ping().serialize()
         reply = await handler.handle_message(query, "context")
         assert isinstance(reply, Reject)
         assert reply.flag == flags.REJECT_UNREGISTERED
@@ -141,7 +131,7 @@ class TestMessagesHandler:
     ) -> None:
         """Test handling of a server-reserved action from a client."""
         handler.registered_clients = {"context": "client"}
-        query = Reject(flag="stub").to_string()
+        query = Reject(flag="stub").serialize()
         reply = await handler.handle_message(query, context="context")
         assert isinstance(reply, Reject)
         assert reply.flag == flags.INVALID_MESSAGE
@@ -153,7 +143,7 @@ class TestMessagesHandler:
         """Test handling of a Recv action with a pending message."""
         handler.registered_clients = {"context": "client"}
         handler.outgoing_messages["client"] = "message"
-        query = Recv(timeout=1).to_string()
+        query = Recv(timeout=1).serialize()
         reply = await handler.handle_message(query, context="context")
         assert isinstance(reply, Send)
         assert reply.content == "message"
@@ -164,7 +154,7 @@ class TestMessagesHandler:
     ) -> None:
         """Test handling of a Recv action that times out."""
         handler.registered_clients = {"context": "client"}
-        query = Recv(timeout=0.2).to_string()
+        query = Recv(timeout=0.2).serialize()
         start = time.time()
         reply = await handler.handle_message(query, context="context")
         delay = time.time() - start
@@ -178,7 +168,7 @@ class TestMessagesHandler:
     ) -> None:
         """Test handling of a Send action from a registered client."""
         handler.registered_clients = {"context": "client"}
-        query = Send(content="message").to_string()
+        query = Send(content="message").serialize()
         reply = await handler.handle_message(query, context="context")
         assert isinstance(reply, Ping)
         assert handler.incoming_messages["client"] == "message"
@@ -190,7 +180,7 @@ class TestMessagesHandler:
         """Test handling of a Send action with a pending message."""
         handler.registered_clients = {"context": "client"}
         handler.incoming_messages["client"] = "pending"
-        query = Send(content="message").to_string()
+        query = Send(content="message").serialize()
         coro = handler.handle_message(query, context="context")
         with pytest.raises(asyncio.TimeoutError):
             await asyncio.wait_for(coro, timeout=0.2)
@@ -202,7 +192,7 @@ class TestMessagesHandler:
     ) -> None:
         """Test handling of a Drop action from a registered client."""
         handler.registered_clients = {"context": "client"}
-        query = Drop().to_string()
+        query = Drop().serialize()
         reply = await handler.handle_message(query, context="context")
         assert isinstance(reply, Ping)
         assert "content" not in handler.registered_clients
@@ -213,7 +203,7 @@ class TestMessagesHandler:
     ) -> None:
         """Test handling of a Ping action from a registered client."""
         handler.registered_clients = {"context": "client"}
-        query = Ping().to_string()
+        query = Ping().serialize()
         reply = await handler.handle_message(query, context="context")
         assert isinstance(reply, Ping)
 
@@ -254,7 +244,7 @@ class TestMessagesHandler:
         handler.registered_clients = {"context": "client"}
         send_outp, recv_reply = await asyncio.gather(
             handler.send_message("message", "client", timeout=1),
-            handler.handle_message(Recv(timeout=1).to_string(), "context"),
+            handler.handle_message(Recv(timeout=1).serialize(), "context"),
         )
         assert send_outp is None
         assert isinstance(recv_reply, Send) and recv_reply.content == "message"
@@ -304,7 +294,7 @@ class TestMessagesHandler:
         handler.registered_clients = {"context": "client"}
         recv_message, send_reply = await asyncio.gather(
             handler.recv_message("client", timeout=1),
-            handler.handle_message(Send("message").to_string(), "context"),
+            handler.handle_message(Send("message").serialize(), "context"),
         )
         assert recv_message == "message"
         assert isinstance(send_reply, Ping)
@@ -327,7 +317,7 @@ class TestMessagesHandler:
             min_clients=1, max_clients=None, timeout=1.0
         )
         coro_register_client = handler.handle_message(
-            Join("client", VERSION).to_string(), "context"
+            Join("client", VERSION).serialize(), "context"
         )
         outp_wait, outp_join = await asyncio.gather(
             coro_wait_for_client, coro_register_client
@@ -346,10 +336,10 @@ class TestMessagesHandler:
             min_clients=1, max_clients=None, timeout=0.2
         )
         coro_register_client_a = handler.handle_message(
-            Join("client", VERSION).to_string(), "context-a"
+            Join("client", VERSION).serialize(), "context-a"
         )
         coro_register_client_b = handler.handle_message(
-            Join("client", VERSION).to_string(), "context-b"
+            Join("client", VERSION).serialize(), "context-b"
         )
         start = time.time()
         outp_wait, outp_join_a, outp_join_b = await asyncio.gather(
@@ -375,7 +365,7 @@ class TestMessagesHandler:
             min_clients=2, max_clients=None, timeout=0.2
         )
         coro_register_client = handler.handle_message(
-            Join("client", VERSION).to_string(), "context"
+            Join("client", VERSION).serialize(), "context"
         )
         start = time.time()
         excp_wait, outp_join = await asyncio.gather(
@@ -399,13 +389,13 @@ class TestMessagesHandler:
             min_clients=1, max_clients=2, timeout=0.2
         )
         coro_register_client_a = handler.handle_message(
-            Join("client", VERSION).to_string(), "context-a"
+            Join("client", VERSION).serialize(), "context-a"
         )
         coro_register_client_b = handler.handle_message(
-            Join("client", VERSION).to_string(), "context-b"
+            Join("client", VERSION).serialize(), "context-b"
         )
         coro_register_client_c = handler.handle_message(
-            Join("client", VERSION).to_string(), "context-c"
+            Join("client", VERSION).serialize(), "context-c"
         )
         start = time.time()
         excp_wait, *join_replies = await asyncio.gather(

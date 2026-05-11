@@ -37,9 +37,11 @@ from declearn.model.api._vector import Vector
 from declearn.typing import Batch
 from declearn.utils import (
     DevicePolicy,
+    access_registered,
     create_types_registry,
     register_from_attr,
 )
+from declearn.utils.serialize import add_serialization_support
 
 __all__ = [
     "Model",
@@ -95,6 +97,13 @@ class Model(Generic[VectorT], metaclass=ABCMeta):
         super().__init_subclass__(**kwargs)
         if register:
             register_from_attr(cls, "typekey", group="Model")
+            add_serialization_support(
+                cls,
+                "msgpack",
+                lambda obj: obj.get_config(allow_bin=True),
+                lambda obj: cls.from_config(obj, allow_bin=True),
+                cls.__name__,
+            )
 
     def __init__(
         self,
@@ -162,19 +171,53 @@ class Model(Generic[VectorT], metaclass=ABCMeta):
         from client-wise dict.
         """
 
-    @abstractmethod
     def get_config(
         self,
+        allow_bin: bool = False,
     ) -> Dict[str, Any]:
-        """Return the model's parameters as a JSON-serializable dict."""
+        """Return the model parameters as a serializable dict.
+
+        Parameters
+        ----------
+        allow_bin:
+            True if binary representations (bytes-like types) are allowed in
+            the configuration dictionary. If false, bytes will be encoded in
+            character string (e.g. hexadecimal string).
+
+        Notes
+        -----
+        When overriding this method, subclasses must call super().get_config()
+        to include the following base config in their config dictionary.
+        """
+        return {"typekey": self.typekey}
 
     @classmethod
-    @abstractmethod
     def from_config(
         cls,
         config: Dict[str, Any],
+        allow_bin: bool = False,
     ) -> Self:
-        """Instantiate a model from a configuration dict."""
+        """Instantiate a model from a configuration dict.
+
+        Parameters
+        ----------
+        config:
+            Configuration dictionary.
+        allow_bin:
+            True if binary representations (bytes-like types) are allowed in
+            the configuration dictionary.
+
+        Raises
+        ------
+        ValueError:
+            If the config dictionary does not contain a 'typekey' field.
+        """
+        if "typekey" not in config:
+            raise ValueError(
+                "Model configuration must contain a 'typekey' field."
+            )
+        subclass = access_registered(config["typekey"], group="Model")
+        return subclass.from_config(config, allow_bin)
 
     @abstractmethod
     def get_weights(

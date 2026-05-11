@@ -93,6 +93,8 @@ class NetworkServer(metaclass=abc.ABCMeta):
     protocol: ClassVar[str] = NotImplemented
     """Protocol name identifier, unique across NetworkServer classes."""
 
+    handler: MessagesHandler
+
     def __init_subclass__(
         cls,
         register: bool = True,
@@ -261,7 +263,7 @@ class NetworkServer(metaclass=abc.ABCMeta):
 
         Parameters
         ----------
-        message: str
+        message: Message
             Message instance that is to be delivered to the client.
         client: str
             Identifier of the client to whom the message is addressed.
@@ -275,7 +277,7 @@ class NetworkServer(metaclass=abc.ABCMeta):
             If `timeout` is set and is reached while the message is
             yet to be collected by the client.
         """
-        await self.handler.send_message(message.to_string(), client, timeout)
+        await self.handler.send_message(message.serialize(), client, timeout)
 
     async def send_messages(
         self,
@@ -314,7 +316,7 @@ class NetworkServer(metaclass=abc.ABCMeta):
 
         Parameters
         ----------
-        message: str
+        message: Message
             Message instance that is to be delivered to the clients.
         clients: set[str] or None, default=None
             Optional subset of registered clients, messages from
@@ -348,7 +350,7 @@ class NetworkServer(metaclass=abc.ABCMeta):
 
         Returns
         -------
-        messages:
+        ser_messages:
             A dictionary mapping clients' names to the serialized
             messages they sent to the server.
         """
@@ -357,8 +359,8 @@ class NetworkServer(metaclass=abc.ABCMeta):
         routines = [self.handler.recv_message(client) for client in clients]
         received = await asyncio.gather(*routines, return_exceptions=False)
         return {
-            client: SerializedMessage.from_message_string(string)
-            for client, string in zip(clients, received, strict=False)
+            client: SerializedMessage.from_bin_message(bin_msg)
+            for client, bin_msg in zip(clients, received, strict=False)
         }
 
     async def wait_for_messages_with_timeout(
@@ -379,9 +381,9 @@ class NetworkServer(metaclass=abc.ABCMeta):
 
         Returns
         -------
-        messages: dict[str, Message]
+        ser_msgs: dict[str, SerializedMessage]
             A dictionary where the keys are the clients' names and
-            the values are Message objects they sent to the server.
+            the values are SerializedMessage objects they sent to the server.
         timeouts: list[str]
             List of names of clients that failed to send a message
             prior to `timeout` being reached.
@@ -392,7 +394,7 @@ class NetworkServer(metaclass=abc.ABCMeta):
             self.handler.recv_message(client, timeout) for client in clients
         ]
         received = await asyncio.gather(*routines, return_exceptions=True)
-        messages: Dict[str, SerializedMessage] = {}
+        ser_msgs: Dict[str, SerializedMessage] = {}
         timeouts: List[str] = []
         for client, output in zip(clients, received, strict=False):
             if isinstance(output, asyncio.TimeoutError):
@@ -400,7 +402,5 @@ class NetworkServer(metaclass=abc.ABCMeta):
             elif isinstance(output, BaseException):
                 raise output
             else:
-                messages[client] = SerializedMessage.from_message_string(
-                    output
-                )
-        return messages, timeouts
+                ser_msgs[client] = SerializedMessage.from_bin_message(output)
+        return ser_msgs, timeouts

@@ -40,7 +40,7 @@ __all__ = [
 ]
 
 
-CHUNK_LENGTH = 2**22 - 50  # 2**22 - sys.getsizeof("") - 1
+CHUNK_LENGTH = 2**22 - 16  # max_size - protobuf overhead with a safety margin
 
 
 def load_pem_file(path: str, password: Optional[str] = None) -> bytes:
@@ -71,6 +71,8 @@ class GrpcServer(NetworkServer):
     """Server-side communication endpoint using gRPC."""
 
     protocol = "grpc"
+
+    handler: MessagesHandler
 
     # pylint: disable-next=too-many-positional-arguments
     # TODO for 2.10 : remove deprecated "logger" argument
@@ -204,15 +206,15 @@ class GrpcServicer(MessageBoardServicer):
 
     async def _handle_and_reply(
         self,
-        message: str,
+        bin_msg: bytes,
         context: grpc.ServicerContext,
     ) -> AsyncIterator[message_pb2.Message]:  # type: ignore
         """Handle a received message and send back the (chunked) reply."""
-        reply = await self.handler.handle_message(message, context.peer())
-        string = reply.to_string()
-        for srt in range(0, len(string), CHUNK_LENGTH):
+        reply = await self.handler.handle_message(bin_msg, context.peer())
+        bin_reply = reply.serialize()
+        for srt in range(0, len(bin_reply), CHUNK_LENGTH):
             end = srt + CHUNK_LENGTH
-            yield message_pb2.Message(message=string[srt:end])
+            yield message_pb2.Message(message=bin_reply[srt:end])
 
     async def send(
         self,
@@ -221,8 +223,8 @@ class GrpcServicer(MessageBoardServicer):
     ) -> AsyncIterator[message_pb2.Message]:  # type: ignore
         """Handle a Message-sending request from a client."""
         # async is needed; pylint: disable=invalid-overridden-method
-        message = request.message  # type: ignore
-        async for chunk in self._handle_and_reply(message, context):
+        bin_msg = request.message  # type: ignore
+        async for chunk in self._handle_and_reply(bin_msg, context):
             yield chunk
 
     async def send_stream(
@@ -239,11 +241,12 @@ class GrpcServicer(MessageBoardServicer):
                 "Refused a chunks-streaming request from client %s",
                 context.peer(),
             )
-            yield message_pb2.Message(message=error.to_string())
+            yield message_pb2.Message(message=error.serialize())
         # Otherwise, assemble the message for streamed chunks, then reply.
         else:
-            message = ""
+            req_chunks = []
             async for request in request_iterator:
-                message += request.message  # type: ignore
-            async for chunk in self._handle_and_reply(message, context):
+                req_chunks.append(request.message)
+            bin_msg = b"".join(req_chunks)
+            async for chunk in self._handle_and_reply(bin_msg, context):
                 yield chunk

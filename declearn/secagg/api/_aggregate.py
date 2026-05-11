@@ -37,8 +37,8 @@ from declearn.utils import (
     Aggregate,
     access_registered,
     access_registration_info,
-    add_json_support,
 )
+from declearn.utils.serialize import add_serialization_support
 
 __all__ = [
     "ArraySpec",
@@ -110,9 +110,13 @@ class SecureAggregate(Generic[AggregateT], metaclass=abc.ABCMeta):
         cls,
         register: bool = True,
     ) -> None:
-        """Automatically add JSON support for subclasses."""
-        add_json_support(
-            cls=cls, pack=cls.to_dict, unpack=cls.from_dict, name=cls.__name__
+        """Automatically add serialization support for subclasses."""
+        add_serialization_support(
+            cls=cls,
+            fmt="msgpack",
+            encode=cls.to_dict,
+            decode=cls.from_dict,
+            name=cls.__name__,
         )
 
     def aggregate(

@@ -19,15 +19,18 @@
 
 import abc
 import dataclasses
+from copy import copy
 from typing import Any, ClassVar, Dict, Generic, Self, Type, TypeVar, Union
 
 from declearn.model.api import Vector
 from declearn.utils import (
     Aggregate,
+    access_registered,
     access_types_mapping,
     create_types_registry,
     register_from_attr,
 )
+from declearn.utils.serialize import add_serialization_support
 
 __all__ = [
     "Aggregator",
@@ -108,7 +111,7 @@ class Aggregator(Generic[ModelUpdatesT], metaclass=abc.ABCMeta):
     - updates_cls: type[ModelUpdates] class attribute
         Type of 'ModelUpdates' data structure used by this Aggregator class.
     - get_config() -> Dict[str, Any]:
-        Return a JSON-serializable configuration dict of an instance.
+        Return a serializable configuration dict of an instance.
     - from_config(Dict[str, Any]) -> Aggregator:
         Classmethod to instantiate an Aggregator from a config dict.
 
@@ -136,6 +139,13 @@ class Aggregator(Generic[ModelUpdatesT], metaclass=abc.ABCMeta):
         super().__init_subclass__(**kwargs)
         if register:
             register_from_attr(cls, "name", group="Aggregator")
+            add_serialization_support(
+                cls,
+                "msgpack",
+                lambda obj: obj.get_config(),
+                cls.from_config,
+                cls.__name__,
+            )
 
     @abc.abstractmethod
     def prepare_for_sharing(
@@ -176,16 +186,35 @@ class Aggregator(Generic[ModelUpdatesT], metaclass=abc.ABCMeta):
     def get_config(
         self,
     ) -> Dict[str, Any]:
-        """Return a JSON-serializable dict with this object's parameters."""
-        return {}  # pragma: no cover
+        """Return a serializable dict with this object's parameters.
+
+        Notes
+        -----
+        When overriding this method, subclasses must call super().get_config()
+        to include the following base config in their config dictionary.
+        """
+        return {"name": self.name}  # pragma: no cover
 
     @classmethod
     def from_config(
         cls,
         config: Dict[str, Any],
     ) -> Self:
-        """Instantiate an Aggregator from its configuration dict."""
-        return cls(**config)
+        """Instantiate an Aggregator from its configuration dict.
+
+        Raises
+        ------
+        ValueError:
+            If the config dictionary does not contain a 'name' field.
+        """
+        if "name" not in config:
+            raise ValueError(
+                "Aggregator configuration must contain a 'name' field."
+            )
+        kwargs = copy(config)  # Copy to avoid side effect on input config.
+        name = kwargs.pop("name")
+        subclass = access_registered(name, group="Aggregator")
+        return subclass(**kwargs)
 
 
 def list_aggregators() -> Dict[str, Type[Aggregator]]:

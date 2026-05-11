@@ -32,43 +32,89 @@ other points of the application, leaving network communications
 with the mere job to transmit strings across the network.
 """
 
+from __future__ import annotations
+
 import abc
 import dataclasses
-import json
 from typing import Optional
 
-from declearn.version import VERSION
+import msgpack  # type: ignore
+
+from declearn.utils.serialize import msgpack_deserialize, msgpack_serialize
 
 __all__ = [
     "Accept",
     "ActionMessage",
     "Drop",
     "Join",
-    "LegacyReject",
-    "LegacyMessageError",
     "Ping",
     "Recv",
     "Reject",
     "Send",
-    "parse_action_from_string",
 ]
-
-
-class LegacyMessageError(Exception):
-    """Custom exception to denote legacy Message being received."""
 
 
 @dataclasses.dataclass
 class ActionMessage(metaclass=abc.ABCMeta):  # noqa: B024
     """Abstract base class for fundamental messages."""
 
-    def to_string(
+    def serialize(
         self,
-    ) -> str:
-        """Serialize this 'ActionMessage' to a string."""
+    ) -> bytes:
+        """Serialize this `ActionMessage` to bytes."""
         data = dataclasses.asdict(self)
         data["action"] = self.__class__.__name__.lower()
-        return json.dumps(data)
+        return msgpack_serialize(data)
+
+    @staticmethod
+    def deserialize(
+        bin_msg: bytes,
+    ) -> ActionMessage:
+        """Parse a serialized `ActionMessage` from bytes.
+
+        Parameters
+        ----------
+        bin_msg:
+            Serialized `ActionMessage` instance bytes.
+
+        Returns
+        -------
+        action:
+            `ActionMessage` recovered from binary data.
+
+        Raises
+        ------
+        KeyError
+            If the bytes cannot be mapped to an `ActionMessage` class.
+        ValueError
+            If the bytes cannot be parsed properly.
+        """
+        try:
+            data = msgpack_deserialize(bin_msg)
+        except (msgpack.UnpackException, msgpack.ExtraData) as exc:
+            raise ValueError("Failed to parse 'ActionMessage' bytes.") from exc
+        except TypeError as exc:
+            err_msg = "Failed to parse 'ActionMessage'."
+            if not isinstance(bin_msg, bytes):
+                err_msg += f" Bytes expected, not '{type(bin_msg).__name__}'."
+            if isinstance(bin_msg, str):
+                err_msg += (
+                    " Make sure to use the same DecLearn version everywhere."
+                )
+            raise ValueError(err_msg) from exc
+
+        if "action" not in data:
+            raise ValueError(
+                "Failed to parse 'ActionMessage' bytes: no 'action' key."
+            )
+        action = data.pop("action")
+        cls = ACTION_MESSAGES.get(action, None)
+        if cls is None:
+            raise KeyError(
+                "Failed to parse 'ActionMessage' bytes: no class matches "
+                f"'{action}' key."
+            )
+        return cls(**data)
 
 
 @dataclasses.dataclass
@@ -116,7 +162,8 @@ class Reject(ActionMessage):
 class Send(ActionMessage):
     """Action message to post content to or receive content from the server."""
 
-    content: str
+    content: bytes
+    """Conveyed binary-serialized content."""
 
 
 _ACTION_CLASSES = [
@@ -129,68 +176,3 @@ _ACTION_CLASSES = [
     Send,
 ]
 ACTION_MESSAGES = {cls.__name__.lower(): cls for cls in _ACTION_CLASSES}
-
-
-def parse_action_from_string(
-    string: str,
-) -> ActionMessage:
-    """Parse a serialized `ActionMessage` from a string.
-
-    Parameters
-    ----------
-    string:
-        Serialized `ActionMessage` instance string.
-
-    Returns
-    -------
-    action:
-        `ActionMessage` recovered from `string`.
-
-    Raises
-    ------
-    KeyError
-        If the string cannot be mapped to an `ActionMessage` class.
-    LegacyMessageError
-        If the string appears to be a serialized legacy `Message`,
-        probably received from an older-declearn-version peer.
-    ValueError
-        If the string cannot be parsed properly.
-    """
-    try:
-        data = json.loads(string)
-    except json.JSONDecodeError as exc:
-        raise ValueError("Failed to parse 'ActionMessage' string.") from exc
-    if "action" not in data:
-        if "typekey" in data:
-            raise LegacyMessageError(
-                f"Received a legacy message with type '{data['typekey']}'."
-            )
-        raise ValueError(
-            "Failed to parse 'ActionMessage' string: no 'action' key."
-        )
-    action = data.pop("action")
-    cls = ACTION_MESSAGES.get(action, None)
-    if cls is None:
-        raise KeyError(
-            "Failed to parse 'ActionMessage' string: no class matches "
-            f"'{data['action']}' key."
-        )
-    return cls(**data)
-
-
-@dataclasses.dataclass
-class LegacyReject(ActionMessage):
-    """Server action to reject a legacy client's (registration) message.
-
-    This message will be serialized in a way that is compatible with the
-    legacy message parser, but not with the current one.
-    """
-
-    def to_string(
-        self,
-    ) -> str:
-        message = (
-            "Cannot communicate due to the DecLearn version in use. "
-            f"Please update to `declearn ~= {VERSION}`."
-        )
-        return json.dumps({"typekey": "error", "message": message})

@@ -218,7 +218,7 @@ class MetricSet:
     def get_config(
         self,
     ) -> Dict[str, Any]:
-        """Return a JSON-serializable configuration dict for this MetricSet."""
+        """Return a serializable configuration dict for this MetricSet."""
         cfg = [(metric.name, metric.get_config()) for metric in self.metrics]
         return {"metrics": cfg}
 

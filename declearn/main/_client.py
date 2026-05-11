@@ -220,20 +220,20 @@ class FederatedClient:
             await self.initialize()
             # Process server instructions as they come.
             while True:
-                message = await self.netwk.recv_message()
-                stoprun = await self.handle_message(message)
+                ser_msg: SerializedMessage = await self.netwk.recv_message()
+                stoprun = await self.handle_message(ser_msg)
                 if stoprun:
                     break
 
     async def handle_message(
         self,
-        message: SerializedMessage,
+        ser_msg: SerializedMessage,
     ) -> bool:
         """Handle an incoming message from the server.
 
         Parameters
         ----------
-        message: SerializedMessage
+        ser_msg: SerializedMessage
             Serialized message that needs triage and processing.
 
         Returns
@@ -242,22 +242,22 @@ class FederatedClient:
             Whether to interrupt the client's message-receiving loop.
         """
         exit_loop = False
-        if issubclass(message.message_cls, messaging.TrainRequest):
-            await self.training_round(message.deserialize())
-        elif issubclass(message.message_cls, messaging.EvaluationRequest):
-            await self.evaluation_round(message.deserialize())
-        elif issubclass(message.message_cls, messaging.FairnessQuery):
-            await self.fairness_round(message.deserialize())
-        elif issubclass(message.message_cls, SecaggSetupQuery):
-            await self.setup_secagg(message)  # note: keep serialized
-        elif issubclass(message.message_cls, messaging.StopTraining):
-            await self.stop_training(message.deserialize())
+        if issubclass(ser_msg.message_cls, messaging.TrainRequest):
+            await self.training_round(ser_msg.deserialize())
+        elif issubclass(ser_msg.message_cls, messaging.EvaluationRequest):
+            await self.evaluation_round(ser_msg.deserialize())
+        elif issubclass(ser_msg.message_cls, messaging.FairnessQuery):
+            await self.fairness_round(ser_msg.deserialize())
+        elif issubclass(ser_msg.message_cls, SecaggSetupQuery):
+            await self.setup_secagg(ser_msg)  # note: keep serialized
+        elif issubclass(ser_msg.message_cls, messaging.StopTraining):
+            await self.stop_training(ser_msg.deserialize())
             exit_loop = True
-        elif issubclass(message.message_cls, messaging.CancelTraining):
-            await self.cancel_training(message.deserialize())
+        elif issubclass(ser_msg.message_cls, messaging.CancelTraining):
+            await self.cancel_training(ser_msg.deserialize())
         else:
             error = "Unexpected message type received from server: "
-            error += message.message_cls.__name__
+            error += ser_msg.message_cls.__name__
             self.logger.error(error)
             raise ValueError(error)
         return exit_loop
@@ -308,7 +308,7 @@ class FederatedClient:
         """
         # Await initialization instructions.
         self.logger.info("Awaiting initialization instructions from server.")
-        received = await self.netwk.recv_message()
+        received: SerializedMessage = await self.netwk.recv_message()
         # If a MetadataQuery is received, process it, then await InitRequest.
         if issubclass(received.message_cls, messaging.MetadataQuery):
             await self._collect_and_send_metadata(received.deserialize())
@@ -456,7 +456,7 @@ class FederatedClient:
         try:
             # When SecAgg is to be used, setup controllers first.
             if self.secagg is not None:
-                received = await self.netwk.recv_message()
+                received: SerializedMessage = await self.netwk.recv_message()
                 await self.setup_secagg(received)
             # Await and deserialize a FairnessSetupQuery.
             received = await self.netwk.recv_message()
@@ -689,7 +689,7 @@ class FederatedClient:
             message.loss,
         )
         if self.ckptr:
-            path = os.path.join(self.ckptr.folder, "model_state_best.json")
+            path = os.path.join(self.ckptr.folder, "model_state_best.mpk")
             self.logger.info("Checkpointing final weights under %s.", path)
             assert self.trainmanager is not None  # for mypy
             self.trainmanager.model.set_weights(

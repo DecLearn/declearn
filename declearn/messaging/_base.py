@@ -18,7 +18,7 @@
 """Messages for the default Federated Learning process of DecLearn."""
 
 import dataclasses
-from typing import Any, Dict, List, Optional, Self, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from declearn.aggregator import Aggregator, ModelUpdates
 from declearn.messaging._api import Message
@@ -26,7 +26,6 @@ from declearn.metrics import MetricInputType, MetricState
 from declearn.model.api import Model, Vector
 from declearn.optimizer import Optimizer
 from declearn.optimizer.modules import AuxVar
-from declearn.utils import deserialize_object, serialize_object
 
 __all__ = [
     "CancelTraining",
@@ -122,22 +121,15 @@ class InitRequest(Message):
     fairness: bool = False
 
     def to_kwargs(self) -> Dict[str, Any]:
-        data: Dict[str, Any] = {}
-        data["model"] = serialize_object(self.model, group="Model").to_dict()
-        data["optim"] = self.optim.get_config()
-        data["aggrg"] = serialize_object(self.aggrg, "Aggregator").to_dict()
-        data["metrics"] = self.metrics
-        data["dpsgd"] = self.dpsgd
-        data["secagg"] = self.secagg
-        data["fairness"] = self.fairness
-        return data
-
-    @classmethod
-    def from_kwargs(cls, **kwargs: Any) -> Self:
-        kwargs["model"] = deserialize_object(kwargs["model"])
-        kwargs["optim"] = Optimizer.from_config(kwargs["optim"])
-        kwargs["aggrg"] = deserialize_object(kwargs["aggrg"])
-        return cls(**kwargs)
+        kwargs: Dict[str, Any] = {}
+        kwargs["model"] = self.model
+        kwargs["optim"] = self.optim
+        kwargs["aggrg"] = self.aggrg
+        kwargs["metrics"] = self.metrics
+        kwargs["dpsgd"] = self.dpsgd
+        kwargs["secagg"] = self.secagg
+        kwargs["fairness"] = self.fairness
+        return kwargs
 
 
 @dataclasses.dataclass

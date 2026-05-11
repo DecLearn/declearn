@@ -35,6 +35,7 @@ from declearn.optimizer.modules import AuxVar, OptiModule
 from declearn.optimizer.regularizers import Regularizer
 from declearn.optimizer.schedulers import Scheduler
 from declearn.typing import Batch
+from declearn.utils.serialize import add_serialization_support
 
 __all__ = [
     "Optimizer",
@@ -298,7 +299,7 @@ class Optimizer:
     def get_config(
         self,
     ) -> Dict[str, Any]:
-        """Return a JSON-serializable dict with this optimizer's parameters.
+        """Return a serializable dict with this optimizer's parameters.
 
         The counterpart to this method is the `from_config` classmethod.
         To access the optimizer's inner states, see the `get_state` method.
@@ -306,7 +307,7 @@ class Optimizer:
         Returns
         -------
         config: dict[str, any]
-            JSON-serializable dict storing this optimizer's instantiation
+            Serializable dict storing this optimizer's instantiation
             configuration.
         """
 
@@ -528,14 +529,14 @@ class Optimizer:
     def get_state(
         self,
     ) -> Dict[str, Any]:
-        """Return a JSON-serializable dict with this optimizer's state.
+        """Return a serializable dict with this optimizer's state.
 
         The counterpart to this method is the `set_state` one.
 
         Returns
         -------
         state: dict[str, any]
-            JSON-serializable dict storing this optimizer's inner state
+            Serializable dict storing this optimizer's inner state
             variables (i.e. those from its modules).
         """
         lrate = self._lrate_scheduler.get_state()
@@ -612,3 +613,12 @@ class Optimizer:
                 )
             # Note: this may raise a KeyError if 'state' is misspecified.
             mod.set_state(state)
+
+
+add_serialization_support(
+    Optimizer,
+    "msgpack",
+    lambda obj: obj.get_config(),
+    Optimizer.from_config,
+    "Optimizer",
+)

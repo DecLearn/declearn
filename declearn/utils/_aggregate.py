@@ -21,8 +21,8 @@ import abc
 import dataclasses
 from typing import Any, ClassVar, Dict, Optional, Self, Tuple
 
-from declearn.utils._json import add_json_support
 from declearn.utils._register import create_types_registry, register_type
+from declearn.utils.serialize._base import add_serialization_support
 
 __all__ = [
     "Aggregate",
@@ -73,43 +73,55 @@ class Aggregate(metaclass=abc.ABCMeta):
 
     Serialization
     -------------
-
     By default, subclasses will be made (de)serializable to and from
-    JSON, using `declearn.utils.add_json_support` and the `to_dict`
-    and `from_dict` methods. They will also be type-registered using
-    `declearn.utils.register_type`. This may be prevented by passing
+    MessagePack, using `declearn.utils.serialize.add_serialization_support` and
+    the `to_dict` and `from_dict` methods. They will also be type-registered
+    using `declearn.utils.register_type`. This may be prevented by passing
     the `register=False` keyword argument at inheritance time, i.e.
     `class MyAggregate(Aggregate, register=False):`.
 
     For this to succeed, first-child subclasses of `Aggregate` need
     to define the class attribute `_group_key`, that acts as a root
-    for their children' JSON-registration name, and the group name
+    for their children' serialization registration name, and the group name
     for their type registration. They also need to be passed the
     `base_cls=True` keyword argument at inheritance time, i.e.
     `class FirstChild(Aggregate, base_cls=True):`.
     """
 
-    _group_key: ClassVar[str]  # Group key for JSON registration.
+    _group_key: ClassVar[str]  # Group key for registration.
 
     def __init_subclass__(
         cls,
         base_cls: bool = False,
         register: bool = True,
     ) -> None:
-        """Automatically type-register and add JSON support for subclasses."""
+        """Automatically type-register and add serialization support for
+        subclasses.
+        """
         if base_cls:
             create_types_registry(cls, name=cls._group_key)
         if register:
             name = f"{cls._group_key}>{cls.__name__}"
-            add_json_support(
-                cls, pack=cls.to_dict, unpack=cls.from_dict, name=name
+            add_serialization_support(
+                cls,
+                fmt="msgpack",
+                encode=cls.to_dict,
+                decode=cls.from_dict,
+                name=name,
+            )
+            add_serialization_support(
+                cls,
+                fmt="json",
+                encode=cls.to_dict,
+                decode=cls.from_dict,
+                name=name,
             )
             register_type(cls, name=cls.__name__, group=cls._group_key)
 
     def to_dict(
         self,
     ) -> Dict[str, Any]:
-        """Return a JSON-serializable dict representation of this instance."""
+        """Return a serializable dict representation of this instance."""
         return dataclasses.asdict(self)
 
     @classmethod

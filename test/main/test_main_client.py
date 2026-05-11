@@ -360,8 +360,8 @@ class TestFederatedClientInitialize:
         netwk = mock.create_autospec(NetworkClient, instance=True)
         netwk.name = "client"
         msg_data: messaging.SerializedMessage[messaging.MetadataQuery] = (
-            messaging.SerializedMessage.from_message_string(
-                messaging.MetadataQuery(fields=["n_samples"]).to_string()
+            messaging.SerializedMessage.from_bin_message(
+                messaging.MetadataQuery(fields=["n_samples"]).serialize()
             )
         )
         msg_init = self._setup_mock_init_request()
@@ -396,8 +396,8 @@ class TestFederatedClientInitialize:
         netwk = mock.create_autospec(NetworkClient, instance=True)
         netwk.name = "client"
         msg_data: messaging.SerializedMessage[messaging.MetadataQuery] = (
-            messaging.SerializedMessage.from_message_string(
-                messaging.MetadataQuery(fields=["invalid"]).to_string()
+            messaging.SerializedMessage.from_bin_message(
+                messaging.MetadataQuery(fields=["invalid"]).serialize()
             )
         )
         netwk.recv_message.return_value = msg_data
@@ -1133,8 +1133,8 @@ class TestFederatedClientMisc:
         client = FederatedClient(netwk=netwk, train_data=MOCK_DATASET)
         # Have it process a CancelTraining message.
         message: messaging.SerializedMessage[messaging.CancelTraining] = (
-            messaging.SerializedMessage.from_message_string(
-                messaging.CancelTraining(reason="mock-reason").to_string()
+            messaging.SerializedMessage.from_bin_message(
+                messaging.CancelTraining(reason="mock-reason").serialize()
             )
         )
         with pytest.raises(RuntimeError, match=".*mock-reason"):
@@ -1149,8 +1149,8 @@ class TestFederatedClientMisc:
         client = FederatedClient(netwk=netwk, train_data=MOCK_DATASET)
         # Have it process an Error message.
         message: messaging.SerializedMessage[messaging.Error] = (
-            messaging.SerializedMessage.from_message_string(
-                messaging.Error(message="error-message").to_string()
+            messaging.SerializedMessage.from_bin_message(
+                messaging.Error(message="error-message").serialize()
             )
         )
         with pytest.raises(ValueError):

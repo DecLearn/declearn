@@ -30,7 +30,7 @@ variables:
 
 # Shared configuration elements between all jobs.
 default:
-  image: "registry.gitlab.inria.fr/magnet/declearn/declearn2/ci-python311:latest"
+  image: "registry.gitlab.inria.fr/magnet/declearn/declearn/ci-python311:latest"
   tags:
     - magnet
     - gpu

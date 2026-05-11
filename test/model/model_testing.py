@@ -18,15 +18,22 @@
 """Shared testing code for TensorFlow and Torch models' unit tests."""
 
 import copy
-import json
 from typing import Any, Generic, List, Protocol, Tuple, Type, TypeVar, Union
 
 import numpy as np
+import pytest
 
 from declearn.model.api import Model, Vector
-from declearn.test_utils import assert_json_serializable_dict, to_numpy
+from declearn.test_utils import (
+    assert_dict_equal,
+    assert_json_serializable_dict,
+    to_numpy,
+)
 from declearn.typing import Batch
-from declearn.utils import json_pack, json_unpack
+from declearn.utils.serialize import (
+    msgpack_deserialize,
+    msgpack_serialize,
+)
 
 VectorT = TypeVar("VectorT", bound=Vector)
 
@@ -66,18 +73,24 @@ class ModelTestSuite:
     ) -> None:
         """Check that the model's config is JSON-serializable."""
         model = test_case.model
-        config = model.get_config()
+        config = model.get_config(allow_bin=False)
         assert_json_serializable_dict(config)
 
+    @pytest.mark.parametrize(
+        "allow_bin", [False, True], ids=["forbid_bin", "allow_bin"]
+    )
     def test_from_config(
         self,
         test_case: ModelTestCase,
+        allow_bin: bool,
     ) -> None:
         """Check that the model can be instantiated from its config."""
         model = test_case.model
-        config = model.get_config()
-        other = model.from_config(copy.deepcopy(config))
-        assert model.get_config() == other.get_config()
+        config = model.get_config(allow_bin=allow_bin)
+        other = Model.from_config(copy.deepcopy(config), allow_bin=allow_bin)
+        model_config = model.get_config(allow_bin=allow_bin)
+        other_config = other.get_config(allow_bin=allow_bin)
+        assert model_config == other_config
         assert model.device_policy == other.device_policy
 
     def test_get_set_weights(
@@ -145,6 +158,17 @@ class ModelTestSuite:
         )
         assert max_err < 1e-7
 
+    def test_msgpack_serialization(
+        self,
+        test_case: ModelTestCase,
+    ) -> None:
+        """Test that MessagePack-serialization of a Model works properly."""
+        model = test_case.model
+        dump = msgpack_serialize(model)
+        model_bis = msgpack_deserialize(dump)
+        assert isinstance(model_bis, type(model))
+        assert_dict_equal(model.get_config(), model_bis.get_config())
+
     def test_compute_batch_gradients_clipped(
         self,
         test_case: ModelTestCase,
@@ -202,13 +226,13 @@ class ModelTestSuite:
         self,
         test_case: ModelTestCase,
     ) -> None:
-        """Test that computed gradients can be (de)serialized as strings."""
+        """Test that computed gradients can be (de)serialized."""
         model = test_case.model
         batch = test_case.dataset[0]
         grads = model.compute_batch_gradients(batch)
-        gdump = json.dumps(grads, default=json_pack)
-        assert isinstance(gdump, str)
-        other = json.loads(gdump, object_hook=json_unpack)
+        gdump = msgpack_serialize(grads)
+        assert isinstance(gdump, bytes)
+        other = msgpack_deserialize(gdump)
         assert grads == other
 
     def test_compute_batch_predictions(

@@ -29,13 +29,10 @@ from declearn.communication.api.backend.actions import (
     ActionMessage,
     Drop,
     Join,
-    LegacyMessageError,
-    LegacyReject,
     Ping,
     Recv,
     Reject,
     Send,
-    parse_action_from_string,
 )
 from declearn.version import VERSION
 
@@ -71,8 +68,8 @@ class MessagesHandler:
         self.heartbeat = heartbeat
         # Set up containers for client identifiers and pending messages.
         self.registered_clients: Dict[Any, str] = {}
-        self.outgoing_messages: Dict[str, str] = {}
-        self.incoming_messages: Dict[str, str] = {}
+        self.outgoing_messages: Dict[str, bytes] = {}
+        self.incoming_messages: Dict[str, bytes] = {}
         # Mark client-registration as unopened.
         self.registration_status = flags.REGISTRATION_UNSTARTED
 
@@ -96,15 +93,15 @@ class MessagesHandler:
 
     async def handle_message(
         self,
-        string: str,
+        bin_msg: bytes,
         context: Any,
     ) -> ActionMessage:
         """Handle an incoming message from a client.
 
         Parameters
         ----------
-        string: str
-            Received message, as a string that can be parsed back
+        bin_msg: bytes
+            Received message, as bytes that can be parsed back
             into an `ActionMessage` instance.
         context: hashable
             Communications-protocol-specific hashable object that
@@ -120,16 +117,13 @@ class MessagesHandler:
         """
         # Parse the incoming message. If it is incorrect, reject it.
         try:
-            message = parse_action_from_string(string)
+            message = ActionMessage.deserialize(bin_msg)
         except (KeyError, TypeError, ValueError) as exc:
             self.logger.info(
                 "Exception encountered while parsing received message: %s",
                 repr(exc),
             )
             return Reject(flags.INVALID_MESSAGE)
-        except LegacyMessageError as exc:
-            self.logger.info(repr(exc))
-            return LegacyReject()
         # Case: join request from a (new) client. Handle it.
         if isinstance(message, Join):
             return await self._handle_join_request(message, context)
@@ -271,15 +265,15 @@ class MessagesHandler:
 
     def post_message(
         self,
-        message: str,
+        bin_msg: bytes,
         client: str,
     ) -> None:
         """Post a message to be requested by a given client.
 
         Parameters
         ----------
-        message: str
-            Message string that is to be posted for the client to collect.
+        bin_msg: bytes
+            Message bytes that is to be posted for the client to collect.
         client: str
             Name of the client to whom the message is addressed.
 
@@ -297,11 +291,11 @@ class MessagesHandler:
                 "Overwriting pending message uncollected by client '%s'.",
                 client,
             )
-        self.outgoing_messages[client] = message
+        self.outgoing_messages[client] = bin_msg
 
     async def send_message(
         self,
-        message: str,
+        bin_msg: bytes,
         client: str,
         timeout: Optional[float] = None,
     ) -> None:
@@ -309,8 +303,8 @@ class MessagesHandler:
 
         Parameters
         ----------
-        message: str
-            Message string that is to be posted for the client to collect.
+        bin_msg: bytes
+            Message bytes that is to be posted for the client to collect.
         client: str
             Name of the client to whom the message is addressed.
         timeout: float or None, default=None
@@ -329,7 +323,7 @@ class MessagesHandler:
         and move on without guarantees that it was collected.
         """
         # Post the message. Wait for it to have been collected.
-        self.post_message(message, client)
+        self.post_message(bin_msg, client)
         countdown = (
             max(math.ceil(timeout / self.heartbeat), 1) if timeout else -1
         )
@@ -345,7 +339,7 @@ class MessagesHandler:
     def check_message(
         self,
         client: str,
-    ) -> Optional[str]:
+    ) -> Optional[bytes]:
         """Check whether a message was received from a given client.
 
         Parameters
@@ -355,7 +349,7 @@ class MessagesHandler:
 
         Returns
         -------
-        message:
+        bin_msg: bytes
             Collected message that was sent by `client`, if any.
             In case no message is available, return None.
 
@@ -372,7 +366,7 @@ class MessagesHandler:
         self,
         client: str,
         timeout: Optional[float] = None,
-    ) -> str:
+    ) -> bytes:
         """Wait for a message to be received from a given client.
 
         Parameters
@@ -391,7 +385,7 @@ class MessagesHandler:
 
         Returns
         -------
-        message:
+        bin_msg: bytes
             Collected message that was sent by `client`.
 
         Notes
@@ -403,9 +397,9 @@ class MessagesHandler:
             max(math.ceil(timeout / self.heartbeat), 1) if timeout else -1
         )
         while countdown:
-            message = self.check_message(client)
-            if message is not None:
-                return message
+            bin_msg = self.check_message(client)
+            if bin_msg is not None:
+                return bin_msg
             await asyncio.sleep(self.heartbeat)
             countdown -= 1
         raise asyncio.TimeoutError(

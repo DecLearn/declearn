@@ -29,6 +29,7 @@ from declearn.metrics import Metric, MetricState
 from declearn.test_utils import (
     assert_dict_equal,
     assert_json_serializable_dict,
+    assert_msgpack_serializable_dict,
 )
 
 MetricStateT = TypeVar("MetricStateT", bound=MetricState)
@@ -196,9 +197,10 @@ class MetricTestSuite:
     def test_config(self, test_case: MetricTestCase) -> None:
         """Test that the metric supports (de)serialization from a dict."""
         metric = test_case.metric
-        # Test that `get_config` returns a JSON-serializable dict.
+        # Test that `get_config` returns a JSON and MsgPack serializable dict.
         config = metric.get_config()
         assert_json_serializable_dict(config)
+        assert_msgpack_serializable_dict(config)
         # Test that `from_config` produces a similar Metric.
         metbis = type(metric).from_config(config)
         assert isinstance(metbis, type(metric))

@@ -79,7 +79,7 @@ class FakeMessageBoard(MessageBoardServicer):
         request: message_pb2.Message,
         context: grpc.ServicerContext,
     ) -> Iterator[message_pb2.Message]:
-        yield message_pb2.Message(message=Ping().to_string())
+        yield message_pb2.Message(message=Ping().serialize())
 
 
 @pytest_asyncio.fixture(name="insecure_grpc_server")

@@ -39,6 +39,7 @@ dependencies = [
     "cryptography >= 35.0",
     "fire ~= 0.4",
     "gmpy2 ~= 2.1",
+    "msgpack>=1.1.2",
     "pandas >= 1.2, < 3.0",
     "requests ~= 2.18",
     "scikit-learn ~= 1.6",
@@ -46,10 +47,12 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-all = [  # all non-dev and non-example extra dependencies
+# All optional dependencies for Declearn usage
+# (does not include development and example-related dependencies)
+all = [
     "dm-haiku >= 0.0.15",
     "flax ~= 0.12",
-    "grpcio >= 1.45",
+    "grpcio >= 1.78",
     "jax[cpu] ~= 0.8",
     "opacus ~= 1.4",
     "protobuf >= 3.19",
@@ -62,7 +65,7 @@ dp = [
     "opacus ~= 1.4",
 ]
 grpc = [
-    "grpcio >= 1.45",
+    "grpcio >= 1.78",
     "protobuf >= 3.19",
 ]
 haiku = [
@@ -116,6 +119,7 @@ tests = [
 dev = [
     "build>=1.3.0",
     "griffe ~= 1.0",
+    "grpcio-tools>=1.78",
     "ipython>=9.8.0",
     "mkdocstrings[python] ~= 0.8",
     "mkdocs-autorefs ~= 0.4",
@@ -162,7 +166,7 @@ dev = [
 
 [project.urls]
 homepage = "https://magnet.gitlabpages.inria.fr/declearn/docs"
-repository = "https://gitlab.inria.fr/magnet/declearn/declearn2.git"
+repository = "https://gitlab.inria.fr/magnet/declearn/declearn.git"
 
 [project.scripts]
 declearn-quickrun = "declearn.quickrun._run:main"

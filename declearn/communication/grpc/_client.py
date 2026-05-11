@@ -34,7 +34,7 @@ __all__ = [
 ]
 
 
-CHUNK_LENGTH = 2**22 - 50  # 2**22 - sys.getsizeof("") - 1
+CHUNK_LENGTH = 2**22 - 16  # max_size - protobuf overhead with a safety margin
 
 
 class GrpcClient(NetworkClient):
@@ -109,26 +109,26 @@ class GrpcClient(NetworkClient):
 
     async def _send_message(
         self,
-        message: str,
-    ) -> str:
+        bin_msg: bytes,
+    ) -> bytes:
         """Send a message to the server and return the obtained reply."""
         if self._service is None:
             raise RuntimeError("Cannot send messages while not connected.")
         # Send the message, as a unary or as a stream of message chunks.
-        if len(message) <= CHUNK_LENGTH:
-            message = message_pb2.Message(message=message)
-            replies = self._service.send(message)
+        if len(bin_msg) <= CHUNK_LENGTH:
+            bin_msg = message_pb2.Message(message=bin_msg)
+            replies = self._service.send(bin_msg)
         else:
             chunks = (
-                message_pb2.Message(message=message[idx : idx + CHUNK_LENGTH])
-                for idx in range(0, len(message), CHUNK_LENGTH)
+                message_pb2.Message(message=bin_msg[idx : idx + CHUNK_LENGTH])
+                for idx in range(0, len(bin_msg), CHUNK_LENGTH)
             )
             replies = self._service.send_stream(chunks)
         # Collect the reply from a stream of message chunks.
-        buffer = ""
+        reply_chunks = []
         async for chunk in replies:
-            buffer += chunk.message
-        return buffer
+            reply_chunks.append(chunk.message)
+        return b"".join(reply_chunks)
 
     async def register(self) -> bool:
         try:
