@@ -41,7 +41,7 @@ theme:
     - search.highlight
     - toc.follow
 
-repo_url: https://gitlab.inria.fr/magnet/declearn/declearn2
+repo_url: https://gitlab.inria.fr/magnet/declearn/declearn
 repo_name: magnet/declearn
 
 markdown_extensions:

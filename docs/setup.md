@@ -98,16 +98,16 @@ download the source code from a release) and install from its root folder.
 #### Using pip
 
 ```bash
-git clone git@gitlab.inria.fr:magnet/declearn/declearn2.git
-cd declearn2
+git clone git@gitlab.inria.fr:magnet/declearn/declearn.git
+cd declearn
 pip install .  # or pip install -e for editable mode
 ```
 
 #### Using uv
 
 ```bash
-git clone git@gitlab.inria.fr:magnet/declearn/declearn2.git
-cd declearn2
+git clone git@gitlab.inria.fr:magnet/declearn/declearn.git
+cd declearn
 uv sync
 ```
 

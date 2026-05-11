@@ -18,7 +18,7 @@ To be able to experiment with this tutorial:
 - Clone the declearn repo (you may specify a given release branch or tag):
 
 ```bash
-git clone git@gitlab.inria.fr:magnet/declearn/declearn2.git declearn
+git clone git@gitlab.inria.fr:magnet/declearn/declearn.git declearn
 ```
 
 - Create a dedicated virtual environment.

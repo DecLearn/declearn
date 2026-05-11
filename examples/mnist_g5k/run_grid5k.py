@@ -221,7 +221,7 @@ def config_resources(
     )
     run_cmd(
         f"git clone --branch develop --single-branch --depth 1 "
-        "https://gitlab.inria.fr/magnet/declearn/declearn2.git /opt/declearn",
+        "https://gitlab.inria.fr/magnet/declearn/declearn.git /opt/declearn",
         roles,
     )
     run_cmd(f"{python_bin} -m pip install -e /opt/declearn[all]", roles)

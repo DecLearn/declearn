@@ -28,7 +28,7 @@ understanding of federated learning.
 ---
 **To test this on the MNIST example**, you can follow along the jupyter
 notebook provided
-[here](https://gitlab.inria.fr/magnet/declearn/declearn2/-/blob/develop/examples/mnist_quickrun/mnist.ipynb),
+[here](https://gitlab.inria.fr/magnet/declearn/declearn/-/blob/develop/examples/mnist_quickrun/mnist.ipynb),
 which we recommend running on [Google Colab](https://colab.research.google.com)
 to skip on setting up git, python, a virtual environment, etc.
 
@@ -43,8 +43,8 @@ to five shell commands. Set up a dedicated `conda` or `venv` environment, and
 run:
 
 ```bash
-git clone https://gitlab.inria.fr/magnet/declearn/declearn2 &&
-cd declearn2 &&
+git clone https://gitlab.inria.fr/magnet/declearn/declearn &&
+cd declearn &&
 pip install .[tensorflow,websockets] &&
 declearn-split --folder "examples/mnist_quickrun" &&
 declearn-quickrun --config "examples/mnist_quickrun/config.toml"
@@ -67,7 +67,7 @@ built in python.
 ---
 **To see what this looks like in practice**, you can head to the all-python
 MNIST example `examples/mnist/` in the `declearn` repository, which you can
-access [here](https://gitlab.inria.fr/magnet/declearn/declearn2/-/tree/develop/examples/mnist/).
+access [here](https://gitlab.inria.fr/magnet/declearn/declearn/-/tree/develop/examples/mnist/).
 
 This version of the example may either be used to run a simulated process on
 a single computer, or to deploy the example over a real-life network.

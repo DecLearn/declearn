@@ -124,7 +124,7 @@ At the moment, DecLearn provides with the following SecAgg algorithms:
 
 ### Hands-on example
 
-If we use the [MNIST example](https://gitlab.inria.fr/magnet/declearn/declearn2/-/tree/develop/examples/mnist/)
+If we use the [MNIST example](https://gitlab.inria.fr/magnet/declearn/declearn/-/tree/develop/examples/mnist/)
 implemented via Python scripts and want to use the DecLearn-provided
 masking-based algorithm for SecAgg (see below), we merely have to apply the
 following modifications:

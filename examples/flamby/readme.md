@@ -16,7 +16,7 @@ To be able to experiment with this tutorial:
 - Clone the declearn repo (you may specify a given release branch or tag):
 
 ```bash
-git clone git@gitlab.inria.fr:magnet/declearn/declearn2.git declearn
+git clone git@gitlab.inria.fr:magnet/declearn/declearn.git declearn
 ```
 
 - Clone the FLamby repo:
@@ -99,7 +99,7 @@ For details on scripts usage, you can use the command
   build it, we started from
   [FLamby metric function for TCGA_BRCA](https://github.com/owkin/FLamby/blob/main/flamby/datasets/fed_tcga_brca/metric.py),
   and then we adapted it for a Federated context following the
-  [Declearn Metric API](https://gitlab.inria.fr/magnet/declearn/declearn2/-/blob/develop/declearn/metrics/_api.py?ref_type=heads).  
+  [Declearn Metric API](https://gitlab.inria.fr/magnet/declearn/declearn/-/blob/develop/declearn/metrics/_api.py?ref_type=heads).  
   You may need to do a similar implementation if you want to use another FLamby
   dataset and if the metric involved is not already implemented by Declearn (see
   the

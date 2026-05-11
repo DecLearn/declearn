@@ -32,7 +32,7 @@ To build the website locally, you may use the following instructions:
 
 ```bash
 # Clone the gitlab repository (optionally targetting a given branch).
-git clone https://gitlab.inria.fr/magnet/declearn/declearn2.git declearn
+git clone https://gitlab.inria.fr/magnet/declearn/declearn.git declearn
 cd declearn
 
 # Install the required dependencies (preferably in a dedicated venv).

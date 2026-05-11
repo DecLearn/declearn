@@ -275,7 +275,7 @@ to compute as robust fairness estimates as possible.
 
 For this example, we are going to use the
 [UCI Heart Disease](https://archive.ics.uci.edu/dataset/45/heart+disease)
-dataset, for which we already provide a [base example](https://gitlab.inria.fr/magnet/declearn/declearn2/-/tree/develop/examples/heart-uci/)
+dataset, for which we already provide a [base example](https://gitlab.inria.fr/magnet/declearn/declearn/-/tree/develop/examples/heart-uci/)
 implemented via Python scripts.
 
 This is a binary classification task, for which we are going to define a single
@@ -286,7 +286,7 @@ binary sensitive attribute: patients' biological sex.
 On the client side, we simply need to wrap the training dataset as an
 `InMemoryFairnessDataset` rather than a base `InMemoryDataset`. This
 results in a simple edit in steps (1-2) of the initial
-[client script](https://gitlab.inria.fr/magnet/declearn/declearn2/-/tree/develop/examples/heart-uci/client.py):
+[client script](https://gitlab.inria.fr/magnet/declearn/declearn/-/tree/develop/examples/heart-uci/client.py):
 
 ```python
 from declearn.fairness.core import InMemoryFairnessDataset
@@ -328,7 +328,7 @@ dict input as `optim` instantiation parameter to `FederatedServer`).
 For instance, to merely measure the model's fairness without altering the
 training process (typically to assess the fairness of a baseline approach),
 one may edit step 2 of the initial
-[server script](https://gitlab.inria.fr/magnet/declearn/declearn2/-/tree/develop/examples/heart-uci/server.py)
+[server script](https://gitlab.inria.fr/magnet/declearn/declearn/-/tree/develop/examples/heart-uci/server.py)
 as follows:
 
 ```python

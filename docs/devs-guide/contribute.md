@@ -8,7 +8,7 @@ framework evolutions and API revisions.
 
 At the moment, declearn is being published on two mirrored public repositories:
 
-- [Inria's GitLab](https://gitlab.inria.fr/magnet/declearn/declearn2) is where
+- [Inria's GitLab](https://gitlab.inria.fr/magnet/declearn/declearn) is where
   the code is primarily hosted and developed.
 
 - [GitHub](https://github.com/declearn/declearn) hosts a mirroring repository
