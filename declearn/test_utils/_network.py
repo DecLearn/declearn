@@ -143,7 +143,7 @@ class MockNetworkClient(NetworkClient, register=False):
         certificate: Optional[str] = None,
         logger: Union[logging.Logger, str, None] = None,
     ) -> None:
-        super().__init__(server_uri, name, certificate, logger)
+        super().__init__(server_uri, name, certificate, logger=logger)
         self._started = False
         self._uuid = str(uuid.uuid4())
 

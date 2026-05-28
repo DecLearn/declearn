@@ -28,6 +28,7 @@ from websockets.client import WebSocketClientProtocol
 from websockets.exceptions import ConnectionClosedError, ConnectionClosedOK
 
 from declearn.communication.api import NetworkClient
+from declearn.communication.utils._compression import resolve_ws_compression
 from declearn.communication.websockets._tools import (
     receive_websockets_message,
     send_websockets_message,
@@ -45,11 +46,12 @@ class WebsocketsClient(NetworkClient):
 
     # pylint: disable-next=too-many-positional-arguments
     # TODO for 2.10 : remove deprecated "logger" argument
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         server_uri: str,
         name: str,
         certificate: Optional[str] = None,
+        compression: Optional[str] = None,
         logger: Union[logging.Logger, str, None] = None,
         headers: Optional[Dict[str, str]] = None,
     ) -> None:
@@ -66,6 +68,11 @@ class WebsocketsClient(NetworkClient):
         certificate: str or None, default=None,
             Path to a certificate (publickey) PEM file, to use SSL/TLS
             communcations encryption.
+        compression: str or None, default=None,
+            Optional message-level compression to use over the wire.
+            One of ``None``, ``"none"`` (both = no compression) or
+            ``"deflate"`` (permessage-deflate). Invalid values raise
+            ``ValueError`` on connection setup.
         logger: logging.Logger or str or None, default=None,
             Deprecated in v2.8, removed in v2.10.
             Not used anymore.
@@ -87,6 +94,7 @@ class WebsocketsClient(NetworkClient):
                 stacklevel=2,
             )
         super().__init__(server_uri, name, certificate)
+        self.compression = compression
         self.headers = headers
         self._socket: Optional[WebSocketClientProtocol] = None
 
@@ -121,6 +129,7 @@ class WebsocketsClient(NetworkClient):
             "ping_timeout": None,  # disable timeout on keep-alive pings
             "max_size": None,
             # disable websockets max_size because app-level chunking is used
+            "compression": resolve_ws_compression(self.compression),
         }
         # If connection fails, retry after 1 second - at most 10 times.
         idx = 0

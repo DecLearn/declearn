@@ -103,12 +103,14 @@ class NetworkClient(metaclass=abc.ABCMeta):
         if register:
             register_from_attr(cls, "protocol", group="NetworkClient")
 
+    # pylint: disable-next=too-many-positional-arguments
     # TODO for 2.10 : remove deprecated "logger" argument
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         server_uri: str,
         name: str,
         certificate: Optional[str] = None,
+        compression: Optional[str] = None,
         logger: Union[logging.Logger, str, None] = None,
     ) -> None:
         """Instantiate the client-side communications handler.
@@ -123,6 +125,12 @@ class NetworkClient(metaclass=abc.ABCMeta):
         certificate: str or None, default=None,
             Path to a certificate (publickey) PEM file, to use SSL/TLS
             communcations encryption.
+        compression: str or None, default=None,
+            Optional message-level compression to use over the wire.
+            One of ``None``, ``"none"`` (both = no compression) or
+            ``"deflate"``. Invalid values raise ``ValueError`` on
+            connection setup. Concrete subclasses are expected to
+            honor this argument; the base class only records it.
         logger: logging.Logger or str or None, default=None,
             Deprecated in v2.8, removed in v2.10.
             Not used anymore.
