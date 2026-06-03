@@ -114,6 +114,22 @@ class EncrypterTestSuite(metaclass=abc.ABCMeta):
         assert isinstance(bis_val, int) and bis_val < max_value
         assert bis_val != enc_val
 
+    def test_encrypt_uint_list(
+        self,
+    ) -> None:
+        """Test that encryption of a list of ints has proper outputs."""
+        encrypter, max_value = self.setup_encrypter()
+        # Test that a list of integers is encrypted into a list of ints.
+        clr_val = [secrets.randbits(32) for _ in range(8)]
+        enc_val = encrypter.encrypt_uint_list(clr_val)
+        assert isinstance(enc_val, list) and len(enc_val) == len(clr_val)
+        assert all(isinstance(x, int) and x < max_value for x in enc_val)
+        # Test that encrypting the same values gives distinct outputs,
+        # due to the increment of the internal time stamp.
+        bis_val = encrypter.encrypt_uint_list(clr_val)
+        assert all(isinstance(x, int) and x < max_value for x in bis_val)
+        assert bis_val != enc_val
+
     def test_encrypt_float(
         self,
     ) -> None:
