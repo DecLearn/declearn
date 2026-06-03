@@ -76,14 +76,8 @@ def resolve_grpc_compression(value: Any) -> "Any":
 
     Returns
     -------
-    ``None`` when no compression is requested (semantically equivalent
-    to ``grpc.Compression.NoCompression`` — gRPC interprets a missing /
-    ``None`` value as the default, which is no compression). ``None``
-    is preferred here because passing ``NoCompression`` explicitly to
-    ``grpc.aio.{secure,insecure}_channel`` triggers a segfault on some
-    grpc-python versions during channel teardown.
-
-    Returns ``grpc.Compression.Deflate`` when ``"deflate"`` is requested.
+    ``grpc.Compression.NoCompression`` when no compression is requested,
+    or ``grpc.Compression.Deflate`` when ``"deflate"`` is requested.
 
     Raises
     ------
@@ -91,10 +85,10 @@ def resolve_grpc_compression(value: Any) -> "Any":
         If `value` is not one of the supported options.
     """
     canonical = _validate(value)
-    if canonical is None:
-        return None
     # Lazy-import grpc: this module is also imported by the websockets
     # transport, which must work without grpc installed.
     import grpc  # type: ignore[import-untyped]  # noqa: PLC0415
 
+    if canonical is None:
+        return grpc.Compression.NoCompression
     return grpc.Compression.Deflate

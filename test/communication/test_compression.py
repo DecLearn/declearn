@@ -44,13 +44,9 @@ def test_resolve_ws_compression_invalid():
 
 @pytest.mark.parametrize("value", [None, "none"], ids=["none", "none-str"])
 def test_resolve_grpc_compression_no_compression(value):
-    """Test that 'no-compression' values resolve to None for gRPC.
-
-    Note: None (rather than grpc.Compression.NoCompression) is returned
-    on purpose, to avoid a segfault on some grpc versions at channel
-    teardown; hence this assertion does not require grpc to be installed.
-    """
-    assert resolve_grpc_compression(value) is None
+    """Test that 'no-compression' values resolve to NoCompression for gRPC."""
+    grpc = pytest.importorskip("grpc")
+    assert resolve_grpc_compression(value) == grpc.Compression.NoCompression
 
 
 def test_resolve_grpc_compression_deflate():
