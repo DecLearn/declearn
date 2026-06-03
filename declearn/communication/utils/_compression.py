@@ -95,6 +95,6 @@ def resolve_grpc_compression(value: Any) -> "Any":
         return None
     # Lazy-import grpc: this module is also imported by the websockets
     # transport, which must work without grpc installed.
-    import grpc  # type: ignore[import-untyped]  # noqa: PLC0415  # pylint: disable=import-outside-toplevel
+    import grpc  # type: ignore[import-untyped]  # noqa: PLC0415
 
     return grpc.Compression.Deflate

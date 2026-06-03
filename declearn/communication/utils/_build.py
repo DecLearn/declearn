@@ -56,7 +56,6 @@ def raise_if_installable(
         ) from exc
 
 
-# pylint: disable-next=too-many-positional-arguments
 # TODO for 2.10 : remove deprecated "logger" argument
 def build_client(  # noqa: PLR0913
     protocol: str,

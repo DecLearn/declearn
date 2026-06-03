@@ -103,7 +103,6 @@ class NetworkClient(metaclass=abc.ABCMeta):
         if register:
             register_from_attr(cls, "protocol", group="NetworkClient")
 
-    # pylint: disable-next=too-many-positional-arguments
     # TODO for 2.10 : remove deprecated "logger" argument
     def __init__(  # noqa: PLR0913
         self,
