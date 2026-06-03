@@ -140,7 +140,7 @@ class MaskingEncrypter(Encrypter):
         mask = int(self._generate_masks(1)[0])
         return (value + mask) % self.max_int
 
-    def encrypt_uint_vector(
+    def encrypt_uint_list(
         self,
         values: List[int],
     ) -> List[int]:

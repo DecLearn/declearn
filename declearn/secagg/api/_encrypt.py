@@ -93,7 +93,7 @@ class Encrypter(metaclass=abc.ABCMeta):
             Encrypted value, as a (possibly-large) integer.
         """
 
-    def encrypt_uint_vector(
+    def encrypt_uint_list(
         self,
         values: List[int],
     ) -> List[int]:
@@ -186,7 +186,7 @@ class Encrypter(metaclass=abc.ABCMeta):
         """
         flt_val, v_spec = value.flatten()
         int_val = self.quantizer.quantize_list(flt_val)
-        enc_val = self.encrypt_uint_vector(int_val)
+        enc_val = self.encrypt_uint_list(int_val)
         return enc_val, v_spec
 
     def encrypt_aggregate(
