@@ -214,7 +214,7 @@ split your data yourself, using custom names for files and folders. An example:
 ```
 
 This section is parsed as the fields of a `DataSourceConfig` dataclass.
-Check its [documentation][declearn.quickrun/DataSourceConfig] to see
+Check its [documentation][declearn.quickrun.DataSourceConfig] to see
 all available fields. This `DataSourceConfig` is then parsed by the
 [`parse_data_folder`][declearn.quickrun.parse_data_folder] function.
 
@@ -305,8 +305,8 @@ Your data, in a standard tabular format, split by client. Within each client
 folder, we expect four files : training data and labels, validation data and
 labels.
 
-If your data is not already split by client, we are developing an experimental
-data splitting utility. It currently has a limited scope, only dealing
+If your data is not already split by client, we have developed an experimental
+data splitting utility. Note that it has a limited scope, only dealing
 with classification tasks, excluding multi-label. You can call it using
 `declearn-split --folder <path_to_original_data>`. For more details, refer to
 the [documentation][declearn.dataset.split_data].

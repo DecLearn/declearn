@@ -1,7 +1,9 @@
 # DecLearn Examples
 
 Here you can find directories containing examples and tutorials of how you can
-use, deploy or adapt DecLearn.
+use, deploy or adapt DecLearn.  
+
+> **Note** : The `mnist` example is ideal to start working with Declearn objects and to know how to launch a federated experiment.
 
 
 - `adding_rmsprop` : Example of how to write a custom `Optimizer` module

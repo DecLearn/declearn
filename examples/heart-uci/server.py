@@ -17,6 +17,7 @@
 
 """Script to run a federated server on the heart-disease example."""
 
+import logging
 import os
 
 from declearn.communication import NetworkServerConfig
@@ -24,6 +25,7 @@ from declearn.main import FederatedServer
 from declearn.main.config import FLOptimConfig, FLRunConfig
 from declearn.model.sklearn import SklearnSGDModel
 from declearn.test_utils import setup_server_argparse
+from declearn.utils import config_server_loggers
 
 FILEDIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -53,6 +55,9 @@ def run_server(
     port: int, default=8765
         Communication port on which to serve.
     """
+    ### Optional: some convenience settings.
+    # Set up logger to see information printed on the console.
+    config_server_loggers(level=logging.INFO)
 
     # (1) Define a model
 
@@ -69,7 +74,7 @@ def run_server(
     # of local gradient descent steps taken.
     aggregator = {
         "name": "averaging",
-        "config": {"steps_weighted": True},
+        "steps_weighted": True,
     }
 
     # Configure the client-side optimizer to use.

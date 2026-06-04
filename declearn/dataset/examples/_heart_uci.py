@@ -61,6 +61,9 @@ def load_heart_uci(
         path = os.path.join(folder, f"data_{name}.csv")
         if os.path.isfile(path):
             data = pd.read_csv(path)
+            print(
+                f"'{name}' dataset was already prepared, using existing data."
+            )
             return data, "num"
     # Download (and optionally save) or read from the source zip file.
     source = get_heart_uci_zipfile(folder)
@@ -71,6 +74,7 @@ def load_heart_uci(
     if folder is not None:
         path = os.path.join(folder, f"data_{name}.csv")
         data.to_csv(path, sep=",", encoding="utf-8", index=False)
+    print(f"'{name}' dataset successfully downloaded and prepared.")
     return data, "num"
 
 
