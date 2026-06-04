@@ -28,6 +28,7 @@ from declearn.communication.grpc.protobufs import message_pb2
 from declearn.communication.grpc.protobufs.message_pb2_grpc import (
     MessageBoardStub,
 )
+from declearn.communication.utils._compression import resolve_grpc_compression
 
 __all__ = [
     "GrpcClient",
@@ -48,6 +49,7 @@ class GrpcClient(NetworkClient):
         server_uri: str,
         name: str,
         certificate: Optional[str] = None,
+        compression: Optional[str] = None,
         logger: Union[logging.Logger, str, None] = None,
     ) -> None:
         """Instantiate the client-side gRPC communications handler.
@@ -63,6 +65,11 @@ class GrpcClient(NetworkClient):
         certificate: str or None, default=None,
             Path to a certificate (publickey) PEM file, to use SSL/TLS
             communcations encryption.
+        compression: str or None, default=None,
+            Optional message-level compression to use over the wire.
+            One of ``None``, ``"none"`` (both = no compression) or
+            ``"deflate"``. Invalid values raise ``ValueError`` on
+            connection setup.
         logger: logging.Logger or str or None, default=None,
             Deprecated in v2.8, removed in v2.10.
             Not used anymore.
@@ -78,6 +85,7 @@ class GrpcClient(NetworkClient):
                 stacklevel=2,
             )
         super().__init__(server_uri, name, certificate)
+        self.compression = compression
         self._channel: Optional[grpc.Channel] = None
         self._service: Optional[MessageBoardStub] = None
 
@@ -94,10 +102,15 @@ class GrpcClient(NetworkClient):
 
     async def start(self) -> None:
         if self._channel is None:
+            compression = resolve_grpc_compression(self.compression)
             self._channel = (
-                grpc.aio.secure_channel(self.server_uri, self._ssl)  # type: ignore
+                grpc.aio.secure_channel(  # type: ignore
+                    self.server_uri, self._ssl, compression=compression
+                )
                 if (self._ssl is not None)
-                else grpc.aio.insecure_channel(self.server_uri)
+                else grpc.aio.insecure_channel(
+                    self.server_uri, compression=compression
+                )
             )
         self._service = MessageBoardStub(self._channel)
 

@@ -93,6 +93,18 @@ class Encrypter(metaclass=abc.ABCMeta):
             Encrypted value, as a (possibly-large) integer.
         """
 
+    def encrypt_uint_list(
+        self,
+        values: List[int],
+    ) -> List[int]:
+        """Encrypt a list of unsigned integers.
+
+        Default implementation: per-element fallback. Subclasses
+        SHOULD override this with a batched implementation when
+        possible (see MaskingEncrypter for an example).
+        """
+        return [self.encrypt_uint(v) for v in values]
+
     def encrypt_float(
         self,
         value: float,
@@ -174,7 +186,7 @@ class Encrypter(metaclass=abc.ABCMeta):
         """
         flt_val, v_spec = value.flatten()
         int_val = self.quantizer.quantize_list(flt_val)
-        enc_val = [self.encrypt_uint(val) for val in int_val]
+        enc_val = self.encrypt_uint_list(int_val)
         return enc_val, v_spec
 
     def encrypt_aggregate(

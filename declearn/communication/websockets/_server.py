@@ -29,6 +29,7 @@ from websockets.server import WebSocketServer, WebSocketServerProtocol
 
 from declearn.communication.api import NetworkServer
 from declearn.communication.api.backend import MessagesHandler
+from declearn.communication.utils._compression import resolve_ws_compression
 from declearn.communication.websockets._tools import (
     StreamRefusedError,
     receive_websockets_message,
@@ -57,6 +58,7 @@ class WebsocketsServer(NetworkServer):
         private_key: Optional[str] = None,
         password: Optional[str] = None,
         heartbeat: float = 1.0,
+        compression: Optional[str] = None,
         logger: Union[logging.Logger, str, None] = None,
     ) -> None:
         """Instantiate the server-side WebSockets communications handler.
@@ -81,6 +83,11 @@ class WebsocketsServer(NetworkServer):
         heartbeat: float, default=1.0
             Delay (in seconds) between verifications when checking for a
             message having beend received from or collected by a client.
+        compression: str or None, default=None,
+            Optional message-level compression to use over the wire.
+            One of ``None``, ``"none"`` (both = no compression) or
+            ``"deflate"`` (permessage-deflate). Invalid values raise
+            ``ValueError`` on connection setup.
         logger: logging.Logger or str or None, default=None,
             Deprecated in v2.8, removed in v2.10.
             Not used anymore.
@@ -99,6 +106,7 @@ class WebsocketsServer(NetworkServer):
         super().__init__(
             host, port, certificate, private_key, password, heartbeat
         )
+        self.compression = compression
         self._server: Optional[WebSocketServer] = None
 
     @property
@@ -136,6 +144,7 @@ class WebsocketsServer(NetworkServer):
             ping_timeout=None,  # disable timeout on keep-alive pings
             max_size=None,
             # disable websockets max_size because app-level chunking is used
+            compression=resolve_ws_compression(self.compression),
         )
         # Run the websockets server.
         self.logger.info("Server is now starting...")

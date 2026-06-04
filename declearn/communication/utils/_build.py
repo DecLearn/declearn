@@ -57,11 +57,12 @@ def raise_if_installable(
 
 
 # TODO for 2.10 : remove deprecated "logger" argument
-def build_client(
+def build_client(  # noqa: PLR0913
     protocol: str,
     server_uri: str,
     name: str,
     certificate: Optional[str] = None,
+    compression: Optional[str] = None,
     logger: Union[logging.Logger, str, None] = None,
     **kwargs: Any,
 ) -> NetworkClient:
@@ -80,6 +81,10 @@ def build_client(
     certificate: str or None, default=None,
         Path to a certificate (publickey) PEM file, to use SSL/TLS
         communcations encryption.
+    compression: str or None, default=None,
+        Optional message-level compression to use over the wire.
+        One of ``None``, ``"none"`` (both = no compression) or
+        ``"deflate"``. Invalid values raise ``ValueError``.
     logger: logging.Logger or str or None, default=None,
         Deprecated in v2.8, removed in v2.10.
         Not used anymore.
@@ -115,6 +120,7 @@ def build_client(
         server_uri=server_uri,
         name=name,
         certificate=certificate,
+        compression=compression,
         **kwargs,
     )
 
@@ -129,6 +135,7 @@ def build_server(  # noqa: PLR0913
     private_key: Optional[str] = None,
     password: Optional[str] = None,
     heartbeat: float = 1.0,
+    compression: Optional[str] = None,
     logger: Union[logging.Logger, str, None] = None,
     **kwargs: Any,
 ) -> NetworkServer:
@@ -157,6 +164,10 @@ def build_server(  # noqa: PLR0913
     heartbeat: float, default=1.0
         Delay (in seconds) between verifications when checking for a
         message having beend received from or collected by a client.
+    compression: str or None, default=None,
+        Optional message-level compression to use over the wire.
+        One of ``None``, ``"none"`` (both = no compression) or
+        ``"deflate"``. Invalid values raise ``ValueError``.
     logger: logging.Logger or str or None, default=None,
         Deprecated in v2.8, removed in v2.10.
         Not used anymore.
@@ -196,6 +207,7 @@ def build_server(  # noqa: PLR0913
         private_key=private_key,
         password=password,
         heartbeat=heartbeat,
+        compression=compression,
         logger=logger,
         **kwargs,
     )

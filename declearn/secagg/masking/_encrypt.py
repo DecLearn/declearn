@@ -140,6 +140,19 @@ class MaskingEncrypter(Encrypter):
         mask = int(self._generate_masks(1)[0])
         return (value + mask) % self.max_int
 
+    def encrypt_uint_list(
+        self,
+        values: List[int],
+    ) -> List[int]:
+        """Batched override: one mask-generation call for all values."""
+        if not values:
+            return []
+        masks = self._generate_masks(len(values))
+        max_int = self.max_int
+        return [
+            (v + int(m)) % max_int for v, m in zip(values, masks, strict=True)
+        ]
+
     def wrap_into_secure_aggregate(
         self,
         encrypted: List[int],
