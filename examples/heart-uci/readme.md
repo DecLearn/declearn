@@ -21,14 +21,19 @@ python run.py
 ```
 heart-uci/
 │   client.py  - set up and launch a federated-learning client
-│   data.py    - download and prepare the dataset
+│   data.py    - optional util to download and prepare the dataset
 │   gen_ssl.py - generate self-signed ssl certificates
 │   run.py     - launch both the server and clients in a single session
 │   server.py  - set up and launch a federated-learning server
-│   setup.sh   - bash script to prepare client-wise and server isolated folders
 └─── data      - saved datasets as csv files
 └─── results   - saved results from training procedure
 ```
+
+**Note** : `data.py` is here as a utility script. It can be used to download
+and prepare the dataset if you want to explore the data before launching an
+experiment.  
+Thus, you don't need to run it in an experiment. The main scripts `run.py` or
+`client.py` will anyway download the client data.
 
 ## Run training routine
 

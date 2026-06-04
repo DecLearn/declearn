@@ -24,12 +24,9 @@ from declearn.test_utils import generate_ssl_certificates, make_importable
 from declearn.utils import run_as_processes
 
 # Perform local imports.
-# pylint: disable=wrong-import-position, wrong-import-order
 with make_importable(os.path.dirname(__file__)):
     from client import run_client
     from server import run_server
-# pylint: enable=wrong-import-position, wrong-import-order
-
 
 NAMES = ["cleveland", "hungarian", "switzerland", "va"]
 
@@ -38,6 +35,12 @@ def run_demo(
     nb_clients: int = 4,
 ) -> None:
     """Run a server and its clients using multiprocessing."""
+    if not (1 <= nb_clients <= 4):
+        raise ValueError(
+            "This demo only supports 1 to 4 clients. \nReceived "
+            f"{nb_clients}. Please use a valid input."
+        )
+
     # Use a temporary directory for single-use self-signed SSL files.
     with tempfile.TemporaryDirectory() as folder:
         # Generate self-signed SSL certificates and gather their paths.

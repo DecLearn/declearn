@@ -22,7 +22,9 @@ import os
 
 from declearn.dataset.examples import load_heart_uci
 
-DATADIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
+DEFAULT_DATADIR = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "data"
+)
 NAMES = ("cleveland", "hungarian", "switzerland", "va")
 
 
@@ -33,17 +35,21 @@ if __name__ == "__main__":
     parser.add_argument(
         "--folder",
         type=str,
-        default=DATADIR,
+        default=DEFAULT_DATADIR,
         help="folder where to write output csv files",
     )
     parser.add_argument(
         "names",
-        action="append",
+        action="extend",
         nargs="+",
         help="name(s) of client center(s), data from which to prepare",
         choices=["cleveland", "hungarian", "switzerland", "va"],
     )
     args = parser.parse_args()
+    # If default data directory is used : make sure that it has been created.
+    if args.folder == DEFAULT_DATADIR:
+        os.makedirs(DEFAULT_DATADIR, exist_ok=True)
+
     # Download and pre-process the selected dataset(s).
     for name in args.names:
         load_heart_uci(name=name, folder=args.folder)

@@ -17,6 +17,7 @@
 
 """Script to run a federated client on the heart-disease example."""
 
+import logging
 import os
 from typing import Literal
 
@@ -27,8 +28,9 @@ from declearn.dataset import InMemoryDataset
 from declearn.dataset.examples import load_heart_uci
 from declearn.main import FederatedClient
 from declearn.test_utils import setup_client_argparse
+from declearn.utils import config_client_loggers
 
-FILEDIR = os.path.dirname(__file__)
+FILEDIR = os.path.dirname(os.path.abspath(__file__))
 
 
 def run_client(
@@ -55,11 +57,21 @@ def run_client(
         Whether to be verbose in the displayed contents, including
         all logger information and progress bars.
     """
+    ### Optional: some convenience settings.
+    # Set up logger to see information printed on the console.
+    config_client_loggers(
+        client_name=name,
+        level=logging.INFO,
+    )
 
     # (1-2) Interface training and optional validation data.
 
+    # Creates `data` directory if not exist.
+    datadir_path = os.path.join(FILEDIR, "data")
+    os.makedirs(datadir_path, exist_ok=True)
+
     # Load and randomly split the dataset. Note: target is a str (column name).
-    data, target = load_heart_uci(name, folder=os.path.join(FILEDIR, "data"))
+    data, target = load_heart_uci(name, folder=datadir_path)
     data = data.loc[np.random.permutation(data.index)]
     n_tr = round(len(data) * 0.8)  # 80% train, 20% valid
 
