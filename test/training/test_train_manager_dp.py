@@ -167,3 +167,59 @@ class TestDPTrainingManager:
         budget_spent = manager.get_privacy_spent()
         assert budget_spent[0] <= request.budget[0]
         assert budget_spent[1] == request.budget[1]
+
+    def test_precompute_preserves_accountant_history(self):
+        """Test that precomputing max-steps does not mutate the accountant.
+
+        The precompute binary-searches the largest allowed step count by
+        temporarily overwriting `accountant.history` with synthetic tuples.
+        It must restore the real history exactly, so that the accountant
+        only ever reflects steps that actually occurred.
+        """
+        manager = build_dp_manager(n_batch=100)
+        request = build_privacy_request(rounds=1, n_steps=50)
+        manager.make_private(request)
+        noise = manager.get_noise_multiplier()
+        srate = BATCHES["batch_size"] / (100 * BATCHES["batch_size"])
+        # Case A: empty history (round start, before any step).
+        snapshot = list(manager.accountant.history)
+        max_steps = manager._compute_max_steps_for_round(noise, srate)
+        assert isinstance(max_steps, int) and max_steps > 0
+        assert manager.accountant.history == snapshot
+        # Case B: non-empty history (some steps already accounted for).
+        for _ in range(5):
+            manager.accountant.step(noise_multiplier=noise, sample_rate=srate)
+        snapshot = list(manager.accountant.history)
+        manager._compute_max_steps_for_round(noise, srate)
+        assert manager.accountant.history == snapshot
+
+    def test_precompute_matches_canonical_interruption(self):
+        """Test precompute interrupts at the same step as a per-step check.
+
+        The whole point of the precompute is byte-identical behavior to the
+        canonical per-step `get_epsilon` check: the precomputed bound must
+        equal the number of steps a naive per-step accountant would accept
+        before the budget is exceeded. This pins that equivalence as a
+        regression guard.
+        """
+        manager = build_dp_manager(n_batch=100)
+        request = build_privacy_request(rounds=1, n_steps=50)
+        manager.make_private(request)
+        noise = manager.get_noise_multiplier()
+        srate = BATCHES["batch_size"] / (100 * BATCHES["batch_size"])
+        budget_eps, budget_delta = request.budget
+        # Reference: count how many steps a per-step check would accept.
+        reference = RDPAccountant()
+        accepted = 0
+        while accepted < 1000:
+            reference.step(noise_multiplier=noise, sample_rate=srate)
+            if reference.get_epsilon(delta=budget_delta) > budget_eps:
+                break  # this step would overspend; canonical rejects it
+            accepted += 1
+        # The precomputed bound must equal that step count exactly.
+        assert manager._compute_max_steps_for_round(noise, srate) == accepted
+        # And running an over-long round must stop after exactly that many.
+        reply = manager.training_round(
+            build_train_request(n_steps=accepted + 50)
+        )
+        assert reply.n_steps == accepted
