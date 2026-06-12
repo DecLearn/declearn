@@ -1,0 +1,144 @@
+
+# coding: utf-8
+
+# Copyright 2026 Inria (Institut National de Recherche en Informatique
+# et Automatique)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import datetime
+import logging
+import os
+from dataclasses import astuple, dataclass
+
+from model import ModelConfigsInput, SimpleMaskedTSAutoEncoder
+from torch.nn import MSELoss
+
+from declearn.communication.utils._build import NetworkServerConfig
+from declearn.main._server import FederatedServer
+from declearn.main.config._run_config import FLRunConfig
+from declearn.main.config._strategy import FLOptimConfig
+from declearn.model.torch import TorchModel
+from declearn.test_utils._argparse import setup_server_argparse
+from declearn.utils import config_server_loggers
+
+
+# wrap server config into a dataclass
+@dataclass
+class ServerConfigInput: 
+    certificate: str
+    private_key: str
+    nb_clients: int = 2
+    protocol: str = "websockets"
+    host: str = 'localhost'
+    port: int = 8765
+logger = logging.getLogger(__name__)
+
+FILEDIR = os.path.dirname(os.path.abspath(__file__))
+
+    
+def run_server(server_configs : ServerConfigInput, model_configs : ModelConfigsInput): 
+    """Runs a server with the defined configurations"""
+    model = TorchModel(
+        model=SimpleMaskedTSAutoEncoder(model_configs),
+        loss=MSELoss()
+    )
+    # Set up checkpointing and logging.
+    stamp = datetime.datetime.now().strftime("%y-%m-%d_%H-%M")
+    checkpoint = os.path.join(FILEDIR, f"result_{stamp}", "server")
+    config_server_loggers(
+        level=logging.INFO, fpath=os.path.join(checkpoint, "logs.txt")
+    )
+    
+    certificate, private_key, nb_clients, protocol, host, port = astuple(server_configs)
+    aggregator = {
+        "name": "averaging",
+        "steps_weighted": True}
+    
+    client_opt = {
+        "lrate": 0.02,
+        "modules": ["rmsprop"],
+    }
+    server_opt = {
+        "lrate": 1.0,
+        "modules": [("momentum", {"beta": 0.95})],
+    }   
+    # Wrap this up into an OptimizationStrategy object.
+    optim = FLOptimConfig.from_params(
+        aggregator=aggregator,
+        client_opt=client_opt,
+        server_opt=server_opt,
+    )
+    network = NetworkServerConfig(
+        protocol=protocol,
+        host=host,
+        port=port,
+        certificate=certificate,
+        private_key=private_key,
+    )
+    server = FederatedServer(
+        # fmt: off
+        model,
+        network,
+        optim,
+        metrics=["binary-classif", "binary-roc"],
+        checkpoint=f"{FILEDIR}/results/server",
+    )
+    run_cfg = FLRunConfig.from_params(
+        rounds=20,
+        register={"min_clients": nb_clients},
+        training={"batch_size": 30, "drop_remainder": False},
+        evaluate={"batch_size": 50, "drop_remainder": False},
+        early_stop={"tolerance": 0.0, "patience": 5, "relative": False},
+    )
+    logger.info("Launching server ...")
+    server.run(run_cfg)
+    
+
+# Called when the script is called directly (using `python server.py`).
+if __name__ == "__main__":
+    # Parse command-line arguments.
+    parser = setup_server_argparse(
+        usage="Start a server to train a simple time-series Auto-encoder",
+        default_cert=os.path.join(FILEDIR, "server-cert.pem"),
+        default_pkey=os.path.join(FILEDIR, "server-pkey.pem"),
+    )
+    parser.add_argument(
+        "--nb_clients",
+        type=int,
+        help="number of clients",
+        choices=list(range(1,3)),
+    )
+    parser.add_argument(
+        "--window_size",
+        type=int, 
+        help="Size of the sliding window.",
+    )
+    parser.add_argument(
+        "--mask_ratio", 
+        type=float, 
+        help="Percentage of masking applied on every window.",
+        choices=[0.25,0.50,0.75,0.90]
+    )
+    args = parser.parse_args()
+    
+    server_config = ServerConfigInput(
+        nb_clients= args.nb_clients, 
+        certificate= args.certificate,
+        private_key=args.private_key,     
+        
+    )
+    model_configs = ModelConfigsInput(input_dim=args.window_size, mask_ratio=args.mask_ratio)
+    
+    # Run the server routine.
+    run_server(server_config, model_configs)
