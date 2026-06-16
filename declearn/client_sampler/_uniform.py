@@ -44,9 +44,7 @@ class UniformClientSampler(ClientSampler):
         seed: Optional[int] = None,
         max_retries: int = ClientSampler.DEFAULT_MAX_RETRIES,
     ):
-        """
-        Instantiate the uniform client sampler.
-        """
+        """Instantiate the uniform client sampler."""
         super().__init__(max_retries=max_retries)
         self.n_samples = n_samples
         self.seed = seed
@@ -56,9 +54,8 @@ class UniformClientSampler(ClientSampler):
     def secagg_compatible(self) -> bool:
         return True
 
-    def cls_sample(self, eligible_clients: Set[str]) -> Set[str]:
-        """
-        Back-end of the sampling method for the uniform client sampler.
+    def sample(self, eligible_clients: Set[str]) -> Set[str]:
+        """Sample clients uniformly among the provided eligible clients.
 
         If there are more than `n_samples` clients in `eligible_clients`, this
         method samples this number of clients with uniform probability, without

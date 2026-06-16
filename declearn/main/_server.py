@@ -772,7 +772,7 @@ class FederatedServer:
         self,
     ) -> Set[str]:
         """Return the names of clients that should participate in the round."""
-        sampled_clients = self.client_sampler.sample()
+        sampled_clients = self.client_sampler.run()
 
         if not isinstance(self.client_sampler, DefaultClientSampler):
             self.logger.debug(

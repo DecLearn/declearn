@@ -42,20 +42,20 @@ class TestClientSampler:
     def test_default_sampling(self, clients: Set[str]):
         sampler = DefaultClientSampler()
         sampler.init_clients(clients)
-        sampled_clients = sampler.sample()
+        sampled_clients = sampler.run()
         assert clients == sampled_clients
 
     def test_sampling_fail(self, clients: Set[str]):
         fail_sampler = FailClientSampler()
         fail_sampler.init_clients(clients)
-        sampled_clients = fail_sampler.sample()
+        sampled_clients = fail_sampler.run()
         assert sampled_clients == clients
 
     @pytest.mark.parametrize("n_samples", [1, 2])
     def test_uniform_sampling(self, n_samples: int, clients: Set[str]):
         sampler = UniformClientSampler(n_samples=n_samples)
         sampler.init_clients(clients)
-        sampled_client = sampler.sample()
+        sampled_client = sampler.run()
         assert len(sampled_client) == n_samples
         assert sampled_client.issubset(clients)
 
@@ -70,7 +70,7 @@ class TestClientSampler:
             n_samples=2, client_to_weight=client_to_weight
         )
         sampler.init_clients(clients)
-        sampled_clients = sampler.sample()
+        sampled_clients = sampler.run()
         expected_clients = {"client2", "client3"}
         assert sampled_clients == expected_clients
 
@@ -92,7 +92,7 @@ class TestClientSampler:
         sampler.init_clients(clients)
         sampled_clients = []
         for _ in range(10_000):
-            sampled_client = sampler.sample().pop()
+            sampled_client = sampler.run().pop()
             sampled_clients.append(sampled_client)
         counts = Counter(sampled_clients)
         total = counts.total()
@@ -150,7 +150,7 @@ class TestClientSampler:
         sampler.init_clients(clients)
         # update the scores using the fake gradient norms
         sampler.update(client_to_reply, global_model)
-        sampled_clients = sampler.sample()
+        sampled_clients = sampler.run()
         assert len(sampled_clients) == 2
         # client 2 and 3 have the highest scores (2 and 3)
         # so they must be chosen
@@ -190,7 +190,7 @@ class TestClientSampler:
         compo_sampler.init_clients(clients)
         # update the scores using the fake gradient norms
         compo_sampler.update(client_to_reply, global_model)
-        sampled_clients = compo_sampler.sample()
+        sampled_clients = compo_sampler.run()
 
         # first, the criterion sampler should have selected client3 and then
         # the uniform sampler should have picked randomly one among the others

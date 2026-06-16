@@ -368,7 +368,7 @@ To define your own client sampler, you must create a subclass of
 name, e.g. `"uniform"` for the class `UniformClientSampler`.
 - Defining the boolean class property `secagg_compatible` (just returning True
 or False) to precise if your strategy is compatible with secure aggregation.
-- Implementing the method `cls_sample` in which your custom client sampling
+- Implementing the method `sample` in which your custom client sampling
 logic is defined.
 
 Optionally, if your sampler needs to update its internal state after each

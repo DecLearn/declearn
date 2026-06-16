@@ -125,8 +125,9 @@ class CriterionClientSampler(ClientSampler):
             for client, score in self.client_to_score.items()
         }
 
-    def cls_sample(self, eligible_clients: Set[str]) -> Set[str]:
-        """Back-end of the sampling method for criterion client sampler.
+    def sample(self, eligible_clients: Set[str]) -> Set[str]:
+        """Sample clients, given a criterion and among the provided eligible
+        clients.
 
         If there are more than `n_samples` clients in `eligible_clients`,
         this method selects the `n_samples` clients with the highest criterion

@@ -30,11 +30,8 @@ from declearn.model.api import Model
 class CompositionClientSampler(ClientSampler):
     """Client sampler that composes a list of other samplers sequentially.
 
-    The composition mechanism works the following way: the first sampler
-    selects some client(s), then the second one selects other(s) among the
-    remaining ones, and so on.
-    At the end, the clients selected by the `CompositionClientSampler` are the
-    union of client sets selected by each sampler, consecutively.
+    For more details on the composition mechanism, see the documentation of the
+    `sample` method below.
 
     Attributes
     ----------
@@ -63,7 +60,16 @@ class CompositionClientSampler(ClientSampler):
         for sampler in self.samplers:
             sampler.init_clients(clients)
 
-    def cls_sample(self, eligible_clients: Set[str]) -> Set[str]:
+    def sample(self, eligible_clients: Set[str]) -> Set[str]:
+        """Sample clients among the provided eligible clients, using the
+        composed client samplers.
+
+        The composition mechanism works the following way: the first sampler
+        selects some client(s), then the second one selects other(s) among the
+        remaining ones, and so on.
+        At the end, the clients selected by the `CompositionClientSampler` are
+        the union of client sets selected by each sampler, consecutively.
+        """
         total_sampled_clients = set()
         for sampler in self.samplers:
             sampler_clients = sampler.sample(eligible_clients)

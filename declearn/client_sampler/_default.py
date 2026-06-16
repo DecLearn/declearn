@@ -31,5 +31,6 @@ class DefaultClientSampler(ClientSampler):
     def secagg_compatible(self) -> bool:
         return True
 
-    def cls_sample(self, eligible_clients: Set[str]) -> Set[str]:
+    def sample(self, eligible_clients: Set[str]) -> Set[str]:
+        """Sample all provided eligible clients."""
         return eligible_clients
