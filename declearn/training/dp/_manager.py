@@ -293,6 +293,8 @@ class DPTrainingManager(TrainingManager):
         max_steps:
             Largest number of additional steps that keeps total ε ≤ budget.
         """
+        if self.accountant is None:
+            return 0
         budget_eps = self._dp_budget[0]
         budget_delta = self._dp_budget[1]
         # Snapshot the real history and restore it at the end, so that the
