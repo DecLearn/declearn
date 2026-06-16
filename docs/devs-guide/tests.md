@@ -125,7 +125,7 @@ You may also arguments to compute and export coverage statistics, using the
 
 ```bash
 # Run all tests and export coverage information in HTML format.
-pytest --cov=declearn --cov-report=html tests/
+pytest --cov=declearn --cov-report=html test/
 ```
 
 ### Running ruff to format the code
