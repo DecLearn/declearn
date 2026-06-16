@@ -101,11 +101,12 @@ class NormalizedDivCriterion(Criterion):
         for client, reply in client_to_reply.items():
             w_updates = np.array(reply.updates.updates.flatten()[0])
             # client weight updates
-            size_upd = len(w_updates)
-            if size_upd != size_w:
+            size_updates = len(w_updates)
+            if size_updates != size_w:
                 raise ValueError(
                     f"Flattened global model weights size ({size_w}) and "
-                    f"client model updates size ({size_upd}) must be equal."
+                    f"client model updates size ({size_updates}) must be "
+                    "equal."
                 )
             score = float(
                 1 / size_w * np.sum(np.abs(w_updates / (w_server + eps)))

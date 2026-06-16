@@ -80,7 +80,7 @@ class CriterionClientSampler(ClientSampler):
         super().__init__(max_retries=max_retries)
         if missing_scores_policy not in get_args(MissingScorePolicy):
             raise ValueError(
-                f"Missing scores policy {missing_scores_policy} "
+                f"Missing scores policy '{missing_scores_policy}' "
                 f"is not supported."
             )
         self.n_samples = n_samples
@@ -116,7 +116,7 @@ class CriterionClientSampler(ClientSampler):
             replacement_score = 1 / len(self.clients)
         else:
             raise ValueError(
-                f"Missing scores policy {self.missing_scores_policy} "
+                f"Missing scores policy '{self.missing_scores_policy}' "
                 f"is not supported."
             )
 
