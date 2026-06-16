@@ -61,8 +61,46 @@ class TestCriterion:
                 expected_scores[client], scores[client], rel_tol=1e-6
             )
 
+    def test_constant_criterion_invalid(self):
+        with pytest.raises(ValueError):
+            ConstantCriterion(None)
+
+    def test_init_composition_criterion_plus(self):
+        criterion1 = ConstantCriterion(1)
+        criterion2 = ConstantCriterion(2)
+        compo_criterion = criterion1 + criterion2
+        assert isinstance(compo_criterion, CompositionCriterion)
+
+    def test_init_composition_criterion_sub(self):
+        criterion1 = ConstantCriterion(1)
+        criterion2 = ConstantCriterion(2)
+        compo_criterion = criterion2 - criterion1
+        assert isinstance(compo_criterion, CompositionCriterion)
+
+    def test_init_composition_criterion_mul(self):
+        criterion1 = ConstantCriterion(1)
+        criterion2 = ConstantCriterion(2)
+        compo_criterion = criterion1 * criterion2
+        assert isinstance(compo_criterion, CompositionCriterion)
+
+    def test_init_composition_criterion_div(self):
+        criterion1 = ConstantCriterion(1)
+        criterion2 = ConstantCriterion(2)
+        compo_criterion = criterion1 / criterion2
+        assert isinstance(compo_criterion, CompositionCriterion)
+
+    def test_init_composition_criterion_pow(self):
+        criterion1 = ConstantCriterion(2)
+        compo_criterion = criterion1**2
+        assert isinstance(compo_criterion, CompositionCriterion)
+
+    def test_fail_init_composition_criterion_invalid_type(self):
+        criterion1 = ConstantCriterion(2)
+        with pytest.raises(ValueError):
+            compo_criterion = criterion1 + None  # noqa: F841
+
     @pytest.mark.parametrize("framework", VECTOR_FRAMEWORKS)
-    def test_composition_criterion(
+    def test_composition_criterion_grad_norm_and_constants(
         self,
         client_to_reply: Dict[str, TrainReply],
         global_model: Model,
@@ -264,3 +302,48 @@ class TestCriterion:
         # check score is correctly computed from history
         for client, expected_score in agg_to_expected_scores[agg].items():
             assert math.isclose(expected_score, scores[client], rel_tol=1e-6)
+
+    def test_train_time_hist_criterion_invalid_agg(self) -> None:
+        with pytest.raises(ValueError):
+            TrainTimeHistoryCriterion(
+                lower_is_better=True,
+                agg="invalid",
+            )
+
+    @pytest.mark.parametrize("framework", ["torch"])
+    def test_train_time_hist_criterion_set_invalid_agg(
+        self, global_model: Model
+    ) -> None:
+        # Setup inputs of the `compute` function.
+        DEFAULT_EPOCHS = 1
+        DEFAULT_STEPS = 10
+        DEFAULT_GRAD = ModelUpdates(
+            GradientsTestCase("torch").mock_ones,
+            weights=1,
+        )
+        client_to_reply = {
+            "client_1": TrainReply(
+                n_epoch=DEFAULT_EPOCHS,
+                n_steps=DEFAULT_STEPS,
+                t_spent=20.0,
+                updates=DEFAULT_GRAD,
+                aux_var={},
+            ),
+            "client_2": TrainReply(
+                n_epoch=DEFAULT_EPOCHS,
+                n_steps=DEFAULT_STEPS,
+                t_spent=10.0,
+                updates=DEFAULT_GRAD,
+                aux_var={},
+            ),
+        }
+
+        criterion = TrainTimeHistoryCriterion(
+            lower_is_better=True,
+            agg="sum",
+        )
+        # Set invalid value for criterion aggregate function.
+        criterion.agg = "invalid"
+
+        with pytest.raises(ValueError):
+            criterion.compute(client_to_reply, global_model)
