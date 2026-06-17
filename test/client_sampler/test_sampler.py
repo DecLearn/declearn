@@ -269,8 +269,8 @@ class TestClientSampler:
         monkeypatch,
     ):
         """
-        Test composition client sampler with a gradient norm criterion client
-        sampling and then a uniform sampling.
+        Test composition client sampler with gradient norm criterion client
+        sampling and then uniform sampling.
 
         Note: we use the same mocking method (with monkeypatch) as in
         'test_criterion_sampling'

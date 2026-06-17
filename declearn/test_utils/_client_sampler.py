@@ -23,7 +23,7 @@ from declearn.client_sampler import ClientSampler
 
 
 class FailClientSampler(ClientSampler):
-    """Client sampler that always return an empty set when sampling clients"""
+    """Client sampler that always returns an empty set when sampling clients"""
 
     strategy = "fail"
 
