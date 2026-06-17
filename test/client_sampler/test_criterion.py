@@ -303,7 +303,7 @@ class TestCriterion:
         for client, expected_score in agg_to_expected_scores[agg].items():
             assert math.isclose(expected_score, scores[client], rel_tol=1e-6)
 
-    def test_train_time_hist_criterion_invalid_agg(self) -> None:
+    def test_train_time_history_criterion_invalid_agg_func(self) -> None:
         with pytest.raises(ValueError):
             TrainTimeHistoryCriterion(
                 lower_is_better=True,
@@ -311,7 +311,7 @@ class TestCriterion:
             )
 
     @pytest.mark.parametrize("framework", ["torch"])
-    def test_train_time_hist_criterion_set_invalid_agg(
+    def test_train_time_history_criterion_set_invalid_agg_func(
         self, global_model: Model
     ) -> None:
         # Setup inputs of the `compute` function.
