@@ -29,6 +29,7 @@ from declearn.client_sampler import (
     DefaultClientSampler,
     UniformClientSampler,
     WeightedClientSampler,
+    list_client_samplers,
 )
 from declearn.client_sampler.criterion import GradientNormCriterion
 from declearn.messaging import TrainReply
@@ -42,37 +43,94 @@ class TestClientSampler:
     def test_default_sampling(self, clients: Set[str]):
         sampler = DefaultClientSampler()
         sampler.init_clients(clients)
-        sampled_clients = sampler.sample()
+        sampled_clients = sampler.run()
+        assert sampler.secagg_compatible
         assert clients == sampled_clients
+
+    def test_sample_with_not_initialized_client_set(self):
+        sampler = DefaultClientSampler()
+        with pytest.raises(AttributeError):
+            sampler.run()
+
+    def test_sample_with_subset_eligible_clients(self, clients: Set[str]):
+        sampler = DefaultClientSampler()
+        # Initialize with client1, client2, client3
+        sampler.init_clients(clients)
+        eligible_clients = {"client1", "client2"}
+        sampled_clients = sampler.run(eligible_clients)
+        assert sampled_clients == eligible_clients
+
+    def test_sample_with_wrong_eligible_clients(self, clients: Set[str]):
+        sampler = DefaultClientSampler()
+        # Initialize with client1, client2, client3
+        sampler.init_clients(clients)
+        eligible_clients = {"client1", "client4"}
+        with pytest.raises(ValueError):
+            sampler.run(eligible_clients)
 
     def test_sampling_fail(self, clients: Set[str]):
         fail_sampler = FailClientSampler()
         fail_sampler.init_clients(clients)
-        sampled_clients = fail_sampler.sample()
+        sampled_clients = fail_sampler.run()
         assert sampled_clients == clients
 
     @pytest.mark.parametrize("n_samples", [1, 2])
     def test_uniform_sampling(self, n_samples: int, clients: Set[str]):
         sampler = UniformClientSampler(n_samples=n_samples)
         sampler.init_clients(clients)
-        sampled_client = sampler.sample()
+        sampled_client = sampler.run()
+        assert sampler.secagg_compatible
         assert len(sampled_client) == n_samples
         assert sampled_client.issubset(clients)
+
+    def test_uniform_sampling_with_n_samples_higher_than_nb_clients(
+        self,
+        clients: Set[str],
+    ):
+        """Test that with uniform sampling, when we want to sample more
+        clients than in the full client set (`n_samples >= len(clients)`),
+        all clients are selected.
+        """
+        sampler = UniformClientSampler(n_samples=4)
+        sampler.init_clients(clients)
+        sampled_clients = sampler.run()
+        assert sampled_clients == clients
 
     def test_weighted_sampling(self, clients: Set[str]):
         client_to_weight = {
             "client1": 0,  # zero-valued weight, so should not be sampled
             "client2": 1,
             "client3": 2,
-            "client4": 3,  # anticipated client, not in the actual one
+            "client4": 3,  # anticipated client, not in the actual ones
         }
         sampler = WeightedClientSampler(
             n_samples=2, client_to_weight=client_to_weight
         )
         sampler.init_clients(clients)
-        sampled_clients = sampler.sample()
+        sampled_clients = sampler.run()
         expected_clients = {"client2", "client3"}
+        assert sampler.secagg_compatible
         assert sampled_clients == expected_clients
+
+    def test_weighted_sampling_with_n_samples_higher_than_nb_clients(
+        self,
+        clients: Set[str],
+    ):
+        """Test that with weighted sampling, when we want to sample more
+        clients than in the full client set (`n_samples >= len(clients)`),
+        all clients are selected.
+        """
+        client_to_weight = {
+            "client1": 0,
+            "client2": 1,
+            "client3": 2,
+        }
+        sampler = WeightedClientSampler(
+            n_samples=4, client_to_weight=client_to_weight
+        )
+        sampler.init_clients(clients)
+        sampled_clients = sampler.run()
+        assert sampled_clients == clients
 
     def test_weighted_sampling_check_proportions(self, clients: Set[str]):
         """
@@ -92,7 +150,7 @@ class TestClientSampler:
         sampler.init_clients(clients)
         sampled_clients = []
         for _ in range(10_000):
-            sampled_client = sampler.sample().pop()
+            sampled_client = sampler.run().pop()
             sampled_clients.append(sampled_client)
         counts = Counter(sampled_clients)
         total = counts.total()
@@ -114,15 +172,17 @@ class TestClientSampler:
             sampler.init_clients(clients)
 
     @pytest.mark.parametrize("framework", ["torch"])
+    @pytest.mark.parametrize("missing_scores_policy", ["priority", "equal"])
     def test_criterion_sampling(
         self,
         clients: Set[str],
         client_to_reply: Dict[str, TrainReply],
         global_model: Model,
+        missing_scores_policy: str,
         monkeypatch,
     ):
         """
-        Test gradient norm criterion client sampling
+        Test gradient norm criterion client sampling.
 
         Notes: uses the train_replies fixture with one arbitrary fixed
         framework: torch.
@@ -145,19 +205,63 @@ class TestClientSampler:
         sampler = CriterionClientSampler(
             n_samples=2,
             criterion=criterion,
-            missing_scores_policy="priority",
+            missing_scores_policy=missing_scores_policy,
         )
         sampler.init_clients(clients)
         # update the scores using the fake gradient norms
         sampler.update(client_to_reply, global_model)
-        sampled_clients = sampler.sample()
+        sampled_clients = sampler.run()
+        assert not sampler.secagg_compatible
         assert len(sampled_clients) == 2
         # client 2 and 3 have the highest scores (2 and 3)
         # so they must be chosen
         assert sampled_clients == {"client2", "client3"}
 
+    def test_criterion_sampling_with_n_samples_higher_than_nb_clients(
+        self,
+        clients: Set[str],
+    ):
+        """Test that with criterion sampling, when we want to sample more
+        clients than in the full client set (`n_samples >= len(clients)`),
+        all clients are selected.
+        """
+        criterion = GradientNormCriterion()
+        sampler = CriterionClientSampler(
+            n_samples=4,
+            criterion=criterion,
+            missing_scores_policy="priority",
+        )
+        sampler.init_clients(clients)
+        sampled_clients = sampler.run()
+        assert sampled_clients == clients
+
+    def test_criterion_sampling_invalid_missing_scores_policy(self):
+        criterion = GradientNormCriterion()
+        with pytest.raises(ValueError):
+            CriterionClientSampler(
+                n_samples=2,
+                criterion=criterion,
+                missing_scores_policy="invalid",
+            )
+
+    def test_criterion_sampling_invalid_set_of_missing_score_policy(
+        self,
+        clients: Set[str],
+    ):
+        criterion = GradientNormCriterion()
+        sampler = CriterionClientSampler(
+            n_samples=2,
+            criterion=criterion,
+            missing_scores_policy="priority",
+        )
+        sampler.init_clients(clients)
+        # Update missing_score_policy attribute with invalid value.
+        sampler.missing_scores_policy = "invalid"
+        with pytest.raises(ValueError):
+            sampler.run()
+
     @pytest.mark.parametrize("framework", ["torch"])
-    def test_compo_crit_unif_sampling(
+    def test_composition_sampling_criterion_uniform(
         self,
         clients: Set[str],
         client_to_reply: Dict[str, TrainReply],
@@ -165,8 +269,8 @@ class TestClientSampler:
         monkeypatch,
     ):
         """
-        Test composition client sampler with a gradient norm criterion client
-        sampling and then a uniform sampling
+        Test composition client sampler with gradient norm criterion client
+        sampling and then uniform sampling.
 
         Note: we use the same mocking method (with monkeypatch) as in
         'test_criterion_sampling'
@@ -190,9 +294,58 @@ class TestClientSampler:
         compo_sampler.init_clients(clients)
         # update the scores using the fake gradient norms
         compo_sampler.update(client_to_reply, global_model)
-        sampled_clients = compo_sampler.sample()
+        sampled_clients = compo_sampler.run()
 
         # first, the criterion sampler should have selected client3 and then
         # the uniform sampler should have picked randomly one among the others
         assert len(sampled_clients) == 2
         assert "client3" in sampled_clients
+
+    def test_composition_sampling_secagg_compatible(self):
+        """Test that the composition sampler is secagg-compatible if all
+        the composed samplers are secagg-compatible.
+        """
+        client_to_weight = {
+            "client1": 0,
+            "client2": 2,
+            "client3": 8,
+        }
+        weighted_sampler = WeightedClientSampler(
+            n_samples=1, client_to_weight=client_to_weight
+        )
+        unif_sampler = UniformClientSampler(n_samples=1)
+        compo_sampler = CompositionClientSampler(
+            [weighted_sampler, unif_sampler]
+        )
+        assert compo_sampler.secagg_compatible
+
+    def test_composition_sampling_secagg_incompatible(self):
+        """Test that the composition sampler is secagg-incompatible if at
+        least one of the composed samplers is secagg-incompatible.
+        """
+        criterion = GradientNormCriterion()
+        crit_sampler = CriterionClientSampler(
+            n_samples=1,
+            criterion=criterion,
+            missing_scores_policy="priority",
+        )
+        unif_sampler = UniformClientSampler(n_samples=1)
+        compo_sampler = CompositionClientSampler([crit_sampler, unif_sampler])
+        assert not compo_sampler.secagg_compatible
+
+    def test_list_client_samplers(self):
+        """Test that known clients samplers are listed by the
+        `list_client_samplers` function.
+        """
+        expected_samplers = {
+            "composition": CompositionClientSampler,
+            "criterion": CriterionClientSampler,
+            "default": DefaultClientSampler,
+            "uniform": UniformClientSampler,
+            "weighted": WeightedClientSampler,
+        }
+        actual_samplers = list_client_samplers()
+
+        for sampler_name, sampler_class in expected_samplers.items():
+            assert sampler_name in actual_samplers
+            assert actual_samplers[sampler_name] == sampler_class

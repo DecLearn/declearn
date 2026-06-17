@@ -139,6 +139,18 @@ def test_from_specs_composition_with_objects():
     assert isinstance(sampler2, DefaultClientSampler)
 
 
+def test_from_specs_composition_with_unsupported_sampler_type():
+    specs = {
+        "strategy": "composition",
+        "samplers": [
+            42,
+            DefaultClientSampler(),
+        ],
+    }
+    with pytest.raises(ValueError):
+        instantiate_client_sampler(**specs)
+
+
 def test_from_specs_criterion_grad_norm():
     specs = {
         "strategy": "criterion",
@@ -163,6 +175,21 @@ def test_from_specs_criterion_constant():
             "name": "constant",
             "value": 1,
         },
+        "missing_scores_policy": "priority",
+    }
+    sampler = instantiate_client_sampler(**specs)
+    assert isinstance(sampler, CriterionClientSampler)
+    assert sampler.n_samples == 2
+    assert sampler.missing_scores_policy == "priority"
+    assert isinstance(sampler.criterion, ConstantCriterion)
+    assert sampler.criterion.value == 1
+
+
+def test_from_specs_criterion_constant_as_instance():
+    specs = {
+        "strategy": "criterion",
+        "n_samples": 2,
+        "criterion": ConstantCriterion(1),
         "missing_scores_policy": "priority",
     }
     sampler = instantiate_client_sampler(**specs)
@@ -218,6 +245,17 @@ def test_from_specs_criterion_constant_missing_param():
         instantiate_client_sampler(**specs)
 
 
+def test_from_specs_criterion_invalid():
+    specs = {
+        "strategy": "criterion",
+        "n_samples": 2,
+        "criterion": 42,
+        "missing_scores_policy": "priority",
+    }
+    with pytest.raises(ValueError):
+        instantiate_client_sampler(**specs)
+
+
 @pytest.mark.parametrize(
     "operation",
     OPERATIONS,
@@ -233,6 +271,33 @@ def test_from_specs_criterion_composition(operation: str):
                 {
                     "name": "gradient_norm",
                 },
+                {
+                    "name": "constant",
+                    "value": 1,
+                },
+            ],
+        },
+        "missing_scores_policy": "priority",
+    }
+    sampler = instantiate_client_sampler(**specs)
+    assert isinstance(sampler, CriterionClientSampler)
+    assert sampler.n_samples == 2
+    assert sampler.missing_scores_policy == "priority"
+    assert isinstance(sampler.criterion, CompositionCriterion)
+    assert isinstance(sampler.criterion.parents[0], GradientNormCriterion)
+    assert isinstance(sampler.criterion.parents[1], ConstantCriterion)
+    assert sampler.criterion.parents[1].value == 1
+
+
+def test_from_specs_criterion_composition_with_criterion_instance():
+    specs = {
+        "strategy": "criterion",
+        "n_samples": 2,
+        "criterion": {
+            "name": "composition",
+            "operation": "+",
+            "parents": [
+                GradientNormCriterion(),
                 {
                     "name": "constant",
                     "value": 1,
@@ -285,6 +350,27 @@ def test_from_specs_criterion_composition_wrong_operation_type():
                 {
                     "name": "gradient_norm",
                 },
+                {
+                    "name": "constant",
+                    "value": 1,
+                },
+            ],
+        },
+        "missing_scores_policy": "priority",
+    }
+    with pytest.raises(ValueError):
+        instantiate_client_sampler(**specs)
+
+
+def test_from_specs_criterion_composition_wrong_criterion_type():
+    specs = {
+        "strategy": "criterion",
+        "n_samples": 2,
+        "criterion": {
+            "name": "composition",
+            "operation": "+",
+            "parents": [
+                42,
                 {
                     "name": "constant",
                     "value": 1,

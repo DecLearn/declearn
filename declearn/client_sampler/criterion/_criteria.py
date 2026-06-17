@@ -101,11 +101,12 @@ class NormalizedDivCriterion(Criterion):
         for client, reply in client_to_reply.items():
             w_updates = np.array(reply.updates.updates.flatten()[0])
             # client weight updates
-            size_upd = len(w_updates)
-            if size_upd != size_w:
+            size_updates = len(w_updates)
+            if size_updates != size_w:
                 raise ValueError(
                     f"Flattened global model weights size ({size_w}) and "
-                    f"client model updates size ({size_upd}) must be equal."
+                    f"client model updates size ({size_updates}) must be "
+                    "equal."
                 )
             score = float(
                 1 / size_w * np.sum(np.abs(w_updates / (w_server + eps)))
@@ -154,7 +155,7 @@ class TrainTimeHistoryCriterion(Criterion):
         score (score will be `- aggregated_times`). Otherwise, a higher value
         for aggregated times of leads to a better score (score will be
         `+ aggregated_times`).
-    agg: AggregateFunc
+    agg_func: AggregateFunc
         Name of a method to aggregate the history values into a float, e.g.
         average, sum.
     history: Dict[str, List[float]], read-only instance property
@@ -174,13 +175,13 @@ class TrainTimeHistoryCriterion(Criterion):
     AggregateFunc = Literal["average", "sum"]
 
     def __init__(
-        self, lower_is_better: bool = True, agg: AggregateFunc = "average"
+        self, lower_is_better: bool = True, agg_func: AggregateFunc = "average"
     ):
-        if agg not in get_args(self.AggregateFunc):
-            raise ValueError(f"Unsupported aggregate function '{agg}'.")
+        if agg_func not in get_args(self.AggregateFunc):
+            raise ValueError(f"Unsupported aggregate function '{agg_func}'.")
 
         self.lower_is_better = lower_is_better
-        self.agg = agg
+        self.agg_func = agg_func
         self._history: Dict[str, List[float]] = {}
 
     @property
@@ -200,16 +201,18 @@ class TrainTimeHistoryCriterion(Criterion):
                 self._history[client] = [reply.t_spent]  # init history
 
         # aggregate all times in each client history
-        if self.agg == "average":
+        if self.agg_func == "average":
 
-            def agg_fn(hist):
+            def agg_function(hist):
                 return sum(hist) / len(hist)
-        elif self.agg == "sum":
-            agg_fn = sum
+        elif self.agg_func == "sum":
+            agg_function = sum
         else:
-            raise ValueError(f"Unsupported aggregate function '{self.agg}'.")
+            raise ValueError(
+                f"Unsupported aggregate function '{self.agg_func}'."
+            )
 
         return {
-            client: sign * agg_fn(self._history[client])
+            client: sign * agg_function(self._history[client])
             for client in client_to_reply
         }

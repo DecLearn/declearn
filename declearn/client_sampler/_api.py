@@ -69,8 +69,8 @@ class ClientSampler(metaclass=ABCMeta):
 
     Key methods
     -----------
-    - sample(eligible_clients):
-        Perform the client sampling.
+    - run(eligible_clients):
+        Run the client sampling.
     - update(client_to_reply, global_model):
         Update sampler internal state.
 
@@ -85,8 +85,8 @@ class ClientSampler(metaclass=ABCMeta):
         e.g. "default" for `DefaultClientSampler`.
     - secagg_compatible(): boolean read-only class property
         Indicate if the client sampler is compatible with secure aggregation
-    - cls_sample(eligible_clients):
-        Class-specific back-end of the common sampling method `sample`.
+    - sample(eligible_clients):
+        Class-specific method to sample clients, triggered by `run`.
 
     Overridable
     -----------
@@ -179,16 +179,16 @@ class ClientSampler(metaclass=ABCMeta):
         """
         self.clients.update(clients)
 
-    def sample(
+    def run(
         self,
         eligible_clients: Optional[Set[str]] = None,
     ) -> Set[str]:
-        """Sample clients among the provided eligible clients.
+        """Run the client sampling process among the provided eligible clients.
 
         It is the entrypoint method for the client sampling, including
         mechanisms common to all client samplers (e.g. retry capability).
 
-        If eligible_client is None, samples among the full clients set.
+        If `eligible_client` is None, samples among the full clients set.
 
         Notes
         -----
@@ -242,7 +242,7 @@ class ClientSampler(metaclass=ABCMeta):
         nb_retries = 0
         retry = True
         while retry:
-            sampled_clients = self.cls_sample(eligible_clients)
+            sampled_clients = self.sample(eligible_clients)
             if len(sampled_clients) > 0:
                 retry = False
             elif nb_retries < self.max_retries:
@@ -257,8 +257,8 @@ class ClientSampler(metaclass=ABCMeta):
         return sampled_clients
 
     @abstractmethod
-    def cls_sample(self, eligible_clients: Set[str]) -> Set[str]:
-        """Class-specific back-end of the `sample` method.
+    def sample(self, eligible_clients: Set[str]) -> Set[str]:
+        """Sample clients among the provided eligible clients.
 
         Implementation of the precise client sampling algorithm, specific to
         the subclass.

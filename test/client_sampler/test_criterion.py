@@ -38,6 +38,27 @@ from declearn.test_utils import GradientsTestCase, list_available_frameworks
 VECTOR_FRAMEWORKS = list_available_frameworks()
 
 
+def build_reply_with_t_spent_of(t_spent: float) -> TrainReply:
+    """Utility function to build a `TrainReply` instance using provided value
+    for `t_spent`, and default arbitrary values for `n_epoch`, `n_steps`,
+    `updates` and `aux_var`.
+    """
+    DEFAULT_EPOCHS = 1
+    DEFAULT_STEPS = 10
+    DEFAULT_GRAD = ModelUpdates(
+        GradientsTestCase("torch").mock_ones,
+        weights=1,
+    )
+
+    return TrainReply(
+        n_epoch=DEFAULT_EPOCHS,
+        n_steps=DEFAULT_STEPS,
+        t_spent=t_spent,
+        updates=DEFAULT_GRAD,
+        aux_var={},
+    )
+
+
 class TestCriterion:
     """Shared unit tests suite for 'Criterion' subclasses."""
 
@@ -61,8 +82,46 @@ class TestCriterion:
                 expected_scores[client], scores[client], rel_tol=1e-6
             )
 
+    def test_constant_criterion_invalid(self):
+        with pytest.raises(ValueError):
+            ConstantCriterion(None)
+
+    def test_init_composition_criterion_plus(self):
+        criterion1 = ConstantCriterion(1)
+        criterion2 = ConstantCriterion(2)
+        compo_criterion = criterion1 + criterion2
+        assert isinstance(compo_criterion, CompositionCriterion)
+
+    def test_init_composition_criterion_sub(self):
+        criterion1 = ConstantCriterion(1)
+        criterion2 = ConstantCriterion(2)
+        compo_criterion = criterion2 - criterion1
+        assert isinstance(compo_criterion, CompositionCriterion)
+
+    def test_init_composition_criterion_mul(self):
+        criterion1 = ConstantCriterion(1)
+        criterion2 = ConstantCriterion(2)
+        compo_criterion = criterion1 * criterion2
+        assert isinstance(compo_criterion, CompositionCriterion)
+
+    def test_init_composition_criterion_div(self):
+        criterion1 = ConstantCriterion(1)
+        criterion2 = ConstantCriterion(2)
+        compo_criterion = criterion1 / criterion2
+        assert isinstance(compo_criterion, CompositionCriterion)
+
+    def test_init_composition_criterion_pow(self):
+        criterion1 = ConstantCriterion(2)
+        compo_criterion = criterion1**2
+        assert isinstance(compo_criterion, CompositionCriterion)
+
+    def test_fail_init_composition_criterion_invalid_type(self):
+        criterion1 = ConstantCriterion(2)
+        with pytest.raises(ValueError):
+            compo_criterion = criterion1 + None  # noqa: F841
+
     @pytest.mark.parametrize("framework", VECTOR_FRAMEWORKS)
-    def test_composition_criterion(
+    def test_composition_criterion_grad_norm_and_constants(
         self,
         client_to_reply: Dict[str, TrainReply],
         global_model: Model,
@@ -149,88 +208,39 @@ class TestCriterion:
                 expected_scores[client], scores[client], rel_tol=1e-6
             )
 
-    @pytest.mark.parametrize("agg", ["average", "sum"])
+    @pytest.mark.parametrize("agg_func", ["average", "sum"])
     @pytest.mark.parametrize("framework", ["torch"])
     def test_train_time_hist_criterion_lowest(
         self,
-        agg: TrainTimeHistoryCriterion.AggregateFunc,
+        agg_func: TrainTimeHistoryCriterion.AggregateFunc,
         global_model: Model,
     ) -> None:
-        DEFAULT_EPOCHS = 1
-        DEFAULT_STEPS = 10
-        DEFAULT_GRAD = ModelUpdates(
-            GradientsTestCase("torch").mock_ones,
-            weights=1,
-        )
-
         criterion = TrainTimeHistoryCriterion(
             lower_is_better=True,
-            agg=agg,
+            agg_func=agg_func,
         )
 
         # 1st fake round results
         client_to_reply = {
-            "client_1": TrainReply(
-                n_epoch=DEFAULT_EPOCHS,
-                n_steps=DEFAULT_STEPS,
-                t_spent=20.0,
-                updates=DEFAULT_GRAD,
-                aux_var={},
-            ),
-            "client_2": TrainReply(
-                n_epoch=DEFAULT_EPOCHS,
-                n_steps=DEFAULT_STEPS,
-                t_spent=10.0,
-                updates=DEFAULT_GRAD,
-                aux_var={},
-            ),
+            "client_1": build_reply_with_t_spent_of(20.0),
+            "client_2": build_reply_with_t_spent_of(10.0),
         }
         # compute score after fake round 1
         scores = criterion.compute(client_to_reply, global_model)
 
         # fake round 2, update only the training time
         client_to_reply = {
-            "client_2": TrainReply(
-                n_epoch=DEFAULT_EPOCHS,
-                n_steps=DEFAULT_STEPS,
-                t_spent=40.0,
-                updates=DEFAULT_GRAD,
-                aux_var={},
-            ),
-            "client_3": TrainReply(
-                n_epoch=DEFAULT_EPOCHS,
-                n_steps=DEFAULT_STEPS,
-                t_spent=30.0,
-                updates=DEFAULT_GRAD,
-                aux_var={},
-            ),
+            "client_2": build_reply_with_t_spent_of(40.0),
+            "client_3": build_reply_with_t_spent_of(30.0),
         }
         # compute score after fake round 2
         scores = criterion.compute(client_to_reply, global_model)
 
         # fake round 3, update sampled clients and training time
         client_to_reply = {
-            "client_1": TrainReply(
-                n_epoch=DEFAULT_EPOCHS,
-                n_steps=DEFAULT_STEPS,
-                t_spent=50.0,
-                updates=DEFAULT_GRAD,
-                aux_var={},
-            ),
-            "client_2": TrainReply(
-                n_epoch=DEFAULT_EPOCHS,
-                n_steps=DEFAULT_STEPS,
-                t_spent=70.0,
-                updates=DEFAULT_GRAD,
-                aux_var={},
-            ),
-            "client_3": TrainReply(
-                n_epoch=DEFAULT_EPOCHS,
-                n_steps=DEFAULT_STEPS,
-                t_spent=60.0,
-                updates=DEFAULT_GRAD,
-                aux_var={},
-            ),
+            "client_1": build_reply_with_t_spent_of(50.0),
+            "client_2": build_reply_with_t_spent_of(70.0),
+            "client_3": build_reply_with_t_spent_of(60.0),
         }
         # compute score after fake round 3
         scores = criterion.compute(client_to_reply, global_model)
@@ -262,5 +272,32 @@ class TestCriterion:
                 assert math.isclose(expected, value, rel_tol=1e-6)
 
         # check score is correctly computed from history
-        for client, expected_score in agg_to_expected_scores[agg].items():
+        for client, expected_score in agg_to_expected_scores[agg_func].items():
             assert math.isclose(expected_score, scores[client], rel_tol=1e-6)
+
+    def test_train_time_history_criterion_invalid_agg_func(self) -> None:
+        with pytest.raises(ValueError):
+            TrainTimeHistoryCriterion(
+                lower_is_better=True,
+                agg_func="invalid",
+            )
+
+    @pytest.mark.parametrize("framework", ["torch"])
+    def test_train_time_history_criterion_set_invalid_agg_func(
+        self, global_model: Model
+    ) -> None:
+        # Setup inputs of the `compute` function.
+        client_to_reply = {
+            "client_1": build_reply_with_t_spent_of(20.0),
+            "client_2": build_reply_with_t_spent_of(10.0),
+        }
+
+        criterion = TrainTimeHistoryCriterion(
+            lower_is_better=True,
+            agg_func="sum",
+        )
+        # Set invalid value for criterion aggregate function.
+        criterion.agg_func = "invalid"
+
+        with pytest.raises(ValueError):
+            criterion.compute(client_to_reply, global_model)

@@ -272,11 +272,11 @@ clisamp_specs = {
 #### Composition example
 
 In this section, you can find an example of how to sequentially compose two
-client samplers in one, that, in each round :
-- first, selects the 2 clients that have the lowest training time in the last
-round local training
-- then, among the remaining clients, select 1 client randomly based on a
-uniform probability law
+client samplers in one, that, in each round :  
+  - first, selects the 2 clients that have the lowest training time in the last
+  round local training  
+  - then, among the remaining clients, select 1 client randomly based on a
+  uniform probability law  
 
 ```python
 from declearn.client_sampler import (
@@ -368,7 +368,7 @@ To define your own client sampler, you must create a subclass of
 name, e.g. `"uniform"` for the class `UniformClientSampler`.
 - Defining the boolean class property `secagg_compatible` (just returning True
 or False) to precise if your strategy is compatible with secure aggregation.
-- Implementing the method `cls_sample` in which your custom client sampling
+- Implementing the method `sample` in which your custom client sampling
 logic is defined.
 
 Optionally, if your sampler needs to update its internal state after each
