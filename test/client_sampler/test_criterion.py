@@ -187,11 +187,11 @@ class TestCriterion:
                 expected_scores[client], scores[client], rel_tol=1e-6
             )
 
-    @pytest.mark.parametrize("agg", ["average", "sum"])
+    @pytest.mark.parametrize("agg_func", ["average", "sum"])
     @pytest.mark.parametrize("framework", ["torch"])
     def test_train_time_hist_criterion_lowest(
         self,
-        agg: TrainTimeHistoryCriterion.AggregateFunc,
+        agg_func: TrainTimeHistoryCriterion.AggregateFunc,
         global_model: Model,
     ) -> None:
         DEFAULT_EPOCHS = 1
@@ -203,7 +203,7 @@ class TestCriterion:
 
         criterion = TrainTimeHistoryCriterion(
             lower_is_better=True,
-            agg=agg,
+            agg_func=agg_func,
         )
 
         # 1st fake round results
@@ -300,14 +300,14 @@ class TestCriterion:
                 assert math.isclose(expected, value, rel_tol=1e-6)
 
         # check score is correctly computed from history
-        for client, expected_score in agg_to_expected_scores[agg].items():
+        for client, expected_score in agg_to_expected_scores[agg_func].items():
             assert math.isclose(expected_score, scores[client], rel_tol=1e-6)
 
     def test_train_time_history_criterion_invalid_agg_func(self) -> None:
         with pytest.raises(ValueError):
             TrainTimeHistoryCriterion(
                 lower_is_better=True,
-                agg="invalid",
+                agg_func="invalid",
             )
 
     @pytest.mark.parametrize("framework", ["torch"])
@@ -340,10 +340,10 @@ class TestCriterion:
 
         criterion = TrainTimeHistoryCriterion(
             lower_is_better=True,
-            agg="sum",
+            agg_func="sum",
         )
         # Set invalid value for criterion aggregate function.
-        criterion.agg = "invalid"
+        criterion.agg_func = "invalid"
 
         with pytest.raises(ValueError):
             criterion.compute(client_to_reply, global_model)
