@@ -272,11 +272,11 @@ clisamp_specs = {
 #### Composition example
 
 In this section, you can find an example of how to sequentially compose two
-client samplers in one, that, in each round :
-- first, selects the 2 clients that have the lowest training time in the last
-round local training
-- then, among the remaining clients, select 1 client randomly based on a
-uniform probability law
+client samplers in one, that, in each round :  
+  - first, selects the 2 clients that have the lowest training time in the last
+  round local training  
+  - then, among the remaining clients, select 1 client randomly based on a
+  uniform probability law  
 
 ```python
 from declearn.client_sampler import (
