@@ -16,7 +16,8 @@
 #                      run_benchmarks.sh.
 #
 # `default_preset` is what `./run_benchmarks.sh` picks when PRESET is
-# unset. The `ci` preset is the one the CI regression check uses; everything else
+# unset. The `ci` preset is the one the CI regression check uses — all
+# four classes with single-sample timings (`--quick`); everything else
 # runs on demand via `PRESET=<name> ./run_benchmarks.sh`. For one-off
 # class subsets, override the active preset's class list with the
 # CLASSES env var, e.g.
@@ -29,6 +30,9 @@ presets:
   ci:
     classes:
       - BackendsBenchmark
+      - RegularizersBenchmark
+      - ScaffoldBenchmark
+      - SecAggBenchmark
     n_clients_axis: [5]
     asv_args:
       - "--quick"
@@ -42,17 +46,6 @@ presets:
       - SecAggBenchmark
     n_clients_axis: [5]
     asv_args:
-      - "--show-stderr"
-
-  quick:
-    classes:
-      - BackendsBenchmark
-      - RegularizersBenchmark
-      - ScaffoldBenchmark
-      - SecAggBenchmark
-    n_clients_axis: [5]
-    asv_args:
-      - "--quick"
       - "--show-stderr"
 
   scale:

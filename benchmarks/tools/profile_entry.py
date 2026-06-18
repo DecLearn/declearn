@@ -20,8 +20,6 @@ respective profiler.
 import argparse
 import logging
 
-from declearn.utils import config_server_loggers
-
 from benchmarks.workload import build_benchmark, run_benchmark
 
 
@@ -59,6 +57,12 @@ def _parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = _parse_args()
+    # Imported lazily (not at module top) so ASV's benchmark discovery,
+    # which imports every module under benchmark_dir, does not pull this
+    # symbol in. It was added after v2.7.0, so a top-level import breaks
+    # discovery when seeding older releases into the bench history.
+    from declearn.utils import config_server_loggers
+
     # Surface the federated server's progress (registration, rounds,
     # aggregation, evaluation) on stderr while profiling, so the run is not
     # a silent black box. Scoped to this entry point on purpose: the ASV

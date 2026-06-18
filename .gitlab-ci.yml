@@ -190,7 +190,7 @@ benchmarks:
           PRESET=ci ./run_benchmarks.sh run "${TAG}^!"
         done
       else
-        PREV_TAG=$(git describe --abbrev=0 "${CI_COMMIT_TAG}^" 2>/dev/null || true)
+        PREV_TAG=$(git describe --tags --abbrev=0 "${CI_COMMIT_TAG}^" 2>/dev/null || true)
         HAVE_PRIOR=false
         # Try the previous tag's artifact first; fall back to develop's
         # bootstrap. Both curl and unzip failures are tolerated here —

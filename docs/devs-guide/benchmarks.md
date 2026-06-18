@@ -64,9 +64,8 @@ The presets currently available are the following:
 
 | Preset | Classes | n_clients | asv_args | Use |
 |---|---|---|---|---|
-| `ci` (default) | Backends | `[5]` | `--quick`, `--show-stderr` | The release-tag regression check that the CI runs |
+| `ci` (default) | all four | `[5]` | `--quick`, `--show-stderr` | The release-tag regression check that the CI runs; all classes with single-sample timings |
 | `full` | all four | `[5]` | `--show-stderr` | The definitive on-demand sweep |
-| `quick` | all four | `[5]` | `--quick`, `--show-stderr` | All classes with single-sample timings |
 | `scale` | all four | `[5, 20]` | `--show-stderr` | Measuring performance at scale  |
 
 Note that widening `n_clients_axis` to include larger client counts makes

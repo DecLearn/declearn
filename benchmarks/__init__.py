@@ -11,10 +11,11 @@ per-version sweep under ~2 hours. The active axis is sourced from the
 `DECLEARN_BENCH_N_CLIENTS` env var (comma-separated positive ints,
 e.g. "5,20") when set, so that `bench.yaml` profiles can widen or
 narrow the sweep without editing this file. Every class — including
-SecAggBenchmark — honors the same axis; CI runs only the regression-check
-profile, so any cell that turns out to be slow (the n=20 masking
-cell historically hit `SecAggBenchmark.timeout`) is only paid for in
-manual investigation runs where it is visible to the operator.
+SecAggBenchmark — honors the same axis. The CI regression-check profile
+(`ci`) runs all four classes but keeps the axis at n=5, so the slow
+cells (the n=20 masking cell historically hit `SecAggBenchmark.timeout`)
+are only paid for in manual `scale` runs where they are visible to the
+operator.
 
 Memory tracking: `time_run` measures peak host-RSS-delta and peak
 GPU bytes as side effects (microseconds; invisible against the
