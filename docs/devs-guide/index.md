@@ -14,3 +14,6 @@ This guide is structured this way:
     Guide on how to build and render the package's documentation.
 - [Docstrings style guide](./docs-style.md):<br/>
     Guide on how to format docstrings and have them properly rendered.
+- [Benchmarking](./benchmarks.md):<br/>
+    Guide on how to run the performance benchmark suite, profile with
+    py-spy, and investigate regressions.

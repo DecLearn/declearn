@@ -1,0 +1,66 @@
+# Benchmark suite presets.
+#
+# A preset bundles the three knobs that change per run:
+#   - classes:         which benchmark classes ASV runs (from
+#                      benchmarks/__init__.py). Each name becomes a
+#                      `-b "^Class\."` regex filter on `asv run`.
+#   - n_clients_axis:  comma-joined into the DECLEARN_BENCH_N_CLIENTS
+#                      env var, which __init__.py reads to seed
+#                      N_CLIENTS_AXIS. Every class honors it; widening
+#                      it (e.g. [5, 20]) makes SecAggBenchmark sweep
+#                      too, which has historically been slow at n=20.
+#   - asv_args:        flags appended verbatim to `asv run`. Common
+#                      ones: `--quick` (one sample/cell), `--show-stderr`.
+#                      Do NOT put `-b`, `--python`, or
+#                      `--set-commit-hash` here — those are managed by
+#                      run_benchmarks.sh.
+#
+# `default_preset` is what `./run_benchmarks.sh` picks when PRESET is
+# unset. The `ci` preset is the one the CI regression check uses; everything else
+# runs on demand via `PRESET=<name> ./run_benchmarks.sh`. For one-off
+# class subsets, override the active preset's class list with the
+# CLASSES env var, e.g.
+# `CLASSES=ScaffoldBenchmark PRESET=full ./run_benchmarks.sh`.
+
+default_preset: ci
+
+presets:
+
+  ci:
+    classes:
+      - BackendsBenchmark
+    n_clients_axis: [5]
+    asv_args:
+      - "--quick"
+      - "--show-stderr"
+
+  full:
+    classes:
+      - BackendsBenchmark
+      - RegularizersBenchmark
+      - ScaffoldBenchmark
+      - SecAggBenchmark
+    n_clients_axis: [5]
+    asv_args:
+      - "--show-stderr"
+
+  quick:
+    classes:
+      - BackendsBenchmark
+      - RegularizersBenchmark
+      - ScaffoldBenchmark
+      - SecAggBenchmark
+    n_clients_axis: [5]
+    asv_args:
+      - "--quick"
+      - "--show-stderr"
+
+  scale:
+    classes:
+      - BackendsBenchmark
+      - RegularizersBenchmark
+      - ScaffoldBenchmark
+      - SecAggBenchmark
+    n_clients_axis: [5, 20]
+    asv_args:
+      - "--show-stderr"

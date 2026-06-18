@@ -46,6 +46,10 @@ details on this example and on how to run it, please refer to its own
   - Select a communication protocol (_e.g._ "grpc" or "websockets").
   - Select the host address and port to use.
   - Preferably provide paths to PEM files storing SSL-required information.
+  - Optionally enable message compression over the wire via the `compression`
+    argument (`None`/`"none"` for no compression, or `"deflate"`). This trades
+    some CPU for smaller network messages, which can speed up rounds when model
+    updates are large; it must be set consistently on the server and clients.
   - Wrap this into a config dict or use `declearn.communication.build_server`
     to instantiate a `declearn.communication.api.NetworkServer` to be used.
 
@@ -108,6 +112,8 @@ details on this example and on how to run it, please refer to its own
   - Provide the server URI to connect to.
   - Preferable provide the path to a PEM file storing SSL-required information
     (matching those used on the Server side).
+  - Optionally enable message compression via the `compression` argument
+    (`None`/`"none"` or `"deflate"`), matching the value used on the server.
   - Wrap this into a config dict or use `declearn.communication.build_client`
     to instantiate a `declearn.communication.api.NetworkClient` to be used.
 

@@ -14,11 +14,20 @@ workflow:
       variables:
         IS_CORE_PUSH: "true"
         BRANCH_NAME: $CI_COMMIT_BRANCH
+    - if: $CI_COMMIT_TAG  # release tag push -> bench regression check
+      variables:
+        IS_TAG: "true"
+        BRANCH_NAME: $CI_COMMIT_TAG
+    - if: $CI_PIPELINE_SOURCE == "web" && $BENCH_BOOTSTRAP == "true"  # manual UI trigger w/ BENCH_BOOTSTRAP=true -> bench-bootstrap
+      variables:
+        IS_BOOTSTRAP: "true"
+        BRANCH_NAME: $CI_COMMIT_BRANCH
 
-# Pipeline stages: clean-up cached files, then run tests.
+# Pipeline stages: clean-up cached files, then run tests, then bench.
 stages:
   - clean
   - test
+  - bench
 
 # Use environment variables to;
 # - keep pip cache files between runs (on the Docker executor)
@@ -26,7 +35,10 @@ stages:
 # - keep the small venv where pip and tox are installed
 variables:
   TOX_CACHE_DIR: "$CI_PROJECT_DIR/.tox"
-  GIT_CLEAN_FLAGS: -ffdx -e .pip -e .tox -e /venv
+  # Preserve pip / tox / venv across jobs (existing); add the bench
+  # MNIST splits and ASV's per-commit virtualenv dir so the bench
+  # job doesn't re-download data or re-install torch+tf each pipeline.
+  GIT_CLEAN_FLAGS: -ffdx -e .pip -e .tox -e /venv -e benchmarks/data -e benchmarks/.asv/env
 
 # Shared configuration elements between all jobs.
 default:
@@ -122,3 +134,87 @@ test-maximal:
   tags:
     - gpu
     - magnet
+
+
+### Bench stage
+
+# Shared configuration for benchmark jobs. The host venv (/venv) already
+# has pip + tox; ASV and pyyaml are the only deltas this layer pulls
+# in (~30s, cached via $CI_PROJECT_DIR/.pip across pipelines).
+# declearn + torch/tf get installed by ASV into its per-commit virtualenv
+# at .asv/env/, which is preserved across pipelines via GIT_CLEAN_FLAGS.
+.bench_cfg:
+  stage: bench
+  before_script:
+    - apt-get update -qq && apt-get install -y -qq git curl unzip
+    - source /venv/bin/activate
+    - pip install --quiet asv pyyaml
+    - git fetch --quiet origin '+refs/heads/develop:refs/heads/develop' || true
+  variables:
+    # Full clone so `git describe` can find the previous release tag.
+    GIT_DEPTH: "0"
+  artifacts:
+    when: always           # keep results + html even when regression is detected
+    expire_in: never       # cumulative history; small JSONs grow monotonically
+    paths:
+      - benchmarks/.asv/results/
+      - benchmarks/.asv/html/
+      - benchmarks/asv.conf.json
+
+# Bench regression check on each release tag push; same job runs in
+# bootstrap mode when a pipeline is started from the GitLab UI with the
+# BENCH_BOOTSTRAP=true variable set. See the Benchmarking page in the
+# developer guide (docs/devs-guide/benchmarks.md).
+benchmarks:
+  extends:
+    .bench_cfg
+  rules:
+    - if: $IS_TAG                  # release tag push: regression-check mode (blocks on regression)
+    - if: $IS_BOOTSTRAP           # manual UI trigger w/ BENCH_BOOTSTRAP=true: bootstrap mode
+  variables:
+    BOOTSTRAP_TAGS: "v2.7.0 v2.8.0"
+  script:
+    - cd "$CI_PROJECT_DIR/benchmarks"
+    - mkdir -p .asv/results
+    - |
+      # `set -e` is omitted on purpose: a regression detected by
+      # `asv continuous` exits non-zero, and we want to capture that code
+      # while still running `asv publish` so the HTML report ends up in
+      # the failed-job artifact for the dev to inspect.
+      set -o pipefail
+      REGRESSION_EXIT=0
+      if [ "$IS_BOOTSTRAP" = "true" ]; then
+        echo "=== bootstrap mode: seeding tags [$BOOTSTRAP_TAGS] ==="
+        for TAG in $BOOTSTRAP_TAGS; do
+          echo "--- seeding $TAG ---"
+          PRESET=ci ./run_benchmarks.sh run "${TAG}^!"
+        done
+      else
+        PREV_TAG=$(git describe --abbrev=0 "${CI_COMMIT_TAG}^" 2>/dev/null || true)
+        HAVE_PRIOR=false
+        # Try the previous tag's artifact first; fall back to develop's
+        # bootstrap. Both curl and unzip failures are tolerated here —
+        # we fall through to soft-seed mode rather than aborting the job.
+        for REF_TRY in "$PREV_TAG" "develop"; do
+          if [ -z "$REF_TRY" ]; then continue; fi
+          echo "--- fetching prior cumulative artifact (ref=$REF_TRY) ---"
+          if curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --location --silent --fail \
+               --output /tmp/prev.zip \
+               "$CI_API_V4_URL/projects/$CI_PROJECT_ID/jobs/artifacts/$REF_TRY/download?job=benchmarks" \
+             && unzip -o -q /tmp/prev.zip -d "$CI_PROJECT_DIR"; then
+            HAVE_PRIOR=true
+            break
+          fi
+        done
+        if [ "$HAVE_PRIOR" = "true" ]; then
+          # `asv continuous --factor 1.5` exits non-zero on >1.5x slowdown,
+          # which (with allow_failure unset) fails the release pipeline.
+          echo "=== regression check: $PREV_TAG vs $CI_COMMIT_TAG (--factor 1.5) ==="
+          PRESET=ci ./run_benchmarks.sh continuous "$PREV_TAG" "$CI_COMMIT_TAG" --factor 1.5 || REGRESSION_EXIT=$?
+        else
+          echo "=== no prior baseline; soft-seeding $CI_COMMIT_TAG ==="
+          PRESET=ci ./run_benchmarks.sh run "${CI_COMMIT_TAG}^!"
+        fi
+      fi
+      asv publish
+      exit $REGRESSION_EXIT

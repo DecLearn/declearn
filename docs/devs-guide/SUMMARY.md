@@ -3,3 +3,4 @@
 - [Unit tests and code analysis](./tests.md)
 - [Building the documentation](./docs-build.md)
 - [Docstrings style guide](./docs-style.md)
+- [Benchmarking](./benchmarks.md)
