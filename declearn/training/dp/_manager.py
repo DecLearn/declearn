@@ -93,7 +93,7 @@ class DPTrainingManager(TrainingManager):
         self._dp_budget = (0.0, 0.0)
         self._dp_states: Optional[Tuple[float, float]] = None
         # Precompute the max-allowed number of steps once per round via a
-        # binary search over the RDP accountant, collapsing the per-step
+        # binary search over the privacy accountant, collapsing the per-step
         # budget check to a single integer compare. Mid-round budget
         # detection is preserved exactly (see `_compute_max_steps_for_round`).
         self._max_steps_this_round: Optional[int] = None
@@ -232,7 +232,7 @@ class DPTrainingManager(TrainingManager):
         `_training_round` routine.
 
         The maximum number of steps allowed this round was precomputed
-        once at round start via a binary search over the RDP
+        once at round start via a binary search over the privacy
         accountant (see `_compute_max_steps_for_round`). The per-step cost
         is therefore a single (cheap) `accountant.step` plus an integer
         compare. Mid-round budget detection is preserved exactly, since the
@@ -267,16 +267,20 @@ class DPTrainingManager(TrainingManager):
         given ``(noise, srate)`` keeps the total spent epsilon at or below the
         budget.
 
-        Implementation note: opacus's ``RDPAccountant`` stores its history as
-        ``(noise, srate, count)`` tuples, and computes epsilon from those
-        tuples rather than from individual steps. Appending a single tuple
-        with ``count=k`` is therefore exactly equivalent to calling ``step``
-        ``k`` times (RDP composes additively, so epsilon depends only on the
-        aggregate counts, not on step granularity or ordering). Each
-        binary-search probe is thus one ``get_epsilon`` call on a history of
-        size O(rounds), regardless of the per-round step count. With
-        ~log2(max_probe) probes per round, the precompute cost is bounded and
-        independent of the number of steps actually taken.
+        Implementation note: every opacus accountant (``rdp``, ``gdp`` and
+        ``prv``) stores its history as ``(noise, srate, count)`` tuples, and
+        computes epsilon from those aggregate counts rather than from
+        individual steps. A single tuple with ``count=k`` is therefore
+        equivalent to calling ``step`` ``k`` times (privacy loss depends only
+        on the aggregate counts, not on step granularity or ordering). The
+        probe history is built by merging into the trailing tuple (rather than
+        appending a separate one) so this equivalence also holds for the
+        ``gdp`` accountant, whose ``get_epsilon`` reads only the last history
+        tuple -- see the body below. Each binary-search probe is thus one
+        ``get_epsilon`` call on a history of size O(rounds), regardless of the
+        per-round step count. With ~log2(max_probe) probes per round, the
+        precompute cost is bounded and independent of the number of steps
+        actually taken.
 
         Parameters
         ----------
@@ -300,8 +304,8 @@ class DPTrainingManager(TrainingManager):
         # Snapshot the real history and restore it at the end, so that the
         # accountant reflects only the steps that have ACTUALLY occurred.
         history_snapshot = list(self.accountant.history)
-        # Build the probe history exactly as `mid` real `step` calls would:
-        # merge into the trailing tuple when it shares this round's
+        # Build the probe history exactly as `candidate` real `step` calls
+        # would: merge into the trailing tuple when it shares this round's
         # (noise, srate), otherwise start a fresh tuple. This mirrors
         # opacus's `IAccountant.step` merge logic. It is required for the
         # GaussianAccountant ("gdp"), whose `get_epsilon` only reads the
@@ -316,18 +320,18 @@ class DPTrainingManager(TrainingManager):
             base = history_snapshot
             prev_count = 0
         try:
-            lo, hi = 0, max_probe
-            while lo < hi:
-                mid = (lo + hi + 1) // 2
+            max_feasible, search_upper = 0, max_probe
+            while max_feasible < search_upper:
+                candidate = (max_feasible + search_upper + 1) // 2
                 self.accountant.history = base + [
-                    (noise, srate, prev_count + mid)
+                    (noise, srate, prev_count + candidate)
                 ]
                 eps = self.accountant.get_epsilon(delta=budget_delta)
                 if eps <= budget_eps:
-                    lo = mid
+                    max_feasible = candidate
                 else:
-                    hi = mid - 1
-            return lo
+                    search_upper = candidate - 1
+            return max_feasible
         finally:
             self.accountant.history = history_snapshot
 
