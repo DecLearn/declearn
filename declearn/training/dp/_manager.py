@@ -300,12 +300,27 @@ class DPTrainingManager(TrainingManager):
         # Snapshot the real history and restore it at the end, so that the
         # accountant reflects only the steps that have ACTUALLY occurred.
         history_snapshot = list(self.accountant.history)
+        # Build the probe history exactly as `mid` real `step` calls would:
+        # merge into the trailing tuple when it shares this round's
+        # (noise, srate), otherwise start a fresh tuple. This mirrors
+        # opacus's `IAccountant.step` merge logic. It is required for the
+        # GaussianAccountant ("gdp"), whose `get_epsilon` only reads the
+        # LAST history tuple: appending a separate tuple would make it
+        # ignore the budget already spent in previous rounds and thus
+        # over-authorize steps. RDP and PRV compose additively over the
+        # whole history, so merging is equivalent for them as well.
+        if history_snapshot and history_snapshot[-1][:2] == (noise, srate):
+            base = history_snapshot[:-1]
+            prev_count = history_snapshot[-1][2]
+        else:
+            base = history_snapshot
+            prev_count = 0
         try:
             lo, hi = 0, max_probe
             while lo < hi:
                 mid = (lo + hi + 1) // 2
-                self.accountant.history = history_snapshot + [
-                    (noise, srate, mid)
+                self.accountant.history = base + [
+                    (noise, srate, prev_count + mid)
                 ]
                 eps = self.accountant.get_epsilon(delta=budget_delta)
                 if eps <= budget_eps:
