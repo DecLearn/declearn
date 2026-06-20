@@ -27,3 +27,4 @@ Datasets
 
 from ._heart_uci import load_heart_uci
 from ._mnist import load_mnist
+from ._time_series import load_semg_hand_poses, EMGDatasetConfigs

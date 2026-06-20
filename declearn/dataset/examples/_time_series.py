@@ -1,18 +1,22 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import io
 import os
 import zipfile
-from typing import Generator, Iterator, Literal, Optional, Tuple, Union
+from typing import Iterator, Optional
 import torch as t
 import pandas as pd
 import requests
 import logging
-import torch as t
+import torch as t 
+import argparse
 
-__all__=["load_semg_hand_poses"]
+__all__=[
+    "load_semg_hand_poses",
+    "EMGDatasetConfigs"
+    ]
 
 #NOTE: for now the example support the creation of a dataset from one action file
-ACTIONS = ['fistdown', 
+ACTIONS = ['fistdwn', 
            'fistout', 
            'left', 
            'neut', 
@@ -30,44 +34,48 @@ logger = logging.getLogger(__name__)
 
 #TODO: [] Add the documentation to the functions.
 #TODO: [] Write the necessary unit tests.
+#TODO: [] Make the target logic generic, for now it depends on the example dataset.
 
 # Define the necessary types here  -------------------
-type Signal = list[float]
+Signal = list[float]
 
 @dataclass
 class EMGDatasetConfigs:
     folder : str
-    action : str = ACTIONS[0]
-    target : int =  -1
-    subjects : list[int]= list(range(0,16)) #by default, select all the participants
+    actions : list[str] = field(default_factory=lambda: ACTIONS)
+    target : int =  8
+    subjects : list[int]= field(default_factory=lambda: list(range(0,15)) )#by default, select all the participants
     window_size : int = 128
-    zip_name : str = '15Subjects-7-Gestures'
+    zip_name : str = '15Subjects-7Gestures'
     on_save: bool = True
-    on_save_filename : Optional[str] = '15Subjects-1-Gestures-pr-tensor'
+    on_save_filename : Optional[str] = '15Subjects-1Gestures-pr-tensor'
     
 
 #NOTE: in this example we don't care about tracking emg-subject membership
 class EMGSignal:
-    def __init__(self, signal : Signal): 
+    def __init__(self, signal : Signal, params : EMGDatasetConfigs):
+        self.length = 0
         self.content = signal
-        self.length = self.set_length()
-        self.windows = None
-        self.nb_windows = 0
+        self.nb_windows = params
         
-        
-    #TODO: set the content in the correct type -> convert to t.Tensor
-    def set_content_type(self,signal : Signal):
-        #by default this function convert to pytorch tensor
-        self.content = t.Tensor(signal)
+    @property
+    def content(self, ):
+        return self._content
+    @content.setter
+    def content(self,signal):
+        self._content = t.Tensor(signal)
+        self.length = self._content.shape[0]
     
     #TODO: basically we want to compute the length as a proprety
-    def set_length(self):
-        self.length = self.content.shape[0]
-    
-    #TODO: and hence set the number of windows it will obtain after splitting
-    def set_nb_windows(self, params: EMGDatasetConfigs): 
-        self.nb_windows = int(self.length / params.window_size)
-        
+
+    @property
+    def nb_windows(self, ):
+        return self._nb_windows
+    @nb_windows.setter
+    def nb_windows(self, params):
+         self._nb_windows = int(self.length / params.window_size)
+
+
     #TODO: every signal has the ability to perform sliding window routine on itself
     def _split_signal_by_window(self, params: EMGDatasetConfigs):
         if params.window_size > int(self.length /2): 
@@ -75,8 +83,8 @@ class EMGSignal:
         
         windows =  t.zeros((self.nb_windows,params.window_size))
         
-        for i in range(params.window_size+1):
-            windows[i] = t.Tensor(windows[i*params.window_size:(i+1)*params.window_size])
+        for i in range(self.nb_windows):
+            windows[i, :] = t.Tensor(self.content[i*params.window_size:(i+1)*params.window_size])
         return windows
     
     def get_signal_slided_windows(self, params : EMGDatasetConfigs):
@@ -84,13 +92,13 @@ class EMGSignal:
 #-----------------------------------------------------
         
         
-def build_emg_dataset(params: EMGDatasetConfigs)-> t.Tensor:
+def load_semg_hand_poses(params: EMGDatasetConfigs)-> t.Tensor:
     #TODO: the function must return a dataframe containing the signal values for the target column
     #Checking for any value errors
-    if not set(params.subjects).issubset(range(0,15)):
+    if not set(params.subjects).issubset(range(0,16)):
         raise ValueError(f"Invalid Subject index Value {params.subjects} Subject list must be contained in {list(range(0,15))}. Please try again.")
     
-    if (-1>  params.target > 8):
+    if not (9>  params.target > 0):
         raise ValueError(f"Invalid sensor index. Target value must be between 1 and 8. Please try again")
     
     evaluate_emg_data_by_source(params)
@@ -103,8 +111,6 @@ def build_emg_dataset(params: EMGDatasetConfigs)-> t.Tensor:
             
     #preprocessed file doesn't exist so we take care of that
     return get_emg_tensor(params)
-    
-    
     
         
 def download_semg_hand_poses()-> bytes:
@@ -119,22 +125,31 @@ def download_semg_hand_poses()-> bytes:
     return reply.content
 
 def load_raw_dataframes(params : EMGDatasetConfigs)-> Iterator[pd.DataFrame]:
+    directory = os.path.abspath(os.path.join('examples', params.folder))
 
-    source = os.path.join(params.folder, f'{params.zip_name}.zip')
-    with zipfile.ZipFile(source) as zfile:
-
-        for s in params.subjects: 
-            with zfile.open(f'{source}/S{s}/emg-{params.action}-S{s}.csv', 'r') as z_safile:
+    source = os.path.join(directory, f'{params.zip_name}.zip')
+    zfile = zipfile.ZipFile(source)
+    files = list(map(lambda x: x.filename, zfile.filelist))
+    
+    for s in params.subjects:
+        for act in params.actions:
+            current_file = f'{params.zip_name}/S{s}/emg-{act}-S{s}.csv'
+            if not current_file in files: 
+                continue
+            with zfile.open(current_file, 'r') as z_safile:
                 yield pd.read_csv(io.BytesIO(z_safile.read())) 
             
 def evaluate_emg_data_by_source(params : EMGDatasetConfigs):
     
     #Assumes the opened zip file already exists
-    if isinstance(params.folder, str): 
-        if not os.path.isdir(params.folder): 
+    if isinstance(params.folder, str):
+        #construct folder
+        directory = os.path.abspath(os.path.join('examples', params.folder))
+        print(directory)
+        if not os.path.isdir(directory): 
             raise ValueError(f"Failed to find {params.folder}. Please try with a valid folder.")
         
-        path = os.path.join(params.folder, f'{params.zip_name}.zip')
+        path = os.path.join(directory, f'{params.zip_name}.zip')
         if os.path.isfile(path):
             return 
     
@@ -149,10 +164,9 @@ def _get_normalized_emgs(params: EMGDatasetConfigs) -> Iterator[EMGSignal]:
     #norlmalizes the set of signals to and returns a list of EMG signals
     for df in load_raw_dataframes(params):
         
-        normalized_signal = (df- df.mean()/df.std())[f'emg-{params.target}'].values.tolist()
+        normalized_signal : Signal = (df- df.mean()/df.std())[f'emg{params.target}'].values.tolist()
         
-        emg_instance = EMGSignal(normalized_signal)
-        emg_instance.set_nb_windows(params)
+        emg_instance = EMGSignal(normalized_signal, params)
         
         yield emg_instance
         
@@ -161,13 +175,34 @@ def _get_normalized_emgs(params: EMGDatasetConfigs) -> Iterator[EMGSignal]:
 def _split_processed_emgs_by_window(params: EMGDatasetConfigs)-> t.Tensor:
     #perform the sliding window routine and concatenate the results (Length, window_size)
     tensor = t.tensor([])
+    on_save_file_path = os.path.abspath(os.path.join(f'examples', params.folder))
+    on_save_file_name = f'{on_save_file_path}/{params.on_save_filename}.pt'
+    
+    if os.path.isfile(on_save_file_name):
+        return t.load(on_save_file_name)
+    
     for emg_instance in _get_normalized_emgs(params): 
         slided_windows_per_signal = emg_instance.get_signal_slided_windows(params)
-        tensor.cat((tensor, slided_windows_per_signal), 0)
-    if params.on_save: 
-        t.save(tensor, params.on_save_filename)
+        tensor = t.cat((tensor, slided_windows_per_signal), 0)
+    if params.on_save:
+        t.save(tensor, on_save_file_name)
     #dump the tensor into a the file
     return tensor
 
 def get_emg_tensor(params: EMGDatasetConfigs) -> t.Tensor:
     return _split_processed_emgs_by_window(params)
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--folder")
+    
+    args = parser.parse_args()
+    #create the configs object
+    emg_dataset_configs = EMGDatasetConfigs(folder=args.folder)
+    
+    #run the dataset creation script
+    load_semg_hand_poses(emg_dataset_configs)
+    
+if __name__ == "__main__":
+    main()
