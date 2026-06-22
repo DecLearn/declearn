@@ -1,4 +1,3 @@
-
 # coding: utf-8
 
 # Copyright 2026 Inria (Institut National de Recherche en Informatique
@@ -31,32 +30,56 @@ with make_importable(os.path.dirname(__file__)):
     from run_server import ServerConfigInput, run_server
 
 
+def run_demo(
+    folder: str,
+    nb_clients: int = 2,
+    window_size: int = 128,
+    mask_ratio: float = 0.25,
+    target: int = 8
+):
+    """Runs 1 server simulation along max 2 clients demo for time-series example"
 
-def run_demo(folder : str, nb_clients : int = 2, window_size : int = 128, mask_ratio: float = 0.25): 
-    """Runs 1 server simulation along max 2 clients demo for time-series example"""
-    
-    with tempfile.TemporaryDirectory() as tempdir: 
+    Args:
+        folder (str): directory where the data is/will be stored.
+        nb_clients (int, optional): Number of clients for the experiment. Defaults to 2.
+        window_size (int, optional): Size of the sliding window applied on evey sEMG signal. Defaults to 128.
+        mask_ratio (float, optional): The rate of random points to be masked. Defaults to 25%.
+        target(int, optional): The column representing the sensor from which the time-series data is constructed.
+
+    Raises:
+        RuntimeError: If the processes do not yield successful response then there must be an error during runtime.
+    """
+
+    with tempfile.TemporaryDirectory() as tempdir:
         ca_cert, sv_cert, sv_pkey = generate_ssl_certificates(tempdir)
         server_configs = ServerConfigInput(
-            nb_clients, 
+            nb_clients,
             certificate=sv_cert,
             private_key=sv_pkey,
         )
-        model_configs = ModelConfigsInput(input_dim=window_size,mask_ratio=mask_ratio)
-        server = (run_server, (server_configs, model_configs,))
-        
+        model_configs = ModelConfigsInput(
+            input_dim=window_size, mask_ratio=mask_ratio
+        )
+        server = (
+            run_server,
+            (
+                server_configs,
+                model_configs,
+            ),
+        )
 
         clients = [
-            (run_client, (ClientConfigInput(f"client_{i}", ca_cert, folder),)) 
-            for i in range(nb_clients)]
+            (run_client, (ClientConfigInput(f"client_{i}", ca_cert, folder, target),))
+            for i in range(nb_clients)
+        ]
         success, outp = run_as_processes(server, *clients)
-        
+
         if not success:
             raise RuntimeError(
                 "Something went wrong during the demo. Exceptions caught:\n"
                 "\n".join(str(e) for e in outp if isinstance(e, RuntimeError))
             )
-            
+
+
 if __name__ == "__main__":
     fire.Fire(run_demo)
-

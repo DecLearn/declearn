@@ -23,8 +23,14 @@ Datasets
     Load and/or download a pre-processed UCI heart disease dataset.
 * [load_mnist][declearn.dataset.examples.load_mnist]:
     Load and/or download the MNIST digit-classification dataset.
+* [load_semg_hand_poses][declearn.dataset.examples.load_semg_hand_poses]:
+    Load and/or download the hand poses sEMG csv files.
+* [ACTIONS][declearn.dataset.examples.ACTIONS]
+    The list of movements done by every participant.
+* [EMGDatasetConfigs][declearn.dataset.examples.EMGDatasetConfigs]
+    Configuration container for EMG dataset preprocessing and loading.
 """
 
 from ._heart_uci import load_heart_uci
 from ._mnist import load_mnist
-from ._time_series import load_semg_hand_poses, EMGDatasetConfigs
+from ._time_series import ACTIONS, EMGDatasetConfigs, load_semg_hand_poses
