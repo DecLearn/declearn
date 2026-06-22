@@ -17,6 +17,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Script to create MaskedAutoEncoder necessary Dataset."""
+
 from torch.utils.data import Dataset
 
 

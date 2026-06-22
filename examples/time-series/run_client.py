@@ -15,88 +15,140 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Script to run a federated client on the Semg hand poses dataset."""
+
 import os
 from dataclasses import astuple, dataclass
 from typing import Union
 
+import torch
 from dataset import MaskedAutoEncoderDataset
 from sklearn.model_selection import train_test_split
 
 from declearn.communication.utils._build import NetworkClientConfig
-from declearn.dataset.examples import EMGDatasetConfigs, load_semg_hand_poses
+from declearn.dataset.examples import (
+    ACTIONS,
+)
 from declearn.dataset.torch import TorchDataset
 from declearn.main._client import FederatedClient
-from declearn.test_utils._argparse import setup_client_argparse
+from declearn.utils.examples import setup_client_argparse
 
 FILEDIR = os.path.dirname(__file__)
 
 
 @dataclass
 class ClientConfigInput:
-    name : Union[str| list[str]]
-    certificate : str
-    folder: str = "time-series/data"
-    protocol : str = "websockets"
-    server_uri : str = "wss://localhost:8765"
-    verbose : bool = True
-    
+    """
+    Configuration container for Federated Client necessary configuration.
 
-def run_client(
-    configs : ClientConfigInput
-):
-    "Creates and runs a client instance"
+    Fields
+    ------
+    folder: str
+        Root folder containing the EMG data.
+    actions: List[str]
+        List of action/gesture labels to keep.
+    target: int
+        Target emg sensor index.
+    subjects: List[int]
+        Subject identifiers to include in the dataset.
+    window_size: int
+        Number of time steps per sliding window.
+    zip_name: str
+        Name of the archive or dataset bundle.
+    on_save: bool
+        Whether to save processed outputs to disk.
+    on_save_filename: Optional[str]
+        Filename used when saving processed data.
 
-    params = EMGDatasetConfigs(folder=configs.folder)
-    semg_data = load_semg_hand_poses(params)
-    train, valid= train_test_split(semg_data, test_size=0.20)
-    
+    """
+
+    name: Union[str | list[str]]
+    certificate: str
+    data_path: str
+    target: int = 8
+    protocol: str = "websockets"
+    server_uri: str = "wss://localhost:8765"
+    verbose: bool = True
+
+
+def run_client(configs: ClientConfigInput):
+    """Creates and runs a client instance
+
+    Parameters
+    ----------
+    configs: ClientConfigInput)
+        Necessary configuration to run the client instance.
+    """
+
+    data = torch.load(configs.data_path)
+    train, valid = train_test_split(data, test_size=0.20)
+
     train = TorchDataset(
         dataset=MaskedAutoEncoderDataset(train),
-        
     )
     valid = TorchDataset(
-        dataset= MaskedAutoEncoderDataset(valid),
+        dataset=MaskedAutoEncoderDataset(valid),
     )
 
     name, certificate, _, protocol, server_uri, _ = astuple(configs)
-    network = NetworkClientConfig(
-        protocol, 
-        server_uri, 
-        name, 
-        certificate
-    )
+    network = NetworkClientConfig(protocol, server_uri, name, certificate)
 
     client = FederatedClient(
-        netwk=network, 
+        netwk=network,
         train_data=train,
-        valid_data=valid, 
-        
+        valid_data=valid,
     )
 
     client.run()
 
 
-if __name__== "__main__":
-    #parse any neccessary arguments from bash using the client parser
+if __name__ == "__main__":
+    # parse any neccessary arguments from bash using the client parser
     parser = setup_client_argparse(
-        usage="Start a client providing an EMG dataset", 
+        usage="Start a client providing an EMG dataset",
         default_cert=os.path.join(FILEDIR, "ca-cert.pem"),
     )
-    parser.add_argument("--folder", type=str, help="Folder in which the time-series data is located.")
-    parser.add_argument("--name", type=str, help="Name of the client")
-    parser.add_argument("--window_size", type=int, help="Sliding window size")
-    parser.add_argument("--target", type=int, help="Target column to extract", choices=list(range(1,9)))
-    
-    args= parser.parse_args() 
+    parser.add_argument(
+        "--name",
+        type=str,
+        help="Client name. Must be the same as the name "
+        "used to generate the data.",
+    )
+    parser.add_argument(
+        "--data_path",
+        type=str,
+        default=os.path.join(os.path.dirname(__file__), "data"),
+        help="Absolute path to the client data.",
+    )
+    parser.add_argument(
+        "--window_size",
+        default=128,
+        help="Int. Sliding window length.",
+    )
+    parser.add_argument(
+        "--actions",
+        default=ACTIONS,
+        help="List[str]. List of available actions from which "
+        + "files are chosen to be processed",
+    )
+    parser.add_argument(
+        "--target",
+        type=int,
+        help="Int. Target column to extract which represents the sensor "
+        + "corresponding to the time-series.",
+        default=8,
+        choices=list(range(1, 9)),
+    )
+    args = parser.parse_args()
 
-    #set up the configs object
+    # set up the configs object
     client_configs = ClientConfigInput(
         name=args.name,
-        folder=args.folder,
+        data_path=f"{args.data_path}/{args.name}.pt",
         certificate=args.certificate,
         protocol=args.protocol,
-        server_uri=args.uri)
-    
+        server_uri=args.uri,
+    )
+
     # run the client routine
     run_client(client_configs)
-    
