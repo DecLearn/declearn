@@ -27,8 +27,6 @@ from declearn.utils.examples import generate_ssl_certificates
 with make_importable(os.path.dirname(__file__)):
     from run_client import run_client
     from run_server import run_server
-# pylint: enable=wrong-import-position, wrong-import-order
-
 
 NAMES = ["cleveland", "hungarian", "switzerland", "va"]
 

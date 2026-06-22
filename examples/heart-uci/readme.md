@@ -20,11 +20,11 @@ python run.py
 
 ```
 heart-uci/
-│   client.py  - set up and launch a federated-learning client
-│   data.py    - optional util to download and prepare the dataset
-│   gen_ssl.py - generate self-signed ssl certificates
-│   run.py     - launch both the server and clients in a single session
-│   server.py  - set up and launch a federated-learning server
+│   run_client.py      - set up and launch a federated-learning client
+│   prepare_data.py    - optional util to download and prepare the dataset
+│   gen_ssl.py         - generate self-signed ssl certificates
+│   run_demo.py        - launch both the server and clients in a single session
+│   run_server.py      - set up and launch a federated-learning server
 └─── data      - saved datasets as csv files
 └─── results   - saved results from training procedure
 ```

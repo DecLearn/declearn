@@ -25,6 +25,9 @@ import torch
 from dataset import MaskedAutoEncoderDataset
 from sklearn.model_selection import train_test_split
 
+# Do not remove the following "unused" import,
+# it is necessary for type registration
+import declearn.model.torch  # noqa: F401
 from declearn.communication.utils._build import NetworkClientConfig
 from declearn.dataset.examples import (
     ACTIONS,
@@ -90,7 +93,7 @@ def run_client(configs: ClientConfigInput):
         dataset=MaskedAutoEncoderDataset(valid),
     )
 
-    name, certificate, _, protocol, server_uri, _ = astuple(configs)
+    name, certificate, _, _, protocol, server_uri, _ = astuple(configs)
     network = NetworkClientConfig(protocol, server_uri, name, certificate)
 
     client = FederatedClient(
@@ -140,6 +143,11 @@ if __name__ == "__main__":
         choices=list(range(1, 9)),
     )
     args = parser.parse_args()
+    data_path = os.path.abspath(f"{args.data_path}/{args.name}.pt")
+
+    # check if the data path actually exists
+    if not os.path.exists(data_path):
+        raise FileNotFoundError(f"Data file was not found: {data_path}")
 
     # set up the configs object
     client_configs = ClientConfigInput(

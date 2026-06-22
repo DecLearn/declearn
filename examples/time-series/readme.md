@@ -68,16 +68,14 @@ cd examples/time-series && uv run run_demo.py --help
    when distinct computers are used), or prepared redundantly at each place
    using the same random seed and agreeing on clients' ordering.
 
-   To use the `prepare_data.py` script, simply run:
-   ```bashand
-   python dataset/examples/_time-series.py --folder <data_folder>
-   ```
-    To see and play with data prep arguments further, run the same file with `--help` flag.
+- `_time_series_emg.py` handles filtering, splitting, and normalization.
+- `prepare_data.py` automates dataset generation.
 
 
-3. **Set up SSL certificates**:<br/>
-   Create a signed SSL certificate for the server and share the CA file that
-   signed it with each and every clients. That CA may be self-signed.
+```bash
+python examples/time-series/prepare_data.py --nb_clients <NUMBER_OF_CLIENTS>
+```
+#### 2. Set Up SSL Certificates
 
    When testing locally, execute the `generate_ssl.py` script, to create a
    self-signed root CA and an SSL certificate for "localhost":

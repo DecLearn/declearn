@@ -26,50 +26,70 @@ from declearn.utils import run_as_processes
 # Perform local imports.
 with make_importable(os.path.dirname(__file__)):
     from model import ModelConfigsInput
+    from prepare_data import prepare_data_for_clients
     from run_client import ClientConfigInput, run_client
     from run_server import ServerConfigInput, run_server
 
 
 def run_demo(
-    folder: str,
     nb_clients: int = 2,
     window_size: int = 128,
     mask_ratio: float = 0.25,
-    target: int = 8
+    target: int = 8,
 ):
     """Runs 1 server simulation along max 2 clients demo for time-series example"
 
-    Args:
-        folder (str): directory where the data is/will be stored.
-        nb_clients (int, optional): Number of clients for the experiment. Defaults to 2.
-        window_size (int, optional): Size of the sliding window applied on evey sEMG signal. Defaults to 128.
-        mask_ratio (float, optional): The rate of random points to be masked. Defaults to 25%.
-        target(int, optional): The column representing the sensor from which the time-series data is constructed.
+    Parameters
+    ----------
+    Directory where the data is/will be stored.
+    nb_clients: int (optional)
+    Number of clients for the experiment. Defaults to 2.
+    window_size: int (optional)
+        Size of the sliding window applied on evey sEMG signal.
+        Defaults to 128.
+    mask_ratio: float (optional)
+        The rate of random points to be masked. Defaults to 0.25.
+    target: int (optional)
+        The column representing the sensor from which the time-series data is
+        constructed.
 
-    Raises:
-        RuntimeError: If the processes do not yield successful response then there must be an error during runtime.
+    Raises
+    ------
+    RuntimeError:
+        - If the processes do not yield successful response then
+            there must be an error during runtime.
     """
 
     with tempfile.TemporaryDirectory() as tempdir:
+        prepare_data_for_clients(nb_clients)
+
         ca_cert, sv_cert, sv_pkey = generate_ssl_certificates(tempdir)
         server_configs = ServerConfigInput(
-            nb_clients,
+            nb_clients=nb_clients,
             certificate=sv_cert,
             private_key=sv_pkey,
         )
         model_configs = ModelConfigsInput(
             input_dim=window_size, mask_ratio=mask_ratio
         )
-        server = (
-            run_server,
-            (
-                server_configs,
-                model_configs,
-            ),
-        )
+
+        server = (run_server, (server_configs, model_configs))
 
         clients = [
-            (run_client, (ClientConfigInput(f"client_{i}", ca_cert, folder, target),))
+            (
+                run_client,
+                (
+                    ClientConfigInput(
+                        name=f"client_{i}",
+                        certificate=ca_cert,
+                        data_path=os.path.join(
+                            os.path.join(os.path.dirname(__file__), "data"),
+                            f"client_{i}.pt",
+                        ),
+                        target=i,
+                    ),
+                ),
+            )
             for i in range(nb_clients)
         ]
         success, outp = run_as_processes(server, *clients)
