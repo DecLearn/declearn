@@ -203,24 +203,18 @@ Browse to the regressed benchmark's timeline and confirm where it jumps.
 
 ### 3. Set up the cluster environment (one-time)
 
-The profiling steps run on the cluster, where a CUDA-capable GPU and a
-consistent runtime are available. A working GPU and Python 3.11 are
-required: the suite does run end-to-end on CPU, but the timings will not
-be comparable to the CI's, and `DECLEARN_BENCH_FORCE_GPU=1` (the
-default) refuses to proceed in that case.
+Profiling needs a CUDA-capable GPU and Python 3.11. The suite also runs
+on CPU, but its timings are not comparable to the CI's.
 
-The host venv only needs to drive ASV and the profilers; declearn +
-torch/tensorflow are installed per-checkout in step 4 (and, for sweeps,
-per-commit by ASV; see `asv.conf.json`). Create it with uv, activate it,
-then run the bootstrap:
+Create and activate a Python 3.11 environment with any tool (`uv`,
+`python -m venv`, `conda`, ...), then install the `bench` extra (ASV plus
+the py-spy and memray profilers). declearn and the torch/tensorflow
+workload deps come separately, in step 4.
 
 ```bash
-# The venv must be named declearn-bench-gpu: bootstrap_cluster.sh and the
-# steps below default to ~/.venvs/declearn-bench-gpu. --seed ships pip
-# inside the venv (without it the installs fall through to a system Python).
 uv venv --python 3.11 --seed ~/.venvs/declearn-bench-gpu
 source ~/.venvs/declearn-bench-gpu/bin/activate
-./benchmarks/bootstrap_cluster.sh    # installs asv, pyyaml, py-spy, memray
+pip install -e '.[bench]'    # asv, pyyaml, py-spy, memray
 ```
 
 ### 4. Cluster: profile both refs
@@ -235,6 +229,11 @@ First the baseline:
 git clone https://gitlab.inria.fr/magnet/declearn/declearn.git
 cd ~/declearn
 git checkout <prev_ref>            # the baseline, e.g. v2.7.0
+# Install declearn with the workload extras. How you get torch /
+# tensorflow depends on your hardware, so pick the builds that match it;
+# the three commands below are the CUDA 12.x setup the CI uses, shown as
+# a worked example. Reproducing the CI's numbers means matching its
+# stack, but for simply localizing a hotspot any working install will do.
 pip install "torch<=2.11" --index-url https://download.pytorch.org/whl/cu126
 pip install -e '.[torch,tensorflow,websockets]'
 pip install 'tensorflow[and-cuda]'
@@ -245,10 +244,12 @@ cd benchmarks
 OUTPUT=profiles/baseline-torch.json ./tools/pyspy.sh --backend torch --n-clients 5
 ```
 
-The editable (`-e`) install links the live source tree, so the next
-`git checkout` updates the installed declearn automatically. Reinstall
-only if the dependencies in `pyproject.toml` actually change between the
-two refs.
+The `'.[torch,tensorflow,websockets]'` extras pull in the workload deps;
+the surrounding CUDA-specific commands are only what the CI's GPUs need,
+and you adapt or drop them for whatever you are running on. The editable
+(`-e`) install links the live source tree, so the next `git checkout`
+updates the installed declearn automatically. Reinstall only if the
+dependencies in `pyproject.toml` actually change between the two refs.
 
 Then the slow ref:
 
@@ -373,16 +374,17 @@ websockets, or a custom optimizer module), the investigator writes their
 own driver script and wraps it with the profiler directly. There are
 three layers available, ordered from the cheapest to the most general:
 
-| Layer | Use when | Driver builds the run via |
+| Layer | Use when | Example |
 |---|---|---|
-| `tools/pyspy.sh` / `tools/memray.sh` | The configuration is reachable through `build_benchmark`'s existing toggles. | The wrapper, plus `profile_entry.py`. |
-| A custom driver on top of `benchmarks.workload` | The configuration uses `build_benchmark` plus extra setup the wrapper does not expose. | `from benchmarks.workload import build_benchmark, run_benchmark`, adding whatever instrumentation or knobs are needed. |
-| A custom driver on top of the raw declearn APIs | The configuration is outside `build_benchmark`'s surface entirely. | `from declearn.main import FederatedServer, FederatedClient` (and the rest of declearn's API), constructing the experiment from scratch. |
+| `tools/pyspy.sh` / `tools/memray.sh` | Config fits `build_benchmark`'s toggles. | `./tools/pyspy.sh --backend torch --secagg` |
+| Custom driver on `benchmarks.workload` | Config needs a tweak the toggles don't expose. | `spec = build_benchmark(...)`, override e.g. `spec.optim_config.aggregator`, then `run_benchmark(spec)` |
+| Custom driver on raw declearn APIs | Config is outside `build_benchmark` entirely. | Build the server and clients from `declearn.main` yourself; template: `workload/runner.py` (keep one asyncio loop so the profiler sees one process) |
 
-In every case, the profile is recorded by wrapping the driver with the
-chosen profiler: `py-spy record -o out.json --format speedscope -- python
-driver.py` for CPU/time, or `memray run -o out.bin -- python driver.py`
-(then `memray flamegraph out.bin`) for memory.
+Either way the driver is just a Python script, so you profile it by
+wrapping that script with the chosen profiler: `py-spy record -o out.json
+--format speedscope -- python driver.py` for CPU/time, or `memray run -o
+out.bin -- python driver.py` (then `memray flamegraph out.bin`) for
+memory.
 
 ## Extending the suite
 

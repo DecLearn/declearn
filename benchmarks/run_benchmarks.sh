@@ -32,7 +32,7 @@ CLASSES="${CLASSES:-}"
 if [ -z "${VIRTUAL_ENV:-}" ]; then
     VENV="${BENCH_VENV:-$HOME/.venvs/declearn-bench-gpu}"
     if [ ! -d "$VENV" ]; then
-        echo "ERROR: no venv at $VENV; run bootstrap_cluster.sh first." >&2
+        echo "ERROR: no venv at $VENV. Create/activate one and install the bench extra, e.g.: pip install -e '.[bench]'" >&2
         exit 1
     fi
     # shellcheck disable=SC1091
