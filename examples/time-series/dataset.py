@@ -28,10 +28,11 @@ class MaskedAutoEncoderDataset(Dataset):
         Dataset for Time-series Masked Auto-encoder model example. 
         
         This dataset returns an input sample and a target derived from the same
-        sample. It is typically used in self-supervised settings where the model
-        learns to reconstruct missing or masked parts of the input.
+        sample. It is typically used in self-supervised settings where the 
+        model learns to reconstruct missing or masked parts of the input.
         
-        For now this class serves as a pytorch wrapper around the data and does not include the 
+        For now this class serves as a pytorch wrapper around the data and does
+        not include the 
         transformation functionality.
         
         Args:

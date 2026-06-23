@@ -37,7 +37,8 @@ def run_demo(
     mask_ratio: float = 0.25,
     target: int = 8,
 ):
-    """Runs 1 server simulation along max 2 clients demo for time-series example"
+    """Runs 1 server simulation along max 2 clients demo
+    for time-series example
 
     Parameters
     ----------
