@@ -40,7 +40,8 @@ Each class measures three quantities for every parameter combination:
 - `track_peakmem_run`, the peak host [RSS](https://en.wikipedia.org/wiki/Resident_set_size)
   during the run;
 - `track_peakgpu_run`, the peak GPU bytes allocated during the run
-  (this is torch-only, as the tensorflow cell is intentionally skipped).
+  (torch-only: it is read from torch's CUDA allocator, which does not see
+  TensorFlow's separate allocator, so the tensorflow cell reports n/a).
 
 The `n_clients` axis is shared across all four classes. It is sourced
 from the `DECLEARN_BENCH_N_CLIENTS` environment variable that the runner
