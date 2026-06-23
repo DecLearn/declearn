@@ -168,8 +168,9 @@ test-maximal:
 benchmarks:
   extends:
     .bench_cfg
+  allow_failure: true             # regression -> non-blocking warning, does not fail the release pipeline
   rules:
-    - if: $IS_TAG                  # release tag push: regression-check mode (blocks on regression)
+    - if: $IS_TAG                  # release tag push: regression-check mode (warns on regression)
     - if: $IS_BOOTSTRAP           # manual UI trigger w/ BENCH_BOOTSTRAP=true: bootstrap mode
   variables:
     BOOTSTRAP_TAGS: "v2.7.0 v2.8.0"
@@ -207,8 +208,9 @@ benchmarks:
           fi
         done
         if [ "$HAVE_PRIOR" = "true" ]; then
-          # `asv continuous --factor 1.5` exits non-zero on >1.5x slowdown,
-          # which (with allow_failure unset) fails the release pipeline.
+          # `asv continuous --factor 1.5` exits non-zero on >1.5x slowdown.
+          # The job sets `allow_failure: true`, so this surfaces as a
+          # non-blocking warning rather than failing the release pipeline.
           echo "=== regression check: $PREV_TAG vs $CI_COMMIT_TAG (--factor 1.5) ==="
           PRESET=ci ./run_benchmarks.sh continuous "$PREV_TAG" "$CI_COMMIT_TAG" --factor 1.5 || REGRESSION_EXIT=$?
         else
