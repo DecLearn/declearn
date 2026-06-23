@@ -377,7 +377,7 @@ three layers available, ordered from the cheapest to the most general:
 | Layer | Use when | Example |
 |---|---|---|
 | `tools/pyspy.sh` / `tools/memray.sh` | Config fits `build_benchmark`'s toggles. | `./tools/pyspy.sh --backend torch --secagg` |
-| Custom driver on `benchmarks.workload` | Config needs a tweak the toggles don't expose. | `spec = build_benchmark(...)`, override e.g. `spec.optim_config.aggregator`, then `run_benchmark(spec)` |
+| Custom driver on `benchmarks.workload` | Config needs a tweak the toggles don't expose. | `spec = build_benchmark(...)`, override e.g. `spec.optim_config.aggregator`, then `run_benchmark(spec)`<br>(same build/run pattern as [Extending the suite](#extending-the-suite)) |
 | Custom driver on raw declearn APIs | Config is outside `build_benchmark` entirely. | Build the server and clients from `declearn.main` yourself; template: `workload/runner.py` (keep one asyncio loop so the profiler sees one process) |
 
 Either way the driver is just a Python script, so you profile it by
