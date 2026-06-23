@@ -37,7 +37,8 @@ Each class measures three quantities for every parameter combination:
 
 - `time_run`, the wall-clock time of one full FL run (registration,
   training rounds, aggregation and evaluation);
-- `track_peakmem_run`, the peak host RSS growth during the run;
+- `track_peakmem_run`, the peak host [RSS](https://en.wikipedia.org/wiki/Resident_set_size)
+  during the run;
 - `track_peakgpu_run`, the peak GPU bytes allocated during the run
   (this is torch-only, as the tensorflow cell is intentionally skipped).
 
