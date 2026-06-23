@@ -138,8 +138,8 @@ memray, the generated `.html` file is opened directly in a browser.
 ## Continuous integration
 
 The bench job is defined in declearn's existing `.gitlab-ci.yml` file,
-as a sibling of the `test-minimal` and `test-maximal` jobs, within its
-own `bench` stage. It does not run on day-to-day MR or develop pushes;
+within its own `bench` pipeline stage. It does not run on day-to-day MR
+or develop pushes;
 it is triggered only on release-tag pushes and on manual "Run pipeline"
 runs from the GitLab UI that set the `BENCH_BOOTSTRAP=true` variable.
 
