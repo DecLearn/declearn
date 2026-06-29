@@ -123,8 +123,10 @@ When a regression is detected, the next question is usually *where in
 the code it happens*. The `benchmarks/tools/` subpackage provides a small
 flow for that step: one picks the configuration that regressed, records a
 single run, then inspects the resulting flame graph. Two complementary
-profilers are wired in: [py-spy](https://github.com/benfred/py-spy) for
-CPU/time and [memray](https://github.com/bloomberg/memray) for memory,
+profilers are wired in:  
+  - [py-spy](https://github.com/benfred/py-spy) for CPU/time,
+  - [memray](https://github.com/bloomberg/memray) for memory,
+
 both sharing the same entry point.
 
 | File | Role |
