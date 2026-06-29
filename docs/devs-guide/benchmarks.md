@@ -135,9 +135,9 @@ both sharing the same entry point.
 | `tools/pyspy.sh` | Wraps `profile_entry.py` with `py-spy record`, emitting a [speedscope](https://www.speedscope.app/) JSON file under `profiles/` (which is gitignored). Use it to find where time is spent. |
 | `tools/memray.sh` | Wraps `profile_entry.py` with `memray run`, writing a `.bin` capture under `profiles/` and then rendering an HTML memory flame graph alongside it. Use it to find where memory is allocated. Set `NATIVE=1` to also capture native (C/C++) allocation stacks, e.g. torch / tensorflow tensors. |
 
-For py-spy, the resulting `.json` file may be dragged into
-<https://www.speedscope.app/> to obtain an interactive flame graph. For
-memray, the generated `.html` file is opened directly in a browser.
+- For py-spy, the resulting `.json` file may be dragged into
+<https://www.speedscope.app/> to obtain an interactive flame graph.
+- For memray, the generated `.html` file is opened directly in a browser.
 
 ## Continuous integration
 
