@@ -19,8 +19,6 @@
 # Env vars:
 #   PRESET        (default: bench.yaml's default_preset)
 #   CLASSES       (optional CSV; overrides the preset's class list)
-#   BENCH_VENV    (default: $HOME/.venvs/declearn-bench-gpu)
-#                 Only used if no virtualenv is already active.
 
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -28,15 +26,12 @@ cd "$(dirname "$0")"
 PRESET="${PRESET:-}"
 CLASSES="${CLASSES:-}"
 
-# Activate the bench venv unless one is already active (e.g. in CI).
-if [ -z "${VIRTUAL_ENV:-}" ]; then
-    VENV="${BENCH_VENV:-$HOME/.venvs/declearn-bench-gpu}"
-    if [ ! -d "$VENV" ]; then
-        echo "ERROR: no venv at $VENV. Create/activate one and install the bench extra, e.g.: pip install -e '.[bench]'" >&2
-        exit 1
-    fi
-    # shellcheck disable=SC1091
-    source "$VENV/bin/activate"
+# Run in whatever environment is active. Like the profilers, this script
+# doesn't manage a venv: create/activate one and install the bench extra
+# (`pip install -e '.[bench]'`) beforehand — the name is yours to choose.
+if ! command -v asv >/dev/null 2>&1; then
+    echo "ERROR: asv not on PATH. Activate your bench venv and install the bench extra: pip install -e '.[bench]'" >&2
+    exit 1
 fi
 
 eval "$(python bench_config.py ${PRESET:+--preset "$PRESET"} ${CLASSES:+--classes "$CLASSES"})"

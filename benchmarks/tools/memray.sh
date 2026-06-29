@@ -20,8 +20,6 @@
 #                the capture, as <OUTPUT>.html.
 #   NATIVE       set to 1 to also record native (C/C++) allocation stacks, e.g.
 #                torch / tensorflow tensor allocations. Slower, larger capture.
-#   BENCH_VENV   default: $HOME/.venvs/declearn-bench-gpu
-#                Only used if no virtualenv is already active.
 
 set -euo pipefail
 
@@ -37,17 +35,6 @@ CALLER_PWD="$PWD"
 # `python -m benchmarks.tools.profile_entry` resolves only from the
 # parent of the `benchmarks/` package (the declearn repo root).
 cd "$PROJECT_ROOT"
-
-# Activate the bench venv unless one is already active (e.g. in CI).
-if [ -z "${VIRTUAL_ENV:-}" ]; then
-    VENV="${BENCH_VENV:-$HOME/.venvs/declearn-bench-gpu}"
-    if [ ! -d "$VENV" ]; then
-        echo "ERROR: no venv at $VENV. Create/activate one and install the bench extra, e.g.: pip install -e '.[bench]'" >&2
-        exit 1
-    fi
-    # shellcheck disable=SC1091
-    source "$VENV/bin/activate"
-fi
 
 if ! command -v memray >/dev/null 2>&1; then
     echo "ERROR: memray not on PATH. Install with: pip install memray" >&2

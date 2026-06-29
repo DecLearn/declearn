@@ -82,9 +82,9 @@ classes while preserving its `n_clients_axis` and `asv_args`.
 The `benchmarks/run_benchmarks.sh` script is the single entry point for
 every benchmark invocation, both locally and inside the
 CI. It acts as a thin wrapper that resolves the active preset (via
-`bench_config.py`), activates the bench virtual environment when needed,
-sets the GPU-policy environment, and hands control over to ASV with the
-resolved filters and flags already in place.
+`bench_config.py`), sets the GPU-policy environment, and hands control
+over to ASV with the resolved filters and flags already in place. It runs
+in whatever environment is active and does not manage a venv of its own.
 
 ## The workload
 
@@ -211,13 +211,15 @@ Profiling needs a CUDA-capable GPU and Python 3.11. The suite also runs
 on CPU, but its timings are not comparable to the CI's.
 
 Create and activate a Python 3.11 environment with any tool (`uv`,
-`python -m venv`, `conda`, ...), then install the `bench` extra (ASV plus
-the py-spy and memray profilers). declearn and the torch/tensorflow
-workload deps come separately, in step 4.
+`python -m venv`, `conda`, ...) and any name, then install the `bench`
+extra (ASV plus the py-spy and memray profilers). The `run_benchmarks.sh`
+and profiler scripts just use whatever environment is active — they
+don't manage or look for a venv of their own. declearn and the
+torch/tensorflow workload deps come separately, in step 4.
 
 ```bash
-uv venv --python 3.11 --seed ~/.venvs/declearn-bench-gpu
-source ~/.venvs/declearn-bench-gpu/bin/activate
+uv venv --python 3.11 --seed ~/.venvs/declearn-bench   # name is yours to pick
+source ~/.venvs/declearn-bench/bin/activate
 pip install -e '.[bench]'    # asv, pyyaml, py-spy, memray
 ```
 
