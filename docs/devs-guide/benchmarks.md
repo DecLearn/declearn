@@ -19,6 +19,21 @@ The suite is meant to serve two distinct purposes:
   (memory) integrations to generate flame graphs for a specific
   configuration when narrowing down where a regression lives.
 
+At a glance, the `benchmarks/` folder is organized as follows:
+
+```
+benchmarks/
+├── suite.py          # the ASV benchmark classes ASV discovers and runs
+├── _memory.py        # peak host-RSS / GPU probes used by the classes
+├── asv.conf.json     # ASV configuration (envs, build/install, branches)
+├── bench.yaml        # named run presets (which classes, which axes)
+├── bench_config.py   # resolves a preset into the options ASV expects
+├── run_benchmarks.sh # entry point that wires the preset into ASV
+├── workload/         # builds and runs the FL workload each benchmark drives
+├── tools/            # py-spy / memray scripts for one-off investigation
+└── data/             # cached MNIST shards, generated on first run
+```
+
 ## Benchmark classes
 
 The benchmark classes are defined in `benchmarks/suite.py`; these are
