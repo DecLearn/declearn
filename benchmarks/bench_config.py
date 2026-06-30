@@ -11,9 +11,12 @@ The emitted block defines:
 - `BENCH_PRESET` (string)  - echoed back so the sh script can log it.
 - `DECLEARN_BENCH_N_CLIENTS` (exported)  - comma-joined axis read by
   `benchmarks/__init__.py` at ASV discovery time.
-- `ASV_BENCH_FILTERS` (bash array)  - one ``-b ^ClassName\.`` pair per
-  class in the preset. Anchoring with ``^`` and ``\.`` avoids accidental
-  substring matches across class names.
+- `ASV_BENCH_FILTERS` (bash array)  - one ``-b (^|\.)ClassName\.`` pair
+  per class in the preset. ASV names benchmarks by their module path
+  (e.g. ``suite.BackendsBenchmark.time_run``), so the filter matches the
+  class name at a name boundary (string start or a ``.``) and requires a
+  trailing ``\.``; this avoids accidental substring matches across class
+  names while tolerating the ``suite.`` module prefix.
 - `ASV_EXTRA_ARGS` (bash array)  - the preset's `asv_args` verbatim.
 
 Class names are validated against `KNOWN_CLASSES` to catch typos at
@@ -128,11 +131,13 @@ def render_shell(preset: Dict[str, Any]) -> str:
     """Render `preset` as bash code that exports env + sets two arrays."""
     name = preset["name"]
     axis_csv = ",".join(str(v) for v in preset["n_clients_axis"])
-    # Anchor each class name with ^...\. so a class whose name is a
-    # prefix of another (none today, but cheap to defend) cannot leak.
+    # Bound each class name with (^|\.)...\. so it matches the module-
+    # prefixed ASV name (suite.ClassName.method) at a name boundary,
+    # while a class whose name is a prefix of another (none today, but
+    # cheap to defend) cannot leak.
     filters: List[str] = []
     for cls in preset["classes"]:
-        filters.extend(["-b", f"^{cls}\\."])
+        filters.extend(["-b", f"(^|\\.){cls}\\."])
     filter_array = " ".join(shlex.quote(tok) for tok in filters)
     extra_array = " ".join(shlex.quote(tok) for tok in preset["asv_args"])
     return (

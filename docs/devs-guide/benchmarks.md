@@ -21,8 +21,10 @@ The suite is meant to serve two distinct purposes:
 
 ## Benchmark classes
 
-The benchmark classes are defined in `benchmarks/__init__.py`; these are
-the entities that ASV discovers, parameterises and runs. Four classes
+The benchmark classes are defined in `benchmarks/suite.py`; these are
+the entities that ASV discovers, parameterises and runs. ASV names them
+by their module path, so each cell appears as `suite.<Class>.<method>`
+(e.g. `suite.BackendsBenchmark.time_run`). Four classes
 are currently in place, each exercising a different declearn feature
 against the same MNIST workload.
 
@@ -189,7 +191,7 @@ the release tag). In the `benchmarks` job log, confirm:
 - that `asv publish` still ran afterwards (the loading-results /
   generating-graphs lines) and the job then exited non-zero.
 
-Note the **regressed cell** (e.g. `BackendsBenchmark.time_run(5, 'torch')`)
+Note the **regressed cell** (e.g. `suite.BackendsBenchmark.time_run(5, 'torch')`)
 and the **two refs** being compared (e.g. `v2.7.0` vs `v2.8.0`).
 
 ### 2. Download the artifact
@@ -398,12 +400,12 @@ memory.
 
 Adding a new benchmark class requires touching three files:
 
-1. In `__init__.py`, define the class itself. Declare its `params`,
+1. In `suite.py`, define the class itself. Declare its `params`,
    `param_names` and `timeout`, and implement the `time_run(...)`,
    `setup(...)` and `track_*` methods, following the shape of the four
    existing classes. The body should delegate to `build_benchmark(...)`
    and `run_benchmark(...)`, so that the workload stays defined in a
-   single place.
+   single place, and to `benchmarks._memory` for the peak-memory probes.
 2. In `bench_config.py`, add the new class name to the `KNOWN_CLASSES`
    frozenset. Without this, the name fails the allowlist check at
    preset-resolution time, even though ASV would discover the class
