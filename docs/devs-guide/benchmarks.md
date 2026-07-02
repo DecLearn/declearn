@@ -244,7 +244,8 @@ pip install -e '.[bench]'    # asv, pyyaml, py-spy, memray
 
 Profile the **baseline** and the **slow** ref: the baseline run is what
 gives the slow run something to be compared against, so both need
-profiling, not just the slow one.
+profiling, not just the slow one.  
+Here we show an example of profiling with py-spy.
 
 First the baseline:
 

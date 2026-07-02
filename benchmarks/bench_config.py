@@ -9,8 +9,8 @@ consumed by `eval "$(python bench_config.py --preset <name>)"`.
 The emitted block defines:
 
 - `BENCH_PRESET` (string)  - echoed back so the sh script can log it.
-- `DECLEARN_BENCH_N_CLIENTS` (exported)  - comma-joined axis read by
-  `benchmarks/__init__.py` at ASV discovery time.
+- `DECLEARN_BENCH_N_CLIENTS` (string, exported)  - comma-joined axis
+  read at ASV discovery time.
 - `ASV_BENCH_FILTERS` (bash array)  - one ``-b (^|\.)ClassName\.`` pair
   per class in the preset. ASV names benchmarks by their module path
   (e.g. ``suite.BackendsBenchmark.time_run``), so the filter matches the

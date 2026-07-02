@@ -154,8 +154,8 @@ test-maximal:
     # Full clone so `git describe` can find the previous release tag.
     GIT_DEPTH: "0"
   artifacts:
-    when: always           # keep results + html even when regression is detected
-    expire_in: never       # cumulative history; small JSONs grow monotonically
+    when: always      # keep results + html even when regression is detected
+    expire_in: never  # cumulative history; small JSONs grow monotonically
     paths:
       - benchmarks/.asv/results/
       - benchmarks/.asv/html/
@@ -168,10 +168,10 @@ test-maximal:
 benchmarks:
   extends:
     .bench_cfg
-  allow_failure: true             # regression -> non-blocking warning, does not fail the release pipeline
+  allow_failure: true    # regression -> non-blocking warning, does not fail the release pipeline
   rules:
-    - if: $IS_TAG                  # release tag push: regression-check mode (warns on regression)
-    - if: $IS_BOOTSTRAP           # manual UI trigger w/ BENCH_BOOTSTRAP=true: bootstrap mode
+    - if: $IS_TAG        # release tag push: regression-check mode (warns on regression)
+    - if: $IS_BOOTSTRAP  # manual UI trigger w/ BENCH_BOOTSTRAP=true: bootstrap mode
   variables:
     BOOTSTRAP_TAGS: "v2.7.0 v2.8.0"
   script:
