@@ -12,8 +12,7 @@ The suite is meant to serve two distinct purposes:
 
 - As a release-tag regression check, a fixed subset of benchmarks is run
   on every release-tag push, comparing the new release against the previous one
-  and failing the pipeline if a regression beyond a 1.5x factor is
-  detected.
+  and failing the benchmark job (a non-blocking warning) if a regression beyond a 1.5x factor is detected.
 - As an on-demand investigation tool, developers may run any subset of benchmarks against any commits, browse the
   results as an ASV timeline, and use the py-spy (CPU/time) and memray
   (memory) integrations to generate flame graphs for a specific

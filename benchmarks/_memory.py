@@ -32,6 +32,7 @@ def _cuda() -> bool:
 
 
 def _cache_path(cls_name: str, params: Tuple) -> str:
+    """Return the per-cell `/tmp` cache path for a class/params combo."""
     key = "_".join(str(p) for p in params)
     return os.path.join(
         tempfile.gettempdir(), f"declearn_mem_{cls_name}_{key}.json"

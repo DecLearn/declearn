@@ -16,7 +16,7 @@ workflow:
         BRANCH_NAME: $CI_COMMIT_BRANCH
     - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/  # release tag (vMAJOR.MINOR.PATCH) push -> bench regression check
       variables:
-        IS_TAG: "true"
+        IS_RELEASE_TAG: "true"
         BRANCH_NAME: $CI_COMMIT_TAG
     - if: $CI_PIPELINE_SOURCE == "web" && $BENCH_BOOTSTRAP == "true"  # manual UI trigger w/ BENCH_BOOTSTRAP=true -> bench-bootstrap
       variables:
@@ -149,7 +149,7 @@ test-maximal:
     - apt-get update -qq && apt-get install -y -qq git curl unzip
     - source /venv/bin/activate
     - pip install --quiet asv pyyaml
-    - git fetch --quiet origin '+refs/heads/develop:refs/heads/develop' || true
+    - git fetch --quiet origin '+refs/heads/develop:refs/heads/develop' || true # non-fatal: only feeds asv publish's HTML timeline; the regression check works without it
   variables:
     # Full clone so `git describe` can find the previous release tag.
     GIT_DEPTH: "0"
@@ -170,7 +170,7 @@ benchmarks:
     .bench_cfg
   allow_failure: true             # regression -> non-blocking warning, does not fail the release pipeline
   rules:
-    - if: $IS_TAG                  # release tag push: regression-check mode (warns on regression)
+    - if: $IS_RELEASE_TAG          # release tag push: regression-check mode (warns on regression)
     - if: $IS_BOOTSTRAP           # manual UI trigger w/ BENCH_BOOTSTRAP=true: bootstrap mode
   variables:
     BOOTSTRAP_TAGS: "v2.7.0 v2.8.0"
@@ -193,6 +193,13 @@ benchmarks:
         for REF_TRY in "$PREV_TAG" "develop"; do
           [ -z "$REF_TRY" ] && continue
           echo "fetching baseline artifact (ref=$REF_TRY)"
+          # Pull the artifact archive of the last successful `benchmarks` job on
+          # $REF_TRY via the GitLab jobs-artifacts API (JOB-TOKEN authenticates
+          # the request; --fail turns a missing artifact / HTTP error into a
+          # non-zero exit; --location follows redirects to the storage backend).
+          # Only if the download succeeds do we unzip it (-o overwrite, -q quiet)
+          # into the project dir, restoring the prior .asv/results as the
+          # comparison baseline. Either step failing -> try the next ref.
           if curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --location --silent --fail \
                --output /tmp/prev.zip \
                "$CI_API_V4_URL/projects/$CI_PROJECT_ID/jobs/artifacts/$REF_TRY/download?job=benchmarks" \

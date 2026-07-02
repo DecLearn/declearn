@@ -50,6 +50,7 @@ DEFAULT_YAML_PATH = Path(__file__).resolve().parent / "bench.yaml"
 
 
 def _die(msg: str) -> "None":
+    """Print an error to stderr and exit with status 2."""
     print(f"bench_config: {msg}", file=sys.stderr)
     sys.exit(2)
 
