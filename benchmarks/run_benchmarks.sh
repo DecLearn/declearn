@@ -2,7 +2,7 @@
 # Thin ASV wrapper driven by bench.yaml.
 #
 # Resolves the active preset via bench_config.py into:
-#   - DECLEARN_BENCH_N_CLIENTS (env var read by __init__.py)
+#   - DECLEARN_BENCH_N_CLIENTS (env var read by suite.py at discovery time)
 #   - -b <regex> filters per class
 #   - preset-level asv flags (e.g. --quick, --show-stderr)
 # ...then execs `asv <subcommand> [args...] <filters> <flags>` so the caller
