@@ -172,7 +172,7 @@ def _build_clients(
     return clients
 
 
-def build_benchmark(  # noqa: PLR0913 — flat axis API by design
+def build_benchmark(  # noqa: PLR0913 - flat axis API by design
     backend: str = B.BASELINE_BACKEND,
     n_clients: int = B.BASELINE_N_CLIENTS,
     regularizer: Optional[str] = None,
@@ -210,13 +210,13 @@ def build_benchmark(  # noqa: PLR0913 — flat axis API by design
     """
     _validate(backend, regularizer, scaffold, secagg)
     layout = BACKEND_LAYOUT[backend]
-    server_model = _build_model(backend)
+    model = _build_model(backend)
     optim = _build_optim(regularizer, scaffold)
     run = _build_run_config(rounds, n_clients, batch_size)
     server_secagg, client_secagg = _build_secagg(secagg, n_clients)
     clients = _build_clients(n_clients, layout, client_secagg)
     return BenchmarkSpec(
-        server_model=server_model,
+        model=model,
         optim_config=optim,
         run_config=run,
         network_host=B.BASELINE_NETWORK_HOST,

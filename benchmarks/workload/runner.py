@@ -55,7 +55,7 @@ async def _run_async(spec: BenchmarkSpec) -> None:
         heartbeat=0.1,
     )
     server = FederatedServer(
-        model=spec.server_model,
+        model=spec.model,
         netwk=netwk_server,
         optim=spec.optim_config,
         metrics=spec.metrics or None,

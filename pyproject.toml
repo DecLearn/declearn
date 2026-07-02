@@ -85,9 +85,9 @@ websockets = [
     "websockets >= 10.1, < 14.0",
 ]
 
-# Benchmark + profiling tooling (drives ASV and the py-spy / memray
-# profilers). The workload itself additionally needs the torch /
-# tensorflow / websockets extras; see docs/devs-guide/benchmarks.md.
+# Benchmark + profiling tooling
+# Note: The workload itself additionally needs other extras
+# (See docs/devs-guide/benchmarks.md).
 bench = [
     "asv",
     "pyyaml",

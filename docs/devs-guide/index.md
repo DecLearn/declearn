@@ -15,5 +15,5 @@ This guide is structured this way:
 - [Docstrings style guide](./docs-style.md):<br/>
     Guide on how to format docstrings and have them properly rendered.
 - [Benchmarking](./benchmarks.md):<br/>
-    Guide on how to run the performance benchmark suite, profile with
-    py-spy, and investigate regressions.
+    Guide on how to run the performance benchmark suite, perform profiling,
+    and investigate regressions.

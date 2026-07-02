@@ -5,13 +5,13 @@
 #   - DECLEARN_BENCH_N_CLIENTS (env var read by __init__.py)
 #   - -b <regex> filters per class
 #   - preset-level asv flags (e.g. --quick, --show-stderr)
-# …then execs `asv <subcommand> [args...] <filters> <flags>` so the caller
+# ...then execs `asv <subcommand> [args...] <filters> <flags>` so the caller
 # decides whether to run `run`, `continuous`, `compare`, etc. Version
 # checkout is handled natively by ASV (repo is the parent declearn repo),
 # so no pip-install dance is needed.
 #
 # Usage:
-#   ./run_benchmarks.sh                                       # asv run on current HEAD
+#   ./run_benchmarks.sh  # asv run on current HEAD
 #   ./run_benchmarks.sh continuous v2.7.0 v2.8.0 --factor 1.5
 #   PRESET=full ./run_benchmarks.sh run ALL --skip-existing-commits
 #   CLASSES=ScaffoldBenchmark PRESET=full ./run_benchmarks.sh continuous v2.7.0 HEAD
@@ -48,6 +48,7 @@ export DECLEARN_BENCH_FORCE_GPU="${DECLEARN_BENCH_FORCE_GPU:-1}"
 asv machine --yes >/dev/null
 
 SUBCMD="${1:-run}"
+# If subcommand was passed: remove `$SUBCMD` from `$@` (so that it will only contains actual arguments).
 shift || true
 
 exec asv "$SUBCMD" "${ASV_BENCH_FILTERS[@]}" "${ASV_EXTRA_ARGS[@]}" "$@"

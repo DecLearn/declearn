@@ -28,7 +28,7 @@ class ClientSpec:
 class BenchmarkSpec:
     """Container of everything `run_benchmark` needs to launch one run."""
 
-    server_model: Model
+    model: Model
     optim_config: FLOptimConfig
     run_config: FLRunConfig
     network_host: str
