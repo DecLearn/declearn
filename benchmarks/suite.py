@@ -22,17 +22,13 @@ The `n_clients` axis is a single shared point (`[5]` by default) to keep
 the per-version sweep bounded. It is sourced from the
 `DECLEARN_BENCH_N_CLIENTS` env var (comma-separated positive ints, e.g.
 "5,20") when set, so that `bench.yaml` profiles can widen or narrow the
-sweep without editing this file. Every class honors the same axis. The
-CI regression-check profile (`ci`) keeps the axis at n=5, so the slow
-cells (historically the n=20 masking cell, which hit
-`SecAggBenchmark.timeout`) are only paid for in manual `scale` runs
-where they are visible to the operator.
+sweep without editing this file. 
 """
 
 import os
 from typing import List
 
-from benchmarks import _memory
+from benchmarks._memory import capture_end, capture_start, read_cached
 from benchmarks.workload import build_benchmark, run_benchmark
 from benchmarks.workload.build import BACKEND_LAYOUT
 from benchmarks.workload.data import ensure_data_for_n_clients
@@ -88,15 +84,15 @@ class BackendsBenchmark:
         ensure_data_for_n_clients(n_clients, BACKEND_LAYOUT[backend])
 
     def time_run(self, n_clients: int, backend: str) -> None:
-        baseline = _memory.capture_start()
+        baseline = capture_start()
         spec = build_benchmark(backend=backend, n_clients=n_clients)
         run_benchmark(spec)
-        _memory.capture_end(
+        capture_end(
             "BackendsBenchmark", (n_clients, backend), baseline
         )
 
     def track_peakmem_run(self, n_clients: int, backend: str) -> int:
-        return _memory.read_cached(
+        return read_cached(
             "BackendsBenchmark", (n_clients, backend), "host_delta_bytes"
         )
     track_peakmem_run.unit = "bytes"  # type: ignore[attr-defined]
@@ -107,7 +103,7 @@ class BackendsBenchmark:
         # failed.
         if backend != "torch":
             return float("nan")
-        return _memory.read_cached(
+        return read_cached(
             "BackendsBenchmark", (n_clients, backend), "gpu_bytes"
         )
     track_peakgpu_run.unit = "bytes"  # type: ignore[attr-defined]
@@ -124,17 +120,17 @@ class RegularizersBenchmark:
         ensure_data_for_n_clients(n_clients, "chw")
 
     def time_run(self, n_clients: int, regularizer: str) -> None:
-        baseline = _memory.capture_start()
+        baseline = capture_start()
         spec = build_benchmark(
             backend="torch", regularizer=regularizer, n_clients=n_clients
         )
         run_benchmark(spec)
-        _memory.capture_end(
+        capture_end(
             "RegularizersBenchmark", (n_clients, regularizer), baseline
         )
 
     def track_peakmem_run(self, n_clients: int, regularizer: str) -> int:
-        return _memory.read_cached(
+        return read_cached(
             "RegularizersBenchmark",
             (n_clients, regularizer),
             "host_delta_bytes",
@@ -142,7 +138,7 @@ class RegularizersBenchmark:
     track_peakmem_run.unit = "bytes"  # type: ignore[attr-defined]
 
     def track_peakgpu_run(self, n_clients: int, regularizer: str) -> int:
-        return _memory.read_cached(
+        return read_cached(
             "RegularizersBenchmark", (n_clients, regularizer), "gpu_bytes"
         )
     track_peakgpu_run.unit = "bytes"  # type: ignore[attr-defined]
@@ -159,21 +155,21 @@ class ScaffoldBenchmark:
         ensure_data_for_n_clients(n_clients, "chw")
 
     def time_run(self, n_clients: int) -> None:
-        baseline = _memory.capture_start()
+        baseline = capture_start()
         spec = build_benchmark(
             backend="torch", scaffold=True, n_clients=n_clients
         )
         run_benchmark(spec)
-        _memory.capture_end("ScaffoldBenchmark", (n_clients,), baseline)
+        capture_end("ScaffoldBenchmark", (n_clients,), baseline)
 
     def track_peakmem_run(self, n_clients: int) -> int:
-        return _memory.read_cached(
+        return read_cached(
             "ScaffoldBenchmark", (n_clients,), "host_delta_bytes"
         )
     track_peakmem_run.unit = "bytes"  # type: ignore[attr-defined]
 
     def track_peakgpu_run(self, n_clients: int) -> int:
-        return _memory.read_cached(
+        return read_cached(
             "ScaffoldBenchmark", (n_clients,), "gpu_bytes"
         )
     track_peakgpu_run.unit = "bytes"  # type: ignore[attr-defined]
@@ -190,21 +186,21 @@ class SecAggBenchmark:
         ensure_data_for_n_clients(n_clients, "chw")
 
     def time_run(self, n_clients: int) -> None:
-        baseline = _memory.capture_start()
+        baseline = capture_start()
         spec = build_benchmark(
             backend="torch", secagg="masking", n_clients=n_clients
         )
         run_benchmark(spec)
-        _memory.capture_end("SecAggBenchmark", (n_clients,), baseline)
+        capture_end("SecAggBenchmark", (n_clients,), baseline)
 
     def track_peakmem_run(self, n_clients: int) -> int:
-        return _memory.read_cached(
+        return read_cached(
             "SecAggBenchmark", (n_clients,), "host_delta_bytes"
         )
     track_peakmem_run.unit = "bytes"  # type: ignore[attr-defined]
 
     def track_peakgpu_run(self, n_clients: int) -> int:
-        return _memory.read_cached(
+        return read_cached(
             "SecAggBenchmark", (n_clients,), "gpu_bytes"
         )
     track_peakgpu_run.unit = "bytes"  # type: ignore[attr-defined]
