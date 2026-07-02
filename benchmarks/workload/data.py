@@ -63,6 +63,7 @@ def _client_files(folder: Path, idx: int) -> Tuple[Path, Path, Path, Path]:
 
 
 def _is_complete(folder: Path, n_clients: int) -> bool:
+    """Return True if `folder` holds every expected file for all clients."""
     if not folder.is_dir():
         return False
     for idx in range(n_clients):
@@ -105,6 +106,7 @@ def ensure_source_data(n_clients: int) -> Path:
 
 
 def _convert(array: np.ndarray, layout: str, is_target: bool) -> np.ndarray:
+    """Reshape image `array` to the backend's expected layout (targets pass through)."""
     if is_target:
         return array
     if layout == "chw":

@@ -1,12 +1,4 @@
-"""Translate benchmark parameters into a fully-instantiated `BenchmarkSpec`.
-
-This is the layer where parameter interpretation lives: a small set of
-high-level toggles ("torch + SCAFFOLD + 5 clients") expand into concrete
-declearn objects (Model, FLOptimConfig, FLRunConfig, datasets, optional
-SecAgg configs). Validation rejects parameter combinations that declearn
-or the optional dependencies cannot honor (e.g. SCAFFOLD on non-torch
-backends in the v1 suite).
-"""
+"""Translate high-level benchmark parameters into a `BenchmarkSpec`."""
 
 import importlib
 from typing import List, Optional
@@ -49,6 +41,7 @@ def _validate(
     scaffold: bool,
     secagg: Optional[str],
 ) -> None:
+    """Raise ValueError if any workload option is unknown or incompatible."""
     if backend not in _VALID_BACKENDS:
         raise ValueError(
             f"Invalid backend '{backend}'. Expected one of {_VALID_BACKENDS}."
