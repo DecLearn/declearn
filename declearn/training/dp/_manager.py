@@ -87,12 +87,12 @@ class DPTrainingManager(TrainingManager):
             logger=logger,
             verbose=verbose,
         )
-        # DP-related fields: accountant, clipping norm and budget.
+        # Add DP-related fields: accountant, clipping norm and budget.
         self.accountant: Optional[IAccountant] = None
         self.sclip_norm: Optional[float] = None
         self._dp_budget = (0.0, 0.0)
         self._dp_states: Optional[Tuple[float, float]] = None
-        # Fields related to mechanism of max-allowed number of steps per round.
+        # Per-round precomputed max steps (see `_compute_max_steps_for_round`).
         self._max_steps_this_round: Optional[int] = None
         self._step_counter_this_round: int = 0
 
@@ -108,11 +108,6 @@ class DPTrainingManager(TrainingManager):
             PrivacyRequest message specifying the privacy budget, type
             of accountant and expected use of the training data.
         """
-        if message.accountant not in ["rdp", "gdp", "prv"]:
-            raise ValueError(
-                f"Unsupported DP accountant '{message.accountant}', "
-                "only {'rdp', 'gdp', 'prv'} are currently supported."
-            )
         # REVISE: add support for fixed requested noise multiplier
         # Compute the noise multiplier to use based on the budget
         # and the planned training duration and parameters.
@@ -265,24 +260,15 @@ class DPTrainingManager(TrainingManager):
     ) -> int:
         """Return the largest number of steps this round keeps ε at-or-below.
 
-        Binary-search the largest ``k`` such that adding ``k`` steps with the
-        given ``(noise, srate)`` keeps the total spent epsilon at or below the
+        Binary-search the largest `k` such that adding `k` steps with the
+        given `(noise, srate)` keeps the total spent epsilon at or below the
         budget.
 
-        Implementation note: every opacus accountant (``rdp``, ``gdp`` and
-        ``prv``) stores its history as ``(noise, srate, count)`` tuples, and
-        computes epsilon from those aggregate counts rather than from
-        individual steps. A single tuple with ``count=k`` is therefore
-        equivalent to calling ``step`` ``k`` times (privacy loss depends only
-        on the aggregate counts, not on step granularity or ordering). The
-        probe history is built by merging into the trailing tuple (rather than
-        appending a separate one) so this equivalence also holds for the
-        ``gdp`` accountant, whose ``get_epsilon`` reads only the last history
-        tuple -- see the body below. Each binary-search probe is thus one
-        ``get_epsilon`` call on a history of size O(rounds), regardless of the
-        per-round step count. With ~log2(max_probe) probes per round, the
-        precompute cost is bounded and independent of the number of steps
-        actually taken.
+        Opacus accountants store history as `(noise, srate, count)` tuples
+        and derive epsilon from the aggregate counts, so a single tuple with
+        `count=k` is equivalent to `k` separate `step` calls. Each probe is
+        therefore one `get_epsilon` call, and the whole search costs
+        ~log2(max_probe) probes regardless of the per-round step count.
 
         Parameters
         ----------
@@ -306,35 +292,34 @@ class DPTrainingManager(TrainingManager):
         # Snapshot the real history and restore it at the end, so that the
         # accountant reflects only the steps that have ACTUALLY occurred.
         history_snapshot = list(self.accountant.history)
-        # Build the probe history exactly as `candidate` real `step` calls
-        # would: merge into the trailing tuple when it shares this round's
-        # (noise, srate), otherwise start a fresh tuple. This mirrors
-        # opacus's `IAccountant.step` merge logic. It is required for the
-        # GaussianAccountant ("gdp"), whose `get_epsilon` only reads the
-        # LAST history tuple: appending a separate tuple would make it
-        # ignore the budget already spent in previous rounds and thus
-        # over-authorize steps. RDP and PRV compose additively over the
-        # whole history, so merging is equivalent for them as well.
+        # Build the probe history as real `step` calls would, mirroring
+        # opacus's `IAccountant.step` merge logic: fold the round's steps into
+        # the trailing tuple when it shares this round's (noise, srate). This
+        # matters for the GaussianAccountant ("gdp"), whose `get_epsilon`
+        # reads only the LAST tuple; a separate tuple would hide the budget
+        # already spent and over-authorize steps. (RDP/PRV compose over the
+        # whole history, so merging is equivalent for them too.)
         if history_snapshot and history_snapshot[-1][:2] == (noise, srate):
+            # Trailing tuple matches: drop it from `base` and resume its count.
             base = history_snapshot[:-1]
             prev_count = history_snapshot[-1][2]
         else:
+            # No matching tuple: keep all history and start this round at 0.
             base = history_snapshot
             prev_count = 0
         try:
-            # Binary search
-            max_feasible, search_upper = 0, max_probe
-            while max_feasible < search_upper:
-                candidate = (max_feasible + search_upper + 1) // 2
+            low, high = 0, max_probe
+            while low < high:
+                candidate = (low + high + 1) // 2
                 self.accountant.history = base + [
                     (noise, srate, prev_count + candidate)
                 ]
                 eps = self.accountant.get_epsilon(delta=budget_delta)
                 if eps <= budget_eps:
-                    max_feasible = candidate
+                    low = candidate
                 else:
-                    search_upper = candidate - 1
-            return max_feasible
+                    high = candidate - 1
+            return low
         finally:
             self.accountant.history = history_snapshot
 
