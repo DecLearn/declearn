@@ -20,7 +20,11 @@
 import logging
 from typing import List, Optional, Tuple, Union
 
-from opacus.accountants import IAccountant, create_accountant  # type: ignore
+from opacus.accountants import (  # type: ignore
+    GaussianAccountant,
+    IAccountant,
+    create_accountant,
+)
 from opacus.accountants.utils import get_noise_multiplier  # type: ignore
 
 from declearn import messaging
@@ -129,6 +133,15 @@ class DPTrainingManager(TrainingManager):
         )
         self.optim.modules.insert(0, noise_module)
         # Create an accountant and store the clipping norm and privacy budget.
+        # Restrict to the accountants whose history semantics
+        # `_compute_max_steps_for_round` relies on. Fail closed on anything
+        # else (e.g. a future opacus accountant) so it forces a conscious
+        # review rather than silently risking mis-authorized steps.
+        if message.accountant not in ("rdp", "gdp", "prv"):
+            raise ValueError(
+                f"Unsupported DP accountant '{message.accountant}': expected "
+                "one of 'rdp', 'gdp' or 'prv'."
+            )
         self.accountant = create_accountant(message.accountant)
         self.sclip_norm = message.sclip_norm
         self._dp_budget = message.budget
@@ -292,19 +305,18 @@ class DPTrainingManager(TrainingManager):
         # Snapshot the real history and restore it at the end, so that the
         # accountant reflects only the steps that have ACTUALLY occurred.
         history_snapshot = list(self.accountant.history)
-        # Build the probe history as real `step` calls would, mirroring
-        # opacus's `IAccountant.step` merge logic: fold the round's steps into
-        # the trailing tuple when it shares this round's (noise, srate). This
-        # matters for the GaussianAccountant ("gdp"), whose `get_epsilon`
-        # reads only the LAST tuple; a separate tuple would hide the budget
-        # already spent and over-authorize steps. (RDP/PRV compose over the
-        # whole history, so merging is equivalent for them too.)
-        if history_snapshot and history_snapshot[-1][:2] == (noise, srate):
-            # Trailing tuple matches: drop it from `base` and resume its count.
+        # GDP's `get_epsilon` reads only the LAST history tuple, so this
+        # round's steps must fold into it to retain prior-round budget; RDP
+        # and PRV compose over the whole history, where a fresh tuple is
+        # equivalent. (The `make_private` allowlist keeps this to these three.)
+        if len(history_snapshot) > 0 and isinstance(
+            self.accountant, GaussianAccountant
+        ):
+            # GDP: resume the trailing tuple's cumulative count.
             base = history_snapshot[:-1]
             prev_count = history_snapshot[-1][2]
-        else:
-            # No matching tuple: keep all history and start this round at 0.
+        else:  # empty history or "rdp" / "prv" accountant
+            # Keep all prior history and start this round's tuple at 0.
             base = history_snapshot
             prev_count = 0
         try:
