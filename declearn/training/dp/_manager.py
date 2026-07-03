@@ -87,15 +87,12 @@ class DPTrainingManager(TrainingManager):
             logger=logger,
             verbose=verbose,
         )
-        # Add DP-related fields: accountant, clipping norm and budget.
+        # DP-related fields: accountant, clipping norm and budget.
         self.accountant: Optional[IAccountant] = None
         self.sclip_norm: Optional[float] = None
         self._dp_budget = (0.0, 0.0)
         self._dp_states: Optional[Tuple[float, float]] = None
-        # Precompute the max-allowed number of steps once per round via a
-        # binary search over the privacy accountant, collapsing the per-step
-        # budget check to a single integer compare. Mid-round budget
-        # detection is preserved exactly (see `_compute_max_steps_for_round`).
+        # Fields related to mechanism of max-allowed number of steps per round.
         self._max_steps_this_round: Optional[int] = None
         self._step_counter_this_round: int = 0
 
@@ -111,6 +108,11 @@ class DPTrainingManager(TrainingManager):
             PrivacyRequest message specifying the privacy budget, type
             of accountant and expected use of the training data.
         """
+        if message.accountant not in ["rdp", "gdp", "prv"]:
+            raise ValueError(
+                f"Unsupported DP accountant '{message.accountant}', "
+                "only {'rdp', 'gdp', 'prv'} are currently supported."
+            )
         # REVISE: add support for fixed requested noise multiplier
         # Compute the noise multiplier to use based on the budget
         # and the planned training duration and parameters.
@@ -320,6 +322,7 @@ class DPTrainingManager(TrainingManager):
             base = history_snapshot
             prev_count = 0
         try:
+            # Binary search
             max_feasible, search_upper = 0, max_probe
             while max_feasible < search_upper:
                 candidate = (max_feasible + search_upper + 1) // 2
