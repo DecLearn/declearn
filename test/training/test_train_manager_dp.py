@@ -242,48 +242,60 @@ class TestDPTrainingManager:
         )
         assert reply.n_steps == accepted
 
-    @pytest.mark.parametrize("accountant", ["rdp", "gdp", "prv"])
-    def test_precompute_matches_canonical_with_prior_history(self, accountant):
-        """Test precompute accounts for budget spent in previous rounds.
+@pytest.mark.parametrize("accountant", ["rdp", "gdp", "prv"])
+@pytest.mark.parametrize("prev", [0, 30])
+def test_precompute_matches_canonical_with_prior_history(self, accountant, prev):
+    """Precompute matches a per-step `get_epsilon` check across accountants.
 
-        With a non-empty history (i.e. from the second round onwards), the
-        precomputed bound must still equal the number of *additional* steps
-        a per-step `get_epsilon` check would accept. This pins the
-        multi-round behavior across every accountant opacus supports.
+    The bound must equal the number of *additional* steps a per-step check
+    accepts, continuing from already-spent budget. `prev` covers both the
+    empty-history case (0) and a real prior round (30); the former proves
+    the merge reduces cleanly to the no-history bound. The bound is also
+    checked tight: exactly `accepted` steps fit, `accepted + 1` overspends.
 
-        Regression guard: the precompute builds the probe history by merging
-        into the trailing tuple rather than appending a separate one. The
-        GaussianAccountant ("gdp") reads only the last history tuple in its
-        `get_epsilon`, so appending would make it ignore prior-round budget
-        and over-authorize steps (overspending). Merging keeps it correct,
-        while remaining equivalent for the additively-composing rdp/prv.
-        """
-        manager = build_dp_manager(n_batch=100)
-        request = build_privacy_request(rounds=1, n_steps=50)
-        manager.make_private(request)
-        # Swap in the accountant under test (make_private defaults to rdp).
-        manager.accountant = create_accountant(accountant)
-        noise = manager.get_noise_multiplier()
-        srate = BATCHES["batch_size"] / (100 * BATCHES["batch_size"])
-        budget_eps, budget_delta = request.budget
-        # Spend some budget first (emulate a previous round of `prev` steps).
-        prev = 30
-        for _ in range(prev):
-            manager.accountant.step(noise_multiplier=noise, sample_rate=srate)
-        # Reference: additional steps a per-step check would still accept,
-        # continuing from the exact same already-spent state.
-        reference = create_accountant(accountant)
-        for _ in range(prev):
-            reference.step(noise_multiplier=noise, sample_rate=srate)
-        accepted = 0
-        while accepted < 1000:
-            reference.step(noise_multiplier=noise, sample_rate=srate)
-            if reference.get_epsilon(delta=budget_delta) > budget_eps:
-                reference.history.pop()  # undo the rejected probe step
-                break
-            accepted += 1
-        # The precomputed additional-step bound must match exactly, and the
-        # real history must be left untouched by the search.
-        snapshot = list(manager.accountant.history)
-        assert manager._compute_max_steps_for_round(noise, srate) == accepted
-        assert manager.accountant.history == snapshot
+    Regression guard: the probe merges into the trailing history tuple
+    rather than appending a new one. GaussianAccountant ("gdp") reads only
+    the last tuple in `get_epsilon`, so appending would ignore prior-round
+    budget and over-authorize; merging stays correct and is equivalent for
+    the additively-composing rdp/prv.
+    """
+    manager = build_dp_manager(n_batch=100)
+    request = build_privacy_request(rounds=1, n_steps=50)
+    manager.make_private(request)
+    # Swap in the accountant under test (make_private defaults to rdp).
+    manager.accountant = create_accountant(accountant)
+    noise = manager.get_noise_multiplier()
+    srate = BATCHES["batch_size"] / (100 * BATCHES["batch_size"])
+    budget_eps, budget_delta = request.budget
+    # Spend some budget first (emulate a previous round of `prev` steps).
+    for _ in range(prev):
+        manager.accountant.step(noise_multiplier=noise, sample_rate=srate)
+    # Reference: additional steps a per-step check would still accept,
+    # continuing from the exact same already-spent state.
+    reference = create_accountant(accountant)
+    for _ in range(prev):
+        reference.step(noise_multiplier=noise, sample_rate=srate)
+    accepted = 0
+    while accepted < 1000:
+        reference.step(noise_multiplier=noise, sample_rate=srate)
+        if reference.get_epsilon(delta=budget_delta) > budget_eps:
+            reference.history.pop()  # undo the rejected probe step
+            break
+        accepted += 1
+    # The precomputed additional-step bound must match exactly, and the
+    # real history must be left untouched by the search.
+    snapshot = list(manager.accountant.history)
+    assert manager._compute_max_steps_for_round(noise, srate) == accepted
+    assert manager.accountant.history == snapshot
+
+    # Boundary exactness: the bound must be tight on both sides. Rebuild
+    # from scratch each time so the probe shares no state or history-surgery
+    # with the code under test.
+    def overspends(extra_steps):
+        probe = create_accountant(accountant)
+        for _ in range(prev + extra_steps):
+            probe.step(noise_multiplier=noise, sample_rate=srate)
+        return probe.get_epsilon(delta=budget_delta) > budget_eps
+
+    assert not overspends(accepted), "the bound itself must stay within budget"
+    assert overspends(accepted + 1), "one step past the bound must overspend"
