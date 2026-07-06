@@ -68,12 +68,13 @@ def build_privacy_request(
     rounds: int = 1,
     n_epoch: Optional[int] = None,
     n_steps: Optional[int] = None,
+    accountant: str = "rdp",
 ) -> messaging.PrivacyRequest:
     """Return a PrivacyRequest with specified number of rounds and steps."""
     return messaging.PrivacyRequest(
         budget=(2.0, 1e-05),
         sclip_norm=2.0,
-        accountant="rdp",
+        accountant=accountant,
         use_csprng=False,
         seed=0,
         rounds=rounds,
@@ -128,6 +129,20 @@ class TestDPTrainingManager:
         assert manager.optim.modules[0].std == noise * request.sclip_norm
         # Check that initially not budget has been spent (but delta is set).
         assert manager.get_privacy_spent() == (0, request.budget[1])
+
+    def test_make_private_with_invalid_accountant(self):
+        """Test that `make_private` rejects an unsupported accountant.
+
+        The allowlist guards `_compute_max_steps_for_round`, whose probe-
+        history logic only holds for opacus's "rdp"/"gdp"/"prv" accountants,
+        so any other value must raise rather than be silently accepted.
+        """
+        manager = build_dp_manager(n_batch=100)
+        request = build_privacy_request(
+            rounds=1, n_epoch=1, accountant="unsupported"
+        )
+        with pytest.raises(ValueError):
+            manager.make_private(request)
 
     def test_dp_budget_constraint_1(self):
         """Test that the DP budget overspending is properly prevented.
