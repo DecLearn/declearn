@@ -15,6 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Script to run a federated server on the Hand Poses sEMG example."""
+
 import datetime
 import logging
 import os
@@ -28,13 +30,31 @@ from declearn.main._server import FederatedServer
 from declearn.main.config._run_config import FLRunConfig
 from declearn.main.config._strategy import FLOptimConfig
 from declearn.model.torch import TorchModel
-from declearn.test_utils import setup_server_argparse
 from declearn.utils import config_server_loggers
+from declearn.utils.examples import setup_server_argparse
 
 
-# wrap server config into a dataclass
 @dataclass
 class ServerConfigInput:
+    """Server input configuration container.
+
+    Fields
+    ------
+    certificate: str
+        Path to the client-required CA certificate PEM file.
+    private_key: str
+        Path to the server's private key PEM file.
+    nb_clients: int
+        Number of clients to await.
+    protocol: str
+        Expected communication protocol.
+    host: str
+        Expected hosting server.
+    port: str
+        Running port.
+
+    """
+
     certificate: str
     private_key: str
     nb_clients: int = 2
@@ -43,8 +63,6 @@ class ServerConfigInput:
     port: int = 8765
 
 
-logger = logging.getLogger(__name__)
-
 FILEDIR = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -52,12 +70,15 @@ def run_server(
     server_configs: ServerConfigInput, model_configs: ModelConfigsInput
 ):
     """Runs a server with the defined configurations"""
+    print(model_configs)
+
     model = TorchModel(
         model=SimpleMaskedTSAutoEncoder(model_configs), loss=MSELoss()
     )
     # Set up checkpointing and logging.
     stamp = datetime.datetime.now().strftime("%y-%m-%d_%H-%M")
     checkpoint = os.path.join(FILEDIR, f"result_{stamp}", "server")
+
     config_server_loggers(
         level=logging.INFO, fpath=os.path.join(checkpoint, "logs.txt")
     )
@@ -103,7 +124,6 @@ def run_server(
         evaluate={"batch_size": 50, "drop_remainder": False},
         early_stop={"tolerance": 0.0, "patience": 5, "relative": False},
     )
-    logger.info("Launching server ...")
     server.run(run_cfg)
 
 
@@ -118,13 +138,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--nb_clients",
         type=int,
-        help="Int. Number of clients for the experiment.",
-        choices=list(range(1, 3)),
+        help="Int. Number of clients for the experiment must be in [1-8]",
         default=2,
     )
     parser.add_argument(
         "--window_size",
-        default=2,
+        default=128,
         help="Int. Sliding window length. Default to 128",
     )
     parser.add_argument(

@@ -15,13 +15,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Demonstration script using the Hand Poses sEMG dataset."""
+
 import os
 import tempfile
 
 import fire
 
-from declearn.test_utils import generate_ssl_certificates, make_importable
-from declearn.utils import run_as_processes
+from declearn.utils import make_importable, run_as_processes
+from declearn.utils.examples import generate_ssl_certificates
 
 # Perform local imports.
 with make_importable(os.path.dirname(__file__)):
