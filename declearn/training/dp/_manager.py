@@ -308,7 +308,7 @@ class DPTrainingManager(TrainingManager):
         # GDP's `get_epsilon` reads only the LAST history tuple, so this
         # round's steps must fold into it to retain prior-round budget; RDP
         # and PRV compose over the whole history, where a fresh tuple is
-        # equivalent. (The `make_private` allowlist keeps this to these three.)
+        # equivalent.
         if len(history_snapshot) > 0 and isinstance(
             self.accountant, GaussianAccountant
         ):
@@ -320,6 +320,7 @@ class DPTrainingManager(TrainingManager):
             base = history_snapshot
             prev_count = 0
         try:
+            # Binary search :
             low, high = 0, max_probe
             while low < high:
                 candidate = (low + high + 1) // 2
