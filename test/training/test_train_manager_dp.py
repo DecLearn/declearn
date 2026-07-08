@@ -299,9 +299,9 @@ class TestDPTrainingManager:
                 probe.step(noise_multiplier=noise, sample_rate=srate)
             return probe.get_epsilon(delta=budget_delta) > budget_eps
 
-        assert not overspends(
-            accepted
-        ), "the bound itself must stay within budget"
-        assert overspends(
-            accepted + 1
-        ), "one step past the bound must overspend"
+        assert not overspends(accepted), (
+            "the bound itself must stay within budget"
+        )
+        assert overspends(accepted + 1), (
+            "one step past the bound must overspend"
+        )
