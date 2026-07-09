@@ -67,8 +67,8 @@ def load_preset(
     If `preset_name` is empty, falls back to `default_preset`.
     `classes_override` (from the `CLASSES` env var / `--classes` flag)
     replaces the preset's `classes` list when provided. The preset's
-    `n_clients_axis` and `asv_args` are preserved either way. Raises
-    via `_die` on missing files, missing presets, or malformed entries.
+    `n_clients_axis` and `asv_args` are preserved either way. Exits
+    on missing files, missing presets, or malformed entries.
     """
     if not yaml_path.is_file():
         _die(f"yaml not found at {yaml_path}")
