@@ -67,9 +67,7 @@ def _build_model(backend: str) -> Model:
     return module.build_model()
 
 
-def _build_optim(
-    regularizer: Optional[str], scaffold: bool
-) -> FLOptimConfig:
+def _build_optim(regularizer: Optional[str], scaffold: bool) -> FLOptimConfig:
     client_modules: List = list(B.BASELINE_CLIENT_MODULES)
     if scaffold:
         client_modules.append("scaffold-client")
@@ -122,9 +120,7 @@ def _build_secagg(
 
     private_keys = [Ed25519PrivateKey.generate() for _ in range(n_clients)]
     public_keys = [key.public_key() for key in private_keys]
-    id_keys = [
-        IdentityKeys(prv, trusted=public_keys) for prv in private_keys
-    ]
+    id_keys = [IdentityKeys(prv, trusted=public_keys) for prv in private_keys]
     server_cfg: SecaggConfigServer = MaskingSecaggConfigServer(
         bitsize=64, clipval=1e8
     )

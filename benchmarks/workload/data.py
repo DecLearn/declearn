@@ -42,9 +42,7 @@ def _fraction_tag(fraction: float) -> str:
     collide. `1.0` -> `"f100"`, `0.1` -> `"f010"`, etc.
     """
     if not 0.0 < fraction <= 1.0:
-        raise ValueError(
-            f"fraction must be in (0, 1]; got {fraction!r}."
-        )
+        raise ValueError(f"fraction must be in (0, 1]; got {fraction!r}.")
     return f"f{int(round(fraction * 100)):03d}"
 
 
@@ -106,7 +104,9 @@ def ensure_source_data(n_clients: int) -> Path:
 
 
 def _convert(array: np.ndarray, layout: str, is_target: bool) -> np.ndarray:
-    """Reshape image `array` to the backend's expected layout (targets pass through)."""
+    """Reshape image `array` to the backend's expected layout
+    (targets pass through).
+    """
     if is_target:
         return array
     if layout == "chw":

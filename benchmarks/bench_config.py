@@ -39,12 +39,14 @@ import yaml
 __all__ = ["KNOWN_CLASSES", "load_preset", "render_shell"]
 
 
-KNOWN_CLASSES = frozenset({
-    "BackendsBenchmark",
-    "RegularizersBenchmark",
-    "ScaffoldBenchmark",
-    "SecAggBenchmark",
-})
+KNOWN_CLASSES = frozenset(
+    {
+        "BackendsBenchmark",
+        "RegularizersBenchmark",
+        "ScaffoldBenchmark",
+        "SecAggBenchmark",
+    }
+)
 
 DEFAULT_YAML_PATH = Path(__file__).resolve().parent / "bench.yaml"
 
@@ -81,9 +83,7 @@ def load_preset(
             _die(f"{yaml_path}: no preset requested and no 'default_preset'")
     if preset_name not in presets:
         available = ", ".join(sorted(presets))
-        _die(
-            f"unknown preset '{preset_name}'. Available: {available}"
-        )
+        _die(f"unknown preset '{preset_name}'. Available: {available}")
     preset = presets[preset_name]
     if not isinstance(preset, dict):
         _die(f"preset '{preset_name}' must be a mapping")
@@ -116,9 +116,7 @@ def load_preset(
     if not isinstance(asv_args, list) or not all(
         isinstance(v, str) for v in asv_args
     ):
-        _die(
-            f"preset '{preset_name}': 'asv_args' must be a list of strings"
-        )
+        _die(f"preset '{preset_name}': 'asv_args' must be a list of strings")
 
     return {
         "name": preset_name,
@@ -176,7 +174,9 @@ def main(argv: List[str]) -> int:
     args = parser.parse_args(argv)
     override: List[str] | None = None
     if args.classes.strip():
-        override = [name.strip() for name in args.classes.split(",") if name.strip()]
+        override = [
+            name.strip() for name in args.classes.split(",") if name.strip()
+        ]
     preset = load_preset(args.yaml, args.preset, override)
     sys.stdout.write(render_shell(preset))
     return 0
