@@ -105,7 +105,7 @@ in whatever environment is active and does not manage a venv of its own.
 ## The workload
 
 The `benchmarks/workload/` subpackage holds the "what runs inside a
-benchmark cell" half of the suite. Where `__init__.py` declares the ASV
+benchmark cell" half of the suite. Where `suite.py` declares the ASV
 cells and the metrics taken around them, `workload/` produces a runnable
 FL experiment from a set of toggles and runs it.
 
@@ -145,6 +145,7 @@ profilers are wired in:
 
 both sharing the same entry point.
 
+Files description :   
 | File | Role |
 |---|---|
 | `tools/profile_entry.py` | An argparse-driven target that runs a single concrete configuration once, calling `build_benchmark` and `run_benchmark` directly and thereby bypassing ASV's sweep harness. Profiler-agnostic: both wrappers below target it. |
@@ -163,15 +164,22 @@ or develop pushes;
 it is triggered only on release-tag pushes and on manual "Run pipeline"
 runs from the GitLab UI that set the `BENCH_BOOTSTRAP=true` variable.
 
-The job operates in one of two modes. In regression-check mode, run on every
+The job operates in one of two modes :  
+- Regression-check mode
+- Bootstrap mode
+
+In regression-check mode, run on every
 release-tag push, it compares the new release against the previous one
-and fails the pipeline on a regression. In bootstrap mode, triggered by
+and fails the pipeline on a regression.  
+
+In bootstrap mode, triggered by
 running a pipeline from the GitLab UI with the `BENCH_BOOTSTRAP=true`
 variable set, it seeds the initial benchmark history across the list of
 releases given in `BOOTSTRAP_TAGS`; this is meant to be run once at
 setup, and again whenever the history needs widening. A plain "Run
 pipeline" without `BENCH_BOOTSTRAP` does not start the bench job.
 
+**Details on history artifacts :**  
 Benchmark history is kept as a cumulative artifact rather than committed
 to the repository. The bench job uploads `.asv/results/` and
 `.asv/html/` as a single artifact (configured with `expire_in: never`
@@ -216,7 +224,7 @@ needs `asv` installed:
 ```bash
 unzip -q artifacts.zip -d bench-artifact
 cd bench-artifact/benchmarks
-asv preview                          # serves http://localhost:8080
+asv preview  # serves http://localhost:8080
 ```
 
 Browse to the regressed benchmark's timeline and confirm where it jumps.
@@ -236,7 +244,7 @@ torch/tensorflow workload deps come separately, in step 4.
 ```bash
 uv venv --python 3.11 --seed ~/.venvs/declearn-bench   # name is yours to pick
 source ~/.venvs/declearn-bench/bin/activate
-pip install -e '.[bench]'    # asv, pyyaml, py-spy, memray
+pip install -e '.[bench]'  # asv, pyyaml, py-spy, memray
 ```
 
 ### 4. Cluster: profile both refs
@@ -278,7 +286,7 @@ Then the slow ref:
 
 ```bash
 cd ~/declearn
-git checkout <new_ref>             # the slow ref, e.g. v2.8.0
+git checkout <new_ref>  # the slow ref, e.g. v2.8.0
 cd benchmarks
 OUTPUT=profiles/slow-torch.json ./tools/pyspy.sh --backend torch --n-clients 5
 ```
@@ -404,10 +412,13 @@ three layers available, ordered from the cheapest to the most general:
 | Custom driver on raw declearn APIs | Config is outside `build_benchmark` entirely. | Build the server and clients from `declearn.main` yourself; template: `workload/runner.py` (keep one asyncio loop so the profiler sees one process) |
 
 Either way the driver is just a Python script, so you profile it by
-wrapping that script with the chosen profiler: `py-spy record -o out.json
---format speedscope -- python driver.py` for CPU/time, or `memray run -o
+wrapping that script with the chosen profiler:  
+- `py-spy record -o out.json
+--format speedscope -- python driver.py` for CPU/time
+
+- `memray run -o
 out.bin -- python driver.py` (then `memray flamegraph out.bin`) for
-memory.
+memory
 
 ## Extending the suite
 
