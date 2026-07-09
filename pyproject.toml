@@ -85,6 +85,16 @@ websockets = [
     "websockets >= 10.1, < 14.0",
 ]
 
+# Benchmark + profiling tooling
+# Note: The workload itself additionally needs other extras
+# (See docs/devs-guide/benchmarks.md).
+bench = [
+    "asv",
+    "pyyaml",
+    "py-spy",
+    "memray",
+]
+
 # Examples-related dependencies.
 g5k = [
     "enoslib ~= 10.5",

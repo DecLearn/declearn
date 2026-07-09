@@ -1,0 +1,54 @@
+#!/bin/bash
+# Thin ASV wrapper driven by bench.yaml.
+#
+# Resolves the active preset via bench_config.py into:
+#   - DECLEARN_BENCH_N_CLIENTS (env var read by suite.py at discovery time)
+#   - -b <regex> filters per class
+#   - preset-level asv flags (e.g. --quick, --show-stderr)
+# ...then execs `asv <subcommand> [args...] <filters> <flags>` so the caller
+# decides whether to run `run`, `continuous`, `compare`, etc. Version
+# checkout is handled natively by ASV (repo is the parent declearn repo),
+# so no pip-install dance is needed.
+#
+# Usage:
+#   ./run_benchmarks.sh  # asv run on current HEAD
+#   ./run_benchmarks.sh continuous v2.7.0 v2.8.0 --factor 1.5
+#   PRESET=full ./run_benchmarks.sh run ALL --skip-existing-commits
+#   CLASSES=ScaffoldBenchmark PRESET=full ./run_benchmarks.sh continuous v2.7.0 HEAD
+#
+# Env vars:
+#   PRESET        (default: bench.yaml's default_preset)
+#   CLASSES       (optional CSV; overrides the preset's class list)
+
+set -euo pipefail
+cd "$(dirname "$0")"
+
+PRESET="${PRESET:-}"
+CLASSES="${CLASSES:-}"
+
+# Run in whatever environment is active. Like the profilers, this script
+# doesn't manage a venv: create/activate one and install the bench extra
+# (`pip install -e '.[bench]'`) beforehand — the name is yours to choose.
+if ! command -v asv >/dev/null 2>&1; then
+    echo "ERROR: asv not on PATH. Activate your bench venv and install the bench extra: pip install -e '.[bench]'" >&2
+    exit 1
+fi
+
+eval "$(python bench_config.py ${PRESET:+--preset "$PRESET"} ${CLASSES:+--classes "$CLASSES"})"
+echo "=== bench preset: ${BENCH_PRESET} (n_clients=${DECLEARN_BENCH_N_CLIENTS})${CLASSES:+, classes overridden: ${CLASSES}} ==="
+
+# Force-loud GPU: a silent CPU fallback would corrupt the comparison.
+export DECLEARN_BENCH_FORCE_GPU="${DECLEARN_BENCH_FORCE_GPU:-1}"
+
+# Ensure ASV has machine metadata. On a fresh runner (a clean CI image or a
+# new cluster node) ~/.asv-machine.json does not exist yet, and in that case
+# `asv run` / `asv continuous` abort non-interactively with "No information
+# stored about machine ...". `asv machine --yes` writes platform defaults and
+# is idempotent, so running it on every invocation is safe.
+asv machine --yes >/dev/null
+
+SUBCMD="${1:-run}"
+# If subcommand was passed: remove `$SUBCMD` from `$@` (so that it will only contains actual arguments).
+shift || true
+
+exec asv "$SUBCMD" "${ASV_BENCH_FILTERS[@]}" "${ASV_EXTRA_ARGS[@]}" "$@"

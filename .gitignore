@@ -31,3 +31,8 @@ docs/api-reference/*/
 docs/api-reference/SUMMARY.md
 docs/api-reference/typing.md
 docs/api-reference/version.md
+# Benchmark suite (benchmarks/).
+benchmarks/data/
+benchmarks/.asv/
+# Profiler outputs (py-spy / memray); ignore at any depth, incl. repo root.
+profiles/
