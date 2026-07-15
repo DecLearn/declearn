@@ -54,7 +54,6 @@ all = [
     "flax ~= 0.12",
     "grpcio >= 1.78",
     "jax[cpu] ~= 0.8",
-    "keras < 3.15",
     "opacus ~= 1.4",
     "protobuf >= 3.19",
     "tensorflow ~= 2.12",
@@ -78,7 +77,6 @@ haiku = [
 ]
 tensorflow = [
     "tensorflow ~= 2.12",
-    "keras < 3.15",
     # Keras 3.15 introduces new non-deterministic properties in model
     # serialization that are not handled by Declearn for now.
 ]

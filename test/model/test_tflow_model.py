@@ -17,11 +17,16 @@
 
 """Unit tests for TensorflowModel."""
 
+import copy
 import os
 import warnings
 from typing import List, Literal
 
 import pytest
+
+from declearn.model.api import Model
+from declearn.test_utils import assert_dict_equal
+from declearn.utils.serialize import msgpack_deserialize, msgpack_serialize
 
 try:
     with warnings.catch_warnings():  # silence tensorflow import-time warnings
@@ -175,6 +180,61 @@ if tf.config.list_logical_devices("GPU"):
 @pytest.mark.parametrize("kind", ["MLP", "MLP-tune", "RNN", "CNN"])
 class TestTensorflowModel(ModelTestSuite):
     """Unit tests for declearn.model.tensorflow.TensorflowModel."""
+
+    @pytest.mark.parametrize(
+        "allow_bin", [False, True], ids=["forbid_bin", "allow_bin"]
+    )
+    def test_from_config(
+        self,
+        test_case: ModelTestCase,
+        allow_bin: bool,
+    ) -> None:
+        """Check that the model can be instantiated from its config.
+
+        Implementation Note
+        -------------------
+        We override this `ModelTestSuite` method because for
+        `TensorflowModel` specifically, we need to reset the Keras session
+        (via `clear_session`) between two model instantiations.
+        Otherwise, auto-naming mechanisms from Keras would give distinct names
+        to identical model subcomponents, which would result in non-identical
+        configurations.
+
+        For details, see : https://github.com/keras-team/keras/issues/23256
+        """
+        tf_keras.utils.clear_session()
+        model = test_case.model
+        config = model.get_config(allow_bin=allow_bin)
+
+        tf_keras.utils.clear_session()
+        other = Model.from_config(copy.deepcopy(config), allow_bin=allow_bin)
+        model_config = model.get_config(allow_bin=allow_bin)
+        other_config = other.get_config(allow_bin=allow_bin)
+
+        assert model_config == other_config
+        assert model.device_policy == other.device_policy
+
+    def test_msgpack_serialization(
+        self,
+        test_case: ModelTestCase,
+    ) -> None:
+        """Test that MessagePack-serialization of a Model works properly.
+
+        Implementation Note
+        -------------------
+        We override this `ModelTestSuite` method for the same reasons as in
+        `TestTensorflowModel.test_from_config`. See this method docstring
+        for details.
+        """
+        tf_keras.utils.clear_session()
+        model = test_case.model
+        dump = msgpack_serialize(model)
+
+        tf_keras.utils.clear_session()
+        model_bis = msgpack_deserialize(dump)
+
+        assert isinstance(model_bis, type(model))
+        assert_dict_equal(model.get_config(), model_bis.get_config())
 
     def test_get_frozen_weights(
         self,
