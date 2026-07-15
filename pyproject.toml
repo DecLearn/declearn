@@ -77,8 +77,6 @@ haiku = [
 ]
 tensorflow = [
     "tensorflow ~= 2.12",
-    # Keras 3.15 introduces new non-deterministic properties in model
-    # serialization that are not handled by Declearn for now.
 ]
 torch = [
     "torch ~= 2.0",
