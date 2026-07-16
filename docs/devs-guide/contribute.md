@@ -31,6 +31,7 @@ transit via GitLab to be integrated. If you want an account for the Inria
 GitLab, feel free to let us know (as it is unfortunately not yet possible to
 register without an invitation).
 
+
 ## Git branching strategy
 
 - The 'develop' branch is the main one and should receive all finalized changes
@@ -42,11 +43,70 @@ register without an invitation).
   these branches enable cherry-picking commits from main to build up an alpha,
   beta, release-candidate and eventually stable `X.Y.0` version to release.
 - Feature branches should be created at will to develop features, enhancements,
-  or even hotfixes that will later be merged into 'main' and eventually into one
-  or multiple release branches.
-- It is legit to write up poc branches, as well as to split the development of a
-  feature into multiple branches that will incrementally be merged into an
+  or even hotfixes that will later be merged into 'main' and eventually into
+  one or multiple release branches.
+- It is legit to write up poc branches, as well as to split the development of
+  a feature into multiple branches that will incrementally be merged into an
   intermediate feature branch that will eventually be merged into 'main'.
+- Git branch naming: branches prefixed by their "category" followed by a `/`
+  are highly recommended to enhance clarity in the development process.
+  For instance, you may use the following categories as prefix:
+  - `feat/` for a new feature
+  - `fix/` for a bug fix
+  - `refactor/` for refactoring
+  - `docs/` for documentation
+  - `test/` for test addition
+  - `ex/` for an example addition or update
+  - `poc/` for a proof of concept
+  - `build/` for updating build configuration, development tools or other
+    changes irrelevant to the user
+
+  Example of encouraged branch name : `feat/client_sampling`
+
+## Git commit naming
+We strongly encourage to use the following format for git commit names:
+```
+TYPE(SCOPE): VERY_SHORT_DESCRIPTION
+
+OPTIONAL_ADDITIONAL_DESCRIPTION
+```
+
+**TYPE**: its value describes the type of commit you make, it should belong to the
+following list:
+- `build` for updating build configuration, dependencies, dev scripts or tools.
+- `chore` for miscellaneous tasks irrelevant to the user.
+- `ci` for updating the continuous integration / continuous development tools.
+- `docs` for changes to the documentation.
+- `feat` for adding or updating a feature (or an example) for the user.
+- `fix` for a bug fix for the user.
+- `perf` for performance improvements.
+- `refactor` for refactoring production code, e.g. variable renaming.
+- `revert` for reverting some previous changes.
+- `style` for code formatting changes, e.g. comma addition, line break, etc.
+- `test` for adding missing tests or refactoring existing tests.
+
+**SCOPE**: its value describes the scope of your commit (e.g. which toplevel 
+feature is concerned). The only constraints for this value: it should be as
+short as possible, while being readable. If the scope is the whole project,
+you can use `root` as the scope value.
+
+**VERY_SHORT_DESCRIPTION**: shortly describes your commit in one line, as short
+as possible.
+
+**OPTIONAL_ADDITIONAL_DESCRIPTION**: optional detailed
+description, follows a blank line, may be composed of bullet points, or not.
+
+Examples of git commit messages :
+```
+feat(client_sampling): add uniform sampler
+
+- add `UniformClientSampler` class
+- add configuration to instantiate this sampler
+```
+
+```
+build(root): edit update_version script
+```
 
 ## Coding rules
 
@@ -59,7 +119,7 @@ The **coding rules** are fairly simple:
   of which are unmodified). The formatting rules for docstrings are detailed in
   the [docstrings style guide](./docs-style.md).
 - Type-hint the code, abiding by [PEP 484](https://peps.python.org/pep-0484/);
-  note that the use of Any and of `type: ignore` comments is authorized, but
+  note that the use of `Any` and of `type: ignore` comments is authorized, but
   should remain parsimonious.
 - Lint your code with [mypy](http://mypy-lang.org/) (for static type checking)
   and [ruff](https://github.com/astral-sh/ruff) (for more general linting); do

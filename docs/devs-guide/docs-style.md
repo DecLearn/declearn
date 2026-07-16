@@ -119,7 +119,7 @@ that are already expensive as to how things work in general.
 For API-defining (abstract) base classes, an overview of the API should
 be provided, optionally structured into subsections.
 
-## "Attributes" section
+### "Attributes" section
 
 An "Attributes" section should detail the public attributes of class instances.
 
@@ -138,7 +138,7 @@ Historically, these have not been used in declearn half as much as they
 should. Efforts towards adding them are undergoing, and new code should
 not neglect this section.
 
-## Additional sections
+### Additional sections
 
 Optionally, one or more sections may be used to detail methods.
 
@@ -169,7 +169,7 @@ is to use the following three sections:
 - "Inheritance": information related to types-registration mechanisms
   and over inheritance-related details.
 
-## Constants and class attributes
+### Constants and class attributes
 
 For constant variables and class attributes, you may optionally write up a
 docstring that will be rendered by mkdocs (but have no effect in python),
@@ -188,6 +188,24 @@ while those that do not will not be rendered. Hence it should be used for
 things that need to be exposed to the docs-consulting users; typically,
 abstract (or base-class-level) class attributes, or type-hinting aliases
 that are commonly used in some public function or method signatures.
+
+## Dataclasses
+
+The main docstring of a public dataclass should follow the same rules as a
+public class, except for the "Attributes" section that should be replaced by a
+"Fields" section. Documenting all fields in the dataclass docstring should be
+preferred over documenting each field locally in their own docstring (on the
+line(s) that follow(s) the declaration).
+
+Example:
+```
+Fields
+------
+toto:
+    Description of the toto dataclass field.
+babar:
+    Description of the babar dataclass field.
+```
 
 ## Public modules' main docstring
 
@@ -311,3 +329,17 @@ explain the formula and/or provide with some pseudo-code, and then add the
 LaTeX formulas as a dedicated section or block (e.g. as an annex), so that
 they can be skipped when reading the raw docstring without missing other
 information than the formulas themselves.
+
+### Deprecation
+
+If a function, an argument, or any symbol is deprecated and will be removed in
+a version `X.Y`. You should:
+- Add the deprecation information in the concerned docstring.
+- Add a warning message in the code, with `warnings.warn(...)`, that indicates
+the deprecation, in which version the symbol will be removed, and the new
+recommended way of obtaining the same functionality.
+- Add a TODO comment for the devs to easily apply the removal of the deprecated
+feature when the concerned version will be released. This comment should match
+this format: `# TODO for X.Y: ...` where `X.Y` is replaced by the removal
+version. Comments matching this format should be checked before each new
+version release.
