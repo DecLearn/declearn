@@ -134,7 +134,20 @@ def aggregate_secagg_messages(
 
 @dataclasses.dataclass
 class SecaggTrainReply(SecaggMessage[TrainReply]):
-    """SecAgg-wrapped 'TrainReply' message."""
+    """SecAgg-wrapped 'TrainReply' message.
+
+    Fields
+    ------
+    n_steps:
+        Number of training steps completed.
+    t_spent:
+        Time spent running training steps (in seconds).
+    updates:
+        Client model secure-aggregated updates to transfer to the server.
+    aux_var:
+        Dictionary mapping auxiliary variable names to the corresponding
+        `SecureAggregate[AuxVar]` instance, to send back to the server.
+    """
 
     typekey = "secagg_train_reply"
 
@@ -202,7 +215,20 @@ class SecaggTrainReply(SecaggMessage[TrainReply]):
 
 @dataclasses.dataclass
 class SecaggEvaluationReply(SecaggMessage[EvaluationReply]):
-    """SecAgg-wrapped 'EvaluationReply' message."""
+    """SecAgg-wrapped 'EvaluationReply' message.
+
+    Fields
+    ------
+    loss:
+        Evaluation loss value.
+    n_steps:
+        Number of evaluation steps completed.
+    t_spent:
+        Time spent running evaluation steps (in seconds).
+    metrics:
+        Secure-aggregated computed metrics, as partial values that may be
+        shared with other agents to federatively compute final values.
+    """
 
     typekey = "secagg_eval_reply"
 

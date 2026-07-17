@@ -106,8 +106,13 @@ class FairnessReply(Message):
     and/or loss over group-wise samples (from which fairness is derived).
 
     This information is generically stored as a list of `values`, the
-    mearning and structure of which is left up to algorithm-specific
+    meaning and structure of which is left up to algorithm-specific
     controllers.
+
+    Fields
+    ------
+    values:
+        List of values whose meaning and strucutre is algorithm-specific.
     """
 
     typekey = "fairness-reply"

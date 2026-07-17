@@ -33,7 +33,25 @@ __all__ = [
 
 @dataclasses.dataclass
 class AurocState(MetricState):
-    """Dataclass for Binary AUROC metric states with fixed thresholds."""
+    """Dataclass for Binary AUROC metric states with fixed thresholds.
+
+    Fields
+    ------
+    tpos:
+        1-d array of sums of (optionally sample-weighted) true positives,
+        computed using multiple thresholds.
+    tneg:
+        1-d array of sums of (optionally sample-weighted) true negatives,
+        computed using multiple thresholds.
+    fpos:
+        1-d array of sums of (optionally sample-weighted) false positives,
+        computed using multiple thresholds.
+    fneg:
+        1-d array of sums of (optionally sample-weighted) false negatives,
+        computed using multiple thresholds.
+    thresh:
+        1-d array of thresholds used to compute previous fields.
+    """
 
     tpos: np.ndarray
     tneg: np.ndarray
@@ -64,7 +82,23 @@ class AurocState(MetricState):
 
 @dataclasses.dataclass
 class AurocStateUnbound(AurocState):
-    """Dataclass for Binary AUROC metric states with adaptive thresholds."""
+    """Dataclass for Binary AUROC metric states with adaptive thresholds.
+
+    tpos:
+        1-d array of sums of (optionally sample-weighted) true positives,
+        computed using multiple thresholds.
+    tneg:
+        1-d array of sums of (optionally sample-weighted) true negatives,
+        computed using multiple thresholds.
+    fpos:
+        1-d array of sums of (optionally sample-weighted) false positives,
+        computed using multiple thresholds.
+    fneg:
+        1-d array of sums of (optionally sample-weighted) false negatives,
+        computed using multiple thresholds.
+    thresh:
+        1-d array of thresholds used to compute previous fields.
+    """
 
     tpos: np.ndarray
     tneg: np.ndarray

@@ -119,21 +119,42 @@ class ActionMessage(metaclass=abc.ABCMeta):  # noqa: B024
 
 @dataclasses.dataclass
 class Accept(ActionMessage):
-    """Server action message to accept a client."""
+    """Server action message to accept a client.
+
+    Fields
+    ------
+    flag:
+        String communication flag that specifies status or any information
+        coming with this `Accept` message.
+    """
 
     flag: str
 
 
 @dataclasses.dataclass
 class Drop(ActionMessage):
-    """Client action message to disconnect from a server."""
+    """Client action message to disconnect from a server.
+
+    Fields
+    ------
+    reason:
+        Optional string that gives the reason behind the drop.
+    """
 
     reason: Optional[str] = None
 
 
 @dataclasses.dataclass
 class Join(ActionMessage):
-    """Client action message to request joining a server."""
+    """Client action message to request joining a server.
+
+    Fields
+    ------
+    name:
+        Requesting client name.
+    version:
+        Declearn version used by the requesting client.
+    """
 
     name: str
     version: str
@@ -146,24 +167,42 @@ class Ping(ActionMessage):
 
 @dataclasses.dataclass
 class Recv(ActionMessage):
-    """Client action message to get content from the server."""
+    """Client action message to get content from the server.
+
+    Fields
+    ------
+    timeout:
+        Optional timeout value for receiving content from the server.
+    """
 
     timeout: Optional[float] = None
 
 
 @dataclasses.dataclass
 class Reject(ActionMessage):
-    """Server action message to reject a client's message."""
+    """Server action message to reject a client's message.
+
+    Fields
+    ------
+    flag:
+        String communication flag that specifies status or any information
+        coming with this `Reject` message.
+    """
 
     flag: str
 
 
 @dataclasses.dataclass
 class Send(ActionMessage):
-    """Action message to post content to or receive content from the server."""
+    """Action message to post content to or receive content from the server.
+
+    Fields
+    ------
+    content:
+        Conveyed binary-serialized content.
+    """
 
     content: bytes
-    """Conveyed binary-serialized content."""
 
 
 _ACTION_CLASSES = [

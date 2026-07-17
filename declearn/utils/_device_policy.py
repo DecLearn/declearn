@@ -49,8 +49,8 @@ class DevicePolicy:
     getter and setter functions: `declearn.utils.get_device_policy` and
     `declearn.utils.set_device_policy`.
 
-    Attributes
-    ----------
+    Fields
+    ------
     gpu: bool
         Whether to use a GPU device rather than the CPU one to back data
         and computations. If no GPU is available, use CPU with a warning.

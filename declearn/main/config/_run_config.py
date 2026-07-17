@@ -54,24 +54,24 @@ class FLRunConfig(TomlConfig):
 
     Fields
     ------
-    - rounds: int
+    rounds: int
         Maximum number of training and validation rounds to perform.
-    - register: RegisterConfig
+    register: RegisterConfig
         Parameters for clients' registration (min and/or max number
         of clients to expect, optional max duration of the process).
-    - training: TrainingConfig
+    training: TrainingConfig
         Parameters for training rounds, including effort constraints
         and data-batching instructions.
-    - evaluate: EvaluateConfig
+    evaluate: EvaluateConfig
         Parameters for validation rounds, similar to training ones.
-    - fairness: FairnessConfig or None
+    fairness: FairnessConfig or None
         Parameters for fairness evaluation rounds.
         Only used when an algorithm to enforce fairness is set up,
         as part of the process's federated optimization configuration.
-    - privacy: PrivacyConfig or None
+    privacy: PrivacyConfig or None
         Optional parameters to set up local differential privacy,
         by having clients use the DP-SGD algorithm for training.
-    - early_stop: EarlyStopConfig or None
+    early_stop: EarlyStopConfig or None
         Optional parameters to set up an EarlyStopping criterion, to
         be leveraged so as to interrupt the federated learning process
         based on the tracking of a minimized quantity (e.g. model loss).

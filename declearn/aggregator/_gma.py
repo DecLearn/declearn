@@ -31,7 +31,14 @@ __all__ = [
 
 @dataclasses.dataclass
 class GMAModelUpdates(ModelUpdates):
-    """Dataclass for GradientMaskedAveraging model updates."""
+    """Dataclass for GradientMaskedAveraging model updates.
+
+    Fields
+    ------
+    up_sign:
+        Signed numerical update of model parameters produced locally.
+        None if not computed yet (with the signs).
+    """
 
     up_sign: Optional[Vector] = None
 

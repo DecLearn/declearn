@@ -58,6 +58,12 @@ class Message(metaclass=ABCMeta):
     (e.g. in testing contexts, or when defining an abstract subclass)
     by passing the `register=False` keyword argument at inheritance;
     e.g. `class MyMsg(Message, register=False):`.
+
+    Fields
+    ------
+    typekey:
+        Class variable, string value that identifies the `Message` subclass.
+        Used for type registration.
     """
 
     typekey: ClassVar[str]

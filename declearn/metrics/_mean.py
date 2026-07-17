@@ -36,7 +36,15 @@ __all__ = [
 
 @dataclasses.dataclass
 class MeanState(MetricState):
-    """Generic 'MetricState' for average-based scalar metrics."""
+    """Generic 'MetricState' for average-based scalar metrics.
+
+    Fields
+    ------
+    num_sum:
+        Numerical sum of (optionally sample-weighted) values.
+    divisor:
+        Divisor, sum of (optionally sample-weighted) divisors.
+    """
 
     num_sum: float = 0.0
     divisor: float = 0.0

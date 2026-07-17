@@ -46,6 +46,15 @@ class SecaggSetupQuery(Message, register=False, metaclass=abc.ABCMeta):
     This message should be subclassed into SecAgg-protocol-specific
     setup requests. By default, it contains server-set quantization
     hyper-parameters.
+
+    Fields
+    ------
+    bitsize:
+        Quantization hyper-parameter, defining the range of output
+        quantized integers.
+    clipval:
+        Quantization hyper-parameter, defining a maximum absolute
+        value for floating point numbers being (un)quantized.
     """
 
     bitsize: int
@@ -90,6 +99,9 @@ class SecaggConfigClient(
             - (opt.) `password`: optional password to decrypt the
               private key file; if required, a user prompt may be
               used rather than passing the password in clear.
+    secagg_type:
+        Class variable, string that identifies the `SecaggConfigClient`
+        subclass. Used for type registration.
     """
 
     id_keys: IdentityKeys
@@ -169,6 +181,9 @@ class SecaggConfigServer(
     clipval:
         Quantization hyper-parameter, defining a maximum absolute
         value for floating point numbers being (un)quantized.
+    secagg_type:
+        Class variable, string that identifies the `SecaggConfigServer`
+        subclass. Used for type registration.
     """
 
     bitsize: int

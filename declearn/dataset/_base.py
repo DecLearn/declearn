@@ -32,7 +32,19 @@ __all__ = [
 
 @dataclasses.dataclass
 class DataSpecs:
-    """Dataclass to wrap a dataset's metadata."""
+    """Dataclass to wrap a dataset's metadata.
+
+    Fields
+    ------
+    n_samples:
+        Number of samples in the dataset.
+    features_shape:
+        Optional shape of the dataset features.
+    classes:
+        Optional set of target classes (only for classification dataset).
+    data_type:
+        Optional data type in the dataset, as a string.
+    """
 
     n_samples: int
     features_shape: Optional[
