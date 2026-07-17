@@ -35,7 +35,19 @@ __all__ = [
 
 @dataclasses.dataclass
 class BinaryConfmat(MetricState):
-    """Binary confusion matrix 'MetricState'."""
+    """Binary confusion matrix 'MetricState'.
+
+    Fields
+    ------
+    tpos:
+        Sum of (optionally sample-weighted) true positives.
+    tneg:
+        Sum of (optionally sample-weighted) true negatives.
+    fpos:
+        Sum of (optionally sample-weighted) false positives.
+    fneg:
+        Sum of (optionally sample-weighted) false negatives.
+    """
 
     tpos: float = 0.0
     tneg: float = 0.0
@@ -136,7 +148,13 @@ class BinaryAccuracyPrecisionRecall(Metric[BinaryConfmat]):
 
 @dataclasses.dataclass
 class ClassifConfmat(MetricState):
-    """Multiclass confusion matrix 'MetricState'."""
+    """Multiclass confusion matrix 'MetricState'.
+
+    Fields
+    ------
+    confmat:
+        Multiclass confusion matrix values.
+    """
 
     confmat: np.ndarray
 

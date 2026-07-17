@@ -36,6 +36,13 @@ class CIndexState(MetricState):
     We store in this state the weighted sum of c-indices in
     local_cindex_sum, and the number of samples in n_samples
     to compute a weighted average of the c-index.
+
+    Fields
+    ------
+    local_cindex_sum:
+        Weighted sum of c-indices.
+    n_samples:
+        Number of samples.
     """
 
     local_cindex_sum: float

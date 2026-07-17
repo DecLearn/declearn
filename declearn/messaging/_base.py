@@ -47,7 +47,13 @@ __all__ = [
 
 @dataclasses.dataclass
 class CancelTraining(Message):
-    """Empty message used to ping or signal message reception."""
+    """Empty message used to ping or signal message reception.
+
+    Fields
+    ------
+    reason:
+        String that gives the reason behind the training cancel.
+    """
 
     typekey = "cancel"
 
@@ -56,7 +62,13 @@ class CancelTraining(Message):
 
 @dataclasses.dataclass
 class Error(Message):
-    """Error message container, used to convey exceptions between nodes."""
+    """Error message container, used to convey exceptions between nodes.
+
+    Fields
+    ------
+    message:
+        Conveyed error message string.
+    """
 
     typekey = "error"
 
@@ -65,7 +77,23 @@ class Error(Message):
 
 @dataclasses.dataclass
 class EvaluationRequest(Message):
-    """Server-emitted request to participate in an evaluation round."""
+    """Server-emitted request to participate in an evaluation round.
+
+    Fields
+    ------
+    round_i:
+        Index of the evaluation round.
+    weights:
+        Model weights.
+    batches:
+        Dictionary mapping batches-generation parameters (in evaluation)
+        to their value.
+    n_steps:
+        Maximum number of local evaluation steps to perform.
+    timeout:
+        Time (in seconds) beyond which to interrupt evaluation,
+        regardless of the actual number of steps taken (> 0).
+    """
 
     typekey = "eval_request"
 
@@ -78,7 +106,20 @@ class EvaluationRequest(Message):
 
 @dataclasses.dataclass
 class EvaluationReply(Message):
-    """Client-emitted results from a local evaluation round."""
+    """Client-emitted results from a local evaluation round.
+
+    Fields
+    ------
+    loss:
+        Evaluation loss value.
+    n_steps:
+        Number of evaluation steps completed.
+    t_spent:
+        Time spent running evaluation steps (in seconds).
+    metrics:
+        Computed metrics, as partial values that may be shared with other
+        agents to federatively compute final values.
+    """
 
     typekey = "eval_reply"
 
@@ -98,7 +139,15 @@ class EvaluationReply(Message):
 
 @dataclasses.dataclass
 class GenericMessage(Message):
-    """Generic message format, with action/params pair."""
+    """Generic message format, with action/params pair.
+
+    Fields
+    ------
+    action:
+        String that indicates the action to perform.
+    params:
+        Key-value parameters conveyed by the generic message.
+    """
 
     typekey = "generic"
 
@@ -108,7 +157,26 @@ class GenericMessage(Message):
 
 @dataclasses.dataclass
 class InitRequest(Message):
-    """Server-emitted request to initialize local model and optimizer."""
+    """Server-emitted request to initialize local model and optimizer.
+
+    Fields
+    ------
+    model:
+        Model initialized by the server.
+    optim:
+        Client optimizer initialized by the server, transfered to clients.
+    aggrg:
+        Aggregator initialized by the server.
+    metrics:
+        List of metric-like items (`MetricInputType`) involved in the federated
+        process.
+    dpsgd:
+        True if privacy (through DP-SGD) is enabled in the federated process.
+    secagg:
+        True if secure aggregation is enabled in the federated process.
+    fairness:
+        True if fairness is enabled in the federated process.
+    """
 
     typekey = "init_request"
 
@@ -141,7 +209,13 @@ class InitReply(Message):
 
 @dataclasses.dataclass
 class MetadataQuery(Message):
-    """Server-emitted request for metadata on a client's dataset."""
+    """Server-emitted request for metadata on a client's dataset.
+
+    Fields
+    ------
+    fields:
+        List of dataset metadata fields requested to the client.
+    """
 
     typekey = "metadata_query"
 
@@ -150,7 +224,14 @@ class MetadataQuery(Message):
 
 @dataclasses.dataclass
 class MetadataReply(Message):
-    """Client-emitted metadata in response to a server request."""
+    """Client-emitted metadata in response to a server request.
+
+    Fields
+    ------
+    data_info:
+        Dictionary mapping metadata names (fields) to their values, sent back
+        by a client to the server.
+    """
 
     typekey = "metadata_reply"
 
@@ -159,7 +240,32 @@ class MetadataReply(Message):
 
 @dataclasses.dataclass
 class PrivacyRequest(Message):
-    """Server-emitted request to set up local differential privacy."""
+    """Server-emitted request to set up local differential privacy.
+
+    Fields
+    ------
+    budget:
+        Target total privacy budget per client, expressed in terms of
+        (epsilon-delta)-DP over the full training schedule.
+    sclip_norm:
+        Clipping threshold of sample-wise gradients' euclidean norm.
+        This parameter binds the sensitivity of sample-wise gradients.
+    accountant:
+        Accounting mechanism string used to estimate epsilon by Opacus.
+    use_csprng:
+        Whether to use cryptographically-secure pseudo-random numbers
+        (CSPRNG) rather than the default numpy generator.
+    seed:
+        Optional seed to the noise-addition module's RNG.
+    rounds:
+        Maximum number of training and validation rounds to perform.
+    batches:
+        Dictionary mapping batches-generation parameters to their value.
+    n_epoch:
+        Maximum number of local data-processing epochs to perform.
+    n_steps:
+        Maximum number of local data-processing steps to perform.
+    """
 
     # dataclass; pylint: disable=too-many-instance-attributes
 
@@ -187,7 +293,17 @@ class PrivacyReply(Message):
 
 @dataclasses.dataclass
 class StopTraining(Message):
-    """Server-emitted notification that the training process is over."""
+    """Server-emitted notification that the training process is over.
+
+    Fields
+    ------
+    weights:
+        Best global model weights.
+    loss:
+        Best global model loss.
+    rounds:
+        Number of training rounds that occurred in the process.
+    """
 
     typekey = "stop_training"
 
@@ -198,7 +314,28 @@ class StopTraining(Message):
 
 @dataclasses.dataclass
 class TrainRequest(Message):
-    """Server-emitted request to participate in a training round."""
+    """Server-emitted request to participate in a training round.
+
+    Fields
+    ------
+    round_i:
+        Index of the training round.
+    weights:
+        Model weights.
+    aux_var:
+        Dictionary mapping auxiliary variable names to the corresponding
+        `AuxVar` instance.
+    batches:
+        Dictionary mapping batches-generation parameters (in training) to their
+        value.
+    n_epoch:
+        Maximum number of local data-processing epochs to perform.
+    n_steps:
+        Maximum number of local data-processing steps to perform.
+    timeout:
+        Time (in seconds) beyond which to interrupt processing, regardless of
+        the actual number of steps taken (> 0).
+    """
 
     typekey = "train_request"
 
@@ -219,7 +356,22 @@ class TrainRequest(Message):
 
 @dataclasses.dataclass
 class TrainReply(Message):
-    """Client-emitted results from a local training round."""
+    """Client-emitted results from a local training round.
+
+    Fields
+    ------
+    n_epoch:
+        Number of training epochs completed.
+    n_steps:
+        Number of training steps completed.
+    t_spent:
+        Time spent running training steps (in seconds).
+    updates:
+        Client model updates to transfer to the server.
+    aux_var:
+        Dictionary mapping auxiliary variable names to the corresponding
+        `AuxVar` instance, to send back to the server.
+    """
 
     typekey = "train_reply"
 

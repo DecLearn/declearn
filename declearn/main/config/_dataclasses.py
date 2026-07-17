@@ -62,8 +62,8 @@ class TrainingConfig:
     `declearn.dataset.Dataset.generate_batches` and
     `declearn.communication.messaging.TrainRequest`.
 
-    Attributes
-    ----------
+    Fields
+    ------
     batch_size: int
         Number of samples per processed data batch.
     shuffle: bool
@@ -127,8 +127,8 @@ class TrainingConfig:
 class EvaluateConfig(TrainingConfig):
     """Dataclass wrapping parameters for an evaluation round.
 
-    Exclusive attributes
-    --------------------
+    Fields
+    ------
     frequency: int
         Number of training rounds to run between evaluation ones.
         By default, run an evaluation round after each training one.
@@ -169,8 +169,8 @@ class PrivacyConfig:
     doctrings of each accountant. See
     https://github.com/pytorch/opacus/tree/main/opacus/accountants
 
-    Attributes
-    ----------
+    Fields
+    ------
     budget: (float, float)
         Target total privacy budget per client, expressed in terms of
         (epsilon-delta)-DP over the full training schedule.
@@ -242,8 +242,8 @@ class FairnessConfig:
     `declearn.fairness.core.FairnessAccuracyComputer`
     metrics-computation methods.
 
-    Attributes
-    ----------
+    Fields
+    ------
     batch_size: int
         Number of samples per processed data batch.
     frequency: int

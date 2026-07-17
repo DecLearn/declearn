@@ -48,17 +48,17 @@ class FLOptimConfig(TomlConfig):
 
     Fields
     ------
-    - client_opt: Optimizer
+    client_opt: Optimizer
         Optimizer to be used by clients (that each hold a copy)
         so as to conduct the step-wise local model updates.
-    - server_opt: Optimizer, default=Optimizer(lrate=1.0)
+    server_opt: Optimizer, default=Optimizer(lrate=1.0)
         Optimizer to be used by the server so as to conduct a
         round-wise global model update based on the aggregated
         client updates.
-    - aggregator: Aggregator, default=AverageAggregator()
+    aggregator: Aggregator, default=AverageAggregator()
         Client weights aggregator to be used by the server so as
         to conduct the round-wise aggregation of client udpates.
-    - fairness: Fairness or None, default=None
+    fairness: Fairness or None, default=None
         Optional `FairnessControllerServer` instance specifying
         an algorithm to enforce fairness of the trained model.
 

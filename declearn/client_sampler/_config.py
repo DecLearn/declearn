@@ -28,6 +28,15 @@ from declearn.utils import TomlConfig
 class ClientSamplerConfig(TomlConfig):
     """TOML-parsable configuration container implementation for
     `ClientSampler`.
+
+    Fields
+    ------
+    strategy:
+        String typekey that identifies a `ClientSampler` subclass to
+        instantiate.
+    params:
+        Dictionary mapping parameter names to their value, for `ClientSampler`
+        instantiation.
     """
 
     strategy: str

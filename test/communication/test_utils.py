@@ -34,7 +34,13 @@ from declearn.messaging import Error, Message, SerializedMessage
 
 @dataclasses.dataclass
 class SimpleMessage(Message, register=False):  # type: ignore[call-arg]
-    """Stub Message subclass for this module's unit tests."""
+    """Stub Message subclass for this module's unit tests.
+
+    Fields
+    ------
+    content:
+        Message content string.
+    """
 
     typekey = "simple"
 

@@ -72,23 +72,25 @@ class SerialSpec(Generic[T]):
     """Dataclass to wrap a (de)serialization scheme for a type.
 
     This structure is agnostic of the serialization format.
+
+    Fields
+    ------
+    cls:
+        Object type.
+    name:
+        Name used to identify the type in the (de)serialization registry.
+    encoder:
+        Hook function used to encode objects of this type to a primitive
+        serializable representation.
+    decoder:
+        Hook function used to decode serialized data to build an object
+        of the concerned type.
     """
 
     cls: Type[T]
-    """Object type."""
-
     name: str
-    """Name used to identify the type in the (de)serialization registry."""
-
     encoder: Callable[[T], Any]  # cls -> any
-    """Hook function used to encode objects of this type to a primitive
-    serializable representation.
-    """
-
     decoder: Callable[[Any], T]  # any -> cls
-    """Hook function used to decode serialized data to build an object
-    of the concerned type.
-    """
 
 
 def add_serialization_support(  # noqa: PLR0913

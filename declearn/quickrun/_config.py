@@ -34,8 +34,8 @@ __all__ = [
 class ModelConfig(TomlConfig):
     """Dataclass used to provide custom model location and name.
 
-    Attributes
-    ----------
+    Fields
+    ------
     model_file: str or None
         Path to the python file under which the model is declared.
         If None, look for "model.py" parallel to the "config.toml" one.
@@ -52,8 +52,8 @@ class ModelConfig(TomlConfig):
 class DataSourceConfig(TomlConfig):
     """Dataclass associated with the quickrun's `parse_data_folder` function.
 
-    Attributes
-    ----------
+    Fields
+    ------
     data_folder: str
         Absolute path to the to the main folder hosting the data.
     client_names: list or None
@@ -74,8 +74,8 @@ class DataSourceConfig(TomlConfig):
 class ExperimentConfig(TomlConfig):
     """Dataclass providing kwargs to `FederatedServer` and `FederatedClient`.
 
-    Attributes
-    ----------
+    Fields
+    ------
     metrics: MetricSet or None
         Optional MetricSet instance, defining evaluation metrics to compute
         in addition to the model's loss. It may be parsed from a list of

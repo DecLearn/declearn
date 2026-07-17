@@ -32,7 +32,19 @@ __all__ = [
 
 @dataclasses.dataclass
 class R2State(MetricState):
-    """MetricState subclass for RSquared computations."""
+    """MetricState subclass for RSquared computations.
+
+    Fields
+    ------
+    sum_of_squared_errors:
+        Sum of (optionally sample-weighted) squared errors.
+    sum_of_squared_labels:
+        Sum of (optionally sample-weighted) squared labels.
+    sum_of_labels:
+        Sum of (optionally sample-weighted) labels.
+    sum_of_weights:
+        Sum of sample weights.
+    """
 
     sum_of_squared_errors: float = 0.0
     sum_of_squared_labels: float = 0.0
