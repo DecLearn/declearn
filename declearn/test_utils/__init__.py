@@ -36,7 +36,6 @@ from ._assertions import (
     assert_list_equal,
     assert_msgpack_serializable_dict,
 )
-from ._client_sampler import FailClientSampler
 from ._convert import to_numpy
 from ._gen_ssl import generate_ssl_certificates
 from ._imports import make_importable

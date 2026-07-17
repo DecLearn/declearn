@@ -22,6 +22,7 @@ from collections import Counter
 from typing import Dict, Set
 
 import pytest
+from utils import FailClientSampler
 
 from declearn.client_sampler import (
     CompositionClientSampler,
@@ -34,7 +35,6 @@ from declearn.client_sampler import (
 from declearn.client_sampler.criterion import GradientNormCriterion
 from declearn.messaging import TrainReply
 from declearn.model.api import Model
-from declearn.test_utils import FailClientSampler
 
 
 class TestClientSampler:
