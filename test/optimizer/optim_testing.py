@@ -30,8 +30,8 @@ from declearn.test_utils import (
     FrameworkType,
     GradientsTestCase,
     list_available_frameworks,
-    to_numpy,
 )
+from test.testing_utils import to_numpy
 
 Plugin = Union[OptiModule, Regularizer]
 

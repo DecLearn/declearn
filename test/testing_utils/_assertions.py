@@ -23,13 +23,14 @@ from typing import Any, Dict, List, Optional, Tuple, Type, Union
 import numpy as np
 from numpy.testing import assert_array_equal
 
-from declearn.test_utils._convert import to_numpy
 from declearn.utils.serialize import (
     json_deserialize,
     json_serialize,
     msgpack_deserialize,
     msgpack_serialize,
 )
+
+from ._convert import to_numpy
 
 __all__ = [
     "assert_batch_equal",

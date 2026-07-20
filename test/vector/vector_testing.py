@@ -24,11 +24,11 @@ from typing import Any, Callable, ClassVar, Dict, Generic, Type, TypeVar
 import numpy as np
 
 from declearn.model.api import Vector, VectorSpec
-from declearn.test_utils import to_numpy
 from declearn.utils.serialize import msgpack_deserialize, msgpack_serialize
 from test.testing_utils import (
     assert_json_serializable_dict,
     assert_msgpack_serializable_dict,
+    to_numpy,
 )
 
 __all__ = [

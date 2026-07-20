@@ -34,7 +34,6 @@ from declearn.test_utils import (
     FrameworkType,
     GradientsTestCase,
     list_available_frameworks,
-    to_numpy,
 )
 from declearn.utils import (
     Aggregate,
@@ -44,7 +43,7 @@ from declearn.utils.serialize import (
     msgpack_deserialize,
     msgpack_serialize,
 )
-from test.testing_utils import assert_msgpack_serializable_dict
+from test.testing_utils import assert_msgpack_serializable_dict, to_numpy
 
 
 @dataclasses.dataclass

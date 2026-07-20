@@ -23,6 +23,7 @@ __all__ = [
     "assert_json_serializable_dict",
     "assert_list_equal",
     "assert_msgpack_serializable_dict",
+    "to_numpy",
 ]
 
 from ._assertions import (
@@ -32,3 +33,4 @@ from ._assertions import (
     assert_list_equal,
     assert_msgpack_serializable_dict,
 )
+from ._convert import to_numpy

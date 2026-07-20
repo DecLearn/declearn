@@ -24,7 +24,6 @@ import numpy as np
 import pytest
 
 from declearn.model.api import Model, Vector
-from declearn.test_utils import to_numpy
 from declearn.typing import Batch
 from declearn.utils.serialize import (
     msgpack_deserialize,
@@ -33,6 +32,7 @@ from declearn.utils.serialize import (
 from test.testing_utils import (
     assert_dict_equal,
     assert_json_serializable_dict,
+    to_numpy,
 )
 
 VectorT = TypeVar("VectorT", bound=Vector)
