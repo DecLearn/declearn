@@ -25,8 +25,8 @@ import tempfile
 import fire  # type: ignore
 from flamby.datasets.fed_tcga_brca import FedTcgaBrca as TcgaBrcaDataset
 
-from declearn import generate_ssl_certificates
 from declearn.utils import make_importable, run_as_processes
+from declearn.utils.examples import generate_ssl_certificates
 
 # Perform local imports.
 with make_importable(os.path.dirname(__file__)):

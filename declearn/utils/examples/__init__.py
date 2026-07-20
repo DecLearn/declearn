@@ -17,15 +17,25 @@
 
 """Shared utilities used in DecLearn examples.
 
+Argument-parsing utils
+----------------------
 * [setup_client_argparse][declearn.utils.examples.setup_client_argparse]:
     Set up an `ArgumentParser` to be used in a client-side script.
 * [setup_server_argparse][declearn.utils.examples.setup_server_argparse]:
     Set up an `ArgumentParser` to be used in a server-side script.
+
+SSL certificate utils
+---------------------
+* [generate_ssl_certificates]\
+[declearn.utils.examples.generate_ssl_certificates]
+    Generate a self-signed CA and a CA-signed SSL certificate.
 """
 
 __all__ = [
     "setup_client_argparse",
     "setup_server_argparse",
+    "generate_ssl_certificates",
 ]
 
 from ._argparse import setup_client_argparse, setup_server_argparse
+from ._gen_ssl import generate_ssl_certificates

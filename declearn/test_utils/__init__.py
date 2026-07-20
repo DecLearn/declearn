@@ -36,7 +36,6 @@ from ._assertions import (
     assert_msgpack_serializable_dict,
 )
 from ._convert import to_numpy
-from ._gen_ssl import generate_ssl_certificates
 from ._network import (
     MockNetworkClient,
     MockNetworkServer,

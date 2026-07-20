@@ -111,9 +111,9 @@ We then sequentially run the server then the clients on separate terminals.
    Note that in real-life applications, one would most likely use certificates
    certificates signed by a trusted certificate authority instead.
 
-   Alternatively, `declearn.test_utils.generate_ssl_certificates` may be used to
-   generate a self-signed CA and a signed certificate for a given domain name
-   or IP address.  
+   Alternatively, `declearn.utils.examples.generate_ssl_certificates` may be
+   used to generate a self-signed CA and a signed certificate for a given
+   domain name or IP address.  
    To achieve this easily with the provided example script, update 
    `generate_ssl.py` so that it calls the `generate_ssl_certificates` function
    with custom arguments, more precisely :
