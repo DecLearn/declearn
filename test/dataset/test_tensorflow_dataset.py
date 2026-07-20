@@ -34,7 +34,7 @@ except ModuleNotFoundError:
 
 from declearn.dataset import Dataset
 from declearn.dataset.tensorflow import TensorflowDataset
-from declearn.test_utils import make_importable
+from declearn.utils import make_importable
 
 # relative imports from `dataset_testbase`
 with make_importable(os.path.dirname(__file__)):

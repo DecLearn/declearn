@@ -33,7 +33,7 @@ from declearn.secagg.joye_libert import (
 )
 from declearn.secagg.joye_libert.messages import JoyeLibertSecaggSetupQuery
 from declearn.secagg.utils import generate_random_biprime
-from declearn.test_utils import make_importable
+from declearn.utils import make_importable
 
 with make_importable(os.path.dirname(os.path.abspath(__file__))):
     from secagg_setup_testing import SecaggSetupTestCase

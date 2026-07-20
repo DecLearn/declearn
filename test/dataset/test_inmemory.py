@@ -28,7 +28,7 @@ import sklearn.datasets  # type: ignore
 
 from declearn.dataset import InMemoryDataset
 from declearn.dataset.utils import save_data_array
-from declearn.test_utils import make_importable
+from declearn.utils import make_importable
 
 # relative imports from `dataset_testbase.py`
 with make_importable(os.path.dirname(__file__)):

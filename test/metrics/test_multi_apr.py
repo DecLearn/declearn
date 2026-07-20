@@ -23,7 +23,7 @@ import numpy as np
 import pytest
 
 from declearn.metrics import MulticlassAccuracyPrecisionRecall
-from declearn.test_utils import make_importable
+from declearn.utils import make_importable
 
 # relative imports from `metric_testing.py`
 with make_importable(os.path.dirname(__file__)):

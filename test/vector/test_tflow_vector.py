@@ -28,7 +28,7 @@ except ModuleNotFoundError:
 
 from declearn.model.sklearn import NumpyVector
 from declearn.model.tensorflow import TensorflowVector
-from declearn.test_utils import make_importable
+from declearn.utils import make_importable
 
 with make_importable(os.path.dirname(__file__)):
     from vector_testing import VectorFactory, VectorTestSuite

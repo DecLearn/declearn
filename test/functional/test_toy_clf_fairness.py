@@ -45,8 +45,8 @@ from declearn.secagg.utils import IdentityKeys
 from declearn.test_utils import (
     MockNetworkClient,
     MockNetworkServer,
-    make_importable,
 )
+from declearn.utils import make_importable
 
 with make_importable(os.path.dirname(__file__)):
     from test_toy_clf_secagg import setup_masking_idkeys

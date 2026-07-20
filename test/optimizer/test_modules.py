@@ -57,8 +57,8 @@ from declearn.test_utils import (
     GradientsTestCase,
     assert_dict_equal,
     assert_msgpack_serializable_dict,
-    make_importable,
 )
+from declearn.utils import make_importable
 
 # relative imports from `optim_testing.py`
 with make_importable(os.path.dirname(__file__)):

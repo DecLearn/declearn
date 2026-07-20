@@ -23,8 +23,8 @@ from typing import Literal, Optional
 
 import fire  # type: ignore
 
-from declearn.test_utils import generate_ssl_certificates, make_importable
-from declearn.utils import run_as_processes
+from declearn.test_utils import generate_ssl_certificates
+from declearn.utils import make_importable, run_as_processes
 
 # Perform local imports.
 # pylint: disable=wrong-import-position, wrong-import-order

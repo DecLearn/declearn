@@ -36,7 +36,8 @@ from declearn.fairness.fairbatch import (
     FairbatchDataset,
     FairbatchSamplingController,
 )
-from declearn.test_utils import make_importable, setup_mock_network_endpoints
+from declearn.test_utils import setup_mock_network_endpoints
+from declearn.utils import make_importable
 
 with make_importable(os.path.dirname(os.path.abspath(__file__))):
     from fairness_controllers_testing import (

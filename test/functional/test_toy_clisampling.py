@@ -51,8 +51,7 @@ from declearn.main.config import FLOptimConfig, FLRunConfig
 from declearn.main.utils import IncompatibleConfigsError
 from declearn.model.sklearn import SklearnSGDModel
 from declearn.secagg.masking import MaskingSecaggConfigServer
-from declearn.test_utils import make_importable
-from declearn.utils import config_logger
+from declearn.utils import config_logger, make_importable
 
 with make_importable(os.path.dirname(__file__)):
     from test_toy_clf_secagg import generate_toy_dataset

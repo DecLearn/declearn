@@ -27,8 +27,7 @@ from torch.nn import CrossEntropyLoss
 import declearn
 from declearn.metrics import MulticlassAccuracyPrecisionRecall
 from declearn.model.torch import TorchModel
-from declearn.test_utils import make_importable
-from declearn.utils import config_server_loggers
+from declearn.utils import config_server_loggers, make_importable
 
 # Perform local imports.
 with make_importable(os.path.dirname(__file__)):

@@ -27,7 +27,7 @@ from declearn.secagg.masking import (
     MaskingSecaggConfigServer,
 )
 from declearn.secagg.masking.messages import MaskingSecaggSetupQuery
-from declearn.test_utils import make_importable
+from declearn.utils import make_importable
 
 with make_importable(os.path.dirname(os.path.abspath(__file__))):
     from secagg_setup_testing import SecaggSetupTestCase

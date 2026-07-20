@@ -40,7 +40,7 @@ import pytest
 
 from declearn.optimizer import list_optim_regularizers
 from declearn.optimizer.regularizers import Regularizer
-from declearn.test_utils import make_importable
+from declearn.utils import make_importable
 
 # relative imports from `optim_testing.py`
 with make_importable(os.path.dirname(__file__)):

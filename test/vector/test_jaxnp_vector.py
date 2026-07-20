@@ -33,7 +33,7 @@ except ModuleNotFoundError:
 from declearn.model.haiku import JaxNumpyVector
 from declearn.model.haiku.utils import select_device
 from declearn.model.sklearn import NumpyVector
-from declearn.test_utils import make_importable
+from declearn.utils import make_importable
 
 with make_importable(os.path.dirname(__file__)):
     from vector_testing import VectorFactory, VectorTestSuite

@@ -50,11 +50,11 @@ from declearn.quickrun._config import (
     ModelConfig,
 )
 from declearn.quickrun._parser import parse_data_folder
-from declearn.test_utils import make_importable
 from declearn.utils import (
     LOGGING_LEVEL_MAJOR,
     config_client_loggers,
     config_server_loggers,
+    make_importable,
     set_device_policy,
 )
 

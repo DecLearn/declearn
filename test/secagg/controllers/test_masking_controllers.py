@@ -30,7 +30,7 @@ from declearn.secagg.masking import (
     MaskingDecrypter,
     MaskingEncrypter,
 )
-from declearn.test_utils import make_importable
+from declearn.utils import make_importable
 
 with make_importable(os.path.join(os.path.dirname(__file__))):
     from secagg_testing import (

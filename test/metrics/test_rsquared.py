@@ -25,7 +25,7 @@ import pytest
 from sklearn.metrics import mean_squared_error, r2_score  # type: ignore
 
 from declearn.metrics import RSquared
-from declearn.test_utils import make_importable
+from declearn.utils import make_importable
 
 # relative imports from `metric_testing.py` and `test_mae_mse.py`
 with make_importable(os.path.dirname(__file__)):
