@@ -27,6 +27,7 @@ __all__ = [
     "MockNetworkClient",
     "MockNetworkServer",
     "setup_mock_network_endpoints",
+    "build_secagg_controllers",
 ]
 
 from ._assertions import (
@@ -42,3 +43,4 @@ from ._network import (
     MockNetworkServer,
     setup_mock_network_endpoints,
 )
+from ._secagg import build_secagg_controllers
