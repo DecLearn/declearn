@@ -28,7 +28,6 @@ tests and examples. It may also serve to introduce experimental new
 features that may be ported to the stable API in the future.
 """
 
-from ._argparse import setup_client_argparse, setup_server_argparse
 from ._assertions import (
     assert_batch_equal,
     assert_dict_equal,

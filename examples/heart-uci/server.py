@@ -24,8 +24,8 @@ from declearn.communication import NetworkServerConfig
 from declearn.main import FederatedServer
 from declearn.main.config import FLOptimConfig, FLRunConfig
 from declearn.model.sklearn import SklearnSGDModel
-from declearn.test_utils import setup_server_argparse
 from declearn.utils import config_server_loggers
+from declearn.utils.examples import setup_server_argparse
 
 FILEDIR = os.path.dirname(os.path.abspath(__file__))
 
