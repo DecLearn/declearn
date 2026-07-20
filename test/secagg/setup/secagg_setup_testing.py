@@ -39,8 +39,8 @@ from declearn.secagg.api import (
     SecaggConfigServer,
     SecaggSetupQuery,
 )
-from declearn.test_utils import MockNetworkClient, MockNetworkServer
 from declearn.utils import access_registered
+from test.testing_utils import MockNetworkClient, MockNetworkServer
 
 
 class SecaggSetupTestCase(metaclass=abc.ABCMeta):

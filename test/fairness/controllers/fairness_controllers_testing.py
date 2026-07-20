@@ -44,12 +44,9 @@ from declearn.metrics import MeanMetric
 from declearn.model.api import Model
 from declearn.secagg.api import Decrypter, Encrypter
 from declearn.secagg.messaging import SecaggFairnessReply
-from declearn.test_utils import (
-    build_secagg_controllers,
-    setup_mock_network_endpoints,
-)
+from declearn.test_utils import build_secagg_controllers
 from declearn.training import TrainingManager
-from test.testing_utils import assert_dict_equal
+from test.testing_utils import assert_dict_equal, setup_mock_network_endpoints
 
 # Define arbitrary group definitions and sample counts.
 CLIENT_COUNTS = [

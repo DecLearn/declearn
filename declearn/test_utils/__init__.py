@@ -28,11 +28,6 @@ tests and examples. It may also serve to introduce experimental new
 features that may be ported to the stable API in the future.
 """
 
-from ._network import (
-    MockNetworkClient,
-    MockNetworkServer,
-    setup_mock_network_endpoints,
-)
 from ._secagg import build_secagg_controllers
 from ._vectors import (
     FrameworkType,

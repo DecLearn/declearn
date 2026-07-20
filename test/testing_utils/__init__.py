@@ -24,6 +24,9 @@ __all__ = [
     "assert_list_equal",
     "assert_msgpack_serializable_dict",
     "to_numpy",
+    "MockNetworkClient",
+    "MockNetworkServer",
+    "setup_mock_network_endpoints",
 ]
 
 from ._assertions import (
@@ -34,3 +37,8 @@ from ._assertions import (
     assert_msgpack_serializable_dict,
 )
 from ._convert import to_numpy
+from ._network import (
+    MockNetworkClient,
+    MockNetworkServer,
+    setup_mock_network_endpoints,
+)
