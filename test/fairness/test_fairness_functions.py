@@ -34,7 +34,7 @@ from declearn.fairness.core import (
     EqualizedOddsFunction,
     list_fairness_functions,
 )
-from declearn.test_utils import assert_dict_equal
+from test.testing_utils import assert_dict_equal
 
 
 class FairnessFunctionTestSuite(metaclass=abc.ABCMeta):

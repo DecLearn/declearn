@@ -28,13 +28,6 @@ tests and examples. It may also serve to introduce experimental new
 features that may be ported to the stable API in the future.
 """
 
-from ._assertions import (
-    assert_batch_equal,
-    assert_dict_equal,
-    assert_json_serializable_dict,
-    assert_list_equal,
-    assert_msgpack_serializable_dict,
-)
 from ._convert import to_numpy
 from ._network import (
     MockNetworkClient,

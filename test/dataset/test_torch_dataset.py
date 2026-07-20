@@ -32,8 +32,9 @@ except ModuleNotFoundError:
 # pylint: enable=duplicate-code
 
 from declearn.dataset.torch import TorchDataset, collate_with_padding
-from declearn.test_utils import assert_batch_equal, to_numpy
+from declearn.test_utils import to_numpy
 from declearn.utils import make_importable
+from test.testing_utils import assert_batch_equal
 
 # relative imports from `dataset_testbase.py`
 with make_importable(os.path.dirname(__file__)):

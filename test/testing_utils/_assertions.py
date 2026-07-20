@@ -32,10 +32,11 @@ from declearn.utils.serialize import (
 )
 
 __all__ = [
+    "assert_batch_equal",
     "assert_dict_equal",
     "assert_json_serializable_dict",
     "assert_list_equal",
-    "assert_batch_equal",
+    "assert_msgpack_serializable_dict",
 ]
 
 

@@ -26,7 +26,7 @@ import numpy as np
 import pytest
 
 from declearn.metrics import Metric, MetricState
-from declearn.test_utils import (
+from test.testing_utils import (
     assert_dict_equal,
     assert_json_serializable_dict,
     assert_msgpack_serializable_dict,

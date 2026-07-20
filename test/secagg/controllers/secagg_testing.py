@@ -33,7 +33,6 @@ from declearn.secagg.api import Decrypter, Encrypter, SecureAggregate
 from declearn.test_utils import (
     FrameworkType,
     GradientsTestCase,
-    assert_msgpack_serializable_dict,
     list_available_frameworks,
     to_numpy,
 )
@@ -45,6 +44,7 @@ from declearn.utils.serialize import (
     msgpack_deserialize,
     msgpack_serialize,
 )
+from test.testing_utils import assert_msgpack_serializable_dict
 
 
 @dataclasses.dataclass

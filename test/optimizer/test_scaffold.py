@@ -31,8 +31,8 @@ from declearn.optimizer.modules import (
 from declearn.test_utils import (
     FrameworkType,
     GradientsTestCase,
-    assert_dict_equal,
 )
+from test.testing_utils import assert_dict_equal
 
 
 @pytest.fixture(name="mock_gradients")

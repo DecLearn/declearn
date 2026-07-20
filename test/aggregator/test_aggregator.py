@@ -26,12 +26,14 @@ from declearn.model.api import Vector
 from declearn.test_utils import (
     FrameworkType,
     GradientsTestCase,
-    assert_dict_equal,
-    assert_msgpack_serializable_dict,
     list_available_frameworks,
 )
 from declearn.utils import set_device_policy
 from declearn.utils.serialize import msgpack_deserialize, msgpack_serialize
+from test.testing_utils import (
+    assert_dict_equal,
+    assert_msgpack_serializable_dict,
+)
 
 AGGREGATOR_CLASSES = list_aggregators()
 VECTOR_FRAMEWORKS = list_available_frameworks()
