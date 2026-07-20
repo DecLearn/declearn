@@ -18,7 +18,7 @@
 """Unit tests for SklearnSGDModel."""
 
 import os
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 import pytest
@@ -110,18 +110,7 @@ class SklearnSGDTestCase(ModelTestCase):
         pass
 
 
-@pytest.fixture(name="test_case")
-def fixture_test_case(
-    s_weights: bool,
-    as_sparse: bool,
-    loss_cfg: dict,
-) -> SklearnSGDTestCase:
-    """Fixture to access a SklearnSGDTestCase."""
-    return SklearnSGDTestCase(
-        loss_cfg["n_classes"], s_weights, as_sparse, loss_cfg["loss"]
-    )
-
-
+### Resources for test case parametrization of the following tests ###
 REG_LOSSES = (
     "squared_error",
     "huber",
@@ -141,24 +130,11 @@ CLS_LOSSES = (
     "squared_epsilon_insensitive",
 )
 
-
-NCLASSES_TO_ID = {
-    None: "Reg",
-    2: "Bin",
-    5: "Clf",
-}
-
-LOSS_TO_ID = {
-    "hinge": "Hinge",
-    "log_loss": "Log",
-    "modified_huber": "MdfHbr",
-    "squared_hinge": "SqrHinge",
-    "perceptron": "Prcpt",
-    "squared_error": "Squared",
-    "huber": "Huber",
-    "epsilon_insensitive": "EpsIns",
-    "squared_epsilon_insensitive": "SqrEpsIns",
-}
+DEFAULT_LOSS_CONFIGS = [
+    {"n_classes": None, "loss": REG_LOSSES[0]},
+    {"n_classes": 2, "loss": CLS_LOSSES[0]},
+    {"n_classes": 5, "loss": CLS_LOSSES[0]},
+]
 
 LOSS_CONFIGS = (
     [
@@ -176,12 +152,78 @@ LOSS_CONFIGS = (
 )
 
 
-@pytest.mark.parametrize("as_sparse", [False, True], ids=["", "Sparse"])
-@pytest.mark.parametrize("s_weights", [False, True], ids=["", "SmpWgt"])
+def get_id_from(param_config: Tuple[bool, bool, Dict[str, Any]]) -> str:
+    """Util function to get the parameter-configuration ID (name that
+    identifies the combination of parameters used in the test case).
+    """
+    NCLASSES_TO_ID = {
+        None: "Reg",
+        2: "Bin",
+        5: "Clf",
+    }
+
+    LOSS_TO_ID = {
+        "hinge": "Hinge",
+        "log_loss": "Log",
+        "modified_huber": "MdfHbr",
+        "squared_hinge": "SqrHinge",
+        "perceptron": "Prcpt",
+        "squared_error": "Squared",
+        "huber": "Huber",
+        "epsilon_insensitive": "EpsIns",
+        "squared_epsilon_insensitive": "SqrEpsIns",
+    }
+
+    as_sparse, s_weights, loss_config = param_config
+    task_id = NCLASSES_TO_ID[loss_config["n_classes"]]
+    loss_id = LOSS_TO_ID[loss_config["loss"]]
+    return (
+        f"{'Sparse' if as_sparse else ''}"
+        f"{'SmpWgt' if s_weights else ''}"
+        f"{task_id}_{loss_id}"
+    )
+
+
+sparse_weight_param_configs = [
+    (as_sparse, s_weights, loss_config)
+    for as_sparse in (False, True)
+    for s_weights in (False, True)
+    for loss_config in DEFAULT_LOSS_CONFIGS
+]
+"""Parameter-configs where we combine all values for the parameters `as_sparse`
+and `s_weights` and the three tasks (regression, binary classification and
+multi-class classification) with the default loss.
+"""
+
+loss_param_configs = [
+    (False, False, loss_config)
+    for loss_config in LOSS_CONFIGS
+    if loss_config not in DEFAULT_LOSS_CONFIGS  # prevent case duplication
+]
+"""Parameter-configs where `as_sparse` and `s_weights` are fixed to `False`,
+combined with all (not-tested yet) loss configurations.
+"""
+
+param_configs = sparse_weight_param_configs + loss_param_configs
+### End of resources ###
+
+
+@pytest.fixture(name="test_case")
+def fixture_test_case(
+    s_weights: bool,
+    as_sparse: bool,
+    loss_config: Dict[str, Any],
+) -> SklearnSGDTestCase:
+    """Fixture to access a SklearnSGDTestCase."""
+    return SklearnSGDTestCase(
+        loss_config["n_classes"], s_weights, as_sparse, loss_config["loss"]
+    )
+
+
 @pytest.mark.parametrize(
-    "loss_cfg",
-    LOSS_CONFIGS,
-    ids=lambda c: f"{NCLASSES_TO_ID[c['n_classes']]}_{LOSS_TO_ID[c['loss']]}",
+    "as_sparse, s_weights, loss_config",
+    param_configs,
+    ids=[get_id_from(param_config) for param_config in param_configs],
 )
 class TestSklearnSGDModel(ModelTestSuite):
     """Unit tests for declearn.model.sklearn.SklearnSGDModel."""
