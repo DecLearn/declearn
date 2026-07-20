@@ -52,12 +52,10 @@ from declearn.optimizer.modules import (
     YogiModule,
     YogiMomentumModule,
 )
-from declearn.test_utils import (
-    FrameworkType,
-    GradientsTestCase,
-)
 from declearn.utils import make_importable
 from test.testing_utils import (
+    FrameworkType,
+    GradientsTestCase,
     assert_dict_equal,
     assert_msgpack_serializable_dict,
 )

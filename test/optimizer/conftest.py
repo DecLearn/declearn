@@ -19,8 +19,8 @@
 
 import pytest
 
-from declearn.test_utils import list_available_frameworks
 from declearn.utils import set_device_policy
+from test.testing_utils import list_available_frameworks
 
 
 @pytest.fixture(name="framework", params=list_available_frameworks())

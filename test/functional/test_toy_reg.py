@@ -62,8 +62,8 @@ from declearn.metrics import RSquared
 from declearn.model.api import Model
 from declearn.model.sklearn import SklearnSGDModel
 from declearn.optimizer import Optimizer
-from declearn.test_utils import FrameworkType
 from declearn.utils import set_device_policy
+from test.testing_utils import FrameworkType
 
 # optional frameworks' dependencies pylint: disable=ungrouped-imports
 # pylint: disable=duplicate-code

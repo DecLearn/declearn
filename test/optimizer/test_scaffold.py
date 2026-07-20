@@ -28,11 +28,11 @@ from declearn.optimizer.modules import (
     ScaffoldClientModule,
     ScaffoldServerModule,
 )
-from declearn.test_utils import (
+from test.testing_utils import (
     FrameworkType,
     GradientsTestCase,
+    assert_dict_equal,
 )
-from test.testing_utils import assert_dict_equal
 
 
 @pytest.fixture(name="mock_gradients")

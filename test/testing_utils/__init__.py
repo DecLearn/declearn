@@ -28,6 +28,9 @@ __all__ = [
     "MockNetworkServer",
     "setup_mock_network_endpoints",
     "build_secagg_controllers",
+    "FrameworkType",
+    "GradientsTestCase",
+    "list_available_frameworks",
 ]
 
 from ._assertions import (
@@ -44,3 +47,8 @@ from ._network import (
     setup_mock_network_endpoints,
 )
 from ._secagg import build_secagg_controllers
+from ._vectors import (
+    FrameworkType,
+    GradientsTestCase,
+    list_available_frameworks,
+)

@@ -33,7 +33,7 @@ from declearn.client_sampler.criterion import (
 )
 from declearn.messaging import TrainReply
 from declearn.model.api import Model
-from declearn.test_utils import GradientsTestCase, list_available_frameworks
+from test.testing_utils import GradientsTestCase, list_available_frameworks
 
 VECTOR_FRAMEWORKS = list_available_frameworks()
 

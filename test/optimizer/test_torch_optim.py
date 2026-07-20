@@ -32,8 +32,8 @@ except ModuleNotFoundError:
 
 from declearn.model.torch import TorchOptiModule, TorchVector
 from declearn.optimizer.modules import OptiModule
-from declearn.test_utils import GradientsTestCase
 from declearn.utils import make_importable, set_device_policy
+from test.testing_utils import GradientsTestCase
 
 # relative imports from `test_modules.py`
 with make_importable(os.path.dirname(__file__)):
