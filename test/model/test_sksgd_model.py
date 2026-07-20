@@ -27,6 +27,7 @@ from sklearn.linear_model import SGDClassifier, SGDRegressor  # type: ignore
 from declearn.model.sklearn import NumpyVector, SklearnSGDModel
 from declearn.model.sklearn._sgd import LossesLiteral
 from declearn.typing import Batch
+from declearn.utils import make_importable
 
 from .model_testing import ModelTestCase, ModelTestSuite
 

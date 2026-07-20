@@ -46,6 +46,7 @@ from test.testing_utils import (
     MockNetworkClient,
     MockNetworkServer,
 )
+from declearn.utils import make_importable
 
 from .test_toy_clf_secagg import setup_masking_idkeys
 

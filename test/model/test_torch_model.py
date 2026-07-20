@@ -31,7 +31,7 @@ except ModuleNotFoundError:
 from declearn.model.api import Model
 from declearn.model.torch import TorchModel, TorchVector
 from declearn.typing import Batch
-from declearn.utils import set_device_policy
+from declearn.utils import make_importable, set_device_policy
 
 from .model_testing import ModelTestCase, ModelTestSuite
 
