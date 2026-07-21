@@ -18,7 +18,6 @@
 """Unit tests for the TorchOptiModule class."""
 
 import importlib
-import os
 from typing import Iterator, Type
 from unittest import mock
 
@@ -32,13 +31,10 @@ except ModuleNotFoundError:
 
 from declearn.model.torch import TorchOptiModule, TorchVector
 from declearn.optimizer.modules import OptiModule
-from declearn.utils import make_importable, set_device_policy
+from declearn.utils import set_device_policy
 from test.testing_utils import GradientsTestCase
 
-# relative imports from `test_modules.py`
-with make_importable(os.path.dirname(__file__)):
-    from test_modules import OptiModuleTestSuite
-
+from .test_modules import OptiModuleTestSuite
 
 DEVICES = ["CPU"]
 if torch.cuda.device_count():

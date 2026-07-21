@@ -17,7 +17,6 @@
 
 """Unit tests for Joye-Libert setup routines."""
 
-import os
 from typing import Any, Dict
 
 from declearn.secagg.masking import (
@@ -27,10 +26,8 @@ from declearn.secagg.masking import (
     MaskingSecaggConfigServer,
 )
 from declearn.secagg.masking.messages import MaskingSecaggSetupQuery
-from declearn.utils import make_importable
 
-with make_importable(os.path.dirname(os.path.abspath(__file__))):
-    from secagg_setup_testing import SecaggSetupTestCase
+from .secagg_setup_testing import SecaggSetupTestCase
 
 
 class TestMaskingSecaggSetup(SecaggSetupTestCase):

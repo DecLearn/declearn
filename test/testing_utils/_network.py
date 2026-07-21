@@ -50,12 +50,11 @@ MessageT = TypeVar("MessageT", bound=Message)
 HANDLERS: Dict[str, MessagesHandler] = {}
 
 
-class MockNetworkServer(NetworkServer, register=False):
+class MockNetworkServer(NetworkServer, register=False):  # type: ignore
     """Fake server network communication endpoint using global dictionaries."""
 
     protocol = "mock"
 
-    # pylint: disable-next=too-many-positional-arguments
     def __init__(  # noqa: PLR0913
         self,
         host: str = "localhost",
@@ -131,7 +130,7 @@ class MockNetworkServer(NetworkServer, register=False):
         return await asyncio.wait_for(coro, timeout=5)
 
 
-class MockNetworkClient(NetworkClient, register=False):
+class MockNetworkClient(NetworkClient, register=False):  # type: ignore
     """Fake client network communication endpoint using global dictionaries."""
 
     protocol = "mock"

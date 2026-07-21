@@ -18,7 +18,6 @@
 """Unit tests for Fed-FairGrad controllers."""
 
 import asyncio
-import os
 from typing import List
 from unittest import mock
 
@@ -36,15 +35,13 @@ from declearn.fairness.fairgrad import (
     FairgradControllerServer,
     FairgradWeightsController,
 )
-from declearn.utils import make_importable
 from test.testing_utils import setup_mock_network_endpoints
 
-with make_importable(os.path.dirname(os.path.abspath(__file__))):
-    from fairness_controllers_testing import (
-        CLIENT_COUNTS,
-        TOTAL_COUNTS,
-        FairnessControllerTestSuite,
-    )
+from .fairness_controllers_testing import (
+    CLIENT_COUNTS,
+    TOTAL_COUNTS,
+    FairnessControllerTestSuite,
+)
 
 
 class TestFairgradControllers(FairnessControllerTestSuite):

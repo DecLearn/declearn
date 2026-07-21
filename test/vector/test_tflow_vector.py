@@ -17,8 +17,6 @@
 
 """Unit tests for 'declearn.model.tensorflow.TensorflowVector'."""
 
-import os
-
 import pytest
 
 try:
@@ -28,10 +26,8 @@ except ModuleNotFoundError:
 
 from declearn.model.sklearn import NumpyVector
 from declearn.model.tensorflow import TensorflowVector
-from declearn.utils import make_importable
 
-with make_importable(os.path.dirname(__file__)):
-    from vector_testing import VectorFactory, VectorTestSuite
+from .vector_testing import VectorFactory, VectorTestSuite
 
 
 class TensorflowVectorFactory(VectorFactory):

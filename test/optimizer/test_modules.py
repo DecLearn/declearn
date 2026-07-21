@@ -34,7 +34,6 @@ of these.
 """
 
 import functools
-import os
 from typing import Type
 
 import pytest
@@ -52,7 +51,6 @@ from declearn.optimizer.modules import (
     YogiModule,
     YogiMomentumModule,
 )
-from declearn.utils import make_importable
 from test.testing_utils import (
     FrameworkType,
     GradientsTestCase,
@@ -60,10 +58,7 @@ from test.testing_utils import (
     assert_msgpack_serializable_dict,
 )
 
-# relative imports from `optim_testing.py`
-with make_importable(os.path.dirname(__file__)):
-    from optim_testing import PluginTestBase
-
+from .optim_testing import PluginTestBase
 
 # Access the list of modules to test; remove some that have dedicated tests.
 OPTIMODULE_SUBCLASSES = list_optim_modules()

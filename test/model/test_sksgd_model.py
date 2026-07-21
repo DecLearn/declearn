@@ -17,7 +17,6 @@
 
 """Unit tests for SklearnSGDModel."""
 
-import os
 from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
@@ -28,11 +27,8 @@ from sklearn.linear_model import SGDClassifier, SGDRegressor  # type: ignore
 from declearn.model.sklearn import NumpyVector, SklearnSGDModel
 from declearn.model.sklearn._sgd import LossesLiteral
 from declearn.typing import Batch
-from declearn.utils import make_importable
 
-# relative imports from `model_testing.py`
-with make_importable(os.path.dirname(__file__)):
-    from model_testing import ModelTestCase, ModelTestSuite
+from .model_testing import ModelTestCase, ModelTestSuite
 
 
 class SklearnSGDTestCase(ModelTestCase):
@@ -130,13 +126,13 @@ CLS_LOSSES = (
     "squared_epsilon_insensitive",
 )
 
-DEFAULT_LOSS_CONFIGS = [
+DEFAULT_LOSS_CONFIGS: List[Dict[str, Any]] = [
     {"n_classes": None, "loss": REG_LOSSES[0]},
     {"n_classes": 2, "loss": CLS_LOSSES[0]},
     {"n_classes": 5, "loss": CLS_LOSSES[0]},
 ]
 
-LOSS_CONFIGS = (
+LOSS_CONFIGS: List[Dict[str, Any]] = (
     [
         {"n_classes": None, "loss": loss}
         for loss in REG_LOSSES  # regression configs
