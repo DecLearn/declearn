@@ -17,7 +17,6 @@
 
 """Unit tests for mere-monitoring fairness controllers."""
 
-import os
 from unittest import mock
 
 import pytest
@@ -27,10 +26,8 @@ from declearn.fairness.monitor import (
     FairnessMonitorClient,
     FairnessMonitorServer,
 )
-from declearn.test_utils import make_importable
 
-with make_importable(os.path.dirname(os.path.abspath(__file__))):
-    from fairness_controllers_testing import FairnessControllerTestSuite
+from .fairness_controllers_testing import FairnessControllerTestSuite
 
 
 class TestFairnessMonitorControllers(FairnessControllerTestSuite):

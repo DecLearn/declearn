@@ -18,7 +18,6 @@
 """Unit tests for Masking-based SecAgg controllers."""
 
 import copy
-import os
 import secrets
 from typing import Any, Dict, List, Tuple
 from unittest import mock
@@ -30,16 +29,14 @@ from declearn.secagg.masking import (
     MaskingDecrypter,
     MaskingEncrypter,
 )
-from declearn.test_utils import make_importable
 
-with make_importable(os.path.join(os.path.dirname(__file__))):
-    from secagg_testing import (
-        DecrypterExceptionsTestSuite,
-        DecrypterTestSuite,
-        EncrypterTestSuite,
-        MockSimpleAggregate,
-        SecureAggregateTestSuite,
-    )
+from .secagg_testing import (
+    DecrypterExceptionsTestSuite,
+    DecrypterTestSuite,
+    EncrypterTestSuite,
+    MockSimpleAggregate,
+    SecureAggregateTestSuite,
+)
 
 
 class TestMaskingEncrypter(EncrypterTestSuite):

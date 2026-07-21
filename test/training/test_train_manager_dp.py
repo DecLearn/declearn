@@ -17,7 +17,6 @@
 
 """Unit tests for `declearn.main.privacy.DPTrainingManager`."""
 
-import os
 from typing import Any, Optional
 
 import pytest
@@ -34,12 +33,9 @@ except ModuleNotFoundError:
 from declearn import messaging
 from declearn.dataset import DataSpecs
 from declearn.optimizer.modules import GaussianNoiseModule
-from declearn.test_utils import make_importable
 from declearn.training.dp import DPTrainingManager
 
-with make_importable(os.path.dirname(__file__)):
-    from test_train_manager import BATCHES, build_manager, build_train_request
-
+from .test_train_manager import BATCHES, build_manager, build_train_request
 
 BATCHES["poisson"] = True  # mock the use of Poisson sampling out of coherence
 

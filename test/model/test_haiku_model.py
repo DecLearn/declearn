@@ -17,7 +17,6 @@
 
 """Unit tests for HaikuModel."""
 
-import os
 import warnings
 from typing import Any, Callable, Dict, List, Literal, Union
 
@@ -32,13 +31,10 @@ except ModuleNotFoundError:
     pytest.skip("jax and/or haiku are unavailable", allow_module_level=True)
 
 from declearn.model.haiku import HaikuModel, JaxNumpyVector
-from declearn.test_utils import make_importable
 from declearn.typing import Batch
 from declearn.utils import set_device_policy
 
-# relative imports from `model_testing.py`
-with make_importable(os.path.dirname(__file__)):
-    from model_testing import ModelTestCase, ModelTestSuite
+from .model_testing import ModelTestCase, ModelTestSuite
 
 # Enable float64 support.
 jax.config.update("jax_enable_x64", True)

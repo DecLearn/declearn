@@ -18,14 +18,12 @@
 """Unit tests for TensorflowModel."""
 
 import copy
-import os
 import warnings
 from typing import List, Literal
 
 import pytest
 
 from declearn.model.api import Model
-from declearn.test_utils import assert_dict_equal
 from declearn.utils.serialize import msgpack_deserialize, msgpack_serialize
 
 try:
@@ -39,13 +37,11 @@ else:
 
 from declearn.model.tensorflow import TensorflowModel, TensorflowVector
 from declearn.model.tensorflow.utils import build_keras_loss
-from declearn.test_utils import make_importable
 from declearn.typing import Batch
 from declearn.utils import set_device_policy
+from test.testing_utils import assert_dict_equal
 
-# relative imports from `model_testing.py`
-with make_importable(os.path.dirname(__file__)):
-    from model_testing import ModelTestCase, ModelTestSuite
+from .model_testing import ModelTestCase, ModelTestSuite
 
 # mypy: ignore-errors
 

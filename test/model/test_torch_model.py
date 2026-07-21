@@ -18,7 +18,6 @@
 """Unit tests for TorchModel."""
 
 import copy
-import os
 import typing
 from typing import List, Literal, Tuple
 
@@ -31,13 +30,10 @@ except ModuleNotFoundError:
 
 from declearn.model.api import Model
 from declearn.model.torch import TorchModel, TorchVector
-from declearn.test_utils import make_importable
 from declearn.typing import Batch
 from declearn.utils import set_device_policy
 
-# relative imports from `model_testing.py`
-with make_importable(os.path.dirname(__file__)):
-    from model_testing import ModelTestCase, ModelTestSuite
+from .model_testing import ModelTestCase, ModelTestSuite
 
 
 class ExtractLSTMFinalOutput(torch.nn.Module):

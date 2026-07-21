@@ -18,7 +18,6 @@
 """Unit tests for Joye-Libert setup routines."""
 
 import asyncio
-import os
 from typing import Any, Dict, Tuple
 from unittest import mock
 
@@ -33,10 +32,8 @@ from declearn.secagg.joye_libert import (
 )
 from declearn.secagg.joye_libert.messages import JoyeLibertSecaggSetupQuery
 from declearn.secagg.utils import generate_random_biprime
-from declearn.test_utils import make_importable
 
-with make_importable(os.path.dirname(os.path.abspath(__file__))):
-    from secagg_setup_testing import SecaggSetupTestCase
+from .secagg_setup_testing import SecaggSetupTestCase
 
 
 class TestJoyeLibertSecaggSetup(SecaggSetupTestCase):

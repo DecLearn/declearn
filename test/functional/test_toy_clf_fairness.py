@@ -42,15 +42,12 @@ from declearn.main import FederatedClient, FederatedServer
 from declearn.main.config import FLRunConfig
 from declearn.model.sklearn import SklearnSGDModel
 from declearn.secagg.utils import IdentityKeys
-from declearn.test_utils import (
+from test.testing_utils import (
     MockNetworkClient,
     MockNetworkServer,
-    make_importable,
 )
 
-with make_importable(os.path.dirname(__file__)):
-    from test_toy_clf_secagg import setup_masking_idkeys
-
+from .test_toy_clf_secagg import setup_masking_idkeys
 
 SEED = 0
 

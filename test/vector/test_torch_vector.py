@@ -17,8 +17,6 @@
 
 """Unit tests for 'declearn.model.torch.TorchVector'."""
 
-import os
-
 import pytest
 
 try:
@@ -28,10 +26,8 @@ except ModuleNotFoundError:
 
 from declearn.model.sklearn import NumpyVector
 from declearn.model.torch import TorchVector
-from declearn.test_utils import make_importable
 
-with make_importable(os.path.dirname(__file__)):
-    from vector_testing import VectorFactory, VectorTestSuite
+from .vector_testing import VectorFactory, VectorTestSuite
 
 
 class TorchVectorFactory(VectorFactory):

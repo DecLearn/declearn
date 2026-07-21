@@ -78,6 +78,8 @@ Miscellaneous
     Automatically build a dataclass matching a function's signature.
 * [dataclass_from_init][declearn.utils.dataclass_from_init]:
     Automatically build a dataclass matching a class's init signature.
+* [make_importable][declearn.utils.make_importable]
+    Context manager to perform relative/local imports.
 * [run_as_processes][declearn.utils.run_as_processes]:
     Run coroutines concurrently within individual processes.
 """
@@ -89,6 +91,7 @@ __all__ = [
     "DevicePolicy",
     "get_device_policy",
     "set_device_policy",
+    "make_importable",
     "LOGGING_LEVEL_MAJOR",
     "config_client_loggers",
     "config_logger",
@@ -116,6 +119,7 @@ from ._device_policy import (
     get_device_policy,
     set_device_policy,
 )
+from ._imports import make_importable
 
 # TODO for 2.10: remove get_logger + remove from docstring above
 from ._logging import (

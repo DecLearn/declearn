@@ -30,8 +30,7 @@ from torch.utils.data import random_split
 # Do not remove the following "unused" import,
 # it is necessary for type registration
 import declearn.model.torch
-from declearn.test_utils import make_importable
-from declearn.utils import config_client_loggers
+from declearn.utils import config_client_loggers, make_importable
 
 # Do not remove the following "unused" import,
 # it is necessary for type registration

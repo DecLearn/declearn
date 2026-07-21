@@ -192,7 +192,6 @@ sigterm = true
 source_pkgs = ["declearn"]
 omit = [
     "**/grpc/protobufs/*.py",  # auto-generated protobuf code files
-    "**/test_utils/*.py",  # dev-only test-oriented utils
 ]
 
 [tool.coverage.paths]

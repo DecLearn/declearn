@@ -15,21 +15,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Shared utils for client sampler's testing."""
-
-from typing import Set
-
-from declearn.client_sampler import ClientSampler
-
-
-class FailClientSampler(ClientSampler):
-    """Client sampler that always returns an empty set when sampling clients"""
-
-    strategy = "fail"
-
-    @property
-    def secagg_compatible(self) -> bool:
-        return True
-
-    def sample(self, eligible_clients: Set[str]) -> Set[str]:
-        return set()
+"""Tests for the `optimizer` module."""

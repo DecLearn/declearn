@@ -19,7 +19,7 @@
 
 import pytest
 
-from declearn.test_utils import list_available_frameworks
+from test.testing_utils import list_available_frameworks
 
 
 @pytest.fixture(name="framework", params=list_available_frameworks())

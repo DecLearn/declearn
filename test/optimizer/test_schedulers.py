@@ -38,7 +38,7 @@ from declearn.optimizer.schedulers import (
     Warmup,
     WarmupRounds,
 )
-from declearn.test_utils import (
+from test.testing_utils import (
     assert_dict_equal,
     assert_json_serializable_dict,
 )

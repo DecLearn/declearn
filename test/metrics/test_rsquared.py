@@ -17,7 +17,6 @@
 
 """Unit and functional tests for the R^2 Metric subclasses."""
 
-import os
 from typing import Dict, Union
 
 import numpy as np
@@ -25,12 +24,9 @@ import pytest
 from sklearn.metrics import mean_squared_error, r2_score  # type: ignore
 
 from declearn.metrics import RSquared
-from declearn.test_utils import make_importable
 
-# relative imports from `metric_testing.py` and `test_mae_mse.py`
-with make_importable(os.path.dirname(__file__)):
-    from metric_testing import MetricTestCase
-    from test_mae_mse import MeanMetricTestSuite
+from .metric_testing import MetricTestCase
+from .test_mae_mse import MeanMetricTestSuite
 
 
 @pytest.fixture(name="test_case")

@@ -17,15 +17,11 @@
 
 """Unit tests for 'declearn.model.sklearn.NumpyVector'."""
 
-import os
-
 import pytest
 
 from declearn.model.sklearn import NumpyVector
-from declearn.test_utils import make_importable
 
-with make_importable(os.path.dirname(__file__)):
-    from vector_testing import VectorFactory, VectorTestSuite
+from .vector_testing import VectorFactory, VectorTestSuite
 
 
 class NumpyVectorFactory(VectorFactory):

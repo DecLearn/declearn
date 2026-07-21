@@ -26,7 +26,7 @@ from declearn.model.api import Vector
 from declearn.model.sklearn import NumpyVector
 from declearn.optimizer.modules import OptiModule
 from declearn.optimizer.regularizers import Regularizer
-from declearn.test_utils import (
+from test.testing_utils import (
     FrameworkType,
     GradientsTestCase,
     list_available_frameworks,

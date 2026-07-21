@@ -17,7 +17,6 @@
 
 """Unit tests for FairFed controllers."""
 
-import os
 from typing import Dict, List, Union
 from unittest import mock
 
@@ -31,13 +30,11 @@ from declearn.fairness.fairfed import (
     FairfedControllerServer,
     FairfedValueComputer,
 )
-from declearn.test_utils import make_importable
 
-with make_importable(os.path.dirname(os.path.abspath(__file__))):
-    from fairness_controllers_testing import (
-        CLIENT_COUNTS,
-        FairnessControllerTestSuite,
-    )
+from .fairness_controllers_testing import (
+    CLIENT_COUNTS,
+    FairnessControllerTestSuite,
+)
 
 
 class TestFairfedControllers(FairnessControllerTestSuite):

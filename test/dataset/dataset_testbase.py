@@ -23,7 +23,7 @@ from dataclasses import asdict
 import numpy as np
 
 from declearn.dataset import Dataset
-from declearn.test_utils import assert_batch_equal, to_numpy
+from test.testing_utils import assert_batch_equal, to_numpy
 
 
 class DatasetTestToolbox:

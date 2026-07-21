@@ -31,8 +31,7 @@ import declearn
 # it is necessary for type registration
 import declearn.model.torch
 from declearn.dataset.torch import TorchDataset
-from declearn.test_utils import make_importable
-from declearn.utils import config_client_loggers
+from declearn.utils import config_client_loggers, make_importable
 
 # Perform local imports.
 with make_importable(os.path.dirname(__file__)):

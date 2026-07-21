@@ -15,20 +15,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Collection of utils for running tests and examples around declearn.
+"""Shared utilities across all tests."""
 
-This submodule is not imported with declearn by default - it requires
-being explicitly imported, and should not be so by end-users, unless
-they accept the risk of using unstable features.
+__all__ = [
+    "assert_batch_equal",
+    "assert_dict_equal",
+    "assert_json_serializable_dict",
+    "assert_list_equal",
+    "assert_msgpack_serializable_dict",
+    "to_numpy",
+    "MockNetworkClient",
+    "MockNetworkServer",
+    "setup_mock_network_endpoints",
+    "build_secagg_controllers",
+    "FrameworkType",
+    "GradientsTestCase",
+    "list_available_frameworks",
+]
 
-This submodule is *not* considered part of the stable declearn API,
-meaning that its contents may change without warnings. Its features
-are not designed to be used outside of the scope of declearn-shipped
-tests and examples. It may also serve to introduce experimental new
-features that may be ported to the stable API in the future.
-"""
-
-from ._argparse import setup_client_argparse, setup_server_argparse
 from ._assertions import (
     assert_batch_equal,
     assert_dict_equal,
@@ -36,10 +40,7 @@ from ._assertions import (
     assert_list_equal,
     assert_msgpack_serializable_dict,
 )
-from ._client_sampler import FailClientSampler
 from ._convert import to_numpy
-from ._gen_ssl import generate_ssl_certificates
-from ._imports import make_importable
 from ._network import (
     MockNetworkClient,
     MockNetworkServer,

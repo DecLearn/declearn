@@ -18,7 +18,6 @@
 """Unit tests for Joye-Libert SecAgg controllers."""
 
 import copy
-import os
 import secrets
 from typing import Any, Dict, List, Tuple
 
@@ -30,16 +29,14 @@ from declearn.secagg.joye_libert import (
     JoyeLibertDecrypter,
     JoyeLibertEncrypter,
 )
-from declearn.test_utils import make_importable
 
-with make_importable(os.path.join(os.path.dirname(__file__))):
-    from secagg_testing import (
-        DecrypterExceptionsTestSuite,
-        DecrypterTestSuite,
-        EncrypterTestSuite,
-        MockSimpleAggregate,
-        SecureAggregateTestSuite,
-    )
+from .secagg_testing import (
+    DecrypterExceptionsTestSuite,
+    DecrypterTestSuite,
+    EncrypterTestSuite,
+    MockSimpleAggregate,
+    SecureAggregateTestSuite,
+)
 
 
 class TestJoyeLibertEncrypter(EncrypterTestSuite):

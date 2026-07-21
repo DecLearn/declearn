@@ -33,19 +33,14 @@ same values (up to reasonable numerical precision) for all
 of these.
 """
 
-import os
 from typing import Type
 
 import pytest
 
 from declearn.optimizer import list_optim_regularizers
 from declearn.optimizer.regularizers import Regularizer
-from declearn.test_utils import make_importable
 
-# relative imports from `optim_testing.py`
-with make_importable(os.path.dirname(__file__)):
-    from optim_testing import PluginTestBase
-
+from .optim_testing import PluginTestBase
 
 REGULARIZER_SUBCLASSES = list_optim_regularizers()
 

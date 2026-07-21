@@ -17,7 +17,6 @@
 
 """Unit tests for `declearn.metrics.BinaryRocAUC`."""
 
-import os
 from typing import Any, Dict, Literal, Tuple, Union
 
 import numpy as np
@@ -25,11 +24,8 @@ import pytest
 import sklearn  # type: ignore
 
 from declearn.metrics import BinaryRocAUC
-from declearn.test_utils import make_importable
 
-# relative imports from `metric_testing.py`
-with make_importable(os.path.dirname(__file__)):
-    from metric_testing import MetricTestCase, MetricTestSuite
+from .metric_testing import MetricTestCase, MetricTestSuite
 
 
 @pytest.fixture(name="test_case")

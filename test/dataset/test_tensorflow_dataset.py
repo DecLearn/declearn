@@ -17,10 +17,8 @@
 
 """Unit tests for 'declearn.dataset.tensorflow.TensorflowDataset'."""
 
-import os
 import warnings
 
-# pylint: disable=duplicate-code
 import numpy as np
 import pytest
 
@@ -30,24 +28,17 @@ try:
         import tensorflow as tf  # type: ignore
 except ModuleNotFoundError:
     pytest.skip("TensorFlow is unavailable", allow_module_level=True)
-# pylint: enable=duplicate-code
 
 from declearn.dataset import Dataset
 from declearn.dataset.tensorflow import TensorflowDataset
-from declearn.test_utils import make_importable
 
-# relative imports from `dataset_testbase`
-with make_importable(os.path.dirname(__file__)):
-    from dataset_testbase import DatasetTestSuite, DatasetTestToolbox
-
+from .dataset_testbase import DatasetTestSuite, DatasetTestToolbox
 
 SEED = 20230731
 
 
 class TensorflowDatasetTestToolbox(DatasetTestToolbox):
     """Toolbox for TensorflowDataset."""
-
-    # pylint: disable=too-few-public-methods
 
     framework = "tensorflow"
 

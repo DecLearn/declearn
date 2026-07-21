@@ -27,8 +27,8 @@ from declearn.communication import NetworkClientConfig
 from declearn.dataset import InMemoryDataset
 from declearn.dataset.examples import load_heart_uci
 from declearn.main import FederatedClient
-from declearn.test_utils import setup_client_argparse
 from declearn.utils import config_client_loggers
+from declearn.utils.examples import setup_client_argparse
 
 FILEDIR = os.path.dirname(os.path.abspath(__file__))
 

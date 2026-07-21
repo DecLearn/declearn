@@ -17,11 +17,9 @@
 
 """Script to generate self-signed SSL certificates for the demo."""
 
-import os
-
 import fire
 
-from declearn.test_utils import generate_ssl_certificates
+from declearn.utils.examples import generate_ssl_certificates
 
 if __name__ == "__main__":
     fire.Fire(generate_ssl_certificates)

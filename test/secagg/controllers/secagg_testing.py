@@ -30,13 +30,6 @@ import pytest
 from declearn.model.api import Vector, VectorSpec
 from declearn.model.sklearn import NumpyVector
 from declearn.secagg.api import Decrypter, Encrypter, SecureAggregate
-from declearn.test_utils import (
-    FrameworkType,
-    GradientsTestCase,
-    assert_msgpack_serializable_dict,
-    list_available_frameworks,
-    to_numpy,
-)
 from declearn.utils import (
     Aggregate,
     set_device_policy,
@@ -44,6 +37,13 @@ from declearn.utils import (
 from declearn.utils.serialize import (
     msgpack_deserialize,
     msgpack_serialize,
+)
+from test.testing_utils import (
+    FrameworkType,
+    GradientsTestCase,
+    assert_msgpack_serializable_dict,
+    list_available_frameworks,
+    to_numpy,
 )
 
 

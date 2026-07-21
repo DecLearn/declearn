@@ -17,17 +17,12 @@
 
 """Unit tests for `declearn.metrics.MulticlassAccuracyPrecisionRecall`."""
 
-import os
-
 import numpy as np
 import pytest
 
 from declearn.metrics import MulticlassAccuracyPrecisionRecall
-from declearn.test_utils import make_importable
 
-# relative imports from `metric_testing.py`
-with make_importable(os.path.dirname(__file__)):
-    from metric_testing import MetricTestCase, MetricTestSuite
+from .metric_testing import MetricTestCase, MetricTestSuite
 
 
 @pytest.fixture(name="test_case")

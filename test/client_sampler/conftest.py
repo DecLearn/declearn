@@ -26,7 +26,7 @@ import pytest
 from declearn.aggregator import ModelUpdates
 from declearn.messaging import TrainReply
 from declearn.model.api import Model
-from declearn.test_utils import (
+from test.testing_utils import (
     FrameworkType,
     GradientsTestCase,
 )

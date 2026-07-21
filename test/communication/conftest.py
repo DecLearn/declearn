@@ -22,7 +22,7 @@ from typing import Dict, Iterator
 
 import pytest
 
-from declearn.test_utils import generate_ssl_certificates
+from declearn.utils.examples import generate_ssl_certificates
 
 
 @pytest.fixture(name="ssl_cert", scope="module")

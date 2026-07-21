@@ -30,8 +30,8 @@ from declearn.optimizer import Optimizer
 from declearn.optimizer.modules import AuxVar, OptiModule
 from declearn.optimizer.regularizers import Regularizer
 from declearn.optimizer.schedulers import Scheduler
-from declearn.test_utils import assert_json_serializable_dict
 from declearn.utils.serialize import msgpack_deserialize, msgpack_serialize
+from test.testing_utils import assert_json_serializable_dict
 
 
 class MockOptiModule(OptiModule):

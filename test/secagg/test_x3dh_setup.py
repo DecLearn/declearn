@@ -36,7 +36,7 @@ from declearn.messaging import (
 )
 from declearn.secagg.x3dh import run_x3dh_setup_client, run_x3dh_setup_server
 from declearn.secagg.x3dh.messages import X3DHRequests, X3DHResponses
-from declearn.test_utils import MockNetworkClient, MockNetworkServer
+from test.testing_utils import MockNetworkClient, MockNetworkServer
 
 
 @pytest.fixture(name="id_keys", scope="module")

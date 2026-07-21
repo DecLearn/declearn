@@ -19,7 +19,7 @@
 
 import os
 
-from declearn.test_utils import generate_ssl_certificates
+from declearn.utils.examples import generate_ssl_certificates
 
 if __name__ == "__main__":
     FILEDIR = os.path.dirname(os.path.abspath(__file__))
