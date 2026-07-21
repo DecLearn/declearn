@@ -52,10 +52,10 @@ from declearn.quickrun._config import (
 from declearn.quickrun._parser import parse_data_folder
 from declearn.utils import (
     LOGGING_LEVEL_MAJOR,
-    config_client_loggers,
-    config_server_loggers,
     make_importable,
     set_device_policy,
+    setup_client_loggers,
+    setup_server_loggers,
 )
 
 __all__ = ["quickrun"]
@@ -105,7 +105,7 @@ async def run_server(  # noqa: PLR0913
     model = get_model(folder, model_config)
     checkpoint = get_checkpoint(folder, expe_config)
     checkpoint = os.path.join(checkpoint, "server")
-    config_server_loggers(
+    setup_server_loggers(
         level=logging.INFO, fpath=os.path.join(checkpoint, "logs.txt")
     )
 
@@ -136,7 +136,7 @@ async def run_client(
     checkpoint = get_checkpoint(folder, expe_config)
     checkpoint = os.path.join(checkpoint, name)
     # Set up a logger: write everything to file, but filter console outputs.
-    config_client_loggers(
+    setup_client_loggers(
         client_name=name,
         level=logging.INFO,
         fpath=os.path.join(checkpoint, "logs.txt"),

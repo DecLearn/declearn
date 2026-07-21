@@ -51,7 +51,7 @@ from declearn.main.config import FLOptimConfig, FLRunConfig
 from declearn.main.utils import IncompatibleConfigsError
 from declearn.model.sklearn import SklearnSGDModel
 from declearn.secagg.masking import MaskingSecaggConfigServer
-from declearn.utils import config_logger
+from declearn.utils import setup_logger
 
 from .test_toy_clf_secagg import generate_toy_dataset
 
@@ -90,7 +90,7 @@ async def async_run_server(
     secagg_config = (
         MaskingSecaggConfigServer(bitsize=64, clipval=1e8) if secagg else None
     )
-    config_logger("declearn.server", level=logging.DEBUG)
+    setup_logger("declearn.server", level=logging.DEBUG)
     server = FederatedServer(
         model=model,
         netwk=netwk,

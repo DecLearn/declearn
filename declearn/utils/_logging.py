@@ -22,13 +22,17 @@ import os
 import warnings
 from typing import Optional
 
-# TODO for 2.10: remove get_logger from list
+# TODO for 2.10: remove get_logger, config_logger, config_server_loggers,
+# config_client_loggers from list
 __all__ = [
-    "get_logger",
     "LOGGING_LEVEL_MAJOR",
+    "setup_logger",
+    "setup_server_loggers",
+    "setup_client_loggers",
     "config_logger",
     "config_server_loggers",
     "config_client_loggers",
+    "get_logger",
 ]
 
 
@@ -38,6 +42,170 @@ LOGGING_LEVEL_MAJOR = (logging.WARNING + logging.INFO) // 2
 logging.addLevelName(level=LOGGING_LEVEL_MAJOR, levelName="MAJOR")
 
 DEFAULT_FORMAT = "%(asctime)s:%(name)s:%(levelname)s: %(message)s"
+
+
+def setup_logger(
+    name: str,
+    level: Optional[int] = None,
+    fpath: Optional[str] = None,
+    s_fmt: Optional[str] = None,
+    propagate: bool = True,
+) -> None:
+    """Easily setup the logger with the provided name.
+
+    Util function to easily get the logger with the provided named and setup
+    it with a basic configuration and pre-set handlers.
+
+    Add a stream handler (logs on standard error output) if none exists for the
+    provided logger name.
+
+    Parameters
+    ----------
+    name: str
+        Name of the logger to configure.
+    level: int or None
+        New logging level to apply.
+    fpath: str or None
+        Optional file to log messages to.
+    s_fmt: str or None
+        Optional format string for all handlers.
+        If None, use the default format set by Declearn.
+    propagate: bool
+        If True, events logged to this logger will be passed to the handlers of
+        higher level (ancestor) loggers, in addition to any handlers attached
+        to this logger.
+        See `logging.Logger`'s `propagate` attribute for more details.
+    """
+    logger = logging.getLogger(name)
+    logger.propagate = propagate
+
+    if level is not None:
+        logger.setLevel(level)
+
+    formatter = logging.Formatter(s_fmt or DEFAULT_FORMAT)
+
+    # Update existing stream handlers.
+    for handler in logger.handlers:
+        if isinstance(handler, logging.StreamHandler):
+            handler.setFormatter(formatter)
+
+    # Add a stream handler if none exist.
+    if not any(isinstance(h, logging.StreamHandler) for h in logger.handlers):
+        sh = logging.StreamHandler()
+        sh.setFormatter(formatter)
+        logger.addHandler(sh)
+
+    # Add a file handler if requested and not already present.
+    if fpath and not any(
+        isinstance(h, logging.FileHandler)
+        and getattr(h, "baseFilename", None) == os.path.abspath(fpath)
+        for h in logger.handlers
+    ):
+        os.makedirs(os.path.dirname(os.path.abspath(fpath)), exist_ok=True)
+        fh = logging.FileHandler(fpath, mode="a", encoding="utf-8")
+        fh.setFormatter(formatter)
+        logger.addHandler(fh)
+
+
+def setup_server_loggers(
+    level: Optional[int] = None,
+    fpath: Optional[str] = None,
+    s_fmt: Optional[str] = None,
+):
+    """Easily setup all loggers related to the federated server.
+
+    All loggers related to the server are configured the same way.
+    """
+    setup_logger(
+        "declearn.server",
+        level=level,
+        fpath=fpath,
+        s_fmt=s_fmt,
+        propagate=False,
+    )
+
+
+def setup_client_loggers(
+    client_name: str,
+    level: Optional[int] = None,
+    fpath: Optional[str] = None,
+    s_fmt: Optional[str] = None,
+):
+    """Easily setup all loggers related to a federated client.
+
+    All loggers related to the client that match the provided `client_name`
+    are configured the same way.
+    """
+    setup_logger(
+        f"declearn.client-{client_name}",
+        level=level,
+        fpath=fpath,
+        s_fmt=s_fmt,
+        propagate=False,
+    )
+
+
+# TODO for 2.10: deprecated, remove function
+def config_logger(
+    name: str,
+    level: Optional[int] = None,
+    fpath: Optional[str] = None,
+    s_fmt: Optional[str] = None,
+    propagate: bool = True,
+) -> None:
+    """Easily setup the logger with the provided name.
+
+    Deprecated since v2.9, will be removed in v2.10
+    Use `setup_logger` instead.
+    """
+    warnings.warn(
+        "config_logger() is deprecated and will be removed in 2.10. "
+        "Use `setup_logger` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    setup_logger(name, level, fpath, s_fmt, propagate)
+
+
+# TODO for 2.10: deprecated, remove function
+def config_server_loggers(
+    level: Optional[int] = None,
+    fpath: Optional[str] = None,
+    s_fmt: Optional[str] = None,
+):
+    """Easily setup all loggers related to the federated server.
+
+    Deprecated since v2.9, will be removed in v2.10
+    Use `setup_server_loggers` instead.
+    """
+    warnings.warn(
+        "config_server_loggers() is deprecated and will be removed in 2.10. "
+        "Use `setup_server_loggers` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    setup_server_loggers(level, fpath, s_fmt)
+
+
+# TODO for 2.10: deprecated, remove function
+def config_client_loggers(
+    client_name: str,
+    level: Optional[int] = None,
+    fpath: Optional[str] = None,
+    s_fmt: Optional[str] = None,
+):
+    """Easily setup all loggers related to a federated client.
+
+    Deprecated since v2.9, will be removed in v2.10
+    Use `setup_client_loggers` instead.
+    """
+    warnings.warn(
+        "config_client_loggers() is deprecated and will be removed in 2.10. "
+        "Use `setup_client_loggers` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    setup_client_loggers(client_name, level, fpath, s_fmt)
 
 
 # TODO for 2.10: deprecated, remove function
@@ -97,82 +265,3 @@ def get_logger(
         logger.addHandler(handler)
     # Return the logger instance.
     return logger
-
-
-def config_logger(
-    name: str,
-    level: Optional[int] = None,
-    fpath: Optional[str] = None,
-    s_fmt: Optional[str] = None,
-) -> None:
-    """Util function to easily get the logger with the provided named and setup
-    it with a basic configuration and pre-set handlers.
-
-    Add a stream handler (logs on standard error output) if none exists for the
-    provided logger name.
-
-    Parameters
-    ----------
-    name: str
-        Name of the logger to configure.
-    level: int or None
-        New logging level to apply.
-    fpath: str or None
-        Optional file to log messages to.
-    s_fmt: str or None
-        Optional format string for all handlers.
-        If None, use the default format set by Declearn.
-    """
-    logger = logging.getLogger(name)
-
-    if level is not None:
-        logger.setLevel(level)
-
-    formatter = logging.Formatter(s_fmt or DEFAULT_FORMAT)
-
-    # Update existing stream handlers.
-    for handler in logger.handlers:
-        if isinstance(handler, logging.StreamHandler):
-            handler.setFormatter(formatter)
-
-    # Add a stream handler if none exist.
-    if not any(isinstance(h, logging.StreamHandler) for h in logger.handlers):
-        sh = logging.StreamHandler()
-        sh.setFormatter(formatter)
-        logger.addHandler(sh)
-
-    # Add a file handler if requested and not already present.
-    if fpath and not any(
-        isinstance(h, logging.FileHandler)
-        and getattr(h, "baseFilename", None) == os.path.abspath(fpath)
-        for h in logger.handlers
-    ):
-        os.makedirs(os.path.dirname(os.path.abspath(fpath)), exist_ok=True)
-        fh = logging.FileHandler(fpath, mode="a", encoding="utf-8")
-        fh.setFormatter(formatter)
-        logger.addHandler(fh)
-
-
-def config_server_loggers(
-    level: Optional[int] = None,
-    fpath: Optional[str] = None,
-    s_fmt: Optional[str] = None,
-):
-    """Util function to easy apply the same simple configuration to all
-    loggers related to the federated server.
-    """
-    config_logger("declearn.server", level=level, fpath=fpath, s_fmt=s_fmt)
-
-
-def config_client_loggers(
-    client_name: str,
-    level: Optional[int] = None,
-    fpath: Optional[str] = None,
-    s_fmt: Optional[str] = None,
-):
-    """Util function to easy apply the same simple configuration to all
-    loggers related to the client that match the provided client name.
-    """
-    config_logger(
-        f"declearn.client-{client_name}", level=level, fpath=fpath, s_fmt=s_fmt
-    )
