@@ -1,39 +1,37 @@
-# Demo training task: Time-series masked auto-encoder for hand pose surface elecrtomyography (sEMG)
-The following example is built to illustrate the usage of [declearn](https://github.com/DecLearn/declearn) to perform
-Federated learning for signal reconstruction.
-In this example we use [surfce electromyography](https://en.wikipedia.org/wiki/Electromyography) time-series data on the dataset
-*"[EMGs datasets:
-Two datasets with EMGs signals of people making gestures](https://www.rovit.ua.es/dataset/emgs/)"*
-proposed by (N.Nasri and al, 2019). 
+# Demo Training Task: Time-Series Masked Autoencoder for Hand Pose sEMG
 
-The used model for this example, is a super basic Masked [Auto-Encoder](https://en.wikipedia.org/wiki/Autoencoder) following the butterfly architecture
-in which the idea is to mask random points of every slice of the signal following a specified masking ratio, then attempt to reconstrcut the whole slice.
+This example demonstrates how to use [DecLearn](https://github.com/DecLearn/declearn) to perform federated learning for signal reconstruction.
 
-For now the loss is computed over the whole slice instead of just the masked points, this choice is to simplify the first implementation of this example.
+We use time-series data from [Surface Electromyography (sEMG)](https://en.wikipedia.org/wiki/Electromyography), specifically the dataset:  
+*"[EMG datasets: Two datasets with EMG signals of people making gestures](https://www.rovit.ua.es/dataset/emgs/)"* by Nasri et al. (2019).
 
-## Technical setup 
-Start first by cloning the declearn library
+The model implemented in this example is a simple masked [autoencoder](https://en.wikipedia.org/wiki/Autoencoder) following a butterfly architecture. The core idea is to randomly mask points within each signal slice according to a predefined masking ratio, and train the model to reconstruct the full slice.
+
+For simplicity, the loss is currently computed over the entire slice rather than restricted to the masked points.
+
+## Technical Setup
+
+First, clone the DecLearn repository:
+
 ```bash
 git clone git@gitlab.inria.fr:magnet/declearn/declearn.git declearn
 ```
-Create a virual env and install the necessary packages listed in the `pyproject.toml` within `declearn/`
+
+Create a virtual environment and install the required dependencies listed in `pyproject.toml`:
 
 ```bash
 python3 -m venv <your_venv_name>
 ```
+
 ```bash
-cd declearn && pip install . && cd ./examples/time-series/
+cd declearn && pip install ".[torch, websockets]" && cd examples/time-series/
 ```
-If you use `uv` python package manager: 
-```bash
-uv venv <your_venv_name> && cd declearn 
-```
-```bash
-uv pip install -r pyroject.toml
-```
-## Structure
-The folder is structured the following way:
-```
+
+## Project Structure
+
+The example directory is organized as follows:
+
+```text
 examples/time-series/
 ├── dataset.py       # Dataset definition
 ├── gen_ssl.py       # Self-signed SSL certificate generation
@@ -44,98 +42,104 @@ examples/time-series/
 ├── run_demo.py      # Run the full demo locally
 └── run_server.py    # Launch the server
 ```
+
 ## Execution
-The simplest way to run the demo is to run it locally, using multiprocessing.
+
+The demo can be run either from a single terminal (local simulation) or across multiple terminals or machines (closer to real-world deployment).
+
+### Single-Terminal Execution
+
+First, generate the dataset using:
+
 ```bash
-cd declearn && python examples/time-series/prepare_data.py --nb_clients <NUMBER_OF_CLIENTS>
+cd declearn && python examples/time-series/data.py --nb_clients <NUMBER_OF_CLIENTS>
 ```
-To know more about the flags for the example, you can use: 
+
+You can experiment with the number of clients, up to 8 for now.
+
+Then, run the full demo locally using multiprocessing:
+
 ```bash
-cd examples/time-series && python3 run run_demo.py --help
+cd examples/time-series && python3 run_demo.py
 ```
-Similarly with `uv`:
+
+To view available options:
+
 ```bash
-cd examples/time-series && uv run run_demo.py --help
+python3 run_demo.py --help
+```
+
+Or with `uv`:
+
+```bash
+uv run run_demo.py --help
 ```
 
 ### Multi-Terminal Execution
 
-1. **Prepare the data**:<br/>
-   First, clients' data should be generated, by fetching and splitting the
-   *sEMG hand poses* dataset. This can be done in any way you want, but a practical and
-   easy one is to use the `dataset/examples/_time-series.py` script. Data may either be
-   prepared at a single location and then shared across clients (in the case
-   when distinct computers are used), or prepared redundantly at each place
-   using the same random seed and agreeing on clients' ordering.
+In this setup, the server and clients are launched independently, potentially on different machines, using SSL-secured communication.
+
+#### 1. Prepare the Data
+
+Client datasets must be generated in advance by downloading and splitting the sEMG dataset. In this example, each client is assigned one sensor, which limits the number of clients to 8.
 
 - `_time_series_emg.py` handles filtering, splitting, and normalization.
-- `prepare_data.py` automates dataset generation.
+- `data.py` automates dataset generation.
 
+To generate client data:
 
 ```bash
-python examples/time-series/prepare_data.py --nb_clients <NUMBER_OF_CLIENTS>
+python examples/time-series/data.py --nb_clients <NUMBER_OF_CLIENTS>
 ```
+
 #### 2. Set Up SSL Certificates
 
-   When testing locally, execute the `generate_ssl.py` script, to create a
-   self-signed root CA and an SSL certificate for "localhost":
+Generate SSL certificates for secure communication. For local testing:
 
 ```bash
 python examples/time-series/data.py --nb_clients <NUMBER_OF_CLIENTS>
 ```
 #### 2. Set Up SSL Certificates
 
-   Alternatively, `declearn.test_utils.generate_ssl_certificates` may be used to
-   generate a self-signed CA and a signed certificate for a given domain name
-   or IP address.  
-   To achieve this easily with the provided example script, update 
-   `generate_ssl.py` so that it calls the `generate_ssl_certificates` function
-   with custom arguments, more precisely :
-   - If you use a domaine name as host (e.g. `mymachine.mydomain.fr`), set this
-   value for the `c_name` argument (or in a list, for the `alt_dns` argument).
-   - If you use an IP address as host (e.g. `192.0.2.1`), set this value in a
-   list and pass it to the `alt_ips` argument.
+For more advanced setups, you can use `declearn.test_utils.generate_ssl_certificates`.
 
-      Example (IP address):  
-      `generate_ssl_certificates(FILEDIR, alt_ips=["192.0.2.1"])`
+Examples:
+- Domain name: set `c_name="mymachine.mydomain.fr"` or include it in `alt_dns`.
+- IP address:
 
+```python
+generate_ssl_certificates(FILEDIR, alt_ips=["192.0.2.1"])
+```
 
 For more advanced setups, you can use `declearn.utils.generate_ssl_certificates`.
 
-   E.g., to use 2 clients:
+#### 3. Run the Server
 
-    ```bash
-    python run_server.py 2  # use --help for details on network and SSL options
-    ```
+Start the server first:
 
-    Note that you may edit that script to change the model learned, the FL
-    and optimization algorithms used, and/or the training hyper-parameters,
-    including the introduction of sample-level differential privacy.
+```bash
+python run_server.py 2
+```
 
-3. **Run each client**:<br/>
-   Open a new terminal and launch the client script, specifying the path to
-   the main data folder (e.g. `"data/15Subjects-7Gestures"`) and the client's name (e.g.
-   "client_0"), which are both used to determine where to get the prepared
-   data. Additional network parameters may also be passed; by default, things
-   will run on the localhost, looking for a `generate_ssl.py`-created CA PEM
-   file.
+Use `--help` to configure networking and SSL options.
 
-   E.g., to launch the first client after preparing iid-split data with the
-   `prepara_data.py` script, call:
+You may also modify this script to adjust:
+- The model architecture
+- The federated learning strategy
+- The optimization algorithm
+- The training hyperparameters, including differential privacy
 
 ```bash
 python run_server.py 
 ```
 
-Note that: 
-- the server should be launched before the clients, otherwise the
-latter might fail to connect which would cause the script to terminate. A
-few seconds' delay is tolerable as clients will make multiple connection
-attempts prior to failing.
-- In this example we use the same data file for both clients (for now). But feel free
-add sEMG data that follows the same structure normally it should be processed just as fine.
+Launch each client in a separate terminal:
 
+```bash
+python run_client.py client_0 "data/15Subjects-7Gestures"
+```
 
+Use `--help` for additional options.
 
 Launch each client in a separate terminal:
 

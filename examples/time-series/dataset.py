@@ -1,5 +1,3 @@
-
-
 # coding: utf-8
 
 # Copyright 2026 Inria (Institut National de Recherche en Informatique
@@ -25,18 +23,20 @@ from torch.utils.data import Dataset
 class MaskedAutoEncoderDataset(Dataset):
     def __init__(self, data):
         """
-        Dataset for Time-series Masked Auto-encoder model example. 
-        
+        Dataset for Time-series Masked Auto-encoder model example.
+
         This dataset returns an input sample and a target derived from the same
-        sample. It is typically used in self-supervised settings where the 
+        sample. It is typically used in self-supervised settings where the
         model learns to reconstruct missing or masked parts of the input.
-        
+
         For now this class serves as a pytorch wrapper around the data and does
-        not include the 
+        not include the
         transformation functionality.
-        
-        Args:
-            data (list or array): Input data samples.
+
+        Parameters
+        ----------
+        data: List
+            An array composed of the input data samples.
         """
         self.data = data
 
