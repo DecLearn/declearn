@@ -27,6 +27,7 @@ from typing import Optional
 __all__ = [
     "LOGGING_LEVEL_MAJOR",
     "setup_logger",
+    "setup_root_logger",
     "setup_server_loggers",
     "setup_client_loggers",
     "config_logger",
@@ -107,6 +108,52 @@ def setup_logger(
         logger.addHandler(fh)
 
 
+def setup_root_logger(
+    level: Optional[int] = logging.INFO,
+    fpath: Optional[str] = None,
+    s_fmt: Optional[str] = None,
+):
+    """Easily setup Declearn root logger.
+
+    All Declearn loggers inherit their configuration from the root logger.
+    Declearn logs are quiet by default, a call to this function enables
+    all Declearn logs to be printed on terminal or even written to a file.
+
+    A simple call to this function without argument will enable all logs from
+    the library with level INFO (or above) to be displayed on standard error
+    output.
+
+    Configuration of logging level, destination file and log format is
+    possible by passing the proper arguments.
+
+    Parameters
+    ----------
+    level: int or None
+        Logging level to apply. Default to `logging.INFO`.
+    fpath: str or None
+        Optional file to log messages to.
+    s_fmt: str or None
+        Optional format string for all handlers.
+        If None, use the default format set by Declearn.
+
+    Technical note
+    --------------
+    This function configures the root logger of Declearn, named "declearn".
+    As Python logging is hierarchical, and all loggers in the library should
+    be prefixed by `declearn.`, this implies that the configuration here is
+    applied by default to all Declearn loggers.
+    However, inheriting loggers (e.g. "declearn.server") may have their
+    configuration overriden explicitly using the `setup_logger` utility,
+    or any derived one.
+    """
+    setup_logger(
+        "declearn",
+        level=level,
+        fpath=fpath,
+        s_fmt=s_fmt,
+    )
+
+
 def setup_server_loggers(
     level: Optional[int] = None,
     fpath: Optional[str] = None,
@@ -114,7 +161,18 @@ def setup_server_loggers(
 ):
     """Easily setup all loggers related to the federated server.
 
-    All loggers related to the server are configured the same way.
+    All loggers related to the server are configured the same way with the
+    provided configuration parameters.
+
+    Parameters
+    ----------
+    level: int or None
+        Logging level to apply.
+    fpath: str or None
+        Optional file to log messages to.
+    s_fmt: str or None
+        Optional format string for all handlers.
+        If None, use the default format set by Declearn.
     """
     setup_logger(
         "declearn.server",
@@ -134,7 +192,19 @@ def setup_client_loggers(
     """Easily setup all loggers related to a federated client.
 
     All loggers related to the client that match the provided `client_name`
-    are configured the same way.
+    are configured the same way with the provided configuration parameters.
+
+    Parameters
+    ----------
+    client_name: str
+        Client name.
+    level: int or None
+        Logging level to apply.
+    fpath: str or None
+        Optional file to log messages to.
+    s_fmt: str or None
+        Optional format string for all handlers.
+        If None, use the default format set by Declearn.
     """
     setup_logger(
         f"declearn.client-{client_name}",

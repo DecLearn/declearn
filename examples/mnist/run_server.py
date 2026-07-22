@@ -77,10 +77,10 @@ def run_server(
         ]
     )
 
-    # Set up checkpointing and logging.
+    # Set up checkpointing.
     stamp = datetime.datetime.now().strftime("%y-%m-%d_%H-%M")
     checkpoint = os.path.join(FILEDIR, f"result_{stamp}", "server")
-    # Set up a logger, records from which will go to a file.
+    # Set up all server-related loggers, records from which will go to a file.
     setup_server_loggers(
         level=logging.INFO, fpath=os.path.join(checkpoint, "logs.txt")
     )

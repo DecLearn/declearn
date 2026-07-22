@@ -52,12 +52,14 @@ Logging utils
 -------------
 Utils to set up and configure loggers:
 
-* [setup_logger][declearn.utils.config_logger]:
+* [setup_logger][declearn.utils.setup_logger]:
     Easily configure an existing logger, automating basic handlers'
     configuration.
-* [setup_server_loggers][declearn.utils.config_server_loggers]:
+* [setup_root_logger][declearn.utils.setup_root_logger]:
+    Easily setup Declearn root logger.
+* [setup_server_loggers][declearn.utils.setup_server_loggers]:
     Easily configure all federated server-related loggers.
-* [setup_client_loggers][declearn.utils.config_client_loggers]:
+* [setup_client_loggers][declearn.utils.setup_client_loggers]:
     Easily configure all loggers related to a provided federated client.
 * [LOGGING_LEVEL_MAJOR][declearn.utils.LOGGING_LEVEL_MAJOR]:
     Custom "MAJOR" severity level, between stdlib "INFO" and "WARNING".
@@ -94,6 +96,7 @@ __all__ = [
     "config_logger",
     "config_server_loggers",
     "setup_client_loggers",
+    "setup_root_logger",
     "setup_logger",
     "setup_server_loggers",
     "get_logger",
@@ -131,6 +134,7 @@ from ._logging import (
     get_logger,
     setup_client_loggers,
     setup_logger,
+    setup_root_logger,
     setup_server_loggers,
 )
 from ._multiprocess import run_as_processes

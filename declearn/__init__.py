@@ -84,7 +84,6 @@ from . import (
     utils,
     version,
 )
-from .utils import config_logger
 
 __version__ = version.VERSION
 
@@ -109,6 +108,6 @@ __all__ = [
 
 # Init default configuration for Declearn root logger.
 # By default, the logs are written nowhere (because of the null handler).
-# Indeed, logging configuration is left to the user.
-main_logger = logging.getLogger("declearn")
-main_logger.addHandler(logging.NullHandler())
+# Loggers configuration is left to users of the library.
+root_logger = logging.getLogger("declearn")
+root_logger.addHandler(logging.NullHandler())

@@ -67,9 +67,10 @@ def run_client(
     # Set CPU as device.
     declearn.utils.set_device_policy(gpu=False)
 
-    # Set up logger and checkpointer.
+    # Set up checkpointing.
     stamp = datetime.datetime.now().strftime("%y-%m-%d_%H-%M")
     checkpoint = os.path.join(FILEDIR, f"result_{stamp}", client_name)
+    # Set up all client-related loggers, records from which will go to a file.
     setup_client_loggers(
         client_name=client_name,
         level=logging.INFO,
