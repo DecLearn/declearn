@@ -17,19 +17,26 @@
 
 """Functional tests for 'declearn.dataset.examples' utils."""
 
+import os
 from unittest import mock
 
 import numpy as np
 import pandas as pd  # type: ignore
+import pytest
+import torch
 
 from declearn.dataset.examples import (
     load_heart_uci,
     load_mnist,
 )
+from declearn.dataset.examples._time_series_emg import (
+    EMGDatasetConfigs,
+    load_semg_hand_poses,
+)
 
 
 def test_load_heart_uci(tmpdir: str) -> None:
-    """Functional tests for 'declearn.dataset.example.load_heart_uci'."""
+    """Functional tests for 'declearn.dataset.examples.load_heart_uci'."""
     # Test that downloading the dataset works.
     data, tcol = load_heart_uci("va", folder=tmpdir)
     assert isinstance(data, pd.DataFrame)
@@ -45,7 +52,7 @@ def test_load_heart_uci(tmpdir: str) -> None:
 
 
 def test_load_mnist(tmpdir: str) -> None:
-    """Functional tests for 'declearn.dataset.example.load_mnist'."""
+    """Functional tests for 'declearn.dataset.examples.load_mnist'."""
     # Test that downloading the (test) dataset works.
     images, labels = load_mnist(train=False, folder=tmpdir)
     assert isinstance(images, np.ndarray)
@@ -59,3 +66,29 @@ def test_load_mnist(tmpdir: str) -> None:
         patch_download.assert_not_called()
     assert (img_bis == images).all()
     assert (lab_bis == labels).all()
+
+
+def test_load_semg_hand_poses(tmpdir: str):
+    """Functional test for 'declearn.dataset.examples.load_semg_hand_poses'"""
+    # mock the configs file
+    fake_configs = EMGDatasetConfigs(
+        path=tmpdir, target=1, on_save_filename="data_pr"
+    )
+
+    data = load_semg_hand_poses(fake_configs)
+
+    # check that the data got downloaded correctly into tmpdir
+    assert os.path.exists(f"{tmpdir}/{fake_configs.zip_name}.zip")
+    assert isinstance(data, torch.Tensor) and data.dim() >= 2
+
+    # test that the data gets returned when the file already exists
+    with mock.patch(
+        "declearn.dataset.examples._time_series_emg.get_hand_poses_emg_tensor",
+    ) as get_hand_poses:
+        load_semg_hand_poses(fake_configs)
+        get_hand_poses.assert_not_called()
+
+    # test that the error gets raised when passing a path that doesn't exist
+    fake_configs.path = "tmp/dir"
+    with pytest.raises(ValueError):
+        load_semg_hand_poses(fake_configs)
