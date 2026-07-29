@@ -42,8 +42,8 @@ def prepare_data_for_clients(nb_clients: int = 2) -> None:
     Raises
     ------
     ValueError:
-        If the number of clients surpasses the number of sensors per participant
-        which is 8 for the dataset chosen for this example.
+        If the number of clients surpasses the number of sensors per
+        participant which is 8 for the dataset chosen for this example.
     """
     if not os.path.exists(DATA_DIR):
         # build the data folder

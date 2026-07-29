@@ -19,7 +19,7 @@
 
 import os
 import tempfile
-from typing import Literal, Optional
+from typing import Optional
 
 import fire  # type: ignore
 

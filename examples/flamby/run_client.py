@@ -35,7 +35,7 @@ from declearn.utils import config_client_loggers, make_importable
 # Do not remove the following "unused" import,
 # it is necessary for type registration
 with make_importable(os.path.dirname(__file__)):
-    from metric import CIndexMetric
+    pass
 
 import declearn
 from declearn.dataset.torch import TorchDataset

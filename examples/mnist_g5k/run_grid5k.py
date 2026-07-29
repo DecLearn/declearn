@@ -85,7 +85,7 @@ def run_grid5k(
         roles=roles,
         host=host,
     )
-    print(f"Starting experiment...")
+    print("Starting experiment...")
     run_server(
         nb_clients=nb_clients,
         roles=roles,
@@ -220,7 +220,7 @@ def config_resources(
         f"{python_bin} -m pip install --upgrade pip setuptools wheel", roles
     )
     run_cmd(
-        f"git clone --branch develop --single-branch --depth 1 "
+        "git clone --branch develop --single-branch --depth 1 "
         "https://gitlab.inria.fr/magnet/declearn/declearn.git /opt/declearn",
         roles,
     )
