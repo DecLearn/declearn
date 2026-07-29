@@ -15,7 +15,7 @@ Run from the parent of `benchmarks/` (i.e. the declearn repo root):
 Typical use is via `tools/pyspy.sh` (CPU/time flame graph) or
 `tools/memray.sh` (memory flame graph), which wrap this with the
 respective profiler.
-"""
+"""  # noqa: E501
 
 import argparse
 import logging

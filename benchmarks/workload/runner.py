@@ -3,11 +3,10 @@
 import asyncio
 import os
 
+from benchmarks.workload.spec import BenchmarkSpec
 from declearn.communication import NetworkClientConfig, NetworkServerConfig
 from declearn.main import FederatedClient, FederatedServer
 from declearn.utils import set_device_policy
-
-from benchmarks.workload.spec import BenchmarkSpec
 
 __all__ = ["run_benchmark"]
 
