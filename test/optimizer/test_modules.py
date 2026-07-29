@@ -57,7 +57,6 @@ from test.testing_utils import (
     assert_dict_equal,
     assert_msgpack_serializable_dict,
 )
-from declearn.utils import make_importable
 
 from .optim_testing import PluginTestBase
 
