@@ -135,9 +135,8 @@ class EMGSignal:
         ----------
         signal: Signal
             Input signal introduced by the user.
-        configs: EMGDatasetConfigs
-            Configurations regarding the dataset
-            and to be applied by on the EMG signal introduced by the user.
+        window_size: int
+            Number of time steps per sliding window.
 
         """
         self.content = torch.Tensor(signal)
@@ -156,12 +155,12 @@ class EMGSignal:
 
         Parameters
         ----------
-        configs: EMGDatasetConfigs
-            User specific processing parameters object.
+        window_size: int
+            Number of time steps per sliding window.
 
         Returns
         -------
-        t.Tensor:
+        torch.Tensor:
             A matrix composed of size [N, window_size] where N is the number of
             extracted windows per the current signal.
 
