@@ -69,12 +69,6 @@ To view available options:
 python3 run_demo.py --help
 ```
 
-Or with `uv`:
-
-```bash
-uv run run_demo.py --help
-```
-
 ### Multi-Terminal Execution
 
 In this setup, the server and clients are launched independently, potentially on different machines, using SSL-secured communication.
