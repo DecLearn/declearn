@@ -24,7 +24,7 @@ from declearn.communication import NetworkServerConfig
 from declearn.main import FederatedServer
 from declearn.main.config import FLOptimConfig, FLRunConfig
 from declearn.model.sklearn import SklearnSGDModel
-from declearn.utils import config_server_loggers
+from declearn.utils import setup_server_loggers
 from declearn.utils.examples import setup_server_argparse
 
 FILEDIR = os.path.dirname(os.path.abspath(__file__))
@@ -57,7 +57,7 @@ def run_server(
     """
     ### Optional: some convenience settings.
     # Set up logger to see information printed on the console.
-    config_server_loggers(level=logging.INFO)
+    setup_server_loggers(level=logging.INFO)
 
     # (1) Define a model
 

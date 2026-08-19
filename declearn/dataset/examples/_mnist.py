@@ -18,6 +18,7 @@
 """Util to download the MNIST digit-classification dataset."""
 
 import gzip
+import logging
 import os
 from typing import Optional, Tuple
 
@@ -27,6 +28,8 @@ import requests
 __all__ = [
     "load_mnist",
 ]
+
+logger = logging.getLogger(__name__)
 
 
 def load_mnist(
@@ -59,6 +62,7 @@ def load_mnist(
     tag = "train" if train else "t10k"
     images = _load_mnist_data(folder, tag, images=True)
     labels = _load_mnist_data(folder, tag, images=False)
+    logger.info("MNIST data loaded successfully.")
     return images, labels
 
 

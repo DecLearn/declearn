@@ -27,7 +27,7 @@ from torch.nn import CrossEntropyLoss
 import declearn
 from declearn.metrics import MulticlassAccuracyPrecisionRecall
 from declearn.model.torch import TorchModel
-from declearn.utils import config_server_loggers, make_importable
+from declearn.utils import make_importable, setup_server_loggers
 
 # Perform local imports.
 with make_importable(os.path.dirname(__file__)):
@@ -79,7 +79,7 @@ def run_server(
     stamp = datetime.datetime.now().strftime("%y-%m-%d_%H-%M")
     checkpoint = os.path.join(FILEDIR, f"result_{stamp}", "server")
     # Set up a logger, records from which will go to a file.
-    config_server_loggers(
+    setup_server_loggers(
         level=logging.INFO, fpath=os.path.join(checkpoint, "logs.txt")
     )
 

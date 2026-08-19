@@ -61,14 +61,14 @@ def main() -> None:
     # which imports every module under benchmark_dir, does not pull this
     # symbol in. It was added after v2.7.0, so a top-level import breaks
     # discovery when seeding older releases into the bench history.
-    from declearn.utils import config_server_loggers
+    from declearn.utils import setup_server_loggers  # noqa: PLC0415
 
     # Surface the federated server's progress (registration, rounds,
     # aggregation, evaluation) on stderr while profiling, so the run is not
     # a silent black box. Scoped to this entry point on purpose: the ASV
     # cells share the same workload but stay quiet, to avoid polluting their
     # timings and flooding the CI logs.
-    config_server_loggers(level=logging.INFO)
+    setup_server_loggers(level=logging.INFO)
     spec = build_benchmark(
         backend=args.backend,
         n_clients=args.n_clients,
