@@ -262,6 +262,7 @@ select = [
 ignore = [
     "PLR2004", # magic-value-comparison
     "PLW0603", # global-statement
+    "PLR0917", # too many positional arguments 
 ]
 
 [tool.ruff.lint.per-file-ignores]

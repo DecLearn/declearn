@@ -30,7 +30,7 @@ from torch.utils.data import random_split
 # Do not remove the following "unused" import,
 # it is necessary for type registration
 import declearn.model.torch
-from declearn.utils import config_client_loggers, make_importable
+from declearn.utils import make_importable, setup_client_loggers
 
 # Do not remove the following "unused" import,
 # it is necessary to register and serialize this example-specific metric and
@@ -81,7 +81,7 @@ def run_client(
     client_name = f"client_{client_idx}"
     stamp = datetime.datetime.now().strftime("%y-%m-%d_%H-%M")
     checkpoint = os.path.join(FILEDIR, f"result_{stamp}", client_name)
-    config_client_loggers(
+    setup_client_loggers(
         client_name=client_name,
         level=logging.INFO,
         fpath=os.path.join(checkpoint, "logs.txt"),

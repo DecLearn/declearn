@@ -31,7 +31,7 @@ import declearn
 # it is necessary for type registration
 import declearn.model.torch
 from declearn.dataset.torch import TorchDataset
-from declearn.utils import config_client_loggers, make_importable
+from declearn.utils import make_importable, setup_client_loggers
 
 # Perform local imports.
 with make_importable(os.path.dirname(__file__)):
@@ -78,7 +78,7 @@ def run_client(
     # Set up logger and checkpointer.
     stamp = datetime.datetime.now().strftime("%y-%m-%d_%H-%M")
     checkpoint = os.path.join(FILEDIR, f"result_{stamp}", client_name)
-    config_client_loggers(
+    setup_client_loggers(
         client_name=client_name,
         level=logging.INFO,
         fpath=os.path.join(checkpoint, "logs.txt"),

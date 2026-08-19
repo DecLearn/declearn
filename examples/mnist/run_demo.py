@@ -23,7 +23,11 @@ from typing import Literal, Optional
 
 import fire  # type: ignore
 
-from declearn.utils import make_importable, run_as_processes
+from declearn.utils import (
+    make_importable,
+    run_as_processes,
+    setup_root_logger,
+)
 from declearn.utils.examples import generate_ssl_certificates
 
 # Perform local imports.
@@ -52,6 +56,8 @@ def run_demo(
     seed:
         Optional seed to the RNG used for all sampling operations.
     """
+    # Setup Declearn root logger (to display Declearn logs on stderr).
+    setup_root_logger()
     # Generate the MNIST split data for this demo.
     data_folder = prepare_mnist(nb_clients, scheme, seed=seed)
     # Use a temporary directory for single-use self-signed SSL files.
