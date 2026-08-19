@@ -22,7 +22,7 @@ import tempfile
 
 import fire
 
-from declearn.utils import make_importable, run_as_processes
+from declearn.utils import make_importable, run_as_processes, setup_root_logger
 from declearn.utils.examples import generate_ssl_certificates
 
 # Perform local imports.
@@ -62,6 +62,8 @@ def run_demo(
         - If the processes do not yield successful response then
             there must be an error during runtime.
     """
+    # Setup Declearn root logger (to display Declearn logs on stderr).
+    setup_root_logger()
 
     with tempfile.TemporaryDirectory() as tempdir:
         prepare_data_for_clients(nb_clients)
