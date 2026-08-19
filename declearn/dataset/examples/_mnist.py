@@ -87,7 +87,9 @@ def _load_mnist_data(
         )
     else:
         shape, off = [int(data[4:8].hex(), 16)], 8
-    array = np.frombuffer(bytearray(data[off:]), dtype="uint8").reshape(shape)
+    array = np.frombuffer(bytearray(data[off:]), dtype="uint8").reshape(
+        shape
+    )  # type : ignore
     return (array / 255).astype(np.single) if images else array
 
 

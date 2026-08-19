@@ -361,7 +361,7 @@ def _stack_default(
     """Stack sample-wise atomic elements."""
     if samples[0] is None:
         return None
-    return tf.stack(samples)
+    return tf.stack(samples)  # type: ignore[arg-type]
 
 
 def _stack_padded(

@@ -344,7 +344,7 @@ class BinaryRocAUC(Metric[AurocState]):
         thresh = self._states.thresh
         if self.bound is None:
             thresh = self._build_thresholds(
-                min(y_pred.min(), thresh[0]),
+                min(y_pred.min(), thresh[0]),  # type: ignore
                 max(y_pred.max(), thresh[-1]),
             )
             aggcls: Type[AurocState] = AurocStateUnbound
