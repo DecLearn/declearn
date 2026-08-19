@@ -105,7 +105,7 @@ Examples:
 generate_ssl_certificates(FILEDIR, alt_ips=["192.0.2.1"])
 ```
 
-For more advanced setups, you can use `declearn.utils.generate_ssl_certificates`.
+For more advanced setups, you can use `declearn.utils.examples.generate_ssl_certificates`.
 
 #### 3. Run the Server
 
