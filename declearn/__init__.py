@@ -108,6 +108,6 @@ __all__ = [
 
 # Init default configuration for Declearn root logger.
 # By default, the logs are written nowhere (because of the null handler).
-# Loggers configuration is left to users of the library.
+# Loggers configuration is left to the library users.
 root_logger = logging.getLogger("declearn")
 root_logger.addHandler(logging.NullHandler())
