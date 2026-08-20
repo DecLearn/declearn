@@ -195,8 +195,8 @@ def config_resources(
         Path to your network storage (ex: group storage), accessible from
         Grid5000 machines.
     data_dir: str
-        Name of the directory (on the network storage) in which the data will be
-        downloaded.
+        Name of the directory (on the network storage) in which the data will
+        be downloaded.
     roles: list[en.objects.Roles]
         Instances on which the command line will be executed.
     host: str
@@ -315,8 +315,8 @@ def run_clients(
         Path to your network storage (ex: group storage), accessible from
         Grid5000 machines.
     data_dir: str
-        Name of the directory (on the network storage) in which the data will be
-        downloaded.
+        Name of the directory (on the network storage) in which the data will
+        be downloaded.
     roles: list[en.objects.Roles]
         Instances where the command line will be executed.
     host: str

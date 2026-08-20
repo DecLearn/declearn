@@ -45,7 +45,7 @@ DEFAULT_CERT = os.path.join(FILEDIR, "server-cert.pem")
 DEFAULT_PKEY = os.path.join(FILEDIR, "server-pkey.pem")
 
 
-def run_server(
+def run_server(  # noqa: PLR0913
     nb_clients: int,
     certificate: str = DEFAULT_CERT,
     private_key: str = DEFAULT_PKEY,

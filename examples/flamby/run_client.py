@@ -45,7 +45,7 @@ FILEDIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_CERT = os.path.join(FILEDIR, "ca-cert.pem")
 
 
-def run_client(
+def run_client(  # noqa: PLR0913
     client_idx: int,
     ca_cert: str = DEFAULT_CERT,
     protocol: str = "websockets",

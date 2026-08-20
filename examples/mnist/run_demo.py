@@ -31,12 +31,10 @@ from declearn.utils import (
 from declearn.utils.examples import generate_ssl_certificates
 
 # Perform local imports.
-# pylint: disable=wrong-import-position, wrong-import-order
 with make_importable(os.path.dirname(__file__)):
     from prepare_data import prepare_mnist
     from run_client import run_client
     from run_server import run_server
-# pylint: enable=wrong-import-position, wrong-import-order
 
 
 def run_demo(

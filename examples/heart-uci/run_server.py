@@ -30,7 +30,7 @@ from declearn.utils.examples import setup_server_argparse
 FILEDIR = os.path.dirname(os.path.abspath(__file__))
 
 
-def run_server(
+def run_server(  # noqa: PLR0913
     nb_clients: int,
     certificate: str,
     private_key: str,

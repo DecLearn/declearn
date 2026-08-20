@@ -28,7 +28,7 @@ from datasets import load_dataset
 DATADIR = os.path.join(os.path.dirname(__file__), "data")
 
 
-def prepare_hf_dataset(
+def prepare_hf_dataset(  # noqa: PLR0913
     nb_clients: int,
     text_field: str = "text",
     label_field: str = "label",

@@ -33,7 +33,7 @@ from declearn.utils.examples import setup_client_argparse
 FILEDIR = os.path.dirname(os.path.abspath(__file__))
 
 
-def run_client(
+def run_client(  # noqa: PLR0913
     name: Literal["cleveland", "hungarian", "switzerland", "va"],
     ca_cert: str,
     protocol: str = "websockets",
