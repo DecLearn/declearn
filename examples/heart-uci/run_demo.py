@@ -25,8 +25,8 @@ from declearn.utils.examples import generate_ssl_certificates
 
 # Perform local imports.
 with make_importable(os.path.dirname(__file__)):
-    from client import run_client
-    from server import run_server
+    from run_client import run_client
+    from run_server import run_server
 
 NAMES = ["cleveland", "hungarian", "switzerland", "va"]
 

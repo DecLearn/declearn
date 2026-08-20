@@ -4,11 +4,6 @@ import importlib
 from typing import List, Optional
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-from declearn.dataset import InMemoryDataset
-from declearn.main.config import FLOptimConfig, FLRunConfig
-from declearn.model.api import Model
-from declearn.secagg.api import SecaggConfigClient, SecaggConfigServer
-from declearn.secagg.utils import IdentityKeys
 
 from benchmarks.workload import baseline as B
 from benchmarks.workload.data import (
@@ -16,6 +11,11 @@ from benchmarks.workload.data import (
     ensure_data_for_n_clients,
 )
 from benchmarks.workload.spec import BenchmarkSpec, ClientSpec
+from declearn.dataset import InMemoryDataset
+from declearn.main.config import FLOptimConfig, FLRunConfig
+from declearn.model.api import Model
+from declearn.secagg.api import SecaggConfigClient, SecaggConfigServer
+from declearn.secagg.utils import IdentityKeys
 
 __all__ = ["BACKEND_LAYOUT", "build_benchmark"]
 

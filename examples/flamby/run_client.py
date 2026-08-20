@@ -33,9 +33,10 @@ import declearn.model.torch
 from declearn.utils import make_importable, setup_client_loggers
 
 # Do not remove the following "unused" import,
-# it is necessary for type registration
+# it is necessary to register and serialize this example-specific metric and
+# make the FL experiment work when using this script.
 with make_importable(os.path.dirname(__file__)):
-    from metric import CIndexMetric
+    from metric import CIndexMetric  # noqa: F401
 
 import declearn
 from declearn.dataset.torch import TorchDataset

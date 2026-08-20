@@ -1,6 +1,7 @@
 """Standard MNIST CNN built with PyTorch, used by all torch runs."""
 
 import torch
+
 from declearn.model.api import Model
 from declearn.model.torch import TorchModel
 
