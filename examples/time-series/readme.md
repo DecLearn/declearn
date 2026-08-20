@@ -20,7 +20,7 @@ git clone git@gitlab.inria.fr:magnet/declearn/declearn.git declearn
 Create a virtual environment and install the required dependencies listed in `pyproject.toml`:
 
 ```bash
-python3 -m venv <your_venv_name>
+python3 -m venv <YOUR_VENV_NAME>
 ```
 
 ```bash
@@ -34,7 +34,7 @@ The example directory is organized as follows:
 ```text
 examples/time-series/
 ├── dataset.py       # Dataset definition
-├── gen_ssl.py       # Self-signed SSL certificate generation
+├── generate_ssl.py       # Self-signed SSL certificate generation
 ├── model.py         # Model definition
 ├── prepare_data.py  # Client data generation script
 ├── readme.md        # Documentation
@@ -52,7 +52,8 @@ The demo can be run either from a single terminal (local simulation) or across m
 First, generate the dataset using:
 
 ```bash
-cd declearn && python examples/time-series/data.py --nb_clients <NUMBER_OF_CLIENTS>
+cd declearn/examples/time-series
+python prepare_data.py --nb_clients <NUMBER_OF_CLIENTS>
 ```
 
 You can experiment with the number of clients, up to 8 for now.
@@ -60,13 +61,13 @@ You can experiment with the number of clients, up to 8 for now.
 Then, run the full demo locally using multiprocessing:
 
 ```bash
-cd examples/time-series && python3 run_demo.py
+python run_demo.py
 ```
 
 To view available options:
 
 ```bash
-python3 run_demo.py --help
+python run_demo.py --help
 ```
 
 ### Multi-Terminal Execution
@@ -78,12 +79,13 @@ In this setup, the server and clients are launched independently, potentially on
 Client datasets must be generated in advance by downloading and splitting the sEMG dataset. In this example, each client is assigned one sensor, which limits the number of clients to 8.
 
 - `_time_series_emg.py` handles filtering, splitting, and normalization.
-- `data.py` automates dataset generation.
+- `prepare_data.py` automates dataset generation.
 
 To generate client data:
 
 ```bash
-python examples/time-series/prepare_data.py --nb_clients <NUMBER_OF_CLIENTS>
+cd declearn/examples/time-series
+python prepare_data.py --nb_clients <NUMBER_OF_CLIENTS>
 ```
 
 #### 2. Set Up SSL Certificates
@@ -91,7 +93,7 @@ python examples/time-series/prepare_data.py --nb_clients <NUMBER_OF_CLIENTS>
 Generate SSL certificates for secure communication. For local testing:
 
 ```bash
-python examples/time-series/data.py --nb_clients <NUMBER_OF_CLIENTS>
+python generate_ssl.py
 ```
 ##### Advanced setup
 
@@ -99,13 +101,13 @@ For more advanced setups, you can use `declearn.utils.examples.generate_ssl_cert
 
 Examples:
 - Domain name: set `c_name="mymachine.mydomain.fr"` or include it in `alt_dns`.
-- IP address:
+- IP address:  
 
 ```python
 generate_ssl_certificates(FILEDIR, alt_ips=["192.0.2.1"])
 ```
 
-#### 3. Run the Server
+#### 3. Run the server
 
 Start the server first:
 
@@ -119,7 +121,10 @@ You may also modify this script to adjust:
 - The model architecture
 - The federated learning strategy
 - The optimization algorithm
-- The training hyperparameters, including differential privacy
+- The training hyper-parameters, including differential privacy
+
+
+#### 4. Run the clients
 
 Launch each client in a separate terminal:
 
