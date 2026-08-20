@@ -40,11 +40,12 @@ with make_importable(os.path.dirname(__file__)):
 
 FILEDIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_CERT = os.path.join(FILEDIR, "ca-cert.pem")
+DEFAULT_DATA_FOLDER = os.path.join(FILEDIR, "data")
 
 
 def run_client(  # noqa: PLR0913
     client_name: str,
-    data_folder: str,
+    data_folder: str = DEFAULT_DATA_FOLDER,
     ca_cert: str = DEFAULT_CERT,
     protocol: str = "websockets",
     serv_uri: str = "wss://localhost:8765",
@@ -57,7 +58,8 @@ def run_client(  # noqa: PLR0913
     client_name: str
         Name of the client (i.e. center data from which to use).
     data_folder: str
-        The parent folder of this client's data
+        The parent folder of this client's data.
+        Default to this example "data" folder's path.
     ca_cert: str, default="./ca-cert.pem"
         Path to the certificate authority file that was used to
         sign the server's SSL certificate.

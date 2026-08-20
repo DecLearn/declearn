@@ -121,9 +121,9 @@ if __name__ == "__main__":
         default_cert=os.path.join(FILEDIR, "ca-cert.pem"),
     )
     parser.add_argument(
-        "name",
+        "client_name",
         type=str,
-        help="name of your client",
+        help="Client name",
         choices=["cleveland", "hungarian", "switzerland", "va"],
     )
     args = parser.parse_args()

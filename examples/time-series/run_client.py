@@ -114,7 +114,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         type=str,
-        dest="name",
+        dest="client_name",
         help="Client name. Must be the same as the name "
         "used to generate the data.",
     )

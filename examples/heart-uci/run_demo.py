@@ -20,6 +20,8 @@
 import os
 import tempfile
 
+import fire
+
 from declearn.utils import make_importable, run_as_processes
 from declearn.utils.examples import generate_ssl_certificates
 
@@ -64,4 +66,4 @@ def run_demo(
 
 
 if __name__ == "__main__":
-    run_demo()
+    fire.Fire(run_demo)
