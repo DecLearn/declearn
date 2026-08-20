@@ -17,12 +17,15 @@
 
 """Utils to fetch and prepare some open-source datasets.
 
-Datasets
---------
+Heart-UCI and MNIST Datasets
+----------------------------
 * [load_heart_uci][declearn.dataset.examples.load_heart_uci]:
     Load and/or download a pre-processed UCI heart disease dataset.
 * [load_mnist][declearn.dataset.examples.load_mnist]:
     Load and/or download the MNIST digit-classification dataset.
+
+sEMG time-series Dataset (needs torch)
+--------------------------------------
 * [load_semg_hand_poses][declearn.dataset.examples.load_semg_hand_poses]:
     Load and/or download the hand poses sEMG csv files.
 * [ACTIONS][declearn.dataset.examples.ACTIONS]
@@ -31,6 +34,14 @@ Datasets
     Configuration container for EMG dataset preprocessing and loading.
 """
 
+from importlib.util import find_spec
+
 from ._heart_uci import load_heart_uci
 from ._mnist import load_mnist
-from ._time_series_emg import ACTIONS, EMGDatasetConfigs, load_semg_hand_poses
+
+if find_spec("torch") is not None:  # if "torch" dependency is installed
+    from ._time_series_emg import (
+        ACTIONS,
+        EMGDatasetConfigs,
+        load_semg_hand_poses,
+    )
