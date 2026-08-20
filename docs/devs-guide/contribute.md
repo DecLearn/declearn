@@ -161,6 +161,10 @@ uv venv --python 3.12
   - `poc/` for a proof of concept
   - `build/` for updating build configuration, development tools or other
     changes irrelevant to the user
+  - `dev/` for a develop-like branch on which a substantial feature is being
+  developed in incremental steps (and MRs). This kind of branch allows to
+  work incrementally on a feature, and make frequent MRs and merges, without
+  releasing it on the `develop` branch until the complete work is finished.
 
   Example of encouraged branch name : `feat/client_sampling`
 
@@ -285,3 +289,8 @@ Resources relative to CI/CD are :
 - the `.gitlab-ci.yml` configuration file
 - the resources in the `ci/` directory (e.g. `Dockerfile` to build the CI/CD
   custom Docker image)
+
+## Other resources
+
+For core developers, additional resources (e.g. for the project management) can be
+found in the [DecLearn private wiki](https://gitlab.inria.fr/magnet/declearn/declearn/-/wikis/home).
