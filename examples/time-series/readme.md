@@ -83,7 +83,7 @@ Client datasets must be generated in advance by downloading and splitting the sE
 To generate client data:
 
 ```bash
-python examples/time-series/data.py --nb_clients <NUMBER_OF_CLIENTS>
+python examples/time-series/prepare_data.py --nb_clients <NUMBER_OF_CLIENTS>
 ```
 
 #### 2. Set Up SSL Certificates
@@ -93,9 +93,9 @@ Generate SSL certificates for secure communication. For local testing:
 ```bash
 python examples/time-series/data.py --nb_clients <NUMBER_OF_CLIENTS>
 ```
-#### 2. Set Up SSL Certificates
+##### Advanced setup
 
-For more advanced setups, you can use `declearn.test_utils.generate_ssl_certificates`.
+For more advanced setups, you can use `declearn.utils.examples.generate_ssl_certificates`.
 
 Examples:
 - Domain name: set `c_name="mymachine.mydomain.fr"` or include it in `alt_dns`.
@@ -105,14 +105,12 @@ Examples:
 generate_ssl_certificates(FILEDIR, alt_ips=["192.0.2.1"])
 ```
 
-For more advanced setups, you can use `declearn.utils.examples.generate_ssl_certificates`.
-
 #### 3. Run the Server
 
 Start the server first:
 
 ```bash
-python run_server.py 2
+python run_server.py <NUMBER_OF_CLIENTS>
 ```
 
 Use `--help` to configure networking and SSL options.
@@ -123,22 +121,10 @@ You may also modify this script to adjust:
 - The optimization algorithm
 - The training hyperparameters, including differential privacy
 
-```bash
-python run_server.py 
-```
-
 Launch each client in a separate terminal:
 
 ```bash
-python run_client.py client_0 "data/15Subjects-7Gestures"
-```
-
-Use `--help` for additional options.
-
-Launch each client in a separate terminal:
-
-```bash
-python run_client.py --name client_<CLIENT_NUMBER>
+python run_client.py client_<CLIENT_NUMBER>
 ```
 
 Use `--help` for additional options.
