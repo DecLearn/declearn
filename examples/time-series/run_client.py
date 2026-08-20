@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Script to run a federated client on the Semg hand poses dataset."""
+"""Script to run a federated client on the sEMG hand poses dataset."""
 
 import os
 from dataclasses import astuple, dataclass
