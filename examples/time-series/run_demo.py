@@ -37,24 +37,19 @@ def run_demo(
     nb_clients: int = 2,
     window_size: int = 128,
     mask_ratio: float = 0.25,
-    target: int = 8,
 ):
     """Runs 1 server simulation along max 2 clients demo
     for time-series example
 
     Parameters
     ----------
-    Directory where the data is/will be stored.
     nb_clients: int (optional)
-    Number of clients for the experiment. Defaults to 2.
+        Number of clients for the experiment. Defaults to 2.
     window_size: int (optional)
-        Size of the sliding window applied on evey sEMG signal.
+        Size of the sliding window applied on every sEMG signal.
         Defaults to 128.
     mask_ratio: float (optional)
         The rate of random points to be masked. Defaults to 0.25.
-    target: int (optional)
-        The column representing the sensor from which the time-series data is
-        constructed.
 
     Raises
     ------

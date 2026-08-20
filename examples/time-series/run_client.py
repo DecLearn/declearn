@@ -19,6 +19,7 @@
 
 import os
 from dataclasses import astuple, dataclass
+from pathlib import Path
 from typing import Union
 
 import torch
@@ -112,13 +113,13 @@ if __name__ == "__main__":
         default_cert=os.path.join(FILEDIR, "ca-cert.pem"),
     )
     parser.add_argument(
-        "--name",
         type=str,
+        dest="name",
         help="Client name. Must be the same as the name "
         "used to generate the data.",
     )
     parser.add_argument(
-        "--data_path",
+        "--data_folder",
         type=str,
         default=os.path.join(os.path.dirname(__file__), "data"),
         help="Absolute path to the client data.",
@@ -143,7 +144,7 @@ if __name__ == "__main__":
         choices=list(range(1, 9)),
     )
     args = parser.parse_args()
-    data_path = os.path.abspath(f"{args.data_path}/{args.name}.pt")
+    data_path = os.path.abspath(Path(args.data_folder) / f"{args.name}.pt")
 
     # check if the data path actually exists
     if not os.path.exists(data_path):
@@ -152,7 +153,7 @@ if __name__ == "__main__":
     # set up the configs object
     client_configs = ClientConfigInput(
         name=args.name,
-        data_path=f"{args.data_path}/{args.name}.pt",
+        data_path=data_path,
         certificate=args.certificate,
         protocol=args.protocol,
         server_uri=args.uri,

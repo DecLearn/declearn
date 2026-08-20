@@ -136,7 +136,7 @@ if __name__ == "__main__":
         default_pkey=os.path.join(FILEDIR, "server-pkey.pem"),
     )
     parser.add_argument(
-        "--nb_clients",
+        dest="nb_clients",
         type=int,
         help="Int. Number of clients for the experiment must be in [1-8]",
         default=2,
