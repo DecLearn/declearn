@@ -26,9 +26,6 @@ import torch
 from dataset import MaskedAutoEncoderDataset
 from sklearn.model_selection import train_test_split
 
-# Do not remove the following "unused" import,
-# it is necessary for type registration
-import declearn.model.torch  # noqa: F401
 from declearn.communication.utils._build import NetworkClientConfig
 from declearn.dataset.examples import (
     ACTIONS,

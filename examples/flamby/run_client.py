@@ -27,9 +27,6 @@ import fire  # type: ignore
 from flamby.datasets.fed_tcga_brca import FedTcgaBrca as TcgaBrcaDataset
 from torch.utils.data import random_split
 
-# Do not remove the following "unused" import,
-# it is necessary for type registration
-import declearn.model.torch
 from declearn.utils import make_importable, setup_client_loggers
 
 # Do not remove the following "unused" import,

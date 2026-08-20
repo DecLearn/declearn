@@ -24,10 +24,6 @@ import os
 import fire  # type: ignore
 
 import declearn
-
-# Do not remove the following "unused" import,
-# it is necessary for type registration
-import declearn.model.tensorflow
 from declearn.utils import setup_client_loggers
 
 FILEDIR = os.path.dirname(os.path.abspath(__file__))
