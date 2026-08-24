@@ -25,12 +25,11 @@ from dataclasses import astuple, dataclass
 from model import ModelConfigsInput, SimpleMaskedTSAutoEncoder
 from torch.nn import MSELoss
 
-from declearn.communication.utils._build import NetworkServerConfig
-from declearn.main._server import FederatedServer
-from declearn.main.config._run_config import FLRunConfig
-from declearn.main.config._strategy import FLOptimConfig
+from declearn.communication.utils import NetworkServerConfig
+from declearn.main import FederatedServer
+from declearn.main.config import FLOptimConfig, FLRunConfig
 from declearn.model.torch import TorchModel
-from declearn.utils import config_server_loggers
+from declearn.utils import setup_server_loggers
 from declearn.utils.examples import setup_server_argparse
 
 
@@ -79,7 +78,7 @@ def run_server(
     stamp = datetime.datetime.now().strftime("%y-%m-%d_%H-%M")
     checkpoint = os.path.join(FILEDIR, f"result_{stamp}", "server")
 
-    config_server_loggers(
+    setup_server_loggers(
         level=logging.INFO, fpath=os.path.join(checkpoint, "logs.txt")
     )
 

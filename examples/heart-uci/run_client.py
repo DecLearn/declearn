@@ -128,4 +128,4 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     # Run the client routine.
-    run_client(args.name, args.certificate, args.protocol, args.uri)
+    run_client(args.client_name, args.certificate, args.protocol, args.uri)
