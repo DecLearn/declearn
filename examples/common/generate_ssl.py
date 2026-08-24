@@ -17,10 +17,20 @@
 
 """Script to generate self-signed SSL certificates for example experiments.
 
-By default, generates the certificates in the current directory (where you
+Usage Notes
+-----------
+- By default, generates the certificates in the current directory (where you
 have run this script).
 
-TODO doc details (multi-machine)
+- `alt_dns` and `alt_ips` arguments expect a list of strings, but as they are
+CLI arguments, you must wrap them into a string (using quotes).
+Ex:
+```bash
+python generate_ssl.py \
+    --alt-dns='["my.domain.com", "localhost"]' \
+    --alt-ips='["127.0.0.1"]'
+```
+
 """
 
 import fire

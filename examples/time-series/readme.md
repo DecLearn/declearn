@@ -34,7 +34,6 @@ The example directory is organized as follows:
 ```text
 examples/time-series/
 ├── dataset.py       # Dataset definition
-├── generate_ssl.py       # Self-signed SSL certificate generation
 ├── model.py         # Model definition
 ├── prepare_data.py  # Client data generation script
 ├── readme.md        # Documentation
@@ -93,19 +92,15 @@ python prepare_data.py --nb_clients <NUMBER_OF_CLIENTS>
 Generate SSL certificates for secure communication. For local testing:
 
 ```bash
-python generate_ssl.py
+python ../common/generate_ssl.py
 ```
-##### Advanced setup
 
-For more advanced setups, you can use `declearn.utils.examples.generate_ssl_certificates`.
+Note that in real-life applications, one would most likely use certificates
+certificates signed by a trusted certificate authority instead.
 
-Examples:
-- Domain name: set `c_name="mymachine.mydomain.fr"` or include it in `alt_dns`.
-- IP address:  
-
-```python
-generate_ssl_certificates(FILEDIR, alt_ips=["192.0.2.1"])
-```
+Also note that `generate_ssl.py` may be used to generate a self-signed CA and
+a signed certificate for a given domain name or IP address.  
+See the script documentation for more details.
 
 #### 3. Run the server
 

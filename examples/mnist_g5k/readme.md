@@ -50,7 +50,7 @@ MNIST dataset machines. **It is the only script you will need to run**.
 All the other scripts are not aimed to be launched on your local machine. They
 are here to be easily found, downloaded (using git) and run by Grid5000 machines
 reserved for the experiment :
-- the `generate_ssl.py`, `prepare_data.py` and `run_server.py` scripts will be
+- the `../common/generate_ssl.py`, `prepare_data.py` and `run_server.py` scripts will be
 run by the server machine.
 - the `run_client.py` script will be run by each client machine.
 

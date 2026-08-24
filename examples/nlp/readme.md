@@ -37,7 +37,6 @@ structured the following way:
 ```
 nlp/
 │   dataset.py      - contains a torch Dataset implementation adapted to this task
-│   generate_ssl.py - generate self-signed ssl certificates
 │   model.py        - contains a torch module implementation adapted to this task
 |   prepare_data.py - fetch and split the IMDb dataset for FL use
 |   run_client.py   - set up and launch a federated-learning client
@@ -72,7 +71,7 @@ some learning parameters (by editing the `run_server.py` script).
 
 For something closer to real life implementation, i.e. to run the examples from
 different terminals or machines, you can draw inspiration from the dedicated
-section in [the MNIST example](../mnist/readme.md) which mainly uses the same
+section in [the heart-uci example](../heart-uci/readme.md) which mainly uses the same
 scripts as here.  
 For details on scripts usage, you can use the command
 `python [SCRIPT_NAME].py --help`.

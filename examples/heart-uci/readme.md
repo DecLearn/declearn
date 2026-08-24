@@ -22,7 +22,6 @@ python run.py
 heart-uci/
 │   run_client.py      - set up and launch a federated-learning client
 │   prepare_data.py    - optional util to download and prepare the dataset
-│   gen_ssl.py         - generate self-signed ssl certificates
 │   run_demo.py        - launch both the server and clients in a single session
 │   run_server.py      - set up and launch a federated-learning server
 └─── data      - saved datasets as csv files
@@ -68,23 +67,25 @@ We then sequentially run the server then the clients on separate terminals.
    Start by creating a signed SSL certificate for the server and sharing the
    CA file with each and every clients. The CA may be self-signed.
 
-   When testing locally, execute the `gen_ssl.py` script, to create a
-   self-signed root CA and an SSL certificate for "localhost":
+   When testing locally, execute the `generate_ssl.py` script,
+   to create a self-signed root CA and an SSL certificate for "localhost":
    ```bash
-   python gen_ssl.py
+   python ../common/generate_ssl.py
    ```
 
    Note that in real-life applications, one would most likely use certificates
    signed by a trusted certificate authority instead.
-   Alternatively, `declearn.utils.examples.generate_ssl_certificates` may be
+
+   Also note that `generate_ssl.py` may be
    used to generate a self-signed CA and a signed certificate for a given
-   domain name or IP address.
+   domain name or IP address.  
+   See the script documentation for more details.
 
 2. **Run the server**:<br/>
    Open a terminal and launch the server script for 1 to 4 clients,
    specifying the path to the SSL certificate and private key files,
    and network parameters. By default, things will run on the local
-   host, looking for `gen_ssl.py`-created PEM files.
+   host, looking for `generate_ssl.py`-created PEM files.
 
    E.g., to use 2 clients:
     ```bash
@@ -95,7 +96,7 @@ We then sequentially run the server then the clients on separate terminals.
    Open a new terminal and launch the client script, specifying one of the
    dataset-provider names, and optionally the path the CA file and network
    parameters. By default, things will run on the local host, looking for
-   a `gen_ssl.py`-created CA PEM file.
+   a `generate_ssl.py`-created CA PEM file.
 
    E.g., to launch a client using the "cleveland" dataset:
     ```bash

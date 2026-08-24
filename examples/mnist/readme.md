@@ -31,7 +31,6 @@ the following way:
 
 ```
 mnist/
-│   generate_ssl.py - generate self-signed ssl certificates
 |   prepare_data.py - fetch and split the MNIST dataset for FL use
 |   run_client.py   - set up and launch a federated-learning client
 │   run_demo.py     - simulate the entire FL process in a single session
@@ -101,30 +100,20 @@ We then sequentially run the server then the clients on separate terminals.
    Create a signed SSL certificate for the server and share the CA file that
    signed it with each and every clients. That CA may be self-signed.
 
-   When testing locally, execute the `generate_ssl.py` script, to create a
-   self-signed root CA and an SSL certificate for "localhost":
+   When testing locally, execute the `generate_ssl.py` script,
+   to create a self-signed root CA and an SSL certificate for "localhost":
 
    ```bash
-   python generate_ssl.py
+   python ../common/generate_ssl.py
    ```
 
    Note that in real-life applications, one would most likely use certificates
    certificates signed by a trusted certificate authority instead.
 
-   Alternatively, `declearn.utils.examples.generate_ssl_certificates` may be
+   Also note that `generate_ssl.py` may be
    used to generate a self-signed CA and a signed certificate for a given
    domain name or IP address.  
-   To achieve this easily with the provided example script, update 
-   `generate_ssl.py` so that it calls the `generate_ssl_certificates` function
-   with custom arguments, more precisely :
-   - If you use a domaine name as host (e.g. `mymachine.mydomain.fr`), set this
-   value for the `c_name` argument (or in a list, for the `alt_dns` argument).
-   - If you use an IP address as host (e.g. `192.0.2.1`), set this value in a
-   list and pass it to the `alt_ips` argument.
-
-      Example (IP address):  
-      `generate_ssl_certificates(FILEDIR, alt_ips=["192.0.2.1"])`
-
+   See the script documentation for more details.
 
 3. **Run the server**:<br/>
    Open a terminal and launch the server script for the desired number of
