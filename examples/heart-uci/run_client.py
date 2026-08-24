@@ -27,7 +27,7 @@ from declearn.communication import NetworkClientConfig
 from declearn.dataset import InMemoryDataset
 from declearn.dataset.examples import load_heart_uci
 from declearn.main import FederatedClient
-from declearn.utils import setup_client_loggers
+from declearn.utils import setup_client_loggers, setup_root_logger
 from declearn.utils.examples import setup_client_argparse
 
 FILEDIR = os.path.dirname(os.path.abspath(__file__))
@@ -127,5 +127,8 @@ if __name__ == "__main__":
         choices=["cleveland", "hungarian", "switzerland", "va"],
     )
     args = parser.parse_args()
+
+    setup_root_logger()  # to display all info logs in the console
+
     # Run the client routine.
     run_client(args.client_name, args.certificate, args.protocol, args.uri)

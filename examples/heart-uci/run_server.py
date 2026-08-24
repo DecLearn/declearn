@@ -24,7 +24,7 @@ from declearn.communication import NetworkServerConfig
 from declearn.main import FederatedServer
 from declearn.main.config import FLOptimConfig, FLRunConfig
 from declearn.model.sklearn import SklearnSGDModel
-from declearn.utils import setup_server_loggers
+from declearn.utils import setup_root_logger, setup_server_loggers
 from declearn.utils.examples import setup_server_argparse
 
 FILEDIR = os.path.dirname(os.path.abspath(__file__))
@@ -151,5 +151,8 @@ if __name__ == "__main__":
         choices=[1, 2, 3, 4],
     )
     args = parser.parse_args()
+
+    setup_root_logger()  # to display all info logs in the console
+
     # Run the server routine.
     run_server(**args.__dict__)

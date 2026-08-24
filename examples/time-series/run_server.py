@@ -29,7 +29,7 @@ from declearn.communication.utils import NetworkServerConfig
 from declearn.main import FederatedServer
 from declearn.main.config import FLOptimConfig, FLRunConfig
 from declearn.model.torch import TorchModel
-from declearn.utils import setup_server_loggers
+from declearn.utils import setup_root_logger, setup_server_loggers
 from declearn.utils.examples import setup_server_argparse
 
 
@@ -69,8 +69,6 @@ def run_server(
     server_configs: ServerConfigInput, model_configs: ModelConfigsInput
 ):
     """Runs a server with the defined configurations"""
-    print(model_configs)
-
     model = TorchModel(
         model=SimpleMaskedTSAutoEncoder(model_configs), loss=MSELoss()
     )
@@ -164,6 +162,8 @@ if __name__ == "__main__":
     model_configs = ModelConfigsInput(
         input_dim=args.window_size, mask_ratio=args.mask_ratio
     )
+
+    setup_root_logger()  # to display all info logs in the console
 
     # Run the server routine.
     run_server(server_config, model_configs)

@@ -33,7 +33,7 @@ from declearn.dataset.examples import (
 )
 from declearn.dataset.torch import TorchDataset
 from declearn.main import FederatedClient
-from declearn.utils import setup_client_loggers
+from declearn.utils import setup_client_loggers, setup_root_logger
 from declearn.utils.examples import setup_client_argparse
 
 FILEDIR = os.path.dirname(__file__)
@@ -165,6 +165,8 @@ if __name__ == "__main__":
         protocol=args.protocol,
         server_uri=args.uri,
     )
+
+    setup_root_logger()  # to display all info logs in the console
 
     # run the client routine
     run_client(client_configs)

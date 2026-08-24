@@ -25,7 +25,7 @@ import tempfile
 import fire  # type: ignore
 from flamby.datasets.fed_tcga_brca import FedTcgaBrca as TcgaBrcaDataset
 
-from declearn.utils import make_importable, run_as_processes
+from declearn.utils import make_importable, run_as_processes, setup_root_logger
 from declearn.utils.examples import generate_ssl_certificates
 
 # Perform local imports.
@@ -47,6 +47,8 @@ def run_demo(
     """
     if nb_clients <= 0 or nb_clients > 6:
         raise NotImplementedError("This demo only supports up to 6 clients")
+
+    setup_root_logger()  # to display all info logs in the console
 
     # Initial call to the dataset to prompt the license agreement.
     TcgaBrcaDataset()

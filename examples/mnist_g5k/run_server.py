@@ -21,7 +21,7 @@ import datetime
 import logging
 import os
 
-from declearn.utils import setup_server_loggers
+from declearn.utils import setup_root_logger, setup_server_loggers
 
 # set env variable to prevent the whole gpu allocation by tensorflow
 os.environ["TF_FORCE_GPU_ALLOW_GROWTH"] = "true"
@@ -80,7 +80,8 @@ def run_server(  # noqa: PLR0913
     # Set up checkpointing and logging.
     stamp = datetime.datetime.now().strftime("%y-%m-%d_%H-%M")
     checkpoint = os.path.join(FILEDIR, f"result_{stamp}", "server")
-    # Set up a logger, records from which will go to a file.
+    setup_root_logger()  # to display all info logs in the console
+    # Set up a server logger, records from which will go to a file.
     setup_server_loggers(
         level=logging.INFO, fpath=os.path.join(checkpoint, "logs.txt")
     )
@@ -185,7 +186,7 @@ def run_server(  # noqa: PLR0913
 
 
 def main():
-    "Fire-wrapped `run_server`."
+    """Fire-wrapped `run_server`."""
     fire.Fire(run_server)
 
 

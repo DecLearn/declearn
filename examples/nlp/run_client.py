@@ -27,7 +27,11 @@ from transformers import DistilBertTokenizer
 
 import declearn
 from declearn.dataset.torch import TorchDataset
-from declearn.utils import make_importable, setup_client_loggers
+from declearn.utils import (
+    make_importable,
+    setup_client_loggers,
+    setup_root_logger,
+)
 
 # Perform local imports.
 with make_importable(os.path.dirname(__file__)):
@@ -70,7 +74,7 @@ def run_client(  # noqa: PLR0913
 
     ### Optional: some convenience settings
 
-    # Set GPU as prefered device.
+    # Set GPU as preferred device.
     declearn.utils.set_device_policy(gpu=True)
 
     # Set up logger and checkpointer.
@@ -128,7 +132,9 @@ def run_client(  # noqa: PLR0913
 
 
 def main():
-    "Fire-wrapped `run_client`."
+    """Fire-wrapped `run_client`."""
+    setup_root_logger()  # to display all info logs in the console
+
     fire.Fire(run_client)
 
 

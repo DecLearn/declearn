@@ -24,7 +24,7 @@ import os
 import fire  # type: ignore
 
 import declearn
-from declearn.utils import setup_client_loggers
+from declearn.utils import setup_client_loggers, setup_root_logger
 
 FILEDIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_CERT = os.path.join(FILEDIR, "ca-cert.pem")
@@ -119,7 +119,9 @@ def run_client(  # noqa: PLR0913
 
 
 def main():
-    "Fire-wrapped `run_client`."
+    """Fire-wrapped `run_client`."""
+    setup_root_logger()  # to display all info logs in the console
+
     fire.Fire(run_client)
 
 

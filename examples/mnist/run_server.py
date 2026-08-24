@@ -21,7 +21,7 @@ import datetime
 import logging
 import os
 
-from declearn.utils import setup_server_loggers
+from declearn.utils import setup_root_logger, setup_server_loggers
 
 # set env variable to prevent the whole gpu allocation by tensorflow
 os.environ["TF_FORCE_GPU_ALLOW_GROWTH"] = "true"
@@ -186,6 +186,8 @@ def run_server(  # noqa: PLR0913
 
 def main():
     "Fire-wrapped `run_server`."
+    setup_root_logger()  # to display all info logs in the console
+
     fire.Fire(run_server)
 
 
