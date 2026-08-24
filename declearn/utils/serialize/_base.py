@@ -35,6 +35,11 @@ from typing import (
     TypeVar,
 )
 
+from ._lazy import (
+    _LAZY_SERIAL_REGISTRY,
+    import_module_of,
+)
+
 __all__ = ["add_serialization_support"]
 
 SerialFmt = Literal["msgpack", "json"]  # supported serialization formats
@@ -195,16 +200,29 @@ def _decode(obj: Dict[str, Any], fmt: SerialFmt) -> Any:
     # If 'obj' does not conform to SerialWrapper format, return it as-is.
     if not isinstance(obj, dict) or (set(obj.keys()) != {"__type__", "dump"}):
         return obj
-    # If 'obj' is SerialWrapper but spec is not found,
-    # warn before returning as-is.
-    spec = _DESERIAL_REGISTRY[fmt].get(obj["__type__"])
+
+    object_type = obj["__type__"]
+    spec = _DESERIAL_REGISTRY[fmt].get(object_type)
+    # If object type has not been serialization-registered:
     if spec is None:
-        warnings.warn(
-            f"{fmt}-deserializer received a seemingly-packed object "
-            f"of name '{obj['__type__']}', the specifications for "
-            "which are unavailable.\nIt was returned as-is.",
-            stacklevel=2,
-        )
+        # If object type has been lazily serialization-registered:
+        if object_type in _LAZY_SERIAL_REGISTRY:
+            import_module_of(object_type)
+            # This manual import triggered the serialization support,
+            # so, now we are able to decode the object in a recursive call.
+            return _decode(obj, fmt)
+        else:
+            # Object type has not been registered nor lazy-registered,
+            # warn before returning as-is.
+            warnings.warn(
+                f"{fmt}-deserializer received a seemingly-packed object "
+                f"of name '{obj['__type__']}', the specifications for "
+                f"which are unavailable. Meaning that type '{obj['__type__']}'"
+                " has no serialization support in this DecLearn process. "
+                "Consequently, the packed object is returned as-is and may "
+                "lead to a subsequent error.",
+                stacklevel=2,
+            )
         return obj
     # Otherwise, use the recovered spec to decode the object.
     return spec.decoder(obj["dump"])
