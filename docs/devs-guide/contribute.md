@@ -138,19 +138,24 @@ uv venv --python 3.12
 - The 'develop' branch is the main one and should receive all finalized changes
   to the source code. Release branches are then created and updated by cherry-
   picking from that branch. It therefore acts as a nightly stable version.
+
 - The 'rX.Y' branches are release branches for each and every X.Y versions. For
   past versions, these branches enable pushing patches towards a subminor
   version release (hence being version `X.Y.(Z+1)-dev`). For future versions,
   these branches enable cherry-picking commits from main to build up an alpha,
   beta, release-candidate and eventually stable `X.Y.0` version to release.
+
 - Feature branches should be created at will to develop features, enhancements,
   or even hotfixes that will later be merged into 'main' and eventually into
   one or multiple release branches.
+
 - It is legit to write up poc branches, as well as to split the development of
   a feature into multiple branches that will incrementally be merged into an
   intermediate feature branch that will eventually be merged into 'main'.
+
 - Git branch naming: branches prefixed by their "category" followed by a `/`
   are highly recommended to enhance clarity in the development process.
+
   For instance, you may use the following categories as prefix:
   - `feat/` for a new feature
   - `fix/` for a bug fix
@@ -159,8 +164,19 @@ uv venv --python 3.12
   - `test/` for test addition
   - `ex/` for an example addition or update
   - `poc/` for a proof of concept
+
+  - `study/` for a side study on a precise topic, e.g. to demonstrate a result
+  or motivate an implementation choice. Such a branch will typically never be
+  merged but may host a study notebook that will always be available for
+  consultation in the future.
+  
   - `build/` for updating build configuration, development tools or other
     changes irrelevant to the user
+  
+  - `dev/` for a develop-like branch on which a substantial feature is being
+  developed in incremental steps (and MRs). This kind of branch allows to
+  work incrementally on a feature, and make frequent MRs and merges, without
+  releasing it on the `develop` branch until the complete work is finished.
 
   Example of encouraged branch name : `feat/client_sampling`
 
@@ -285,3 +301,8 @@ Resources relative to CI/CD are :
 - the `.gitlab-ci.yml` configuration file
 - the resources in the `ci/` directory (e.g. `Dockerfile` to build the CI/CD
   custom Docker image)
+
+## Other resources
+
+For core developers, additional resources (e.g. for the project management) can be
+found in the [DecLearn private wiki](https://gitlab.inria.fr/magnet/declearn/declearn/-/wikis/home).

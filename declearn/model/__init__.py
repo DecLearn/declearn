@@ -67,6 +67,10 @@ The optional-dependency-based submodules that may be manually imported are:
         Vector for torch Tensor objects.
 """
 
+from importlib.util import find_spec
+
+from declearn.utils.serialize import add_lazy_serial_support
+
 from . import api, sklearn
 
 OPTIONAL_MODULES = [
@@ -74,3 +78,20 @@ OPTIONAL_MODULES = [
     "tensorflow",
     "torch",
 ]
+
+# Add lazy serialization support for optional submodules' symbols
+# (only if the corresponding optional dependency is installed).
+# For more details about this, see `declearn.utils.serialize` documentation.
+if find_spec("haiku-dm") is not None:  # if haiku is installed
+    add_lazy_serial_support("HaikuModel", module=f"{__name__}.haiku")
+    add_lazy_serial_support("JaxNumpyVector", module=f"{__name__}.haiku")
+
+if find_spec("tensorflow") is not None:  # if tensorflow is installed
+    add_lazy_serial_support("TensorflowModel", module=f"{__name__}.tensorflow")
+    add_lazy_serial_support(
+        "TensorflowVector", module=f"{__name__}.tensorflow"
+    )
+
+if find_spec("torch") is not None:  # if torch is installed
+    add_lazy_serial_support("TorchModel", module=f"{__name__}.torch")
+    add_lazy_serial_support("TorchVector", module=f"{__name__}.torch")

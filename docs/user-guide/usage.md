@@ -151,8 +151,8 @@ NetworkServer), or at the instance level for classes instantiated several times
 TrainingManager).
 
 ### Easy configuration
-The `declearn.utils.config_server_loggers` and 
-`declearn.utils.config_client_loggers` functions may be used (before launching
+The `declearn.utils.setup_server_loggers` and 
+`declearn.utils.setup_client_loggers` functions may be used (before launching
 the FL experiment) to facilitate the setup of server-related loggers and 
 specific client-related loggers, respectively. 
 
@@ -160,16 +160,20 @@ These functions allow basic configuration, i.e. defining loggers
 verbosity level, format, and whether messages should be logged to the console
 and/or to an output file.
 
-You can also specifically use `declearn.utils.config_logger` in the same way for
+If you want to apply a configuration to all loggers in the experiment, you can
+use `declearn.utils.setup_root_logger`. This is allowed by the fact that all
+DecLearn logger names follow hierarchical naming and are all prefixed with
+`declearn.`.
+
+You can also specifically use `declearn.utils.setup_logger` in the same way for
 any logger whose name you know.
 
 Notes :  
-- Declearn logger names follow hierarchical naming, they are all prefixed with
-`declearn.`. Thus, if you want to apply a configuration to all loggers in the
-experiment, you can use `declearn.utils.config_logger` with "declearn" as
-`name` argument.
-- Each class concerned by logging should normally indicate the name of its
-associated logger in its docstring.
+- Each class concerned by class-level logging should normally indicate the name
+of its associated logger in its docstring.
+- Module-level loggers should be named after the module full name, e.g.
+`declearn.foo._bar`.
+
 
 ### Advanced configuration
 Because it relies on Python’s global logging registry, each class/instance

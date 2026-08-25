@@ -15,12 +15,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Script to generate self-signed SSL certificates for the demo."""
+"""Script to generate self-signed SSL certificates for example experiments.
 
-import os
+Usage Notes
+-----------
+- By default, generates the certificates in the current directory (where you
+have run this script).
+
+- `alt_dns` and `alt_ips` arguments expect a list of strings, but as they are
+CLI arguments, you must wrap them into a string (using quotes).
+Ex:
+```bash
+python generate_ssl.py \
+    --alt-dns='["my.domain.com", "localhost"]' \
+    --alt-ips='["127.0.0.1"]'
+```
+
+"""
+
+import fire
 
 from declearn.utils.examples import generate_ssl_certificates
 
 if __name__ == "__main__":
-    FILEDIR = os.path.dirname(os.path.abspath(__file__))
-    generate_ssl_certificates(FILEDIR)
+    fire.Fire(generate_ssl_certificates)

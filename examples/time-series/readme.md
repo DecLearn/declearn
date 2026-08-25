@@ -14,17 +14,17 @@ For simplicity, the loss is currently computed over the entire slice rather than
 First, clone the DecLearn repository:
 
 ```bash
-git clone git@gitlab.inria.fr:magnet/declearn/declearn.git declearn
+git clone https://gitlab.inria.fr/magnet/declearn/declearn.git
 ```
 
-Create a virtual environment and install the required dependencies listed in `pyproject.toml`:
-
+Create and activate a virtual environment and install the required dependencies listed in `pyproject.toml`:
+Ex:  
 ```bash
-python3 -m venv <YOUR_VENV_NAME>
+python3 -m venv .venv && source .venv/bin/activate
 ```
 
 ```bash
-cd declearn && pip install ".[torch, websockets]" && cd examples/time-series/
+cd declearn && pip install ".[torch, websockets]" && cd ..
 ```
 
 ## Project Structure
@@ -34,10 +34,8 @@ The example directory is organized as follows:
 ```text
 examples/time-series/
 ├── dataset.py       # Dataset definition
-├── generate_ssl.py       # Self-signed SSL certificate generation
 ├── model.py         # Model definition
 ├── prepare_data.py  # Client data generation script
-├── readme.md        # Documentation
 ├── run_client.py    # Launch a federated learning client
 ├── run_demo.py      # Run the full demo locally
 └── run_server.py    # Launch the server
@@ -93,19 +91,15 @@ python prepare_data.py --nb_clients <NUMBER_OF_CLIENTS>
 Generate SSL certificates for secure communication. For local testing:
 
 ```bash
-python generate_ssl.py
+python ../common/generate_ssl.py
 ```
-##### Advanced setup
 
-For more advanced setups, you can use `declearn.utils.examples.generate_ssl_certificates`.
+Note that in real-life applications, one would most likely use certificates
+certificates signed by a trusted certificate authority instead.
 
-Examples:
-- Domain name: set `c_name="mymachine.mydomain.fr"` or include it in `alt_dns`.
-- IP address:  
-
-```python
-generate_ssl_certificates(FILEDIR, alt_ips=["192.0.2.1"])
-```
+Also note that `generate_ssl.py` may be used to generate a self-signed CA and
+a signed certificate for a given domain name or IP address.  
+See the script documentation for more details.
 
 #### 3. Run the server
 

@@ -33,7 +33,11 @@ from flamby.datasets.fed_tcga_brca import (
 
 import declearn
 from declearn.model.torch import TorchModel
-from declearn.utils import make_importable, setup_server_loggers
+from declearn.utils import (
+    make_importable,
+    setup_root_logger,
+    setup_server_loggers,
+)
 
 # Perform local imports.
 with make_importable(os.path.dirname(__file__)):
@@ -45,7 +49,7 @@ DEFAULT_CERT = os.path.join(FILEDIR, "server-cert.pem")
 DEFAULT_PKEY = os.path.join(FILEDIR, "server-pkey.pem")
 
 
-def run_server(
+def run_server(  # noqa: PLR0913
     nb_clients: int,
     certificate: str = DEFAULT_CERT,
     private_key: str = DEFAULT_PKEY,
@@ -181,6 +185,8 @@ def run_server(
 
 def main():
     "Fire-wrapped `run_server`."
+    setup_root_logger()  # to display all info logs in the console
+
     fire.Fire(run_server)
 
 

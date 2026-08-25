@@ -7,13 +7,35 @@
 predict a binary variable, indicating heart disease, from a set of health
 indicators.
 
-**To simply run the demo**, use the bash command below. You can follow along
-the code in the `hands-on` section of the package documentation. For more
-details on what running the federated learning processes imply, see the last
-section.
+**To simply run the demo**, use the bash command below in a set-up environment.
+You can follow along the code in the `hands-on` section of the package documentation.
+For more details on what running the federated learning processes imply,
+see the last section.
 
 ```bash
-python run.py
+python run_demo.py
+```
+
+## Setup
+
+To be able to experiment with this tutorial:
+
+- Clone the declearn repo (you may specify a given release branch or tag):
+
+```bash
+git clone https://gitlab.inria.fr/magnet/declearn/declearn.git
+```
+
+- Create and activate a dedicated virtual environment.
+Ex:
+```bash
+python3 -m venv .venv && source .venv/bin/activate
+```
+
+- Install declearn in it from the local repo:
+
+```bash
+cd declearn && pip install ".[websockets]" && cd ..
 ```
 
 ## Folder structure
@@ -22,7 +44,6 @@ python run.py
 heart-uci/
 │   run_client.py      - set up and launch a federated-learning client
 │   prepare_data.py    - optional util to download and prepare the dataset
-│   gen_ssl.py         - generate self-signed ssl certificates
 │   run_demo.py        - launch both the server and clients in a single session
 │   run_server.py      - set up and launch a federated-learning server
 └─── data      - saved datasets as csv files
@@ -32,8 +53,8 @@ heart-uci/
 **Note** : `prepare_data.py` is here as a utility script. It can be used to download
 and prepare the dataset if you want to explore the data before launching an
 experiment.  
-Thus, you don't need to run it in an experiment. The main scripts `run.py` or
-`client.py` will anyway download the client data.
+Thus, you don't need to run it in an experiment. The main scripts `run_demo.py` or
+`run_client.py` will anyway download the client data.
 
 ## Run training routine
 
@@ -46,11 +67,12 @@ the demo from different terminals or machines.
 Use :
 
 ```bash
-python run.py  # note: python examples/heart-uci/run.py works as well
+cd declearn/examples/heart-uci
+python run_demo.py  # note: python examples/heart-uci/run_demo.py works as well
 ```
 
-The `run.py` scripts collects the server and client routines defined under
-the `server.py` and `client.py` scripts, and runs them concurrently under
+The `run_demo.py` scripts collects the server and client routines defined under
+the `run_server.py` and `run_client.py` scripts, and runs them concurrently under
 a single python session using multiprocessing.
 
 This is the easiest way to launch the demo, e.g. to see the effects of
@@ -68,38 +90,40 @@ We then sequentially run the server then the clients on separate terminals.
    Start by creating a signed SSL certificate for the server and sharing the
    CA file with each and every clients. The CA may be self-signed.
 
-   When testing locally, execute the `gen_ssl.py` script, to create a
-   self-signed root CA and an SSL certificate for "localhost":
+   When testing locally, execute the `generate_ssl.py` script,
+   to create a self-signed root CA and an SSL certificate for "localhost":
    ```bash
-   python gen_ssl.py
+   python ../common/generate_ssl.py
    ```
 
    Note that in real-life applications, one would most likely use certificates
    signed by a trusted certificate authority instead.
-   Alternatively, `declearn.utils.examples.generate_ssl_certificates` may be
+
+   Also note that `generate_ssl.py` may be
    used to generate a self-signed CA and a signed certificate for a given
-   domain name or IP address.
+   domain name or IP address.  
+   See the script documentation for more details.
 
 2. **Run the server**:<br/>
    Open a terminal and launch the server script for 1 to 4 clients,
    specifying the path to the SSL certificate and private key files,
    and network parameters. By default, things will run on the local
-   host, looking for `gen_ssl.py`-created PEM files.
+   host, looking for `generate_ssl.py`-created PEM files.
 
    E.g., to use 2 clients:
     ```bash
-    python server.py 2  # use --help for details on network and SSL options
+    python run_server.py 2  # use --help for details on network and SSL options
     ```
 
 3. **Run each client**:<br/>
    Open a new terminal and launch the client script, specifying one of the
    dataset-provider names, and optionally the path the CA file and network
    parameters. By default, things will run on the local host, looking for
-   a `gen_ssl.py`-created CA PEM file.
+   a `generate_ssl.py`-created CA PEM file.
 
    E.g., to launch a client using the "cleveland" dataset:
     ```bash
-    python client.py cleveland   # use --help for details on other options
+    python run_client.py cleveland   # use --help for details on other options
     ```
 
 Note that the server should be launched before the clients, otherwise the

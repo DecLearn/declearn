@@ -17,6 +17,7 @@
 
 """Script to run a federated client on the sEMG hand poses dataset."""
 
+import logging
 import os
 from dataclasses import astuple, dataclass
 from pathlib import Path
@@ -26,15 +27,13 @@ import torch
 from dataset import MaskedAutoEncoderDataset
 from sklearn.model_selection import train_test_split
 
-# Do not remove the following "unused" import,
-# it is necessary for type registration
-import declearn.model.torch  # noqa: F401
 from declearn.communication.utils._build import NetworkClientConfig
 from declearn.dataset.examples import (
     ACTIONS,
 )
 from declearn.dataset.torch import TorchDataset
-from declearn.main._client import FederatedClient
+from declearn.main import FederatedClient
+from declearn.utils import setup_client_loggers, setup_root_logger
 from declearn.utils.examples import setup_client_argparse
 
 FILEDIR = os.path.dirname(__file__)
@@ -80,9 +79,15 @@ def run_client(configs: ClientConfigInput):
 
     Parameters
     ----------
-    configs: ClientConfigInput)
+    configs: ClientConfigInput
         Necessary configuration to run the client instance.
     """
+
+    # Set up logger to see information printed on the console.
+    setup_client_loggers(
+        client_name=configs.name,
+        level=logging.INFO,
+    )
 
     data = torch.load(configs.data_path)
     train, valid = train_test_split(data, test_size=0.20)
@@ -114,7 +119,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         type=str,
-        dest="name",
+        dest="client_name",
         help="Client name. Must be the same as the name "
         "used to generate the data.",
     )
@@ -144,7 +149,9 @@ if __name__ == "__main__":
         choices=list(range(1, 9)),
     )
     args = parser.parse_args()
-    data_path = os.path.abspath(Path(args.data_folder) / f"{args.name}.pt")
+    data_path = os.path.abspath(
+        Path(args.data_folder) / f"{args.client_name}.pt"
+    )
 
     # check if the data path actually exists
     if not os.path.exists(data_path):
@@ -152,12 +159,14 @@ if __name__ == "__main__":
 
     # set up the configs object
     client_configs = ClientConfigInput(
-        name=args.name,
+        name=args.client_name,
         data_path=data_path,
         certificate=args.certificate,
         protocol=args.protocol,
         server_uri=args.uri,
     )
+
+    setup_root_logger()  # to display all info logs in the console
 
     # run the client routine
     run_client(client_configs)

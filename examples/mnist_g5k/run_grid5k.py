@@ -195,8 +195,8 @@ def config_resources(
         Path to your network storage (ex: group storage), accessible from
         Grid5000 machines.
     data_dir: str
-        Name of the directory (on the network storage) in which the data will be
-        downloaded.
+        Name of the directory (on the network storage) in which the data will
+        be downloaded.
     roles: list[en.objects.Roles]
         Instances on which the command line will be executed.
     host: str
@@ -226,9 +226,10 @@ def config_resources(
     )
     run_cmd(f"{python_bin} -m pip install -e /opt/declearn[all]", roles)
 
-    # Copy .py scripts from mnist example folder to the current path
-    # for simplicity purpose :
+    # Copy .py scripts from "mnist_g5k" and "common" example folders to the
+    # current path for simplicity purpose :
     run_cmd("cp -v /opt/declearn/examples/mnist_g5k/*py ./", roles)
+    run_cmd("cp -v /opt/declearn/examples/common/*py ./", roles)
 
     # Generate SSL certificates and artifacts on the server machine.
     run_cmd(
@@ -315,8 +316,8 @@ def run_clients(
         Path to your network storage (ex: group storage), accessible from
         Grid5000 machines.
     data_dir: str
-        Name of the directory (on the network storage) in which the data will be
-        downloaded.
+        Name of the directory (on the network storage) in which the data will
+        be downloaded.
     roles: list[en.objects.Roles]
         Instances where the command line will be executed.
     host: str

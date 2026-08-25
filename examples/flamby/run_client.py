@@ -27,10 +27,11 @@ import fire  # type: ignore
 from flamby.datasets.fed_tcga_brca import FedTcgaBrca as TcgaBrcaDataset
 from torch.utils.data import random_split
 
-# Do not remove the following "unused" import,
-# it is necessary for type registration
-import declearn.model.torch
-from declearn.utils import make_importable, setup_client_loggers
+from declearn.utils import (
+    make_importable,
+    setup_client_loggers,
+    setup_root_logger,
+)
 
 # Do not remove the following "unused" import,
 # it is necessary to register and serialize this example-specific metric and
@@ -45,7 +46,7 @@ FILEDIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_CERT = os.path.join(FILEDIR, "ca-cert.pem")
 
 
-def run_client(
+def run_client(  # noqa: PLR0913
     client_idx: int,
     ca_cert: str = DEFAULT_CERT,
     protocol: str = "websockets",
@@ -131,6 +132,8 @@ def run_client(
 
 def main():
     "Fire-wrapped `run_client`."
+    setup_root_logger()  # to display all info logs in the console
+
     fire.Fire(run_client)
 
 

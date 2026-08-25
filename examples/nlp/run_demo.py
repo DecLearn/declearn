@@ -23,7 +23,7 @@ from typing import Optional
 
 import fire  # type: ignore
 
-from declearn.utils import make_importable, run_as_processes
+from declearn.utils import make_importable, run_as_processes, setup_root_logger
 from declearn.utils.examples import generate_ssl_certificates
 
 # Perform local imports.
@@ -46,6 +46,7 @@ def run_demo(
     seed: Optional[int]
         random state
     """
+    setup_root_logger()  # to display all info logs in the console
     # Generate the HuggingFace IMDb split data for this demo.
     data_folder = prepare_hf_dataset(nb_clients, seed=seed)
     # Use a temporary directory for single-use self-signed SSL files.

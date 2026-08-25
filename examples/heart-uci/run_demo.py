@@ -20,7 +20,9 @@
 import os
 import tempfile
 
-from declearn.utils import make_importable, run_as_processes
+import fire
+
+from declearn.utils import make_importable, run_as_processes, setup_root_logger
 from declearn.utils.examples import generate_ssl_certificates
 
 # Perform local imports.
@@ -40,6 +42,8 @@ def run_demo(
             "This demo only supports 1 to 4 clients. \nReceived "
             f"{nb_clients}. Please use a valid input."
         )
+
+    setup_root_logger()  # to display all info logs in the console
 
     # Use a temporary directory for single-use self-signed SSL files.
     with tempfile.TemporaryDirectory() as folder:
@@ -64,4 +68,4 @@ def run_demo(
 
 
 if __name__ == "__main__":
-    run_demo()
+    fire.Fire(run_demo)

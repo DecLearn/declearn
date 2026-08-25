@@ -27,13 +27,13 @@ from declearn.communication import NetworkClientConfig
 from declearn.dataset import InMemoryDataset
 from declearn.dataset.examples import load_heart_uci
 from declearn.main import FederatedClient
-from declearn.utils import setup_client_loggers
+from declearn.utils import setup_client_loggers, setup_root_logger
 from declearn.utils.examples import setup_client_argparse
 
 FILEDIR = os.path.dirname(os.path.abspath(__file__))
 
 
-def run_client(
+def run_client(  # noqa: PLR0913
     name: Literal["cleveland", "hungarian", "switzerland", "va"],
     ca_cert: str,
     protocol: str = "websockets",
@@ -121,11 +121,14 @@ if __name__ == "__main__":
         default_cert=os.path.join(FILEDIR, "ca-cert.pem"),
     )
     parser.add_argument(
-        "name",
+        "client_name",
         type=str,
-        help="name of your client",
+        help="Client name",
         choices=["cleveland", "hungarian", "switzerland", "va"],
     )
     args = parser.parse_args()
+
+    setup_root_logger()  # to display all info logs in the console
+
     # Run the client routine.
-    run_client(args.name, args.certificate, args.protocol, args.uri)
+    run_client(args.client_name, args.certificate, args.protocol, args.uri)

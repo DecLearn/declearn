@@ -26,12 +26,12 @@ import pandas as pd
 from transformers import DistilBertTokenizer
 
 import declearn
-
-# Do not remove the following "unused" import,
-# it is necessary for type registration
-import declearn.model.torch
 from declearn.dataset.torch import TorchDataset
-from declearn.utils import make_importable, setup_client_loggers
+from declearn.utils import (
+    make_importable,
+    setup_client_loggers,
+    setup_root_logger,
+)
 
 # Perform local imports.
 with make_importable(os.path.dirname(__file__)):
@@ -40,11 +40,12 @@ with make_importable(os.path.dirname(__file__)):
 
 FILEDIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_CERT = os.path.join(FILEDIR, "ca-cert.pem")
+DEFAULT_DATA_FOLDER = os.path.join(FILEDIR, "data")
 
 
-def run_client(
+def run_client(  # noqa: PLR0913
     client_name: str,
-    data_folder: str,
+    data_folder: str = DEFAULT_DATA_FOLDER,
     ca_cert: str = DEFAULT_CERT,
     protocol: str = "websockets",
     serv_uri: str = "wss://localhost:8765",
@@ -57,7 +58,8 @@ def run_client(
     client_name: str
         Name of the client (i.e. center data from which to use).
     data_folder: str
-        The parent folder of this client's data
+        The parent folder of this client's data.
+        Default to this example "data" folder's path.
     ca_cert: str, default="./ca-cert.pem"
         Path to the certificate authority file that was used to
         sign the server's SSL certificate.
@@ -72,7 +74,7 @@ def run_client(
 
     ### Optional: some convenience settings
 
-    # Set GPU as prefered device.
+    # Set GPU as preferred device.
     declearn.utils.set_device_policy(gpu=True)
 
     # Set up logger and checkpointer.
@@ -130,7 +132,9 @@ def run_client(
 
 
 def main():
-    "Fire-wrapped `run_client`."
+    """Fire-wrapped `run_client`."""
+    setup_root_logger()  # to display all info logs in the console
+
     fire.Fire(run_client)
 
 

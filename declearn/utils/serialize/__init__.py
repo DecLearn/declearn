@@ -28,6 +28,9 @@ Common serialization utils
 [declearn.utils.serialize.add_serialization_support]:
     Register or update (de)serialization support for a custom type under a
     given serialization format.
+* [add_lazy_serial_support][declearn.utils.serialize.add_lazy_serial_support]:
+    Register lazily a custom type for (de)serialization.
+    For details about lazy-registration, see the concerned section below.
 
 JSON serialization
 ------------------
@@ -59,9 +62,32 @@ MessagePack serialization
 [declearn.utils.serialize.list_msgpack_serializable]:
     Return all types that have a custom MessagePack-(de)serialization
     support in DecLearn.
+
+Details on lazy serialization support
+-------------------------------------
+Lazy serialization support allows to indicate that a type is known, not
+registered yet, but that we just need to import the associated module to
+trigger its actual serialization support / serialization-registration.
+
+Example: To trigger the actual registration for the type `TorchModel`,
+the module `declearn.model.torch` needs to be manually imported (this module
+is not auto-imported with DecLearn as it relies on the 'torch' optional
+dependency).
+
+What is the purpose of lazy registration ? 
+If a federated client process has not imported `declearn.model.torch` but
+receives from the server a serialized `TorchModel`, it will not known how to
+deserialize it (leading to an error).
+Thanks to lazy-registration, it can know that the type exists in DecLearn,
+even if not actually defined in the process. Thus, it will be able to import
+the corresponding module, triggering the type definition and consequently its
+actual serialization support (in general thanks to the `__init_subclass__` of
+the parent class).
 """
 
 __all__ = [
+    "add_serialization_support",
+    "add_lazy_serial_support",
     "json_deserialize",
     "json_dump",
     "json_load",
@@ -72,7 +98,6 @@ __all__ = [
     "msgpack_dump",
     "msgpack_load",
     "msgpack_serialize",
-    "add_serialization_support",
 ]
 
 from ._base import add_serialization_support
@@ -83,6 +108,7 @@ from ._json import (
     json_serialize,
     list_json_serializable,
 )
+from ._lazy import add_lazy_serial_support
 from ._msgpack import (
     list_msgpack_serializable,
     msgpack_deserialize,

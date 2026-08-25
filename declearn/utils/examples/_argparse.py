@@ -56,30 +56,32 @@ def setup_client_argparse(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument(
-        "--uri",
+        "--serv_uri",
+        "-s",
         dest="uri",
         type=str,
-        help="server URI to which to connect",
+        help="Server URI to which to connect",
         default=default_uri,
     )
     parser.add_argument(
         "--protocol",
+        "-p",
         dest="protocol",
         type=str,
-        help="name of the communication protocol to use",
+        help="Name of the communication protocol to use",
         default=default_ptcl,
     )
     parser.add_argument(
-        "--cert",
+        "--ca_cert",
+        "-c",
         dest="certificate",
         type=str,
-        help="path to the client-side ssl certificate authority file",
+        help="Path to the client-side ssl certificate authority file",
         default=default_cert,
     )
     return parser
 
 
-# pylint: disable-next=too-many-positional-arguments
 def setup_server_argparse(  # noqa: PLR0913
     usage: Optional[str] = None,
     default_host: str = "localhost",
@@ -111,7 +113,6 @@ def setup_server_argparse(  # noqa: PLR0913
         ArgumentParser with pre-set optional arguments required
         to configure network communications on the server side.
     """
-    # arguments serve modularity; pylint: disable=too-many-arguments
     parser = argparse.ArgumentParser(
         usage=usage,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -138,14 +139,15 @@ def setup_server_argparse(  # noqa: PLR0913
         default=default_ptcl,
     )
     parser.add_argument(
-        "--cert",
+        "--certificate",
+        "-c",
         dest="certificate",
         type=str,
         help="path to the server-side ssl certificate",
         default=default_cert,
     )
     parser.add_argument(
-        "--pkey",
+        "--private_key",
         dest="private_key",
         type=str,
         help="path to the server-side ssl private key",
