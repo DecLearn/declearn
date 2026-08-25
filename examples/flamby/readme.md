@@ -16,7 +16,7 @@ To be able to experiment with this tutorial:
 - Clone the declearn repo (you may specify a given release branch or tag):
 
 ```bash
-git clone git@gitlab.inria.fr:magnet/declearn/declearn.git declearn
+git clone https://gitlab.inria.fr/magnet/declearn/declearn.git
 ```
 
 - Clone the FLamby repo:
@@ -79,6 +79,7 @@ some learning parameters (by editing the `run_server.py` script).
 For something closer to real life implementation, i.e. to run the examples from
 different terminals or machines, you can draw inspiration from the dedicated
 section in [the heart-uci example](../heart-uci/readme.md) which mainly uses the same scripts as here.  
+
 For details on scripts usage, you can use the command
 `python [SCRIPT_NAME].py --help`.
 

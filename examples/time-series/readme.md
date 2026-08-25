@@ -14,17 +14,17 @@ For simplicity, the loss is currently computed over the entire slice rather than
 First, clone the DecLearn repository:
 
 ```bash
-git clone git@gitlab.inria.fr:magnet/declearn/declearn.git declearn
+git clone https://gitlab.inria.fr/magnet/declearn/declearn.git
 ```
 
-Create a virtual environment and install the required dependencies listed in `pyproject.toml`:
-
+Create and activate a virtual environment and install the required dependencies listed in `pyproject.toml`:
+Ex:  
 ```bash
-python3 -m venv <YOUR_VENV_NAME>
+python3 -m venv .venv && source .venv/bin/activate
 ```
 
 ```bash
-cd declearn && pip install ".[torch, websockets]" && cd examples/time-series/
+cd declearn && pip install ".[torch, websockets]" && cd ..
 ```
 
 ## Project Structure
@@ -36,7 +36,6 @@ examples/time-series/
 ├── dataset.py       # Dataset definition
 ├── model.py         # Model definition
 ├── prepare_data.py  # Client data generation script
-├── readme.md        # Documentation
 ├── run_client.py    # Launch a federated learning client
 ├── run_demo.py      # Run the full demo locally
 └── run_server.py    # Launch the server
