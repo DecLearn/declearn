@@ -140,12 +140,14 @@ the code it happens*. The `benchmarks/tools/` subpackage provides a small
 flow for that step: one picks the configuration that regressed, records a
 single run, then inspects the resulting flame graph. Two complementary
 profilers are wired in:  
-  - [py-spy](https://github.com/benfred/py-spy) for CPU/time,
-  - [memray](https://github.com/bloomberg/memray) for memory,
+
+- [py-spy](https://github.com/benfred/py-spy) for CPU/time,  
+- [memray](https://github.com/bloomberg/memray) for memory,  
 
 both sharing the same entry point.
 
-Files description :   
+Files description :  
+
 | File | Role |
 |---|---|
 | `tools/profile_entry.py` | An argparse-driven target that runs a single concrete configuration once, calling `build_benchmark` and `run_benchmark` directly and thereby bypassing ASV's sweep harness. Profiler-agnostic: both wrappers below target it. |
@@ -165,8 +167,9 @@ it is triggered only on release-tag pushes and on manual "Run pipeline"
 runs from the GitLab UI that set the `BENCH_BOOTSTRAP=true` variable.
 
 The job operates in one of two modes :  
-- Regression-check mode
-- Bootstrap mode
+
+- Regression-check mode  
+- Bootstrap mode  
 
 In regression-check mode, run on every
 release-tag push, it compares the new release against the previous one
@@ -413,6 +416,7 @@ three layers available, ordered from the cheapest to the most general:
 
 Either way the driver is just a Python script, so you profile it by
 wrapping that script with the chosen profiler:  
+
 - `py-spy record -o out.json
 --format speedscope -- python driver.py` for CPU/time
 
