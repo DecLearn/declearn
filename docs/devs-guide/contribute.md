@@ -156,27 +156,24 @@ uv venv --python 3.12
 - Git branch naming: branches prefixed by their "category" followed by a `/`
   are highly recommended to enhance clarity in the development process.
 
-  For instance, you may use the following categories as prefix:
-  - `feat/` for a new feature
-  - `fix/` for a bug fix
-  - `refactor/` for refactoring
-  - `docs/` for documentation
-  - `test/` for test addition
-  - `ex/` for an example addition or update
-  - `poc/` for a proof of concept
-
-  - `study/` for a side study on a precise topic, e.g. to demonstrate a result
-  or motivate an implementation choice. Such a branch will typically never be
-  merged but may host a study notebook that will always be available for
-  consultation in the future.
-  
-  - `build/` for updating build configuration, development tools or other
-    changes irrelevant to the user
-  
-  - `dev/` for a develop-like branch on which a substantial feature is being
-  developed in incremental steps (and MRs). This kind of branch allows to
-  work incrementally on a feature, and make frequent MRs and merges, without
-  releasing it on the `develop` branch until the complete work is finished.
+  For instance, you may use the following categories as prefix:  
+    - `feat/` for a new feature  
+    - `fix/` for a bug fix  
+    - `refactor/` for refactoring  
+    - `docs/` for documentation  
+    - `test/` for test addition  
+    - `ex/` for an example addition or update  
+    - `poc/` for a proof of concept  
+    - `study/` for a side study on a precise topic, e.g. to demonstrate a result
+    or motivate an implementation choice. Such a branch will typically never be
+    merged but may host a study notebook that will always be available for
+    consultation in the future.  
+    - `build/` for updating build configuration, development tools or other
+      changes irrelevant to the user  
+    - `dev/` for a develop-like branch on which a substantial feature is being
+    developed in incremental steps (and MRs). This kind of branch allows to
+    work incrementally on a feature, and make frequent MRs and merges, without
+    releasing it on the `develop` branch until the complete work is finished.  
 
   Example of encouraged branch name : `feat/client_sampling`
 
@@ -218,18 +215,19 @@ OPTIONAL_ADDITIONAL_DESCRIPTION
 ```
 
 **TYPE**: its value describes the type of commit you make, it should belong to the
-following list:
-- `build` for updating build configuration, dependencies, dev scripts or tools.
-- `chore` for miscellaneous tasks irrelevant to the user.
-- `ci` for updating the continuous integration / continuous development tools.
-- `docs` for changes to the documentation.
-- `feat` for adding or updating a feature (or an example) for the user.
-- `fix` for a bug fix for the user.
-- `perf` for performance improvements.
-- `refactor` for refactoring production code, e.g. variable renaming.
-- `revert` for reverting some previous changes.
-- `style` for code formatting changes, e.g. comma addition, line break, etc.
-- `test` for adding missing tests or refactoring existing tests.
+following list:  
+
+- `build` for updating build configuration, dependencies, dev scripts or tools.  
+- `chore` for miscellaneous tasks irrelevant to the user.  
+- `ci` for updating the continuous integration / continuous development tools.  
+- `docs` for changes to the documentation.  
+- `feat` for adding or updating a feature (or an example) for the user.  
+- `fix` for a bug fix for the user.  
+- `perf` for performance improvements.  
+- `refactor` for refactoring production code, e.g. variable renaming.  
+- `revert` for reverting some previous changes.  
+- `style` for code formatting changes, e.g. comma addition, line break, etc.  
+- `test` for adding missing tests or refactoring existing tests.  
 
 **SCOPE**: its value describes the scope of your commit (e.g. which toplevel 
 feature is concerned). The only constraints for this value: it should be as
