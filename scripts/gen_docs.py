@@ -175,7 +175,7 @@ def _generate_private_submodules_content_doc(
     else:
         members = {str(k): module.members[str(k)] for k in module.exports}
     for key, obj in members.items():
-        if obj.is_module or obj.module.name in pub_mod or key.startswith("_"):
+        if key.startswith("_") or obj.is_module or obj.module.name in pub_mod:
             continue
         if not (obj.docstring or obj.is_class or obj.is_function):
             continue

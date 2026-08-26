@@ -34,12 +34,13 @@ sEMG time-series Dataset (needs torch)
     Configuration container for EMG dataset preprocessing and loading.
 """
 
-from importlib.util import find_spec
+# Underscore to notify that is private, and should not be re-exported.
+from importlib.util import find_spec as _find_spec
 
 from ._heart_uci import load_heart_uci
 from ._mnist import load_mnist
 
-if find_spec("torch") is not None:  # if "torch" dependency is installed
+if _find_spec("torch") is not None:  # if "torch" dependency is installed
     from ._time_series_emg import (
         ACTIONS,
         EMGDatasetConfigs,
