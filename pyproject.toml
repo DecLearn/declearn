@@ -17,10 +17,12 @@ authors = [
     {name = "Paul Andrey", email = "paul.andrey@inria.fr"},
     {name = "Nathan Bigaud", email = "nathan.bigaud@inria.fr"},
     {name = "Simon Decomble", email = "simon.decomble@inria.fr"},
+    {name = "Ikram Messadi", email = "ikram.messadi@inria.fr"},
 ]
 maintainers = [
     {name = "Paul Andrey", email = "paul.andrey@inria.fr"},
     {name = "Simon Decomble", email = "simon.decomble@inria.fr"},
+    {name = "Ikram Messadi", email = "ikram.messadi@inria.fr"},
 ]
 classifiers = [
     "Development Status :: 5 - Production/Stable",

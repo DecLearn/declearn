@@ -1,7 +1,12 @@
 This file maintains the list of present and past declearn authors.
 A secondary file listing punctual open-source contributors may complement it.
 
-Declearn 2.7 - 
+Declearn 2.9
+- Simon Decomble (simon.decomble@inria.fr) (core developer)
+- Ikram Messadi (ikram.messadi@inria.fr) (core developer)
+- Fares Slimani
+
+Declearn 2.7 - 2.8
 - Simon Decomble (simon.decomble@inria.fr)
 
 Declearn 2.4 - 2.6
