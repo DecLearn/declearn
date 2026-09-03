@@ -44,8 +44,8 @@ class WeightedClientSampler(ClientSampler):
         Number of clients to be sampled.
     client_to_weight: Dict[str, float]
         Exhaustive mapping between each client and a weight.
-        A higher weight means a higher chance (proportionally) to be selected by
-        the sampler. The weights don't need to sum to one.
+        A higher weight means a higher chance (proportionally) to be selected
+        by the sampler. The weights don't need to sum to one.
     seed: Optional[int]
         Optional random state used for sampling.
     """
