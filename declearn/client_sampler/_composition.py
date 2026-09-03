@@ -91,7 +91,7 @@ class CompositionClientSampler(ClientSampler):
         Notes
         -----
         Each sampler composing the 'samplers' list can be either
-        a dictionnary of valid sampler specification, or an instance of
+        a dictionary of valid sampler specification, or an instance of
         `ClientSampler`.
         """
         samplers = kwargs["samplers"]
