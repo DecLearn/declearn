@@ -399,10 +399,10 @@ async def async_run_server(  # noqa: PLR0913
         server_opt=1.0,
     )
     server = FederatedServer(
-        model,
-        netwk,
-        optim,
-        metrics=["r2"],
+        models=[model],
+        netwk=netwk,
+        optimizers=[optim],
+        metrics=[["r2"]],
         checkpoint={"folder": folder, "max_history": 1},
     )
     # Set up hyper-parameters and run training.
@@ -486,7 +486,7 @@ async def test_declearn_federated(
         assert not errors, f"The FL process failed:\n{errors}"
         # Assert that the federated model converged above an expected value.
         with open(
-            os.path.join(folder, "metrics.json"), encoding="utf-8"
+            os.path.join(folder, "model_0", "metrics.json"), encoding="utf-8"
         ) as file:
             metrics = json.load(file)
         best_r2 = max(values["r2"] for values in metrics.values())

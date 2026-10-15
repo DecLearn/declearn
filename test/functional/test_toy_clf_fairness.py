@@ -135,18 +135,18 @@ async def server_routine(
         "fairness": fairness,
     }
     server = FederatedServer(
-        model,
+        models=[model],
         netwk=netwk,
-        optim=optim,
-        metrics=["binary-classif"],
+        optimizers=[optim],
+        metrics=[["binary-classif"]],
         secagg={"secagg_type": "masking"} if secagg else None,
         checkpoint={"folder": folder, "max_history": 1},
     )
     config = FLRunConfig.from_params(
         rounds=5,
         register={"min_clients": n_clients, "timeout": 2},
-        training={"n_epoch": 1, "batch_size": 10},
-        evaluate={"frequency": 5},  # only evaluate the last model
+        training=[{"n_epoch": 1, "batch_size": 10}],
+        evaluate=[{"frequency": 5}],  # only evaluate the last model
         fairness={"batch_size": 50},
     )
     with warnings.catch_warnings():
@@ -181,15 +181,15 @@ async def client_routine(
 def fairness_fixture(
     algorithm: str,
     f_type: str,
-) -> FairnessControllerServer:
+) -> List[FairnessControllerServer]:
     """Server-side fairness controller providing fixture."""
     if algorithm == "fairbatch":
-        return FairbatchControllerServer(f_type, alpha=0.005, fedfb=False)
+        return [FairbatchControllerServer(f_type, alpha=0.005, fedfb=False)]
     if algorithm == "fairfed":
-        return FairfedControllerServer(f_type, beta=1.0, strict=True)
+        return [FairfedControllerServer(f_type, beta=1.0, strict=True)]
     if algorithm == "fairgrad":
-        return FairgradControllerServer(f_type, eta=0.5, eps=1e-6)
-    return FairnessMonitorServer(f_type)
+        return [FairgradControllerServer(f_type, eta=0.5, eps=1e-6)]
+    return [FairnessMonitorServer(f_type)]
 
 
 @pytest.mark.parametrize("secagg", [False, True], ids=["clrtxt", "secagg"])
@@ -199,7 +199,7 @@ def fairness_fixture(
 )
 @pytest.mark.asyncio
 async def test_toy_classif_fairness(
-    fairness: FairnessControllerServer,
+    fairness: List[FairnessControllerServer],
     secagg: bool,
     tmp_path: str,
 ) -> None:
@@ -218,7 +218,7 @@ async def test_toy_classif_fairness(
     datasets = generate_toy_dataset(n_clients=3)
     clients_id_keys = setup_masking_idkeys(secagg, n_clients=3)
     # Set up and run the fairness-aware federated learning experiment.
-    coro_server = server_routine(fairness, secagg, folder=tmp_path)
+    coro_server = server_routine(fairness[0], secagg, folder=tmp_path)
     coro_clients = [
         client_routine(train_dst, valid_dst, id_keys)
         for (train_dst, valid_dst), id_keys in zip(
@@ -232,10 +232,14 @@ async def test_toy_classif_fairness(
     errors = "\n".join(repr(e) for e in outputs if isinstance(e, Exception))
     assert not errors, f"The FL process failed:\n{errors}"
     # Load and parse utility and fairness metrics at the final round.
-    u_metrics = pd.read_csv(os.path.join(tmp_path, "metrics.csv"))
-    f_metrics = pd.read_csv(os.path.join(tmp_path, "fairness_metrics.csv"))
+    u_metrics = pd.read_csv(os.path.join(tmp_path, "model_0", "metrics.csv"))
+    f_metrics = pd.read_csv(
+        os.path.join(tmp_path, "model_0", "fairness_metrics.csv")
+    )
     accuracy = u_metrics.iloc[-1]["accuracy"]
-    fairness_cols = [f"{fairness.f_type}_{group}" for group in fairness.groups]
+    fairness_cols = [
+        f"{fairness[0].f_type}_{group}" for group in fairness[0].groups
+    ]
     fairness_mean_abs = f_metrics.iloc[-1][fairness_cols].abs().mean()
     # Verify that the FedAvg baseline matches expected accuracy and fairness,
     # or that other algorithms achieve lower accuracy and better fairness.
@@ -245,12 +249,12 @@ async def test_toy_classif_fairness(
         "demographic_parity": 0.025,
         "equalized_odds": 0.142,
     }
-    if fairness.algorithm == "monitor":
+    if fairness[0].algorithm == "monitor":
         assert accuracy >= 0.76
-        assert fairness_mean_abs > expected_fairness[fairness.f_type]
-    elif fairness.algorithm == "fairfed":
+        assert fairness_mean_abs > expected_fairness[fairness[0].f_type]
+    elif fairness[0].algorithm == "fairfed":
         assert accuracy >= 0.72
-        assert fairness_mean_abs > expected_fairness[fairness.f_type]
+        assert fairness_mean_abs > expected_fairness[fairness[0].f_type]
     else:
         assert 0.76 > accuracy > 0.54
-        assert fairness_mean_abs < expected_fairness[fairness.f_type]
+        assert fairness_mean_abs < expected_fairness[fairness[0].f_type]

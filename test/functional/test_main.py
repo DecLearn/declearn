@@ -231,15 +231,17 @@ class DeclearnTestCase:
     ) -> None:
         """Set up and run a FederatedServer."""
         set_device_policy(gpu=False)  # disable GPU use to avoid concurrence
-        model = self.build_model()
+        models = [self.build_model()]
         netwk = self.build_netwk_server()
-        optim = self.build_optim_config()
+        optimizers = [self.build_optim_config()]
         with tempfile.TemporaryDirectory() as folder:
-            server = FederatedServer(model, netwk, optim, checkpoint=folder)
+            server = FederatedServer(
+                models, netwk, optimizers, checkpoint=folder
+            )
             config = {
                 "rounds": self.rounds,
                 "register": {"max_clients": self.nb_clients, "timeout": 20},
-                "training": {"batch_size": 100},
+                "training": [{"batch_size": 100}],
             }
             server.run(config)
 

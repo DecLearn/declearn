@@ -92,10 +92,10 @@ async def async_run_server(
     )
     setup_logger("declearn.server", level=logging.DEBUG)
     server = FederatedServer(
-        model=model,
+        models=[model],
         netwk=netwk,
-        optim=optim,
-        metrics=["binary-classif"],
+        optimizers=[optim],
+        metrics=[["binary-classif"]],
         client_sampler=client_sampler,
         secagg=secagg_config,
         checkpoint={"folder": folder, "max_history": 1},
@@ -177,7 +177,7 @@ async def run_declearn_experiment(
         assert not errors, f"The FL process failed:\n{errors}"
         # Assert that the experiment ran properly.
         with open(
-            os.path.join(folder, "metrics.json"), encoding="utf-8"
+            os.path.join(folder, "model_0", "metrics.json"), encoding="utf-8"
         ) as file:
             metrics = json.load(file)
         # Return the last validation accuracy reached.
