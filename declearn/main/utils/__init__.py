@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Utils for the main federated learning traning and evaluation processes.
+"""Utils for the main federated learning training and evaluation processes.
 
 End-user utils
 --------------
@@ -37,12 +37,18 @@ Backend utils to aggregate clients' dataset information:
     Validate and aggregate clients' data-info dictionaries.
 * [AggregationError][declearn.main.utils.AggregationError]:
     Custom exception that may be raised by `aggregate_clients_data_info`.
-"""
+* [declearn.main.utils._validate_optional_dataset_list]:
+    Validate and normalize an optional list of Datasets.
+* [declearn.main.utils.dispatch_replies]:
+    Dispatch multi-model replies by model index.
+
+    """
 
 from ._checkpoint import Checkpointer
 from ._data_info import AggregationError, aggregate_clients_data_info
 from ._early_stop import EarlyStopConfig, EarlyStopping
 from ._error import IncompatibleConfigsError
+from ._multi_model import dispatch_replies, validate_optional_dataset_list
 
 __all__ = [
     "Checkpointer",
@@ -51,4 +57,6 @@ __all__ = [
     "EarlyStopConfig",
     "EarlyStopping",
     "IncompatibleConfigsError",
+    "validate_optional_dataset_list",
+    "dispatch_replies",
 ]
