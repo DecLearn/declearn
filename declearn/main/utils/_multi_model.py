@@ -16,7 +16,7 @@
 # limitations under the License.
 
 
-from typing import Callable, Iterable, List, Optional, TypeVar
+from typing import Callable, List, Optional, TypeVar
 
 from declearn.dataset._base import Dataset
 from declearn.main.utils._error import InvalidDatasetType
