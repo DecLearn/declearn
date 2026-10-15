@@ -24,3 +24,8 @@ class IncompatibleConfigsError(Exception):
     """
 
     pass
+
+
+class InvalidDatasetType(TypeError):
+    def __init__(self, target: str, recv_data_type):
+        super().__init__(f"{target} must be a Dataset. Got : {recv_data_type}")
