@@ -31,8 +31,8 @@ __all__ = ["validate_optional_dataset_list", "dispatch_replies"]
 
 
 def validate_optional_dataset_list(
-    data: Dataset | List[Dataset],
-    name: str,
+    data: Optional[Dataset | List[Dataset]] = None,
+    name: str = "",
     reference_length: Optional[int] = None,
 ) -> List[Optional[T]]:
     """Validate and normalize an optional list of Datasets.
@@ -46,8 +46,6 @@ def validate_optional_dataset_list(
     # check if the dataset is a single element, convert it to a single
     # element list
     # NOTE necessary change to not break the old api
-    if not isinstance(data, List):
-        data = [data]
 
     if data is None:
         if reference_length is None:
@@ -55,8 +53,7 @@ def validate_optional_dataset_list(
                 f"{name} is None and no reference_length provided"
             )
         return [None] * reference_length
-
-    data_list = list(data)
+    data_list = [data] if isinstance(data, Dataset) else data
     # Validate element types
     for idx, item in enumerate(data_list):
         if item is not None and not isinstance(item, Dataset):
