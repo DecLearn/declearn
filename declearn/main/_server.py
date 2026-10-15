@@ -628,7 +628,7 @@ class FederatedServer:
         key = str(idx)
         # Extract metadata for this model
         client_info = {
-            client: reply.data[key] for client, reply in replies.items()
+            client: reply.data_info[key] for client, reply in replies.items()
         }
         try:
             aggregated_info = aggregate_clients_data_info(

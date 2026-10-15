@@ -426,7 +426,9 @@ class FederatedClient:
             "Sending models metadata to the server",
         )
 
-        await self.netwk.send_message(messaging.MetadataReply(data=_metadata))
+        await self.netwk.send_message(
+            messaging.MetadataReply(data_info=_metadata)
+        )
 
     async def _initialize_dpsgd(
         self,
