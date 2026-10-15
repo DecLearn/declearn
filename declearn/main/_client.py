@@ -388,7 +388,7 @@ class FederatedClient:
         # Optionally checkpoint the received models and optimizers.
         if self.ckptr:
             for idx, trainmanager in enumerate(self.trainmanagers):
-                self.ckptr.set_folder_model_index(idx=idx)
+                self.ckptr.set_model_folder(idx=idx)
                 self.ckptr.checkpoint(
                     model=trainmanager.model,
                     optimizer=trainmanager.optim,
@@ -674,7 +674,7 @@ class FederatedClient:
         losses = trainmanager.model.collect_training_losses()
 
         if self.ckptr is not None:
-            self.ckptr.set_folder_model_index(model_index)
+            self.ckptr.set_model_folder(model_index)
 
             self.ckptr.save_metrics(
                 metrics={"training_losses": np.array(losses)},
@@ -778,7 +778,7 @@ class FederatedClient:
         if isinstance(reply, messaging.EvaluationReply):
             # Optionally checkpoint the model, optimizer and local loss.
             if self.ckptr:
-                self.ckptr.set_folder_model_index(model_index)
+                self.ckptr.set_model_folder(model_index)
                 self.ckptr.checkpoint(
                     model=trainmanager.model,
                     optimizer=trainmanager.optim,
@@ -865,7 +865,7 @@ class FederatedClient:
 
         # Optionally save computed fairness metrics.
         if self.ckptr is not None:
-            self.ckptr.set_folder_model_index(model_index)
+            self.ckptr.set_model_folder(model_index)
             self.ckptr.save_metrics(
                 metrics=metrics,
                 prefix="fairness_metrics",
@@ -899,7 +899,7 @@ class FederatedClient:
             )
 
             if self.ckptr:
-                self.ckptr.set_folder_model_index(idx)
+                self.ckptr.set_model_folder(idx)
                 path = os.path.join(
                     self.ckptr.folder,
                     "model_state_best.mpk",

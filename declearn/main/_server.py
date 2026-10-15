@@ -871,7 +871,7 @@ class FederatedServer:
                 secagg=self._decrypter,
             )
             if self.ckptr is not None:
-                self.ckptr.set_folder_model_index(idx)
+                self.ckptr.set_model_folder(idx)
                 self.ckptr.save_metrics(
                     metrics=metrics,
                     prefix="fairness_metrics",
@@ -1192,7 +1192,7 @@ class FederatedServer:
                 )
             # Optionally checkpoint the model, optimizer and metrics.
             if self.ckptr:
-                self.ckptr.set_folder_model_index(idx)
+                self.ckptr.set_model_folder(idx)
                 self._checkpoint_after_evaluation(
                     metrics, result if len(result) > 1 else {}
                 )
@@ -1423,7 +1423,7 @@ class FederatedServer:
         if self.ckptr:
             for idx, model in enumerate(self.models):
                 path = os.path.join(self.ckptr.folder, "model_state_best.mpk")
-                self.ckptr.set_folder_model_index(idx)
+                self.ckptr.set_model_folder(idx)
                 self.logger.info(
                     "Checkpointing final weights for model %d.under %s",
                     idx + 1,
