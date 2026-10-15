@@ -508,70 +508,61 @@ class FederatedServer:
             clients before raising.
         """
         # Gather the RegisterConfig instance from the main FLRunConfig.
-        try:
-            regst_cfg = config.register
 
-            # Wait for clients to register.
-            self.logger.info("Starting clients registration process.")
-            await self.netwk.wait_for_clients(
-                regst_cfg.min_clients,
-                regst_cfg.max_clients,
-                regst_cfg.timeout,
-            )
-            self.logger.info("Clients' registration is now complete.")
+        regst_cfg = config.register
 
-            # When needed, prompt clients for metadata and process them.
-            await self._require_and_process_data_info_from_models()
+        # Wait for clients to register.
+        self.logger.info("Starting clients registration process.")
+        await self.netwk.wait_for_clients(
+            regst_cfg.min_clients,
+            regst_cfg.max_clients,
+            regst_cfg.timeout,
+        )
+        self.logger.info("Clients' registration is now complete.")
 
-            # Serialize initialization information and send it to clients.
-            message = messaging.InitRequest(
-                models=self.models,
-                optimizers=self.c_opt,
-                aggrg=self.aggrg,
-                metrics=self.metrics_set,
-                dpsgd=config.privacy is not None,
-                secagg=None
-                if self.secagg is None
-                else self.secagg.secagg_type,
-                fairness=[fairness is not None for fairness in self.fairness],
-            )
+        # When needed, prompt clients for metadata and process them.
+        await self._require_and_process_data_info_from_models()
 
-            self.logger.info(
-                "Broadcasting initialization instructions to clients."
-            )
-            await self.netwk.broadcast_message(message)
-            self.logger.info("Initialization instructions sent successfully.")
+        # Serialize initialization information and send it to clients.
+        message = messaging.InitRequest(
+            models=self.models,
+            optimizers=self.c_opt,
+            aggrg=self.aggrg,
+            metrics=self.metrics_set,
+            dpsgd=config.privacy is not None,
+            secagg=None if self.secagg is None else self.secagg.secagg_type,
+            fairness=[fairness is not None for fairness in self.fairness],
+        )
 
-            # Await a confirmation from clients that initialization went well.
-            self.logger.info("Waiting for clients' responses.")
-            await self._collect_results(
-                clients=self.netwk.client_names,
-                msgtype=messaging.InitReply,
-                context="Initialization",
-            )
+        await self.netwk.broadcast_message(message)
+        self.logger.info("Initialization instructions sent successfully.")
 
-            # If local differential privacy is configured, set it up.
-            if config.privacy is not None:
-                await self._initialize_dpsgd(config)
+        # Await a confirmation from clients that initialization went well.
+        self.logger.info("Waiting for clients' responses.")
+        await self._collect_results(
+            clients=self.netwk.client_names,
+            msgtype=messaging.InitReply,
+            context="Initialization",
+        )
 
-            # When SecAgg is to be used, set up controllers first.
-            if self.secagg is not None:
-                await self.setup_secagg()
+        # If local differential privacy is configured, set it up.
+        if config.privacy is not None:
+            await self._initialize_dpsgd(config)
 
-            # Set up each configured fairness controller.
-            for idx, fairness in enumerate(self.fairness):
-                if fairness is not None:
-                    self.aggrg[idx] = await fairness.setup_fairness(
-                        netwk=self.netwk,
-                        aggregator=self.aggrg[idx],
-                        secagg=self._decrypter,
-                    )
+        # When SecAgg is to be used, set up controllers first.
+        if self.secagg is not None:
+            await self.setup_secagg()
 
-            self.logger.info("Initialization was successful.")
+        # Set up each configured fairness controller.
+        for idx, fairness in enumerate(self.fairness):
+            if fairness is not None:
+                self.aggrg[idx] = await fairness.setup_fairness(
+                    netwk=self.netwk,
+                    aggregator=self.aggrg[idx],
+                    secagg=self._decrypter,
+                )
 
-        except Exception:
-            self.logger.exception("Server initialization failed.")
-            raise
+        self.logger.info("Initialization was successful.")
 
     async def _require_and_process_data_info_from_models(
         self,
