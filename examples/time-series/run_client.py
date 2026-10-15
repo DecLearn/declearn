@@ -20,6 +20,7 @@
 import logging
 import os
 from dataclasses import astuple, dataclass
+from datetime import datetime
 from pathlib import Path
 from typing import Union
 
@@ -102,17 +103,22 @@ def run_client(configs: ClientConfigInput):
     name, certificate, _, _, protocol, server_uri, _ = astuple(configs)
     network = NetworkClientConfig(protocol, server_uri, name, certificate)
 
+    # Set up checkpointing and logging.
+    stamp = datetime.now().strftime("%y-%m-%d_%H-%M")
+    checkpoint = os.path.join(FILEDIR, f"result_{stamp}", "client")
+
     client = FederatedClient(
         netwk=network,
         train_data=train,
         valid_data=valid,
+        checkpoint=checkpoint,
     )
 
     client.run()
 
 
 if __name__ == "__main__":
-    # parse any neccessary arguments from bash using the client parser
+    # parse any necessary arguments from bash using the client parser
     parser = setup_client_argparse(
         usage="Start a client providing an EMG dataset",
         default_cert=os.path.join(FILEDIR, "ca-cert.pem"),
