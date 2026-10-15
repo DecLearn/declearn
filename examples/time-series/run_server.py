@@ -108,11 +108,11 @@ def run_server(
     )
     server = FederatedServer(
         # fmt: off
-        model,
-        network,
-        optim,
-        metrics=["binary-classif", "binary-roc"],
-        checkpoint=f"{FILEDIR}/results/server",
+        models=[model],
+        netwk=network,
+        optimizers=[optim],
+        metrics=[["binary-classif", "binary-roc"]],
+        checkpoint=checkpoint,
     )
     run_cfg = FLRunConfig.from_params(
         rounds=20,

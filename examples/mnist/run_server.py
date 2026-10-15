@@ -143,12 +143,12 @@ def run_server(  # noqa: PLR0913
 
     ### (4) Instantiate and run a FederatedServer.
 
-    # Instanciate
+    # Instantiate
     server = declearn.main.FederatedServer(
-        model=model,
+        models=[model],
         netwk=network,
-        optim=optim,
-        metrics=metrics,
+        optimizers=[optim],
+        metrics=[metrics],
         checkpoint=checkpoint,
     )
 

@@ -116,10 +116,10 @@ def run_server(  # noqa: PLR0913
     # evaluation rounds.
     server = FederatedServer(
         # fmt: off
-        model,
-        network,
-        optim,
-        metrics=["binary-classif", "binary-roc"],
+        models=[model],
+        netwk=network,
+        optimizers=[optim],
+        metrics=[["binary-classif", "binary-roc"]],
         checkpoint=f"{FILEDIR}/results/server",
     )
 
