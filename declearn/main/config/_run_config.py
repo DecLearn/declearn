@@ -18,7 +18,7 @@
 """TOML-parsable container for Federated Learning "run" configurations."""
 
 import dataclasses
-from typing import Any, Optional, Self
+from typing import Any, List, Optional, Self
 
 from declearn.main.config._dataclasses import (
     EvaluateConfig,
@@ -59,11 +59,11 @@ class FLRunConfig(TomlConfig):
     register: RegisterConfig
         Parameters for clients' registration (min and/or max number
         of clients to expect, optional max duration of the process).
-    training: TrainingConfig
-        Parameters for training rounds, including effort constraints
+    training: List[TrainingConfig]
+        List of parameters for training rounds, including effort constraints
         and data-batching instructions.
-    evaluate: EvaluateConfig
-        Parameters for validation rounds, similar to training ones.
+    evaluate: List[EvaluateConfig]
+        List of parameters for validation rounds, similar to training ones.
     fairness: FairnessConfig or None
         Parameters for fairness evaluation rounds.
         Only used when an algorithm to enforce fairness is set up,
@@ -98,8 +98,8 @@ class FLRunConfig(TomlConfig):
 
     rounds: int
     register: RegisterConfig
-    training: TrainingConfig
-    evaluate: EvaluateConfig
+    training: List[TrainingConfig]
+    evaluate: List[EvaluateConfig]
     fairness: FairnessConfig
     privacy: Optional[PrivacyConfig] = None
     early_stop: Optional[EarlyStopConfig] = None  # type: ignore  # is a type
@@ -128,34 +128,80 @@ class FLRunConfig(TomlConfig):
         return cls.default_parser(field, inputs)
 
     @classmethod
-    def from_params(
+    def from_params(  # noqa: PLR0912
         cls,
         **kwargs: Any,
     ) -> Self:
+        # Normalize the inputs to lists in case of single training and
+        # make sure to wrap the training and evaluation fields to lists to
+        # avoid breaking changes later
+        training = kwargs.get("training")
+        if isinstance(training, TrainingConfig):
+            kwargs["training"] = [training]
+        elif isinstance(training, dict):
+            kwargs["training"] = [training]
+
+        evaluate = kwargs.get("evaluate")
+        if isinstance(evaluate, EvaluateConfig):
+            kwargs["evaluate"] = [evaluate]
+        elif isinstance(evaluate, dict):
+            kwargs["evaluate"] = [evaluate]
+
         # If evaluation batch size is not set, use the same as training.
-        # Note: if inputs have invalid formats, let the parent method fail.
-        evaluate = kwargs.setdefault("evaluate", {})
-        if isinstance(evaluate, dict) and ("batch_size" not in evaluate):
+        # NOTE if inputs have invalid formats, let the parent method fail.
+        evaluate = kwargs.setdefault("evaluate", [{}])
+        if isinstance(evaluate, list):
             training = kwargs.get("training")
-            if isinstance(training, dict):
-                evaluate.setdefault("batch_size", training.get("batch_size"))
-            elif isinstance(training, TrainingConfig):
-                evaluate.setdefault("batch_size", training.batch_size)
+
+            for evaluation in evaluate:
+                if not isinstance(evaluation, dict):
+                    continue
+
+                if "batch_size" in evaluation:
+                    continue
+
+                if isinstance(training, list) and training:
+                    train = training[0]
+
+                    if isinstance(train, dict):
+                        evaluation.setdefault(
+                            "batch_size",
+                            train.get("batch_size"),
+                        )
+                    elif isinstance(train, TrainingConfig):
+                        evaluation.setdefault(
+                            "batch_size",
+                            train.batch_size,
+                        )
         # If privacy is set and poisson sampling bool parameter is unspecified
         # for the training dataset, make it True rather than False by default.
         privacy = kwargs.get("privacy")
         if isinstance(privacy, dict):
             training = kwargs.get("training")
-            if isinstance(training, dict):
-                training.setdefault("poisson", True)
+            if isinstance(training, list):
+                for train in training:
+                    if isinstance(train, dict):
+                        train.setdefault("poisson", True)
         # If fairness batch size is not set, use the same as evaluation.
         # Note: if inputs have invalid formats, let the parent method fail.
         fairness = kwargs.setdefault("fairness", {})
-        if isinstance(fairness, dict) and ("batch_size" not in fairness):
+
+        if isinstance(fairness, dict) and "batch_size" not in fairness:
             evaluate = kwargs.get("evaluate")
-            if isinstance(evaluate, dict):
-                fairness.setdefault("batch_size", evaluate.get("batch_size"))
-            elif isinstance(evaluate, EvaluateConfig):
-                fairness.setdefault("batch_size", evaluate.batch_size)
+
+            if isinstance(evaluate, list) and evaluate:
+                evaluation = evaluate[0]
+
+                if isinstance(evaluation, dict):
+                    fairness.setdefault(
+                        "batch_size",
+                        evaluation.get("batch_size"),
+                    )
+                elif isinstance(evaluation, EvaluateConfig):
+                    fairness.setdefault(
+                        "batch_size",
+                        evaluation.batch_size,
+                    )
+
         # Delegate the rest of the work to the parent method.
         return super().from_params(**kwargs)
