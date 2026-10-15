@@ -188,8 +188,13 @@ class FederatedServer:
 
         # NOTE: because metrics can be none
         if metrics:
-            self.metrics_set = metrics
-            self.metrics = [MetricSet.from_specs(metric) for metric in metrics]
+            self.metrics_set = []
+            for metric in metrics:
+                if isinstance(metric, MetricSet):
+                    self.metrics_set.append(metric.get_config()["metrics"])
+                else:
+                    self.metrics_set.append(metric)
+                self.metrics.append(MetricSet.from_specs(metric))
         # Assign the wrapped MetricSet.
         self.netwk = self._parse_netwk(netwk)
 
@@ -503,47 +508,56 @@ class FederatedServer:
             clients before raising.
         """
         # Gather the RegisterConfig instance from the main FLRunConfig.
-        regst_cfg = config.register
-        # Wait for clients to register.
-        self.logger.info("Starting clients registration process.")
-        await self.netwk.wait_for_clients(
-            regst_cfg.min_clients, regst_cfg.max_clients, regst_cfg.timeout
-        )
-        self.logger.info("Clients' registration is now complete.")
+        try:
+            regst_cfg = config.register
 
-        # When needed, prompt clients for metadata and process them.
-        await self._require_and_process_data_info_from_models()
+            # Wait for clients to register.
+            self.logger.info("Starting clients registration process.")
+            await self.netwk.wait_for_clients(
+                regst_cfg.min_clients,
+                regst_cfg.max_clients,
+                regst_cfg.timeout,
+            )
+            self.logger.info("Clients' registration is now complete.")
 
-        # Serialize initialization information and send it to clients.
-        message = messaging.InitRequest(
-            models=self.models,
-            optimizers=self.c_opt,
-            aggrg=self.aggrg,
-            metrics=self.metrics_set,
-            dpsgd=config.privacy is not None,
-            secagg=None if self.secagg is None else self.secagg.secagg_type,
-            fairness=[fairness is not None for fairness in self.fairness],
-        )
-        print("Sent message ", message)
-        self.logger.info("Sending initialization requests to clients.")
-        await self.netwk.broadcast_message(message)
-        # Await a confirmation from clients that initialization went well.
-        # If any client has failed to initialize, raise.
-        self.logger.info("Waiting for clients' responses.")
-        await self._collect_results(
-            clients=self.netwk.client_names,
-            msgtype=messaging.InitReply,
-            context="Initialization",
-        )
-        # If local differential privacy is configured, set it up.
-        if config.privacy is not None:
-            await self._initialize_dpsgd(config)
+            # When needed, prompt clients for metadata and process them.
+            await self._require_and_process_data_info_from_models()
 
-        # When SecAgg is to be used, set up controllers first.
-        if self.secagg is not None:
-            await self.setup_secagg()
+            # Serialize initialization information and send it to clients.
+            message = messaging.InitRequest(
+                models=self.models,
+                optimizers=self.c_opt,
+                aggrg=self.aggrg,
+                metrics=self.metrics_set,
+                dpsgd=config.privacy is not None,
+                secagg=None
+                if self.secagg is None
+                else self.secagg.secagg_type,
+                fairness=[fairness is not None for fairness in self.fairness],
+            )
 
-        if any(fairness is not None for fairness in self.fairness):
+            self.logger.info(
+                "Broadcasting initialization instructions to clients."
+            )
+            await self.netwk.broadcast_message(message)
+            self.logger.info("Initialization instructions sent successfully.")
+
+            # Await a confirmation from clients that initialization went well.
+            self.logger.info("Waiting for clients' responses.")
+            await self._collect_results(
+                clients=self.netwk.client_names,
+                msgtype=messaging.InitReply,
+                context="Initialization",
+            )
+
+            # If local differential privacy is configured, set it up.
+            if config.privacy is not None:
+                await self._initialize_dpsgd(config)
+
+            # When SecAgg is to be used, set up controllers first.
+            if self.secagg is not None:
+                await self.setup_secagg()
+
             # Set up each configured fairness controller.
             for idx, fairness in enumerate(self.fairness):
                 if fairness is not None:
@@ -552,7 +566,12 @@ class FederatedServer:
                         aggregator=self.aggrg[idx],
                         secagg=self._decrypter,
                     )
-        self.logger.info("Initialization was successful.")
+
+            self.logger.info("Initialization was successful.")
+
+        except Exception:
+            self.logger.exception("Server initialization failed.")
+            raise
 
     async def _require_and_process_data_info_from_models(
         self,
@@ -567,18 +586,20 @@ class FederatedServer:
             incompatible. Send CancelTraining to all clients before
             raising.
         """
-        print("Inside _require_and_process_data_info_from_models")
         # create a dictionary of fields where every key corresponds to
         # i^th required_data_info for the i^th model
         fields = {
             f"{idx}": model.required_data_info
             for idx, model in enumerate(self.models)
         }
+
         # revise: add optimizer, etc.
         if not any(fields.values()):
             return
+
         # Collect required metadata from clients.
         query = messaging.MetadataQuery(fields=fields)
+
         await self.netwk.broadcast_message(query)
 
         replies = await self._collect_results(
