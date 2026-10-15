@@ -29,6 +29,7 @@ __all__ = [
     "FairnessQuery",
     "FairnessReply",
     "FairnessSetupQuery",
+    "MultiModelFairnessQuery",
 ]
 
 
@@ -96,6 +97,31 @@ class FairnessQuery(Message):
     n_batch: Optional[int] = None
     thresh: Optional[float] = None
     weights: Optional[Vector] = None
+
+
+@dataclasses.dataclass
+class MultiModelFairnessQuery(Message):
+    """Server-emitted fairness-computation queries across all models.
+
+    Fields
+    ------
+    requests:
+        A list of FairnessQuery instance per model.
+    """
+
+    typekey = "multi_model_fairness_query"
+
+    requests: List[FairnessQuery]
+
+    @classmethod
+    def from_kwargs(cls, **kwargs):
+        kwargs["requests"] = [
+            FairnessQuery.from_kwargs(**request)
+            if isinstance(request, dict)
+            else request
+            for request in kwargs["requests"]
+        ]
+        return cls(**kwargs)
 
 
 @dataclasses.dataclass
