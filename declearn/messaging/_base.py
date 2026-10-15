@@ -42,6 +42,11 @@ __all__ = [
     "StopTraining",
     "TrainReply",
     "TrainRequest",
+    "MultiModelEvaluationRequest",
+    "MultiModelEvaluationReply",
+    "MultiModelTrainReply",
+    "MultiModelTrainRequest",
+    "PrivacyTrainingConfig",
 ]
 
 
@@ -105,6 +110,32 @@ class EvaluationRequest(Message):
 
 
 @dataclasses.dataclass
+class MultiModelEvaluationRequest(Message):
+    """Server-emitted request to participate in an evaluation round across
+    all models.
+
+    Fields
+    ------
+    requests:
+        List of EvaluationRequest per model.
+    """
+
+    typekey = "multi_model_eval_request"
+
+    requests: List[EvaluationRequest]
+
+    @classmethod
+    def from_kwargs(cls, **kwargs):
+        kwargs["requests"] = [
+            EvaluationRequest.from_kwargs(**request)
+            if isinstance(request, dict)
+            else request
+            for request in kwargs["requests"]
+        ]
+        return cls(**kwargs)
+
+
+@dataclasses.dataclass
 class EvaluationReply(Message):
     """Client-emitted results from a local evaluation round.
 
@@ -138,6 +169,39 @@ class EvaluationReply(Message):
 
 
 @dataclasses.dataclass
+class MultiModelEvaluationReply(Message):
+    """Client-emitted results from the local evaluation round with replies
+    from all trained models.
+
+    Fields
+    ------
+    replies:
+        List of EvaluationReply per trained model.
+    """
+
+    typekey = "multi_model_eval_reply"
+
+    replies: List[EvaluationReply]
+
+    def to_kwargs(self) -> Dict[str, Any]:
+        data = super().to_kwargs()
+        data["replies"] = [reply.to_kwargs() for reply in self.replies]
+        return data
+
+    @classmethod
+    def from_kwargs(cls, **kwargs):
+        replies = []
+
+        for data in kwargs["replies"]:
+            if isinstance(data, EvaluationReply):
+                replies.append(data)
+            else:
+                replies.append(EvaluationReply.from_kwargs(**data))
+
+        return cls(replies=replies)
+
+
+@dataclasses.dataclass
 class GenericMessage(Message):
     """Generic message format, with action/params pair.
 
@@ -157,47 +221,97 @@ class GenericMessage(Message):
 
 @dataclasses.dataclass
 class InitRequest(Message):
-    """Server-emitted request to initialize local model and optimizer.
+    """Server-emitted request to initialize local models and optimizers.
 
     Fields
     ------
     model:
-        Model initialized by the server.
+        List of Models initialized by the server.
     optim:
-        Client optimizer initialized by the server, transfered to clients.
+        A list of Client optimizers initialized by the server, transferred to clients.
+        where the ith optimizer belongs to the ith model.
     aggrg:
         Aggregator initialized by the server.
     metrics:
-        List of metric-like items (`MetricInputType`) involved in the federated
-        process.
+        List of a List of metric-like items (`MetricInputType`) involved
+        in the federated process, each is used for the ith model.
     dpsgd:
         True if privacy (through DP-SGD) is enabled in the federated process.
     secagg:
         True if secure aggregation is enabled in the federated process.
     fairness:
-        True if fairness is enabled in the federated process.
+        List of bool, True if fairness is enabled in the federated process
+        for the ith model.
     """
 
     typekey = "init_request"
 
-    model: Model
-    optim: Optimizer
-    aggrg: Aggregator
-    metrics: List[MetricInputType] = dataclasses.field(default_factory=list)
+    models: List[Model]
+    optimizers: List[Optimizer]
+    aggrg: List[Aggregator]
+    metrics: List[List[Optional[MetricInputType]]] = dataclasses.field(
+        default_factory=list
+    )
     dpsgd: bool = False
+    fairness: List[bool] = dataclasses.field(default_factory=lambda: [False])
     secagg: Optional[str] = None
-    fairness: bool = False
 
-    def to_kwargs(self) -> Dict[str, Any]:
-        kwargs: Dict[str, Any] = {}
-        kwargs["model"] = self.model
-        kwargs["optim"] = self.optim
-        kwargs["aggrg"] = self.aggrg
-        kwargs["metrics"] = self.metrics
-        kwargs["dpsgd"] = self.dpsgd
-        kwargs["secagg"] = self.secagg
-        kwargs["fairness"] = self.fairness
-        return kwargs
+    def __post_init__(self):
+        # here we normalize single objects to lists.
+        if not isinstance(self.models, list):
+            self.models = [self.models]
+
+        if not isinstance(self.optimizers, list):
+            self.optimizers = [self.optimizers]
+
+        if not isinstance(self.aggrg, list):
+            self.aggrg = [self.aggrg]
+        # case where no metrics are used -> None for all the models
+        if not self.metrics:
+            self.metrics = [None] * len(self.models)
+        elif not isinstance(self.metrics, list):
+            self.metrics = [self.metrics]
+
+        # a list of fairness options for every model
+        if not isinstance(self.fairness, list):
+            self.fairness = [self.fairness]
+
+        # validate that each model has its corresponding components.
+        n_models = len(self.models)
+
+        if len(self.optimizers) != n_models:
+            raise ValueError(
+                f"Expected {n_models} optimizers, got {len(self.optimizers)}."
+            )
+
+        if len(self.aggrg) != n_models:
+            raise ValueError(
+                f"Expected {n_models} aggregators, got {len(self.aggrg)}."
+            )
+        # for now we take as many metrics as the models.
+        # rollback is not yet implemented in this version
+        if self.metrics and len(self.metrics) != n_models:
+            raise ValueError(
+                f"Expected metrics for {n_models} models, "
+                f"got {len(self.metrics)}."
+            )
+
+        if len(self.fairness) != n_models:
+            raise ValueError(
+                f"Expected {n_models} fairness flags, "
+                f"got {len(self.fairness)}."
+            )
+
+    def to_kwargs(self):
+        return {
+            "models": self.models,
+            "optimizers": self.optimizers,
+            "aggrg": self.aggrg,
+            "metrics": self.metrics,
+            "dpsgd": self.dpsgd,
+            "secagg": self.secagg,
+            "fairness": self.fairness,
+        }
 
 
 @dataclasses.dataclass
@@ -214,12 +328,12 @@ class MetadataQuery(Message):
     Fields
     ------
     fields:
-        List of dataset metadata fields requested to the client.
+        Dictionary of Lists, each, is a list of dataset metadata fields requested to the client.
     """
 
     typekey = "metadata_query"
 
-    fields: List[str]
+    fields: Dict[str, List[str]]
 
 
 @dataclasses.dataclass
@@ -229,13 +343,24 @@ class MetadataReply(Message):
     Fields
     ------
     data_info:
-        Dictionary mapping metadata names (fields) to their values, sent back
+        Dictionary of models mapping dictionaries, each, maps metadata names (fields) to their values, sent back
         by a client to the server.
     """
 
     typekey = "metadata_reply"
 
-    data_info: Dict[str, Any]
+    data_info: Dict[str, Dict[str, Any]]
+
+
+# TODO: add the general privacy config dataclass for all the models
+# to be discussed
+@dataclasses.dataclass
+class PrivacyTrainingConfig:
+    """Training parameters used for differential privacy accounting."""
+
+    batches: Dict[str, Any]
+    n_epoch: Optional[int]
+    n_steps: Optional[int]
 
 
 @dataclasses.dataclass
@@ -279,9 +404,7 @@ class PrivacyRequest(Message):
     seed: Optional[int]
     # TrainingConfig + rounds
     rounds: int
-    batches: Dict[str, Any]
-    n_epoch: Optional[int]
-    n_steps: Optional[int]
+    training: List[PrivacyTrainingConfig]
 
 
 @dataclasses.dataclass
@@ -307,8 +430,8 @@ class StopTraining(Message):
 
     typekey = "stop_training"
 
-    weights: Vector
-    loss: float
+    weights: Dict[str, Vector]
+    loss: Dict[str, float]
     rounds: int
 
 
@@ -355,6 +478,31 @@ class TrainRequest(Message):
 
 
 @dataclasses.dataclass
+class MultiModelTrainRequest(Message):
+    """Server-emitted request to participate in a training round
+    across all models.
+
+    Fields
+    ------
+    requests:
+        A List of TrainRequest instance per model.
+    """
+
+    typekey = "multi_model_train_request"
+    requests: List[TrainRequest]
+
+    @classmethod
+    def from_kwargs(cls, **kwargs):
+        kwargs["requests"] = [
+            TrainRequest.from_kwargs(**request)
+            if isinstance(request, dict)
+            else request
+            for request in kwargs["requests"]
+        ]
+        return cls(**kwargs)
+
+
+@dataclasses.dataclass
 class TrainReply(Message):
     """Client-emitted results from a local training round.
 
@@ -387,3 +535,40 @@ class TrainReply(Message):
         data["updates"] = self.updates
         data["aux_var"] = self.aux_var
         return data
+
+
+@dataclasses.dataclass
+class MultiModelTrainReply(Message):
+    """Client-emitted results from a local training round across
+    all models.
+
+    Fields
+    ------
+    replies:
+        A list of TrainReply instance per model.
+    """
+
+    typekey = "multi_model_train_reply"
+
+    replies: List[TrainReply]
+
+    @classmethod
+    def from_kwargs(cls, **kwargs):
+        replies = []
+
+        for data in kwargs["replies"]:
+            if isinstance(data, TrainReply):
+                replies.append(data)
+                continue
+            # overriding the data variable
+            data = dict(data)  # noqa: PLW2901
+
+            if isinstance(data["updates"], dict):
+                data["updates"] = ModelUpdates(
+                    updates=data["updates"]["updates"],
+                    weights=data["updates"]["weights"],
+                )
+
+            replies.append(TrainReply.from_kwargs(**data))
+
+        return cls(replies=replies)
