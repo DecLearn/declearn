@@ -40,8 +40,6 @@ from declearn.main.config import (
 from declearn.main.utils import Checkpointer
 from declearn.messaging import (
     EvaluationReply,
-    EvaluationRequest,
-    FairnessQuery,
     InitReply,
     InitRequest,
     Message,
@@ -52,14 +50,22 @@ from declearn.messaging import (
     SerializedMessage,
     StopTraining,
     TrainReply,
-    TrainRequest,
 )
+from declearn.messaging._base import (
+    MultiModelEvaluationReply,
+    MultiModelEvaluationRequest,
+    MultiModelTrainReply,
+    MultiModelTrainRequest,
+)
+from declearn.messaging._fairness import MultiModelFairnessQuery
 from declearn.metrics import MetricSet
 from declearn.model.api import Model
 from declearn.model.sklearn import SklearnSGDModel
 from declearn.optimizer import Optimizer
 from declearn.secagg.api import Decrypter, SecaggConfigServer
 from declearn.secagg.messaging import (
+    MultiModelSecaggEvaluationReply,
+    MultiModelSecaggTrainReply,
     SecaggEvaluationReply,
     SecaggTrainReply,
 )
@@ -83,21 +89,22 @@ class TestFederatedServerInit:  # pylint: disable=too-many-public-methods
 
     def test_model_instance(self) -> None:
         """Test specifying 'model' as a 'Model' instance."""
-        model = SklearnSGDModel.from_parameters(kind="regressor")
+        models = [SklearnSGDModel.from_parameters(kind="regressor")]
         server = FederatedServer(
-            model=model, netwk=MOCK_NETWK, optim=MOCK_OPTIM
+            models=models, netwk=MOCK_NETWK, optimizers=[MOCK_OPTIM]
         )
-        assert server.model is model
+        assert server.models == models
 
     def test_model_serialized(self) -> None:
         """Test specifying 'model' as a serialized 'Model'."""
         model = SklearnSGDModel.from_parameters(kind="regressor")
         config = model.get_config(allow_bin=False)
         server = FederatedServer(
-            model=config, netwk=MOCK_NETWK, optim=MOCK_OPTIM
+            models=[config], netwk=MOCK_NETWK, optimizers=[MOCK_OPTIM]
         )
-        assert isinstance(server.model, SklearnSGDModel)
-        assert server.model.get_config() == model.get_config()
+        assert isinstance(server.models, List)
+        assert isinstance(server.models[0], SklearnSGDModel)
+        assert server.models[0].get_config() == model.get_config()
 
     def test_model_json_path(self, tmp_path: str) -> None:
         """Test specifying 'model' as a serialized 'Model' file path."""
@@ -106,16 +113,18 @@ class TestFederatedServerInit:  # pylint: disable=too-many-public-methods
         path = os.path.join(tmp_path, "model.json")
         json_dump(config, path)
         server = FederatedServer(
-            model=path, netwk=MOCK_NETWK, optim=MOCK_OPTIM
+            models=[path], netwk=MOCK_NETWK, optimizers=[MOCK_OPTIM]
         )
-        assert isinstance(server.model, SklearnSGDModel)
-        assert server.model.get_config() == model.get_config()
+        assert isinstance(server.models[0], SklearnSGDModel)
+        assert server.models[0].get_config() == model.get_config()
 
     def test_model_invalid(self) -> None:
         """Test specifying 'model' with an invalid type."""
         with pytest.raises(TypeError):
             FederatedServer(
-                model=mock.MagicMock(), netwk=MOCK_NETWK, optim=MOCK_OPTIM
+                models=[mock.MagicMock()],
+                netwk=MOCK_NETWK,
+                optimizers=[MOCK_OPTIM],
             )
 
     # Tests for the 'netwk' argument.
@@ -125,7 +134,7 @@ class TestFederatedServerInit:  # pylint: disable=too-many-public-methods
         netwk = mock.create_autospec(NetworkServer, instance=True)
         netwk.name = "server"
         server = FederatedServer(
-            model=MOCK_MODEL, netwk=netwk, optim=MOCK_OPTIM
+            models=[MOCK_MODEL], netwk=netwk, optimizers=[MOCK_OPTIM]
         )
         assert server.netwk is netwk
 
@@ -133,7 +142,7 @@ class TestFederatedServerInit:  # pylint: disable=too-many-public-methods
         """Test specifying 'netwk' as a 'NetworkServerConfig' instance."""
         netwk = mock.create_autospec(NetworkServerConfig, instance=True)
         server = FederatedServer(
-            model=MOCK_MODEL, netwk=netwk, optim=MOCK_OPTIM
+            models=[MOCK_MODEL], netwk=netwk, optimizers=[MOCK_OPTIM]
         )
         netwk.build_server.assert_called_once()
         assert server.netwk is netwk.build_server.return_value
@@ -143,7 +152,7 @@ class TestFederatedServerInit:  # pylint: disable=too-many-public-methods
         netwk = {"protocol": "mock", "host": "host", "port": 8000}
         with mock.patch.object(NetworkServerConfig, "build_server") as patched:
             server = FederatedServer(
-                model=MOCK_MODEL, netwk=netwk, optim=MOCK_OPTIM
+                models=[MOCK_MODEL], netwk=netwk, optimizers=[MOCK_OPTIM]
             )
         patched.assert_called_once()
         assert server.netwk is patched.return_value
@@ -153,7 +162,7 @@ class TestFederatedServerInit:  # pylint: disable=too-many-public-methods
         netwk = "stub_path_to_netwk_config.toml"
         with mock.patch.object(NetworkServerConfig, "from_toml") as patched:
             server = FederatedServer(
-                model=MOCK_MODEL, netwk=netwk, optim=MOCK_OPTIM
+                models=[MOCK_MODEL], netwk=netwk, optimizers=[MOCK_OPTIM]
             )
         patched.assert_called_once_with(netwk)
         patched.return_value.build_server.assert_called_once()
@@ -163,7 +172,9 @@ class TestFederatedServerInit:  # pylint: disable=too-many-public-methods
         """Test specifying 'netwk' as an invalid type."""
         with pytest.raises(TypeError):
             FederatedServer(
-                model=MOCK_MODEL, netwk=mock.MagicMock(), optim=MOCK_OPTIM
+                models=[MOCK_MODEL],
+                netwk=mock.MagicMock(),
+                optimizers=[MOCK_OPTIM],
             )
 
     # Tests for the 'optim' argument.
@@ -179,12 +190,12 @@ class TestFederatedServerInit:  # pylint: disable=too-many-public-methods
             ),
         )
         server = FederatedServer(
-            model=MOCK_MODEL, netwk=MOCK_NETWK, optim=optim
+            models=[MOCK_MODEL], netwk=MOCK_NETWK, optimizers=[optim]
         )
-        assert server.c_opt is optim.client_opt
-        assert server.optim is optim.server_opt
-        assert server.aggrg is optim.aggregator
-        assert server.fairness is optim.fairness
+        assert server.c_opt[0] is optim.client_opt
+        assert server.optimizers[0] is optim.server_opt
+        assert server.aggrg[0] is optim.aggregator
+        assert server.fairness[0] is optim.fairness
 
     def test_optim_dict(self) -> None:
         """Test specifying 'optim' as a config dict."""
@@ -197,12 +208,12 @@ class TestFederatedServerInit:  # pylint: disable=too-many-public-methods
             ),
         }
         server = FederatedServer(
-            model=MOCK_MODEL, netwk=MOCK_NETWK, optim=optim
+            models=[MOCK_MODEL], netwk=MOCK_NETWK, optimizers=[optim]
         )
-        assert server.c_opt is optim["client_opt"]
-        assert server.optim is optim["server_opt"]
-        assert server.aggrg is optim["aggregator"]
-        assert server.fairness is optim["fairness"]
+        assert server.c_opt[0] is optim["client_opt"]
+        assert server.optimizers[0] is optim["server_opt"]
+        assert server.aggrg[0] is optim["aggregator"]
+        assert server.fairness[0] is optim["fairness"]
 
     def test_optim_toml(self, tmp_path: str) -> None:
         """Test specifying 'optim' as a TOML file path."""
@@ -225,18 +236,21 @@ class TestFederatedServerInit:  # pylint: disable=too-many-public-methods
         # Try instantiating from its path.
         config = FLOptimConfig.from_toml(path)
         server = FederatedServer(
-            model=MOCK_MODEL, netwk=MOCK_NETWK, optim=path
+            models=[MOCK_MODEL], netwk=MOCK_NETWK, optimizers=[path]
         )
-        assert server.c_opt.get_config() == config.client_opt.get_config()
-        assert server.optim.get_config() == config.server_opt.get_config()
-        assert server.aggrg.get_config() == config.aggregator.get_config()
-        assert server.fairness is None
+        assert server.c_opt[0].get_config() == config.client_opt.get_config()
+        assert (
+            server.optimizers[0].get_config() == config.server_opt.get_config()
+        )
+        assert server.aggrg[0].get_config() == config.aggregator.get_config()
+        # verify that for every model, the parsed_optim.fairness is appended
+        assert server.fairness == [None]
 
     def test_optim_invalid(self) -> None:
         """Test specifying 'optim' with an invalid type."""
         with pytest.raises(TypeError):
             FederatedServer(
-                model=MOCK_MODEL, netwk=MOCK_NETWK, optim=mock.MagicMock()
+                model=[MOCK_MODEL], netwk=MOCK_NETWK, optim=[mock.MagicMock()]
             )
 
     # Tests for the 'metrics' argument.
@@ -245,9 +259,9 @@ class TestFederatedServerInit:  # pylint: disable=too-many-public-methods
         """Test specifying 'metrics' as a MetricSet instance."""
         metrics = mock.create_autospec(MetricSet, instance=True)
         server = FederatedServer(
-            MOCK_MODEL, MOCK_NETWK, MOCK_OPTIM, metrics=metrics
+            [MOCK_MODEL], MOCK_NETWK, [MOCK_OPTIM], metrics=[metrics]
         )
-        assert server.metrics is metrics
+        assert server.metrics == [metrics]
 
     def test_metrics_specs(self) -> None:
         """Test specifying 'metrics' as a list of specs.
@@ -258,26 +272,29 @@ class TestFederatedServerInit:  # pylint: disable=too-many-public-methods
         with mock.patch.object(MetricSet, "from_specs") as patched:
             # fmt: off
             server = FederatedServer(
-                MOCK_MODEL, MOCK_NETWK, MOCK_OPTIM,
-                metrics=metrics  # type: ignore[arg-type]
+                [MOCK_MODEL], MOCK_NETWK, [MOCK_OPTIM],
+                metrics=[metrics]  # type: ignore[arg-type]
             )
             # fmt: on
         patched.assert_called_once_with(metrics)
-        assert server.metrics is patched.return_value
+        assert server.metrics[0] is patched.return_value
 
     def test_metrics_none(self) -> None:
         """Test specifying 'metrics' as None."""
         server = FederatedServer(
-            MOCK_MODEL, MOCK_NETWK, MOCK_OPTIM, metrics=None
+            [MOCK_MODEL], MOCK_NETWK, [MOCK_OPTIM], metrics=None
         )
-        assert isinstance(server.metrics, MetricSet)
-        assert not server.metrics.metrics
+        assert isinstance(server.metrics, List)
+        assert not server.metrics
 
     def test_metrics_invalid(self) -> None:
         """Test specifying 'metrics' as a MetricSet instance."""
         with pytest.raises(TypeError):
             FederatedServer(
-                MOCK_MODEL, MOCK_NETWK, MOCK_OPTIM, metrics=mock.MagicMock()
+                [MOCK_MODEL],
+                MOCK_NETWK,
+                [MOCK_OPTIM],
+                metrics=[mock.MagicMock()],
             )
 
     # Tests for the 'secagg' argument.
@@ -286,14 +303,14 @@ class TestFederatedServerInit:  # pylint: disable=too-many-public-methods
         """Test specifying 'secagg' as a SecaggConfigServer instance."""
         secagg = mock.create_autospec(SecaggConfigServer, instance=True)
         server = FederatedServer(
-            MOCK_MODEL, MOCK_NETWK, MOCK_OPTIM, secagg=secagg
+            [MOCK_MODEL], MOCK_NETWK, [MOCK_OPTIM], secagg=secagg
         )
         assert server.secagg is secagg
 
     def test_secagg_none(self) -> None:
         """Test specifying 'secagg' as None."""
         server = FederatedServer(
-            MOCK_MODEL, MOCK_NETWK, MOCK_OPTIM, secagg=None
+            [MOCK_MODEL], MOCK_NETWK, [MOCK_OPTIM], secagg=None
         )
         assert server.secagg is None
 
@@ -304,7 +321,7 @@ class TestFederatedServerInit:  # pylint: disable=too-many-public-methods
             "declearn.main._server.parse_secagg_config_server"
         ) as patched:
             server = FederatedServer(
-                MOCK_MODEL, MOCK_NETWK, MOCK_OPTIM, secagg=secagg
+                [MOCK_MODEL], MOCK_NETWK, [MOCK_OPTIM], secagg=secagg
             )
         patched.assert_called_once_with(**secagg)
         assert server.secagg is patched.return_value
@@ -313,7 +330,7 @@ class TestFederatedServerInit:  # pylint: disable=too-many-public-methods
         """Test specifying 'secagg' as an invalid type."""
         with pytest.raises(TypeError):
             FederatedServer(
-                MOCK_MODEL, MOCK_NETWK, MOCK_OPTIM, secagg=mock.MagicMock()
+                [MOCK_MODEL], MOCK_NETWK, [MOCK_OPTIM], secagg=mock.MagicMock()
             )
 
     # Tests for the 'checkpoint' argument.
@@ -322,26 +339,26 @@ class TestFederatedServerInit:  # pylint: disable=too-many-public-methods
         """Test specifying 'checkpoint' as a Checkpointer instance."""
         checkpointer = mock.create_autospec(Checkpointer, instance=True)
         server = FederatedServer(
-            MOCK_MODEL, MOCK_NETWK, MOCK_OPTIM, checkpoint=checkpointer
+            [MOCK_MODEL], MOCK_NETWK, [MOCK_OPTIM], checkpoint=checkpointer
         )
         assert server.ckptr is checkpointer
 
     def test_checkpoint_none(self) -> None:
         """Test specifying 'checkpoint' as None."""
         server = FederatedServer(
-            MOCK_MODEL, MOCK_NETWK, MOCK_OPTIM, checkpoint=None
+            [MOCK_MODEL], MOCK_NETWK, [MOCK_OPTIM], checkpoint=None
         )
         assert server.ckptr is None
 
     def test_checkpoint_specs(self) -> None:
         """Test specifying 'checkpoint' as some specs.
 
-        Note: 'Checkpointer.from_specs' has its own unit tests for subcases.
+        Note: 'Checkpointer.from_specs' has its own unit tests for sub-cases.
         """
         specs = {"folder": "mock_folder", "max_history": 1}
         with mock.patch.object(Checkpointer, "from_specs") as patched:
             server = FederatedServer(
-                MOCK_MODEL, MOCK_NETWK, MOCK_OPTIM, checkpoint=specs
+                [MOCK_MODEL], MOCK_NETWK, [MOCK_OPTIM], checkpoint=specs
             )
         patched.assert_called_once_with(specs)
         assert server.ckptr is patched.return_value
@@ -352,6 +369,7 @@ class TestFederatedServerRoutines:
 
     @staticmethod
     async def setup_test_server(
+        n_models: int = 1,
         use_secagg: bool = False,
         use_fairness: bool = False,
     ) -> FederatedServer:
@@ -359,25 +377,40 @@ class TestFederatedServerRoutines:
         netwk = mock.create_autospec(NetworkServer, instance=True)
         netwk.name = "server"
         netwk.client_names = {"client_a", "client_b"}
-        optim = FLOptimConfig(
-            client_opt=mock.create_autospec(Optimizer, instance=True),
-            server_opt=mock.create_autospec(Optimizer, instance=True),
-            aggregator=mock.create_autospec(Aggregator, instance=True),
-            fairness=(
-                mock.create_autospec(FairnessControllerServer, instance=True)
-                if use_fairness
-                else None
-            ),
-        )
+
+        models = [
+            mock.create_autospec(Model, instance=True) for _ in range(n_models)
+        ]
+
+        optimizers = [
+            FLOptimConfig(
+                client_opt=mock.create_autospec(Optimizer, instance=True),
+                server_opt=mock.create_autospec(Optimizer, instance=True),
+                aggregator=mock.create_autospec(Aggregator, instance=True),
+                fairness=(
+                    mock.create_autospec(
+                        FairnessControllerServer, instance=True
+                    )
+                    if use_fairness
+                    else None
+                ),
+            )
+            for _ in range(n_models)
+        ]
+
         secagg: Optional[SecaggConfigServer] = None
         if use_secagg:
             secagg = mock.create_autospec(SecaggConfigServer, instance=True)
             secagg.secagg_type = "mock_secagg"  # type: ignore
+
         return FederatedServer(
-            model=mock.create_autospec(Model, instance=True),
+            models=models,
             netwk=netwk,
-            optim=optim,
-            metrics=mock.create_autospec(MetricSet, instance=True),
+            optimizers=optimizers,
+            metrics=[
+                mock.create_autospec(MetricSet, instance=True)
+                for _ in range(n_models)
+            ],
             secagg=secagg,
             checkpoint=mock.create_autospec(Checkpointer, instance=True),
         )
@@ -403,6 +436,9 @@ class TestFederatedServerRoutines:
         "fairness", [False, True], ids=["unfair", "fairness"]
     )
     @pytest.mark.parametrize("secagg", [False, True], ids=["clrtxt", "secagg"])
+    @pytest.mark.parametrize(
+        "n_models", [1, 2], ids=["single-model", "multi-model"]
+    )
     @pytest.mark.asyncio
     async def test_initialization(
         self,
@@ -410,103 +446,139 @@ class TestFederatedServerRoutines:
         fairness: bool,
         privacy: bool,
         metadata: bool,
+        n_models: int,
     ) -> None:
-        """Test that the 'initialization' routine triggers expected calls."""
-        # Set up a server with mocked attributes.
+        """Test initialization with one or multiple models."""
         server = await self.setup_test_server(
-            use_secagg=secagg, use_fairness=fairness
+            n_models=n_models,
+            use_secagg=secagg,
+            use_fairness=fairness,
         )
+
         assert isinstance(server.netwk, mock.NonCallableMagicMock)
-        assert isinstance(server.model, mock.NonCallableMagicMock)
-        server.model.required_data_info = {"n_samples"} if metadata else {}
-        aggrg = server.aggrg
-        # Run the initialization routine.
+        assert len(server.models) == n_models
+
+        # Configure each model's metadata requirements.
+        for model in server.models:
+            model.required_data_info = {"n_samples"} if metadata else {}
+
+        # Run initialization.
         config = FLRunConfig.from_params(
             rounds=10,
             register=RegisterConfig(0, 2, 120),
-            training={"batch_size": 8},
+            training=[{"batch_size": 8} for _ in range(n_models)],
             privacy=(
                 {"budget": (1e-3, 0.0), "sclip_norm": 1.0} if privacy else None
             ),
         )
+
         server.netwk.wait_for_messages.side_effect = self._setup_init_replies(
-            metadata, privacy
+            metadata=metadata,
+            privacy=privacy,
+            n_models=n_models,
         )
+
         await server.initialization(config)
-        # Verify that the clients-registration routine was called.
+
+        # Verify client registration.
         server.netwk.wait_for_clients.assert_awaited_once_with(0, 2, 120)
-        # Verify that the expected number of message exchanges occured.
+
+        # Verify message exchanges.
         assert server.netwk.broadcast_message.await_count == (
             1 + metadata + privacy
         )
+
         queries = server.netwk.broadcast_message.await_args_list.copy()
-        # When configured, verify that metadata were queried and used.
+
+        # Verify metadata collection and model initialization.
         if metadata:
             query = queries.pop(0)[0][0]
             assert isinstance(query, MetadataQuery)
-            assert query.fields == ["n_samples"]
-            server.model.initialize.assert_called_once_with({"n_samples": 200})
-        # Verify that an InitRequest was sent with expected parameters.
+
+            assert len(query.fields) == n_models
+            for idx in range(n_models):
+                assert query.fields[str(idx)] == {"n_samples"}
+
+                server.models[idx].initialize.assert_called_once_with(
+                    {"n_samples": 200}
+                )
+
+        # Verify InitRequest.
         query = queries.pop(0)[0][0]
         assert isinstance(query, InitRequest)
         assert query.dpsgd is privacy
+
         if secagg:
             assert query.secagg is not None
         else:
             assert query.secagg is None
-        assert query.fairness is fairness
-        # Verify that DP-SGD setup occurred when expected.
+
+        assert query.fairness == [fairness] * n_models
+
+        # Verify DP-SGD setup.
         if privacy:
             query = queries.pop(0)[0][0]
             assert isinstance(query, PrivacyRequest)
             assert query.budget == (1e-3, 0.0)
             assert query.sclip_norm == 1.0
             assert query.rounds == 10
-        # Verify that SecAgg setup occurred when expected.
+
+        # Verify SecAgg setup.
         decrypter: Optional[Decrypter] = None
         if secagg:
             assert isinstance(server.secagg, mock.NonCallableMagicMock)
-            if fairness:
-                server.secagg.setup_decrypter.assert_awaited_once()
-                decrypter = server.secagg.setup_decrypter.return_value
-            else:
-                server.secagg.setup_decrypter.assert_not_called()
-        # Verify that fairness setup occurred when expected.
+            server.secagg.setup_decrypter.assert_awaited_once()
+            decrypter = server.secagg.setup_decrypter.return_value
+
+        # Verify fairness setup across all the models
         if fairness:
-            assert isinstance(server.fairness, mock.NonCallableMagicMock)
-            server.fairness.setup_fairness.assert_awaited_once_with(
-                netwk=server.netwk, aggregator=aggrg, secagg=decrypter
-            )
-            assert server.aggrg is server.fairness.setup_fairness.return_value
+            assert isinstance(server.fairness[0], mock.NonCallableMagicMock)
+
+            # for every model verify that the fairness is being set up
+            for idx in range(n_models):
+                assert server.fairness[idx].setup_fairness.await_count == 1
+                for call in server.fairness[0].setup_fairness.await_args_list:
+                    assert call.kwargs["netwk"] is server.netwk
+                    assert call.kwargs["secagg"] is decrypter
 
     def _setup_init_replies(
         self,
         metadata: bool,
         privacy: bool,
-    ) -> List[Dict[str, mock.NonCallableMagicMock]]:
+        n_models: int = 1,
+    ) -> List[Dict[str, Dict[str, mock.NonCallableMagicMock]]]:
+        """Prepare mocked client replies for initialization."""
         clients = ("client_a", "client_b")
-        messages: List[Dict[str, mock.NonCallableMagicMock]] = []
+        messages: List[Dict[str, Dict[str, mock.NonCallableMagicMock]]] = []
+
         if metadata:
-            msg = MetadataReply({"n_samples": 100})
+            data = {str(idx): {"n_samples": 100} for idx in range(n_models)}
+
+            msg = MetadataReply(data_info=data)
             messages.append(
                 {
-                    key: self.setup_mock_serialized_message(MetadataReply, msg)
-                    for key in clients
+                    client: self.setup_mock_serialized_message(
+                        MetadataReply, msg
+                    )
+                    for client in clients
                 }
             )
+
         messages.append(
             {
-                key: self.setup_mock_serialized_message(InitReply)
-                for key in clients
+                client: self.setup_mock_serialized_message(InitReply)
+                for client in clients
             }
         )
+
         if privacy:
             messages.append(
                 {
-                    key: self.setup_mock_serialized_message(PrivacyReply)
-                    for key in clients
+                    client: self.setup_mock_serialized_message(PrivacyReply)
+                    for client in clients
                 }
             )
+
         return messages
 
     @pytest.mark.parametrize("secagg", [False, True], ids=["clrtxt", "secagg"])
@@ -518,33 +590,63 @@ class TestFederatedServerRoutines:
         """Test that the 'training_round' routine triggers expected calls."""
         # Set up a server with mocked attributes.
         server = await self.setup_test_server(use_secagg=secagg)
+
         assert isinstance(server.netwk, mock.NonCallableMagicMock)
-        assert isinstance(server.model, mock.NonCallableMagicMock)
-        assert isinstance(server.optim, mock.NonCallableMagicMock)
-        assert isinstance(server.aggrg, mock.NonCallableMagicMock)
+        assert isinstance(server.models, List)
+        assert isinstance(server.models[0], mock.NonCallableMagicMock)
+        assert isinstance(server.optimizers, List)
+        assert isinstance(server.optimizers[0], mock.NonCallableMagicMock)
+        assert isinstance(server.aggrg, List)
+        assert isinstance(server.aggrg[0], mock.NonCallableMagicMock)
         # Mock-run a training routine.
         reply_cls: Type[Message] = (
-            SecaggTrainReply if secagg else TrainReply  # type: ignore
+            MultiModelSecaggTrainReply if secagg else MultiModelTrainReply  # type: ignore
         )
         updates = mock.create_autospec(ModelUpdates, instance=True)
-        reply_msg = TrainReply(
-            n_epoch=1, n_steps=10, t_spent=0.0, updates=updates, aux_var={}
+        reply_msg = (
+            MultiModelTrainReply(
+                replies=[
+                    TrainReply(
+                        n_epoch=1,
+                        n_steps=10,
+                        t_spent=0.0,
+                        updates=updates,
+                        aux_var={},
+                    )
+                ]
+            )
+            if not secagg
+            else MultiModelSecaggTrainReply(
+                replies=[
+                    SecaggTrainReply(
+                        n_steps=10,
+                        t_spent=0.0,
+                        updates=updates,
+                        aux_var={},
+                    )
+                ]
+            )
         )
-        wrapped = None if secagg else reply_msg
         server.netwk.wait_for_messages.return_value = {
-            "client_a": self.setup_mock_serialized_message(reply_cls, wrapped),
-            "client_b": self.setup_mock_serialized_message(reply_cls, wrapped),
+            "client_a": self.setup_mock_serialized_message(
+                reply_cls, reply_msg
+            ),
+            "client_b": self.setup_mock_serialized_message(
+                reply_cls, reply_msg
+            ),
         }
         with mock.patch(
             "declearn.secagg.messaging.aggregate_secagg_messages",
-            return_value=reply_msg,
+            return_value=(reply_msg.replies[0] if secagg else reply_msg),
         ) as patch_aggregate_secagg_messages:
             await server.training_round(
                 round_i=1,
-                train_cfg=TrainingConfig(batch_size=8),
+                train_cfgs=[
+                    TrainingConfig(batch_size=8) for _ in server.models
+                ],
                 clients=server.netwk.client_names,
             )
-        # Verify that expected actions occured.
+        # Verify that expected actions occurred.
         # (a) optional secagg setup
         if secagg:
             assert isinstance(server.secagg, mock.NonCallableMagicMock)
@@ -555,9 +657,15 @@ class TestFederatedServerRoutines:
         assert isinstance(queries, dict)
         assert queries.keys() == server.netwk.client_names
         for query in queries.values():
-            assert isinstance(query, TrainRequest)
-            assert query.weights is server.model.get_weights.return_value
-            assert query.aux_var is server.optim.collect_aux_var.return_value
+            for reply in query.requests:
+                assert isinstance(query, MultiModelTrainRequest)
+                assert (
+                    reply.weights is server.models[0].get_weights.return_value
+                )
+                assert (
+                    reply.aux_var
+                    is server.optimizers[0].collect_aux_var.return_value
+                )
         # (c) training reply reception
         server.netwk.wait_for_messages.assert_awaited_once()
         if secagg:
@@ -565,9 +673,9 @@ class TestFederatedServerRoutines:
         else:
             patch_aggregate_secagg_messages.assert_not_called()
         # (d) updates aggregation and global model weights update
-        server.optim.process_aux_var.assert_called_once()
-        server.aggrg.finalize_updates.assert_called_once()
-        server.optim.apply_gradients.assert_called_once()
+        server.optimizers[0].process_aux_var.assert_called_once()
+        server.aggrg[0].finalize_updates.assert_called_once()
+        server.optimizers[0].apply_gradients.assert_called_once()
 
     @pytest.mark.parametrize("secagg", [False, True], ids=["clrtxt", "secagg"])
     @pytest.mark.asyncio
@@ -579,30 +687,52 @@ class TestFederatedServerRoutines:
         # Set up a server with mocked attributes.
         server = await self.setup_test_server(use_secagg=secagg)
         assert isinstance(server.netwk, mock.NonCallableMagicMock)
-        assert isinstance(server.model, mock.NonCallableMagicMock)
-        assert isinstance(server.metrics, mock.NonCallableMagicMock)
+        assert isinstance(server.models, List)
+        assert isinstance(server.models[0], mock.NonCallableMagicMock)
+
+        assert isinstance(server.metrics, List)
+        assert isinstance(server.metrics[0], mock.NonCallableMagicMock)
+
         assert isinstance(server.ckptr, mock.NonCallableMagicMock)
         # Mock-run an evaluation routine.
         reply_cls: Type[Message] = (
-            SecaggEvaluationReply  # type: ignore
+            MultiModelSecaggEvaluationReply  # type: ignore
             if secagg
-            else EvaluationReply
+            else MultiModelEvaluationReply
         )
-        reply_msg = EvaluationReply(
-            loss=0.42, n_steps=10, t_spent=0.0, metrics={}
+        reply_msg = (
+            MultiModelEvaluationReply(
+                replies=[
+                    EvaluationReply(
+                        loss=0.42, n_steps=10, t_spent=0.0, metrics={}
+                    )
+                ]
+            )
+            if not secagg
+            else MultiModelSecaggEvaluationReply(
+                replies=[
+                    SecaggEvaluationReply(
+                        loss=0.42, n_steps=10, t_spent=0.0, metrics={}
+                    )
+                ]
+            )
         )
-        wrapped = None if secagg else reply_msg
+
         server.netwk.wait_for_messages.return_value = {
-            "client_a": self.setup_mock_serialized_message(reply_cls, wrapped),
-            "client_b": self.setup_mock_serialized_message(reply_cls, wrapped),
+            "client_a": self.setup_mock_serialized_message(
+                reply_cls, reply_msg
+            ),
+            "client_b": self.setup_mock_serialized_message(
+                reply_cls, reply_msg
+            ),
         }
         with mock.patch(
             "declearn.secagg.messaging.aggregate_secagg_messages",
-            return_value=reply_msg,
+            return_value=(reply_msg.replies[0] if secagg else reply_msg),
         ) as patch_aggregate_secagg_messages:
             await server.evaluation_round(
                 round_i=1,
-                valid_cfg=EvaluateConfig(batch_size=8),
+                valid_cfg=[EvaluateConfig(batch_size=8)],
                 clients=server.netwk.client_names,
             )
         # Verify that expected actions occured.
@@ -616,8 +746,12 @@ class TestFederatedServerRoutines:
         assert isinstance(queries, dict)
         assert queries.keys() == server.netwk.client_names
         for query in queries.values():
-            assert isinstance(query, EvaluationRequest)
-            assert query.weights is server.model.get_weights.return_value
+            assert isinstance(query, MultiModelEvaluationRequest)
+
+            for reply in query.requests:
+                assert (
+                    reply.weights is server.models[0].get_weights.return_value
+                )
         # (c) evaluation reply reception
         server.netwk.wait_for_messages.assert_awaited_once()
         if secagg:
@@ -625,14 +759,14 @@ class TestFederatedServerRoutines:
         else:
             patch_aggregate_secagg_messages.assert_not_called()
         # (d) metrics aggregation
-        server.metrics.reset.assert_called_once()
-        server.metrics.set_states.assert_called_once()
-        server.metrics.get_result.assert_called_once()
+        server.metrics[0].reset.assert_called_once()
+        server.metrics[0].set_states.assert_called_once()
+        server.metrics[0].get_result.assert_called_once()
         # (e) checkpointing
         server.ckptr.checkpoint.assert_called_once_with(
-            model=server.model,
-            optimizer=server.optim,
-            metrics=server.metrics.get_result.return_value,
+            model=server.models[0],
+            optimizer=server.optimizers[0],
+            metrics=server.metrics[0].get_result.return_value,
         )
 
     @pytest.mark.asyncio
@@ -646,7 +780,7 @@ class TestFederatedServerRoutines:
         # Mock a call that should result in skipping the round.
         await server.evaluation_round(
             round_i=1,
-            valid_cfg=EvaluateConfig(batch_size=8, frequency=2),
+            valid_cfg=[EvaluateConfig(batch_size=8, frequency=2)],
             clients=server.netwk.client_names,
         )
         # Assert that no message was sent (routine was skipped).
@@ -666,8 +800,10 @@ class TestFederatedServerRoutines:
             use_secagg=secagg, use_fairness=True
         )
         assert isinstance(server.netwk, mock.NonCallableMagicMock)
-        assert isinstance(server.model, mock.NonCallableMagicMock)
-        assert isinstance(server.fairness, mock.NonCallableMagicMock)
+        assert isinstance(server.models, List)
+        assert isinstance(server.models[0], mock.NonCallableMagicMock)
+
+        assert isinstance(server.fairness[0], mock.NonCallableMagicMock)
         assert isinstance(server.ckptr, mock.NonCallableMagicMock)
         # Mock-run a fairness routine.
         await server.fairness_round(
@@ -688,15 +824,19 @@ class TestFederatedServerRoutines:
         assert isinstance(queries, dict)
         assert queries.keys() == server.netwk.client_names
         for query in queries.values():
-            assert isinstance(query, FairnessQuery)
-            assert query.weights is server.model.get_weights.return_value
+            assert isinstance(query, MultiModelFairnessQuery)
+            for request in query.requests:
+                assert (
+                    request.weights
+                    is server.models[0].get_weights.return_value
+                )
         # (c) fairness controller round routine
-        server.fairness.run_fairness_round.assert_awaited_once_with(
+        server.fairness[0].run_fairness_round.assert_awaited_once_with(
             netwk=server.netwk, secagg=decrypter
         )
         # (d) checkpointing
         server.ckptr.save_metrics.assert_called_once_with(
-            metrics=server.fairness.run_fairness_round.return_value,
+            metrics=server.fairness[0].run_fairness_round.return_value,
             prefix="fairness_metrics",
             append=False,
             timestamp="round_0",
@@ -710,7 +850,7 @@ class TestFederatedServerRoutines:
         # Set up a server with mocked attributes and no fairness controller.
         server = await self.setup_test_server(use_fairness=False)
         assert isinstance(server.netwk, mock.NonCallableMagicMock)
-        assert server.fairness is None
+        assert server.fairness == [None]
         # Call the fairness round routine.1
         await server.fairness_round(
             round_i=0,
@@ -729,7 +869,7 @@ class TestFederatedServerRoutines:
         """Test that 'fairness_round' skips rounds when configured."""
         # Set up a server with a mocked fairness controller.
         server = await self.setup_test_server(use_fairness=True)
-        assert isinstance(server.fairness, mock.NonCallableMagicMock)
+        assert isinstance(server.fairness[0], mock.NonCallableMagicMock)
         # Mock a call that should result in skipping the round.
         await server.fairness_round(
             round_i=1,
@@ -737,7 +877,7 @@ class TestFederatedServerRoutines:
             clients=server.netwk.client_names,
         )
         # Assert that the round was skipped.
-        server.fairness.run_fairness_round.assert_not_called()
+        server.fairness[0].run_fairness_round.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_stop_training(
@@ -747,7 +887,9 @@ class TestFederatedServerRoutines:
         # Set up a server with mocked attributes.
         server = await self.setup_test_server()
         assert isinstance(server.netwk, mock.NonCallableMagicMock)
-        assert isinstance(server.model, mock.NonCallableMagicMock)
+        assert isinstance(server.models, List)
+
+        assert isinstance(server.models[0], mock.NonCallableMagicMock)
         assert isinstance(server.ckptr, mock.NonCallableMagicMock)
         server.ckptr.folder = "mock_folder"
         # Call the 'stop_training' routine.
@@ -756,12 +898,14 @@ class TestFederatedServerRoutines:
         server.netwk.broadcast_message.assert_awaited_once()
         message = server.netwk.broadcast_message.await_args[0][0]
         assert isinstance(message, StopTraining)
-        assert message.weights is server.model.get_weights.return_value
-        assert math.isnan(message.loss)
+        assert (
+            message.weights["0"] is server.models[0].get_weights.return_value
+        )
+        assert math.isnan(message.loss["0"])
         assert message.rounds == 5
         # Verify that the expected checkpointing occured.
         server.ckptr.save_model.assert_called_once_with(
-            server.model, timestamp="best"
+            server.models[0], timestamp="best"
         )
 
 
@@ -778,7 +922,7 @@ class TestFederatedServerRun:
         Mock the actual underlying routine.
         """
         server = FederatedServer(
-            model=MOCK_MODEL, netwk=MOCK_NETWK, optim=MOCK_OPTIM
+            models=[MOCK_MODEL], netwk=MOCK_NETWK, optimizers=[MOCK_OPTIM]
         )
         config = mock.create_autospec(dict, instance=True)
         with mock.patch.object(
@@ -801,7 +945,7 @@ class TestFederatedServerRun:
         Mock the actual underlying routine.
         """
         server = FederatedServer(
-            model=MOCK_MODEL, netwk=MOCK_NETWK, optim=MOCK_OPTIM
+            models=[MOCK_MODEL], netwk=MOCK_NETWK, optimizers=[MOCK_OPTIM]
         )
         config = "mock_path.toml"
         with mock.patch.object(
@@ -824,7 +968,7 @@ class TestFederatedServerRun:
         Mock the actual underlying routine.
         """
         server = FederatedServer(
-            model=MOCK_MODEL, netwk=MOCK_NETWK, optim=MOCK_OPTIM
+            models=[MOCK_MODEL], netwk=MOCK_NETWK, optimizers=[MOCK_OPTIM]
         )
         config = mock.create_autospec(FLRunConfig, instance=True)
         with mock.patch.object(server, "async_run") as patch_async_run:
@@ -838,16 +982,16 @@ class TestFederatedServerRun:
         """Test that 'async_run' triggers expected routines."""
         # Setup a server and a run config with mock attributes.
         server = FederatedServer(
-            model=MOCK_MODEL,
+            models=[MOCK_MODEL],
             netwk=MOCK_NETWK,
-            optim=MOCK_OPTIM,
+            optimizers=[MOCK_OPTIM],
             checkpoint=mock.create_autospec(Checkpointer, instance=True),
         )
         config = FLRunConfig(
             rounds=10,
             register=mock.create_autospec(RegisterConfig, instance=True),
-            training=mock.create_autospec(TrainingConfig, instance=True),
-            evaluate=mock.create_autospec(EvaluateConfig, instance=True),
+            training=[mock.create_autospec(TrainingConfig, instance=True)],
+            evaluate=[mock.create_autospec(EvaluateConfig, instance=True)],
             fairness=mock.create_autospec(FairnessConfig, instance=True),
             privacy=None,
             early_stop=None,
