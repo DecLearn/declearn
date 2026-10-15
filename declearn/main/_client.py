@@ -357,7 +357,6 @@ class FederatedClient:
             self.fairness: List[Optional[FairnessControllerClient]] = [
                 None
             ] * len(self.trainmanagers)
-            print("Values of client.fairness at initialization", self.fairness)
         except Exception as exc:
             await self.netwk.send_message(messaging.Error(repr(exc)))
             raise RuntimeError("Initialization failed.") from exc
@@ -406,7 +405,6 @@ class FederatedClient:
             for data in self.train_data
         ]
         _metadata: Dict = {}
-        print(message.fields)
         for model_index, metadata in enumerate(metadata_list):
             if missing := set(message.fields[f"{model_index}"]).difference(
                 metadata
