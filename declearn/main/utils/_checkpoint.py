@@ -86,6 +86,30 @@ class Checkpointer:
             if not (isinstance(max_history, int) and max_history >= 0):
                 raise TypeError("'max_history' must be a positive int or None")
         self.max_history = max_history
+        # additional attribute to save the base folder
+        self.base_folder = folder
+
+    def set_model_folder(self, idx: int = 0) -> None:
+        """Sets/updates the checkpointer's output folder for a specific model.
+
+        Creates a dedicated subfolder for the model identified by ``idx``
+        and updates the checkpointer to save its results in that folder.
+
+        The subfolder is named ``model_{idx}`` and is created inside the
+        checkpointer's base folder if it does not already exist.
+
+        Parameters
+        ----------
+        idx : int, default=0
+            Index of the model whose results are to be saved. Determines
+            the name of the output subfolder (``model_{idx}``).
+
+        """
+        fpath = os.path.join(self.base_folder, f"model_{idx}")
+
+        os.makedirs(fpath, exist_ok=True)
+
+        self.folder = fpath
 
     @classmethod
     def from_specs(
@@ -112,7 +136,7 @@ class Checkpointer:
         Raises
         ------
         TypeError
-            If `inputs` is of unproper type.
+            If `inputs` is of improper type.
 
         Other exceptions may be raised when calling this class's `__init__`.
         """
