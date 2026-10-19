@@ -135,10 +135,10 @@ async def server_routine(
         "fairness": fairness,
     }
     server = FederatedServer(
-        models=[model],
+        model=model,
         netwk=netwk,
-        optimizers=[optim],
-        metrics=[["binary-classif"]],
+        optim=optim,
+        metrics=["binary-classif"],
         secagg={"secagg_type": "masking"} if secagg else None,
         checkpoint={"folder": folder, "max_history": 1},
     )

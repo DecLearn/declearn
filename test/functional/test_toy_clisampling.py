@@ -92,10 +92,10 @@ async def async_run_server(
     )
     setup_logger("declearn.server", level=logging.DEBUG)
     server = FederatedServer(
-        models=[model],
+        model=model,
         netwk=netwk,
-        optimizers=[optim],
-        metrics=[["binary-classif"]],
+        optim=optim,
+        metrics=["binary-classif"],
         client_sampler=client_sampler,
         secagg=secagg_config,
         checkpoint={"folder": folder, "max_history": 1},

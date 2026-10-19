@@ -134,10 +134,10 @@ async def async_run_server(
         MaskingSecaggConfigServer(bitsize=64, clipval=1e8) if secagg else None
     )
     server = FederatedServer(
-        models=[model],
+        model=model,
         netwk=netwk,
-        optimizers=[optim],
-        metrics=[["binary-classif"]],
+        optim=optim,
+        metrics=["binary-classif"],
         secagg=secagg_config,
         checkpoint={"folder": folder, "max_history": 1},
     )

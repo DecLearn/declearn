@@ -17,7 +17,9 @@
 
 """Declearn demonstration / testing code."""
 
+import logging
 import tempfile
+import traceback
 import warnings
 from typing import Any, Dict, Literal, Optional
 
@@ -230,20 +232,33 @@ class DeclearnTestCase:
         self,
     ) -> None:
         """Set up and run a FederatedServer."""
-        set_device_policy(gpu=False)  # disable GPU use to avoid concurrence
-        models = [self.build_model()]
-        netwk = self.build_netwk_server()
-        optimizers = [self.build_optim_config()]
-        with tempfile.TemporaryDirectory() as folder:
-            server = FederatedServer(
-                models, netwk, optimizers, checkpoint=folder
-            )
-            config = {
-                "rounds": self.rounds,
-                "register": {"max_clients": self.nb_clients, "timeout": 20},
-                "training": [{"batch_size": 100}],
-            }
-            server.run(config)
+        try:
+            set_device_policy(
+                gpu=False
+            )  # disable GPU use to avoid concurrence
+            model = self.build_model()
+            netwk = self.build_netwk_server()
+            optim = self.build_optim_config()
+            with tempfile.TemporaryDirectory() as folder:
+                server = FederatedServer(
+                    model,
+                    netwk,
+                    optim,
+                    checkpoint=folder,
+                    logger=logging.getLogger("declearn.test.functional"),
+                )
+                config = {
+                    "rounds": self.rounds,
+                    "register": {
+                        "max_clients": self.nb_clients,
+                        "timeout": 20,
+                    },
+                    "training": [{"batch_size": 100}],
+                }
+                server.run(config)
+        except BaseException:
+            traceback.print_exc()
+            raise
 
     def run_federated_client(
         self,
@@ -323,7 +338,11 @@ def test_declearn(
             stacklevel=2,
         )
     # fmt: off
-    run_test_case(
+    try:
+        run_test_case(
         kind, framework, strategy,
         nb_clients=2, protocol=protocol, use_ssl=False, rounds=2,
     )
+    except BaseException:
+                traceback.print_exc()
+                raise

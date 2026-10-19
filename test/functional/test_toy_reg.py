@@ -316,7 +316,6 @@ def test_declearn_baseline(
         r_sq.update(*pred)
         scores.append(r_sq.get_result()["r2"])  # type: ignore
     # Check that the R2 increased through epochs to reach a high value.
-    print(scores)
     assert all(scores[i + 1] >= scores[i] for i in range(rounds - 1))
     assert scores[-1] >= R2_THRESHOLD
 
@@ -399,10 +398,10 @@ async def async_run_server(  # noqa: PLR0913
         server_opt=1.0,
     )
     server = FederatedServer(
-        models=[model],
+        model=model,
         netwk=netwk,
-        optimizers=[optim],
-        metrics=[["r2"]],
+        optim=optim,
+        metrics=["r2"],
         checkpoint={"folder": folder, "max_history": 1},
     )
     # Set up hyper-parameters and run training.
