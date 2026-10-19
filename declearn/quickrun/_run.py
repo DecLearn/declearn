@@ -110,10 +110,10 @@ async def run_server(  # noqa: PLR0913
     )
 
     server = FederatedServer(
-        models=[model],
+        model=model,
         netwk=network,
-        optimizers=[optim],
-        metrics=[expe_config.metrics],
+        optim=optim,
+        metrics=expe_config.metrics,
         secagg=None,
         checkpoint=checkpoint,
     )
