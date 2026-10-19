@@ -48,7 +48,11 @@ from ._checkpoint import Checkpointer
 from ._data_info import AggregationError, aggregate_clients_data_info
 from ._early_stop import EarlyStopConfig, EarlyStopping
 from ._error import IncompatibleConfigsError
-from ._multi_model import dispatch_replies, validate_optional_dataset_list
+from ._multi_model import (
+    dispatch_replies,
+    parse_list,
+    validate_optional_dataset_list,
+)
 
 __all__ = [
     "Checkpointer",
@@ -59,4 +63,5 @@ __all__ = [
     "IncompatibleConfigsError",
     "validate_optional_dataset_list",
     "dispatch_replies",
+    "parse_list",
 ]
