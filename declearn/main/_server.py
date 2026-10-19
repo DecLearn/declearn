@@ -63,6 +63,7 @@ from declearn.main.utils import (
     IncompatibleConfigsError,
     aggregate_clients_data_info,
     dispatch_replies,
+    parse_list,
 )
 from declearn.messaging import SerializedMessage
 from declearn.messaging._base import MetadataReply
@@ -99,11 +100,21 @@ class FederatedServer:
     # TODO for 2.10 : remove deprecated "logger" argument
     def __init__(  # noqa: PLR0913
         self,
-        models: List[Union[Model, str, Dict[str, Any]]],
+        model: Union[
+            List[Union[Model, str, Dict[str, Any]]], Model, str, Dict[str, Any]
+        ],
         netwk: Union[NetworkServer, NetworkServerConfig, Dict[str, Any], str],
-        optimizers: List[Union[FLOptimConfig, str, Dict[str, Any]]],
+        optim: Union[
+            List[Union[FLOptimConfig, str, Dict[str, Any]]],
+            FLOptimConfig,
+            str,
+            Dict[str, Any],
+        ],
         metrics: Union[
-            List[MetricSet], List[List[MetricInputType]], None
+            List[Union[MetricSet, List[List[MetricInputType]]],],
+            MetricSet,
+            List[List[MetricInputType]],
+            None,
         ] = None,
         client_sampler: Union[
             ClientSampler, ClientSamplerConfig, Dict[str, Any], None
@@ -129,7 +140,8 @@ class FederatedServer:
             the `from_params` method) or TOML configuration file path.
             This object specifies the optimizers to use by the clients
             and the server, as well as the client-updates aggregator.
-        metrics: A list of MetricSet or list[MetricInputType] or None, default=None
+        metrics: A list of MetricSet or list[MetricInputType] or None,
+        default=None
             MetricSet instance or list of Metric instances and/or specs
             to wrap into one, defining evaluation metrics to compute in
             addition to the model's loss.
@@ -164,38 +176,45 @@ class FederatedServer:
 
         # NOTE for the first model's fairness strategy
         # is used by default across all models.
-        self.models: List[Model] = []
-        self.optimizers: List[Optimizer] = []
-        self.aggrg: List[Aggregator] = []
-        self.c_opt = []
-        self.metrics = []
-        parsed_models = []
-        self.fairness = []
-        # Parsing the models & optimizers
-        for model, optim in zip(models, optimizers, strict=True):
-            parsed_model = self._parse_model(model)
-            parsed_optim = self._parse_optim(optim)
+        self.model: List[Model] = parse_list(model, self.parse_model)
+        self._n_models: int = len(self.model)
 
-            parsed_models.append(parsed_model)
+        # parsing optimizer related ingredients
+        parsed_optimizers = parse_list(optim, self.parse_optim)
+        self.aggrg = [optim.aggregator for optim in parsed_optimizers]
+        self.optim = [optim.server_opt for optim in parsed_optimizers]
+        self.c_opt = [optim.client_opt for optim in parsed_optimizers]
+        self.fairness = [optim.fairness for optim in parsed_optimizers]
 
-            self.aggrg.append(parsed_optim.aggregator)
-            self.optimizers.append(parsed_optim.server_opt)
-            self.c_opt.append(parsed_optim.client_opt)
-
-            self.fairness.append(parsed_optim.fairness)  # note optional
-        self.models = parsed_models
-        self._n_models: int = len(self.models)
-
-        # NOTE: because metrics can be none
-        if metrics:
+        parsed_metrics = []
+        if metrics is None:
+            self.metrics = []
             self.metrics_set = []
-            for metric in metrics:
-                if isinstance(metric, MetricSet):
-                    self.metrics_set.append(metric.get_config()["metrics"])
-                else:
-                    self.metrics_set.append(metric)
-                self.metrics.append(MetricSet.from_specs(metric))
-        # Assign the wrapped MetricSet.
+        elif not isinstance(metrics, list) and not isinstance(
+            metrics, MetricSet
+        ):
+            raise TypeError("'metrics' must be a list or None.")
+        elif isinstance(metrics, MetricSet):
+            parsed_metrics = parse_list(
+                metrics,
+                self.parse_metric,
+                parse_as_list=True,
+            )
+        elif metrics and isinstance(metrics, list):
+            if isinstance(metrics[0], str):
+                # A list of specifications representing ONE MetricSet.
+                parsed_metrics = parse_list(
+                    metrics,
+                    self.parse_metric,
+                    parse_as_list=True,
+                )
+            else:
+                # A list of MetricSet instances or lists of specifications.
+                parsed_metrics = parse_list(metrics, self.parse_metric)
+
+        self.metrics = [metric for metric, _ in parsed_metrics]
+        self.metrics_set = [config for _, config in parsed_metrics]
+
         self.netwk = self._parse_netwk(netwk)
 
         # Assign a client sampler - by default one is used
@@ -231,7 +250,37 @@ class FederatedServer:
         }
 
     @staticmethod
-    def _parse_model(
+    def parse_metric(
+        metric: Union[MetricSet, List[MetricInputType]],
+    ) -> tuple[MetricSet, List[MetricInputType]]:
+        """Parse one metric set and extract its configuration."""
+        if isinstance(metric, MetricSet):
+            metrics_config = metric.get_config()["metrics"]
+        else:
+            metrics_config = metric
+
+        return MetricSet.from_specs(metric), metrics_config
+
+    @staticmethod
+    def parse_configs(
+        config: Union[FLRunConfig, List[str], List[Dict[str, Any]]],
+    ) -> FLRunConfig:
+        """Parse federated-learning configurations."""
+
+        if isinstance(config, FLRunConfig):
+            return config
+        elif isinstance(config, dict):
+            return FLRunConfig.from_params(**config)
+        elif isinstance(config, str):
+            return FLRunConfig.from_toml(config)
+        else:
+            raise TypeError(
+                "'configs' should contain FLRunConfig objects, "
+                "dicts, or paths to TOML files."
+            )
+
+    @staticmethod
+    def parse_model(
         model: Union[Model, str, Dict[str, Any]],
     ) -> Model:
         """Parse 'model' instantiation argument."""
@@ -258,23 +307,26 @@ class FederatedServer:
             f"form, not '{type(model)}'"
         )
 
-    def _parse_configs(
-        self,
-        config: Union[FLRunConfig, List[str], List[Dict[str, Any]]],
-    ) -> FLRunConfig:
-        """Parse federated-learning configurations."""
-
-        if isinstance(config, FLRunConfig):
-            return config
-        elif isinstance(config, dict):
-            return FLRunConfig.from_params(**config)
-        elif isinstance(config, str):
-            return FLRunConfig.from_toml(config)
-        else:
-            raise TypeError(
-                "'configs' should contain FLRunConfig objects, "
-                "dicts, or paths to TOML files."
-            )
+    @staticmethod
+    def parse_optim(
+        optim: Union[
+            FLOptimConfig,
+            str,
+            Dict[str, Any],
+        ],
+    ) -> FLOptimConfig:
+        """Parse 'optim' instantiation argument."""
+        if isinstance(optim, FLOptimConfig):
+            return optim
+        if isinstance(optim, str):
+            return FLOptimConfig.from_toml(optim)
+        if isinstance(optim, dict):
+            return FLOptimConfig.from_params(**optim)
+        raise TypeError(
+            "'optim' should be a declearn.main.config.FLOptimConfig "
+            "or a dict of parameters or the path to a TOML file from "
+            f"which to instantiate one, not '{type(optim)}'."
+        )
 
     @staticmethod
     def _parse_netwk(
@@ -298,23 +350,6 @@ class FederatedServer:
             )
         # Instantiate from the (parsed) config.
         return config.build_server()
-
-    @staticmethod
-    def _parse_optim(
-        optim: Union[FLOptimConfig, str, Dict[str, Any]],
-    ) -> FLOptimConfig:
-        """Parse 'optim' instantiation argument."""
-        if isinstance(optim, FLOptimConfig):
-            return optim
-        if isinstance(optim, str):
-            return FLOptimConfig.from_toml(optim)
-        if isinstance(optim, dict):
-            return FLOptimConfig.from_params(**optim)
-        raise TypeError(
-            "'optim' should be a declearn.main.config.FLOptimConfig "
-            "or a dict of parameters or the path to a TOML file from "
-            f"which to instantiate one, not '{type(optim)}'."
-        )
 
     @staticmethod
     def _parse_clisamp(
@@ -410,7 +445,7 @@ class FederatedServer:
             May be a str pointing to a TOML configuration file.
             May be as a dict of keyword arguments to be parsed.
         """
-        config = self._parse_configs(config)
+        config = self.parse_configs(config)
 
         asyncio.run(self.async_run(config))
 
@@ -524,8 +559,9 @@ class FederatedServer:
         await self._require_and_process_data_info_from_models()
 
         # Serialize initialization information and send it to clients.
+
         message = messaging.InitRequest(
-            models=self.models,
+            models=self.model,
             optimizers=self.c_opt,
             aggrg=self.aggrg,
             metrics=self.metrics_set,
@@ -577,33 +613,37 @@ class FederatedServer:
             incompatible. Send CancelTraining to all clients before
             raising.
         """
-        # create a dictionary of fields where every key corresponds to
-        # i^th required_data_info for the i^th model
-        fields = {
-            f"{idx}": model.required_data_info
-            for idx, model in enumerate(self.models)
-        }
+        try:
+            # create a dictionary of fields where every key corresponds to
+            # i^th required_data_info for the i^th model
+            fields = {
+                f"{idx}": model.required_data_info
+                for idx, model in enumerate(self.model)
+            }
 
-        # revise: add optimizer, etc.
-        if not any(fields.values()):
-            return
+            # revise: add optimizer, etc.
+            if not any(fields.values()):
+                return
 
-        # Collect required metadata from clients.
-        query = messaging.MetadataQuery(fields=fields)
+            # Collect required metadata from clients.
+            query = messaging.MetadataQuery(fields=fields)
 
-        await self.netwk.broadcast_message(query)
+            await self.netwk.broadcast_message(query)
 
-        replies = await self._collect_results(
-            self.netwk.client_names,
-            msgtype=MetadataReply,
-            context="Metadata collection",
-        )
-
-        # Process each model independently
-        for idx, model in enumerate(self.models):
-            await self._require_and_process_data_info(
-                fields, replies, idx, model
+            replies = await self._collect_results(
+                self.netwk.client_names,
+                msgtype=MetadataReply,
+                context="Metadata collection",
             )
+
+            # Process each model independently
+            for idx, model in enumerate(self.model):
+                await self._require_and_process_data_info(
+                    fields, replies, idx, model
+                )
+        except Exception:
+            self.logger.exception("Client initialization failed.")
+            raise
 
     async def _require_and_process_data_info(
         self, fields, replies, idx, model
@@ -671,7 +711,7 @@ class FederatedServer:
         )
         self.logger.info(
             "Done initializing %d models.",
-            len(self.models),
+            len(self.model),
         )
 
     async def _collect_results(
@@ -705,35 +745,45 @@ class FederatedServer:
             Client-wise collected messages.
         """
         # Await clients' responses and type-check them.
-        replies: Dict[str, SerializedMessage]
-        replies = await self.netwk.wait_for_messages(clients)
-        results: Dict[str, MessageT] = {}
-        errors: Dict[str, str] = {}
+        try:
+            replies: Dict[str, SerializedMessage]
+            replies = await self.netwk.wait_for_messages(clients)
+            results: Dict[str, MessageT] = {}
+            errors: Dict[str, str] = {}
 
-        for client, reply in replies.items():
-            if issubclass(reply.message_cls, msgtype):
-                results[client] = reply.deserialize()
-            elif issubclass(reply.message_cls, messaging.Error):
-                err_msg = reply.deserialize().message
-                errors[client] = f"{context} failed: {err_msg}"
-            else:
-                errors[client] = f"Unexpected message: {reply.message_cls}"
-        # If any client has failed to send proper results, raise.
-        # future: modularize errors-handling behaviour
-        if errors:
-            err_msg = f"{context} failed for another client."
-            messages: Dict[str, messaging.Message] = {
-                client: messaging.CancelTraining(errors.get(client, err_msg))
-                for client in self.netwk.client_names
-            }
-            await self.netwk.send_messages(messages)
-            err_msg = f"{context} failed for {len(errors)} clients:" + "".join(
-                f"\n    {client}: {error}" for client, error in errors.items()
-            )
-            self.logger.error(err_msg)
-            raise RuntimeError(err_msg)
-        # Otherwise, return collected results.
-        return results
+            for client, reply in replies.items():
+                if issubclass(reply.message_cls, msgtype):
+                    results[client] = reply.deserialize()
+                elif issubclass(reply.message_cls, messaging.Error):
+                    err_msg = reply.deserialize().message
+                    errors[client] = f"{context} failed: {err_msg}"
+                else:
+                    errors[client] = f"Unexpected message: {reply.message_cls}"
+            # If any client has failed to send proper results, raise.
+            # future: modularize errors-handling behavior
+            if errors:
+                err_msg = f"{context} failed for another client."
+                messages: Dict[str, messaging.Message] = {
+                    client: messaging.CancelTraining(
+                        errors.get(client, err_msg)
+                    )
+                    for client in self.netwk.client_names
+                }
+                await self.netwk.send_messages(messages)
+                err_msg = (
+                    f"{context} failed for {len(errors)} clients:"
+                    + "".join(
+                        f"\n    {client}: {error}"
+                        for client, error in errors.items()
+                    )
+                )
+                self.logger.error(err_msg)
+                raise RuntimeError(err_msg)
+            # Otherwise, return collected results.
+            return results
+        except Exception:
+            self.logger.exception("Server training round failed.")
+            raise
 
     # generalize the dpsgd over all the models
     async def _initialize_dpsgd(
@@ -802,7 +852,9 @@ class FederatedServer:
 
     def _aggregate_secagg_replies(
         self,
-        replies: Mapping[str, secagg_messaging.SecaggMessage[MessageT]],
+        replies: Union[
+            Mapping[str, secagg_messaging.SecaggMessage[MessageT]],
+        ],
     ) -> MessageT:
         """Secure-Aggregate (and decrypt) client-issued encrypted messages."""
         assert self._decrypter is not None
@@ -853,7 +905,6 @@ class FederatedServer:
         # turn the weights attribute into a list
         # NOTE for now we assume that the fairnessQuery contains
         # the global fairness config that is the same across all the clients
-
         ## SUPER IMPORTANT NOTE:
         ##
         query = messaging.MultiModelFairnessQuery(
@@ -865,7 +916,7 @@ class FederatedServer:
                     thresh=fairness_cfg.thresh,
                     weights=None,
                 )
-                for _ in self.models
+                for _ in self.model
             ]
         )
 
@@ -924,11 +975,11 @@ class FederatedServer:
             round_i,
             train_cfgs,
         )
-
         self.logger.info("Awaiting clients' training results.")
         results = []
         if self._decrypter is None:
             results = await self._process_model_updates(clients)
+
         else:
             results = await self._process_secagg_model_update(clients)
         # Aggregate client-wise results and update the global model.
@@ -939,15 +990,14 @@ class FederatedServer:
         for idx, result in enumerate(results):
             self._conduct_global_update(
                 result,
-                self.optimizers[idx],
-                self.models[idx],
+                self.optim[idx],
+                self.model[idx],
                 self.aggrg[idx],
                 idx=idx,
             )
 
     async def _process_model_updates(self, clients):
-        """Process the model updates step in the case where the train replies
-        from all clients across all models aren't secagged"""
+        """Process non-SecAgg multi-model training replies."""
 
         multi_model_results = await self._collect_results(
             clients, messaging.MultiModelTrainReply, "training"
@@ -957,7 +1007,7 @@ class FederatedServer:
         )
 
         for idx, result in enumerate(results_per_model):
-            self.client_sampler.update(result, self.models[idx])
+            self.client_sampler.update(result, self.model[idx])
 
         return results_per_model
 
@@ -983,7 +1033,7 @@ class FederatedServer:
             client_results = {client: aggregated_results for client in clients}
             self.client_sampler.update(
                 client_results,
-                self.models[idx],
+                self.model[idx],
             )
             processed_results.append({"aggregated": aggregated_results})
 
@@ -1022,12 +1072,13 @@ class FederatedServer:
             messaging.TrainRequest(
                 round_i=round_i,
                 weights=None,
-                aux_var=self.optimizers[idx].collect_aux_var(),
+                aux_var=self.optim[idx].collect_aux_var(),
                 **train_cfgs[idx].message_params,
             )
             for idx in range(self._n_models)
         ]
         ## group all the training requests in one message
+
         msg_light = messaging.MultiModelTrainRequest(requests)
 
         # Send it to clients, sparingly joining model weights.
@@ -1060,7 +1111,7 @@ class FederatedServer:
 
         for idx, clients_needing_weights in needs_weights.items():
             if clients_needing_weights:
-                model_weights[idx] = self.models[idx].get_weights(
+                model_weights[idx] = self.model[idx].get_weights(
                     trainable=True,
                 )
 
@@ -1105,15 +1156,16 @@ class FederatedServer:
             Client-wise TrainReply messages sent after a training round.
         """
         try:
-            # Unpack, aggregate and finally process optimizer auxiliary variables.
+            # Unpack, aggregate and finally process optimizer auxiliary
+            # variables.
             aux_var: Dict[str, AuxVar] = {}
             for msg in results.values():
                 for key, aux in msg.aux_var.items():
                     aux_var[key] = aux_var.get(key, 0) + aux
-
             optim.process_aux_var(aux_var)
 
-            # Compute aggregated "gradients" (updates) and apply them to the model.
+            # Compute aggregated "gradients" (updates) and apply them to
+            # the model.
             updates = sum(msg.updates for msg in results.values())
             gradients = aggrg.finalize_updates(updates)
             optim.apply_gradients(model, gradients)
@@ -1171,23 +1223,24 @@ class FederatedServer:
             )
             results = dispatch_replies(response, lambda reply: reply.replies)
         else:
-            secagg_results = await self._collect_results(
+            multi_model_results = await self._collect_results(
                 clients,
                 secagg_messaging.MultiModelSecaggEvaluationReply,
                 "evaluation",
             )
-            results_per_model = dispatch_replies(
-                secagg_results,
+
+            results_per_model: list[
+                dict[str, secagg_messaging.SecaggEvaluationReply]
+            ] = dispatch_replies(
+                multi_model_results,
                 lambda reply: reply.replies,
             )
-            for secagg_results in results_per_model:
-                results.append(
-                    {
-                        "aggregated": self._aggregate_secagg_replies(
-                            secagg_results
-                        )
-                    }
+
+            for model_results in results_per_model:
+                aggregated_result: messaging.EvaluationReply = (
+                    self._aggregate_secagg_replies(model_results)
                 )
+                results.append({"aggregated": aggregated_result})
         # Compute and report aggregated evaluation metrics.
         self.logger.info("Aggregating evaluation results across the models.")
         for idx, result in enumerate(results):
@@ -1202,6 +1255,7 @@ class FederatedServer:
                         if isinstance(v, float)
                     },
                 )
+
             # Optionally checkpoint the model, optimizer and metrics.
             if self.ckptr:
                 self.ckptr.set_model_folder(idx)
@@ -1213,7 +1267,7 @@ class FederatedServer:
             # "best" trainable weights (per model)
             self._losses[f"{idx}"].append(loss)
             if loss == min(self._losses[f"{idx}"]):
-                self._best[f"{idx}"] = self.models[idx].get_weights(
+                self._best[f"{idx}"] = self.model[idx].get_weights(
                     trainable=True
                 )
 
@@ -1284,29 +1338,40 @@ class FederatedServer:
         # Reset the local MetricSet and set up ad hoc variables for the loss.
         loss = 0.0
         dvsr = 0.0
+        if not self.metrics:
+            for _, reply in results.items():
+                loss += reply.loss
+                dvsr += reply.n_steps
+
+            loss = loss / dvsr if dvsr else 0.0
+            return loss, {"loss": loss}
 
         self.metrics[idx].reset()
         agg_states = self.metrics[idx].get_states()
         # Iteratively update the MetricSet and loss floats based on results.
         for client, reply in results.items():
             # Case when the client reported some metrics.
-            if reply.metrics:
-                states = reply.metrics.copy()
-                # Deal with loss metric's aggregation.
-                s_loss = states.pop("loss")
-                assert isinstance(s_loss, MeanState)
-                loss += s_loss.num_sum
-                dvsr += s_loss.divisor
-                # Aggregate other metrics.
-                for key, val in states.items():
-                    agg_states[key] += val
-            # Case when the client only reported the aggregated local loss.
-            else:
-                self.logger.info(
-                    "Client %s refused to share their local metrics.", client
-                )
-                loss += reply.loss
-                dvsr += reply.n_steps
+            try:
+                if reply.metrics:
+                    states = reply.metrics.copy()
+                    # Deal with loss metric's aggregation.
+                    s_loss = states.pop("loss")
+                    assert isinstance(s_loss, MeanState)
+                    loss += s_loss.num_sum
+                    dvsr += s_loss.divisor
+                    # Aggregate other metrics.
+                    for key, val in states.items():
+                        agg_states[key] += val
+                # Case when the client only reported the aggregated local loss.
+                else:
+                    self.logger.info(
+                        "Client %s refused to share their local metrics.",
+                        client,
+                    )
+                    loss += reply.loss
+                    dvsr += reply.n_steps
+            except Exception:
+                raise
         # Compute the final results.
         self.metrics[idx].set_states(agg_states)
         metrics = self.metrics[idx].get_result()
@@ -1343,9 +1408,10 @@ class FederatedServer:
                 "the FederatedServer having a Checkpointer."
             )
         # Checkpoint the model, optimizer and global evaluation metrics.
+
         timestamp = self.ckptr.checkpoint(
-            model=self.models[idx],
-            optimizer=self.optimizers[idx],
+            model=self.model[idx],
+            optimizer=self.optim[idx],
             metrics=metrics,
         )
         # Checkpoint the client-wise metrics (or at least their loss).
@@ -1353,8 +1419,19 @@ class FederatedServer:
         for client, reply in results.items():
             metrics = {"loss": reply.loss}
             if reply.metrics:
-                self.metrics[idx].set_states(reply.metrics)
-                metrics.update(self.metrics[idx].get_result())
+                if idx < len(self.metrics) and self.metrics[idx] is not None:
+                    # Use the configured MetricSet when available.
+                    self.metrics[idx].set_states(reply.metrics)
+                    metrics.update(self.metrics[idx].get_result())
+                else:
+                    # No configured MetricSet: preserve the client's loss
+                    # and avoid accessing self.metrics[idx].
+                    self.logger.debug(
+                        "Cannot compute client metric results for %s: "
+                        "no MetricSet is configured for model %s.",
+                        client,
+                        idx,
+                    )
             self.ckptr.save_metrics(
                 metrics=metrics,
                 prefix=f"metrics_{client}",
@@ -1406,7 +1483,7 @@ class FederatedServer:
         # Collect the final weights of every model
         weights = {}
 
-        for idx, model in enumerate(self.models):
+        for idx, model in enumerate(self.model):
             best_weights = self._best.get(f"{idx}")
 
             if best_weights is None:
@@ -1433,7 +1510,7 @@ class FederatedServer:
 
         # Checkpoint every model
         if self.ckptr:
-            for idx, model in enumerate(self.models):
+            for idx, model in enumerate(self.model):
                 path = os.path.join(self.ckptr.folder, "model_state_best.mpk")
                 self.ckptr.set_model_folder(idx)
                 self.logger.info(
