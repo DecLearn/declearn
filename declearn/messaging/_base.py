@@ -184,9 +184,7 @@ class MultiModelEvaluationReply(Message):
     replies: List[EvaluationReply]
 
     def to_kwargs(self) -> Dict[str, Any]:
-        data = super().to_kwargs()
-        data["replies"] = [reply.to_kwargs() for reply in self.replies]
-        return data
+        return {"replies": [reply.to_kwargs() for reply in self.replies]}
 
     @classmethod
     def from_kwargs(cls, **kwargs):
@@ -228,8 +226,8 @@ class InitRequest(Message):
     model:
         List of Models initialized by the server.
     optim:
-        A list of Client optimizers initialized by the server, transferred to clients.
-        where the ith optimizer belongs to the ith model.
+        A list of Client optimizers initialized by the server, transferred
+        to clients where the ith optimizer belongs to the ith model.
     aggrg:
         Aggregator initialized by the server.
     metrics:
@@ -328,7 +326,8 @@ class MetadataQuery(Message):
     Fields
     ------
     fields:
-        Dictionary of Lists, each, is a list of dataset metadata fields requested to the client.
+        Dictionary of Lists, each, is a list of dataset metadata fields
+        requested to the client.
     """
 
     typekey = "metadata_query"
@@ -343,8 +342,8 @@ class MetadataReply(Message):
     Fields
     ------
     data_info:
-        Dictionary of models mapping dictionaries, each, maps metadata names (fields) to their values, sent back
-        by a client to the server.
+        Dictionary of models mapping dictionaries, each, maps metadata names
+        (fields) to their values, sent back by a client to the server.
     """
 
     typekey = "metadata_reply"
@@ -479,17 +478,11 @@ class TrainRequest(Message):
 
 @dataclasses.dataclass
 class MultiModelTrainRequest(Message):
-    """Server-emitted request to participate in a training round
-    across all models.
-
-    Fields
-    ------
-    requests:
-        A List of TrainRequest instance per model.
-    """
-
     typekey = "multi_model_train_request"
     requests: List[TrainRequest]
+
+    def to_kwargs(self) -> Dict[str, Any]:
+        return {"requests": [request.to_kwargs() for request in self.requests]}
 
     @classmethod
     def from_kwargs(cls, **kwargs):
@@ -551,6 +544,9 @@ class MultiModelTrainReply(Message):
     typekey = "multi_model_train_reply"
 
     replies: List[TrainReply]
+
+    def to_kwargs(self) -> Dict[str, Any]:
+        return {"replies": [reply.to_kwargs() for reply in self.replies]}
 
     @classmethod
     def from_kwargs(cls, **kwargs):
