@@ -112,7 +112,7 @@ def run_server(
         network,
         optim,
         metrics=["binary-classif", "binary-roc"],
-        checkpoint=f"{FILEDIR}/results/server",
+        checkpoint=checkpoint,
     )
     run_cfg = FLRunConfig.from_params(
         rounds=20,
