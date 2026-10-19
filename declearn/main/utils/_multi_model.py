@@ -16,15 +16,16 @@
 # limitations under the License.
 
 
-from typing import Callable, List, Optional, TypeVar
+from typing import Callable, List, Optional, TypeVar, Union
 
 from declearn.dataset._base import Dataset
 from declearn.main.utils._error import InvalidDatasetType
 
 T = TypeVar("T")
-
 MultiReply = TypeVar("MultiReply")
 Reply = TypeVar("Reply")
+
+R = TypeVar("R")
 
 
 __all__ = ["validate_optional_dataset_list", "dispatch_replies"]
@@ -46,7 +47,6 @@ def validate_optional_dataset_list(
     # check if the dataset is a single element, convert it to a single
     # element list
     # NOTE necessary change to not break the old api
-
     if data is None:
         if reference_length is None:
             raise ValueError(
@@ -54,6 +54,7 @@ def validate_optional_dataset_list(
             )
         return [None] * reference_length
     data_list = [data] if isinstance(data, Dataset) else data
+
     # Validate element types
     for idx, item in enumerate(data_list):
         if item is not None and not isinstance(item, Dataset):
@@ -89,3 +90,30 @@ def dispatch_replies(
             results_per_model[idx][client] = reply
 
     return results_per_model
+
+
+def parse_list(
+    obj: Union[T, List[T]],
+    callback: Callable[[T], R],
+    *,
+    parse_as_list: bool = False,
+) -> List[R]:
+    """Apply a callback to an object or a list of objects.
+
+    If obj is a list, apply callback to each element.
+    Otherwise, apply callback once and wrap the result in a list.
+
+    Parameters
+    ----------
+    obj: Union[T, List[T]]
+        An object or a list of objects to parse.
+    callback: Callable[[T], R]
+        A function that parses a single object.
+
+    Returns
+    -------
+        A list of parsed objects.
+    """
+    if isinstance(obj, list) and not parse_as_list:
+        return [callback(item) for item in obj]
+    return [callback(obj)]  # type: ignore[arg-type]
