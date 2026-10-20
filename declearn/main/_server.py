@@ -1292,7 +1292,7 @@ class FederatedServer:
             if self.ckptr:
                 self.ckptr.set_model_folder(idx)
                 self._checkpoint_after_evaluation(
-                    metrics, result if len(result) > 1 else {}
+                    metrics, result if len(result) > 1 else {}, idx
                 )
 
             # Record the global loss, and update the kept
