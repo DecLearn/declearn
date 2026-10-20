@@ -45,6 +45,19 @@ def validate_optional_dataset_list(
         - each element is None or a Dataset
         - if reference_length is given, len(data) == reference_length
     Returns a fresh list (copy) to avoid external mutation.
+
+    Parameters
+    ----------
+    data: optional[Dataset | List[Dataset]], default to None,
+        Data to be validated.
+    name: str, default to ""
+        Dataset class, ideally, either train or valid
+    reference_length: Optional[int], default to None.
+        The length of reference to validate the dataset length against.
+
+    Returns
+    -------
+        List of validated data.
     """
     # check if the dataset is a single element, convert it to a single
     # element list
@@ -75,7 +88,21 @@ def dispatch_replies(
     results: dict[str, MultiReply],
     get_replies: Callable[[MultiReply], list[Reply]],
 ) -> list[dict[str, Reply]]:
-    """Dispatch multi-model replies by model index."""
+    """Dispatch multi-model replies by model index.
+
+    Parameters
+    ----------
+    results: dict[str, MultiReply]
+        Dictionary of MultiReply per client.
+    get_replies: Callable[[MultiReply], list[Reply]]
+        A callback (function) that takes a MultiReply and returns a list of
+        replies.
+
+    Returns
+    -------
+        a list of dictionaries in which the keys are client names and
+        values are the Reply (TrainReply, EvaluationReply .. etc)
+    """
     results_per_model: list[dict[str, Reply]] = []
 
     for client, multi_reply in results.items():
