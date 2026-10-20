@@ -247,7 +247,7 @@ class InitRequest(Message):
     models: List[Model]
     optimizers: List[Optimizer]
     aggrg: List[Aggregator]
-    metrics: List[List[Optional[MetricInputType]]] = dataclasses.field(
+    metrics: List[List[MetricInputType] | None] = dataclasses.field(
         default_factory=list
     )
     dpsgd: bool = False
@@ -401,8 +401,9 @@ class PrivacyRequest(Message):
     accountant: str
     use_csprng: bool
     seed: Optional[int]
-    # TrainingConfig + rounds
     rounds: int
+
+    # TrainingConfig per model
     training: List[PrivacyTrainingConfig]
 
 
