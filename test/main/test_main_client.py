@@ -298,11 +298,13 @@ class TestFederatedClientInitialize:
     def _setup_mock_init_request(
         secagg: Optional[str] = None,
         dpsgd: bool = False,
-        fairness: Optional[List[bool]] = None,
+        fairness: Optional[List[bool] | bool] = None,
     ) -> messaging.SerializedMessage[messaging.InitRequest]:
         """Return a mock serialized InitRequest."""
         if fairness is None:
             fairness = [False]
+        if fairness is bool and not isinstance(fairness, list):
+            fairness = [fairness]
         init_req = messaging.InitRequest(
             models=mock.MagicMock(),
             optimizers=mock.MagicMock(),
