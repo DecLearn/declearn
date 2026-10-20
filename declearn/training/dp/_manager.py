@@ -79,6 +79,7 @@ class DPTrainingManager(TrainingManager):
         metrics: Union[MetricSet, List[MetricInputType], None] = None,
         logger: Union[logging.Logger, str, None] = None,
         verbose: bool = True,
+        privacy_cfg_idx: int = 0,
     ) -> None:
         # inherited signature; pylint: disable=too-many-arguments
         super().__init__(
@@ -100,6 +101,10 @@ class DPTrainingManager(TrainingManager):
         self._max_steps_this_round: Optional[int] = None
         self._step_counter_this_round: int = 0
 
+        # an additional attribute to keep track of accessing
+        # the relevant model idx parameter
+        self.privacy_cfg_idx = privacy_cfg_idx
+
     def make_private(
         self,
         message: messaging.PrivacyRequest,
@@ -115,15 +120,21 @@ class DPTrainingManager(TrainingManager):
         # REVISE: add support for fixed requested noise multiplier
         # Compute the noise multiplier to use based on the budget
         # and the planned training duration and parameters.
+
+        # extract the current model's privacy training config
+        model_privacy_cfg = message.training[self.privacy_cfg_idx]
+
         noise_multiplier = self._fit_noise_multiplier(
             budget=message.budget,
             n_samples=self.train_data.get_data_specs().n_samples,
-            batch_size=message.batches["batch_size"],
+            batch_size=model_privacy_cfg.batches["batch_size"],
             n_round=message.rounds,
-            n_epoch=message.n_epoch,
-            n_steps=message.n_steps,
+            n_epoch=model_privacy_cfg.n_epoch,
+            n_steps=model_privacy_cfg.n_steps,
             accountant=message.accountant,
-            drop_remainder=message.batches.get("drop_remainder", True),
+            drop_remainder=model_privacy_cfg.batches.get(
+                "drop_remainder", True
+            ),
         )
         # Add a gaussian noise addition module to the optimizer's pipeline.
         noise_module = GaussianNoiseModule(
