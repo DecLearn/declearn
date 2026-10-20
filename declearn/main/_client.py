@@ -360,7 +360,7 @@ class FederatedClient:
             for idx in range(len(message.models)):
                 metrics: List[MetricInputType] | None = message.metrics[idx]
                 train_data: Optional[Dataset] = self.train_data[idx]
-                valid_data: Optional[Dataset] = self.train_data[idx]
+                valid_data: Optional[Dataset] = self.valid_data[idx]
 
                 assert train_data is not None
                 self.trainmanagers.append(
