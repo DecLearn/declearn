@@ -16,8 +16,10 @@
 # limitations under the License.
 
 
-from typing import Callable, List, Optional, TypeVar, Union
+import copy
+from typing import Any, Callable, List, Optional, TypeVar, Union
 
+from declearn import messaging
 from declearn.dataset._base import Dataset
 from declearn.main.utils._error import InvalidDatasetType
 
@@ -35,7 +37,7 @@ def validate_optional_dataset_list(
     data: Optional[Dataset | List[Dataset]] = None,
     name: str = "",
     reference_length: Optional[int] = None,
-) -> List[Optional[T]]:
+) -> Any:
     """Validate and normalize an optional list of Datasets.
 
     - If data is None, returns a list of None of length `reference_length`.
@@ -117,3 +119,44 @@ def parse_list(
     if isinstance(obj, list) and not parse_as_list:
         return [callback(item) for item in obj]
     return [callback(obj)]  # type: ignore[arg-type]
+
+
+RequestT = TypeVar("RequestT", bound=messaging.Message)
+
+
+def copy_requests_with_weights(
+    requests: list[RequestT],
+    client: str,
+    needs_weights: dict[int, set[str]],
+    model_weights: dict[int, Any],
+) -> list[RequestT]:
+    """Copy requests and attach weights when needed while maintaining the
+    requests relevant type to avoid mypy complains.
+
+    Parameters
+    ----------
+    requests: list[RequestT].
+        List of requests to which the relevant model weights are copied.
+    client: str
+        Client name.
+    needs_weights: dict[int, set[str]]
+        Dictionary of clients who need the weights
+    model_weights: dict[int, set[str]]
+        Dictionary containing the model weights for every client
+
+    Returns
+    -------
+        A list of type-casted requests with the relevant RequestT type
+
+    """
+    copied_requests: list[RequestT] = []
+
+    for idx, rqst in enumerate(requests):
+        request = copy.copy(rqst)
+
+        if client in needs_weights[idx]:
+            request.weights = model_weights[idx]  # type: ignore [attr-defined]
+
+        copied_requests.append(request)
+
+    return copied_requests
