@@ -22,7 +22,7 @@ import dataclasses
 import logging
 import os
 import warnings
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, cast
 
 import numpy as np
 
@@ -35,7 +35,7 @@ from declearn.communication.utils import (
 from declearn.dataset import Dataset
 from declearn.fairness.api import FairnessControllerClient
 from declearn.main.utils import Checkpointer, validate_optional_dataset_list
-from declearn.messaging import Message, SerializedMessage
+from declearn.messaging import SerializedMessage
 from declearn.metrics._wrapper import MetricInputType
 from declearn.secagg import messaging as secagg_messaging
 from declearn.secagg import parse_secagg_config_client
@@ -358,7 +358,7 @@ class FederatedClient:
             self.trainmanagers = []
 
             for idx in range(len(message.models)):
-                metrics: List[Optional[MetricInputType]] = message.metrics[idx]
+                metrics: List[MetricInputType] | None = message.metrics[idx]
                 train_data: Optional[Dataset] = self.train_data[idx]
                 valid_data: Optional[Dataset] = self.train_data[idx]
 
@@ -515,11 +515,13 @@ class FederatedClient:
                     metrics=manager.metrics,
                     logger=self.logger,
                     verbose=manager.verbose,
+                    privacy_cfg_idx=idx,
                 )
-                for manager in self.trainmanagers
+                for idx, manager in enumerate(self.trainmanagers)
             ]
-
             for manager in self.trainmanagers:
+                manager = cast(DPTrainingManager, manager)
+                # assert isinstance(manager, DPTrainingManager)  # for mypy
                 manager.make_private(message)
 
         except Exception as exc:
@@ -636,10 +638,10 @@ class FederatedClient:
 
         if self._encrypter is not None:
             multi_reply = secagg_messaging.MultiModelSecaggTrainReply(
-                replies=replies
+                replies=replies  # type: ignore [assignment, arg-type]
             )
         else:
-            multi_reply = messaging.MultiModelTrainReply(replies=replies)
+            multi_reply = messaging.MultiModelTrainReply(replies=replies)  # type: ignore [assignment, arg-type]
         await self.netwk.send_message(multi_reply)
 
     async def training_step(
@@ -682,7 +684,8 @@ class FederatedClient:
 
         # Encrypt the reply when SecAgg is enabled.
         if self._encrypter is not None:
-            reply = secagg_messaging.SecaggTrainReply.from_cleartext_message(
+            assert isinstance(reply, messaging.TrainReply)
+            return secagg_messaging.SecaggTrainReply.from_cleartext_message(
                 cleartext=reply,
                 encrypter=self._encrypter,
             )
@@ -704,33 +707,37 @@ class FederatedClient:
 
         Parameters
         ----------
-        message: CausalEvaluationRequest
+        message: EvaluationRequest
             Instructions from the server regarding the evaluation round.
         """
         replies = []
         for idx, msg in enumerate(message.requests):
-            self.logger.error(
-                f"Evaluation failed for model {idx + 1}, round={msg.round_i}",
-            )
             reply = await self.evaluation_step(msg, idx)
             if isinstance(reply, messaging.Error):
+                self.logger.error(
+                    f"Evaluation failed for model {idx + 1}, "
+                    + "round={msg.round_i}",
+                )
                 await self.netwk.send_message(reply)
                 return
             replies.append(reply)
 
-        reply = messaging.MultiModelEvaluationReply(replies)
+        reply = messaging.MultiModelEvaluationReply(replies)  # type: ignore [assignment, arg-type]
         # override the responses with the correct type
         # we assume that all the replies are either all
         # secureagged or not.
 
         if self._encrypter is not None:
-            reply = secagg_messaging.MultiModelSecaggEvaluationReply(replies)
-
+            reply = secagg_messaging.MultiModelSecaggEvaluationReply(replies)  # type: ignore [assignment, arg-type]
         await self.netwk.send_message(reply)
 
     async def evaluation_step(
         self, message: messaging.EvaluationRequest, model_index: int = 0
-    ) -> messaging.EvaluationReply | messaging.Error:
+    ) -> (
+        messaging.EvaluationReply
+        | messaging.Error
+        | secagg_messaging.SecaggEvaluationReply
+    ):
         """Evaluate a specific model for a given evaluation round.
 
         Verify SecAgg setup, run local evaluation, optionally checkpoint the
@@ -766,7 +773,7 @@ class FederatedClient:
         trainmanager = self.trainmanagers[model_index]
 
         # Run the evaluation round.
-        reply: Message = trainmanager.evaluation_round(message)
+        reply = trainmanager.evaluation_round(message)
         # Post-process the results.
         if isinstance(reply, messaging.EvaluationReply):
             # Optionally checkpoint the model, optimizer and local loss.
@@ -779,13 +786,17 @@ class FederatedClient:
                 )
 
         # Optionally prevent sharing metrics (save for the loss).
-        if not self.share_metrics:
+        if not self.share_metrics and isinstance(
+            reply, messaging.EvaluationReply
+        ):  # for mypy
             reply.metrics.clear()
 
         # Optionally SecAgg-encrypt results.
-        if self._encrypter is not None:
+        if self._encrypter is not None and isinstance(
+            reply, messaging.EvaluationReply
+        ):  # for mypy
             msg_cls = secagg_messaging.SecaggEvaluationReply
-            reply = msg_cls.from_cleartext_message(
+            return msg_cls.from_cleartext_message(
                 cleartext=reply,
                 encrypter=self._encrypter,
             )
