@@ -18,7 +18,6 @@
 """Server-side main Federated Learning orchestrating class."""
 
 import asyncio
-import copy
 import dataclasses
 import logging
 import os
@@ -65,6 +64,7 @@ from declearn.main.utils import (
     dispatch_replies,
     parse_list,
 )
+from declearn.main.utils._multi_model import copy_requests_with_weights
 from declearn.messaging import SerializedMessage
 from declearn.messaging._base import MetadataReply
 from declearn.messaging._fairness import MultiModelFairnessQuery
@@ -111,9 +111,9 @@ class FederatedServer:
             Dict[str, Any],
         ],
         metrics: Union[
-            List[Union[MetricSet, List[List[MetricInputType]]],],
+            List[Union[MetricSet, List[MetricInputType]]],
             MetricSet,
-            List[List[MetricInputType]],
+            List[MetricInputType],
             None,
         ] = None,
         client_sampler: Union[
@@ -176,44 +176,59 @@ class FederatedServer:
 
         # NOTE for the first model's fairness strategy
         # is used by default across all models.
-        self.model: List[Model] = parse_list(model, self.parse_model)
+
+        self.model: List[Model] = parse_list(model, self.parse_model)  # type: ignore[arg-type]
         self._n_models: int = len(self.model)
 
-        # parsing optimizer related ingredients
-        parsed_optimizers = parse_list(optim, self.parse_optim)
+        parsed_optimizers: List[FLOptimConfig] = parse_list(
+            optim,
+            self.parse_optim,  # type: ignore[arg-type]
+        )
         self.aggrg = [optim.aggregator for optim in parsed_optimizers]
         self.optim = [optim.server_opt for optim in parsed_optimizers]
         self.c_opt = [optim.client_opt for optim in parsed_optimizers]
         self.fairness = [optim.fairness for optim in parsed_optimizers]
 
-        parsed_metrics = []
+        # Handle metrics.
         if metrics is None:
-            self.metrics = []
-            self.metrics_set = []
-        elif not isinstance(metrics, list) and not isinstance(
-            metrics, MetricSet
-        ):
-            raise TypeError("'metrics' must be a list or None.")
-        elif isinstance(metrics, MetricSet):
-            parsed_metrics = parse_list(
-                metrics,
-                self.parse_metric,
-                parse_as_list=True,
-            )
-        elif metrics and isinstance(metrics, list):
-            if isinstance(metrics[0], str):
-                # A list of specifications representing ONE MetricSet.
-                parsed_metrics = parse_list(
-                    metrics,
-                    self.parse_metric,
-                    parse_as_list=True,
-                )
-            else:
-                # A list of MetricSet instances or lists of specifications.
-                parsed_metrics = parse_list(metrics, self.parse_metric)
+            self.metrics: List[MetricSet] = []
+            self.metrics_set: List[List[MetricInputType] | None] = [
+                None
+            ] * self._n_models
 
-        self.metrics = [metric for metric, _ in parsed_metrics]
-        self.metrics_set = [config for _, config in parsed_metrics]
+        else:
+            # Normalize the input into one entry per model.
+            if isinstance(metrics, MetricSet):
+                model_metrics = [metrics]  # type: ignore[list-item]
+
+            elif isinstance(metrics, list):
+                if not metrics:
+                    model_metrics = []
+
+                elif isinstance(metrics[0], str):
+                    # flat list of metric specifications represents ONE model.
+                    model_metrics = [metrics]  # type: ignore[list-item]
+
+                else:
+                    # A list of MetricSet instances or lists of metric inputs,
+                    # with one entry per model.
+                    model_metrics = metrics  # type: ignore[assignment]
+
+            else:
+                raise TypeError(
+                    "'metrics' must be a MetricSet, a list of metric inputs, "
+                    "a list of MetricSet instances, or a list of lists of "
+                    "metric inputs, or None."
+                )
+
+            # Parse each model's metrics and retain both representations.
+            parsed_metrics = [
+                self.parse_metric(model_metric)
+                for model_metric in model_metrics
+            ]
+
+            self.metrics = [metric for metric, _ in parsed_metrics]
+            self.metrics_set = [config for _, config in parsed_metrics]
 
         self.netwk = self._parse_netwk(netwk)
 
@@ -626,7 +641,9 @@ class FederatedServer:
                 return
 
             # Collect required metadata from clients.
-            query = messaging.MetadataQuery(fields=fields)
+            query = messaging.MetadataQuery(
+                fields=fields  # type: ignore [arg-type]
+            )
 
             await self.netwk.broadcast_message(query)
 
@@ -1116,20 +1133,36 @@ class FederatedServer:
                 )
 
         # Build the message for each client.
-        messages = {}
-
+        messages: dict[
+            str,
+            Union[
+                messaging.MultiModelTrainRequest,
+                messaging.MultiModelEvaluationRequest,
+                MultiModelFairnessQuery,
+            ],
+        ] = {}
         for client in clients:
-            requests = []
+            if isinstance(msg_light, messaging.MultiModelTrainRequest):
+                train_requests = copy_requests_with_weights(
+                    msg_light.requests, client, needs_weights, model_weights
+                )
+                messages[client] = messaging.MultiModelTrainRequest(
+                    train_requests
+                )
 
-            for idx, rqst in enumerate(msg_light.requests):
-                request = copy.copy(rqst)
+            elif isinstance(msg_light, messaging.MultiModelEvaluationRequest):
+                evaluation_requests = copy_requests_with_weights(
+                    msg_light.requests, client, needs_weights, model_weights
+                )
+                messages[client] = messaging.MultiModelEvaluationRequest(
+                    evaluation_requests
+                )
 
-                if client in needs_weights[idx]:
-                    request.weights = model_weights[idx]
-
-                requests.append(request)
-
-            messages[client] = type(msg_light)(requests)
+            else:
+                fairness_requests = copy_requests_with_weights(
+                    msg_light.requests, client, needs_weights, model_weights
+                )
+                messages[client] = MultiModelFairnessQuery(fairness_requests)
 
         # Send before updating ownership state.
         await self.netwk.send_messages(messages)
@@ -1235,7 +1268,6 @@ class FederatedServer:
                 multi_model_results,
                 lambda reply: reply.replies,
             )
-
             for model_results in results_per_model:
                 aggregated_result: messaging.EvaluationReply = (
                     self._aggregate_secagg_replies(model_results)
@@ -1338,7 +1370,8 @@ class FederatedServer:
         # Reset the local MetricSet and set up ad hoc variables for the loss.
         loss = 0.0
         dvsr = 0.0
-        if not self.metrics:
+
+        if len(self.metrics) == 0:
             for _, reply in results.items():
                 loss += reply.loss
                 dvsr += reply.n_steps
