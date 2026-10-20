@@ -526,6 +526,7 @@ class TestFederatedClientInitialize:
             metrics=patch_tm.return_value.metrics,
             logger=client.logger,
             verbose=patch_tm.return_value.verbose,
+            privacy_cfg_idx=0,
         )
         patch_dp.return_value.make_private.assert_called_once_with(dp_query)
         for trainmanager in client.trainmanagers:
