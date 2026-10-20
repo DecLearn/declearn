@@ -74,9 +74,13 @@ def build_privacy_request(
         use_csprng=False,
         seed=0,
         rounds=rounds,
-        n_epoch=n_epoch,
-        n_steps=n_steps,
-        batches=BATCHES,
+        training=[
+            messaging.PrivacyTrainingConfig(
+                n_epoch=n_epoch,
+                n_steps=n_steps,
+                batches=BATCHES,
+            )
+        ],
     )
 
 
