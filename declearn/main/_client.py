@@ -316,7 +316,6 @@ class FederatedClient:
             training managers failed.
         """
         try:
-            # Await initialization instructions.
             self.logger.info(
                 "Awaiting initialization instructions from server."
             )
@@ -330,7 +329,6 @@ class FederatedClient:
                 )
                 received = await self.netwk.recv_message()
 
-            # Ensure that an CausalInitRequest was received.
             message = await verify_server_message_validity(
                 self.netwk,
                 received,
@@ -352,37 +350,7 @@ class FederatedClient:
         except Exception:
             self.logger.exception("Client initialization failed.")
             raise
-
-        # Perform initialization, catching errors to report them to the server.
-        try:
-            self.trainmanagers = []
-
-            for idx in range(len(message.models)):
-                metrics: List[MetricInputType] | None = message.metrics[idx]
-                train_data: Optional[Dataset] = self.train_data[idx]
-                valid_data: Optional[Dataset] = self.valid_data[idx]
-
-                assert train_data is not None
-                self.trainmanagers.append(
-                    TrainingManager(
-                        model=message.models[idx],
-                        optim=message.optimizers[idx],
-                        aggrg=message.aggrg[idx],
-                        train_data=train_data,
-                        valid_data=valid_data,
-                        metrics=metrics,
-                        logger=self.logger,
-                        verbose=self.verbose,
-                    )
-                )
-
-            self.fairness: List[Optional[FairnessControllerClient]] = [
-                None
-            ] * len(self.trainmanagers)
-        except Exception as exc:
-            await self.netwk.send_message(messaging.Error(repr(exc)))
-            raise RuntimeError("Initialization failed.") from exc
-
+        await self._initialize_trainmanagers(message)
         # Send back an empty message to indicate that things went fine.
         self.logger.info("Notifying the server that initialization went fine.")
         await self.netwk.send_message(messaging.InitReply())
@@ -415,6 +383,80 @@ class FederatedClient:
                     optimizer=trainmanager.optim,
                     first_call=True,
                 )
+
+    async def _initialize_trainmanagers(
+        self, message: messaging.InitRequest
+    ) -> None:
+        """
+        Configures a `TrainingManager` for each model specified in the
+        initialization request, using the corresponding optimizer, gradient
+        aggregator, training dataset, validation dataset, and evaluation
+        metrics.
+
+        If multiple models are received and the client provides a single
+        training dataset, that dataset is shared across all models.
+        Similarly, if a single non-None validation dataset is provided,
+        it is shared across all models.
+        Otherwise, datasets are assigned to models according to their
+        respective indices.
+
+        Parameters
+        ----------
+        message : messaging.InitRequest
+            Initialization request received from the server, containing the
+            models, optimizers, gradient aggregators, evaluation metrics, and
+            other configuration required to initialize training.
+
+        Raises
+        ------
+        RuntimeError
+            If an error occurs while initializing the training managers. An
+            error message is first sent to the server.
+        """
+
+        try:
+            self.trainmanagers = []
+
+            # NOTE: at this point we must check for the case where
+            # there are 1+ models and the clients dispose of 1 train/valid set
+            nb_models = len(message.models)
+            if nb_models > 1 and len(self.train_data) == 1:
+                self.train_data = self.train_data * nb_models
+
+            # case where the training for the models is done on the same
+            # dataset but every model doesn't have its own validation set.
+            if (
+                nb_models > 1
+                and self.valid_data[0] is not None
+                and len(self.valid_data) == 1
+            ):
+                self.valid_data = self.valid_data * nb_models
+
+            for idx in range(len(message.models)):
+                metrics: List[MetricInputType] | None = message.metrics[idx]
+                train_data: Optional[Dataset] = self.train_data[idx]
+                valid_data: Optional[Dataset] = self.valid_data[idx]
+
+                assert train_data is not None
+                self.trainmanagers.append(
+                    TrainingManager(
+                        model=message.models[idx],
+                        optim=message.optimizers[idx],
+                        aggrg=message.aggrg[idx],
+                        train_data=train_data,
+                        valid_data=valid_data,
+                        metrics=metrics,
+                        logger=self.logger,
+                        verbose=self.verbose,
+                    )
+                )
+
+            self.fairness: List[Optional[FairnessControllerClient]] = [
+                None
+            ] * len(self.trainmanagers)
+        except Exception as exc:
+            await self.netwk.send_message(messaging.Error(repr(exc)))
+            raise RuntimeError("Initialization failed.") from exc
 
     async def _collect_and_send_metadata_of_models(
         self,
@@ -520,8 +562,7 @@ class FederatedClient:
                 for idx, manager in enumerate(self.trainmanagers)
             ]
             for manager in self.trainmanagers:
-                manager = cast(DPTrainingManager, manager)
-                # assert isinstance(manager, DPTrainingManager)  # for mypy
+                manager = cast(DPTrainingManager, manager)  # for mypy
                 manager.make_private(message)
 
         except Exception as exc:
