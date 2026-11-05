@@ -244,66 +244,18 @@ class InitRequest(Message):
 
     typekey = "init_request"
 
-    models: List[Model]
-    optimizers: List[Optimizer]
+    model: List[Model]
+    optim: List[Optimizer]
     aggrg: List[Aggregator]
-    metrics: List[List[MetricInputType] | None] = dataclasses.field(
-        default_factory=list
-    )
+    metrics: List[MetricInputType] = dataclasses.field(default_factory=list)
     dpsgd: bool = False
-    fairness: List[bool] = dataclasses.field(default_factory=lambda: [False])
+    fairness: bool = False
     secagg: Optional[str] = None
-
-    def __post_init__(self):
-        # here we normalize single objects to lists.
-        if not isinstance(self.models, list):
-            self.models = [self.models]
-
-        if not isinstance(self.optimizers, list):
-            self.optimizers = [self.optimizers]
-
-        if not isinstance(self.aggrg, list):
-            self.aggrg = [self.aggrg]
-        # case where no metrics are used -> None for all the models
-        if not self.metrics:
-            self.metrics = [None] * len(self.models)
-        elif not isinstance(self.metrics, list):
-            self.metrics = [self.metrics]
-
-        # a list of fairness options for every model
-        if not isinstance(self.fairness, list):
-            self.fairness = [self.fairness]
-
-        # validate that each model has its corresponding components.
-        n_models = len(self.models)
-
-        if len(self.optimizers) != n_models:
-            raise ValueError(
-                f"Expected {n_models} optimizers, got {len(self.optimizers)}."
-            )
-
-        if len(self.aggrg) != n_models:
-            raise ValueError(
-                f"Expected {n_models} aggregators, got {len(self.aggrg)}."
-            )
-        # for now we take as many metrics as the models.
-        # rollback is not yet implemented in this version
-        if self.metrics and len(self.metrics) != n_models:
-            raise ValueError(
-                f"Expected metrics for {n_models} models, "
-                f"got {len(self.metrics)}."
-            )
-
-        if len(self.fairness) != n_models:
-            raise ValueError(
-                f"Expected {n_models} fairness flags, "
-                f"got {len(self.fairness)}."
-            )
 
     def to_kwargs(self):
         return {
-            "models": self.models,
-            "optimizers": self.optimizers,
+            "model": self.model,
+            "optim": self.optim,
             "aggrg": self.aggrg,
             "metrics": self.metrics,
             "dpsgd": self.dpsgd,
@@ -401,10 +353,11 @@ class PrivacyRequest(Message):
     accountant: str
     use_csprng: bool
     seed: Optional[int]
+    # TrainingConfig + rounds
     rounds: int
-
-    # TrainingConfig per model
-    training: List[PrivacyTrainingConfig]
+    batches: Dict[str, Any]
+    n_epoch: Optional[int]
+    n_steps: Optional[int]
 
 
 @dataclasses.dataclass
