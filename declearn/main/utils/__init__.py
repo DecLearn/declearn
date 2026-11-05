@@ -37,11 +37,15 @@ Backend utils to aggregate clients' dataset information:
     Validate and aggregate clients' data-info dictionaries.
 * [AggregationError][declearn.main.utils.AggregationError]:
     Custom exception that may be raised by `aggregate_clients_data_info`.
-* [declearn.main.utils._validate_optional_dataset_list]:
+* [validate_optional_dataset_list]\
+    [declearn.main.utils.validate_optional_dataset_list]:
     Validate and normalize an optional list of Datasets.
-* [declearn.main.utils.dispatch_replies]:
+* [dispatch_replies][declearn.main.utils.dispatch_replies]:
     Dispatch multi-model replies by model index.
-
+* [copy_requests_with_weights][declearn.main.utils.copy_requests_with_weights]:
+    Copy requests and attach weights when needed (used by server)
+* [ServerUtils][declearn.main.utils.ServerUtils]
+    Server utilities for parsing inputs. 
     """
 
 from ._checkpoint import Checkpointer
@@ -49,10 +53,11 @@ from ._data_info import AggregationError, aggregate_clients_data_info
 from ._early_stop import EarlyStopConfig, EarlyStopping
 from ._error import IncompatibleConfigsError
 from ._multi_model import (
+    copy_requests_with_weights,
     dispatch_replies,
-    parse_list,
     validate_optional_dataset_list,
 )
+from ._server import ServerUtils
 
 __all__ = [
     "Checkpointer",
@@ -63,5 +68,6 @@ __all__ = [
     "IncompatibleConfigsError",
     "validate_optional_dataset_list",
     "dispatch_replies",
-    "parse_list",
+    "copy_requests_with_weights",
+    "ServerUtils",
 ]
