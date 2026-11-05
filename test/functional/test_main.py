@@ -253,7 +253,7 @@ class DeclearnTestCase:
                         "max_clients": self.nb_clients,
                         "timeout": 20,
                     },
-                    "training": [{"batch_size": 100}],
+                    "training": {"batch_size": 100},
                 }
                 server.run(config)
         except BaseException:
