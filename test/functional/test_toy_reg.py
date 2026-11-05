@@ -422,18 +422,169 @@ async def async_run_client(
     train: Dataset,
     valid: Dataset,
     name: str = "client",
+    ckptr: str | None = None,
 ) -> None:
     """Routine to run a FL client, called by `run_declearn_experiment`."""
     netwk = NetworkClientConfig.from_params(
         protocol="websockets", server_uri="ws://localhost:8765", name=name
     )
+
     client = FederatedClient(netwk, train, valid)
+    if ckptr:
+        client.ckptr = ckptr
     await client.async_run()
 
 
+async def async_run_server_two_models(  # noqa: PLR0913
+    folder: str,
+    framework: FrameworkType,
+    lrate: float = 0.01,
+    rounds: int = 10,
+    b_size: int = 10,
+    clients: int = 3,
+) -> None:
+    """Routine to run a FL server on 2 models,
+    called by `run_declearn_experiment`."""
+    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-positional-arguments
+    # Set up the FederatedServer.
+
+    netwk = NetworkServerConfig.from_params(
+        protocol="websockets", host="127.0.0.1", port=8765, heartbeat=0.1
+    )
+    optim = FLOptimConfig.from_params(
+        client_opt=[
+            {
+                "lrate": lrate if framework != "numpy" else (lrate * 2),
+                "regularizers": [("lasso", {"alpha": 0.1})],
+            },
+            {
+                "lrate": lrate if framework != "numpy" else (lrate * 2),
+                "regularizers": [("lasso", {"alpha": 0.1})],
+            },
+        ],
+        server_opt=[1.0, 1.0],
+    )
+
+    server = FederatedServer(
+        model=[
+            get_model(framework),
+            get_model(framework),
+        ],
+        netwk=netwk,
+        optim=optim,
+        metrics=["r2"],
+        checkpoint={"folder": folder, "max_history": 1},
+    )
+
+    # Set up hyper-parameters and run training.
+    config = FLRunConfig.from_params(
+        rounds=rounds,
+        register={"min_clients": clients, "timeout": 10},
+        training=[
+            {
+                "n_epoch": 1,
+                "batch_size": b_size,
+                "drop_remainder": False,
+            },
+            {
+                "n_epoch": 1,
+                "batch_size": b_size,
+                "drop_remainder": False,
+            },
+        ],
+        evaluate=[
+            {"frequency": 10},
+            {"frequency": 10},
+        ],
+    )
+    await server.async_run(config)
+
+
+@pytest.mark.asyncio
+async def test_declearn_federated_two_models(
+    framework: FrameworkType,
+    lrate: float = 0.01,
+    rounds: int = 10,
+    b_size: int = 1,
+    clients: int = 3,
+) -> None:
+    """Run an experiment using declearn to perform a federative training. using
+    2 models
+
+    This function runs the experiment using declearn.
+    It sets up and runs the server and client-wise routines in separate
+    processes, to enable their concurrent execution.
+
+    For now "numpy" framework is not supported in this test.
+
+    Parameters
+    ----------
+    framework: str
+        Framework of the model to train and evaluate. For now it's torch &
+        tensorflow.
+    lrate: float, default=0.01
+        Learning rate of the SGD algorithm performed by clients.
+    rounds: int, default=10
+        Number of FL training rounds to perform.
+        At each round, each client will perform a full epoch of training.
+    b_size: int, default=10
+        Batch size fot the training (and validation) data.
+        Batching will be performed without shuffling nor replacement,
+        and the final batch may be smaller than the others (no drop).
+    clients: int, default=3
+        Number of federated clients to set up and run.
+    """
+    if framework == "numpy":
+        pytest.skip(
+            "Multi-model federated training is not supported for Toy Reg "
+            + "NumPy example yet."
+        )
+    datasets = prep_client_datasets(framework, clients)
+    with tempfile.TemporaryDirectory() as folder:
+        # Set up the server and client coroutines.
+        coro_server = async_run_server_two_models(
+            folder, framework, lrate, rounds, b_size, clients
+        )
+        # client_ckptr_base = lambda x: os.path.join(folder, x)
+        coro_clients = [
+            async_run_client(
+                train,
+                valid,
+                name=f"client_{i}",
+            )
+            for i, (train, valid) in enumerate(datasets)
+        ]
+        # Run the coroutines concurrently using asyncio.
+        outputs = await asyncio.gather(
+            coro_server, *coro_clients, return_exceptions=True
+        )
+        # Assert that no exceptions occurred during the process.
+        errors = "\n".join(
+            repr(exc) for exc in outputs if isinstance(exc, Exception)
+        )
+        assert not errors, f"The FL process failed:\n{errors}"
+        # Assert that the federated model converged above an expected value.
+        assert os.path.exists(os.path.join(folder, "model_0"))
+        assert os.path.exists(os.path.join(folder, "model_1"))
+
+        with open(
+            os.path.join(folder, "model_0", "metrics.json"), encoding="utf-8"
+        ) as file0:
+            metrics0 = json.load(file0)
+            with open(
+                os.path.join(folder, "model_1", "metrics.json"),
+                encoding="utf-8",
+            ) as file1:
+                metrics1 = json.load(file1)
+        best_r2_m0 = max(values["r2"] for values in metrics0.values())
+        best_r2_m1 = max(values["r2"] for values in metrics1.values())
+
+        assert best_r2_m0 >= R2_THRESHOLD, "Model 0 did not converge"
+        assert best_r2_m1 >= R2_THRESHOLD, "Model 1 did not converge"
+
+
 # similar structure in other functional tests; pylint: disable=duplicate-code
-
-
 @pytest.mark.asyncio
 async def test_declearn_federated(
     framework: FrameworkType,
@@ -485,7 +636,7 @@ async def test_declearn_federated(
         assert not errors, f"The FL process failed:\n{errors}"
         # Assert that the federated model converged above an expected value.
         with open(
-            os.path.join(folder, "model_0", "metrics.json"), encoding="utf-8"
+            os.path.join(folder, "metrics.json"), encoding="utf-8"
         ) as file:
             metrics = json.load(file)
         best_r2 = max(values["r2"] for values in metrics.values())
