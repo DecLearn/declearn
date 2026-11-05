@@ -89,7 +89,7 @@ class Checkpointer:
         # additional attribute to save the base folder
         self.base_folder = folder
 
-    def set_model_folder(self, idx: int = 0) -> None:
+    def set_model_folder(self, idx: Optional[int] = None) -> None:
         """Sets/updates the checkpointer's output folder for a specific model.
 
         Creates a dedicated subfolder for the model identified by ``idx``
@@ -105,10 +105,10 @@ class Checkpointer:
             the name of the output subfolder (``model_{idx}``).
 
         """
+        if idx is None:
+            return
         fpath = os.path.join(self.base_folder, f"model_{idx}")
-
         os.makedirs(fpath, exist_ok=True)
-
         self.folder = fpath
 
     @classmethod
@@ -149,7 +149,6 @@ class Checkpointer:
         return inputs
 
     # utility methods
-
     def garbage_collect(
         self,
         prefix: str,
@@ -192,13 +191,13 @@ class Checkpointer:
         return sorted(fnames)
 
     # saving methods
-
     def save_model(
         self,
         model: Model,
         config: bool = True,
         state: bool = True,
         timestamp: Optional[str] = None,
+        idx: Optional[int] = None,
     ) -> Optional[str]:
         """Save a Model's configuration and/or weights to files.
 
@@ -224,6 +223,8 @@ class Checkpointer:
             Timestamp string labeling the output weights file, if any.
             If `states is None`, return None.
         """
+        if idx is not None:
+            self.set_model_folder(idx)
         model_config = (
             None if not config else model.get_config(allow_bin=False)
         )
@@ -233,6 +234,7 @@ class Checkpointer:
             states=model.get_weights() if state else None,
             timestamp=timestamp,
             fmt_states="msgpack",
+            idx=idx,
         )
 
     def save_optimizer(
@@ -241,6 +243,7 @@ class Checkpointer:
         config: bool = True,
         state: bool = True,
         timestamp: Optional[str] = None,
+        idx: Optional[int] = None,
     ) -> Optional[str]:
         """Save an Optimizer's configuration and/or state to files.
 
@@ -264,21 +267,25 @@ class Checkpointer:
             Timestamp string labeling the output states file, if any.
             If `states is None`, return None.
         """
+        if idx is not None:
+            self.set_model_folder(idx)
         return self._save_object(
             prefix="optimizer",
             config=optimizer.get_config() if config else None,
             states=optimizer.get_state() if state else None,
             timestamp=timestamp,
             fmt_states="msgpack",
+            idx=idx,
         )
 
-    def _save_object(
+    def _save_object(  # noqa: PLR0913
         self,
         prefix: str,
         config: Any = None,
         states: Any = None,
         timestamp: Optional[str] = None,
         fmt_states: Literal["json", "msgpack"] = "json",
+        idx: Optional[int] = None,
     ) -> Optional[str]:
         """Shared backend for `save_model` and `save_optimizer`.
 
@@ -308,6 +315,8 @@ class Checkpointer:
             Timestamp string labeling the output states file, if any.
             If `states is None`, return None.
         """
+        if idx is not None:
+            self.set_model_folder(idx)
         if fmt_states not in ["json", "msgpack"]:
             logger.warning(
                 f"Unsupported format '{fmt_states}' to save states. "
@@ -321,7 +330,7 @@ class Checkpointer:
         else:  # json
             dump_states = json_dump
             extension = "json"
-
+        # TODO: TEST this out
         if config:
             fpath = os.path.join(self.folder, f"{prefix}_config.json")
             json_dump(config, fpath)
@@ -342,6 +351,7 @@ class Checkpointer:
         prefix: str = "metrics",
         append: bool = True,
         timestamp: Optional[str] = None,
+        idx: Optional[int] = None,
     ) -> str:
         """Save a dict of metrics to a csv and a json files.
 
@@ -363,6 +373,8 @@ class Checkpointer:
         timestamp: str
             Timestamp string labelling the checkpointed metrics.
         """
+        if idx is not None:
+            self.set_model_folder(idx)
         # Set up a timestamp and convert metrics to raw-JSON-compatible values.
         if timestamp is None:
             timestamp = datetime.now().strftime("%y-%m-%d_%H-%M-%S")
@@ -404,6 +416,7 @@ class Checkpointer:
         optimizer: Optional[Optimizer] = None,
         metrics: Optional[Dict[str, Union[float, np.ndarray]]] = None,
         first_call: bool = False,
+        idx: Optional[int] = None,
     ) -> str:
         """Checkpoint inputs, using a common timestamp label.
 
@@ -429,24 +442,38 @@ class Checkpointer:
             Timestamp string labeling the model weights and optimizer state
             files, as well as the values appended to the metrics files.
         """
+        if idx is not None:
+            self.set_model_folder(idx)
         timestamp = datetime.now().strftime("%y-%m-%d_%H-%M-%S")
         remove: List[str] = []
         if model:
             self.save_model(
-                model, config=first_call, state=True, timestamp=timestamp
+                model,
+                config=first_call,
+                state=True,
+                timestamp=timestamp,
+                idx=idx,
             )
         elif first_call:
             remove.append(os.path.join(self.folder, MODEL_CONFIG_FILE))
         if optimizer:
             self.save_optimizer(
-                optimizer, config=first_call, state=True, timestamp=timestamp
+                optimizer,
+                config=first_call,
+                state=True,
+                timestamp=timestamp,
+                idx=idx,
             )
         elif first_call:
             remove.append(os.path.join(self.folder, "optimizer_config.json"))
         if metrics:
             append = not first_call
             self.save_metrics(
-                metrics, prefix="metrics", append=append, timestamp=timestamp
+                metrics,
+                prefix="metrics",
+                append=append,
+                timestamp=timestamp,
+                idx=idx,
             )
         elif first_call:
             remove.append(os.path.join(self.folder, "metrics.csv"))
@@ -457,12 +484,12 @@ class Checkpointer:
         return timestamp
 
     # Loading methods
-
     def load_model(
         self,
         model: Optional[Model] = None,
         timestamp: Optional[str] = None,
         load_state: bool = True,
+        idx: Optional[int] = None,
     ) -> Model:
         """Instantiate a Model and/or reset its weights from a save file.
 
@@ -480,6 +507,8 @@ class Checkpointer:
             Flag specifying whether model weights are to be reloaded.
             If `False`, `timestamp` will be ignored.
         """
+        if idx is not None:
+            self.set_model_folder(idx)
         # Type-check or reload the Model from a config file.
         if model is None:
             fpath = os.path.join(self.folder, MODEL_CONFIG_FILE)
@@ -508,6 +537,7 @@ class Checkpointer:
         optimizer: Optional[Optimizer] = None,
         timestamp: Optional[str] = None,
         load_state: bool = True,
+        idx: Optional[int] = None,
     ) -> Optimizer:
         """Instantiate an Optimizer and/or reset its state from a save file.
 
@@ -525,6 +555,8 @@ class Checkpointer:
             Flag specifying whether optimizer state are to be reloaded.
             If `False`, `timestamp` will be ignored.
         """
+        if idx is not None:
+            self.set_model_folder(idx)
         # Type-check or reload the Optimizer from a config file.
         if optimizer is None:
             fpath = os.path.join(self.folder, "optimizer_config.json")
@@ -549,6 +581,7 @@ class Checkpointer:
         prefix: str,
         timestamp: Optional[str] = None,
         fmt_states: Literal["json", "msgpack"] = "json",
+        idx: Optional[int] = None,
     ) -> Any:
         """Reload data from a state checkpoint file.
 
@@ -562,6 +595,8 @@ class Checkpointer:
         fmt_states: Literal["json", "msgpack"], default="json"
             Data format in which the states are serialized and dumped to file.
         """
+        if idx is not None:
+            self.set_model_folder(idx)
         if fmt_states not in ["json", "msgpack"]:
             logger.warning(
                 f"Unsupported format '{fmt_states}' to load states. "
@@ -591,6 +626,7 @@ class Checkpointer:
         self,
         prefix: str = "metrics",
         timestamp: Optional[str] = None,
+        idx: Optional[int] = None,
     ) -> Dict[str, Dict[str, Union[float, np.ndarray]]]:
         """Reload checkpointed metrics.
 
@@ -612,6 +648,8 @@ class Checkpointer:
             If the `timestamp` argument was not None, the first dimension
             will only contain one key, which is that timestamp.
         """
+        if idx is not None:
+            self.set_model_folder(idx)
         fpath = os.path.join(self.folder, f"{prefix}.json")
         if not os.path.isfile(fpath):
             raise FileNotFoundError(
@@ -634,8 +672,7 @@ class Checkpointer:
         }
 
     def load_scalar_metrics(
-        self,
-        prefix: str = "metrics",
+        self, prefix: str = "metrics", idx: Optional[int] = None
     ) -> pd.DataFrame:
         """Return a pandas DataFrame storing checkpointed scalar metrics.
 
@@ -652,6 +689,8 @@ class Checkpointer:
         metrics: pandas.DataFrame
             DataFrame storing timestamp-indexed scalar metrics.
         """
+        if idx is not None:
+            self.set_model_folder(idx)
         fpath = os.path.join(self.folder, f"{prefix}.csv")
         if not os.path.isfile(fpath):
             raise FileNotFoundError(
