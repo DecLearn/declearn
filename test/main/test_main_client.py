@@ -18,7 +18,7 @@
 """Unit tests for 'FederatedClient'."""
 
 import contextlib
-from typing import Any, Iterator, List, Optional, Tuple, Type
+from typing import Any, Iterator, Optional, Tuple, Type
 from unittest import mock
 
 import pytest  # type: ignore
@@ -130,7 +130,6 @@ class TestFederatedClientInit:  # pylint: disable=too-many-public-methods
             FederatedClient(netwk=mock.MagicMock(), train_data=MOCK_DATASET)
 
     # Tests for the 'train_data' argument.
-
     def test_train_data_instance(self) -> None:
         """Test specifying 'train_data' as a Dataset."""
         dataset = mock.create_autospec(Dataset, instance=True)
@@ -246,7 +245,6 @@ class TestFederatedClientInit:  # pylint: disable=too-many-public-methods
             )
 
     # Tests for the 'share_metrics' argument.
-
     def test_share_metrics(self) -> None:
         """Test that 'share_metrics' is properly attributed."""
         client = FederatedClient(
@@ -267,7 +265,6 @@ class TestFederatedClientInit:  # pylint: disable=too-many-public-methods
             )
 
     # Tests for the 'verbose' argument.
-
     def test_verbose_true(self) -> None:
         """Test that 'verbose=True' is recorded and sets proper logging."""
         client = FederatedClient(
@@ -298,17 +295,14 @@ class TestFederatedClientInitialize:
     def _setup_mock_init_request(
         secagg: Optional[str] = None,
         dpsgd: bool = False,
-        fairness: Optional[List[bool] | bool] = None,
+        fairness: bool = False,
+        nb_models: int = 1,
     ) -> messaging.SerializedMessage[messaging.InitRequest]:
         """Return a mock serialized InitRequest."""
-        if fairness is None:
-            fairness = [False]
-        if fairness is bool and not isinstance(fairness, list):
-            fairness = [fairness]
         init_req = messaging.InitRequest(
-            models=mock.MagicMock(),
-            optimizers=mock.MagicMock(),
-            aggrg=mock.MagicMock(),
+            model=[mock.MagicMock() for _ in range(nb_models)],
+            optim=[mock.MagicMock() for _ in range(nb_models)],
+            aggrg=[mock.MagicMock() for _ in range(nb_models)],
             secagg=secagg,
             dpsgd=dpsgd,
             fairness=fairness,
@@ -323,7 +317,7 @@ class TestFederatedClientInitialize:
     @pytest.mark.asyncio
     async def test_initialize_simple(self) -> None:
         """Test that initialization with a single request works as expected."""
-        # Set up amock network endpoint receiving an InitRequest.
+        # Set up a mock network endpoint receiving an InitRequest.
         netwk = mock.create_autospec(NetworkClient, instance=True)
         netwk.name = "client"
         netwk.recv_message.return_value = self._setup_mock_init_request()
@@ -334,10 +328,39 @@ class TestFederatedClientInitialize:
             await client.initialize()
         # Assert that an InitReply was sent to the server.
         netwk.send_message.assert_called_once_with(messaging.InitReply())
+        assert client._nb_models == 1
         # Assert that a TrainingManager was instantiated and assigned.
         patch_tm.assert_called_once()
         for trainmanager in client.trainmanagers:
             assert trainmanager is patch_tm.return_value
+
+    @pytest.mark.asyncio
+    async def test_initialize_simple_2_models(
+        self,
+    ) -> None:
+        """Test that initialization with more than 1 model
+        works as"""
+        netwk = mock.create_autospec(NetworkClient, instance=True)
+        netwk.name = "client"
+        netwk.recv_message.return_value = self._setup_mock_init_request(
+            nb_models=2
+        )
+        client = FederatedClient(netwk=netwk, train_data=MOCK_DATASET)
+        client._initialize_dpsgd = mock.AsyncMock()
+        client._initialize_fairness = mock.AsyncMock()
+
+        assert client._nb_models == 1
+        with patch_class_constructor(TrainingManager) as patch_tm:
+            await client.initialize()
+        # verify that the nb_models has been updated
+        netwk.send_message.assert_called_once_with(messaging.InitReply())
+        assert client._nb_models == 2
+        assert len(client.trainmanagers) == 2
+        assert patch_tm.call_count == 2
+        for trainmanager in client.trainmanagers:
+            assert trainmanager is patch_tm.return_value
+        client._initialize_dpsgd.assert_not_called()
+        client._initialize_fairness.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_initialize_error_catching(self) -> None:
@@ -368,7 +391,7 @@ class TestFederatedClientInitialize:
         msg_data: messaging.SerializedMessage[messaging.MetadataQuery] = (
             messaging.SerializedMessage.from_bin_message(
                 messaging.MetadataQuery(
-                    fields={"0": ["n_samples"]}
+                    fields={"model_0": ["n_samples"]}
                 ).serialize()
             )
         )
@@ -389,7 +412,7 @@ class TestFederatedClientInitialize:
         reply = netwk.send_message.call_args_list[0].args[0]
         assert isinstance(reply, messaging.MetadataReply)
         dataset.get_data_specs.assert_called_once()
-        assert reply.data_info == {"0": {"n_samples": 100}}
+        assert reply.data_info == {"model_0": {"n_samples": 100}}
         # Assert that an InitReply was then sent to the server.
         reply = netwk.send_message.call_args_list[1].args[0]
         assert isinstance(reply, messaging.InitReply)
@@ -406,7 +429,9 @@ class TestFederatedClientInitialize:
         netwk.name = "client"
         msg_data: messaging.SerializedMessage[messaging.MetadataQuery] = (
             messaging.SerializedMessage.from_bin_message(
-                messaging.MetadataQuery(fields={"0": ["invalid"]}).serialize()
+                messaging.MetadataQuery(
+                    fields={"model_0": ["invalid"]}
+                ).serialize()
             )
         )
         netwk.recv_message.return_value = msg_data
@@ -528,7 +553,6 @@ class TestFederatedClientInitialize:
             metrics=patch_tm.return_value.metrics,
             logger=client.logger,
             verbose=patch_tm.return_value.verbose,
-            privacy_cfg_idx=0,
         )
         patch_dp.return_value.make_private.assert_called_once_with(dp_query)
         for trainmanager in client.trainmanagers:
@@ -641,7 +665,7 @@ class TestFederatedClientInitialize:
         mock_controller.setup_fairness.assert_awaited_once_with(
             netwk=client.netwk, secagg=None
         )
-        assert client.fairness[0] is mock_controller
+        assert client.fairness is mock_controller
         # Assert that a single InitReply was then sent to the server.
         netwk.send_message.assert_called_once()
         reply = netwk.send_message.call_args[0][0]
@@ -655,7 +679,7 @@ class TestFederatedClientInitialize:
         netwk = mock.create_autospec(NetworkClient, instance=True)
         netwk.name = "client"
         msg_init = self._setup_mock_init_request(
-            secagg="mock-secagg", fairness=[True]
+            secagg="mock-secagg", fairness=True
         )
         msg_sqry = mock.create_autospec(
             messaging.SerializedMessage, instance=True
@@ -692,7 +716,7 @@ class TestFederatedClientInitialize:
         mock_controller.setup_fairness.assert_awaited_once_with(
             netwk=client.netwk, secagg=secagg.setup_encrypter.return_value
         )
-        assert client.fairness[0] is mock_controller
+        assert client.fairness is mock_controller
         # Assert that a single InitReply was then sent to the server.
         netwk.send_message.assert_called_once()
         reply = netwk.send_message.call_args[0][0]
@@ -732,7 +756,7 @@ class TestFederatedClientInitialize:
         # then a FairnessSetupQuery.
         netwk = mock.create_autospec(NetworkClient, instance=True)
         netwk.name = "client"
-        msg_init = self._setup_mock_init_request(secagg=None, fairness=[True])
+        msg_init = self._setup_mock_init_request(secagg=None, fairness=True)
         msg_fair, _ = self._setup_fairness_setup_query()
         netwk.recv_message.side_effect = [msg_init, msg_fair]
         # Set up a client wrapping the former network endpoint.
@@ -746,7 +770,7 @@ class TestFederatedClientInitialize:
                 await client.initialize()
         # Assert that setup was called (hence causing the exception).
         patch_fcc.assert_called_once()
-        assert client.fairness[0] is None
+        assert client.fairness is None
         # Assert that both messages were fetched, and an error was sent
         # after the fairness setup failed.
         assert netwk.recv_message.call_count == 2
@@ -827,7 +851,6 @@ class TestFederatedClientTrainingRound:
 
     def _finalize_mock_train_managers(self, nb_models: int = 1):
         train_manager = mock.create_autospec(TrainingManager, instance=True)
-
         for _ in range(nb_models):
             yield self._finalize_mock_train_manager(train_manager)
 
@@ -858,7 +881,6 @@ class TestFederatedClientTrainingRound:
                 request.requests[idx]
             )
             replies.append(trainmanager.training_round.return_value)
-
         # assert that the client sends one reply message
         # that groups all the trainreplies from
         # the different models
@@ -898,17 +920,14 @@ class TestFederatedClientTrainingRound:
             "from_cleartext_message",
         ) as patched:
             await client.training_round(request)
-
         # Verify training and encryption for each model.
         assert patched.call_count == len(client.trainmanagers)
-
         expected_replies = []
         for idx, trainmanager in enumerate(client.trainmanagers):
             trainmanager.training_round.assert_called_once_with(
                 request.requests[idx]
             )
             expected_replies.append(patched.return_value)
-
         # Verify the multi-model SecAgg reply is one
         # grouping all the different replies from the models
         expected_message = secagg_messaging.MultiModelSecaggTrainReply(
@@ -940,7 +959,6 @@ class TestFederatedClientTrainingRound:
         )
         await client.training_round(request)
         netwk.send_message.assert_called_once()
-
         reply = netwk.send_message.call_args.args[0]
         assert isinstance(reply, messaging.Error)
         for trainmanager in client.trainmanagers:
@@ -1002,7 +1020,6 @@ class TestFederatedClientEvaluationRound:
                 request.requests[idx]
             )
             replies.append(trainmanager.evaluation_round.return_value)
-
         # make sure that the client sends one message with all
         # the grouped replies
         netwk.send_message.assert_called_once_with(
@@ -1057,21 +1074,19 @@ class TestFederatedClientEvaluationRound:
             "from_cleartext_message",
         ) as patched:
             await client.evaluation_round(request)
-            for idx, trainmanager in enumerate(client.trainmanagers):
-                trainmanager.evaluation_round.assert_called_once_with(
-                    request.requests[idx]
-                )
-                patched.assert_called_once_with(
-                    cleartext=trainmanager.evaluation_round.return_value,
-                    encrypter=secagg.setup_encrypter.return_value,
-                )
-                replies.append(patched.return_value)
-
-            netwk.send_message.assert_called_once_with(
-                secagg_messaging.MultiModelSecaggEvaluationReply(
-                    replies=replies
-                )
+            trainmanager = client.trainmanagers.pop()
+            trainmanager.evaluation_round.assert_called_once_with(
+                request.requests.pop()
             )
+            patched.assert_called_once_with(
+                cleartext=trainmanager.evaluation_round.return_value,
+                encrypter=secagg.setup_encrypter.return_value,
+            )
+            replies.append(patched.return_value)
+
+        netwk.send_message.assert_called_once_with(
+            secagg_messaging.MultiModelSecaggEvaluationReply(replies=replies)
+        )
 
     @pytest.mark.asyncio
     async def test_evaluation_round_secagg_not_setup(self) -> None:
@@ -1089,8 +1104,8 @@ class TestFederatedClientEvaluationRound:
         netwk.send_message.assert_called_once()
         reply = netwk.send_message.call_args.args[0]
         assert isinstance(reply, messaging.Error)
-        for trainmanager in client.trainmanagers:
-            trainmanager.evaluation_round.assert_not_called()
+        trainmanager = client.trainmanagers.pop()
+        trainmanager.evaluation_round.assert_not_called()
 
 
 class TestFederatedClientFairnessRound:
@@ -1111,10 +1126,9 @@ class TestFederatedClientFairnessRound:
         client.trainmanagers = [
             mock.create_autospec(TrainingManager, instance=True)
         ]
-        fairness = [
-            mock.create_autospec(FairnessControllerClient, instance=True)
-        ]
-        client.fairness = fairness
+        client.fairness = mock.create_autospec(
+            FairnessControllerClient, instance=True
+        )
         if ckpt:
             client.ckptr = mock.create_autospec(Checkpointer, instance=True)
         # Call the 'fairness_round' routine and verify expected actions.
@@ -1123,21 +1137,46 @@ class TestFederatedClientFairnessRound:
         )
         await client.fairness_round(request)
 
-        for idx in range(len(client.fairness)):
-            client.fairness[idx].run_fairness_round.assert_awaited_once_with(
-                netwk=netwk, query=request.requests[idx], secagg=None
+        client.fairness.run_fairness_round.assert_awaited_once_with(
+            netwk=netwk, query=request.requests[0], secagg=None
+        )
+
+        @pytest.mark.parametrize("ckpt", [True, False], ids=["ckpt", "nockpt"])
+        @pytest.mark.asyncio
+        async def test_fairness_round_with_2_models(
+            self,
+            ckpt: bool,
+        ) -> None:
+            """Test wether 'fairness_round' fails for when training 2models."""
+            # Set up a client with a mock NetworkClient, TrainingManager,
+            # FairnessClientController and optional Checkpointer.
+            netwk = mock.create_autospec(NetworkClient, instance=True)
+            netwk.name = "client"
+            client = FederatedClient(netwk, train_data=MOCK_DATASET)
+            client.trainmanagers = [
+                mock.create_autospec(TrainingManager, instance=True),
+                mock.create_autospec(TrainingManager, instance=True),
+            ]
+            client.fairness = mock.create_autospec(
+                FairnessControllerClient, instance=True
             )
-            # Verify that when a checkpointer is set, it is used.
             if ckpt:
-                client.ckptr.save_metrics.assert_called_once_with(  # type: ignore
-                    metrics=client.fairness[
-                        idx
-                    ].run_fairness_round.return_value,
-                    prefix="fairness_metrics",
-                    append=False,  # first round, hence file creation or
-                    # overwrite
-                    timestamp="round_0",
+                client.ckptr = mock.create_autospec(
+                    Checkpointer, instance=True
                 )
+            # Call the 'fairness_round' routine and verify expected actions.
+            request = messaging.MultiModelFairnessQuery(
+                requests=[messaging.FairnessQuery(round_i=0)]
+            )
+            with pytest.raises(RuntimeError):
+                await client.fairness_round(request)
+                client.fairness.run_fairness_round.assert_awaited_once_with(
+                    netwk=netwk, query=request.requests[0], secagg=None
+                )
+                # Verify that an Error message was sent.
+                netwk.send_message.assert_called_once()
+                reply = netwk.send_message.call_args.args[0]
+                assert isinstance(reply, messaging.Error)
 
     @pytest.mark.asyncio
     async def test_fairness_round_secagg(self) -> None:
@@ -1151,10 +1190,9 @@ class TestFederatedClientFairnessRound:
         client.trainmanagers = [
             mock.create_autospec(TrainingManager, instance=True)
         ]
-        fairness = [
-            mock.create_autospec(FairnessControllerClient, instance=True)
-        ]
-        client.fairness = fairness
+        client.fairness = mock.create_autospec(
+            FairnessControllerClient, instance=True
+        )
         # Call the SecAgg setup routine.
         await client.setup_secagg(
             mock.create_autospec(messaging.SerializedMessage)
@@ -1164,13 +1202,11 @@ class TestFederatedClientFairnessRound:
             requests=[messaging.FairnessQuery(round_i=1)]
         )
         await client.fairness_round(request)
-
-        for idx in range(len(client.fairness)):
-            client.fairness[idx].run_fairness_round.assert_awaited_once_with(
-                netwk=netwk,
-                query=request.requests[idx],
-                secagg=secagg.setup_encrypter.return_value,
-            )
+        client.fairness.run_fairness_round.assert_awaited_once_with(
+            netwk=netwk,
+            query=request.requests.pop(),
+            secagg=secagg.setup_encrypter.return_value,
+        )
 
     @pytest.mark.asyncio
     async def test_fairness_round_fairness_not_setup(self) -> None:
@@ -1183,19 +1219,18 @@ class TestFederatedClientFairnessRound:
         client.trainmanagers = [
             mock.create_autospec(TrainingManager, instance=True)
         ]
-        client.fairness = [None]
-
+        client.fairness = None
         # Verify that running the fairness step raises a RuntimeError.
         request = messaging.FairnessQuery(round_i=1)
-        with pytest.raises(RuntimeError):
-            await client.fairness_step(request)
-
-        # Verify that an Error message was sent.
         request = messaging.MultiModelFairnessQuery(requests=[request])
-        await client.fairness_round(request)
-        netwk.send_message.assert_called_once()
-        reply = netwk.send_message.call_args.args[0]
-        assert isinstance(reply, messaging.Error)
+
+        with pytest.raises(RuntimeError):
+            await client.fairness_round(request)
+
+            # Verify that an Error message was sent.
+            netwk.send_message.assert_called_once()
+            reply = netwk.send_message.call_args.args[0]
+            assert isinstance(reply, messaging.Error)
 
     @pytest.mark.asyncio
     async def test_fairness_round_secagg_not_setup(self) -> None:
@@ -1209,20 +1244,19 @@ class TestFederatedClientFairnessRound:
         client.trainmanager = mock.create_autospec(
             TrainingManager, instance=True
         )
-        fairness = [
-            mock.create_autospec(FairnessControllerClient, instance=True)
-        ]
-        client.fairness = fairness
+        client.fairness = mock.create_autospec(
+            FairnessControllerClient, instance=True
+        )
         # Run the routine and verify that an Error message was sent.
         request = messaging.MultiModelFairnessQuery(
             requests=[messaging.FairnessQuery(round_i=1)]
         )
-        await client.fairness_round(request)
-        netwk.send_message.assert_called_once()
-        reply = netwk.send_message.call_args.args[0]
-        assert isinstance(reply, messaging.Error)
-        for idx, _ in enumerate(client.fairness):
-            fairness[idx].run_fairness_round.assert_not_called()
+        with pytest.raises(RuntimeError):
+            await client.fairness_round(request)
+            netwk.send_message.assert_called_once()
+            reply = netwk.send_message.call_args.args[0]
+            assert isinstance(reply, messaging.Error)
+            client.fairness.run_fairness_round.assert_not_called()
 
 
 class TestFederatedClientMisc:
