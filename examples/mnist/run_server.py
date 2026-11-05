@@ -126,8 +126,8 @@ def run_server(  # noqa: PLR0913
     # Wrap all this into a FLOptimConfig.
     optim = declearn.main.config.FLOptimConfig.from_params(
         aggregator=aggregator,
-        server_opt=server_opt,
-        client_opt=client_opt,
+        server_opt=[server_opt],
+        client_opt=[client_opt],
     )
 
     ### (3) Define network communication parameters.
@@ -143,7 +143,7 @@ def run_server(  # noqa: PLR0913
 
     ### (4) Instantiate and run a FederatedServer.
 
-    # Instanciate
+    # Instantiate
     server = declearn.main.FederatedServer(
         model=model,
         netwk=network,
