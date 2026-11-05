@@ -35,7 +35,6 @@ __all__ = [
 ]
 
 
-# TODO: clean this class
 @dataclasses.dataclass
 class FLRunConfig(TomlConfig):
     """Global container for Federated Learning "run" configurations.
@@ -123,7 +122,8 @@ class FLRunConfig(TomlConfig):
                 raise ValueError(
                     "All evaluation frequencies must be identical"
                 )
-
+        # by default, convert the self.training and self.evaluate into
+        # single item lists
         if isinstance(self.training, TrainingConfig) and isinstance(
             self.evaluate, EvaluateConfig
         ):
@@ -156,49 +156,63 @@ class FLRunConfig(TomlConfig):
         cls,
         **kwargs: Any,
     ) -> Self:
-        # Normalize the inputs to lists in case of single training and
-        # make sure to wrap the training and evaluation fields to lists to
-        # avoid breaking changes later
         training = kwargs.get("training")
         evaluate = kwargs.setdefault("evaluate", {})
 
-        # evaluate does not dispose of 'batch_size'
-        if isinstance(evaluate, dict) and ("batch_size" not in evaluate):
-            training = kwargs.get("training")
-            if isinstance(training, dict):
-                evaluate.setdefault("batch_size", training.get("batch_size"))
-            elif isinstance(training, TrainingConfig):
-                evaluate.setdefault("batch_size", training.batch_size)
+        cls._set_evaluate_batch_size(training, evaluate)
+        # if evaluate is a list then  by default its batch size
+        # is set from the corresponding training object
+        if isinstance(evaluate, List) and isinstance(training, List):
+            for i in range(len(evaluate)):
+                cls._set_evaluate_batch_size(training[i], evaluate[i])
 
         # If evaluation batch size is not set, use the same as training.
         # If privacy is set and poisson sampling bool parameter is unspecified
-        # for the training dataset, make it True rather than False by default.
         privacy = kwargs.get("privacy")
         if isinstance(privacy, dict):
             training = kwargs.get("training")
             if isinstance(training, dict):
                 training.setdefault("poisson", True)
+
         # If fairness batch size is not set, use the same as evaluation.
         # Note: if inputs have invalid formats, let the parent method fail.
         fairness = kwargs.setdefault("fairness", {})
         if isinstance(fairness, dict) and "batch_size" not in fairness:
-            evaluate = kwargs.get("evaluate")
-            evaluate = (
-                evaluate[0]
-                if evaluate is isinstance(evaluate, List)
-                else evaluate
-            )
-            if isinstance(evaluate, dict):
+            evaluate_instance = kwargs.get("evaluate")
+            # if evaluate is a list, we take the first element
+            if isinstance(evaluate, List):
+                evaluate_instance = evaluate[0]
+            if isinstance(evaluate_instance, dict):
                 fairness.setdefault(
                     "batch_size",
-                    evaluate.get("batch_size"),
+                    evaluate_instance.get("batch_size"),
                 )
-            elif isinstance(evaluate, EvaluateConfig):
+            elif isinstance(evaluate_instance, EvaluateConfig):
                 fairness.setdefault(
                     "batch_size",
-                    evaluate.batch_size,
+                    evaluate_instance.batch_size,
                 )
         kwargs["evaluate"] = evaluate
         kwargs["training"] = training
+
         # Delegate the rest of the work to the parent method.
         return super().from_params(**kwargs)
+
+    @classmethod
+    def _set_evaluate_batch_size(cls, training, evaluate):
+        """Sets the evaluate batch size from the training batch size if not
+        manually provided at start.
+
+        Parameters
+        ----------
+        training: Any
+            Training object containing the batch size received from kwargs
+        evaluate: Any
+            Evaluate object to set the batch size into.
+        """
+        # evaluate does not dispose of 'batch_size'
+        if isinstance(evaluate, dict) and ("batch_size" not in evaluate):
+            if isinstance(training, dict):
+                evaluate.setdefault("batch_size", training.get("batch_size"))
+            elif isinstance(training, TrainingConfig):
+                evaluate.setdefault("batch_size", training.batch_size)
