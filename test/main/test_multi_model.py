@@ -53,9 +53,10 @@ class DummyDataset(Dataset):
 
 
 class TestValidateOptionalDatasetList:
-    # ---------- data is None ----------
+    """Tests different scenarios for dataset validation."""
 
     def test_data_none_with_reference_length(self) -> None:
+        """Tests when the case where the dataset is empty"""
         result = validate_optional_dataset_list(
             data=None,
             name="datasets",
@@ -64,6 +65,7 @@ class TestValidateOptionalDatasetList:
         assert result == [None, None, None]
 
     def test_data_none_without_reference_length_raises(self) -> None:
+        """Tests when the data is None but no reference length is provided"""
         with pytest.raises(
             ValueError,
             match="datasets is None and no reference_length provided",
@@ -74,8 +76,6 @@ class TestValidateOptionalDatasetList:
                 reference_length=None,
             )
 
-    # ---------- data is a list, all valid ----------
-
     def test_data_empty_list_no_reference(self) -> None:
         result = validate_optional_dataset_list(
             data=[],
@@ -85,6 +85,7 @@ class TestValidateOptionalDatasetList:
         assert result == []
 
     def test_data_list_of_datasets_no_reference(self) -> None:
+        """Tests with the data is a list with no reference length"""
         ds1 = DummyDataset(1)
         ds2 = DummyDataset(2)
         result = validate_optional_dataset_list(
@@ -95,6 +96,7 @@ class TestValidateOptionalDatasetList:
         assert result == [ds1, ds2]
 
     def test_data_list_with_none_elements(self) -> None:
+        """Tests when there exist one None element in the dataset array"""
         ds = DummyDataset(1)
         result = validate_optional_dataset_list(
             data=[ds, None, ds],
@@ -103,9 +105,8 @@ class TestValidateOptionalDatasetList:
         )
         assert result == [ds, None, ds]
 
-    # ---------- reference_length checks ----------
-
     def test_reference_length_matches(self) -> None:
+        """Tests for dataset length and reference length match"""
         ds1 = DummyDataset(1)
         result = validate_optional_dataset_list(
             data=[ds1, None],
@@ -115,6 +116,7 @@ class TestValidateOptionalDatasetList:
         assert result == [ds1, None]
 
     def test_reference_length_mismatch_raises(self) -> None:
+        """Tests for dataset length and reference length mismatch"""
         ds1 = DummyDataset(1)
         with pytest.raises(ValueError, match="datasets must have length 2"):
             validate_optional_dataset_list(
@@ -123,9 +125,9 @@ class TestValidateOptionalDatasetList:
                 reference_length=2,
             )
 
-    # ---------- type checks ----------
-
     def test_invalid_element_type_raises(self) -> None:
+        """Tests wether an error is raised if one of the elements
+        is an invalid dataset."""
         ds = DummyDataset(1)
         with pytest.raises(InvalidDatasetType) as exc_info:
             validate_optional_dataset_list(
@@ -147,105 +149,107 @@ class TestValidateOptionalDatasetList:
             )
 
 
-def make_train_reply(name: str) -> TrainReply:
-    """Create a minimal TrainReply for testing."""
-    return TrainReply(
-        n_epoch=1,
-        n_steps=10,
-        t_spent=0.5,
-        updates=mock.Mock(name=f"{name}_updates"),
-        aux_var={},
-    )
+class TestMultiModelUtils:
+    """Tests different utilities for handling multi-model case."""
 
+    @staticmethod
+    def make_train_reply(name: str) -> TrainReply:
+        """Create a minimal TrainReply for testing."""
+        return TrainReply(
+            n_epoch=1,
+            n_steps=10,
+            t_spent=0.5,
+            updates=mock.Mock(name=f"{name}_updates"),
+            aux_var={},
+        )
 
-def test_dispatch_replies():
-    """Test dispatching multi-model replies by model index."""
-    client_0_model_0 = make_train_reply("client_0_model_0")
-    client_0_model_1 = make_train_reply("client_0_model_1")
-
-    client_1_model_0 = make_train_reply("client_1_model_0")
-    client_1_model_1 = make_train_reply("client_1_model_1")
-
-    client_2_model_0 = make_train_reply("client_2_model_0")
-    client_2_model_1 = make_train_reply("client_2_model_1")
-
-    results = {
-        "client_0": MultiModelTrainReply(
-            replies=[
-                client_0_model_0,
-                client_0_model_1,
-            ]
-        ),
-        "client_1": MultiModelTrainReply(
-            replies=[
-                client_1_model_0,
-                client_1_model_1,
-            ]
-        ),
-        "client_2": MultiModelTrainReply(
-            replies=[
-                client_2_model_0,
-                client_2_model_1,
-            ]
-        ),
-    }
-
-    results_per_model = dispatch_replies(
-        results,
-        lambda reply: reply.replies,
-    )
-
-    # Two models -> two dictionaries.
-    assert len(results_per_model) == 2
-
-    # Model 0 receives the first reply from every client.
-    assert results_per_model[0] == {
-        "client_0": client_0_model_0,
-        "client_1": client_1_model_0,
-        "client_2": client_2_model_0,
-    }
-
-    # Model 1 receives the second reply from every client.
-    assert results_per_model[1] == {
-        "client_0": client_0_model_1,
-        "client_1": client_1_model_1,
-        "client_2": client_2_model_1,
-    }
-
-
-def test_dispatch_replies_with_different_number_of_models():
-    """Test that inconsistent client replies are rejected."""
-    results = {
-        "client_0": MultiModelTrainReply(
-            replies=[
-                make_train_reply("client_0_model_0"),
-                make_train_reply("client_0_model_1"),
-            ]
-        ),
-        "client_1": MultiModelTrainReply(
-            replies=[
-                make_train_reply("client_1_model_0"),
-            ]
-        ),
-    }
-
-    with pytest.raises(
-        ValueError,
-        match="All clients must provide the same number of replies",
+    def test_dispatch_replies(
+        self,
     ):
-        dispatch_replies(
+        """Test dispatching multi-model replies by model index."""
+        client_0_model_0 = self.make_train_reply("client_0_model_0")
+        client_0_model_1 = self.make_train_reply("client_0_model_1")
+
+        client_1_model_0 = self.make_train_reply("client_1_model_0")
+        client_1_model_1 = self.make_train_reply("client_1_model_1")
+
+        client_2_model_0 = self.make_train_reply("client_2_model_0")
+        client_2_model_1 = self.make_train_reply("client_2_model_1")
+        results = {
+            "client_0": MultiModelTrainReply(
+                replies=[
+                    client_0_model_0,
+                    client_0_model_1,
+                ]
+            ),
+            "client_1": MultiModelTrainReply(
+                replies=[
+                    client_1_model_0,
+                    client_1_model_1,
+                ]
+            ),
+            "client_2": MultiModelTrainReply(
+                replies=[
+                    client_2_model_0,
+                    client_2_model_1,
+                ]
+            ),
+        }
+
+        results_per_model = dispatch_replies(
+            results,
+            lambda reply: reply.replies,
+        )
+        # Two models -> two dictionaries.
+        assert len(results_per_model) == 2
+        # Model 0 receives the first reply from every client.
+        assert results_per_model[0] == {
+            "client_0": client_0_model_0,
+            "client_1": client_1_model_0,
+            "client_2": client_2_model_0,
+        }
+        # Model 1 receives the second reply from every client.
+        assert results_per_model[1] == {
+            "client_0": client_0_model_1,
+            "client_1": client_1_model_1,
+            "client_2": client_2_model_1,
+        }
+
+    def test_dispatch_replies_with_different_number_of_models(
+        self,
+    ):
+        """Test that inconsistent client replies are rejected."""
+        results = {
+            "client_0": MultiModelTrainReply(
+                replies=[
+                    self.make_train_reply("client_0_model_0"),
+                    self.make_train_reply("client_0_model_1"),
+                ]
+            ),
+            "client_1": MultiModelTrainReply(
+                replies=[
+                    self.make_train_reply("client_1_model_0"),
+                ]
+            ),
+        }
+        with pytest.raises(
+            ValueError,
+            match="All clients must provide the same number of replies",
+        ):
+            dispatch_replies(
+                results,
+                lambda reply: reply.replies,
+            )
+
+    def test_dispatch_replies_empty(
+        self,
+    ):
+        """Test dispatching an empty result."""
+        results = {}
+
+        results_per_model = dispatch_replies(
             results,
             lambda reply: reply.replies,
         )
 
-
-def test_dispatch_replies_empty():
-    """Test dispatching an empty result."""
-    results = {}
-
-    results_per_model = dispatch_replies(
-        results,
-        lambda reply: reply.replies,
-    )
-
-    assert results_per_model == []
+        assert results_per_model == []
