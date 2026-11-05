@@ -26,14 +26,13 @@ from typing import (
     Any,
     ClassVar,
     Dict,
+    List,
     Optional,
     Self,
     Set,
     Type,
     TypeVar,
     Union,
-    get_args,
-    get_origin,
 )
 
 __all__ = [
@@ -121,7 +120,7 @@ def _parse_float(src: str) -> Optional[float]:
 
 def _instantiate_field(
     field: dataclasses.Field[T],
-    inputs: Any,
+    **kwargs: Any,
 ) -> T:
     """Instantiate a dataclass field from input args and kwargs.
 
@@ -138,80 +137,30 @@ def _instantiate_field(
     coming from the target type's `__init__` method.
     """
 
-    field_type = field.type
+    def _instantiate(cls: Type[Any]) -> Any:
+        """Try instantiating a given class from the kwargs."""
+        if issubclass(cls, TomlConfig):
+            return cls.from_params(**kwargs)
+        return cls(**kwargs)
 
-    def _instantiate(typevar: Type[Any], value: Any) -> Any:
-        if isinstance(value, typevar):
-            return value
-        # enable conversion of a dictionary instance
-        # to not break old api examples
-        if isinstance(value, dict):
-            if issubclass(typevar, TomlConfig):
-                return typevar.from_params(**value)
-            return typevar(**value)
-
-        raise TypeError(f"Cannot instantiate {typevar} from {value!r}.")
-
-    def _parse(typevar: Any, value: Any) -> Any:
-        origin = get_origin(typevar)
-        args = get_args(typevar)
-
-        # Plain type.
-        if origin is None:
-            return _instantiate(typevar, value)
-
-        # Union / Optional.
-        if origin is Union:
-            for subtype in args:
-                if subtype is type(None) and value is None:
-                    return None
-                try:
-                    return _parse(subtype, value)
-                except TypeError:
-                    continue
-
-            raise TypeError(f"Failed to instantiate {typevar} from {value!r}.")
-
-        # List[T].
-        if origin is list:
-            if isinstance(value, dict):
-                value = [value]
-
-            if not isinstance(value, list):
-                raise TypeError(
-                    f"Expected a list or dict for {typevar}, "
-                    f"got {type(value).__name__}."
-                )
-
-            return [_parse(args[0], item) for item in value]
-
-        # Tuple[T, ...].
-        if origin is tuple:
-            if not isinstance(value, (tuple, list)):
-                raise TypeError(
-                    f"Expected a tuple/list for {typevar}, "
-                    f"got {type(value).__name__}."
-                )
-
-            if len(args) == 2 and args[1] is Ellipsis:
-                return tuple(_parse(args[0], item) for item in value)
-
-            if len(value) != len(args):
-                raise TypeError(
-                    f"Expected {len(args)} elements for {typevar}, "
-                    f"got {len(value)}."
-                )
-
-            return tuple(
-                _parse(subtype, item)
-                for subtype, item in zip(args, value, strict=False)
-            )
-
+    origin = typing.get_origin(field.type)
+    # Case of a raw type.
+    if origin is None:
+        return _instantiate(field.type)  # type: ignore
+    # Case of a union of types (including optional).
+    if origin is Union:
+        for cls in typing.get_args(field.type):
+            try:
+                return _instantiate(cls)
+            except TypeError:
+                pass
         raise TypeError(
-            f"Unsupported field type: {typevar} with origin {origin}."
+            f"Failed to instantiate {field.name} using type constructors "
+            f"{typing.get_args(field.type)}."
         )
-
-    return _parse(field_type, inputs)
+    raise TypeError(
+        f"Unsupported field type: {field.type} with origin {origin}."
+    )
 
 
 @dataclasses.dataclass
@@ -288,7 +237,6 @@ class TomlConfig:
         for field in dataclasses.fields(cls):
             parser = getattr(cls, f"parse_{field.name}", cls.default_parser)
             inputs = kwargs.pop(field.name, None)
-
             try:
                 fields[field.name] = parser(field, inputs)
             except Exception as exc:  # pylint: disable=broad-except
@@ -309,7 +257,13 @@ class TomlConfig:
     def default_parser(
         cls,
         field: dataclasses.Field[T],
-        inputs: Union[str, Dict[str, Any], T, None],
+        inputs: Union[
+            str,
+            Dict[str, Any],
+            T,
+            None,
+            List[Union[str, Dict[str, Any], T, None]],
+        ],
     ) -> Any:
         """Default method to instantiate a field from python inputs.
 
@@ -367,14 +321,16 @@ class TomlConfig:
                 raise TypeError(
                     f"Field {field.name}: could not parse secondary TOML file."
                 ) from exc
-
+            # Look for a subsection, otherwise keep the entire file.
             section = config.get(field.name, config)
             # Recursively call this parser.
             return cls.default_parser(field, section)
+        # Case of dict inputs: try instantiating the target type.
+        if isinstance(inputs, dict):
+            return _instantiate_field(field, **inputs)
+        if isinstance(inputs, list):
+            return [cls.default_parser(field, item) for item in inputs]
 
-        # case of dict or list inputs: try instantiating the target type.
-        if isinstance(inputs, (dict, list)):
-            return _instantiate_field(field, inputs)
         # Otherwise, raise a TypeError.
         raise TypeError(f"Failed to parse inputs for field {field.name}.")
 
