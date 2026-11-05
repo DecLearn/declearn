@@ -17,20 +17,24 @@
 
 
 import copy
-from typing import Any, Callable, List, Optional, TypeVar, Union
+from typing import Any, Callable, Dict, List, Optional, TypeVar
 
 from declearn import messaging
 from declearn.dataset._base import Dataset
 from declearn.main.utils._error import InvalidDatasetType
 
+RequestT = TypeVar("RequestT", bound=messaging.Message)
 T = TypeVar("T")
 MultiReply = TypeVar("MultiReply")
 Reply = TypeVar("Reply")
-
 R = TypeVar("R")
 
 
-__all__ = ["validate_optional_dataset_list", "dispatch_replies"]
+__all__ = [
+    "validate_optional_dataset_list",
+    "dispatch_replies",
+    "copy_requests_with_weights",
+]
 
 
 def validate_optional_dataset_list(
@@ -60,7 +64,7 @@ def validate_optional_dataset_list(
         List of validated data.
     """
     # check if the dataset is a single element, convert it to a single
-    # element list
+    # element list, if a reference length is provided
     # NOTE necessary change to not break the old api
     if data is None:
         if reference_length is None:
@@ -69,18 +73,14 @@ def validate_optional_dataset_list(
             )
         return [None] * reference_length
     data_list = [data] if isinstance(data, Dataset) else data
-
-    # Validate element types
     for idx, item in enumerate(data_list):
         if item is not None and not isinstance(item, Dataset):
             raise InvalidDatasetType(f"{name}[{idx}]", type(item).__name__)
 
-    # Validate length against reference if provided
     if reference_length is not None and len(data_list) != reference_length:
         raise ValueError(
             f"{name} must have length {reference_length};got {len(data_list)}"
         )
-
     return data_list
 
 
@@ -121,41 +121,11 @@ def dispatch_replies(
     return results_per_model
 
 
-def parse_list(
-    obj: Union[T, List[T]],
-    callback: Callable[[T], R],
-    *,
-    parse_as_list: bool = False,
-) -> List[R]:
-    """Apply a callback to an object or a list of objects.
-
-    If obj is a list, apply callback to each element.
-    Otherwise, apply callback once and wrap the result in a list.
-
-    Parameters
-    ----------
-    obj: Union[T, List[T]]
-        An object or a list of objects to parse.
-    callback: Callable[[T], R]
-        A function that parses a single object.
-
-    Returns
-    -------
-        A list of parsed objects.
-    """
-    if isinstance(obj, list) and not parse_as_list:
-        return [callback(item) for item in obj]
-    return [callback(obj)]  # type: ignore[arg-type]
-
-
-RequestT = TypeVar("RequestT", bound=messaging.Message)
-
-
 def copy_requests_with_weights(
-    requests: list[RequestT],
+    requests: List[RequestT],
     client: str,
-    needs_weights: dict[int, set[str]],
-    model_weights: dict[int, Any],
+    needs_weights: Dict[int, set[str]],
+    model_weights: Dict[int, Any],
 ) -> list[RequestT]:
     """Copy requests and attach weights when needed while maintaining the
     requests relevant type to avoid mypy complains.
@@ -180,10 +150,7 @@ def copy_requests_with_weights(
 
     for idx, rqst in enumerate(requests):
         request = copy.copy(rqst)
-
         if client in needs_weights[idx]:
             request.weights = model_weights[idx]  # type: ignore [attr-defined]
-
         copied_requests.append(request)
-
     return copied_requests
