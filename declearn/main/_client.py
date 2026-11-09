@@ -35,8 +35,7 @@ from declearn.communication.utils import (
 from declearn.dataset import Dataset
 from declearn.fairness.api import FairnessControllerClient
 from declearn.main.utils import Checkpointer, validate_optional_dataset_list
-from declearn.messaging import SerializedMessage
-from declearn.messaging._fairness import FairnessQuery
+from declearn.messaging import FairnessQuery, SerializedMessage
 from declearn.secagg import messaging as secagg_messaging
 from declearn.secagg import parse_secagg_config_client
 from declearn.secagg.api import Encrypter, SecaggConfigClient, SecaggSetupQuery
@@ -81,9 +80,9 @@ class FederatedClient:
             dict, dataclass or path to a TOML file enabling its instantiation.
             In the latter three cases, the object's default logger will be set
             to that of this `FederatedClient`.
-        train_data: Dataset or str
+        train_data: Dataset or List[Dataset] or str.
             Dataset instance wrapping the training data.
-        valid_data: Dataset or str or None
+        valid_data: Dataset or List[Dataset] or str or None.
             Optional Dataset instance wrapping validation data.
             If None, run evaluation rounds over `train_data`.
         checkpoint: Checkpointer or dict or str or None, default=None
@@ -118,10 +117,6 @@ class FederatedClient:
                 stacklevel=2,
             )
         self.netwk = self._parse_netwk(netwk)
-        logging.basicConfig(
-            level=logging.INFO,
-            format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        )
         self.logger = logging.getLogger(f"declearn.client-{self.netwk.name}")
         # Assign the wrapped training dataset.
         self.train_data = validate_optional_dataset_list(
@@ -236,9 +231,7 @@ class FederatedClient:
         self,
         message: SerializedMessage,
     ) -> bool:
-        """Handles an incoming message from the server. The Inference round is
-        by default always handled post training upon an incoming request
-        from the server.
+        """Handles an incoming message from the server.
 
         Parameters
         ----------
@@ -252,7 +245,6 @@ class FederatedClient:
         """
         exit_loop = False
         if issubclass(message.message_cls, messaging.MultiModelTrainRequest):
-            # train model1, model2
             await self.training_round(message.deserialize())
         elif issubclass(
             message.message_cls, messaging.MultiModelEvaluationRequest
@@ -305,7 +297,7 @@ class FederatedClient:
         """Set up Models and Optimizers based on server instructions.
 
         Await server instructions (as an InitRequest message) and conduct
-        initialization for all models.
+        initialization.
 
         Raises
         ------
@@ -315,6 +307,7 @@ class FederatedClient:
             configuration is inconsistent, or because instantiation of the
             training managers failed.
         """
+        # Await initialization instructions.
         is_one_model: bool = self._nb_models == 1
         self.logger.info("Awaiting initialization instructions from server.")
         received: SerializedMessage = await self.netwk.recv_message()
@@ -322,6 +315,7 @@ class FederatedClient:
         if issubclass(received.message_cls, messaging.MetadataQuery):
             await self._collect_and_send_metadata(received.deserialize())
             received = await self.netwk.recv_message()
+        # Ensure that an 'InitRequest' was received.
         message = await verify_server_message_validity(
             self.netwk,
             received,
@@ -367,9 +361,9 @@ class FederatedClient:
         metrics.
 
         If multiple models are received and the client provides a single
-        training dataset, that dataset is shared across all models.
+        training dataset, that dataset is shared.
         Similarly, if a single non-None validation dataset is provided,
-        it is shared across all models.
+        it is used for all models..
         Otherwise, datasets are assigned to models according to their
         respective indices.
 
@@ -389,11 +383,8 @@ class FederatedClient:
         try:
             self.trainmanagers = []
             self._nb_models = len(message.model)
-            # case where training multiple models on the same tr/vl dataset
-            # then update the train_data and valid_data arrays
             if self._nb_models > 1 and len(self.train_data) == 1:
                 self.train_data = self.train_data * self._nb_models
-
             if self._nb_models > 1 and len(self.valid_data) == 1:
                 self.valid_data = self.valid_data * self._nb_models
             for idx in range(len(message.model)):
@@ -407,7 +398,7 @@ class FederatedClient:
                         aggrg=message.aggrg[idx],
                         train_data=train_data,
                         valid_data=valid_data,
-                        metrics=message.metrics,  # same metrics is applied
+                        metrics=message.metrics,  # same metric is applied
                         logger=self.logger,
                         verbose=self.verbose,
                     )
@@ -420,7 +411,7 @@ class FederatedClient:
         self,
         message: messaging.MetadataQuery,
     ) -> None:
-        """Collect and report metadata for all training datasets."""
+        """Collect and report metadata for training datasets."""
         metadata_list: List[dict] = []
         for data in self.train_data:
             assert data is not None  # for mypy
