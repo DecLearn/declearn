@@ -89,7 +89,7 @@ class Checkpointer:
         # additional attribute to save the base folder
         self.base_folder = folder
 
-    def set_model_folder(self, idx: Optional[int] = None) -> None:
+    def _set_model_folder(self, idx: Optional[int] = None) -> None:
         """Sets/updates the checkpointer's output folder for a specific model.
 
         Creates a dedicated subfolder for the model identified by ``idx``
@@ -100,7 +100,7 @@ class Checkpointer:
 
         Parameters
         ----------
-        idx : int, default=0
+        idx : Optional[None], default=None
             Index of the model whose results are to be saved. Determines
             the name of the output subfolder (``model_{idx}``).
 
@@ -216,7 +216,9 @@ class Checkpointer:
             Flag indicating whether to save the model's weights to a file.
         timestamp: str or None, default=None
             Optional preset timestamp to add as weights file suffix.
-
+        idx: Optional[int], default=None.
+            Index of the current model to be saved. Default to None. (i.e) no
+            subfolder structure is created.
         Returns
         -------
         timestamp: str or None
@@ -224,7 +226,7 @@ class Checkpointer:
             If `states is None`, return None.
         """
         if idx is not None:
-            self.set_model_folder(idx)
+            self._set_model_folder(idx)
         model_config = (
             None if not config else model.get_config(allow_bin=False)
         )
@@ -260,6 +262,9 @@ class Checkpointer:
             Flag indicating whether to save the optimizer's state to a file.
         timestamp: str or None, default=None
             Optional preset timestamp to add as state file suffix.
+        idx: Optional[int], default=None.
+            Index of the current model to be saved. Default to None. (i.e) no
+            subfolder structure is created.
 
         Returns
         -------
@@ -268,7 +273,7 @@ class Checkpointer:
             If `states is None`, return None.
         """
         if idx is not None:
-            self.set_model_folder(idx)
+            self._set_model_folder(idx)
         return self._save_object(
             prefix="optimizer",
             config=optimizer.get_config() if config else None,
@@ -308,6 +313,9 @@ class Checkpointer:
             If None, generate a timestamp to use.
         fmt_states: Literal["json", "msgpack"], default="json"
             Data format in which the states are serialized and dumped to file.
+        idx: Optional[int], default=None.
+            Index of the current model to be saved. Default to None. (i.e) no
+            subfolder structure is created.
 
         Returns
         -------
@@ -316,7 +324,7 @@ class Checkpointer:
             If `states is None`, return None.
         """
         if idx is not None:
-            self.set_model_folder(idx)
+            self._set_model_folder(idx)
         if fmt_states not in ["json", "msgpack"]:
             logger.warning(
                 f"Unsupported format '{fmt_states}' to save states. "
@@ -330,7 +338,6 @@ class Checkpointer:
         else:  # json
             dump_states = json_dump
             extension = "json"
-        # TODO: TEST this out
         if config:
             fpath = os.path.join(self.folder, f"{prefix}_config.json")
             json_dump(config, fpath)
@@ -367,6 +374,9 @@ class Checkpointer:
             If False, overwrite any existing file.
         timestamp: str or None, default=None
             Optional preset timestamp to associate with the metrics.
+        idx: Optional[int], default=None.
+            Index of the current model to be saved. Default to None. (i.e) no
+            subfolder structure is created.
 
         Returns
         -------
@@ -374,7 +384,7 @@ class Checkpointer:
             Timestamp string labelling the checkpointed metrics.
         """
         if idx is not None:
-            self.set_model_folder(idx)
+            self._set_model_folder(idx)
         # Set up a timestamp and convert metrics to raw-JSON-compatible values.
         if timestamp is None:
             timestamp = datetime.now().strftime("%y-%m-%d_%H-%M-%S")
@@ -435,6 +445,9 @@ class Checkpointer:
             Flag indicating whether to treat this checkpoint as the first
             one. If True, export the model and optimizer configurations
             and/or erase pre-existing configuration and metrics files.
+        idx: Optional[int], default=None.
+            Index of the current model to be saved. Default to None. (i.e) no
+            subfolder structure is created.
 
         Returns
         -------
@@ -443,7 +456,7 @@ class Checkpointer:
             files, as well as the values appended to the metrics files.
         """
         if idx is not None:
-            self.set_model_folder(idx)
+            self._set_model_folder(idx)
         timestamp = datetime.now().strftime("%y-%m-%d_%H-%M-%S")
         remove: List[str] = []
         if model:
@@ -506,9 +519,17 @@ class Checkpointer:
         load_state: bool, default=True
             Flag specifying whether model weights are to be reloaded.
             If `False`, `timestamp` will be ignored.
+        idx: Optional[int], default=None.
+            Index of the current model to be saved. Default to None. (i.e) no
+            subfolder structure is created.
+
+        Returns
+        -------
+        model: Model
+            Loaded Model instance.
         """
         if idx is not None:
-            self.set_model_folder(idx)
+            self._set_model_folder(idx)
         # Type-check or reload the Model from a config file.
         if model is None:
             fpath = os.path.join(self.folder, MODEL_CONFIG_FILE)
@@ -554,9 +575,17 @@ class Checkpointer:
         load_state: bool, default=True
             Flag specifying whether optimizer state are to be reloaded.
             If `False`, `timestamp` will be ignored.
+        idx: Optional[int], default=None.
+            Index of the current model to be saved. Default to None. (i.e) no
+            subfolder structure is created.
+
+        Returns
+        -------
+        optimizer: Optimizer
+            Loaded optimizer instance.
         """
         if idx is not None:
-            self.set_model_folder(idx)
+            self._set_model_folder(idx)
         # Type-check or reload the Optimizer from a config file.
         if optimizer is None:
             fpath = os.path.join(self.folder, "optimizer_config.json")
@@ -594,9 +623,12 @@ class Checkpointer:
             If None, use the state with the most recent timestamp.
         fmt_states: Literal["json", "msgpack"], default="json"
             Data format in which the states are serialized and dumped to file.
+        idx: Optional[int], default=None.
+            Index of the current model to be saved. Default to None. (i.e) no
+            subfolder structure is created.
         """
         if idx is not None:
-            self.set_model_folder(idx)
+            self._set_model_folder(idx)
         if fmt_states not in ["json", "msgpack"]:
             logger.warning(
                 f"Unsupported format '{fmt_states}' to load states. "
@@ -640,16 +672,19 @@ class Checkpointer:
         timestamp: str or None, default=None
             Optional timestamp string labeling the metrics to reload.
             If None, return all checkpointed metrics.
-
+        idx: Optional[int], default=None.
+            Index of the current model to be saved. Default to None. (i.e) no
+            subfolder structure is created.
         Returns
         -------
         metrics: dict[str, dict[str, (float | np.ndarray)]]
             Dict of metrics, with `{timestamp: {key: value}}` format.
             If the `timestamp` argument was not None, the first dimension
             will only contain one key, which is that timestamp.
+
         """
         if idx is not None:
-            self.set_model_folder(idx)
+            self._set_model_folder(idx)
         fpath = os.path.join(self.folder, f"{prefix}.json")
         if not os.path.isfile(fpath):
             raise FileNotFoundError(
@@ -683,6 +718,9 @@ class Checkpointer:
         ----------
         prefix: str, default="metrics"
             Prefix to the metrics save file's name.
+        idx: Optional[int], default=None.
+            Index of the current model to be saved. Default to None. (i.e) no
+            subfolder structure is created.
 
         Returns
         -------
@@ -690,7 +728,7 @@ class Checkpointer:
             DataFrame storing timestamp-indexed scalar metrics.
         """
         if idx is not None:
-            self.set_model_folder(idx)
+            self._set_model_folder(idx)
         fpath = os.path.join(self.folder, f"{prefix}.csv")
         if not os.path.isfile(fpath):
             raise FileNotFoundError(
