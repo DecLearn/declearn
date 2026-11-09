@@ -111,7 +111,8 @@ class FederatedServer:
 
         Parameters
         ----------
-        model: A list of Model, dict or str
+        model: An instance of Model, dict or str, or a list of  Model, dict or
+            str.
             Model instance, that may be serialized as an ObjectConfig,
             a config dict or a JSON file the path to which is provided.
         netwk: NetworkServer or NetworkServerConfig or dict or str
@@ -219,7 +220,7 @@ class FederatedServer:
 
     def run(
         self,
-        config: Union[FLRunConfig, List[str], List[Dict[str, Any]]],
+        config: Union[FLRunConfig, str, Dict[str, Any]],
     ) -> None:
         """Orchestrate the federated learning routine.
 
@@ -275,14 +276,11 @@ class FederatedServer:
                         first_call=True,
                         idx=None if self._n_models == 1 else idx,
                     )
-            # Iteratively run training and evaluation rounds for all models
+            # Iteratively run training and evaluation rounds
             round_i = 0
             while True:
-                clients_train = self.netwk.client_names
-                clients_eval = clients_train
-                if self._n_models == 1:
-                    clients_train = self._select_training_round_participants()
-                    clients_eval = self._select_evaluation_round_participants()
+                clients_train = self._select_training_round_participants()
+                clients_eval = self._select_evaluation_round_participants()
                 # Fairness round is made on all clients.
                 await self.fairness_round(
                     round_i, config.fairness, self.netwk.client_names
@@ -297,7 +295,7 @@ class FederatedServer:
                 # Decide whether to keep training for at least one round.
                 if not self._keep_training(round_i, config.rounds, early_stop):
                     break
-            # When checkpointing, force evaluating the last models on everyone
+            # When checkpointing, force evaluating the last model on everyone
             if self.ckptr is not None:
                 if round_i % frequency:
                     await self.evaluation_round(
@@ -391,7 +389,6 @@ class FederatedServer:
         self,
     ) -> None:
         """Collect, validate, aggregate and make use of clients' data-info
-        across all the models.
 
         Raises
         ------
@@ -500,13 +497,12 @@ class FederatedServer:
             # Otherwise, return collected results.
         return results
 
-    # generalize the dpsgd over all the models
     async def _initialize_dpsgd(
         self,
         config: FLRunConfig,
     ) -> None:
         """Send a differential privacy setup request to all
-        registered clients across all the models."""
+        registered clients."""
 
         self.logger.info("Sending privacy requests to all clients.")
         assert config.privacy is not None  # else this method is not called
@@ -651,17 +647,13 @@ class FederatedServer:
         """
         # Select participating clients. Run SecAgg setup when needed.
         self.logger.info(
-            "Initiating training round %s for the models",
+            "Initiating training round %s",
             round_i,
         )
         if self.secagg is not None and clients.difference(self._secagg_peers):
             await self.setup_secagg(clients)
         # Send training instructions and await results.
-        await self._send_training_instructions(
-            clients,
-            round_i,
-            train_cfgs,
-        )
+        await self._send_training_instructions(clients, round_i, train_cfgs)
         self.logger.info("Awaiting clients' training results.")
         results = (
             await self._process_model_updates(clients)
@@ -669,9 +661,7 @@ class FederatedServer:
             else await self._process_secagg_model_updates(clients)
         )
         # Aggregate client-wise results and update the global model.
-        self.logger.info(
-            "Conducting server-side optimization overall the models."
-        )
+        self.logger.info("Conducting server-side optimization.")
         for idx, result in enumerate(results):
             self._conduct_global_update(
                 result,
@@ -727,6 +717,8 @@ class FederatedServer:
         self,
     ) -> Set[str]:
         """Return the names of clients that should participate in the round."""
+        if self._n_models > 1:
+            return self.netwk.client_names
         sampled_clients = self.client_sampler.run()
 
         if not isinstance(self.client_sampler, DefaultClientSampler):
@@ -736,7 +728,7 @@ class FederatedServer:
         return sampled_clients
 
     async def _send_training_instructions(
-        self, clients: Set[str], round_i: int, train_cfgs: List[TrainingConfig]
+        self, clients: Set[str], round_i: int, train_cfg: List[TrainingConfig]
     ) -> None:
         """Send training instructions to selected clients.
 
@@ -748,8 +740,7 @@ class FederatedServer:
             Index of the training round.
         train_cfg: List[TrainingConfig]
             A list of TrainingConfig dataclass instance wrapping data-batching
-            and computational effort constraints hyper-parameters
-            for all the models.
+            and computational effort constraints hyper-parameters.
         """
         # Set up the base training request.
         requests = [
@@ -757,7 +748,7 @@ class FederatedServer:
                 round_i=round_i,
                 weights=None,
                 aux_var=self.optim[idx].collect_aux_var(),
-                **train_cfgs[idx].message_params,
+                **train_cfg[idx].message_params,
             )
             for idx in range(self._n_models)
         ]
@@ -852,7 +843,7 @@ class FederatedServer:
             List of EvaluateConfig dataclass instances wrapping data-batching
             and computational effort constraints hyper-parameters for
             every trainable model.
-        clients:
+        clients: Set[str]
             Set of clients used for evaluation during the round.
         force_run: bool, default=False
             Flag to wether force run the evaluation round.
@@ -890,7 +881,7 @@ class FederatedServer:
                 )
                 results.append({"aggregated": aggregated_result})
         # Compute and report aggregated evaluation metrics.
-        self.logger.info("Aggregating evaluation results across the models.")
+        self.logger.info("Aggregating evaluation results.")
         for idx, result in enumerate(results):
             loss, metrics = self._aggregate_evaluation_results(result)
             self.logger.info("Averaged loss is: %s", loss)
@@ -1101,7 +1092,6 @@ class FederatedServer:
 
     async def stop_training(self, rounds: int) -> None:
         """Notify clients that training is over and send final information
-        for all models.
 
         Parameters
         ----------
