@@ -60,10 +60,12 @@ class FLRunConfig(TomlConfig):
         Parameters for clients' registration (min and/or max number
         of clients to expect, optional max duration of the process).
     training: Union[List[TrainingConfig], TrainingConfig]
-        List (or a single) parameters for training rounds, including effort constraints
+        List (or a single) parameters for training rounds, including effort
+        constraints
         and data-batching instructions.
     evaluate: Union[List[EvaluateConfig], EvaluateConfig]
-        List (or a single) of parameters for validation rounds, similar to training ones.
+        List (or a single) of parameters for validation rounds, similar to
+        training ones.
     fairness: FairnessConfig or None
         Parameters for fairness evaluation rounds.
         Only used when an algorithm to enforce fairness is set up,
