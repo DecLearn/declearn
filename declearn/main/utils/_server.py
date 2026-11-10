@@ -32,9 +32,12 @@ from declearn.client_sampler import (
 )
 from declearn.communication import NetworkServerConfig
 from declearn.communication.api import NetworkServer
+from declearn.fairness.api._server import FairnessControllerServer
+from declearn.main.config._dataclasses import PrivacyConfig
 from declearn.main.utils import (
     copy_requests_with_weights,
 )
+from declearn.main.utils._error import IncompatibleConfigsError
 from declearn.model.api import Model
 from declearn.optimizer import Optimizer
 from declearn.secagg import parse_secagg_config_server
@@ -95,7 +98,6 @@ class ServerUtils:
         """
         if isinstance(model, Model):
             return model
-
         if isinstance(model, str):
             try:
                 with open(model, "r", encoding="utf-8") as file:
@@ -409,3 +411,37 @@ class ServerUtils:
                     fairness_requests
                 )
         return messages
+
+    @staticmethod
+    def check_modules_compatibility(
+        cs_sampler: ClientSampler,
+        privacy: Optional[PrivacyConfig],
+        fairness: Optional[FairnessControllerServer],
+        n_models: int,
+    ):
+        """Method that checks wether the extra configuration of privacy,
+        fairness and client sampler is compatible w.r.t nb of models to be
+        trained. The only valid compatibility with a single model.
+
+        Parameters
+        ----------
+        cs_sampler:
+            Optional client sampler instance.
+        privacy:
+            Optional privacy configuration.
+        fairness:
+            Optional fairness controller.
+        n_models:
+            Number of models to be trained
+        Raises
+        ------
+        IncompatibleConfigsError:
+            Incompatibility error message indicating the error-prone config.
+        """
+        err_str = "is compatible only with a single model"
+        if cs_sampler is not DefaultClientSampler() and n_models > 1:
+            raise IncompatibleConfigsError("Client sampling" + err_str)
+        if privacy is not None and n_models > 1:
+            raise IncompatibleConfigsError("privacy" + err_str)
+        if fairness is not None and n_models > 1:
+            raise IncompatibleConfigsError("fairness" + err_str)
