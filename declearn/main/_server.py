@@ -195,9 +195,7 @@ class FederatedServer:
             f"model_{i}": None for i in range(self._n_models)
         }
         # Set up a private attribute to prevent redundant weights sharing
-        self._clients_holding_latest_model: Dict[str, Set[str]] = {
-            f"model_{i}": set() for i in range(self._n_models)
-        }
+        self._clients_holding_latest_model: Set[str] = set()
 
     def _check_clisamp_secagg_compat(self) -> None:
         """Check if instantiated client sampler config and secure aggregation
@@ -681,16 +679,13 @@ class FederatedServer:
         results_per_model = dispatch_replies(
             multi_model_results, lambda reply: reply.replies
         )
-        # NOTE update the client sampler in the case of training
-        # one single model
-        if self._n_models == 1:
-            result = results_per_model[0]
-            self.client_sampler.update(result, self.model[0])
+        result = results_per_model[0]
+        self.client_sampler.update(result, self.model[0])
 
         return results_per_model
 
     async def _process_secagg_model_updates(self, clients):
-        """Process the model updates step in the case where the replies of
+        """Process the model's updates step in the case where the replies of
         all clients are secagged"""
 
         secagg_results = await self._collect_results(
@@ -705,7 +700,6 @@ class FederatedServer:
             aggregated_result = self._aggregate_secagg_replies(
                 secagg_result,
             )
-
             # In the SecAgg case, provide the sampler with each # participating
             # client associated with the aggregated result.
             client_results = {client: aggregated_result for client in clients}
@@ -769,13 +763,13 @@ class FederatedServer:
         ],
         clients: Set[str],
     ) -> None:
-        """Send a multi-model request, adding missing model weights
+        """Send a model(s) request, adding missing model weights
         when needed."""
 
         # Determine which clients need the weights for each model.
         needs_weights = {}
         for idx in range(len(msg_light.requests)):
-            holders = self._clients_holding_latest_model[f"model_{idx}"]
+            holders = self._clients_holding_latest_model
             needs_weights[idx] = clients.difference(holders)
         # Fetch each model's weights at most once.
         model_weights = {}
@@ -789,17 +783,14 @@ class FederatedServer:
         )
         await self.netwk.send_messages(messages)
         # Only mark weights as held after a successful send.
-        for idx, clients_needing_weights in needs_weights.items():
-            self._clients_holding_latest_model[f"model_{idx}"].update(
-                clients_needing_weights
-            )
+        self._clients_holding_latest_model.update(clients_needing_weights)
 
     def _conduct_global_update(
         self,
         results: Dict[str, messaging.TrainReply],
         idx: int,
     ) -> None:
-        """Use training results from clients to update the global model.
+        """Use training results from clients to update the global model(s).
 
         Parameters
         ----------
@@ -822,7 +813,7 @@ class FederatedServer:
         gradients = self.aggrg[idx].finalize_updates(updates)
         self.optim[idx].apply_gradients(self.model[idx], gradients)
         # Record that no clients hold the updated model.
-        self._clients_holding_latest_model[f"model_{idx}"].clear()
+        self._clients_holding_latest_model.clear()
 
     async def evaluation_round(
         self,
