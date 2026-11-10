@@ -167,7 +167,7 @@ class FederatedServer:
             self._n_models, parsed_optim
         )
         self.fairness: Optional[FairnessControllerServer] = (
-            parsed_optim.fairness if self._n_models == 1 else None
+            parsed_optim.fairness
         )
         # Assign the wrapped MetricSet.
         self.metrics = MetricSet.from_specs(metrics)
@@ -255,6 +255,9 @@ class FederatedServer:
             fairness evaluation parameters, and/or an early-stopping
             criterion.
         """
+        ServerUtils.check_modules_compatibility(
+            self.client_sampler, config.privacy, self.fairness, self._n_models
+        )
         assert isinstance(config.training, List)
         assert isinstance(config.evaluate, List)
         frequency: int = config.evaluate[0].frequency
@@ -266,8 +269,7 @@ class FederatedServer:
         async with self.netwk:
             # Conduct the initialization phase.
             await self.initialization(config)
-            if self._n_models == 1:
-                self.client_sampler.init_clients(self.netwk.client_names)
+            self.client_sampler.init_clients(self.netwk.client_names)
             if self.ckptr:
                 for idx in range(self._n_models):
                     self.ckptr.checkpoint(
@@ -371,7 +373,7 @@ class FederatedServer:
             context="Initialization",
         )
         # If local differential privacy is configured, set it up.
-        if config.privacy is not None and self._n_models == 1:
+        if config.privacy is not None:
             await self._initialize_dpsgd(config)
         if self.fairness is not None:
             # When SecAgg is to be used, setup controllers first.
@@ -717,10 +719,7 @@ class FederatedServer:
         self,
     ) -> Set[str]:
         """Return the names of clients that should participate in the round."""
-        if self._n_models > 1:
-            return self.netwk.client_names
         sampled_clients = self.client_sampler.run()
-
         if not isinstance(self.client_sampler, DefaultClientSampler):
             self.logger.debug(
                 f"Sampled clients for train round are : {sampled_clients}"
