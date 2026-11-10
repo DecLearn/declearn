@@ -125,6 +125,7 @@ class FederatedClient:
         self.valid_data = validate_optional_dataset_list(
             valid_data, "valid_data", len(self.train_data)
         )
+        self.trainmanagers: List = []
         # Assign an optional checkpointer.
         if checkpoint is not None:
             checkpoint = Checkpointer.from_specs(checkpoint)
@@ -143,7 +144,7 @@ class FederatedClient:
             warnings.warn(msg, UserWarning, stacklevel=-1)
         self.verbose = bool(verbose)
         self.fairness: Optional[FairnessControllerClient] = None
-        self._nb_models: int = 1
+        self._n_models: int = 1
 
     @staticmethod
     def _parse_netwk(netwk) -> NetworkClient:
@@ -308,7 +309,7 @@ class FederatedClient:
             training managers failed.
         """
         # Await initialization instructions.
-        is_one_model: bool = self._nb_models == 1
+        is_one_model: bool = self._n_models == 1
         self.logger.info("Awaiting initialization instructions from server.")
         received: SerializedMessage = await self.netwk.recv_message()
         # If a MetadataQuery is received, process it, then await
@@ -381,12 +382,11 @@ class FederatedClient:
             error message is first sent to the server.
         """
         try:
-            self.trainmanagers = []
-            self._nb_models = len(message.model)
-            if self._nb_models > 1 and len(self.train_data) == 1:
-                self.train_data = self.train_data * self._nb_models
-            if self._nb_models > 1 and len(self.valid_data) == 1:
-                self.valid_data = self.valid_data * self._nb_models
+            self._n_models = len(message.model)
+            if self._n_models > 1 and len(self.train_data) == 1:
+                self.train_data = self.train_data * self._n_models
+            if self._n_models > 1 and len(self.valid_data) == 1:
+                self.valid_data = self.valid_data * self._n_models
             for idx in range(len(message.model)):
                 train_data: Optional[Dataset] = self.train_data[idx]
                 valid_data: Optional[Dataset] = self.valid_data[idx]
@@ -416,7 +416,7 @@ class FederatedClient:
         for data in self.train_data:
             assert data is not None  # for mypy
             metadata_list.append(dataclasses.asdict(data.get_data_specs()))
-        _metadata: Dict = {}
+        metadata_dict: Dict = {}
         for model_index, metadata in enumerate(metadata_list):
             if missing := set(
                 message.fields[f"model_{model_index}"]
@@ -432,12 +432,12 @@ class FederatedClient:
                 key: metadata[key]
                 for key in message.fields[f"model_{model_index}"]
             }
-            _metadata[f"model_{model_index}"] = data_info
+            metadata_dict[f"model_{model_index}"] = data_info
         self.logger.info(
             "Sending training dataset metadata to the server",
         )
         await self.netwk.send_message(
-            messaging.MetadataReply(data_info=_metadata)
+            messaging.MetadataReply(data_info=metadata_dict)
         )
 
     async def _initialize_dpsgd(
@@ -666,7 +666,7 @@ class FederatedClient:
                 prefix="training_losses",
                 append=True,
                 timestamp=f"round_{message.round_i}",
-                idx=None if self._nb_models == 1 else idx,
+                idx=None if self._n_models == 1 else idx,
             )
         # Encrypt the reply when SecAgg is enabled
         if self._encrypter is not None and isinstance(
@@ -761,7 +761,7 @@ class FederatedClient:
                 model=trainmanager.model,
                 optimizer=trainmanager.optim,
                 metrics=trainmanager.metrics.get_result(),
-                idx=None if self._nb_models == 1 else idx,
+                idx=None if self._n_models == 1 else idx,
             )
         # Optionally prevent sharing metrics (save for the loss).
         if not self.share_metrics and isinstance(
@@ -843,7 +843,7 @@ class FederatedClient:
             StopTraining message received from the server.
         """
         self.logger.info("Global Training is now over,")
-        for idx in range(self._nb_models):
+        for idx in range(self._n_models):
             key = f"model_{idx}"
             self.logger.info(
                 f"Model {idx + 1} after "
@@ -867,7 +867,7 @@ class FederatedClient:
                 self.ckptr.save_model(
                     self.trainmanagers[idx].model,
                     timestamp="best",
-                    idx=None if self._nb_models == 1 else idx,
+                    idx=None if self._n_models == 1 else idx,
                 )
 
     async def cancel_training(
