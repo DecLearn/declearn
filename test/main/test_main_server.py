@@ -1193,7 +1193,6 @@ class TestFederatedServerRun:
             privacy=None,
             early_stop=None,
         )
-        print("FLRunConfig")
         # Call 'async_run', mocking all underlying routines.
         with mock.patch.object(
             server, "initialization"
