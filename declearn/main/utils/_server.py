@@ -378,38 +378,17 @@ class ServerUtils:
             messages object to be sent to the clients under the required
             RequestType
         """
-        messages: dict[
-            str,
-            Union[
-                messaging.MultiModelTrainRequest,
-                messaging.MultiModelEvaluationRequest,
-                messaging.MultiModelFairnessQuery,
-            ],
-        ] = {}
+        messages: dict = {}
         for client in clients:
-            if isinstance(msg_light, messaging.MultiModelTrainRequest):
-                train_requests = copy_requests_with_weights(
-                    msg_light.requests, client, needs_weights, model_weights
+            Request = type(msg_light)
+            messages[client] = Request(
+                requests=copy_requests_with_weights(
+                    msg_light.requests,  # type: ignore [arg-type]
+                    client,
+                    needs_weights,
+                    model_weights,
                 )
-                messages[client] = messaging.MultiModelTrainRequest(
-                    train_requests
-                )
-
-            elif isinstance(msg_light, messaging.MultiModelEvaluationRequest):
-                evaluation_requests = copy_requests_with_weights(
-                    msg_light.requests, client, needs_weights, model_weights
-                )
-                messages[client] = messaging.MultiModelEvaluationRequest(
-                    evaluation_requests
-                )
-
-            else:
-                fairness_requests = copy_requests_with_weights(
-                    msg_light.requests, client, needs_weights, model_weights
-                )
-                messages[client] = messaging.MultiModelFairnessQuery(
-                    fairness_requests
-                )
+            )
         return messages
 
     @staticmethod
