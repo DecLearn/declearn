@@ -328,7 +328,7 @@ class TestFederatedClientInitialize:
             await client.initialize()
         # Assert that an InitReply was sent to the server.
         netwk.send_message.assert_called_once_with(messaging.InitReply())
-        assert client._nb_models == 1
+        assert client._n_models == 1
         # Assert that a TrainingManager was instantiated and assigned.
         patch_tm.assert_called_once()
         for trainmanager in client.trainmanagers:
@@ -349,12 +349,12 @@ class TestFederatedClientInitialize:
         client._initialize_dpsgd = mock.AsyncMock()
         client._initialize_fairness = mock.AsyncMock()
 
-        assert client._nb_models == 1
+        assert client._n_models == 1
         with patch_class_constructor(TrainingManager) as patch_tm:
             await client.initialize()
         # verify that the nb_models has been updated
         netwk.send_message.assert_called_once_with(messaging.InitReply())
-        assert client._nb_models == 2
+        assert client._n_models == 2
         assert len(client.trainmanagers) == 2
         assert patch_tm.call_count == 2
         for trainmanager in client.trainmanagers:
