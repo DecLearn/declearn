@@ -262,9 +262,11 @@ class FederatedServer:
         assert isinstance(config.evaluate, List)
         frequency: int = config.evaluate[0].frequency
         # Instantiate the early-stopping criterion, if any.
-        early_stop: Optional[EarlyStopping] = None
+        early_stop: Optional[List[EarlyStopping]] = None
         if config.early_stop is not None:
-            early_stop = config.early_stop.instantiate()
+            early_stop = [
+                config.early_stop.instantiate() for _ in range(self._n_models)
+            ]
         # Start the communications server and run the FL process.
         async with self.netwk:
             # Conduct the initialization phase.
@@ -1027,7 +1029,6 @@ class FederatedServer:
                 "`_checkpoint_after_evaluation` was called without "
                 "the FederatedServer having a Checkpointer."
             )
-
         # Checkpoint the model, optimizer and global evaluation metrics.
         timestamp = self.ckptr.checkpoint(
             model=self.model[idx],
@@ -1055,7 +1056,7 @@ class FederatedServer:
         self,
         round_i: int,
         rounds: int,
-        early_stop: Optional[EarlyStopping],
+        early_stop: Optional[List[EarlyStopping]],
     ) -> bool:
         """Decide whether training should continue.
 
@@ -1073,11 +1074,19 @@ class FederatedServer:
             self.logger.info("Maximum number of training rounds reached.")
             return False
         if early_stop is not None:
-            for loss in self._losses.values():
-                early_stop.update(loss[-1])
-            if not early_stop.keep_training:
-                self.logger.info("Early stopping criterion reached.")
-                return False
+            for idx, loss_list in enumerate(self._losses.values()):
+                early_stop[idx].update(loss_list[-1])
+
+            if any(
+                [
+                    early_stop[idx].keep_training
+                    for idx in range(self._n_models)
+                ]
+            ):
+                return True
+
+            self.logger.info("Early stopping criterion reached.")
+            return False
         return True
 
     async def stop_training(self, rounds: int) -> None:
