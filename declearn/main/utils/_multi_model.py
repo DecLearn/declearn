@@ -17,13 +17,18 @@
 
 
 import copy
-from typing import Any, Callable, Dict, List, Optional, TypeVar
+from typing import Any, Callable, Dict, List, Optional, TypeVar, Union
 
 from declearn import messaging
 from declearn.dataset._base import Dataset
 from declearn.main.utils._error import InvalidDatasetType
 
-RequestT = TypeVar("RequestT", bound=messaging.Message)
+Request = Union[
+    messaging.TrainRequest,
+    messaging.EvaluationRequest,
+    messaging.FairnessQuery,
+]
+RequestT = TypeVar("RequestT", bound=Request)
 T = TypeVar("T")
 MultiReply = TypeVar("MultiReply")
 Reply = TypeVar("Reply")
@@ -126,7 +131,7 @@ def copy_requests_with_weights(
     client: str,
     needs_weights: Dict[int, set[str]],
     model_weights: Dict[int, Any],
-) -> list[RequestT]:
+) -> List[RequestT]:
     """Copy requests and attach weights when needed while maintaining the
     requests relevant type to avoid mypy complains.
 
@@ -146,8 +151,7 @@ def copy_requests_with_weights(
         A list of type-casted requests with the relevant RequestT type
 
     """
-    copied_requests: list[RequestT] = []
-
+    copied_requests: List[RequestT] = []
     for idx, rqst in enumerate(requests):
         request = copy.copy(rqst)
         if client in needs_weights[idx]:
