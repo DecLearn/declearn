@@ -1122,12 +1122,6 @@ class FederatedServer:
         await self.netwk.broadcast_message(message)
         if self.ckptr:
             for idx, model in enumerate(self.model):
-                path = os.path.join(self.ckptr.folder, "model_state_best.mpk")
-                self.logger.info(
-                    "Checkpointing final weights for model %d.under %s",
-                    idx + 1,
-                    path,
-                )
                 model.set_weights(
                     weights[f"model_{idx}"],
                     trainable=True,
@@ -1136,4 +1130,8 @@ class FederatedServer:
                     model,
                     timestamp="best",
                     idx=None if self._n_models == 1 else idx,
+                )
+                path = os.path.join(self.ckptr.folder, "model_state_best.mpk")
+                self.logger.info(
+                    "Checkpointed for model %d.under %s", idx + 1, path
                 )
