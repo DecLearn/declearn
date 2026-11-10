@@ -970,15 +970,6 @@ class FederatedServer:
         """
         loss = 0.0
         dvsr = 0.0
-        # no metrics were provided --> just return the loss
-        if self.metrics is None:
-            for _, reply in results.items():
-                loss += reply.loss
-                dvsr += reply.n_steps
-
-            loss = loss / dvsr if dvsr else 0.0
-            return loss, {"loss": loss}
-
         # Reset the local MetricSet and set up ad hoc variables for the loss.
         self.metrics.reset()
         agg_states = self.metrics.get_states()
