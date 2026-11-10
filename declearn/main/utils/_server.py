@@ -418,9 +418,9 @@ class ServerUtils:
             Incompatibility error message indicating the error-prone config.
         """
         err_str = "is compatible only with a single model"
-        if cs_sampler is not DefaultClientSampler() and n_models > 1:
-            raise IncompatibleConfigsError("Client sampling" + err_str)
+        if not isinstance(cs_sampler, DefaultClientSampler) and n_models > 1:
+            raise IncompatibleConfigsError("Client sampling " + err_str)
         if privacy is not None and n_models > 1:
-            raise IncompatibleConfigsError("privacy" + err_str)
+            raise IncompatibleConfigsError("privacy " + err_str)
         if fairness is not None and n_models > 1:
-            raise IncompatibleConfigsError("fairness" + err_str)
+            raise IncompatibleConfigsError("fairness " + err_str)
