@@ -162,7 +162,7 @@ class FLRunConfig(TomlConfig):
         evaluate = kwargs.setdefault("evaluate", {})
 
         cls._set_evaluate_batch_size(training, evaluate)
-        # if evaluate is a list then  by default its batch size
+        # if evaluate is a list then by default its batch size
         # is set from the corresponding training object
         if isinstance(evaluate, List) and isinstance(training, List):
             for i in range(len(evaluate)):
@@ -180,20 +180,14 @@ class FLRunConfig(TomlConfig):
         # Note: if inputs have invalid formats, let the parent method fail.
         fairness = kwargs.setdefault("fairness", {})
         if isinstance(fairness, dict) and "batch_size" not in fairness:
-            evaluate_instance = kwargs.get("evaluate")
+            eval = evaluate
             # if evaluate is a list, we take the first element
-            if isinstance(evaluate, List):
-                evaluate_instance = evaluate[0]
-            if isinstance(evaluate_instance, dict):
-                fairness.setdefault(
-                    "batch_size",
-                    evaluate_instance.get("batch_size"),
-                )
-            elif isinstance(evaluate_instance, EvaluateConfig):
-                fairness.setdefault(
-                    "batch_size",
-                    evaluate_instance.batch_size,
-                )
+            if isinstance(eval, List):
+                eval = evaluate[0]
+            if isinstance(eval, dict):
+                fairness.setdefault("batch_size", eval.get("batch_size"))
+            elif isinstance(eval, EvaluateConfig):
+                fairness.setdefault("batch_size", eval.batch_size)
         kwargs["evaluate"] = evaluate
         kwargs["training"] = training
 
