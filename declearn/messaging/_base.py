@@ -18,7 +18,7 @@
 """Messages for the default Federated Learning process of DecLearn."""
 
 import dataclasses
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from declearn.aggregator import Aggregator, ModelUpdates
 from declearn.messaging._api import Message
@@ -46,7 +46,6 @@ __all__ = [
     "MultiModelEvaluationReply",
     "MultiModelTrainReply",
     "MultiModelTrainRequest",
-    "PrivacyTrainingConfig",
 ]
 
 
@@ -189,13 +188,11 @@ class MultiModelEvaluationReply(Message):
     @classmethod
     def from_kwargs(cls, **kwargs):
         replies = []
-
-        for data in kwargs["replies"]:
-            if isinstance(data, EvaluationReply):
-                replies.append(data)
+        for reply in kwargs["replies"]:
+            if isinstance(reply, EvaluationReply):
+                replies.append(reply)
             else:
-                replies.append(EvaluationReply.from_kwargs(**data))
-
+                replies.append(EvaluationReply.from_kwargs(**reply))
         return cls(replies=replies)
 
 
@@ -284,7 +281,7 @@ class MetadataQuery(Message):
 
     typekey = "metadata_query"
 
-    fields: Dict[str, List[str]]
+    fields: Dict[str, Set[str]]
 
 
 @dataclasses.dataclass
@@ -301,17 +298,6 @@ class MetadataReply(Message):
     typekey = "metadata_reply"
 
     data_info: Dict[str, Dict[str, Any]]
-
-
-# TODO: add the general privacy config dataclass for all the models
-# to be discussed
-@dataclasses.dataclass
-class PrivacyTrainingConfig:
-    """Training parameters used for differential privacy accounting."""
-
-    batches: Dict[str, Any]
-    n_epoch: Optional[int]
-    n_steps: Optional[int]
 
 
 @dataclasses.dataclass
@@ -374,9 +360,9 @@ class StopTraining(Message):
     Fields
     ------
     weights:
-        Best global model weights.
+        Weights of the best global model(s), keyed by model index.
     loss:
-        Best global model loss.
+        Loss value of the best global model(s), keyed by model index.
     rounds:
         Number of training rounds that occurred in the process.
     """
@@ -492,7 +478,7 @@ class MultiModelTrainReply(Message):
     Fields
     ------
     replies:
-        A list of TrainReply instance per model.
+        A list of TrainReply instances, where each corresponds to a model.
     """
 
     typekey = "multi_model_train_reply"
@@ -505,20 +491,43 @@ class MultiModelTrainReply(Message):
     @classmethod
     def from_kwargs(cls, **kwargs):
         replies = []
-
-        for data in kwargs["replies"]:
-            if isinstance(data, TrainReply):
-                replies.append(data)
-                continue
-            # overriding the data variable
-            data = dict(data)  # noqa: PLW2901
-
-            if isinstance(data["updates"], dict):
-                data["updates"] = ModelUpdates(
-                    updates=data["updates"]["updates"],
-                    weights=data["updates"]["weights"],
-                )
-
-            replies.append(TrainReply.from_kwargs(**data))
-
+        for reply in kwargs["replies"]:
+            if isinstance(reply, TrainReply):
+                replies.append(reply)
+            else:
+                reply_dict = dict(reply)
+                if isinstance(reply_dict["updates"], dict):
+                    reply_dict["updates"] = ModelUpdates(
+                        updates=reply_dict["updates"]["updates"],
+                        weights=reply_dict["updates"]["weights"],
+                    )
+                replies.append(TrainReply.from_kwargs(**reply_dict))
         return cls(replies=replies)
+
+
+# class MultiModelEvaluationReply(Message):
+#     """Client-emitted results from the local evaluation round with replies
+#     from all trained models.
+
+#     Fields
+#     ------
+#     replies:
+#         List of EvaluationReply per trained model.
+#     """
+
+#     typekey = "multi_model_eval_reply"
+
+#     replies: List[EvaluationReply]
+
+#     def to_kwargs(self) -> Dict[str, Any]:
+#         return {"replies": [reply.to_kwargs() for reply in self.replies]}
+
+#     @classmethod
+#     def from_kwargs(cls, **kwargs):
+#         replies = []
+#         for reply in kwargs["replies"]:
+#             if isinstance(reply, EvaluationReply):
+#                 replies.append(reply)
+#             else:
+#                 replies.append(EvaluationReply.from_kwargs(**reply))
+#         return cls(replies=replies)
