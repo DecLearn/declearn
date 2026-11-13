@@ -40,7 +40,6 @@ Base messages
 * [MetadataReply][declearn.messaging.MetadataReply]
 * [PrivacyRequest][declearn.messaging.PrivacyRequest]
 * [PrivacyReply][declearn.messaging.PrivacyReply]
-* [PrivacyTrainingConfig][declearn.messaging.PrivacyTrainingConfig]
 * [StopTraining][declearn.messaging.StopTraining]
 * [TrainReply][declearn.messaging.TrainReply]
 * [TrainRequest][declearn.messaging.TrainRequest]
@@ -82,7 +81,6 @@ from ._base import (
     MultiModelTrainRequest,
     PrivacyReply,
     PrivacyRequest,
-    PrivacyTrainingConfig,
     StopTraining,
     TrainReply,
     TrainRequest,
