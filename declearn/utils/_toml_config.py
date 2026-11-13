@@ -41,6 +41,7 @@ __all__ = [
 
 
 T = TypeVar("T")
+InputType = Union[str, Dict[str, Any], T, None]
 
 
 def _isinstance_generic(inputs: Any, typevar: Type) -> bool:
@@ -258,11 +259,8 @@ class TomlConfig:
         cls,
         field: dataclasses.Field[T],
         inputs: Union[
-            str,
-            Dict[str, Any],
-            T,
-            None,
-            List[Union[str, Dict[str, Any], T, None]],
+            InputType,
+            List[InputType],
         ],
     ) -> Any:
         """Default method to instantiate a field from python inputs.
@@ -271,13 +269,13 @@ class TomlConfig:
         ----------
         field: dataclasses.Field[<T>]
             Field that is being instantiated.
-        inputs: str or dict or <T> or None
+        inputs: str or dict or <T> or None, or a list of the aforementioned
             Provided inputs to instantiate the field.
             - If valid as per `field.type`, return inputs.
             - If None (and None is invalid), return the field's default value.
             - If dict, treat them as kwargs to the field's type constructor.
             - If str, treat as the path to a TOML file specifying the object.
-
+            - If list, return list of the instantiated field.
         Notes
         -----
         If `inputs` is str and treated as the path to a TOML file,
