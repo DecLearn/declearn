@@ -834,9 +834,7 @@ class TestFederatedServerRoutines:
         ) as patch_aggregate_secagg_messages:
             await server.training_round(
                 round_i=1,
-                train_cfgs=[
-                    TrainingConfig(batch_size=8) for _ in server.model
-                ],
+                train_cfg=[TrainingConfig(batch_size=8) for _ in server.model],
                 clients=server.netwk.client_names,
             )
         # Verify that expected actions occurred.
