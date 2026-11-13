@@ -80,10 +80,10 @@ class FederatedClient:
             dict, dataclass or path to a TOML file enabling its instantiation.
             In the latter three cases, the object's default logger will be set
             to that of this `FederatedClient`.
-        train_data: Dataset or List[Dataset] or str.
-            Dataset instance wrapping the training data.
-        valid_data: Dataset or List[Dataset] or str or None.
-            Optional Dataset instance wrapping validation data.
+        train_data: Dataset, List[Dataset].
+            Dataset instance(s) wrapping the training data.
+        valid_data: Dataset, List[Dataset] or None.
+            Optional Dataset instance(s) wrapping validation data.
             If None, run evaluation rounds over `train_data`.
         checkpoint: Checkpointer or dict or str or None, default=None
             Optional Checkpointer instance or instantiation dict to be
@@ -119,10 +119,10 @@ class FederatedClient:
         self.netwk = self._parse_netwk(netwk)
         self.logger = logging.getLogger(f"declearn.client-{self.netwk.name}")
         # Assign the wrapped training dataset.
-        self.train_data = validate_optional_dataset_list(
+        self.train_data: List[Dataset] = validate_optional_dataset_list(
             train_data, "train_data"
         )
-        self.valid_data = validate_optional_dataset_list(
+        self.valid_data: List = validate_optional_dataset_list(
             valid_data, "valid_data", len(self.train_data)
         )
         self.trainmanagers: List = []
@@ -144,7 +144,7 @@ class FederatedClient:
             warnings.warn(msg, UserWarning, stacklevel=-1)
         self.verbose = bool(verbose)
         self.fairness: Optional[FairnessControllerClient] = None
-        self._n_models: int = 1
+        self._n_models: int = 1  # NOTE default value, overridden at runtime
 
     @staticmethod
     def _parse_netwk(netwk) -> NetworkClient:
@@ -232,7 +232,7 @@ class FederatedClient:
         self,
         message: SerializedMessage,
     ) -> bool:
-        """Handles an incoming message from the server.
+        """Handle an incoming message from the server.
 
         Parameters
         ----------
@@ -295,7 +295,7 @@ class FederatedClient:
     async def initialize(
         self,
     ) -> None:
-        """Set up Models and Optimizers based on server instructions.
+        """Set up Model(s) and Optimizer(s) based on server instructions.
 
         Await server instructions (as an InitRequest message) and conduct
         initialization.
@@ -309,7 +309,6 @@ class FederatedClient:
             training managers failed.
         """
         # Await initialization instructions.
-        is_one_model: bool = self._n_models == 1
         self.logger.info("Awaiting initialization instructions from server.")
         received: SerializedMessage = await self.netwk.recv_message()
         # If a MetadataQuery is received, process it, then await
@@ -318,9 +317,7 @@ class FederatedClient:
             received = await self.netwk.recv_message()
         # Ensure that an 'InitRequest' was received.
         message = await verify_server_message_validity(
-            self.netwk,
-            received,
-            expected=messaging.InitRequest,
+            self.netwk, received, expected=messaging.InitRequest
         )
         # Verify that SecAgg type is coherent across peers.
         secagg_type = None if self.secagg is None else self.secagg.secagg_type
@@ -337,10 +334,10 @@ class FederatedClient:
         self.logger.info("Notifying the server that initialization went fine.")
         await self.netwk.send_message(messaging.InitReply())
         # If instructed to do so, run additional steps to set up DP-SGD.
-        if message.dpsgd and is_one_model:
+        if message.dpsgd:
             await self._initialize_dpsgd()
         # If instructed to do so, run additional steps to enable fairness
-        if message.fairness and is_one_model:
+        if message.fairness:
             await self._initialize_fairness()
         # Optionally checkpoint the received models and optimizers.
         if self.ckptr:
@@ -349,7 +346,7 @@ class FederatedClient:
                     model=trainmanager.model,
                     optimizer=trainmanager.optim,
                     first_call=True,
-                    idx=None if is_one_model else idx,
+                    idx=None if self._n_models == 1 else idx,
                 )
 
     async def _initialize_trainmanagers(
@@ -398,7 +395,7 @@ class FederatedClient:
                         aggrg=message.aggrg[idx],
                         train_data=train_data,
                         valid_data=valid_data,
-                        metrics=message.metrics,  # same metric is applied
+                        metrics=message.metrics,
                         logger=self.logger,
                         verbose=self.verbose,
                     )
@@ -414,7 +411,7 @@ class FederatedClient:
         """Collect and report metadata for training datasets."""
         metadata_list: List[dict] = []
         for data in self.train_data:
-            assert data is not None  # for mypy
+            assert data is not None
             metadata_list.append(dataclasses.asdict(data.get_data_specs()))
         metadata_dict: Dict = {}
         for model_index, metadata in enumerate(metadata_list):
@@ -433,9 +430,7 @@ class FederatedClient:
                 for key in message.fields[f"model_{model_index}"]
             }
             metadata_dict[f"model_{model_index}"] = data_info
-        self.logger.info(
-            "Sending training dataset metadata to the server",
-        )
+        self.logger.info("Sending training dataset metadata to the server")
         await self.netwk.send_message(
             messaging.MetadataReply(data_info=metadata_dict)
         )
@@ -460,8 +455,7 @@ class FederatedClient:
             self.make_private(message)
         except Exception as exc:  # pylint: disable=broad-except
             self.logger.error(
-                "Exception encountered in `make_private`: %s",
-                exc,
+                "Exception encountered in `make_private`: %s", exc
             )
             await self.netwk.send_message(messaging.Error(repr(exc)))
             raise RuntimeError("DP-SGD initialization failed.") from exc
@@ -509,7 +503,7 @@ class FederatedClient:
             )
         ]
 
-        self.trainmanagers[0].make_private(message)  # type: ignore [attr-defined]
+        self.trainmanagers[0].make_private(message)
 
     async def _initialize_fairness(self) -> None:
         """Set up a fairness-enforcing algorithm as part of initialization.
@@ -807,6 +801,7 @@ class FederatedClient:
                 "but no fairness controller was set up."
             )
             self.logger.critical(error)
+            await self.netwk.send_message(messaging.Error(error))
             raise RuntimeError(error)
         # When SecAgg is to be used, verify that it was set up.
         if self.secagg is not None and self._encrypter is None:
@@ -816,6 +811,7 @@ class FederatedClient:
                 "but was not set up."
             )
             self.logger.error(error)
+            await self.netwk.send_message(messaging.Error(error))
             raise RuntimeError(error)
         metrics = await self.fairness.run_fairness_round(
             netwk=self.netwk,
