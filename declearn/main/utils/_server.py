@@ -328,9 +328,7 @@ class ServerUtils:
             try:
                 return parse_secagg_config_server(**secagg)
             except Exception as exc:
-                raise TypeError(
-                    "Failed to parse the provided 'secagg' configuration."
-                ) from exc
+                raise TypeError("Failed to parse 'secagg' inputs.") from exc
 
         raise TypeError(
             "'secagg' should be a SecaggConfigServer instance, a dict of "
@@ -346,7 +344,7 @@ class ServerUtils:
             messaging.MultiModelFairnessQuery,
         ],
         clients: Set[str],
-        needs_weights: Dict,
+        needs_weights: Set,
         model_weights: Dict,
     ) -> Dict:
         """Method that builds the client messages to send relevant requests
@@ -356,20 +354,16 @@ class ServerUtils:
 
         Parameters
         ----------
-        msg_light: Union[
-            messaging.MultiModelTrainRequest,
-            messaging.MultiModelEvaluationRequest,
-            messaging.MultiModelFairnessQuery,
-        ]
+        msg_light:
             the type of message that needs to be sent by the server with the
             `weights` field
             left to None.
-        clients: Set[st]
+        clients:
             Name of the clients to whom the message is addressed.
-        needs_weights: Dict
+        needs_weights: Set
             Dictionary that holds the corresponding model, clients that require
             the weights,
-        model_weights: Dict
+        model_weights:
             Dictionary that holds the model weights to be sent.
 
         Returns
@@ -400,7 +394,7 @@ class ServerUtils:
     ):
         """Method that checks wether the extra configuration of privacy,
         fairness and client sampler is compatible w.r.t nb of models to be
-        trained. The only valid compatibility with a single model.
+        trained. The only valid compatibility is with a single model.
 
         Parameters
         ----------
