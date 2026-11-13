@@ -15,9 +15,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Multi-model handling utility functions."""
 
 import copy
-from typing import Any, Callable, Dict, List, Optional, TypeVar, Union
+from typing import Any, Callable, Dict, List, Optional, Set, TypeVar, Union
 
 from declearn import messaging
 from declearn.dataset._base import Dataset
@@ -46,7 +47,7 @@ def validate_optional_dataset_list(
     data: Optional[Dataset | List[Dataset]] = None,
     name: str = "",
     reference_length: Optional[int] = None,
-) -> Any:
+) -> List:
     """Validate and normalize an optional list of Datasets.
 
     - If data is None, returns a list of None of length `reference_length`.
@@ -68,16 +69,16 @@ def validate_optional_dataset_list(
     -------
         List of validated data.
     """
-    # check if the dataset is a single element, convert it to a single
-    # element list, if a reference length is provided
-    # NOTE necessary change to not break the old api
+    # covers optional validation dataset case
     if data is None:
         if reference_length is None:
             raise ValueError(
                 f"{name} is None and no reference_length provided"
             )
         return [None] * reference_length
+    # check if the dataset is a single element, convert it to a single
     data_list = [data] if isinstance(data, Dataset) else data
+    # checks the invalidity of every single instance introduced
     for idx, item in enumerate(data_list):
         if item is not None and not isinstance(item, Dataset):
             raise InvalidDatasetType(f"{name}[{idx}]", type(item).__name__)
@@ -105,35 +106,31 @@ def dispatch_replies(
 
     Returns
     -------
-        a list of dictionaries in which the keys are client names and
-        values are the Reply (TrainReply, EvaluationReply .. etc)
+        List of dictionaries in which the keys are client names and values are
+        the Reply (e.g. TrainReply, EvaluationReply).  The list is indexed by
+        model.
     """
     results_per_model: list[dict[str, Reply]] = []
-
     for client, multi_reply in results.items():
         replies = get_replies(multi_reply)
-
         if not results_per_model:
             results_per_model = [{} for _ in replies]
         elif len(replies) != len(results_per_model):
             raise ValueError(
                 "All clients must provide the same number of replies."
             )
-
         for idx, reply in enumerate(replies):
             results_per_model[idx][client] = reply
-
     return results_per_model
 
 
 def copy_requests_with_weights(
     requests: List[RequestT],
     client: str,
-    needs_weights: Dict[int, set[str]],
+    needs_weights: Set,
     model_weights: Dict[int, Any],
 ) -> List[RequestT]:
-    """Copy requests and attach weights when needed while maintaining the
-    requests relevant type to avoid mypy complains.
+    """Copy requests and attach weights when needed.
 
     Parameters
     ----------
@@ -141,7 +138,7 @@ def copy_requests_with_weights(
         List of requests to which the relevant model weights are copied.
     client: str
         Client name.
-    needs_weights: dict[int, set[str]]
+    needs_weights: Set
         Dictionary of clients who need the weights
     model_weights: dict[int, set[str]]
         Dictionary containing the model weights for every client
@@ -154,7 +151,7 @@ def copy_requests_with_weights(
     copied_requests: List[RequestT] = []
     for idx, rqst in enumerate(requests):
         request = copy.copy(rqst)
-        if client in needs_weights[idx]:
+        if client in needs_weights:
             request.weights = model_weights[idx]  # type: ignore [attr-defined]
         copied_requests.append(request)
     return copied_requests
