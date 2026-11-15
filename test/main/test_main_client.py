@@ -1147,7 +1147,7 @@ class TestFederatedClientFairnessRound:
             self,
             ckpt: bool,
         ) -> None:
-            """Test wether 'fairness_round' fails for training 2 models."""
+            """Test whether 'fairness_round' fails when training 2 models."""
             # Set up a client with a mock NetworkClient, TrainingManager,
             # FairnessClientController and optional Checkpointer.
             netwk = mock.create_autospec(NetworkClient, instance=True)
