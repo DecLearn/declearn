@@ -763,6 +763,7 @@ class FederatedServer:
         # If no client requires weights, do not even access them.
         if not needs_weights:
             await self.netwk.broadcast_message(msg_light, clients)
+            return
         # If any client does not hold latest weights, ensure they get it.
         model_weights = {}
         for idx in range(self._n_models):
