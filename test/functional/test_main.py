@@ -19,7 +19,6 @@
 
 import logging
 import tempfile
-import traceback
 import warnings
 from typing import Any, Dict, Literal, Optional
 
