@@ -491,7 +491,10 @@ class FederatedClient:
         # pylint: disable=import-outside-toplevel
         from declearn.training.dp import DPTrainingManager  # noqa: PLC0415
 
+        print("\nServer>> Before poping the trainmanagers", self.trainmanagers)
         manager = self.trainmanagers.pop()
+        print("\nServer>> After poping the trainmanagers", self.trainmanagers)
+        print("\n Server>> manager is ", manager)
         self.trainmanagers = [
             DPTrainingManager(
                 model=manager.model,
@@ -504,8 +507,7 @@ class FederatedClient:
                 verbose=manager.verbose,
             )
         ]
-        assert isinstance(self.trainmanagers[0], DPTrainingManager)
-        self.trainmanagers[0].make_private(message)
+        self.trainmanagers[0].make_private(message)  # type: ignore [attr-defined]
 
     async def _initialize_fairness(self) -> None:
         """Set up a fairness-enforcing algorithm as part of initialization.
