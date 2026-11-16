@@ -100,7 +100,7 @@ class Checkpointer:
 
         Parameters
         ----------
-        idx : Optional[None], default=None
+        idx : Optional[int], default=None
             Index of the model whose results are to be saved. Determines
             the name of the output subfolder (``model_{idx}``).
 
