@@ -121,11 +121,13 @@ class FederatedClient:
         # Assign the wrapped training dataset.
         self.train_data: List[Dataset] = validate_optional_dataset_list(
             train_data, "train_data"
+        )  # type: ignore [assignment]
+        self.valid_data: List[Dataset] | List[None] = (
+            validate_optional_dataset_list(
+                valid_data, "valid_data", len(self.train_data)
+            )
         )
-        self.valid_data: List = validate_optional_dataset_list(
-            valid_data, "valid_data", len(self.train_data)
-        )
-        self.trainmanagers: List = []
+        self.trainmanagers: List[TrainingManager] = []
         # Assign an optional checkpointer.
         if checkpoint is not None:
             checkpoint = Checkpointer.from_specs(checkpoint)
@@ -502,7 +504,7 @@ class FederatedClient:
                 verbose=manager.verbose,
             )
         ]
-
+        assert isinstance(self.trainmanagers[0], DPTrainingManager)
         self.trainmanagers[0].make_private(message)
 
     async def _initialize_fairness(self) -> None:
