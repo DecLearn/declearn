@@ -509,7 +509,7 @@ class FederatedServer:
 
         self.logger.info("Sending privacy requests to all clients.")
         assert config.privacy is not None
-        assert isinstance(config.training, List)  # NOTE: for mypy
+        assert isinstance(config.training, List)
         training_cfg = config.training[0]
         params: Dict[str, Any] = {
             "rounds": config.rounds,
@@ -1112,5 +1112,7 @@ class FederatedServer:
                 )
                 path = os.path.join(self.ckptr.folder, "model_state_best.mpk")
                 self.logger.info(
-                    "Checkpointed for model %d.under %s", idx + 1, path
+                    "Checkpointed final weights for model %d.under %s",
+                    idx + 1,
+                    path,
                 )
