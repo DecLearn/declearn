@@ -180,14 +180,16 @@ class FLRunConfig(TomlConfig):
         # Note: if inputs have invalid formats, let the parent method fail.
         fairness = kwargs.setdefault("fairness", {})
         if isinstance(fairness, dict) and "batch_size" not in fairness:
-            eval = evaluate
+            evaluate_config = evaluate
             # if evaluate is a list, we take the first element
-            if isinstance(eval, List):
-                eval = evaluate[0]
+            if isinstance(evaluate_config, List):
+                evaluate_config = evaluate[0]
             if isinstance(eval, dict):
-                fairness.setdefault("batch_size", eval.get("batch_size"))
+                fairness.setdefault(
+                    "batch_size", evaluate_config.get("batch_size")
+                )
             elif isinstance(eval, EvaluateConfig):
-                fairness.setdefault("batch_size", eval.batch_size)
+                fairness.setdefault("batch_size", evaluate_config.batch_size)
         kwargs["evaluate"] = evaluate
         kwargs["training"] = training
 
