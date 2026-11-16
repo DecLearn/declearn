@@ -51,7 +51,7 @@ Backend utils to aggregate clients' dataset information:
 from ._checkpoint import Checkpointer
 from ._data_info import AggregationError, aggregate_clients_data_info
 from ._early_stop import EarlyStopConfig, EarlyStopping
-from ._error import IncompatibleConfigsError
+from ._error import IncompatibilityError
 from ._multi_model import (
     copy_requests_with_weights,
     dispatch_replies,
@@ -65,7 +65,7 @@ __all__ = [
     "aggregate_clients_data_info",
     "EarlyStopConfig",
     "EarlyStopping",
-    "IncompatibleConfigsError",
+    "IncompatibilityError",
     "validate_optional_dataset_list",
     "dispatch_replies",
     "copy_requests_with_weights",
