@@ -47,7 +47,7 @@ def validate_optional_dataset_list(
     data: Optional[Dataset | List[Dataset]] = None,
     name: str = "",
     reference_length: Optional[int] = None,
-) -> List:
+) -> Union[List[Dataset], List[None]]:
     """Validate and normalize an optional list of Datasets.
 
     - If data is None, returns a list of None of length `reference_length`.
@@ -67,7 +67,8 @@ def validate_optional_dataset_list(
 
     Returns
     -------
-        List of validated data.
+        List of Optionally validated data, if no validation data is passed
+        then it's a list of None.
     """
     # covers optional validation dataset case
     if data is None:
@@ -127,7 +128,7 @@ def dispatch_replies(
 def copy_requests_with_weights(
     requests: List[RequestT],
     client: str,
-    needs_weights: Set,
+    needs_weights: Set[str],
     model_weights: Dict[int, Any],
 ) -> List[RequestT]:
     """Copy requests and attach weights when needed.
@@ -138,7 +139,7 @@ def copy_requests_with_weights(
         List of requests to which the relevant model weights are copied.
     client: str
         Client name.
-    needs_weights: Set
+    needs_weights: Set[str]
         Dictionary of clients who need the weights
     model_weights: dict[int, set[str]]
         Dictionary containing the model weights for every client
