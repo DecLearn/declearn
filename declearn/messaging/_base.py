@@ -503,31 +503,3 @@ class MultiModelTrainReply(Message):
                     )
                 replies.append(TrainReply.from_kwargs(**reply_dict))
         return cls(replies=replies)
-
-
-# class MultiModelEvaluationReply(Message):
-#     """Client-emitted results from the local evaluation round with replies
-#     from all trained models.
-
-#     Fields
-#     ------
-#     replies:
-#         List of EvaluationReply per trained model.
-#     """
-
-#     typekey = "multi_model_eval_reply"
-
-#     replies: List[EvaluationReply]
-
-#     def to_kwargs(self) -> Dict[str, Any]:
-#         return {"replies": [reply.to_kwargs() for reply in self.replies]}
-
-#     @classmethod
-#     def from_kwargs(cls, **kwargs):
-#         replies = []
-#         for reply in kwargs["replies"]:
-#             if isinstance(reply, EvaluationReply):
-#                 replies.append(reply)
-#             else:
-#                 replies.append(EvaluationReply.from_kwargs(**reply))
-#         return cls(replies=replies)
