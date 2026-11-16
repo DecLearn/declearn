@@ -32,8 +32,8 @@ from declearn.client_sampler import (
 )
 from declearn.communication import NetworkServerConfig
 from declearn.communication.api import NetworkServer
-from declearn.fairness.api._server import FairnessControllerServer
-from declearn.main.config._dataclasses import PrivacyConfig
+from declearn.fairness.api import FairnessControllerServer
+from declearn.main.config import PrivacyConfig
 from declearn.main.utils import (
     copy_requests_with_weights,
 )
@@ -392,7 +392,7 @@ class ServerUtils:
         fairness: Optional[FairnessControllerServer],
         n_models: int,
     ):
-        """Method that checks wether the extra configuration of privacy,
+        """Method that checks whether the extra configuration of privacy,
         fairness and client sampler is compatible w.r.t nb of models to be
         trained. The only valid compatibility is with a single model.
 
@@ -411,10 +411,10 @@ class ServerUtils:
         IncompatibleConfigsError:
             Incompatibility error message indicating the error-prone config.
         """
-        err_str = "is compatible only with a single model"
+        err_str = "is compatible only with a single model."
         if not isinstance(cs_sampler, DefaultClientSampler) and n_models > 1:
             raise IncompatibleConfigsError("Client sampling " + err_str)
         if privacy is not None and n_models > 1:
-            raise IncompatibleConfigsError("privacy " + err_str)
+            raise IncompatibleConfigsError("Privacy " + err_str)
         if fairness is not None and n_models > 1:
-            raise IncompatibleConfigsError("fairness " + err_str)
+            raise IncompatibleConfigsError("Fairness " + err_str)
