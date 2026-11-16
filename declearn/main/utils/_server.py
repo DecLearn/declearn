@@ -344,8 +344,8 @@ class ServerUtils:
             messaging.MultiModelFairnessQuery,
         ],
         clients: Set[str],
-        needs_weights: Set,
-        model_weights: Dict,
+        needs_weights: Set[str],
+        model_weights: Dict[int, Any],
     ) -> Dict:
         """Method that builds the client messages to send relevant requests
         with necessary attached optional weights, this method is called in the
@@ -360,7 +360,7 @@ class ServerUtils:
             left to None.
         clients:
             Name of the clients to whom the message is addressed.
-        needs_weights: Set
+        needs_weights:
             Dictionary that holds the corresponding model, clients that require
             the weights,
         model_weights:
