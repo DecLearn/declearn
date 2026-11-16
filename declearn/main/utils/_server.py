@@ -37,7 +37,7 @@ from declearn.main.config import PrivacyConfig
 from declearn.main.utils import (
     copy_requests_with_weights,
 )
-from declearn.main.utils._error import IncompatibleConfigsError
+from declearn.main.utils._error import IncompatibilityError
 from declearn.model.api import Model
 from declearn.optimizer import Optimizer
 from declearn.secagg import parse_secagg_config_server
@@ -408,13 +408,13 @@ class ServerUtils:
             Number of models to be trained
         Raises
         ------
-        IncompatibleConfigsError:
+        IncompatibilityError:
             Incompatibility error message indicating the error-prone config.
         """
         err_str = "is compatible only with a single model."
         if not isinstance(cs_sampler, DefaultClientSampler) and n_models > 1:
-            raise IncompatibleConfigsError("Client sampling " + err_str)
+            raise IncompatibilityError("Client sampling " + err_str)
         if privacy is not None and n_models > 1:
-            raise IncompatibleConfigsError("Privacy " + err_str)
+            raise IncompatibilityError("Privacy " + err_str)
         if fairness is not None and n_models > 1:
-            raise IncompatibleConfigsError("Fairness " + err_str)
+            raise IncompatibilityError("Fairness " + err_str)

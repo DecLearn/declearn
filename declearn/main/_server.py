@@ -56,7 +56,7 @@ from declearn.main.utils import (
     AggregationError,
     Checkpointer,
     EarlyStopping,
-    IncompatibleConfigsError,
+    IncompatibilityError,
     ServerUtils,
     aggregate_clients_data_info,
     dispatch_replies,
@@ -202,7 +202,7 @@ class FederatedServer:
 
         Raises
         ------
-        IncompatibleConfigsError
+        IncompatibilityError
             In case the server client sampler and secure aggregation configs
             are incompatible
         """
@@ -210,7 +210,7 @@ class FederatedServer:
             self.secagg is not None
             and not self.client_sampler.secagg_compatible
         ):
-            raise IncompatibleConfigsError(
+            raise IncompatibilityError(
                 "Secure aggregation is enabled, but the selected client "
                 "sampler is not compatible with secure aggregation."
             )

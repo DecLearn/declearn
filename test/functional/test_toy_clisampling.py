@@ -48,7 +48,7 @@ from declearn.communication import NetworkClientConfig, NetworkServerConfig
 from declearn.dataset import InMemoryDataset
 from declearn.main import FederatedClient, FederatedServer
 from declearn.main.config import FLOptimConfig, FLRunConfig
-from declearn.main.utils import IncompatibleConfigsError
+from declearn.main.utils import IncompatibilityError
 from declearn.model.sklearn import SklearnSGDModel
 from declearn.secagg.masking import MaskingSecaggConfigServer
 from declearn.utils import setup_logger
@@ -274,7 +274,7 @@ async def test_clisamp_secagg_incompatibility() -> None:
     client_sampler = CriterionClientSampler(
         n_samples=2, criterion=GradientNormCriterion()
     )
-    with pytest.raises(IncompatibleConfigsError):
+    with pytest.raises(IncompatibilityError):
         await run_declearn_experiment(
             client_sampler=client_sampler,
             datasets=datasets,
