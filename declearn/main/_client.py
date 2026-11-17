@@ -491,10 +491,7 @@ class FederatedClient:
         # pylint: disable=import-outside-toplevel
         from declearn.training.dp import DPTrainingManager  # noqa: PLC0415
 
-        print("\nServer>> Before poping the trainmanagers", self.trainmanagers)
         manager = self.trainmanagers.pop()
-        print("\nServer>> After poping the trainmanagers", self.trainmanagers)
-        print("\n Server>> manager is ", manager)
         self.trainmanagers = [
             DPTrainingManager(
                 model=manager.model,
