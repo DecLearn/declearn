@@ -22,7 +22,7 @@ import dataclasses
 import logging
 import os
 import warnings
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
 
@@ -34,8 +34,8 @@ from declearn.communication.utils import (
 )
 from declearn.dataset import Dataset
 from declearn.fairness.api import FairnessControllerClient
-from declearn.main.utils import Checkpointer
-from declearn.messaging import Message, SerializedMessage
+from declearn.main.utils import Checkpointer, validate_optional_dataset_list
+from declearn.messaging import FairnessQuery, SerializedMessage
 from declearn.secagg import messaging as secagg_messaging
 from declearn.secagg import parse_secagg_config_client
 from declearn.secagg.api import Encrypter, SecaggConfigClient, SecaggSetupQuery
@@ -63,8 +63,8 @@ class FederatedClient:
     def __init__(  # noqa: PLR0913
         self,
         netwk: Union[NetworkClient, NetworkClientConfig, Dict[str, Any], str],
-        train_data: Dataset,
-        valid_data: Optional[Dataset] = None,
+        train_data: Union[List[Dataset], Dataset],
+        valid_data: Optional[Union[List[Dataset], Dataset]] = None,
         checkpoint: Union[Checkpointer, Dict[str, Any], str, None] = None,
         secagg: Union[SecaggConfigClient, Dict[str, Any], None] = None,
         share_metrics: bool = True,
@@ -80,10 +80,10 @@ class FederatedClient:
             dict, dataclass or path to a TOML file enabling its instantiation.
             In the latter three cases, the object's default logger will be set
             to that of this `FederatedClient`.
-        train_data: Dataset or str
-            Dataset instance wrapping the training data.
-        valid_data: Dataset or str or None
-            Optional Dataset instance wrapping validation data.
+        train_data: Dataset, List[Dataset].
+            Dataset instance(s) wrapping the training data.
+        valid_data: Dataset, List[Dataset] or None.
+            Optional Dataset instance(s) wrapping validation data.
             If None, run evaluation rounds over `train_data`.
         checkpoint: Checkpointer or dict or str or None, default=None
             Optional Checkpointer instance or instantiation dict to be
@@ -106,8 +106,6 @@ class FederatedClient:
             If True, display progress bars during training and validation
             rounds.
         """
-        # arguments serve modularity; pylint: disable=too-many-arguments
-        # Assign the wrapped NetworkClient.
         if logger is not None:
             warnings.warn(
                 "Argument 'logger' is deprecated and useless now, it will be "
@@ -121,13 +119,15 @@ class FederatedClient:
         self.netwk = self._parse_netwk(netwk)
         self.logger = logging.getLogger(f"declearn.client-{self.netwk.name}")
         # Assign the wrapped training dataset.
-        if not isinstance(train_data, Dataset):
-            raise TypeError("'train_data' should be a Dataset.")
-        self.train_data = train_data
-        # Assign the wrapped validation dataset (if any).
-        if not (valid_data is None or isinstance(valid_data, Dataset)):
-            raise TypeError("'valid_data' should be a Dataset.")
-        self.valid_data = valid_data
+        self.train_data: List[Dataset] = validate_optional_dataset_list(
+            train_data, "train_data"
+        )  # type: ignore [assignment]
+        self.valid_data: List[Dataset] | List[None] = (
+            validate_optional_dataset_list(
+                valid_data, "valid_data", len(self.train_data)
+            )
+        )
+        self.trainmanagers: List[TrainingManager] = []
         # Assign an optional checkpointer.
         if checkpoint is not None:
             checkpoint = Checkpointer.from_specs(checkpoint)
@@ -145,9 +145,8 @@ class FederatedClient:
             self.logger.warning(msg)
             warnings.warn(msg, UserWarning, stacklevel=-1)
         self.verbose = bool(verbose)
-        # Create slots that are (opt.) populated during initialization.
-        self.trainmanager: Optional[TrainingManager] = None
         self.fairness: Optional[FairnessControllerClient] = None
+        self._n_models: int = 1  # NOTE default value, overridden at runtime
 
     @staticmethod
     def _parse_netwk(netwk) -> NetworkClient:
@@ -220,21 +219,27 @@ class FederatedClient:
             await self.initialize()
             # Process server instructions as they come.
             while True:
-                ser_msg: SerializedMessage = await self.netwk.recv_message()
+                try:
+                    ser_msg: SerializedMessage = (
+                        await self.netwk.recv_message()
+                    )
+                except Exception:
+                    self.logger.exception("Server training round failed.")
+                    raise
                 stoprun = await self.handle_message(ser_msg)
                 if stoprun:
                     break
 
     async def handle_message(
         self,
-        ser_msg: SerializedMessage,
+        message: SerializedMessage,
     ) -> bool:
         """Handle an incoming message from the server.
 
         Parameters
         ----------
-        ser_msg: SerializedMessage
-            Serialized message that needs triage and processing.
+        message: SerializedMessage
+            Serialized message requiring triage and processing.
 
         Returns
         -------
@@ -242,22 +247,27 @@ class FederatedClient:
             Whether to interrupt the client's message-receiving loop.
         """
         exit_loop = False
-        if issubclass(ser_msg.message_cls, messaging.TrainRequest):
-            await self.training_round(ser_msg.deserialize())
-        elif issubclass(ser_msg.message_cls, messaging.EvaluationRequest):
-            await self.evaluation_round(ser_msg.deserialize())
-        elif issubclass(ser_msg.message_cls, messaging.FairnessQuery):
-            await self.fairness_round(ser_msg.deserialize())
-        elif issubclass(ser_msg.message_cls, SecaggSetupQuery):
-            await self.setup_secagg(ser_msg)  # note: keep serialized
-        elif issubclass(ser_msg.message_cls, messaging.StopTraining):
-            await self.stop_training(ser_msg.deserialize())
+        if issubclass(message.message_cls, messaging.MultiModelTrainRequest):
+            await self.training_round(message.deserialize())
+        elif issubclass(
+            message.message_cls, messaging.MultiModelEvaluationRequest
+        ):
+            await self.evaluation_round(message.deserialize())
+        elif issubclass(
+            message.message_cls, messaging.MultiModelFairnessQuery
+        ):
+            await self.fairness_round(message.deserialize())
+        elif issubclass(message.message_cls, SecaggSetupQuery):
+            await self.setup_secagg(message)  # note: keep serialized
+        elif issubclass(message.message_cls, messaging.StopTraining):
+            await self.stop_training(message.deserialize())
             exit_loop = True
-        elif issubclass(ser_msg.message_cls, messaging.CancelTraining):
-            await self.cancel_training(ser_msg.deserialize())
+
+        elif issubclass(message.message_cls, messaging.CancelTraining):
+            await self.cancel_training(message.deserialize())
         else:
             error = "Unexpected message type received from server: "
-            error += ser_msg.message_cls.__name__
+            error += message.message_cls.__name__
             self.logger.error(error)
             raise ValueError(error)
         return exit_loop
@@ -287,7 +297,7 @@ class FederatedClient:
     async def initialize(
         self,
     ) -> None:
-        """Set up a Model and an Optimizer based on server instructions.
+        """Set up Model(s) and Optimizer(s) based on server instructions.
 
         Await server instructions (as an InitRequest message) and conduct
         initialization.
@@ -296,20 +306,14 @@ class FederatedClient:
         ------
         RuntimeError
             If initialization failed, either because the message was not
-            received or was of incorrect type, or because instantiation
-            of the objects it specifies failed.
-
-        Returns
-        -------
-        model: Model
-            Model that is to be trained (with shared initial parameters).
-        optim: Optimizer
-            Optimizer that is to be used locally to train the model.
+            received or was of incorrect type, because the SecAgg
+            configuration is inconsistent, or because instantiation of the
+            training managers failed.
         """
         # Await initialization instructions.
         self.logger.info("Awaiting initialization instructions from server.")
         received: SerializedMessage = await self.netwk.recv_message()
-        # If a MetadataQuery is received, process it, then await InitRequest.
+        # If a MetadataQuery is received, process it, then await
         if issubclass(received.message_cls, messaging.MetadataQuery):
             await self._collect_and_send_metadata(received.deserialize())
             received = await self.netwk.recv_message()
@@ -321,61 +325,117 @@ class FederatedClient:
         secagg_type = None if self.secagg is None else self.secagg.secagg_type
         if message.secagg != secagg_type:
             error = (
-                "SecAgg configurgation mismatch: server set "
+                "SecAgg configuration mismatch: server set "
                 f"'{message.secagg}', client set '{secagg_type}'."
             )
             self.logger.error(error)
             await self.netwk.send_message(messaging.Error(error))
             raise RuntimeError(f"Initialization failed: {error}.")
-        # Perform initialization, catching errors to report them to the server.
-        try:
-            self.trainmanager = TrainingManager(
-                model=message.model,
-                optim=message.optim,
-                aggrg=message.aggrg,
-                train_data=self.train_data,
-                valid_data=self.valid_data,
-                metrics=message.metrics,
-                logger=self.logger,
-                verbose=self.verbose,
-            )
-        except Exception as exc:
-            await self.netwk.send_message(messaging.Error(repr(exc)))
-            raise RuntimeError("Initialization failed.") from exc
+        await self._initialize_trainmanagers(message)
         # Send back an empty message to indicate that things went fine.
         self.logger.info("Notifying the server that initialization went fine.")
         await self.netwk.send_message(messaging.InitReply())
         # If instructed to do so, run additional steps to set up DP-SGD.
         if message.dpsgd:
             await self._initialize_dpsgd()
-        # If instructed to do so, run additional steps to enforce fairness.
+        # If instructed to do so, run additional steps to enable fairness
         if message.fairness:
             await self._initialize_fairness()
-        # Optionally checkpoint the received model and optimizer.
+        # Optionally checkpoint the received models and optimizers.
         if self.ckptr:
-            self.ckptr.checkpoint(
-                model=self.trainmanager.model,
-                optimizer=self.trainmanager.optim,
-                first_call=True,
-            )
+            for idx, trainmanager in enumerate(self.trainmanagers):
+                self.ckptr.checkpoint(
+                    model=trainmanager.model,
+                    optimizer=trainmanager.optim,
+                    first_call=True,
+                    idx=None if self._n_models == 1 else idx,
+                )
+
+    async def _initialize_trainmanagers(
+        self, message: messaging.InitRequest
+    ) -> None:
+        """
+        Configures a `TrainingManager` for each model specified in the
+        initialization request, using the corresponding optimizer, gradient
+        aggregator, training dataset, validation dataset, and evaluation
+        metrics.
+
+        If multiple models are received and the client provides a single
+        training dataset, that dataset is shared.
+        Similarly, if a single non-None validation dataset is provided,
+        it is used for all models..
+        Otherwise, datasets are assigned to models according to their
+        respective indices.
+
+        Parameters
+        ----------
+        message : messaging.InitRequest
+            Initialization request received from the server, containing the
+            models, optimizers, gradient aggregators, evaluation metrics, and
+            other configuration required to initialize training.
+
+        Raises
+        ------
+        RuntimeError
+            If an error occurs while initializing the training managers. An
+            error message is first sent to the server.
+        """
+        try:
+            self._n_models = len(message.model)
+            if self._n_models > 1 and len(self.train_data) == 1:
+                self.train_data = self.train_data * self._n_models
+            if self._n_models > 1 and len(self.valid_data) == 1:
+                self.valid_data = self.valid_data * self._n_models
+            for idx in range(len(message.model)):
+                train_data: Optional[Dataset] = self.train_data[idx]
+                valid_data: Optional[Dataset] = self.valid_data[idx]
+                assert train_data is not None
+                self.trainmanagers.append(
+                    TrainingManager(
+                        model=message.model[idx],
+                        optim=message.optim[idx],
+                        aggrg=message.aggrg[idx],
+                        train_data=train_data,
+                        valid_data=valid_data,
+                        metrics=message.metrics,
+                        logger=self.logger,
+                        verbose=self.verbose,
+                    )
+                )
+        except Exception as exc:
+            await self.netwk.send_message(messaging.Error(repr(exc)))
+            raise RuntimeError("Initialization failed.") from exc
 
     async def _collect_and_send_metadata(
         self,
         message: messaging.MetadataQuery,
     ) -> None:
-        """Collect and report some metadata based on server instructions."""
-        self.logger.info("Collecting metadata to send to the server.")
-        metadata = dataclasses.asdict(self.train_data.get_data_specs())
-        if missing := set(message.fields).difference(metadata):
-            err_msg = f"Metadata query for undefined fields: {missing}."
-            await self.netwk.send_message(messaging.Error(err_msg))
-            raise RuntimeError(err_msg)
-        data_info = {key: metadata[key] for key in message.fields}
-        self.logger.info(
-            "Sending training dataset metadata to the server: %s.",
-            list(data_info),
+        """Collect and report metadata for training datasets."""
+        metadata_list: List[dict] = []
+        for data in self.train_data:
+            assert data is not None
+            metadata_list.append(dataclasses.asdict(data.get_data_specs()))
+        metadata_dict: Dict = {}
+        for model_index, metadata in enumerate(metadata_list):
+            if missing := set(
+                message.fields[f"model_{model_index}"]
+            ).difference(metadata):
+                err_msg = (
+                    f"Metadata query for model {model_index} "
+                    f"contains undefined fields: {missing}."
+                )
+                await self.netwk.send_message(messaging.Error(err_msg))
+                raise RuntimeError(err_msg)
+
+            data_info = {
+                key: metadata[key]
+                for key in message.fields[f"model_{model_index}"]
+            }
+            metadata_dict[f"model_{model_index}"] = data_info
+        self.logger.info("Sending training dataset metadata to the server")
+        await self.netwk.send_message(
+            messaging.MetadataReply(data_info=metadata_dict)
         )
-        await self.netwk.send_message(messaging.MetadataReply(data_info))
 
     async def _initialize_dpsgd(
         self,
@@ -397,8 +457,7 @@ class FederatedClient:
             self.make_private(message)
         except Exception as exc:  # pylint: disable=broad-except
             self.logger.error(
-                "Exception encountered in `make_private`: %s",
-                exc,
+                "Exception encountered in `make_private`: %s", exc
             )
             await self.netwk.send_message(messaging.Error(repr(exc)))
             raise RuntimeError("DP-SGD initialization failed.") from exc
@@ -410,71 +469,81 @@ class FederatedClient:
         self,
         message: messaging.PrivacyRequest,
     ) -> None:
-        """Set up differentially-private training, using DP-SGD.
+        """Set up differentially private training using DP-SGD.
 
-        Based on the server message, replace the wrapped `trainmanager`
-        attribute by an instance of a subclass that provides with DP-SGD.
+        Replace each training manager with a DPTrainingManager and configure
+        it for differentially private training.
 
-        Note that this method triggers the import of `declearn.main.privacy`
-        which may result in an error if the third-party dependency 'opacus'
-        is not available.
+        Note that this method imports `declearn.training.dp`, which may raise
+        an error if the optional dependency `opacus` is unavailable.
 
-        Parameters:
+        Parameters
         ----------
-        message: PrivacyRequest
+        message: messaging.PrivacyRequest
             Instructions from the server regarding the DP-SGD setup.
+
+        Raises
+        ------
+        RuntimeError
+            If initialization of a DP training manager fails.
         """
-        assert self.trainmanager is not None
-        # fmt: off
-        # lazy-import the DPTrainingManager, that involves some optional,
-        # heavy-loadtime dependencies; pylint: disable=import-outside-toplevel
-        from declearn.training.dp import DPTrainingManager # noqa: I001, PLC0415
+        # Lazy import to avoid loading optional dependencies unnecessarily.
+        # pylint: disable=import-outside-toplevel
+        from declearn.training.dp import DPTrainingManager  # noqa: PLC0415
 
-        # pylint: enable=import-outside-toplevel
-        self.trainmanager = DPTrainingManager(
-            model=self.trainmanager.model,
-            optim=self.trainmanager.optim,
-            aggrg=self.trainmanager.aggrg,
-            train_data=self.trainmanager.train_data,
-            valid_data=self.trainmanager.valid_data,
-            metrics=self.trainmanager.metrics,
-            logger=self.logger,
-            verbose=self.trainmanager.verbose,
-        )
-        self.trainmanager.make_private(message)
+        manager = self.trainmanagers.pop()
+        self.trainmanagers = [
+            DPTrainingManager(
+                model=manager.model,
+                optim=manager.optim,
+                aggrg=manager.aggrg,
+                train_data=manager.train_data,
+                valid_data=manager.valid_data,
+                metrics=manager.metrics,
+                logger=self.logger,
+                verbose=manager.verbose,
+            )
+        ]
+        self.trainmanagers[0].make_private(message)  # type: ignore [attr-defined]
 
-    async def _initialize_fairness(
-        self,
-    ) -> None:
+    async def _initialize_fairness(self) -> None:
         """Set up a fairness-enforcing algorithm as part of initialization.
+        This method is to be called
+        only when the server has sent a single model for training
+        (the verification of this condition is done from the server side)
 
         This method is optionally called in the context of `initialize`
         and should never be called in another context.
         """
-        assert self.trainmanager is not None
-        # Optionally setup SecAgg; await a FairnessSetupQuery.
         try:
-            # When SecAgg is to be used, setup controllers first.
+            # Initialize SecAgg once.
             if self.secagg is not None:
                 received: SerializedMessage = await self.netwk.recv_message()
                 await self.setup_secagg(received)
-            # Await and deserialize a FairnessSetupQuery.
+            # Receive the setup query for this model.
             received = await self.netwk.recv_message()
             query = await verify_server_message_validity(
-                self.netwk, received, expected=messaging.FairnessSetupQuery
+                self.netwk,
+                received,
+                expected=messaging.FairnessSetupQuery,
             )
+
         except Exception as exc:
             error = f"Fairness initialization failed: {repr(exc)}."
             self.logger.critical(error)
             raise RuntimeError(error) from exc
-        self.logger.info("Received fairness setup instructions.")
-        # Instantiate a FairnessControllerClient and run its setup routine.
+        self.logger.info(
+            "Received fairness setup instructions",
+        )
         try:
+            trainmanager = self.trainmanagers[0]
             self.fairness = FairnessControllerClient.from_setup_query(
-                query=query, manager=self.trainmanager
+                query=query,
+                manager=trainmanager,
             )
             await self.fairness.setup_fairness(
-                netwk=self.netwk, secagg=self._encrypter
+                netwk=self.netwk,
+                secagg=self._encrypter,
             )
         except Exception as exc:
             error = (
@@ -520,7 +589,7 @@ class FederatedClient:
 
     async def training_round(
         self,
-        message: messaging.TrainRequest,
+        message: messaging.MultiModelTrainRequest,
     ) -> None:
         """Run a local training round.
 
@@ -530,44 +599,84 @@ class FederatedClient:
 
         Parameters
         ----------
-        message: TrainRequest
+        message: MultiModelTrainRequest
             Instructions from the server regarding the training round.
         """
-        assert self.trainmanager is not None
-        # When SecAgg is to be used, verify that it was set up.
+        replies = []
+        for idx, msg in enumerate(message.requests):
+            self.logger.info("Model %d", idx + 1)
+            reply = await self.train_model(msg, idx)
+            if isinstance(reply, messaging.Error):
+                self.logger.error(
+                    "Training failed for model %d in round %d",
+                    idx + 1,
+                    msg.round_i,
+                )
+                await self.netwk.send_message(reply)
+                return
+            replies.append(reply)
+        if self._encrypter is not None:
+            multi_reply = secagg_messaging.MultiModelSecaggTrainReply(
+                replies=replies  # type: ignore [assignment, arg-type]
+            )
+        else:
+            multi_reply = messaging.MultiModelTrainReply(replies=replies)  # type: ignore [assignment, arg-type]
+        await self.netwk.send_message(multi_reply)
+
+    async def train_model(
+        self,
+        message: messaging.TrainRequest,
+        idx: int = 0,
+    ) -> (
+        messaging.TrainReply
+        | secagg_messaging.SecaggTrainReply
+        | messaging.Error
+    ):
+        """Trains the $i^{ith}$ model and sends the reply.
+
+        Parameters
+        ---------
+        message: TrainRequest
+            Instructions from the server regarding the training of $i^{th}$
+            model.
+
+        Returns
+        -------
+        reply: TrainReply | SecaggTrainReply | Error
+            Training reply/metadata from the train-manager associated to
+            the $i^{th}$ mode
+        """
         if self.secagg is not None and self._encrypter is None:
             error = (
-                f"Refusing to participate in training round {message.round_i}"
+                f"Refusing to participate in training round {message.round_i} "
                 "as SecAgg is configured to be used but was not set up."
             )
-            self.logger.error(error)
-            await self.netwk.send_message(messaging.Error(error))
-            return
-        # Run the training round.
-        reply: Message = self.trainmanager.training_round(message)
-        # Collect and optionally record batch-wise training losses.
-        # Note: collection enables purging them from memory.
-        losses = self.trainmanager.model.collect_training_losses()
+            return messaging.Error(error)
+        trainmanager: TrainingManager = self.trainmanagers[idx]
+        reply = trainmanager.training_round(message)
+        losses = trainmanager.model.collect_training_losses()
         if self.ckptr is not None:
             self.ckptr.save_metrics(
                 metrics={"training_losses": np.array(losses)},
                 prefix="training_losses",
                 append=True,
                 timestamp=f"round_{message.round_i}",
+                idx=None if self._n_models == 1 else idx,
             )
-        # Optionally SecAgg-encrypt the reply.
+        # Encrypt the reply when SecAgg is enabled
         if self._encrypter is not None and isinstance(
-            reply, messaging.TrainReply
+            reply,
+            messaging.TrainReply,  # for mypy
         ):
-            reply = secagg_messaging.SecaggTrainReply.from_cleartext_message(
-                cleartext=reply, encrypter=self._encrypter
+            return secagg_messaging.SecaggTrainReply.from_cleartext_message(
+                cleartext=reply,
+                encrypter=self._encrypter,
             )
-        # Send training results (or error message) to the server.
-        await self.netwk.send_message(reply)
+        return reply
 
     async def evaluation_round(
         self,
-        message: messaging.EvaluationRequest,
+        message: messaging.MultiModelEvaluationRequest,
     ) -> None:
         """Run a local evaluation round.
 
@@ -583,7 +692,52 @@ class FederatedClient:
         message: EvaluationRequest
             Instructions from the server regarding the evaluation round.
         """
-        assert self.trainmanager is not None
+        replies = []
+        for idx, msg in enumerate(message.requests):
+            reply = await self.evaluate_model(msg, idx)
+            if isinstance(reply, messaging.Error):
+                self.logger.error(
+                    f"Evaluation failed for model {idx + 1}, "
+                    + "round={msg.round_i}",
+                )
+                await self.netwk.send_message(reply)
+                return
+            replies.append(reply)
+        reply = messaging.MultiModelEvaluationReply(replies)  # type: ignore [assignment, arg-type]
+        if self._encrypter is not None:
+            reply = secagg_messaging.MultiModelSecaggEvaluationReply(replies)  # type: ignore [assignment, arg-type]
+        await self.netwk.send_message(reply)
+
+    async def evaluate_model(
+        self, message: messaging.EvaluationRequest, idx: int = 0
+    ) -> (
+        messaging.EvaluationReply
+        | messaging.Error
+        | secagg_messaging.SecaggEvaluationReply
+    ):
+        """Evaluate a specific model for a given evaluation round.
+
+        Verify SecAgg setup, run local evaluation, optionally checkpoint the
+        results, filter shared metrics, and encrypt the reply if SecAgg is
+        enabled.
+
+        Parameters
+        ----------
+        message: messaging.EvaluationRequest
+            Instructions from the server for the evaluation round.
+        model_index: int, default=0
+            Index of the model to evaluate.
+
+        Returns
+        -------
+        messaging.EvaluationReply | messaging.Error
+            The evaluation results or an error message.
+
+        Raises
+        ------
+        RuntimeError
+            If SecAgg is configured but has not been set up.
+        """
         # When SecAgg is to be used, verify that it was set up.
         if self.secagg is not None and self._encrypter is None:
             error = (
@@ -591,35 +745,38 @@ class FederatedClient:
                 f"{message.round_i} as SecAgg is configured to be used "
                 "but was not set up."
             )
-            self.logger.error(error)
-            await self.netwk.send_message(messaging.Error(error))
-            return
-        # Run the evaluation round.
-        reply: Message = self.trainmanager.evaluation_round(message)
-        # Post-process the results.
-        if isinstance(reply, messaging.EvaluationReply):  # not an Error
-            # Optionnally checkpoint the model, optimizer and local loss.
-            if self.ckptr:
-                self.ckptr.checkpoint(
-                    model=self.trainmanager.model,
-                    optimizer=self.trainmanager.optim,
-                    metrics=self.trainmanager.metrics.get_result(),
-                )
-            # Optionally prevent sharing metrics (save for the loss).
-            if not self.share_metrics:
-                reply.metrics.clear()
-            # Optionally SecAgg-encrypt results.
-            if self._encrypter is not None:
-                msg_cls = secagg_messaging.SecaggEvaluationReply
-                reply = msg_cls.from_cleartext_message(
-                    cleartext=reply, encrypter=self._encrypter
-                )
-        # Send evaluation results (or error message) to the server.
-        await self.netwk.send_message(reply)
+            return messaging.Error(error)
+        trainmanager = self.trainmanagers[idx]
+        reply: messaging.EvaluationReply | messaging.Error = (
+            trainmanager.evaluation_round(message)
+        )
+        # Optionally checkpoint the model, optimizer and local loss.
+        if self.ckptr and isinstance(reply, messaging.EvaluationReply):
+            self.ckptr.checkpoint(
+                model=trainmanager.model,
+                optimizer=trainmanager.optim,
+                metrics=trainmanager.metrics.get_result(),
+                idx=None if self._n_models == 1 else idx,
+            )
+        # Optionally prevent sharing metrics (save for the loss).
+        if not self.share_metrics and isinstance(
+            reply, messaging.EvaluationReply
+        ):
+            reply.metrics.clear()
+        # Optionally SecAgg-encrypt results.
+        if self._encrypter is not None and isinstance(
+            reply, messaging.EvaluationReply
+        ):
+            msg_cls = secagg_messaging.SecaggEvaluationReply
+
+            return msg_cls.from_cleartext_message(
+                cleartext=reply,
+                encrypter=self._encrypter,
+            )
+        return reply
 
     async def fairness_round(
-        self,
-        query: messaging.FairnessQuery,
+        self, message: messaging.MultiModelFairnessQuery
     ) -> None:
         """Handle a server request to run a fairness-related round.
 
@@ -631,15 +788,14 @@ class FederatedClient:
         Parameters
         ----------
         query:
-            `FairnessQuery` message from the server.
+            `MultiModelFairnessQuery` message from the server.
 
         Raises
         ------
         RuntimeError
             If no fairness controller was set up for this instance.
         """
-        assert self.trainmanager is not None
-        # If no fairness controller was set up, raise a RuntimeError.
+        query: FairnessQuery = message.requests[0]
         if self.fairness is None:
             error = (
                 "Received a query to participate in a fairness round, "
@@ -657,13 +813,13 @@ class FederatedClient:
             )
             self.logger.error(error)
             await self.netwk.send_message(messaging.Error(error))
-            return
-        # Otherwise, run the controller's routine.
+            raise RuntimeError(error)
         metrics = await self.fairness.run_fairness_round(
-            netwk=self.netwk, query=query, secagg=self._encrypter
+            netwk=self.netwk,
+            query=query,
+            secagg=self._encrypter,
         )
         # Optionally save computed fairness metrics.
-        # similar to server code; pylint: disable=duplicate-code
         if self.ckptr is not None:
             self.ckptr.save_metrics(
                 metrics=metrics,
@@ -683,19 +839,33 @@ class FederatedClient:
         message: StopTraining
             StopTraining message received from the server.
         """
-        self.logger.info(
-            "Training is now over, after %s rounds. Global loss: %s",
-            message.rounds,
-            message.loss,
-        )
-        if self.ckptr:
-            path = os.path.join(self.ckptr.folder, "model_state_best.mpk")
-            self.logger.info("Checkpointing final weights under %s.", path)
-            assert self.trainmanager is not None  # for mypy
-            self.trainmanager.model.set_weights(
-                message.weights, trainable=True
+        self.logger.info("Global Training is now over,")
+        for idx in range(self._n_models):
+            key = f"model_{idx}"
+            self.logger.info(
+                f"Model {idx + 1} after "
+                + f"{message.rounds} rounds"
+                + f", Global loss: {message.loss[key]}"
             )
-            self.ckptr.save_model(self.trainmanager.model, timestamp="best")
+            if self.ckptr:
+                path = os.path.join(
+                    self.ckptr.folder,
+                    "model_state_best.mpk",
+                )
+                self.logger.info(
+                    "Checkpointing final weights under %s.",
+                    path,
+                )
+                assert self.trainmanagers[idx] is not None
+                self.trainmanagers[idx].model.set_weights(
+                    message.weights[key],
+                    trainable=True,
+                )
+                self.ckptr.save_model(
+                    self.trainmanagers[idx].model,
+                    timestamp="best",
+                    idx=None if self._n_models == 1 else idx,
+                )
 
     async def cancel_training(
         self,

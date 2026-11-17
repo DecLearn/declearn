@@ -126,8 +126,6 @@ class TestTomlConfigDefaultParser:
         assert TomlConfig.default_parser(field, value) is value
         # Test with invalid values (wrong type, length or internal types).
         with pytest.raises(TypeError):
-            TomlConfig.default_parser(field, [12, 15])
-        with pytest.raises(TypeError):
             TomlConfig.default_parser(field, (12, 15, 18))
         with pytest.raises(TypeError):
             TomlConfig.default_parser(field, (12, "15"))

@@ -40,6 +40,8 @@ __all__ = [
     "SecaggMessage",
     "SecaggTrainReply",
     "aggregate_secagg_messages",
+    "MultiModelSecaggEvaluationReply",
+    "MultiModelSecaggTrainReply",
 ]
 
 
@@ -288,6 +290,55 @@ class SecaggEvaluationReply(SecaggMessage[EvaluationReply]):
         return self.__class__(
             loss=loss, n_steps=n_steps, t_spent=t_spent, metrics=metrics
         )
+
+
+@dataclasses.dataclass
+class MultiModelSecaggEvaluationReply(Message):
+    """Sec'Agg wrapped 'MultiModelEvaluationReply' message
+
+    Fields
+    ------
+    replies:
+        A list of SecaggEvaluationReply instance per model.
+    """
+
+    typekey = "multi_model_secagg_eval_reply"
+
+    replies: List[SecaggEvaluationReply]
+
+    @classmethod
+    def from_kwargs(cls, **kwargs):
+        kwargs["replies"] = [
+            SecaggEvaluationReply.from_kwargs(**request)
+            if isinstance(request, dict)
+            else request
+            for request in kwargs["replies"]
+        ]
+        return cls(**kwargs)
+
+
+@dataclasses.dataclass
+class MultiModelSecaggTrainReply(Message):
+    """SecAgg wrapped 'MultiModelTrainReply' message.
+
+    Fields
+    ------
+    replies:
+        A list of SecaggTrainReply instance per model.
+    """
+
+    typekey = "multi_model_secagg_train_reply"
+    replies: List[SecaggTrainReply]
+
+    @classmethod
+    def from_kwargs(cls, **kwargs):
+        kwargs["replies"] = [
+            SecaggTrainReply.from_kwargs(**request)
+            if isinstance(request, dict)
+            else request
+            for request in kwargs["replies"]
+        ]
+        return cls(**kwargs)
 
 
 @dataclasses.dataclass

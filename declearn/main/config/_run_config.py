@@ -18,7 +18,7 @@
 """TOML-parsable container for Federated Learning "run" configurations."""
 
 import dataclasses
-from typing import Any, Optional, Self
+from typing import Any, List, Optional, Self, Union
 
 from declearn.main.config._dataclasses import (
     EvaluateConfig,
@@ -59,11 +59,13 @@ class FLRunConfig(TomlConfig):
     register: RegisterConfig
         Parameters for clients' registration (min and/or max number
         of clients to expect, optional max duration of the process).
-    training: TrainingConfig
-        Parameters for training rounds, including effort constraints
+    training: Union[List[TrainingConfig], TrainingConfig]
+        List (or a single) parameters for training rounds, including effort
+        constraints
         and data-batching instructions.
-    evaluate: EvaluateConfig
-        Parameters for validation rounds, similar to training ones.
+    evaluate: Union[List[EvaluateConfig], EvaluateConfig]
+        List (or a single) of parameters for validation rounds, similar to
+        training ones.
     fairness: FairnessConfig or None
         Parameters for fairness evaluation rounds.
         Only used when an algorithm to enforce fairness is set up,
@@ -98,13 +100,37 @@ class FLRunConfig(TomlConfig):
 
     rounds: int
     register: RegisterConfig
-    training: TrainingConfig
-    evaluate: EvaluateConfig
+    training: Union[List[TrainingConfig], TrainingConfig]
+    evaluate: Union[List[EvaluateConfig], EvaluateConfig]
     fairness: FairnessConfig
     privacy: Optional[PrivacyConfig] = None
     early_stop: Optional[EarlyStopConfig] = None  # type: ignore  # is a type
-
     autofill_fields = {"evaluate", "fairness"}
+
+    def __post_init__(
+        self,
+    ):
+        # necessary type checking for training and evaluate fields
+        is_list_mask = isinstance(self.training, List) and isinstance(
+            self.evaluate, List
+        )
+        if is_list_mask and len(self.training) != len(self.evaluate):
+            raise ValueError(
+                "Training & Evaluation config lists must be of same length"
+            )
+        if is_list_mask:
+            frequencies = list(map(lambda cfg: cfg.frequency, self.evaluate))
+            if len(set(frequencies)) > 1:
+                raise ValueError(
+                    "All evaluation frequencies must be identical"
+                )
+        # by default, convert the self.training and self.evaluate into
+        # single item lists
+        if isinstance(self.training, TrainingConfig) and isinstance(
+            self.evaluate, EvaluateConfig
+        ):
+            self.training = [self.training]
+            self.evaluate = [self.evaluate]
 
     @classmethod
     def parse_register(
@@ -128,34 +154,63 @@ class FLRunConfig(TomlConfig):
         return cls.default_parser(field, inputs)
 
     @classmethod
-    def from_params(
+    def from_params(  # noqa: PLR0912
         cls,
         **kwargs: Any,
     ) -> Self:
-        # If evaluation batch size is not set, use the same as training.
-        # Note: if inputs have invalid formats, let the parent method fail.
+        training = kwargs.get("training")
         evaluate = kwargs.setdefault("evaluate", {})
-        if isinstance(evaluate, dict) and ("batch_size" not in evaluate):
-            training = kwargs.get("training")
-            if isinstance(training, dict):
-                evaluate.setdefault("batch_size", training.get("batch_size"))
-            elif isinstance(training, TrainingConfig):
-                evaluate.setdefault("batch_size", training.batch_size)
+
+        cls._set_evaluate_batch_size(training, evaluate)
+        # if evaluate is a list then by default its batch size
+        # is set from the corresponding training object
+        if isinstance(evaluate, List) and isinstance(training, List):
+            for i in range(len(evaluate)):
+                cls._set_evaluate_batch_size(training[i], evaluate[i])
+
+        # If evaluation batch size is not set, use the same as training.
         # If privacy is set and poisson sampling bool parameter is unspecified
-        # for the training dataset, make it True rather than False by default.
         privacy = kwargs.get("privacy")
         if isinstance(privacy, dict):
             training = kwargs.get("training")
             if isinstance(training, dict):
                 training.setdefault("poisson", True)
+
         # If fairness batch size is not set, use the same as evaluation.
         # Note: if inputs have invalid formats, let the parent method fail.
         fairness = kwargs.setdefault("fairness", {})
-        if isinstance(fairness, dict) and ("batch_size" not in fairness):
-            evaluate = kwargs.get("evaluate")
-            if isinstance(evaluate, dict):
-                fairness.setdefault("batch_size", evaluate.get("batch_size"))
-            elif isinstance(evaluate, EvaluateConfig):
-                fairness.setdefault("batch_size", evaluate.batch_size)
+        if isinstance(fairness, dict) and "batch_size" not in fairness:
+            evaluate_config = evaluate
+            # if evaluate is a list, we take the first element
+            if isinstance(evaluate_config, List):
+                evaluate_config = evaluate[0]
+            if isinstance(eval, dict):
+                fairness.setdefault(
+                    "batch_size", evaluate_config.get("batch_size")
+                )
+            elif isinstance(eval, EvaluateConfig):
+                fairness.setdefault("batch_size", evaluate_config.batch_size)
+        kwargs["evaluate"] = evaluate
+        kwargs["training"] = training
+
         # Delegate the rest of the work to the parent method.
         return super().from_params(**kwargs)
+
+    @classmethod
+    def _set_evaluate_batch_size(cls, training, evaluate):
+        """Sets the evaluate batch size from the training batch size if not
+        manually provided at start.
+
+        Parameters
+        ----------
+        training: Any
+            Training object containing the batch size received from kwargs
+        evaluate: Any
+            Evaluate object to set the batch size into.
+        """
+        # evaluate does not dispose of 'batch_size'
+        if isinstance(evaluate, dict) and ("batch_size" not in evaluate):
+            if isinstance(training, dict):
+                evaluate.setdefault("batch_size", training.get("batch_size"))
+            elif isinstance(training, TrainingConfig):
+                evaluate.setdefault("batch_size", training.batch_size)

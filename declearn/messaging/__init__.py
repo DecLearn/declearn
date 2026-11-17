@@ -43,6 +43,11 @@ Base messages
 * [StopTraining][declearn.messaging.StopTraining]
 * [TrainReply][declearn.messaging.TrainReply]
 * [TrainRequest][declearn.messaging.TrainRequest]
+* [MultiModelTrainRequest][declearn.messaging.MultiModelTrainRequest]
+* [MultiModelTrainReply][declearn.messaging.MultiModelTrainReply]
+* [MultiModelEvaluationReply][declearn.messaging.MultiModelEvaluationReply]
+* [MultiModelEvaluationRequest][declearn.messaging.MultiModelEvaluationRequest]
+
 
 Fairness algorithms messages
 ----------------------------
@@ -52,6 +57,8 @@ Fairness algorithms messages
 * [FairnessQuery][declearn.messaging.FairnessQuery]
 * [FairnessReply][declearn.messaging.FairnessReply]
 * [FairnessSetupQuery][declearn.messaging.FairnessSetupQuery]
+* [MultiModelFairnessQuery][declearn.messaging.MultiModelFairnessQuery]
+
 """
 
 from ._api import (
@@ -68,6 +75,10 @@ from ._base import (
     InitRequest,
     MetadataQuery,
     MetadataReply,
+    MultiModelEvaluationReply,
+    MultiModelEvaluationRequest,
+    MultiModelTrainReply,
+    MultiModelTrainRequest,
     PrivacyReply,
     PrivacyRequest,
     StopTraining,
@@ -80,4 +91,5 @@ from ._fairness import (
     FairnessQuery,
     FairnessReply,
     FairnessSetupQuery,
+    MultiModelFairnessQuery,
 )

@@ -19,7 +19,7 @@
 
 import dataclasses
 import functools
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 from declearn.aggregator import Aggregator, AveragingAggregator
 from declearn.fairness.api import FairnessControllerServer
@@ -28,6 +28,14 @@ from declearn.utils import TomlConfig, access_registered
 
 __all__ = [
     "FLOptimConfig",
+]
+
+
+OptimizerInput = Union[
+    float,
+    Dict[str, Any],
+    Optimizer,
+    None,
 ]
 
 
@@ -57,7 +65,7 @@ class FLOptimConfig(TomlConfig):
         client updates.
     aggregator: Aggregator, default=AverageAggregator()
         Client weights aggregator to be used by the server so as
-        to conduct the round-wise aggregation of client udpates.
+        to conduct the round-wise aggregation of client updates.
     fairness: Fairness or None, default=None
         Optional `FairnessControllerServer` instance specifying
         an algorithm to enforce fairness of the trained model.
@@ -93,8 +101,8 @@ class FLOptimConfig(TomlConfig):
         Instantiate by parsing inputs dicts (or objects).
     """
 
-    client_opt: Optimizer
-    server_opt: Optimizer = dataclasses.field(
+    client_opt: Union[List[Optimizer], Optimizer]
+    server_opt: Union[List[Optimizer], Optimizer] = dataclasses.field(
         default_factory=functools.partial(Optimizer, lrate=1.0)
     )
     aggregator: Aggregator = dataclasses.field(
@@ -105,41 +113,48 @@ class FLOptimConfig(TomlConfig):
     @classmethod
     def parse_client_opt(
         cls,
-        field: dataclasses.Field[Optimizer],
-        inputs: Union[float, Dict[str, Any], Optimizer],
-    ) -> Optimizer:
+        field: dataclasses.Field[Union[List[Optimizer], Optimizer]],
+        inputs: Union[OptimizerInput, List[OptimizerInput]],
+    ) -> Union[Optimizer | List[Optimizer]]:
         """Field-specific parser to instantiate the client-side Optimizer.
 
         This method supports specifying `client_opt`:
 
-        - as a float, parsed as the learning rate to a basic SGD optimzier
+        - as a float, parsed as the learning rate to a basic SGD optimizer
         - as a dict, parsed a serialized Optimizer configuration
         - as an `Optimizer` instance (requiring no parsing)
         """
+        if isinstance(inputs, List):
+            return [cls._parse_optimizer(field, inpt) for inpt in inputs]
         return cls._parse_optimizer(field, inputs)
 
     @classmethod
     def parse_server_opt(
         cls,
-        field: dataclasses.Field[Optimizer],
-        inputs: Union[float, Dict[str, Any], Optimizer, None],
-    ) -> Optimizer:
+        field: dataclasses.Field[Union[Optimizer, List[Optimizer]]],
+        inputs: Union[
+            OptimizerInput,
+            List[OptimizerInput],
+        ],
+    ) -> Union[Optimizer, List[Optimizer]]:
         """Field-specific parser to instantiate the server-side Optimizer.
 
         This method supports specifying `server_opt`:
 
         - as None (or missing kwarg), resulting in a basic `Optimizer(1.0)`
-        - as a float, parsed as the learning rate to a basic SGD optimzier
+        - as a float, parsed as the learning rate to a basic SGD optimizer
         - as a dict, parsed a serialized Optimizer configuration
         - as an `Optimizer` instance (requiring no parsing)
         """
+        if isinstance(inputs, List):
+            return [cls._parse_optimizer(field, inpt) for inpt in inputs]
         return cls._parse_optimizer(field, inputs)
 
     @classmethod
     def _parse_optimizer(
         cls,
-        field: dataclasses.Field[Optimizer],
-        inputs: Union[float, Dict[str, Any], Optimizer, None],
+        field: dataclasses.Field[Union[Optimizer, List[Optimizer]]],
+        inputs: OptimizerInput,
     ) -> Optimizer:
         """Field-specific parser to instantiate an Optimizer."""
         # Delegate to the default parser for most cases.

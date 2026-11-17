@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Utils for the main federated learning traning and evaluation processes.
+"""Utils for the main federated learning training and evaluation processes.
 
 End-user utils
 --------------
@@ -37,12 +37,27 @@ Backend utils to aggregate clients' dataset information:
     Validate and aggregate clients' data-info dictionaries.
 * [AggregationError][declearn.main.utils.AggregationError]:
     Custom exception that may be raised by `aggregate_clients_data_info`.
-"""
+* [validate_optional_dataset_list]\
+    [declearn.main.utils.validate_optional_dataset_list]:
+    Validate and normalize an optional list of Datasets.
+* [dispatch_replies][declearn.main.utils.dispatch_replies]:
+    Dispatch multi-model replies by model index.
+* [copy_requests_with_weights][declearn.main.utils.copy_requests_with_weights]:
+    Copy requests and attach weights when needed (used by server)
+* [ServerUtils][declearn.main.utils.ServerUtils]
+    Server utilities for parsing inputs. 
+    """
 
 from ._checkpoint import Checkpointer
 from ._data_info import AggregationError, aggregate_clients_data_info
 from ._early_stop import EarlyStopConfig, EarlyStopping
-from ._error import IncompatibleConfigsError
+from ._error import IncompatibilityError
+from ._multi_model import (
+    copy_requests_with_weights,
+    dispatch_replies,
+    validate_optional_dataset_list,
+)
+from ._server import ServerUtils
 
 __all__ = [
     "Checkpointer",
@@ -50,5 +65,9 @@ __all__ = [
     "aggregate_clients_data_info",
     "EarlyStopConfig",
     "EarlyStopping",
-    "IncompatibleConfigsError",
+    "IncompatibilityError",
+    "validate_optional_dataset_list",
+    "dispatch_replies",
+    "copy_requests_with_weights",
+    "ServerUtils",
 ]

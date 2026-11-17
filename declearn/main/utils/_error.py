@@ -18,9 +18,18 @@
 """Utils related to general errors."""
 
 
-class IncompatibleConfigsError(Exception):
+class IncompatibilityError(Exception):
     """Custom exception to indicate that incompatible configs/modules/features
     are selected/activated at the same time
     """
 
     pass
+
+
+class InvalidDatasetType(TypeError):
+    """Custom TypeError to indicate that the received dataset is of
+    invalid type
+    """
+
+    def __init__(self, target: str, recv_data_type):
+        super().__init__(f"{target} must be a Dataset. Got : {recv_data_type}")

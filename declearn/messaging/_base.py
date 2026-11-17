@@ -18,7 +18,7 @@
 """Messages for the default Federated Learning process of DecLearn."""
 
 import dataclasses
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from declearn.aggregator import Aggregator, ModelUpdates
 from declearn.messaging._api import Message
@@ -42,6 +42,10 @@ __all__ = [
     "StopTraining",
     "TrainReply",
     "TrainRequest",
+    "MultiModelEvaluationRequest",
+    "MultiModelEvaluationReply",
+    "MultiModelTrainReply",
+    "MultiModelTrainRequest",
 ]
 
 
@@ -105,6 +109,32 @@ class EvaluationRequest(Message):
 
 
 @dataclasses.dataclass
+class MultiModelEvaluationRequest(Message):
+    """Server-emitted request to participate in an evaluation round across
+    all models.
+
+    Fields
+    ------
+    requests:
+        List of EvaluationRequest per model.
+    """
+
+    typekey = "multi_model_eval_request"
+
+    requests: List[EvaluationRequest]
+
+    @classmethod
+    def from_kwargs(cls, **kwargs):
+        kwargs["requests"] = [
+            EvaluationRequest.from_kwargs(**request)
+            if isinstance(request, dict)
+            else request
+            for request in kwargs["requests"]
+        ]
+        return cls(**kwargs)
+
+
+@dataclasses.dataclass
 class EvaluationReply(Message):
     """Client-emitted results from a local evaluation round.
 
@@ -138,6 +168,35 @@ class EvaluationReply(Message):
 
 
 @dataclasses.dataclass
+class MultiModelEvaluationReply(Message):
+    """Client-emitted results from the local evaluation round with replies
+    from all trained models.
+
+    Fields
+    ------
+    replies:
+        List of EvaluationReply per trained model.
+    """
+
+    typekey = "multi_model_eval_reply"
+
+    replies: List[EvaluationReply]
+
+    def to_kwargs(self) -> Dict[str, Any]:
+        return {"replies": [reply.to_kwargs() for reply in self.replies]}
+
+    @classmethod
+    def from_kwargs(cls, **kwargs):
+        replies = []
+        for reply in kwargs["replies"]:
+            if isinstance(reply, EvaluationReply):
+                replies.append(reply)
+            else:
+                replies.append(EvaluationReply.from_kwargs(**reply))
+        return cls(replies=replies)
+
+
+@dataclasses.dataclass
 class GenericMessage(Message):
     """Generic message format, with action/params pair.
 
@@ -157,47 +216,49 @@ class GenericMessage(Message):
 
 @dataclasses.dataclass
 class InitRequest(Message):
-    """Server-emitted request to initialize local model and optimizer.
+    """Server-emitted request to initialize local models and optimizers.
 
     Fields
     ------
     model:
-        Model initialized by the server.
+        List of Models initialized by the server.
     optim:
-        Client optimizer initialized by the server, transfered to clients.
+        A list of Client optimizers initialized by the server, transferred
+        to clients where the ith optimizer belongs to the ith model.
     aggrg:
         Aggregator initialized by the server.
     metrics:
-        List of metric-like items (`MetricInputType`) involved in the federated
-        process.
+        List of a List of metric-like items (`MetricInputType`) involved
+        in the federated process, each is used for the ith model.
     dpsgd:
         True if privacy (through DP-SGD) is enabled in the federated process.
     secagg:
         True if secure aggregation is enabled in the federated process.
     fairness:
-        True if fairness is enabled in the federated process.
+        List of bool, True if fairness is enabled in the federated process
+        for the ith model.
     """
 
     typekey = "init_request"
 
-    model: Model
-    optim: Optimizer
-    aggrg: Aggregator
+    model: List[Model]
+    optim: List[Optimizer]
+    aggrg: List[Aggregator]
     metrics: List[MetricInputType] = dataclasses.field(default_factory=list)
     dpsgd: bool = False
-    secagg: Optional[str] = None
     fairness: bool = False
+    secagg: Optional[str] = None
 
-    def to_kwargs(self) -> Dict[str, Any]:
-        kwargs: Dict[str, Any] = {}
-        kwargs["model"] = self.model
-        kwargs["optim"] = self.optim
-        kwargs["aggrg"] = self.aggrg
-        kwargs["metrics"] = self.metrics
-        kwargs["dpsgd"] = self.dpsgd
-        kwargs["secagg"] = self.secagg
-        kwargs["fairness"] = self.fairness
-        return kwargs
+    def to_kwargs(self):
+        return {
+            "model": self.model,
+            "optim": self.optim,
+            "aggrg": self.aggrg,
+            "metrics": self.metrics,
+            "dpsgd": self.dpsgd,
+            "secagg": self.secagg,
+            "fairness": self.fairness,
+        }
 
 
 @dataclasses.dataclass
@@ -214,12 +275,13 @@ class MetadataQuery(Message):
     Fields
     ------
     fields:
-        List of dataset metadata fields requested to the client.
+        Dictionary of Lists, each, is a list of dataset metadata fields
+        requested to the client.
     """
 
     typekey = "metadata_query"
 
-    fields: List[str]
+    fields: Dict[str, Set[str]]
 
 
 @dataclasses.dataclass
@@ -229,13 +291,13 @@ class MetadataReply(Message):
     Fields
     ------
     data_info:
-        Dictionary mapping metadata names (fields) to their values, sent back
-        by a client to the server.
+        Dictionary of models mapping dictionaries, each, maps metadata names
+        (fields) to their values, sent back by a client to the server.
     """
 
     typekey = "metadata_reply"
 
-    data_info: Dict[str, Any]
+    data_info: Dict[str, Dict[str, Any]]
 
 
 @dataclasses.dataclass
@@ -298,17 +360,17 @@ class StopTraining(Message):
     Fields
     ------
     weights:
-        Best global model weights.
+        Weights of the best global model(s), keyed by model index.
     loss:
-        Best global model loss.
+        Loss value of the best global model(s), keyed by model index.
     rounds:
         Number of training rounds that occurred in the process.
     """
 
     typekey = "stop_training"
 
-    weights: Vector
-    loss: float
+    weights: Dict[str, Vector]
+    loss: Dict[str, float]
     rounds: int
 
 
@@ -355,6 +417,25 @@ class TrainRequest(Message):
 
 
 @dataclasses.dataclass
+class MultiModelTrainRequest(Message):
+    typekey = "multi_model_train_request"
+    requests: List[TrainRequest]
+
+    def to_kwargs(self) -> Dict[str, Any]:
+        return {"requests": [request.to_kwargs() for request in self.requests]}
+
+    @classmethod
+    def from_kwargs(cls, **kwargs):
+        kwargs["requests"] = [
+            TrainRequest.from_kwargs(**request)
+            if isinstance(request, dict)
+            else request
+            for request in kwargs["requests"]
+        ]
+        return cls(**kwargs)
+
+
+@dataclasses.dataclass
 class TrainReply(Message):
     """Client-emitted results from a local training round.
 
@@ -387,3 +468,38 @@ class TrainReply(Message):
         data["updates"] = self.updates
         data["aux_var"] = self.aux_var
         return data
+
+
+@dataclasses.dataclass
+class MultiModelTrainReply(Message):
+    """Client-emitted results from a local training round across
+    all models.
+
+    Fields
+    ------
+    replies:
+        A list of TrainReply instances, where each corresponds to a model.
+    """
+
+    typekey = "multi_model_train_reply"
+
+    replies: List[TrainReply]
+
+    def to_kwargs(self) -> Dict[str, Any]:
+        return {"replies": [reply.to_kwargs() for reply in self.replies]}
+
+    @classmethod
+    def from_kwargs(cls, **kwargs):
+        replies = []
+        for reply in kwargs["replies"]:
+            if isinstance(reply, TrainReply):
+                replies.append(reply)
+            else:
+                reply_dict = dict(reply)
+                if isinstance(reply_dict["updates"], dict):
+                    reply_dict["updates"] = ModelUpdates(
+                        updates=reply_dict["updates"]["updates"],
+                        weights=reply_dict["updates"]["weights"],
+                    )
+                replies.append(TrainReply.from_kwargs(**reply_dict))
+        return cls(replies=replies)

@@ -26,6 +26,7 @@ from typing import (
     Any,
     ClassVar,
     Dict,
+    List,
     Optional,
     Self,
     Set,
@@ -40,6 +41,7 @@ __all__ = [
 
 
 T = TypeVar("T")
+InputType = Union[str, Dict[str, Any], T, None]
 
 
 def _isinstance_generic(inputs: Any, typevar: Type) -> bool:
@@ -124,7 +126,7 @@ def _instantiate_field(
     """Instantiate a dataclass field from input args and kwargs.
 
     This function is meant to enable building dataclass object fields,
-    that requring instantiating from a received value or dict of kwargs.
+    that requiring instantiating from a received value or dict of kwargs.
 
     It supports doing so even when for fields that are annotated to be a
     union of types (notably optional ones: Union[T, None]), and/or are a
@@ -214,7 +216,7 @@ class TomlConfig:
           not passing a kwarg for it will by default result in using its
           default value.
         - If a field both has a default value and supports being None, it
-          may be preferrable to pass an empty dict kwarg so as to use the
+          may be preferable to pass an empty dict kwarg so as to use the
           field's default value rather than a non-default None value.
         - The former remarks hold up when the field does not benefit from
           a specific parser (that may implement arbitrary processing).
@@ -256,7 +258,10 @@ class TomlConfig:
     def default_parser(
         cls,
         field: dataclasses.Field[T],
-        inputs: Union[str, Dict[str, Any], T, None],
+        inputs: Union[
+            InputType,
+            List[InputType],
+        ],
     ) -> Any:
         """Default method to instantiate a field from python inputs.
 
@@ -264,13 +269,13 @@ class TomlConfig:
         ----------
         field: dataclasses.Field[<T>]
             Field that is being instantiated.
-        inputs: str or dict or <T> or None
+        inputs: str or dict or <T> or None, or a list of the aforementioned
             Provided inputs to instantiate the field.
             - If valid as per `field.type`, return inputs.
             - If None (and None is invalid), return the field's default value.
             - If dict, treat them as kwargs to the field's type constructor.
             - If str, treat as the path to a TOML file specifying the object.
-
+            - If list, return list of the instantiated field.
         Notes
         -----
         If `inputs` is str and treated as the path to a TOML file,
@@ -305,7 +310,7 @@ class TomlConfig:
             raise TypeError(
                 f"Field '{field.name}' does not provide a default value."
             )
-        # Case of str inputs poiting to a file: try parsing it.
+        # Case of str inputs pointing to a file: try parsing it.
         if isinstance(inputs, str) and os.path.isfile(inputs):
             try:
                 with open(inputs, "rb") as file:
@@ -321,6 +326,9 @@ class TomlConfig:
         # Case of dict inputs: try instantiating the target type.
         if isinstance(inputs, dict):
             return _instantiate_field(field, **inputs)
+        if isinstance(inputs, list):
+            return [cls.default_parser(field, item) for item in inputs]
+
         # Otherwise, raise a TypeError.
         raise TypeError(f"Failed to parse inputs for field {field.name}.")
 
